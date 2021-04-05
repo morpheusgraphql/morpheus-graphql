@@ -1,65 +1,62 @@
 benchmarking GraphQL/Huge String
-time                 8.036 ms   (7.899 ms .. 8.245 ms)
-                     0.997 R²   (0.995 R² .. 0.999 R²)
-mean                 8.029 ms   (7.953 ms .. 8.115 ms)
-std dev              224.4 μs   (171.9 μs .. 295.3 μs)
+time                 8.035 ms   (7.952 ms .. 8.123 ms)
+                     0.999 R²   (0.998 R² .. 1.000 R²)
+mean                 8.077 ms   (8.033 ms .. 8.139 ms)
+std dev              149.2 μs   (101.7 μs .. 195.9 μs)
 
 benchmarking GraphQL/Mythology
-time                 1.010 ms   (1.002 ms .. 1.018 ms)
+time                 1.063 ms   (1.055 ms .. 1.074 ms)
                      0.999 R²   (0.999 R² .. 1.000 R²)
-mean                 1.013 ms   (1.007 ms .. 1.020 ms)
-std dev              21.74 μs   (15.21 μs .. 35.47 μs)
-variance introduced by outliers: 11% (moderately inflated)
+mean                 1.056 ms   (1.050 ms .. 1.063 ms)
+std dev              18.62 μs   (14.00 μs .. 23.80 μs)
 
 benchmarking GraphQL/Many Descriptions
-time                 10.30 ms   (10.20 ms .. 10.41 ms)
-                     0.999 R²   (0.999 R² .. 1.000 R²)
-mean                 10.29 ms   (10.24 ms .. 10.35 ms)
-std dev              156.0 μs   (117.7 μs .. 221.9 μs)
+time                 10.64 ms   (10.55 ms .. 10.72 ms)
+                     0.999 R²   (0.998 R² .. 1.000 R²)
+mean                 10.74 ms   (10.66 ms .. 10.84 ms)
+std dev              242.1 μs   (123.6 μs .. 374.1 μs)
 
 benchmarking GraphQL/Star Wars
-time                 81.59 ms   (81.08 ms .. 82.35 ms)
+time                 86.48 ms   (85.88 ms .. 86.88 ms)
                      1.000 R²   (1.000 R² .. 1.000 R²)
-mean                 79.78 ms   (78.49 ms .. 80.54 ms)
-std dev              1.676 ms   (870.5 μs .. 2.606 ms)
+mean                 85.36 ms   (84.10 ms .. 85.90 ms)
+std dev              1.396 ms   (349.8 μs .. 2.301 ms)
 
 benchmarking GraphQL/Many Wrappers
-time                 1.410 s    (1.383 s .. 1.461 s)
+time                 1.450 s    (1.442 s .. 1.458 s)
                      1.000 R²   (1.000 R² .. 1.000 R²)
-mean                 1.397 s    (1.393 s .. 1.405 s)
-std dev              7.779 ms   (246.3 μs .. 10.15 ms)
+mean                 1.451 s    (1.450 s .. 1.452 s)
+std dev              1.589 ms   (698.3 μs .. 2.199 ms)
 variance introduced by outliers: 19% (moderately inflated)
 
 benchmarking Morpheus/Huge String
-time                 192.2 μs   (175.1 μs .. 227.1 μs)
-                     0.899 R²   (0.824 R² .. 1.000 R²)
-mean                 182.0 μs   (176.6 μs .. 206.8 μs)
-std dev              32.37 μs   (3.581 μs .. 73.53 μs)
-variance introduced by outliers: 93% (severely inflated)
+time                 192.2 μs   (191.3 μs .. 193.0 μs)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 191.4 μs   (191.0 μs .. 192.2 μs)
+std dev              1.694 μs   (1.309 μs .. 2.486 μs)
 
 benchmarking Morpheus/Mythology
-time                 258.9 μs   (255.1 μs .. 262.2 μs)
-                     0.998 R²   (0.996 R² .. 1.000 R²)
-mean                 258.3 μs   (255.6 μs .. 260.4 μs)
-std dev              8.524 μs   (5.104 μs .. 13.16 μs)
-variance introduced by outliers: 28% (moderately inflated)
+time                 268.2 μs   (267.3 μs .. 269.2 μs)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 267.8 μs   (267.1 μs .. 269.3 μs)
+std dev              2.989 μs   (1.760 μs .. 4.830 μs)
 
 benchmarking Morpheus/Many Descriptions
-time                 449.1 μs   (439.4 μs .. 464.1 μs)
-                     0.996 R²   (0.993 R² .. 1.000 R²)
-mean                 443.2 μs   (440.9 μs .. 454.0 μs)
-std dev              12.71 μs   (6.568 μs .. 26.66 μs)
-variance introduced by outliers: 21% (moderately inflated)
+time                 559.0 μs   (557.4 μs .. 560.6 μs)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 557.7 μs   (556.4 μs .. 559.3 μs)
+std dev              4.979 μs   (3.305 μs .. 7.988 μs)
 
 benchmarking Morpheus/Star Wars
-time                 25.72 ms   (25.36 ms .. 26.12 ms)
-                     0.999 R²   (0.998 R² .. 1.000 R²)
-mean                 25.28 ms   (25.05 ms .. 25.48 ms)
-std dev              492.7 μs   (351.3 μs .. 722.2 μs)
+time                 26.35 ms   (26.10 ms .. 26.56 ms)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 26.62 ms   (26.29 ms .. 27.84 ms)
+std dev              1.285 ms   (202.8 μs .. 2.524 ms)
+variance introduced by outliers: 16% (moderately inflated)
 
 benchmarking Morpheus/Many Wrappers
-time                 41.55 μs   (41.30 μs .. 41.79 μs)
+time                 43.67 μs   (43.37 μs .. 44.14 μs)
                      1.000 R²   (0.999 R² .. 1.000 R²)
-mean                 41.59 μs   (41.29 μs .. 42.22 μs)
-std dev              1.486 μs   (625.4 ns .. 2.607 μs)
-variance introduced by outliers: 39% (moderately inflated)
+mean                 43.58 μs   (43.38 μs .. 44.23 μs)
+std dev              1.071 μs   (597.6 ns .. 2.152 μs)
+variance introduced by outliers: 23% (moderately inflated)
