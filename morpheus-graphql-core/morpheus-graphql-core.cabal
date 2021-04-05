@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0c9041a0d8873b24fbd00ec549267b8fd62af3fefe26afa6d45d494d6e414f20
+-- hash: 0d5bffce5e9adb13ac89aaacbd10251fdca37f57f3b6d59415c65b48a56155b2
 
 name:           morpheus-graphql-core
 version:        0.17.0
@@ -54,6 +54,7 @@ data-files:
     test/rendering/variable/schema.gql
     test/rendering/variable/simple/query.gql
     test/rendering/variable/simple/rendering.gql
+    test/schema/parsing/descriptions/grave-accent/schema.gql
     test/schema/parsing/descriptions/ok/schema.gql
     test/schema/parsing/directive/ok/simple/schema.gql
     test/schema/parsing/directive/ok/sophisticated/schema.gql
@@ -101,6 +102,7 @@ data-files:
     test/rendering/variable/input/variables.json
     test/rendering/variable/list/variables.json
     test/rendering/variable/simple/variables.json
+    test/schema/parsing/descriptions/grave-accent/response.json
     test/schema/parsing/descriptions/ok/response.json
     test/schema/parsing/directive/ok/simple/response.json
     test/schema/parsing/directive/ok/sophisticated/response.json
