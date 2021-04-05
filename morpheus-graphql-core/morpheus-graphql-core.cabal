@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0d5bffce5e9adb13ac89aaacbd10251fdca37f57f3b6d59415c65b48a56155b2
+-- hash: 5def903e52457f885b9b02f50e346ac5005b58573f090f47f6d59d458086f893
 
 name:           morpheus-graphql-core
 version:        0.17.0
@@ -186,9 +186,8 @@ library
       Data.Morpheus.Parsing.Document.TypeSystem
       Data.Morpheus.Parsing.Internal.Arguments
       Data.Morpheus.Parsing.Internal.Internal
-      Data.Morpheus.Parsing.Internal.Literals
       Data.Morpheus.Parsing.Internal.Pattern
-      Data.Morpheus.Parsing.Internal.String
+      Data.Morpheus.Parsing.Internal.SourceText
       Data.Morpheus.Parsing.Internal.Terms
       Data.Morpheus.Parsing.Internal.Value
       Data.Morpheus.Parsing.Request.Operation

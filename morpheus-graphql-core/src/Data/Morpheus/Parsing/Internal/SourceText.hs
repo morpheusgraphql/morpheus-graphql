@@ -4,8 +4,10 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# OPTIONS_GHC -Wno-overflowed-literals #-}
 
-module Data.Morpheus.Parsing.Internal.String
+module Data.Morpheus.Parsing.Internal.SourceText
   ( parseStringBS,
+    ignoredTokens,
+    ignoredTokens1,
   )
 where
 
@@ -15,48 +17,57 @@ import Data.ByteString.Lazy.Internal
 import Data.Morpheus.Parsing.Internal.Internal
   ( Parser,
   )
-import Data.Morpheus.Parsing.Internal.Literals
-  ( ignoredTokens,
-  )
 import Relude hiding (ByteString, empty, many)
 import Text.Megaparsec
   ( choice,
     label,
+    many,
     satisfy,
+    takeWhile1P,
     takeWhileP,
     unexpected,
   )
 import Text.Megaparsec.Byte
   ( char,
+    space1,
     string,
   )
 import Text.Megaparsec.Error
   ( ErrorItem (..),
   )
 
+-- ','
+#define COMMA 44
+
+-- '#'
+#define HASH_TAG 35
+
+-- White Space
+#define TABULATION 0x0009
+#define NEW_LINE 0x000A
+#define SPACE 0x0020
+#define CARRIAGE_RETURN 0x000D
+#define UNICODE_BOM 0xFEFF
+#define NON_CHARACTER 0xFFFF
+
+-- String characters
 #define DOUBLE_QUOTE 34
-
-#define CHAR_b 98
-
-#define CHAR_f 102
-
-#define CHAR_n 110
-
-#define CHAR_r 114
-
-#define CHAR_t 116
-
 #define BACKSLASH 92
 
-#define NEW_LINE 10
+-- Escape Characters
+#define CHAR_b 98
+#define CHAR_f 102
+#define CHAR_n 110
+#define CHAR_r 114
+#define CHAR_t 116
 
 -- https://spec.graphql.org/June2018/#sec-Source-Text
 -- SourceCharacter : [\u0009\u000A\u000D\u0020-\uFFFF]/
 isSourceCharacter :: Word8 -> Bool
-isSourceCharacter 0x0009 = True
-isSourceCharacter 0x000A = True
-isSourceCharacter 0x000D = True
-isSourceCharacter x = 0x0020 <= x && x <= 0xFFFF
+isSourceCharacter TABULATION = True
+isSourceCharacter NEW_LINE = True
+isSourceCharacter CARRIAGE_RETURN = True
+isSourceCharacter x = SPACE <= x && x <= NON_CHARACTER
 {-# INLINE isSourceCharacter #-}
 
 inlineString :: Parser ByteString
@@ -107,3 +118,26 @@ blockString = string "\"\"\"" *> content <* ignoredTokens
 parseStringBS :: Parser ByteString
 parseStringBS = blockString <|> inlineString
 {-# INLINE parseStringBS #-}
+
+-- Ignored Tokens : https://graphql.github.io/graphql-spec/June2018/#sec-Source-Text.Ignored-Tokens
+ignoredTokens :: Parser ()
+ignoredTokens = label "IgnoredTokens" $ many ignored $> ()
+{-# INLINE ignoredTokens #-}
+
+-- isIgnored :: UnicodeBOM, WhiteSpace, LineTerminator, Comment , Comma
+ignored :: Parser ()
+ignored = (takeWhile1P Nothing isIgnored <|> comment) $> ()
+  where
+    isIgnored x =
+      (x >= TABULATION && x <= CARRIAGE_RETURN)
+        || x == SPACE
+        || x == COMMA
+        || x == UNICODE_BOM
+    {-# INLINE isIgnored #-}
+    comment = char HASH_TAG *> takeWhileP Nothing (\x -> isSourceCharacter x && x /= NEW_LINE)
+    {-# INLINE comment #-}
+{-# INLINE ignored #-}
+
+ignoredTokens1 :: Parser ()
+ignoredTokens1 = space1 *> ignoredTokens
+{-# INLINE ignoredTokens1 #-}

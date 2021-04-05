@@ -50,11 +50,11 @@ import Data.Morpheus.Parsing.Internal.Internal
     Position,
     getLocation,
   )
-import Data.Morpheus.Parsing.Internal.Literals
+import Data.Morpheus.Parsing.Internal.SourceText
   ( ignoredTokens,
     ignoredTokens1,
+    parseStringBS,
   )
-import Data.Morpheus.Parsing.Internal.String (parseStringBS)
 import qualified Data.Morpheus.Types.Internal.AST as AST
 import Data.Morpheus.Types.Internal.AST
   ( DataTypeWrapper (..),
