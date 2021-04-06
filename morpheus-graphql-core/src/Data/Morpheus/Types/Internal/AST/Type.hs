@@ -90,7 +90,7 @@ mkMaybeType = BaseType False
 -- TypeWrappers
 -----------------------------------------------------------------------------------
 data TypeWrapper
-  = TypeList Bool TypeWrapper
+  = TypeList {listElementType :: TypeWrapper, isRequiredList :: Bool}
   | BaseType Bool
   deriving (Show, Eq, Lift)
 
@@ -103,7 +103,7 @@ isStronger :: TypeRef -> TypeRef -> Bool
 isStronger t1 t2 = typeConName t1 == typeConName t2 && isStronger' (typeWrappers t1) (typeWrappers t2)
 
 isStronger' :: TypeWrapper -> TypeWrapper -> Bool
-isStronger' (TypeList nonNull1 x1) (TypeList nonNull2 x2) = nonNull1 >= nonNull2 && isStronger' x1 x2
+isStronger' (TypeList x1 nonNull1) (TypeList x2 nonNull2) = nonNull1 >= nonNull2 && isStronger' x1 x2
 isStronger' (BaseType x) (BaseType y) = x >= y
 isStronger' x y = x == y
 
@@ -111,7 +111,7 @@ toTypeRef :: DataTypeWrapper -> TypeRef
 toTypeRef (UnwrappedType typename nonNull) = TypeRef typename (BaseType nonNull)
 toTypeRef (ListType wrapper nonNull) =
   let TypeRef typename hsWrappers = toTypeRef wrapper
-   in TypeRef typename (TypeList nonNull hsWrappers)
+   in TypeRef typename (TypeList hsWrappers nonNull)
 
 -- TypeRef
 -------------------------------------------------------------------
@@ -127,7 +127,7 @@ mkTypeRef typeConName = TypeRef {typeConName, typeWrappers = mkBaseType}
 instance RenderGQL TypeRef where
   renderGQL TypeRef {typeConName, typeWrappers} = renderWrapper typeWrappers
     where
-      renderWrapper (TypeList isNonNull xs) = "[" <> renderWrapper xs <> "]" <> renderNonNull isNonNull
+      renderWrapper (TypeList xs isNonNull) = "[" <> renderWrapper xs <> "]" <> renderNonNull isNonNull
       renderWrapper (BaseType isNonNull) = renderGQL typeConName <> renderNonNull isNonNull
 
 renderNonNull :: Bool -> Rendering
@@ -142,9 +142,9 @@ class Nullable a where
   toNullable :: a -> a
 
 instance Nullable TypeWrapper where
-  isNullable (TypeList nonNull _) = not nonNull
+  isNullable (TypeList _ nonNull) = not nonNull
   isNullable (BaseType nonNull) = not nonNull
-  toNullable (TypeList _ t) = TypeList False t
+  toNullable (TypeList t _) = TypeList t False
   toNullable BaseType {} = BaseType False
 
 instance Nullable TypeRef where

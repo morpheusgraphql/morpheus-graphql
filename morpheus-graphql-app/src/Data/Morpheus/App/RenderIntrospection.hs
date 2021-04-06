@@ -15,7 +15,6 @@ module Data.Morpheus.App.RenderIntrospection
   )
 where
 
-import Data.Foldable (foldr')
 import Data.Morpheus.App.Internal.Resolving
   ( Resolver,
     ResolverContext (..),
@@ -40,7 +39,6 @@ import Data.Morpheus.Types.Internal.AST
     ArgumentDefinition (..),
     ArgumentsDefinition,
     DataEnumValue (..),
-    DataTypeWrapper (..),
     Description,
     DirectiveDefinition (..),
     DirectiveLocation,
@@ -61,6 +59,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeKind (..),
     TypeName (..),
     TypeRef (..),
+    TypeWrapper (BaseType, TypeList),
     UnionMember (..),
     VALID,
     Value (..),
@@ -251,19 +250,20 @@ instance RenderIntrospection (DataEnumValue VALID) where
         <> renderDeprecated enumDirectives
 
 instance RenderIntrospection TypeRef where
-  render TypeRef {typeConName, typeWrappers} = renderWrapper typeWrappers typeConName
+  render TypeRef {typeConName, typeWrappers} = renderWrapper typeWrappers
     where
-      renderWrapper (ListType nextWrapper isNonNull) =
+      renderWrapper :: (Monad m, WithSchema m) => TypeWrapper -> m (ResolverValue m)
+      renderWrapper (TypeList nextWrapper isNonNull) =
         pure $ withNonNull isNonNull $
           mkObject
             "__Type"
             [ renderKind KindList,
-              ("ofType", render nextWrapper)
+              ("ofType", renderWrapper nextWrapper)
             ]
-      renderWrapper (UnwrappedType typename isNonNull) =
+      renderWrapper (BaseType isNonNull) =
         withNonNull isNonNull <$> do
-          kind <- kindOf <$> selectType typename
-          pure $ mkType kind typename Nothing []
+          kind <- kindOf <$> selectType typeConName
+          pure $ mkType kind typeConName Nothing []
 
 withNonNull ::
   ( Monad m,

@@ -160,7 +160,7 @@ validateWrapped wrappers _ Null
   | isNullable wrappers = pure Null
   | otherwise = violation Nothing Null
 -- Validate LIST
-validateWrapped (TypeList _ wrappers) tyCont (List list) =
+validateWrapped (TypeList wrappers _) tyCont (List list) =
   List <$> traverse (validateInputByType wrappers tyCont) list
 {-- 2. VALIDATE TYPES, all wrappers are already Processed --}
 {-- VALIDATE OBJECT--}

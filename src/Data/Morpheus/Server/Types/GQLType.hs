@@ -152,7 +152,7 @@ mkTypeData name _ =
     }
 
 list :: TypeWrapper -> TypeWrapper
-list = TypeList True
+list = flip TypeList True
 
 wrapper :: (TypeWrapper -> TypeWrapper) -> TypeData -> TypeData
 wrapper f TypeData {..} = TypeData {gqlWrappers = f gqlWrappers, ..}

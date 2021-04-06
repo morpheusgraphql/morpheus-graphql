@@ -162,8 +162,8 @@ fieldTypeFromJSON Type {name = Just name} = pure (TypeRef name mkMaybeType)
 fieldTypeFromJSON x = decoderError $ "Unsupported Field" <> msg (show x)
 
 withList :: TypeRef -> TypeRef
-withList (TypeRef name x) = TypeRef name (TypeList False x)
+withList (TypeRef name x) = TypeRef name (TypeList x False)
 
 withListNonNull :: TypeRef -> TypeRef
-withListNonNull (TypeRef name (TypeList _ y)) = TypeRef name (TypeList True y)
+withListNonNull (TypeRef name (TypeList y _)) = TypeRef name (TypeList y True)
 withListNonNull (TypeRef name (BaseType _)) = TypeRef name (BaseType True)

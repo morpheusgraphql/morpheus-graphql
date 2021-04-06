@@ -60,7 +60,7 @@ declareTypeRef :: (TypeName -> Type) -> TypeRef -> Type
 declareTypeRef f TypeRef {typeConName, typeWrappers} = wrappedT typeWrappers
   where
     wrappedT :: TypeWrapper -> Type
-    wrappedT (TypeList nonNull xs) = withNonNull nonNull (AppT (ConT ''[]) $ wrappedT xs)
+    wrappedT (TypeList xs nonNull) = withNonNull nonNull (AppT (ConT ''[]) $ wrappedT xs)
     wrappedT (BaseType nonNull) = withNonNull nonNull (f typeConName)
     {-# INLINE wrappedT #-}
 {-# INLINE declareTypeRef #-}
