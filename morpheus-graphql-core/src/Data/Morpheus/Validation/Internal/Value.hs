@@ -50,6 +50,7 @@ import Data.Morpheus.Types.Internal.AST
     VariableContent (..),
     isNullable,
     isStronger,
+    mkMaybeType,
     mkTypeRef,
     msg,
     msgValidation,
@@ -159,11 +160,11 @@ validateWrapped wrappers _ Null
   | isNullable wrappers = pure Null
   | otherwise = violation Nothing Null
 -- Validate LIST
-validateWrapped (TypeList nonNull wrappers) tyCont (List list) =
+validateWrapped (TypeList _ wrappers) tyCont (List list) =
   List <$> traverse (validateInputByType wrappers tyCont) list
 {-- 2. VALIDATE TYPES, all wrappers are already Processed --}
 {-- VALIDATE OBJECT--}
-validateWrapped (BaseType nonNull) TypeDefinition {typeContent} entryValue =
+validateWrapped BaseType {} TypeDefinition {typeContent} entryValue =
   validateUnwrapped typeContent entryValue
 {-- 3. THROW ERROR: on invalid values --}
 validateWrapped _ _ entryValue = violation Nothing entryValue
@@ -201,7 +202,7 @@ validatInputUnionMember ::
   InputValidator schemaS ctx (Value VALID)
 validatInputUnionMember member value = do
   inputDef <- askDef
-  mkInputUnionValue member <$> validateInputByType MaybeType inputDef value
+  mkInputUnionValue member <$> validateInputByType mkMaybeType inputDef value
   where
     askDef
       | nullary member = askType (Typed $ mkTypeRef unitTypeName)
