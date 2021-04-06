@@ -53,13 +53,12 @@ import Data.Morpheus.Parsing.Internal.SourceText
   )
 import qualified Data.Morpheus.Types.Internal.AST as AST
 import Data.Morpheus.Types.Internal.AST
-  ( DataTypeWrapper (..),
-    Description,
+  ( Description,
     FieldName (..),
     Ref (..),
     TypeName (..),
     TypeRef (..),
-    toTypeRef,
+    TypeWrapper (..),
   )
 import Relude hiding (ByteString, empty, many)
 import Text.Megaparsec
@@ -260,13 +259,16 @@ parseAlias = try (optional alias) <|> pure Nothing
 {-# INLINE parseAlias #-}
 
 parseType :: Parser TypeRef
-parseType = toTypeRef <$> (unwrapped <|> wrapped)
+parseType = uncurry TypeRef <$> (unwrapped <|> wrapped)
   where
-    unwrapped :: Parser DataTypeWrapper
-    unwrapped = UnwrappedType <$> parseTypeName <*> parseNonNull
+    unwrapped :: Parser (TypeName, TypeWrapper)
+    unwrapped = (,) <$> parseTypeName <*> (BaseType <$> parseNonNull)
     {-# INLINE unwrapped #-}
     ----------------------------------------------
-    wrapped :: Parser DataTypeWrapper
-    wrapped = ListType <$> brackets (unwrapped <|> wrapped) <*> parseNonNull
+    wrapped :: Parser (TypeName, TypeWrapper)
+    wrapped = do
+      (typename, wrapper) <- brackets (unwrapped <|> wrapped)
+      isRequired <- parseNonNull
+      pure (typename, TypeList wrapper isRequired)
     {-# INLINE wrapped #-}
 {-# INLINE parseType #-}

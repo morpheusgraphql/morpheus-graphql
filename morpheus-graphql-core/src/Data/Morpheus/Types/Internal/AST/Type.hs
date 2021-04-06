@@ -6,15 +6,13 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.AST.Type
-  ( DataTypeWrapper (..),
-    TypeRef (..),
+  ( TypeRef (..),
     TypeWrapper (..),
     Nullable (..),
     Strictness (..),
     TypeKind (..),
     isStronger,
     mkTypeRef,
-    toTypeRef,
     mkBaseType,
     mkMaybeType,
   )
@@ -94,11 +92,6 @@ data TypeWrapper
   | BaseType Bool
   deriving (Show, Eq, Lift)
 
-data DataTypeWrapper
-  = ListType DataTypeWrapper Bool
-  | UnwrappedType TypeName Bool
-  deriving (Show, Lift)
-
 isStronger :: TypeRef -> TypeRef -> Bool
 isStronger t1 t2 = typeConName t1 == typeConName t2 && isStronger' (typeWrappers t1) (typeWrappers t2)
 
@@ -106,12 +99,6 @@ isStronger' :: TypeWrapper -> TypeWrapper -> Bool
 isStronger' (TypeList x1 nonNull1) (TypeList x2 nonNull2) = nonNull1 >= nonNull2 && isStronger' x1 x2
 isStronger' (BaseType x) (BaseType y) = x >= y
 isStronger' x y = x == y
-
-toTypeRef :: DataTypeWrapper -> TypeRef
-toTypeRef (UnwrappedType typename nonNull) = TypeRef typename (BaseType nonNull)
-toTypeRef (ListType wrapper nonNull) =
-  let TypeRef typename hsWrappers = toTypeRef wrapper
-   in TypeRef typename (TypeList hsWrappers nonNull)
 
 -- TypeRef
 -------------------------------------------------------------------
