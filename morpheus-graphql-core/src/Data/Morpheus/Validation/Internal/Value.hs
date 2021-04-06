@@ -159,13 +159,11 @@ validateWrapped wrappers _ Null
   | isNullable wrappers = pure Null
   | otherwise = violation Nothing Null
 -- Validate LIST
-validateWrapped MaybeType TypeDefinition {typeContent} entryValue =
-  validateUnwrapped typeContent entryValue
 validateWrapped (TypeList nonNull wrappers) tyCont (List list) =
   List <$> traverse (validateInputByType wrappers tyCont) list
 {-- 2. VALIDATE TYPES, all wrappers are already Processed --}
 {-- VALIDATE OBJECT--}
-validateWrapped BaseType TypeDefinition {typeContent} entryValue =
+validateWrapped (BaseType nonNull) TypeDefinition {typeContent} entryValue =
   validateUnwrapped typeContent entryValue
 {-- 3. THROW ERROR: on invalid values --}
 validateWrapped _ _ entryValue = violation Nothing entryValue
