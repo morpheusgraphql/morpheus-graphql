@@ -125,7 +125,7 @@ mkInputUnionField UnionMember {memberName, nullary} =
       fieldType =
         TypeRef
           { typeConName,
-            typeWrappers = [TypeMaybe]
+            typeWrappers = MaybeType
           },
       fieldDirectives = []
     }

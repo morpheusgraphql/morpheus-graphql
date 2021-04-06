@@ -60,11 +60,12 @@ import Data.Morpheus.Types.Internal.AST
     TypeKind (..),
     TypeName,
     TypeRef (..),
+    TypeWrapper (..),
     Typed (..),
     UnionMember (..),
     VALID,
     Value,
-    isWeaker,
+    isStronger,
   )
 import Data.Morpheus.Types.Internal.Config (Config (..))
 import Data.Morpheus.Types.Internal.Validation
@@ -121,7 +122,7 @@ instance ValidateSchema CONST where
           { position = Nothing,
             currentTypeName = "Root",
             currentTypeKind = KindObject Nothing,
-            currentTypeWrappers = [],
+            currentTypeWrappers = BaseType,
             kind = TYPE,
             fieldname = "Root"
           }
@@ -327,17 +328,9 @@ instance TypeEq (Maybe (FieldContent TRUE OUT s)) (Interface, FieldName) where
       toARgs _ = empty
 
 instance (PartialImplements ctx) => TypeEq TypeRef ctx where
-  t1@TypeRef
-    { typeConName,
-      typeWrappers = w1
-    }
-    `isSuptype` t2@TypeRef
-      { typeConName = name',
-        typeWrappers = w2
-      }
-      | typeConName == name' && not (isWeaker w2 w1) = pure ()
-      | otherwise =
-        failImplements UnexpectedType {expectedType = t1, foundType = t2}
+  t1 `isSuptype` t2
+    | isStronger t2 t1 = pure ()
+    | otherwise = failImplements UnexpectedType {expectedType = t1, foundType = t2}
 
 elemIn ::
   ( KeyOf k a,

@@ -12,7 +12,7 @@ module Data.Morpheus.Types.Internal.AST.Type
     Nullable (..),
     Strictness (..),
     TypeKind (..),
-    isWeaker,
+    isStronger,
     mkTypeRef,
     toGQLWrapper,
     toTypeRef,
@@ -82,8 +82,9 @@ instance Strictness TypeKind where
 -- TypeWrappers
 -----------------------------------------------------------------------------------
 data TypeWrapper
-  = TypeList
-  | TypeMaybe
+  = TypeList Bool TypeWrapper
+  | BaseType
+  | MaybeType
   deriving (Show, Eq, Lift)
 
 data DataTypeWrapper
@@ -91,38 +92,36 @@ data DataTypeWrapper
   | UnwrappedType TypeName Bool
   deriving (Show, Lift)
 
-isWeaker :: [TypeWrapper] -> [TypeWrapper] -> Bool
-isWeaker (TypeMaybe : xs1) (TypeMaybe : xs2) = isWeaker xs1 xs2
-isWeaker (TypeMaybe : _) _ = True
-isWeaker (_ : xs1) (_ : xs2) = isWeaker xs1 xs2
-isWeaker _ _ = False
+isStronger :: TypeRef -> TypeRef -> Bool
+isStronger t1 t2 = typeConName t1 == typeConName t2 && isStronger' (typeWrappers t1) (typeWrappers t2)
 
-toGQLWrapper :: [TypeWrapper] -> TypeName -> DataTypeWrapper
-toGQLWrapper (TypeMaybe : (TypeMaybe : tw)) name = toGQLWrapper (TypeMaybe : tw) name
-toGQLWrapper (TypeMaybe : (TypeList : tw)) name = ListType (toGQLWrapper tw name) False
-toGQLWrapper (TypeList : tw) name = ListType (toGQLWrapper tw name) True
-toGQLWrapper [TypeMaybe] name = UnwrappedType name False
-toGQLWrapper [] name = UnwrappedType name True
+isStronger' :: TypeWrapper -> TypeWrapper -> Bool
+isStronger' (TypeList nonNull1 x1) (TypeList nonNull2 x2) = nonNull1 >= nonNull2 && isStronger' x1 x2
+isStronger' BaseType MaybeType = True
+isStronger' x y = x == y
+
+toGQLWrapper :: TypeWrapper -> TypeName -> DataTypeWrapper
+toGQLWrapper (TypeList nonNull tw) name = ListType (toGQLWrapper tw name) nonNull
+toGQLWrapper BaseType name = UnwrappedType name True
+toGQLWrapper MaybeType name = UnwrappedType name False
 
 toTypeRef :: DataTypeWrapper -> TypeRef
-toTypeRef (UnwrappedType typename isNonNull)
-  | isNonNull = TypeRef typename []
-  | otherwise = TypeRef typename [TypeMaybe]
-toTypeRef (ListType wrapper isNonNull) =
+toTypeRef (UnwrappedType typename True) = TypeRef typename BaseType
+toTypeRef (UnwrappedType typename False) = TypeRef typename MaybeType
+toTypeRef (ListType wrapper nonNull) =
   let TypeRef typename hsWrappers = toTypeRef wrapper
-      fullHsWrappers = if isNonNull then TypeList : hsWrappers else TypeMaybe : TypeList : hsWrappers
-   in TypeRef typename fullHsWrappers
+   in TypeRef typename (TypeList nonNull hsWrappers)
 
 -- TypeRef
 -------------------------------------------------------------------
 data TypeRef = TypeRef
   { typeConName :: TypeName,
-    typeWrappers :: [TypeWrapper]
+    typeWrappers :: TypeWrapper
   }
   deriving (Show, Eq, Lift)
 
 mkTypeRef :: TypeName -> TypeRef
-mkTypeRef typeConName = TypeRef {typeConName, typeWrappers = []}
+mkTypeRef typeConName = TypeRef {typeConName, typeWrappers = BaseType}
 
 instance RenderGQL TypeRef where
   renderGQL TypeRef {typeConName, typeWrappers} = showGQLWrapper (toGQLWrapper typeWrappers typeConName)
@@ -139,11 +138,10 @@ class Nullable a where
   isNullable :: a -> Bool
   toNullable :: a -> a
 
-instance Nullable [TypeWrapper] where
-  isNullable (TypeMaybe : _) = True
-  isNullable _ = False
-  toNullable (TypeMaybe : xs) = TypeMaybe : xs
-  toNullable xs = TypeMaybe : xs
+instance Nullable TypeWrapper where
+  isNullable (TypeList nonNull _) = not nonNull
+  isNullable BaseType = False
+  isNullable MaybeType = True
 
 instance Nullable TypeRef where
   isNullable = isNullable . typeWrappers

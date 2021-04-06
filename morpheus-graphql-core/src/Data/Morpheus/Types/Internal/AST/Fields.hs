@@ -301,7 +301,7 @@ mkField fieldContent fieldName fieldType =
       fieldDirectives = []
     }
 
-mkInputValue :: FieldName -> [TypeWrapper] -> TypeName -> FieldDefinition cat s
+mkInputValue :: FieldName -> TypeWrapper -> TypeName -> FieldDefinition cat s
 mkInputValue fieldName typeWrappers typeConName =
   mkField
     Nothing
@@ -311,7 +311,7 @@ mkInputValue fieldName typeWrappers typeConName =
 mkObjectField ::
   ArgumentsDefinition s ->
   FieldName ->
-  [TypeWrapper] ->
+  TypeWrapper ->
   TypeName ->
   FieldDefinition OUT s
 mkObjectField args fieldName typeWrappers typeConName =

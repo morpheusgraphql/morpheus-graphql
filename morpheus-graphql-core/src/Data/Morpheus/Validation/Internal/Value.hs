@@ -49,7 +49,7 @@ import Data.Morpheus.Types.Internal.AST
     Variable (..),
     VariableContent (..),
     isNullable,
-    isWeaker,
+    isStronger,
     mkTypeRef,
     msg,
     msgValidation,
@@ -101,24 +101,14 @@ violation message value = do
       <> maybe "" ((" " <>) . msgValidation) message
 
 checkTypeEquality ::
-  (TypeName, [TypeWrapper]) ->
+  TypeRef ->
   Ref FieldName ->
   Variable VALID ->
   InputValidator schemaS ctx ValidValue
-checkTypeEquality (tyConName, tyWrappers) ref var@Variable {variableValue = ValidVariableValue value, variableType}
-  | typeConName variableType == tyConName
-      && not
-        (isWeaker (typeWrappers variableType) tyWrappers) =
+checkTypeEquality valueType ref var@Variable {variableValue = ValidVariableValue value, variableType}
+  | isStronger variableType valueType =
     pure value
-  | otherwise =
-    failure $
-      incompatibleVariableType
-        ref
-        var
-        TypeRef
-          { typeConName = tyConName,
-            typeWrappers = tyWrappers
-          }
+  | otherwise = failure $ incompatibleVariableType ref var valueType
 
 validateInputByTypeRef ::
   ValidateWithDefault c schemaS s =>
@@ -147,7 +137,7 @@ validateValueByField field =
 -- Validate input Values
 validateInputByType ::
   ValidateWithDefault ctx schemaS valueS =>
-  [TypeWrapper] ->
+  TypeWrapper ->
   TypeDefinition IN schemaS ->
   Value valueS ->
   InputValidator schemaS ctx ValidValue
@@ -157,27 +147,25 @@ validateInputByType tyWrappers typeDef =
 -- VALIDATION
 validateWrapped ::
   ValidateWithDefault ctx schemaS valueS =>
-  [TypeWrapper] ->
+  TypeWrapper ->
   TypeDefinition IN schemaS ->
   Value valueS ->
   InputValidator schemaS ctx ValidValue
 -- Validate Null. value = null ?
 validateWrapped wrappers _ (ResolvedVariable ref variable) = do
   typeName <- asksScope currentTypeName
-  checkTypeEquality (typeName, wrappers) ref variable
+  checkTypeEquality (TypeRef typeName wrappers) ref variable
 validateWrapped wrappers _ Null
   | isNullable wrappers = pure Null
   | otherwise = violation Nothing Null
 -- Validate LIST
-validateWrapped [TypeMaybe] TypeDefinition {typeContent} entryValue =
+validateWrapped MaybeType TypeDefinition {typeContent} entryValue =
   validateUnwrapped typeContent entryValue
-validateWrapped (TypeMaybe : wrappers) typeDef value =
-  validateInputByType wrappers typeDef value
-validateWrapped (TypeList : wrappers) tyCont (List list) =
+validateWrapped (TypeList nonNull wrappers) tyCont (List list) =
   List <$> traverse (validateInputByType wrappers tyCont) list
 {-- 2. VALIDATE TYPES, all wrappers are already Processed --}
 {-- VALIDATE OBJECT--}
-validateWrapped [] TypeDefinition {typeContent} entryValue =
+validateWrapped BaseType TypeDefinition {typeContent} entryValue =
   validateUnwrapped typeContent entryValue
 {-- 3. THROW ERROR: on invalid values --}
 validateWrapped _ _ entryValue = violation Nothing entryValue
@@ -215,7 +203,7 @@ validatInputUnionMember ::
   InputValidator schemaS ctx (Value VALID)
 validatInputUnionMember member value = do
   inputDef <- askDef
-  mkInputUnionValue member <$> validateInputByType [TypeMaybe] inputDef value
+  mkInputUnionValue member <$> validateInputByType MaybeType inputDef value
   where
     askDef
       | nullary member = askType (Typed $ mkTypeRef unitTypeName)

@@ -19,6 +19,7 @@ import Data.Morpheus.Types.Internal.AST
     Operation (..),
     Schema (..),
     TypeKind (..),
+    TypeWrapper (..),
     VALID,
   )
 import Data.Morpheus.Types.Internal.Config (Config (..))
@@ -107,7 +108,7 @@ validateRequest
           { kind = SELECTION,
             currentTypeName = "Root",
             currentTypeKind = KindObject Nothing,
-            currentTypeWrappers = [],
+            currentTypeWrappers = BaseType,
             fieldname = "Root",
             position = Just operationPosition
           }
