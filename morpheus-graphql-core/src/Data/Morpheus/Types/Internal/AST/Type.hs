@@ -14,7 +14,6 @@ module Data.Morpheus.Types.Internal.AST.Type
     TypeKind (..),
     isStronger,
     mkTypeRef,
-    toGQLWrapper,
     toTypeRef,
     mkBaseType,
     mkMaybeType,
@@ -108,10 +107,6 @@ isStronger' (TypeList nonNull1 x1) (TypeList nonNull2 x2) = nonNull1 >= nonNull2
 isStronger' (BaseType x) (BaseType y) = x >= y
 isStronger' x y = x == y
 
-toGQLWrapper :: TypeWrapper -> TypeName -> DataTypeWrapper
-toGQLWrapper (TypeList nonNull tw) name = ListType (toGQLWrapper tw name) nonNull
-toGQLWrapper (BaseType nonNull) name = UnwrappedType name nonNull
-
 toTypeRef :: DataTypeWrapper -> TypeRef
 toTypeRef (UnwrappedType typename nonNull) = TypeRef typename (BaseType nonNull)
 toTypeRef (ListType wrapper nonNull) =
@@ -130,10 +125,10 @@ mkTypeRef :: TypeName -> TypeRef
 mkTypeRef typeConName = TypeRef {typeConName, typeWrappers = mkBaseType}
 
 instance RenderGQL TypeRef where
-  renderGQL TypeRef {typeConName, typeWrappers} = showGQLWrapper (toGQLWrapper typeWrappers typeConName)
+  renderGQL TypeRef {typeConName, typeWrappers} = renderWrapper typeWrappers
     where
-      showGQLWrapper (ListType xs isNonNull) = "[" <> showGQLWrapper xs <> "]" <> renderNonNull isNonNull
-      showGQLWrapper (UnwrappedType name isNonNull) = renderGQL name <> renderNonNull isNonNull
+      renderWrapper (TypeList isNonNull xs) = "[" <> renderWrapper xs <> "]" <> renderNonNull isNonNull
+      renderWrapper (BaseType isNonNull) = renderGQL typeConName <> renderNonNull isNonNull
 
 renderNonNull :: Bool -> Rendering
 renderNonNull True = "!"

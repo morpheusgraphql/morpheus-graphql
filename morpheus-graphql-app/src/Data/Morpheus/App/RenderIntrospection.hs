@@ -71,7 +71,6 @@ import Data.Morpheus.Types.Internal.AST
     mkInputUnionFields,
     msg,
     possibleInterfaceTypes,
-    toGQLWrapper,
   )
 import Data.Text (pack)
 import Relude
@@ -252,20 +251,19 @@ instance RenderIntrospection (DataEnumValue VALID) where
         <> renderDeprecated enumDirectives
 
 instance RenderIntrospection TypeRef where
-  render TypeRef {typeConName, typeWrappers} = render (toGQLWrapper typeWrappers typeConName)
-
-instance RenderIntrospection DataTypeWrapper where
-  render (ListType nextWrapper isNonNull) =
-    pure $ withNonNull isNonNull $
-      mkObject
-        "__Type"
-        [ renderKind KindList,
-          ("ofType", render nextWrapper)
-        ]
-  render (UnwrappedType typename isNonNull) =
-    withNonNull isNonNull <$> do
-      kind <- kindOf <$> selectType typename
-      pure $ mkType kind typename Nothing []
+  render TypeRef {typeConName, typeWrappers} = renderWrapper typeWrappers typeConName
+    where
+      renderWrapper (ListType nextWrapper isNonNull) =
+        pure $ withNonNull isNonNull $
+          mkObject
+            "__Type"
+            [ renderKind KindList,
+              ("ofType", render nextWrapper)
+            ]
+      renderWrapper (UnwrappedType typename isNonNull) =
+        withNonNull isNonNull <$> do
+          kind <- kindOf <$> selectType typename
+          pure $ mkType kind typename Nothing []
 
 withNonNull ::
   ( Monad m,

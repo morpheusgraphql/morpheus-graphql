@@ -72,7 +72,6 @@ module Data.Morpheus.Types.Internal.AST
     toNullable,
     toTypeRef,
     isNullable,
-    toGQLWrapper,
     isStronger,
     isNotSystemTypeName,
     isLeaf,
