@@ -17,8 +17,6 @@ module Data.Morpheus.Parsing.Internal.Terms
     uniqTupleOpt,
     parseTypeCondition,
     spreadLiteral,
-    parseNonNull,
-    parseWrappedType,
     parseAlias,
     sepByAnd,
     parseName,
@@ -63,7 +61,7 @@ import Data.Morpheus.Types.Internal.AST
     Ref (..),
     TypeName (..),
     TypeRef (..),
-    toHSWrappers,
+    toTypeRef,
   )
 import Relude hiding (ByteString, empty, many)
 import Text.Megaparsec
@@ -134,17 +132,17 @@ pipe x = optional (symbol PIPE) *> (x `sepBy1` symbol PIPE)
 -- parens : '()'
 parens :: Parser a -> Parser a
 parens = between (symbol 40) (symbol 41)
-{-# INLINEABLE parens #-}
+{-# INLINE parens #-}
 
 -- braces: {}
 braces :: Parser a -> Parser a
 braces = between (symbol 123) (symbol 125)
-{-# INLINEABLE braces #-}
+{-# INLINE braces #-}
 
 -- brackets: []
 brackets :: Parser a -> Parser a
 brackets = between (symbol 91) (symbol 93)
-{-# INLINEABLE brackets #-}
+{-# INLINE brackets #-}
 
 -- 2.1.9 Names
 -- https://spec.graphql.org/draft/#Name
@@ -169,19 +167,19 @@ name =
 
 parseName :: Parser FieldName
 parseName = FieldName <$> name
-{-# INLINEABLE parseName #-}
+{-# INLINE parseName #-}
 
 parseTypeName :: Parser TypeName
 parseTypeName = TypeName <$> name
-{-# INLINEABLE parseTypeName #-}
+{-# INLINE parseTypeName #-}
 
 keyword :: ByteString -> Parser ()
 keyword x = string x *> ignoredTokens1
-{-# INLINEABLE keyword #-}
+{-# INLINE keyword #-}
 
 varName :: Parser FieldName
 varName = symbol DOLLAR *> parseName <* ignoredTokens
-{-# INLINEABLE varName #-}
+{-# INLINE varName #-}
 
 -- Variable : https://graphql.github.io/graphql-spec/June2018/#Variable
 --
@@ -193,7 +191,7 @@ variable =
     flip Ref
       <$> getLocation
       <*> varName
-{-# INLINEABLE variable #-}
+{-# INLINE variable #-}
 
 -- Descriptions: https://graphql.github.io/graphql-spec/June2018/#Description
 --
@@ -201,33 +199,33 @@ variable =
 --   StringValue
 optDescription :: Parser (Maybe Description)
 optDescription = optional parseString
-{-# INLINEABLE optDescription #-}
+{-# INLINE optDescription #-}
 
 parseString :: Parser AST.Token
 parseString = label "String" $ fromLBS <$> parseStringBS
-{-# INLINEABLE parseString #-}
+{-# INLINE parseString #-}
 
 ------------------------------------------------------------------------
 sepByAnd :: Parser a -> Parser [a]
 sepByAnd entry = entry `sepBy` (optional (symbol AMPERSAND) *> ignoredTokens)
-{-# INLINEABLE sepByAnd #-}
+{-# INLINE sepByAnd #-}
 
 -----------------------------
 collection :: Parser a -> Parser [a]
 collection entry = braces (entry `sepEndBy` ignoredTokens)
-{-# INLINEABLE collection #-}
+{-# INLINE collection #-}
 
 setOf :: (FromElems Eventless a coll, KeyOf k a) => Parser a -> Parser coll
 setOf = collection >=> lift . fromElems
-{-# INLINEABLE setOf #-}
+{-# INLINE setOf #-}
 
 optionalCollection :: (Empty c) => Parser c -> Parser c
 optionalCollection x = x <|> pure empty
-{-# INLINEABLE optionalCollection #-}
+{-# INLINE optionalCollection #-}
 
-parseNonNull :: Parser [DataTypeWrapper]
-parseNonNull = (symbol BANG $> [NonNullType]) <|> pure []
-{-# INLINEABLE parseNonNull #-}
+parseNonNull :: Parser Bool
+parseNonNull = (symbol BANG $> True) <|> pure False
+{-# INLINE parseNonNull #-}
 
 uniqTuple :: (FromElems Eventless a coll, KeyOf k a) => Parser a -> Parser coll
 uniqTuple parser =
@@ -235,11 +233,11 @@ uniqTuple parser =
     parens
       (parser `sepBy` ignoredTokens <?> "empty Tuple value!")
       >>= lift . fromElems
-{-# INLINEABLE uniqTuple #-}
+{-# INLINE uniqTuple #-}
 
 uniqTupleOpt :: (FromElems Eventless a coll, Empty coll, KeyOf k a) => Parser a -> Parser coll
 uniqTupleOpt x = uniqTuple x <|> pure empty
-{-# INLINEABLE uniqTupleOpt #-}
+{-# INLINE uniqTupleOpt #-}
 
 -- Type Conditions: https://graphql.github.io/graphql-spec/June2018/#sec-Type-Conditions
 --
@@ -248,11 +246,11 @@ uniqTupleOpt x = uniqTuple x <|> pure empty
 --
 parseTypeCondition :: Parser TypeName
 parseTypeCondition = keyword "on" *> parseTypeName
-{-# INLINEABLE parseTypeCondition #-}
+{-# INLINE parseTypeCondition #-}
 
 spreadLiteral :: Parser Position
 spreadLiteral = getLocation <* string "..." <* ignoredTokens
-{-# INLINEABLE spreadLiteral #-}
+{-# INLINE spreadLiteral #-}
 
 -- Field Alias : https://graphql.github.io/graphql-spec/June2018/#sec-Field-Alias
 -- Alias
@@ -261,30 +259,16 @@ parseAlias :: Parser (Maybe FieldName)
 parseAlias = try (optional alias) <|> pure Nothing
   where
     alias = label "alias" (parseName <* colon)
-{-# INLINEABLE parseAlias #-}
+{-# INLINE parseAlias #-}
 
 parseType :: Parser TypeRef
-parseType = parseTypeW <$> parseWrappedType <*> parseNonNull
-{-# INLINEABLE parseType #-}
-
-parseTypeW :: ([DataTypeWrapper], TypeName) -> [DataTypeWrapper] -> TypeRef
-parseTypeW (wrappers, typeConName) nonNull =
-  TypeRef
-    { typeConName,
-      typeWrappers = toHSWrappers (nonNull <> wrappers)
-    }
-{-# INLINEABLE parseTypeW #-}
-
-parseWrappedType :: Parser ([DataTypeWrapper], TypeName)
-parseWrappedType = (unwrapped <|> wrapped) <* ignoredTokens
+parseType = toTypeRef <$> (unwrapped <|> wrapped)
   where
-    unwrapped :: Parser ([DataTypeWrapper], TypeName)
-    unwrapped = ([],) <$> parseTypeName <* ignoredTokens
+    unwrapped :: Parser DataTypeWrapper
+    unwrapped = UnwrappedType <$> parseTypeName <*> parseNonNull
+    {-# INLINE unwrapped #-}
     ----------------------------------------------
-    wrapped :: Parser ([DataTypeWrapper], TypeName)
-    wrapped = brackets (wrapAsList <$> (unwrapped <|> wrapped) <*> parseNonNull)
-{-# INLINEABLE parseWrappedType #-}
-
-wrapAsList :: ([DataTypeWrapper], TypeName) -> [DataTypeWrapper] -> ([DataTypeWrapper], TypeName)
-wrapAsList (wrappers, tName) nonNull = (ListType : nonNull <> wrappers, tName)
-{-# INLINEABLE wrapAsList #-}
+    wrapped :: Parser DataTypeWrapper
+    wrapped = ListType <$> brackets (unwrapped <|> wrapped) <*> parseNonNull
+    {-# INLINE wrapped #-}
+{-# INLINE parseType #-}

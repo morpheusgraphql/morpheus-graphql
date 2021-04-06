@@ -54,7 +54,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
-    TypeWrapper,
+    TypeWrapper (..),
     VALID,
     ValidationErrors,
     buildSchema,
@@ -66,7 +66,6 @@ import Data.Morpheus.Types.Internal.AST
     mkUnionContent,
     msg,
     toAny,
-    toHSWrappers,
   )
 import Relude hiding
   ( ByteString,
@@ -157,14 +156,11 @@ instance ParseJSONSchema InputValue (FieldDefinition IN CONST) where
   parse InputValue {inputName, inputType} = uncurry (mkInputValue inputName) <$> fieldTypeFromJSON inputType
 
 fieldTypeFromJSON :: Type -> Eventless ([TypeWrapper], TypeName)
-fieldTypeFromJSON = fmap toHs . fieldTypeRec []
+fieldTypeFromJSON = fieldTypeRec []
   where
-    toHs (w, t) = (toHSWrappers w, t)
-    fieldTypeRec ::
-      [DataTypeWrapper] -> Type -> Eventless ([DataTypeWrapper], TypeName)
-    fieldTypeRec acc Type {kind = LIST, ofType = Just ofType} =
-      fieldTypeRec (ListType : acc) ofType
-    fieldTypeRec acc Type {kind = NON_NULL, ofType = Just ofType} =
-      fieldTypeRec (NonNullType : acc) ofType
-    fieldTypeRec acc Type {name = Just name} = pure (acc, name)
+    fieldTypeRec :: [TypeWrapper] -> Type -> Eventless ([TypeWrapper], TypeName)
+    fieldTypeRec acc Type {kind = LIST, ofType = Just ofType} = fieldTypeRec (TypeMaybe : TypeList : acc) ofType
+    fieldTypeRec acc Type {kind = NON_NULL, ofType = Just Type {kind = LIST, ofType = Just ofType}} = fieldTypeRec (TypeList : acc) ofType
+    fieldTypeRec acc Type {kind = NON_NULL, ofType = Just Type {name = Just name}} = pure (acc, name)
+    fieldTypeRec acc Type {name = Just name} = pure (TypeMaybe : acc, name)
     fieldTypeRec _ x = decoderError $ "Unsupported Field" <> msg (show x)

@@ -70,7 +70,7 @@ module Data.Morpheus.Types.Internal.AST
     initTypeLib,
     kindOf,
     toNullable,
-    toHSWrappers,
+    toTypeRef,
     isNullable,
     toGQLWrapper,
     isWeaker,

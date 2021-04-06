@@ -252,26 +252,35 @@ instance RenderIntrospection (DataEnumValue VALID) where
         <> renderDeprecated enumDirectives
 
 instance RenderIntrospection TypeRef where
-  render TypeRef {typeConName, typeWrappers} = do
-    kind <- kindOf <$> selectType typeConName
-    let currentType = mkType kind typeConName Nothing []
-    pure $ foldr' wrap currentType (toGQLWrapper typeWrappers)
-    where
-      wrap ::
-        ( Monad m,
-          WithSchema m
-        ) =>
-        DataTypeWrapper ->
-        ResolverValue m ->
-        ResolverValue m
-      wrap wrapper contentType =
-        mkObject
-          "__Type"
-          [ renderKind (wrapperKind wrapper),
-            ("ofType", pure contentType)
-          ]
-      wrapperKind ListType = KindList
-      wrapperKind NonNullType = KindNonNull
+  render TypeRef {typeConName, typeWrappers} = render (toGQLWrapper typeWrappers typeConName)
+
+instance RenderIntrospection DataTypeWrapper where
+  render (ListType nextWrapper isNonNull) =
+    pure $ withNonNull isNonNull $
+      mkObject
+        "__Type"
+        [ renderKind KindList,
+          ("ofType", render nextWrapper)
+        ]
+  render (UnwrappedType typename isNonNull) =
+    withNonNull isNonNull <$> do
+      kind <- kindOf <$> selectType typename
+      pure $ mkType kind typename Nothing []
+
+withNonNull ::
+  ( Monad m,
+    WithSchema m
+  ) =>
+  Bool ->
+  ResolverValue m ->
+  ResolverValue m
+withNonNull True contentType =
+  mkObject
+    "__Type"
+    [ renderKind KindNonNull,
+      ("ofType", pure contentType)
+    ]
+withNonNull False contentType = contentType
 
 renderPossibleTypes ::
   (Monad m, WithSchema m) =>

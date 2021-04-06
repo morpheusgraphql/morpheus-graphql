@@ -15,13 +15,12 @@ module Data.Morpheus.Types.Internal.AST.Type
     isWeaker,
     mkTypeRef,
     toGQLWrapper,
-    toHSWrappers,
+    toTypeRef,
   )
 where
 
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
-    Rendering,
     render,
     renderGQL,
   )
@@ -82,15 +81,14 @@ instance Strictness TypeKind where
 
 -- TypeWrappers
 -----------------------------------------------------------------------------------
-
 data TypeWrapper
   = TypeList
   | TypeMaybe
   deriving (Show, Eq, Lift)
 
 data DataTypeWrapper
-  = ListType
-  | NonNullType
+  = ListType DataTypeWrapper Bool
+  | UnwrappedType TypeName Bool
   deriving (Show, Lift)
 
 isWeaker :: [TypeWrapper] -> [TypeWrapper] -> Bool
@@ -99,27 +97,21 @@ isWeaker (TypeMaybe : _) _ = True
 isWeaker (_ : xs1) (_ : xs2) = isWeaker xs1 xs2
 isWeaker _ _ = False
 
-toGQLWrapper :: [TypeWrapper] -> [DataTypeWrapper]
-toGQLWrapper (TypeMaybe : (TypeMaybe : tw)) = toGQLWrapper (TypeMaybe : tw)
-toGQLWrapper (TypeMaybe : (TypeList : tw)) = ListType : toGQLWrapper tw
-toGQLWrapper (TypeList : tw) = [NonNullType, ListType] <> toGQLWrapper tw
-toGQLWrapper [TypeMaybe] = []
-toGQLWrapper [] = [NonNullType]
+toGQLWrapper :: [TypeWrapper] -> TypeName -> DataTypeWrapper
+toGQLWrapper (TypeMaybe : (TypeMaybe : tw)) name = toGQLWrapper (TypeMaybe : tw) name
+toGQLWrapper (TypeMaybe : (TypeList : tw)) name = ListType (toGQLWrapper tw name) False
+toGQLWrapper (TypeList : tw) name = ListType (toGQLWrapper tw name) True
+toGQLWrapper [TypeMaybe] name = UnwrappedType name False
+toGQLWrapper [] name = UnwrappedType name True
 
-toHSWrappers :: [DataTypeWrapper] -> [TypeWrapper]
-toHSWrappers (NonNullType : (NonNullType : xs)) =
-  toHSWrappers (NonNullType : xs)
-toHSWrappers (NonNullType : (ListType : xs)) = TypeList : toHSWrappers xs
-toHSWrappers (ListType : xs) = [TypeMaybe, TypeList] <> toHSWrappers xs
-toHSWrappers [] = [TypeMaybe]
-toHSWrappers [NonNullType] = []
-
-renderWrapped :: RenderGQL a => a -> [TypeWrapper] -> Rendering
-renderWrapped x wrappers = showGQLWrapper (toGQLWrapper wrappers)
-  where
-    showGQLWrapper [] = renderGQL x
-    showGQLWrapper (ListType : xs) = "[" <> showGQLWrapper xs <> "]"
-    showGQLWrapper (NonNullType : xs) = showGQLWrapper xs <> "!"
+toTypeRef :: DataTypeWrapper -> TypeRef
+toTypeRef (UnwrappedType typename isNonNull)
+  | isNonNull = TypeRef typename []
+  | otherwise = TypeRef typename [TypeMaybe]
+toTypeRef (ListType wrapper isNonNull) =
+  let TypeRef typename hsWrappers = toTypeRef wrapper
+      fullHsWrappers = if isNonNull then TypeList : hsWrappers else TypeMaybe : TypeList : hsWrappers
+   in TypeRef typename fullHsWrappers
 
 -- TypeRef
 -------------------------------------------------------------------
@@ -133,7 +125,12 @@ mkTypeRef :: TypeName -> TypeRef
 mkTypeRef typeConName = TypeRef {typeConName, typeWrappers = []}
 
 instance RenderGQL TypeRef where
-  renderGQL TypeRef {typeConName, typeWrappers} = renderWrapped typeConName typeWrappers
+  renderGQL TypeRef {typeConName, typeWrappers} = showGQLWrapper (toGQLWrapper typeWrappers typeConName)
+    where
+      showGQLWrapper (ListType xs isNonNull) = "[" <> showGQLWrapper xs <> "]" <> renderNonNull isNonNull
+      showGQLWrapper (UnwrappedType name isNonNull) = renderGQL name <> renderNonNull isNonNull
+      renderNonNull True = "!"
+      renderNonNull False = ""
 
 instance Msg TypeRef where
   msg = msg . FieldName . LT.toStrict . decodeUtf8 . render
