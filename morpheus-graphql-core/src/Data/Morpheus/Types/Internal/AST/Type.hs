@@ -82,17 +82,16 @@ instance Strictness TypeKind where
   isResolverType _ = False
 
 mkBaseType :: TypeWrapper
-mkBaseType = BaseType
+mkBaseType = BaseType True
 
 mkMaybeType :: TypeWrapper
-mkMaybeType = MaybeType
+mkMaybeType = BaseType False
 
 -- TypeWrappers
 -----------------------------------------------------------------------------------
 data TypeWrapper
   = TypeList Bool TypeWrapper
-  | BaseType
-  | MaybeType
+  | BaseType Bool
   deriving (Show, Eq, Lift)
 
 data DataTypeWrapper
@@ -105,17 +104,15 @@ isStronger t1 t2 = typeConName t1 == typeConName t2 && isStronger' (typeWrappers
 
 isStronger' :: TypeWrapper -> TypeWrapper -> Bool
 isStronger' (TypeList nonNull1 x1) (TypeList nonNull2 x2) = nonNull1 >= nonNull2 && isStronger' x1 x2
-isStronger' BaseType MaybeType = True
+isStronger' (BaseType x) (BaseType y) = x >= y
 isStronger' x y = x == y
 
 toGQLWrapper :: TypeWrapper -> TypeName -> DataTypeWrapper
 toGQLWrapper (TypeList nonNull tw) name = ListType (toGQLWrapper tw name) nonNull
-toGQLWrapper BaseType name = UnwrappedType name True
-toGQLWrapper MaybeType name = UnwrappedType name False
+toGQLWrapper (BaseType nonNull) name = UnwrappedType name nonNull
 
 toTypeRef :: DataTypeWrapper -> TypeRef
-toTypeRef (UnwrappedType typename True) = TypeRef typename BaseType
-toTypeRef (UnwrappedType typename False) = TypeRef typename MaybeType
+toTypeRef (UnwrappedType typename nonNull) = TypeRef typename (BaseType nonNull)
 toTypeRef (ListType wrapper nonNull) =
   let TypeRef typename hsWrappers = toTypeRef wrapper
    in TypeRef typename (TypeList nonNull hsWrappers)
@@ -129,7 +126,7 @@ data TypeRef = TypeRef
   deriving (Show, Eq, Lift)
 
 mkTypeRef :: TypeName -> TypeRef
-mkTypeRef typeConName = TypeRef {typeConName, typeWrappers = BaseType}
+mkTypeRef typeConName = TypeRef {typeConName, typeWrappers = mkBaseType}
 
 instance RenderGQL TypeRef where
   renderGQL TypeRef {typeConName, typeWrappers} = showGQLWrapper (toGQLWrapper typeWrappers typeConName)
@@ -148,8 +145,7 @@ class Nullable a where
 
 instance Nullable TypeWrapper where
   isNullable (TypeList nonNull _) = not nonNull
-  isNullable BaseType = False
-  isNullable MaybeType = True
+  isNullable (BaseType nonNull) = not nonNull
 
 instance Nullable TypeRef where
   isNullable = isNullable . typeWrappers

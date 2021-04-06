@@ -63,8 +63,7 @@ declareTypeRef f TypeRef {typeConName, typeWrappers} =
   where
     wrappedT :: TypeWrapper -> Type
     wrappedT (TypeList nonNull xs) = withNonNull nonNull (AppT (ConT ''[]) $ wrappedT xs)
-    wrappedT BaseType = withNonNull True (f typeConName)
-    wrappedT MaybeType = withNonNull False (f typeConName)
+    wrappedT (BaseType nonNull) = withNonNull nonNull (f typeConName)
     withNonNull True = AppT (ConT ''Maybe)
     withNonNull False = id
 
