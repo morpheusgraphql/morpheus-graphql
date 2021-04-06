@@ -117,7 +117,6 @@ module Data.Morpheus.Types.Internal.AST
     DirectiveLocation (..),
     FieldContent (..),
     fieldContentArgs,
-    mkInputValue,
     mkType,
     mkObjectField,
     UnionMember (..),

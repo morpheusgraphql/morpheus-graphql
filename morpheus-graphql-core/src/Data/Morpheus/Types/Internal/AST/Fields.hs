@@ -33,7 +33,6 @@ module Data.Morpheus.Types.Internal.AST.Fields
     unsafeFromFields,
     fieldsToArguments,
     fieldContentArgs,
-    mkInputValue,
     mkObjectField,
     mkField,
     renderArgumentValues,
@@ -300,13 +299,6 @@ mkField fieldContent fieldName fieldType =
       fieldType,
       fieldDirectives = []
     }
-
-mkInputValue :: FieldName -> TypeWrapper -> TypeName -> FieldDefinition cat s
-mkInputValue fieldName typeWrappers typeConName =
-  mkField
-    Nothing
-    fieldName
-    TypeRef {typeWrappers, typeConName}
 
 mkObjectField ::
   ArgumentsDefinition s ->
