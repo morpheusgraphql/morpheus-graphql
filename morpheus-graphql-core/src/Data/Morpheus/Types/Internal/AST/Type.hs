@@ -93,12 +93,12 @@ data TypeWrapper
   deriving (Show, Eq, Lift)
 
 isStronger :: TypeRef -> TypeRef -> Bool
-isStronger t1 t2 = typeConName t1 == typeConName t2 && isStronger' (typeWrappers t1) (typeWrappers t2)
+isStronger t1 t2 = typeConName t1 == typeConName t2 && isStrongerWrapper (typeWrappers t1) (typeWrappers t2)
 
-isStronger' :: TypeWrapper -> TypeWrapper -> Bool
-isStronger' (TypeList x1 nonNull1) (TypeList x2 nonNull2) = nonNull1 >= nonNull2 && isStronger' x1 x2
-isStronger' (BaseType x) (BaseType y) = x >= y
-isStronger' x y = x == y
+isStrongerWrapper :: TypeWrapper -> TypeWrapper -> Bool
+isStrongerWrapper (TypeList x1 nonNull1) (TypeList x2 nonNull2) = nonNull1 >= nonNull2 && isStronger' x1 x2
+isStrongerWrapper (BaseType x) (BaseType y) = x >= y
+isStrongerWrapper x y = x == y
 
 -- TypeRef
 -------------------------------------------------------------------
