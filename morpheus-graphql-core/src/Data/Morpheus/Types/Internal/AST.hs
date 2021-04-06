@@ -153,6 +153,8 @@ module Data.Morpheus.Types.Internal.AST
     getInputUnionValue,
     unitFieldName,
     unitTypeName,
+    mkBaseType,
+    mkMaybeType,
   )
 where
 

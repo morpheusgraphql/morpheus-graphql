@@ -16,6 +16,8 @@ module Data.Morpheus.Types.Internal.AST.Type
     mkTypeRef,
     toGQLWrapper,
     toTypeRef,
+    mkBaseType,
+    mkMaybeType,
   )
 where
 
@@ -78,6 +80,12 @@ instance Strictness TypeKind where
   isResolverType KindUnion = True
   isResolverType KindInterface = True
   isResolverType _ = False
+
+mkBaseType :: TypeWrapper
+mkBaseType = BaseType
+
+mkMaybeType :: TypeWrapper
+mkMaybeType = MaybeType
 
 -- TypeWrappers
 -----------------------------------------------------------------------------------

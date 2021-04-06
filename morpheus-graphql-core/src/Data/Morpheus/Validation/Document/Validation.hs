@@ -66,6 +66,7 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
     Value,
     isStronger,
+    mkBaseType,
   )
 import Data.Morpheus.Types.Internal.Config (Config (..))
 import Data.Morpheus.Types.Internal.Validation
@@ -122,7 +123,7 @@ instance ValidateSchema CONST where
           { position = Nothing,
             currentTypeName = "Root",
             currentTypeKind = KindObject Nothing,
-            currentTypeWrappers = BaseType,
+            currentTypeWrappers = mkBaseType,
             kind = TYPE,
             fieldname = "Root"
           }
