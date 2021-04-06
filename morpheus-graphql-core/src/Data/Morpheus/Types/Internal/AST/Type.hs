@@ -146,6 +146,8 @@ class Nullable a where
 instance Nullable TypeWrapper where
   isNullable (TypeList nonNull _) = not nonNull
   isNullable (BaseType nonNull) = not nonNull
+  toNullable (TypeList _ t) = TypeList False t
+  toNullable BaseType {} = BaseType False
 
 instance Nullable TypeRef where
   isNullable = isNullable . typeWrappers
