@@ -23,6 +23,7 @@ where
 
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
+    Rendering,
     render,
     renderGQL,
   )
@@ -133,8 +134,10 @@ instance RenderGQL TypeRef where
     where
       showGQLWrapper (ListType xs isNonNull) = "[" <> showGQLWrapper xs <> "]" <> renderNonNull isNonNull
       showGQLWrapper (UnwrappedType name isNonNull) = renderGQL name <> renderNonNull isNonNull
-      renderNonNull True = "!"
-      renderNonNull False = ""
+
+renderNonNull :: Bool -> Rendering
+renderNonNull True = "!"
+renderNonNull False = ""
 
 instance Msg TypeRef where
   msg = msg . FieldName . LT.toStrict . decodeUtf8 . render
