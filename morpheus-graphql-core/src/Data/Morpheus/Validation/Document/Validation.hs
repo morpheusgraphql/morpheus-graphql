@@ -64,7 +64,7 @@ import Data.Morpheus.Types.Internal.AST
     UnionMember (..),
     VALID,
     Value,
-    isStronger,
+    isSubtype,
     mkBaseType,
   )
 import Data.Morpheus.Types.Internal.Config (Config (..))
@@ -329,7 +329,7 @@ instance TypeEq (Maybe (FieldContent TRUE OUT s)) (Interface, FieldName) where
 
 instance (PartialImplements ctx) => TypeEq TypeRef ctx where
   t1 `isSuptype` t2
-    | isStronger t2 t1 = pure ()
+    | t2 `isSubtype` t1 = pure ()
     | otherwise = failImplements UnexpectedType {expectedType = t1, foundType = t2}
 
 elemIn ::

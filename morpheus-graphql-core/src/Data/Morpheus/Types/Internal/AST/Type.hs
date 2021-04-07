@@ -11,7 +11,7 @@ module Data.Morpheus.Types.Internal.AST.Type
     Nullable (..),
     Strictness (..),
     TypeKind (..),
-    isStronger,
+    Subtype (..),
     mkTypeRef,
     mkBaseType,
     mkMaybeType,
@@ -92,10 +92,36 @@ mkBaseType = BaseType True
 mkMaybeType :: TypeWrapper
 mkMaybeType = BaseType False
 
-isStrongerWrapper :: TypeWrapper -> TypeWrapper -> Bool
-isStrongerWrapper (TypeList x1 nonNull1) (TypeList x2 nonNull2) = nonNull1 >= nonNull2 && isStrongerWrapper x1 x2
-isStrongerWrapper (BaseType x) (BaseType y) = x >= y
-isStrongerWrapper x y = x == y
+-- If S is a subtype of T, "S <: T"
+-- A is a subtype of B, then all terms of type A also have type B.
+-- type B = Int | Null
+-- type A = Int
+-- A <: B
+--
+-- interface A { a: String }
+--
+-- type B implements A { a: String!}
+--
+-- type B is subtype of A since :  {String} ⊂ {String, null}
+--
+-- interface A { a: String! }
+--
+-- type B implements A { a: String }
+--
+-- type B is not subtype of A since :  {String, null} ⊂ {String}
+--
+-- type A = { T, Null}
+-- type B = T
+-- type B is subtype of A since :  {T} ⊂ {T, Null}
+-- type B is Subtype if B since: {T} ⊂ {T}
+class Subtype a where
+  isSubtype :: a -> a -> Bool
+
+instance Subtype TypeWrapper where
+  isSubtype (TypeList b nonNull1) (TypeList a nonNull2) =
+    nonNull1 >= nonNull2 && isSubtype b a
+  isSubtype (BaseType b) (BaseType a) = b >= a
+  isSubtype b a = b == a
 
 -- TypeRef
 -------------------------------------------------------------------
@@ -108,8 +134,10 @@ data TypeRef = TypeRef
 mkTypeRef :: TypeName -> TypeRef
 mkTypeRef typeConName = TypeRef {typeConName, typeWrappers = mkBaseType}
 
-isStronger :: TypeRef -> TypeRef -> Bool
-isStronger t1 t2 = typeConName t1 == typeConName t2 && isStrongerWrapper (typeWrappers t1) (typeWrappers t2)
+instance Subtype TypeRef where
+  isSubtype t1 t2 =
+    typeConName t1 == typeConName t2
+      && typeWrappers t1 `isSubtype` typeWrappers t2
 
 instance RenderGQL TypeRef where
   renderGQL TypeRef {typeConName, typeWrappers} = renderWrapper typeWrappers

@@ -49,7 +49,7 @@ import Data.Morpheus.Types.Internal.AST
     Variable (..),
     VariableContent (..),
     isNullable,
-    isStronger,
+    isSubtype,
     mkMaybeType,
     mkTypeRef,
     msg,
@@ -101,14 +101,13 @@ violation message value = do
         value
       <> maybe "" ((" " <>) . msgValidation) message
 
-checkTypeEquality ::
+checkTypeCompatibility ::
   TypeRef ->
   Ref FieldName ->
   Variable VALID ->
   InputValidator schemaS ctx ValidValue
-checkTypeEquality valueType ref var@Variable {variableValue = ValidVariableValue value, variableType}
-  | isStronger variableType valueType =
-    pure value
+checkTypeCompatibility valueType ref var@Variable {variableValue = ValidVariableValue value, variableType}
+  | variableType `isSubtype` valueType = pure value
   | otherwise = failure $ incompatibleVariableType ref var valueType
 
 validateInputByTypeRef ::
@@ -155,7 +154,7 @@ validateWrapped ::
 -- Validate Null. value = null ?
 validateWrapped wrappers _ (ResolvedVariable ref variable) = do
   typeName <- asksScope currentTypeName
-  checkTypeEquality (TypeRef typeName wrappers) ref variable
+  checkTypeCompatibility (TypeRef typeName wrappers) ref variable
 validateWrapped wrappers _ Null
   | isNullable wrappers = pure Null
   | otherwise = violation Nothing Null

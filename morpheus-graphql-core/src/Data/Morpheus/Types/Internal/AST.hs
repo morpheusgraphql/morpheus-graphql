@@ -70,7 +70,7 @@ module Data.Morpheus.Types.Internal.AST
     kindOf,
     toNullable,
     isNullable,
-    isStronger,
+    isSubtype,
     isNotSystemTypeName,
     isLeaf,
     isResolverType,
