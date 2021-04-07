@@ -114,8 +114,8 @@ mkMaybeType = BaseType False
 -- type B = T
 -- type B is subtype of A since :  {T} ⊂ {T, Null}
 -- type B is Subtype if B since: {T} ⊂ {T}
-class Subtyping a where
-  isSubtype :: a -> a -> Bool
+class Subtyping t where
+  isSubtype :: t -> t -> Bool
 
 instance Subtyping TypeWrapper where
   isSubtype (TypeList b nonNull1) (TypeList a nonNull2) =
