@@ -60,7 +60,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeKind (..),
     TypeName,
     TypeRef (..),
-    TypeWrapper (..),
     Typed (..),
     UnionMember (..),
     VALID,
