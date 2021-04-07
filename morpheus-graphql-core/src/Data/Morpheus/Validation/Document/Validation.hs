@@ -323,11 +323,12 @@ fieldArgs (Just (FieldArgs args)) = args
 fieldArgs _ = empty
 
 instance StructuralCompatibility (ArgumentsDefinition s) (Interface, FieldName) where
-  args1 `subtypeOf` args2 = traverse_ validateArg (elems args2)
+  subArguments `subtypeOf` arguments = traverse_ hasCompatibleSubArgument arguments
     where
-      validateArg arg =
-        inArgument (keyOf arg) $
-          selectOr (failImplements Missing) (`subtypeOf` arg) (keyOf arg) args1
+      hasCompatibleSubArgument :: ArgumentDefinition s -> SchemaValidator (Interface, FieldName) ()
+      hasCompatibleSubArgument argument =
+        inArgument (keyOf argument) $
+          selectOr (failImplements Missing) (`subtypeOf` argument) (keyOf argument) subArguments
 
 instance StructuralCompatibility (ArgumentDefinition s) (Interface, Field) where
   subtypeOf = subtypeOfBy (fieldType . argument)
