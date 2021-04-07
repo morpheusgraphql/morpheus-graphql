@@ -53,6 +53,7 @@ import Data.Morpheus.Types.Internal.AST
     OUT,
     Schema (..),
     Schema (..),
+    Subtyping (..),
     TRUE,
     TypeCategory,
     TypeContent (..),
@@ -64,7 +65,6 @@ import Data.Morpheus.Types.Internal.AST
     UnionMember (..),
     VALID,
     Value,
-    isSubtype,
     mkBaseType,
   )
 import Data.Morpheus.Types.Internal.Config (Config (..))
@@ -271,7 +271,7 @@ validateArgumentDefaultValue argName fieldType (DefaultInputValue value) =
         (validateDefaultValue fieldType value)
     pure (DefaultInputValue v)
 
--- INETRFACE
+-- INTERFACE
 ----------------------------
 validateImplements ::
   [TypeName] ->

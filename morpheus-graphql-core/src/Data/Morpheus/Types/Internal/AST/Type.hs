@@ -11,7 +11,7 @@ module Data.Morpheus.Types.Internal.AST.Type
     Nullable (..),
     Strictness (..),
     TypeKind (..),
-    Subtype (..),
+    Subtyping (..),
     mkTypeRef,
     mkBaseType,
     mkMaybeType,
@@ -114,10 +114,10 @@ mkMaybeType = BaseType False
 -- type B = T
 -- type B is subtype of A since :  {T} ⊂ {T, Null}
 -- type B is Subtype if B since: {T} ⊂ {T}
-class Subtype a where
+class Subtyping a where
   isSubtype :: a -> a -> Bool
 
-instance Subtype TypeWrapper where
+instance Subtyping TypeWrapper where
   isSubtype (TypeList b nonNull1) (TypeList a nonNull2) =
     nonNull1 >= nonNull2 && isSubtype b a
   isSubtype (BaseType b) (BaseType a) = b >= a
@@ -134,7 +134,7 @@ data TypeRef = TypeRef
 mkTypeRef :: TypeName -> TypeRef
 mkTypeRef typeConName = TypeRef {typeConName, typeWrappers = mkBaseType}
 
-instance Subtype TypeRef where
+instance Subtyping TypeRef where
   isSubtype t1 t2 =
     typeConName t1 == typeConName t2
       && typeWrappers t1 `isSubtype` typeWrappers t2
