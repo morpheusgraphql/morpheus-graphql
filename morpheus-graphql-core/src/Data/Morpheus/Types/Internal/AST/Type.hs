@@ -79,12 +79,6 @@ instance Strictness TypeKind where
   isResolverType KindInterface = True
   isResolverType _ = False
 
-mkBaseType :: TypeWrapper
-mkBaseType = BaseType True
-
-mkMaybeType :: TypeWrapper
-mkMaybeType = BaseType False
-
 -- TypeWrappers
 -----------------------------------------------------------------------------------
 data TypeWrapper
@@ -92,8 +86,11 @@ data TypeWrapper
   | BaseType Bool
   deriving (Show, Eq, Lift)
 
-isStronger :: TypeRef -> TypeRef -> Bool
-isStronger t1 t2 = typeConName t1 == typeConName t2 && isStrongerWrapper (typeWrappers t1) (typeWrappers t2)
+mkBaseType :: TypeWrapper
+mkBaseType = BaseType True
+
+mkMaybeType :: TypeWrapper
+mkMaybeType = BaseType False
 
 isStrongerWrapper :: TypeWrapper -> TypeWrapper -> Bool
 isStrongerWrapper (TypeList x1 nonNull1) (TypeList x2 nonNull2) = nonNull1 >= nonNull2 && isStrongerWrapper x1 x2
@@ -110,6 +107,9 @@ data TypeRef = TypeRef
 
 mkTypeRef :: TypeName -> TypeRef
 mkTypeRef typeConName = TypeRef {typeConName, typeWrappers = mkBaseType}
+
+isStronger :: TypeRef -> TypeRef -> Bool
+isStronger t1 t2 = typeConName t1 == typeConName t2 && isStrongerWrapper (typeWrappers t1) (typeWrappers t2)
 
 instance RenderGQL TypeRef where
   renderGQL TypeRef {typeConName, typeWrappers} = renderWrapper typeWrappers
