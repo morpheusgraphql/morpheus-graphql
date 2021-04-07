@@ -303,38 +303,38 @@ checkInterfaceField
     } =
     inField fieldName $
       validateDirectives FIELD_DEFINITION fieldDirectives
-        *> selectOr err (`subtypeOf` interfaceField) fieldName objFields
+        *> selectOr err (`isCompatibleTo` interfaceField) fieldName objFields
     where
       err = failImplements Missing
 
 class PartialImplements ctx => StructuralCompatibility a ctx where
-  subtypeOf :: a -> a -> SchemaValidator ctx ()
+  isCompatibleTo :: a -> a -> SchemaValidator ctx ()
 
-subtypeOfBy :: StructuralCompatibility a ctx => (t -> a) -> t -> t -> SchemaValidator ctx ()
-subtypeOfBy f a b = f a `subtypeOf` f b
+isCompatibleBy :: StructuralCompatibility a ctx => (t -> a) -> t -> t -> SchemaValidator ctx ()
+isCompatibleBy f a b = f a `isCompatibleTo` f b
 
 instance StructuralCompatibility (FieldDefinition OUT CONST) (Interface, FieldName) where
-  f1 `subtypeOf` f2 =
-    subtypeOfBy fieldType f1 f2
-      *> subtypeOfBy (fieldArgs . fieldContent) f1 f2
+  f1 `isCompatibleTo` f2 =
+    isCompatibleBy fieldType f1 f2
+      *> isCompatibleBy (fieldArgs . fieldContent) f1 f2
 
 fieldArgs :: Maybe (FieldContent TRUE OUT s) -> ArgumentsDefinition s
 fieldArgs (Just (FieldArgs args)) = args
 fieldArgs _ = empty
 
 instance StructuralCompatibility (ArgumentsDefinition s) (Interface, FieldName) where
-  subArguments `subtypeOf` arguments = traverse_ hasCompatibleSubArgument arguments
+  subArguments `isCompatibleTo` arguments = traverse_ hasCompatibleSubArgument arguments
     where
       hasCompatibleSubArgument :: ArgumentDefinition s -> SchemaValidator (Interface, FieldName) ()
       hasCompatibleSubArgument argument =
         inArgument (keyOf argument) $
-          selectOr (failImplements Missing) (`subtypeOf` argument) (keyOf argument) subArguments
+          selectOr (failImplements Missing) (`isCompatibleTo` argument) (keyOf argument) subArguments
 
 instance StructuralCompatibility (ArgumentDefinition s) (Interface, Field) where
-  subtypeOf = subtypeOfBy (fieldType . argument)
+  isCompatibleTo = isCompatibleBy (fieldType . argument)
 
 instance (PartialImplements ctx) => StructuralCompatibility TypeRef ctx where
-  t1 `subtypeOf` t2
+  t1 `isCompatibleTo` t2
     | t1 `isSubtype` t2 = pure ()
     | otherwise = failImplements UnexpectedType {expectedType = t2, foundType = t1}
 
