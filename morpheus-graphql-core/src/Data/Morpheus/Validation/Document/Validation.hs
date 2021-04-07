@@ -303,52 +303,39 @@ checkInterfaceField
     } =
     inField fieldName $
       validateDirectives FIELD_DEFINITION fieldDirectives
-        *> selectOr err (isSuptype interfaceField) fieldName objFields
+        *> selectOr err (`subtypeOf` interfaceField) fieldName objFields
     where
       err = failImplements Missing
 
-class PartialImplements ctx => TypeEq a ctx where
-  isSuptype :: a -> a -> SchemaValidator ctx ()
+class PartialImplements ctx => StructuralCompatibility a ctx where
+  subtypeOf :: a -> a -> SchemaValidator ctx ()
 
-instance TypeEq (FieldDefinition OUT CONST) (Interface, FieldName) where
-  FieldDefinition
-    { fieldType,
-      fieldContent = args1
-    }
-    `isSuptype` FieldDefinition
-      { fieldType = fieldType',
-        fieldContent = args2
-      } = (fieldType `isSuptype` fieldType') *> (args1 `isSuptype` args2)
+subtypeOfBy :: StructuralCompatibility a ctx => (t -> a) -> t -> t -> SchemaValidator ctx ()
+subtypeOfBy f a b = f a `subtypeOf` f b
 
-instance TypeEq (Maybe (FieldContent TRUE OUT s)) (Interface, FieldName) where
-  f1 `isSuptype` f2 = toARgs f1 `isSuptype` toARgs f2
+instance StructuralCompatibility (FieldDefinition OUT CONST) (Interface, FieldName) where
+  f1 `subtypeOf` f2 =
+    subtypeOfBy fieldType f1 f2
+      *> subtypeOfBy (fieldArgs . fieldContent) f1 f2
+
+fieldArgs :: Maybe (FieldContent TRUE OUT s) -> ArgumentsDefinition s
+fieldArgs (Just (FieldArgs args)) = args
+fieldArgs _ = empty
+
+instance StructuralCompatibility (ArgumentsDefinition s) (Interface, FieldName) where
+  args1 `subtypeOf` args2 = traverse_ validateArg (elems args2)
     where
-      toARgs :: Maybe (FieldContent TRUE OUT s) -> ArgumentsDefinition s
-      toARgs (Just (FieldArgs args)) = args
-      toARgs _ = empty
+      validateArg arg =
+        inArgument (keyOf arg) $
+          selectOr (failImplements Missing) (`subtypeOf` arg) (keyOf arg) args1
 
-instance (PartialImplements ctx) => TypeEq TypeRef ctx where
-  t1 `isSuptype` t2
-    | t2 `isSubtype` t1 = pure ()
-    | otherwise = failImplements UnexpectedType {expectedType = t1, foundType = t2}
+instance StructuralCompatibility (ArgumentDefinition s) (Interface, Field) where
+  subtypeOf = subtypeOfBy (fieldType . argument)
 
-elemIn ::
-  ( KeyOf k a,
-    Selectable k a c,
-    TypeEq a ctx
-  ) =>
-  a ->
-  c ->
-  SchemaValidator ctx ()
-elemIn el = selectOr (failImplements Missing) (isSuptype el) (keyOf el)
-
-instance TypeEq (ArgumentsDefinition s) (Interface, FieldName) where
-  args1 `isSuptype` args2 = traverse_ validateArg (elems args1)
-    where
-      validateArg arg = inArgument (keyOf arg) $ elemIn arg args2
-
-instance TypeEq (ArgumentDefinition s) (Interface, Field) where
-  arg1 `isSuptype` arg2 = fieldType (argument arg1) `isSuptype` fieldType (argument arg2)
+instance (PartialImplements ctx) => StructuralCompatibility TypeRef ctx where
+  t1 `subtypeOf` t2
+    | t1 `isSubtype` t2 = pure ()
+    | otherwise = failImplements UnexpectedType {expectedType = t2, foundType = t1}
 
 -------------------------------
 selectInterface ::
