@@ -31,7 +31,6 @@ import Data.Morpheus.Ext.SemigroupM
 import Data.Morpheus.Internal.Utils
   ( KeyOf (..),
     Selectable (..),
-    elems,
     empty,
     failure,
   )
@@ -289,7 +288,7 @@ mustBeSubset ::
   SchemaValidator TypeName ()
 mustBeSubset objFields (typeName, fields) =
   inInterface typeName $
-    traverse_ (checkInterfaceField objFields) (elems fields)
+    traverse_ (checkInterfaceField objFields) fields
 
 checkInterfaceField ::
   FieldsDefinition OUT CONST ->
