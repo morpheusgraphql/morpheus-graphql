@@ -19,8 +19,15 @@ module Data.Morpheus.Validation.Document.Validation
 where
 
 import Data.Morpheus.Error.Document.Interface
-  ( ImplementsError (..),
-    PartialImplements (..),
+  ( Field (..),
+    ImplementsError (..),
+    Place,
+    TypeSystemElement (..),
+    inArgument,
+    inField,
+    inInterface,
+    inType,
+    partialImplements,
   )
 import Data.Morpheus.Ext.Result
   ( Eventless,
@@ -77,15 +84,9 @@ import Data.Morpheus.Types.Internal.Validation
     startInput,
   )
 import Data.Morpheus.Types.Internal.Validation.SchemaValidator
-  ( Field (..),
-    Interface (..),
-    SchemaValidator,
+  ( SchemaValidator,
     TypeSystemContext (..),
     constraintInterface,
-    inArgument,
-    inField,
-    inInterface,
-    inType,
   )
 import Data.Morpheus.Validation.Internal.Directive
   ( validateDirectives,
@@ -172,7 +173,7 @@ typeDirectiveLocation DataInterface {} = INTERFACE
 
 validateTypeContent ::
   TypeContent TRUE cat CONST ->
-  SchemaValidator TypeName (TypeContent TRUE cat VALID)
+  SchemaValidator TypeSystemElement (TypeContent TRUE cat VALID)
 validateTypeContent
   DataObject
     { objectImplements,
@@ -192,13 +193,13 @@ validateTypeContent (DataInterface fields) =
   DataInterface <$> traverse validateField fields
 
 validateEnumMember ::
-  DataEnumValue CONST -> SchemaValidator TypeName (DataEnumValue VALID)
+  DataEnumValue CONST -> SchemaValidator TypeSystemElement (DataEnumValue VALID)
 validateEnumMember DataEnumValue {enumDirectives = directives, ..} =
   DataEnumValue enumDescription enumName
     <$> validateDirectives ENUM_VALUE directives
 
 validateUnionMember ::
-  UnionMember cat CONST -> SchemaValidator TypeName (UnionMember cat VALID)
+  UnionMember cat CONST -> SchemaValidator TypeSystemElement (UnionMember cat VALID)
 validateUnionMember UnionMember {..} = pure UnionMember {..}
 
 class FieldDirectiveLocation (cat :: TypeCategory) where
@@ -214,7 +215,7 @@ validateField ::
   forall cat.
   FieldDirectiveLocation cat =>
   FieldDefinition cat CONST ->
-  SchemaValidator TypeName (FieldDefinition cat VALID)
+  SchemaValidator TypeSystemElement (FieldDefinition cat VALID)
 validateField field@FieldDefinition {..} =
   inField
     fieldName
@@ -229,23 +230,31 @@ validateField field@FieldDefinition {..} =
 checkFieldContent ::
   FieldDefinition cat CONST ->
   FieldContent TRUE cat CONST ->
-  SchemaValidator (TypeName, FieldName) (FieldContent TRUE cat VALID)
+  SchemaValidator Place (FieldContent TRUE cat VALID)
 checkFieldContent _ (FieldArgs argsDef) = FieldArgs <$> validateArgumentsDefinition argsDef
 checkFieldContent FieldDefinition {fieldType} (DefaultInputValue value) = do
-  (typeName, fName) <- asks local
+  (typeName, fName) <- getTypeAndFieldName
   DefaultInputValue
     <$> startInput
       (SourceInputField typeName fName Nothing)
       (validateDefaultValue fieldType value)
 
+getTypeAndFieldName :: SchemaValidator Place (TypeName, FieldName)
+getTypeAndFieldName = do
+  Field fName _ t <- asks local
+  pure (getTypeName t, fName)
+  where
+    getTypeName (Type x) = x
+    getTypeName (Interface _ x) = x
+
 validateArgumentsDefinition ::
   ArgumentsDefinition CONST ->
-  SchemaValidator (TypeName, FieldName) (ArgumentsDefinition VALID)
+  SchemaValidator Place (ArgumentsDefinition VALID)
 validateArgumentsDefinition = traverse validateArgumentDefinition
 
 validateArgumentDefinition ::
   ArgumentDefinition CONST ->
-  SchemaValidator (TypeName, FieldName) (ArgumentDefinition VALID)
+  SchemaValidator Place (ArgumentDefinition VALID)
 validateArgumentDefinition (ArgumentDefinition FieldDefinition {..}) =
   ArgumentDefinition
     <$> ( FieldDefinition
@@ -260,10 +269,10 @@ validateArgumentDefaultValue ::
   FieldName ->
   TypeRef ->
   FieldContent TRUE IN CONST ->
-  SchemaValidator (TypeName, FieldName) (FieldContent TRUE IN VALID)
+  SchemaValidator Place (FieldContent TRUE IN VALID)
 validateArgumentDefaultValue argName fieldType (DefaultInputValue value) =
   do
-    (typeName, fName) <- asks local
+    (typeName, fName) <- getTypeAndFieldName
     v <-
       startInput
         (SourceInputField typeName fName (Just argName))
@@ -275,7 +284,7 @@ validateArgumentDefaultValue argName fieldType (DefaultInputValue value) =
 validateImplements ::
   [TypeName] ->
   FieldsDefinition OUT CONST ->
-  SchemaValidator TypeName [TypeName]
+  SchemaValidator TypeSystemElement [TypeName]
 validateImplements objectImplements objectFields =
   ( traverse selectInterface objectImplements
       >>= traverse_ (mustBeSubset objectFields)
@@ -285,7 +294,7 @@ validateImplements objectImplements objectFields =
 mustBeSubset ::
   FieldsDefinition OUT CONST ->
   (TypeName, FieldsDefinition OUT CONST) ->
-  SchemaValidator TypeName ()
+  SchemaValidator TypeSystemElement ()
 mustBeSubset objFields (typeName, fields) =
   inInterface typeName $
     traverse_ (checkInterfaceField objFields) fields
@@ -293,7 +302,7 @@ mustBeSubset objFields (typeName, fields) =
 checkInterfaceField ::
   FieldsDefinition OUT CONST ->
   FieldDefinition OUT CONST ->
-  SchemaValidator Interface ()
+  SchemaValidator TypeSystemElement ()
 checkInterfaceField
   objFields
   interfaceField@FieldDefinition
@@ -306,13 +315,13 @@ checkInterfaceField
     where
       err = failImplements Missing
 
-class PartialImplements ctx => StructuralCompatibility a ctx where
-  isCompatibleTo :: a -> a -> SchemaValidator ctx ()
+class StructuralCompatibility a where
+  isCompatibleTo :: a -> a -> SchemaValidator Place ()
 
-isCompatibleBy :: StructuralCompatibility a ctx => (t -> a) -> t -> t -> SchemaValidator ctx ()
+isCompatibleBy :: StructuralCompatibility a => (t -> a) -> t -> t -> SchemaValidator Place ()
 isCompatibleBy f a b = f a `isCompatibleTo` f b
 
-instance StructuralCompatibility (FieldDefinition OUT CONST) (Interface, FieldName) where
+instance StructuralCompatibility (FieldDefinition OUT CONST) where
   f1 `isCompatibleTo` f2 =
     isCompatibleBy fieldType f1 f2
       *> isCompatibleBy (fieldArgs . fieldContent) f1 f2
@@ -321,18 +330,18 @@ fieldArgs :: Maybe (FieldContent TRUE OUT s) -> ArgumentsDefinition s
 fieldArgs (Just (FieldArgs args)) = args
 fieldArgs _ = empty
 
-instance StructuralCompatibility (ArgumentsDefinition s) (Interface, FieldName) where
+instance StructuralCompatibility (ArgumentsDefinition s) where
   subArguments `isCompatibleTo` arguments = traverse_ hasCompatibleSubArgument arguments
     where
-      hasCompatibleSubArgument :: ArgumentDefinition s -> SchemaValidator (Interface, FieldName) ()
+      hasCompatibleSubArgument :: ArgumentDefinition s -> SchemaValidator Place ()
       hasCompatibleSubArgument argument =
         inArgument (keyOf argument) $
           selectOr (failImplements Missing) (`isCompatibleTo` argument) (keyOf argument) subArguments
 
-instance StructuralCompatibility (ArgumentDefinition s) (Interface, Field) where
+instance StructuralCompatibility (ArgumentDefinition s) where
   isCompatibleTo = isCompatibleBy (fieldType . argument)
 
-instance (PartialImplements ctx) => StructuralCompatibility TypeRef ctx where
+instance StructuralCompatibility TypeRef where
   t1 `isCompatibleTo` t2
     | t1 `isSubtype` t2 = pure ()
     | otherwise = failImplements UnexpectedType {expectedType = t2, foundType = t1}
@@ -344,9 +353,8 @@ selectInterface ::
 selectInterface = selectType >=> constraintInterface
 
 failImplements ::
-  PartialImplements ctx =>
   ImplementsError ->
-  SchemaValidator ctx a
+  SchemaValidator Place a
 failImplements err = do
   x <- asks local
   failure $ partialImplements x err
@@ -358,7 +366,7 @@ validateDefaultValue ::
   Value CONST ->
   InputValidator
     CONST
-    (TypeSystemContext (TypeName, FieldName))
+    (TypeSystemContext Place)
     (Value VALID)
 validateDefaultValue typeRef =
   validateInputByTypeRef (Typed typeRef)

@@ -8,7 +8,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -16,13 +15,8 @@ module Data.Morpheus.Types.Internal.Validation.SchemaValidator
   ( SchemaValidator,
     TypeSystemContext (..),
     constraintInterface,
-    inField,
-    inType,
-    inArgument,
-    inInterface,
-    Field (..),
-    Interface (..),
     renderField,
+    withLocalContext,
   )
 where
 
@@ -32,7 +26,6 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     CONST,
-    FieldName,
     FieldsDefinition,
     OUT,
     TypeContent (..),
@@ -51,40 +44,6 @@ import Relude hiding (local)
 newtype TypeSystemContext c = TypeSystemContext
   {local :: c}
   deriving (Show)
-
-inType ::
-  TypeName ->
-  SchemaValidator TypeName v ->
-  SchemaValidator () v
-inType name = withLocalContext (const name)
-
-inInterface ::
-  TypeName ->
-  SchemaValidator Interface v ->
-  SchemaValidator TypeName v
-inInterface interfaceName = withLocalContext (Interface interfaceName)
-
-inField ::
-  FieldName ->
-  SchemaValidator (t, FieldName) v ->
-  SchemaValidator t v
-inField fname = withLocalContext (,fname)
-
-inArgument ::
-  FieldName ->
-  SchemaValidator (t, Field) v ->
-  SchemaValidator (t, FieldName) v
-inArgument aname = withLocalContext (\(t1, f1) -> (t1, Field f1 aname))
-
-data Interface = Interface
-  { interfaceName :: TypeName,
-    typeName :: TypeName
-  }
-
-data Field = Field
-  { fieldName :: FieldName,
-    fieldArgument :: FieldName
-  }
 
 withLocalContext :: (a -> b) -> SchemaValidator b v -> SchemaValidator a v
 withLocalContext = withContext . updateLocal

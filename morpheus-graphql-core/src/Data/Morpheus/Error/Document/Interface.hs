@@ -5,13 +5,18 @@
 
 module Data.Morpheus.Error.Document.Interface
   ( unknownInterface,
-    PartialImplements (..),
     ImplementsError (..),
-    Place (..),
+    partialImplements,
+    Place,
+    Field (..),
+    TypeSystemElement (..),
+    inArgument,
+    inField,
+    inInterface,
+    inType,
   )
 where
 
-import Data.Maybe (Maybe (..))
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName (..),
     TypeName (..),
@@ -20,14 +25,56 @@ import Data.Morpheus.Types.Internal.AST.Base
   )
 import Data.Morpheus.Types.Internal.AST.Type (TypeRef)
 import Data.Morpheus.Types.Internal.Validation.SchemaValidator
-  ( Field (..),
-    Interface (..),
+  ( SchemaValidator,
     renderField,
+    withLocalContext,
   )
-import Data.Semigroup ((<>))
+import Relude
 
 unknownInterface :: TypeName -> ValidationError
 unknownInterface name = "Unknown Interface " <> msgValidation name <> "."
+
+inInterface ::
+  TypeName ->
+  SchemaValidator TypeSystemElement v ->
+  SchemaValidator TypeSystemElement v
+inInterface interfaceName = withLocalContext replace
+  where
+    replace (Interface _ t) = Interface interfaceName t
+    replace (Type t) = Interface interfaceName t
+
+inType ::
+  TypeName ->
+  SchemaValidator TypeSystemElement v ->
+  SchemaValidator () v
+inType name = withLocalContext (const (Type name))
+
+inField ::
+  FieldName ->
+  SchemaValidator Field v ->
+  SchemaValidator TypeSystemElement v
+inField fname = withLocalContext (Field fname Nothing)
+
+inArgument ::
+  FieldName ->
+  SchemaValidator Field v ->
+  SchemaValidator Field v
+inArgument aname = withLocalContext (\field -> field {fieldArgument = Just aname})
+
+data TypeSystemElement
+  = Interface
+      { interfaceName :: TypeName,
+        typeName :: TypeName
+      }
+  | Type TypeName
+
+type Place = Field
+
+data Field = Field
+  { fieldName :: FieldName,
+    fieldArgument :: Maybe FieldName,
+    fieldOf :: TypeSystemElement
+  }
 
 data ImplementsError
   = UnexpectedType
@@ -36,55 +83,38 @@ data ImplementsError
       }
   | Missing
 
-data Place = Place
-  { fieldname :: TypeName,
-    typename :: FieldName,
-    fieldArg :: Maybe (FieldName, TypeName)
-  }
-
-class PartialImplements ctx where
-  partialImplements :: ctx -> ImplementsError -> ValidationError
-
-instance PartialImplements (Interface, FieldName) where
-  partialImplements (Interface interfaceName typename, fieldname) errorType =
-    "Interface field "
-      <> renderField interfaceName fieldname Nothing
-      <> detailedMessage errorType
-    where
-      detailedMessage UnexpectedType {expectedType, foundType} =
-        " expects type "
-          <> msgValidation expectedType
-          <> " but "
-          <> renderField typename fieldname Nothing
-          <> " is type "
-          <> msgValidation foundType
-          <> "."
-      detailedMessage Missing =
-        " expected but "
-          <> msgValidation typename
-          <> " does not provide it."
+partialImplements :: Place -> ImplementsError -> ValidationError
+partialImplements (Field fieldname Nothing (Interface interfaceName typename)) errorType =
+  "Interface field "
+    <> renderField interfaceName fieldname Nothing
+    <> detailedMessage errorType
+  where
+    detailedMessage =
+      detailedMessageGen
+        (renderField typename fieldname Nothing)
+        (msgValidation typename)
+partialImplements (Field fieldname (Just argName) (Interface interfaceName typename)) errorType =
+  "Interface field argument "
+    <> renderField interfaceName fieldname (Just argName)
+    <> detailedMessage errorType
+  where
+    detailedMessage =
+      detailedMessageGen
+        (renderField typename fieldname (Just argName))
+        (renderField typename fieldname Nothing)
 
 -- Interface field TestInterface.name expected but User does not provide it.
 -- Interface field TestInterface.name expects type String! but User.name is type Int!.
-
-instance PartialImplements (Interface, Field) where
-  partialImplements (Interface interfaceName typename, Field fieldname argName) errorType =
-    "Interface field argument "
-      <> renderField interfaceName fieldname (Just argName)
-      <> detailedMessage errorType
-    where
-      detailedMessage UnexpectedType {expectedType, foundType} =
-        " expects type"
-          <> msgValidation expectedType
-          <> " but "
-          <> renderField typename fieldname (Just argName)
-          <> " is type "
-          <> msgValidation foundType
-          <> "."
-      detailedMessage Missing =
-        " expected but "
-          <> renderField typename fieldname Nothing
-          <> " does not provide it."
-
 -- Interface field argument TestInterface.name(id:) expected but User.name does not provide it.
 -- Interface field argument TestInterface.name(id:) expects type ID but User.name(id:) is type String.
+
+detailedMessageGen :: ValidationError -> ValidationError -> ImplementsError -> ValidationError
+detailedMessageGen pl1 _ UnexpectedType {expectedType, foundType} =
+  " expects type "
+    <> msgValidation expectedType
+    <> " but "
+    <> pl1
+    <> " is type "
+    <> msgValidation foundType
+    <> "."
+detailedMessageGen _ pl2 Missing = " expected but " <> pl2 <> " does not provide it."
