@@ -7,7 +7,6 @@ module Data.Morpheus.Error.Document.Interface
   ( unknownInterface,
     ImplementsError (..),
     partialImplements,
-    Place,
     Field (..),
     TypeSystemElement (..),
     inArgument,
@@ -68,8 +67,6 @@ data TypeSystemElement
       }
   | Type TypeName
 
-type Place = Field
-
 data Field = Field
   { fieldName :: FieldName,
     fieldArgument :: Maybe FieldName,
@@ -83,7 +80,7 @@ data ImplementsError
       }
   | Missing
 
-partialImplements :: Place -> ImplementsError -> ValidationError
+partialImplements :: Field -> ImplementsError -> ValidationError
 partialImplements (Field fieldname Nothing (Interface interfaceName typename)) errorType =
   "Interface field "
     <> renderField interfaceName fieldname Nothing
