@@ -81,24 +81,14 @@ data ImplementsError
   | Missing
 
 partialImplements :: Field -> ImplementsError -> ValidationError
-partialImplements (Field fieldname Nothing (Interface interfaceName typename)) errorType =
-  "Interface field "
-    <> renderField interfaceName fieldname Nothing
-    <> detailedMessage errorType
-  where
-    detailedMessage =
-      detailedMessageGen
-        (renderField typename fieldname Nothing)
-        (msgValidation typename)
-partialImplements (Field fieldname (Just argName) (Interface interfaceName typename)) errorType =
-  "Interface field argument "
-    <> renderField interfaceName fieldname (Just argName)
-    <> detailedMessage errorType
-  where
-    detailedMessage =
-      detailedMessageGen
-        (renderField typename fieldname (Just argName))
-        (renderField typename fieldname Nothing)
+partialImplements (Field fieldName argName (Interface interfaceName typename)) errorType =
+  "Interface field " <> maybe "" (const "argument ") argName
+    <> renderField interfaceName fieldName argName
+    <> detailedMessageGen
+      (renderField typename fieldName argName)
+      (maybe (msgValidation typename) (const $ renderField typename fieldName Nothing) argName)
+      errorType
+partialImplements (Field fieldname argName Type {}) errorType = undefined
 
 -- Interface field TestInterface.name expected but User does not provide it.
 -- Interface field TestInterface.name expects type String! but User.name is type Int!.
