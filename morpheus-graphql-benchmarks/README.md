@@ -6,8 +6,8 @@ this Package Provides Benchmark for Morpheus GrapHQL
 
 | means                | GraphQL  | Morpheus |
 | -------------------- | -------- | -------- |
-| Huge String          | 8.035 ms | 192.2 μs |
-| Mythology Schema     | 1.063 ms | 268.2 μs |
-| Long Descriptions    | 10.64 ms | 559.0 μs |
-| Star Wars Schema     | 86.48 ms | 26.35 ms |
-| Nested Wrapper Types | 1.450 s  | 43.67 μs |
+| Huge String          | 8.458 ms | 197.8 μs |
+| Mythology Schema     | 1.078 ms | 279.7 μs |
+| Long Descriptions    | 11.02 ms | 599.9 μs |
+| Star Wars Schema     | 92.38 ms | 25.45 ms |
+| Nested Wrapper Types | 1.483 s  | 42.15 μs |
