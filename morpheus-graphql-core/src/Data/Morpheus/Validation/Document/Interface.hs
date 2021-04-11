@@ -55,12 +55,12 @@ validateImplements ::
   SchemaValidator (TypeEntity ON_TYPE) [TypeName]
 validateImplements interfaceNames objectFields =
   ( traverse (selectType >=> constraintInterface) interfaceNames
-      >>= traverse_ mustBeCompatibleTo
+      >>= traverse_ hasCompatibleFields
   )
     $> interfaceNames
   where
-    mustBeCompatibleTo :: (TypeName, FieldsDefinition OUT CONST) -> SchemaValidator (TypeEntity ON_TYPE) ()
-    mustBeCompatibleTo (typeName, fields) = inInterface typeName $ isCompatibleTo objectFields fields
+    hasCompatibleFields :: (TypeName, FieldsDefinition OUT CONST) -> SchemaValidator (TypeEntity ON_TYPE) ()
+    hasCompatibleFields (typeName, fields) = inInterface typeName $ isCompatibleTo objectFields fields
 
 class StructuralCompatibility a where
   type Context a :: PLACE -> *
