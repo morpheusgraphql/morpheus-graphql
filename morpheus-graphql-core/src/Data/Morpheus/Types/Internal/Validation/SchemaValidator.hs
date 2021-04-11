@@ -27,6 +27,7 @@ module Data.Morpheus.Types.Internal.Validation.SchemaValidator
     TypeEntity (..),
     Field (..),
     InterfaceName (..),
+    PLACE,
   )
 where
 

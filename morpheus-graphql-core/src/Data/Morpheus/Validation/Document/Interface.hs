@@ -1,7 +1,9 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Data.Morpheus.Validation.Document.Interface
   ( validateImplements,
@@ -22,7 +24,6 @@ import Data.Morpheus.Types.Internal.AST
   ( ArgumentDefinition (..),
     ArgumentsDefinition,
     CONST,
-    DirectiveLocation (..),
     FieldContent (..),
     FieldDefinition (..),
     FieldsDefinition,
@@ -37,6 +38,7 @@ import Data.Morpheus.Types.Internal.Validation.SchemaValidator
   ( Field (..),
     ON_INTERFACE,
     ON_TYPE,
+    PLACE,
     SchemaValidator,
     TypeEntity (..),
     TypeSystemContext (..),
@@ -45,56 +47,41 @@ import Data.Morpheus.Types.Internal.Validation.SchemaValidator
     inField,
     inInterface,
   )
-import Data.Morpheus.Validation.Internal.Directive (validateDirectives)
 import Relude hiding (empty, local)
 
 validateImplements ::
   [TypeName] ->
   FieldsDefinition OUT CONST ->
   SchemaValidator (TypeEntity ON_TYPE) [TypeName]
-validateImplements objectImplements objectFields =
-  ( traverse selectInterface objectImplements
-      >>= traverse_ (mustBeSubset objectFields)
+validateImplements interfaceNames objectFields =
+  ( traverse (selectType >=> constraintInterface) interfaceNames
+      >>= traverse_ mustBeCompatibleTo
   )
-    $> objectImplements
-
--------------------------------
-selectInterface ::
-  TypeName ->
-  SchemaValidator ctx (TypeName, FieldsDefinition OUT CONST)
-selectInterface = selectType >=> constraintInterface
-
-mustBeSubset ::
-  FieldsDefinition OUT CONST ->
-  (TypeName, FieldsDefinition OUT CONST) ->
-  SchemaValidator (TypeEntity ON_TYPE) ()
-mustBeSubset objFields (typeName, fields) =
-  inInterface typeName $
-    traverse_ (checkInterfaceField objFields) fields
-
-checkInterfaceField ::
-  FieldsDefinition OUT CONST ->
-  FieldDefinition OUT CONST ->
-  SchemaValidator (TypeEntity ON_INTERFACE) ()
-checkInterfaceField
-  objFields
-  interfaceField@FieldDefinition
-    { fieldName,
-      fieldDirectives
-    } =
-    inField fieldName $
-      validateDirectives FIELD_DEFINITION fieldDirectives
-        *> selectOr err (`isCompatibleTo` interfaceField) fieldName objFields
-    where
-      err = failImplements Missing
+    $> interfaceNames
+  where
+    mustBeCompatibleTo :: (TypeName, FieldsDefinition OUT CONST) -> SchemaValidator (TypeEntity ON_TYPE) ()
+    mustBeCompatibleTo (typeName, fields) = inInterface typeName $ isCompatibleTo objectFields fields
 
 class StructuralCompatibility a where
-  isCompatibleTo :: a -> a -> SchemaValidator (Field ON_INTERFACE) ()
+  type Context a :: PLACE -> *
+  type Context a = Field
 
-isCompatibleBy :: StructuralCompatibility a => (t -> a) -> t -> t -> SchemaValidator (Field ON_INTERFACE) ()
-isCompatibleBy f a b = f a `isCompatibleTo` f b
+  -- Object (which implements interface) -> Interface -> Validation
+  isCompatibleTo :: a -> a -> SchemaValidator ((Context a) ON_INTERFACE) ()
 
-instance StructuralCompatibility (FieldDefinition OUT CONST) where
+  isCompatibleBy :: (t -> a) -> t -> t -> SchemaValidator ((Context a) ON_INTERFACE) ()
+  isCompatibleBy f a b = f a `isCompatibleTo` f b
+
+instance StructuralCompatibility (FieldsDefinition OUT s) where
+  type Context (FieldsDefinition OUT s) = TypeEntity
+  isCompatibleTo objFields = traverse_ checkInterfaceField
+    where
+      checkInterfaceField interfaceField@FieldDefinition {fieldName} =
+        inField fieldName $ selectOr err (`isCompatibleTo` interfaceField) fieldName objFields
+        where
+          err = failImplements Missing
+
+instance StructuralCompatibility (FieldDefinition OUT s) where
   f1 `isCompatibleTo` f2 =
     isCompatibleBy fieldType f1 f2
       *> isCompatibleBy (fieldArgs . fieldContent) f1 f2
@@ -106,7 +93,6 @@ fieldArgs _ = empty
 instance StructuralCompatibility (ArgumentsDefinition s) where
   subArguments `isCompatibleTo` arguments = traverse_ hasCompatibleSubArgument arguments
     where
-      -- hasCompatibleSubArgument :: ArgumentDefinition s -> SchemaValidator Field ()
       hasCompatibleSubArgument argument =
         inArgument (keyOf argument) $
           selectOr (failImplements Missing) (`isCompatibleTo` argument) (keyOf argument) subArguments
