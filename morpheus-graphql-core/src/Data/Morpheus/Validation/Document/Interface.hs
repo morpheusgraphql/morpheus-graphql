@@ -54,9 +54,7 @@ validateImplements ::
   FieldsDefinition OUT CONST ->
   SchemaValidator (TypeEntity ON_TYPE) [TypeName]
 validateImplements interfaceNames objectFields =
-  ( traverse (selectType >=> constraintInterface) interfaceNames
-      >>= traverse_ hasCompatibleFields
-  )
+  traverse (selectType >=> constraintInterface >=> hasCompatibleFields) interfaceNames
     $> interfaceNames
   where
     hasCompatibleFields :: (TypeName, FieldsDefinition OUT CONST) -> SchemaValidator (TypeEntity ON_TYPE) ()
