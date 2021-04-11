@@ -17,9 +17,11 @@ module Data.Morpheus.Types.Internal.Validation.SchemaValidator
     constraintInterface,
     renderField,
     withLocalContext,
+    runSchemaValidator,
   )
 where
 
+import Data.Morpheus.Internal.Ext (Eventless)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
   )
@@ -32,14 +34,30 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeName,
     ValidationError,
+    mkBaseType,
     msgValidation,
   )
+import Data.Morpheus.Types.Internal.AST.Type (TypeKind (KindObject))
+import Data.Morpheus.Types.Internal.AST.TypeSystem (Schema)
+import Data.Morpheus.Types.Internal.Config (Config)
+import Data.Morpheus.Types.Internal.Validation (Scope (..), ScopeKind (TYPE), runValidator)
 import Data.Morpheus.Types.Internal.Validation.Validator
   ( Validator (..),
     renderField,
     withContext,
   )
 import Relude hiding (local)
+
+initialScope :: Scope
+initialScope =
+  Scope
+    { position = Nothing,
+      currentTypeName = "Root",
+      currentTypeKind = KindObject Nothing,
+      currentTypeWrappers = mkBaseType,
+      kind = TYPE,
+      fieldname = "Root"
+    }
 
 newtype TypeSystemContext c = TypeSystemContext
   {local :: c}
@@ -52,6 +70,17 @@ updateLocal :: (a -> b) -> TypeSystemContext a -> TypeSystemContext b
 updateLocal f ctx = ctx {local = f (local ctx)}
 
 type SchemaValidator c = Validator CONST (TypeSystemContext c)
+
+runSchemaValidator :: Validator s (TypeSystemContext ()) a -> Config -> Schema s -> Eventless a
+runSchemaValidator value config sysSchema =
+  runValidator
+    value
+    config
+    sysSchema
+    initialScope
+    TypeSystemContext
+      { local = ()
+      }
 
 constraintInterface ::
   TypeDefinition ANY CONST ->

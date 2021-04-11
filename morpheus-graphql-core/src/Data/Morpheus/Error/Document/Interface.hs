@@ -13,6 +13,7 @@ module Data.Morpheus.Error.Document.Interface
     inField,
     inInterface,
     inType,
+    into,
   )
 where
 
@@ -47,6 +48,12 @@ inType ::
   SchemaValidator TypeSystemElement v ->
   SchemaValidator () v
 inType name = withLocalContext (const (Type name))
+
+into ::
+  TypeSystemElement ->
+  SchemaValidator TypeSystemElement v ->
+  SchemaValidator () v
+into = withLocalContext . const
 
 inField ::
   FieldName ->
