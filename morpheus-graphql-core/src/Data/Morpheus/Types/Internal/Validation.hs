@@ -139,7 +139,7 @@ import Relude hiding
   )
 
 validateOptional :: Applicative f => (a -> f b) -> Maybe a -> f (Maybe b)
-validateOptional f = maybe (pure Nothing) (fmap Just . f)
+validateOptional = traverse
 
 getUnused :: (KeyOf k b, Selectable k a c) => c -> [b] -> [b]
 getUnused uses = filter (not . (`member` uses) . keyOf)
