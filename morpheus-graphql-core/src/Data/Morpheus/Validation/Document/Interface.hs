@@ -10,7 +10,10 @@ where
 
 import Data.Morpheus.Error.Document.Interface
   ( Field (..),
+    INTERFACE,
     ImplementsError (..),
+    TYPE,
+    TYPE,
     TypeEntity (..),
     inArgument,
     inField,
@@ -49,7 +52,7 @@ import Relude hiding (empty, local)
 validateImplements ::
   [TypeName] ->
   FieldsDefinition OUT CONST ->
-  SchemaValidator TypeEntity [TypeName]
+  SchemaValidator (TypeEntity TYPE) [TypeName]
 validateImplements objectImplements objectFields =
   ( traverse selectInterface objectImplements
       >>= traverse_ (mustBeSubset objectFields)
@@ -65,7 +68,7 @@ selectInterface = selectType >=> constraintInterface
 mustBeSubset ::
   FieldsDefinition OUT CONST ->
   (TypeName, FieldsDefinition OUT CONST) ->
-  SchemaValidator TypeEntity ()
+  SchemaValidator (TypeEntity TYPE) ()
 mustBeSubset objFields (typeName, fields) =
   inInterface typeName $
     traverse_ (checkInterfaceField objFields) fields
@@ -73,7 +76,7 @@ mustBeSubset objFields (typeName, fields) =
 checkInterfaceField ::
   FieldsDefinition OUT CONST ->
   FieldDefinition OUT CONST ->
-  SchemaValidator TypeEntity ()
+  SchemaValidator (TypeEntity INTERFACE) ()
 checkInterfaceField
   objFields
   interfaceField@FieldDefinition
@@ -87,9 +90,9 @@ checkInterfaceField
       err = failImplements Missing
 
 class StructuralCompatibility a where
-  isCompatibleTo :: a -> a -> SchemaValidator Field ()
+  isCompatibleTo :: a -> a -> SchemaValidator (Field INTERFACE) ()
 
-isCompatibleBy :: StructuralCompatibility a => (t -> a) -> t -> t -> SchemaValidator Field ()
+isCompatibleBy :: StructuralCompatibility a => (t -> a) -> t -> t -> SchemaValidator (Field INTERFACE) ()
 isCompatibleBy f a b = f a `isCompatibleTo` f b
 
 instance StructuralCompatibility (FieldDefinition OUT CONST) where
@@ -119,7 +122,7 @@ instance StructuralCompatibility TypeRef where
 
 failImplements ::
   ImplementsError ->
-  SchemaValidator Field a
+  SchemaValidator (Field INTERFACE) a
 failImplements err = do
   x <- asks local
   failure $ partialImplements x err

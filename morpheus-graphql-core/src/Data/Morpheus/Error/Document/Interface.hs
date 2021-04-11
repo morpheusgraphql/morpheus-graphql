@@ -1,4 +1,7 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -14,6 +17,9 @@ module Data.Morpheus.Error.Document.Interface
     inInterface,
     inType,
     into,
+    PLACE (..),
+    INTERFACE,
+    TYPE,
   )
 where
 
@@ -36,43 +42,53 @@ unknownInterface name = "Unknown Interface " <> msgValidation name <> "."
 
 inInterface ::
   TypeName ->
-  SchemaValidator TypeEntity v ->
-  SchemaValidator TypeEntity v
-inInterface name = withLocalContext (\t -> t {interfaceName = Just name})
+  SchemaValidator (TypeEntity 'INTERFACE) v ->
+  SchemaValidator (TypeEntity 'TYPE) v
+inInterface name = withLocalContext (\t -> t {interfaceName = OnInterface name})
 
 inType ::
   TypeName ->
-  SchemaValidator TypeEntity v ->
+  SchemaValidator (TypeEntity 'TYPE) v ->
   SchemaValidator () v
-inType name = withLocalContext (const (TypeEntity Nothing name))
+inType name = withLocalContext (const (TypeEntity OnType name))
 
 into ::
-  TypeEntity ->
-  SchemaValidator TypeEntity v ->
+  TypeEntity p ->
+  SchemaValidator (TypeEntity p) v ->
   SchemaValidator () v
 into = withLocalContext . const
 
 inField ::
   FieldName ->
-  SchemaValidator Field v ->
-  SchemaValidator TypeEntity v
+  SchemaValidator (Field p) v ->
+  SchemaValidator (TypeEntity p) v
 inField fname = withLocalContext (Field fname Nothing)
 
 inArgument ::
   FieldName ->
-  SchemaValidator Field v ->
-  SchemaValidator Field v
+  SchemaValidator (Field p) v ->
+  SchemaValidator (Field p) v
 inArgument aname = withLocalContext (\field -> field {fieldArgument = Just aname})
 
-data TypeEntity = TypeEntity
-  { interfaceName :: Maybe TypeName,
+data PLACE = INTERFACE | TYPE
+
+type INTERFACE = 'INTERFACE
+
+type TYPE = 'TYPE
+
+data InterfaceName (p :: PLACE) where
+  OnInterface :: TypeName -> InterfaceName 'INTERFACE
+  OnType :: InterfaceName 'TYPE
+
+data TypeEntity (p :: PLACE) = TypeEntity
+  { interfaceName :: InterfaceName p,
     typeName :: TypeName
   }
 
-data Field = Field
+data Field p = Field
   { fieldName :: FieldName,
     fieldArgument :: Maybe FieldName,
-    fieldOf :: TypeEntity
+    fieldOf :: TypeEntity p
   }
 
 data ImplementsError
@@ -82,15 +98,14 @@ data ImplementsError
       }
   | Missing
 
-partialImplements :: Field -> ImplementsError -> ValidationError
-partialImplements (Field fieldName argName (TypeEntity (Just interfaceName) typename)) errorType =
+partialImplements :: Field 'INTERFACE -> ImplementsError -> ValidationError
+partialImplements (Field fieldName argName (TypeEntity (OnInterface interfaceName) typename)) errorType =
   "Interface field " <> maybe "" (const "argument ") argName
     <> renderField interfaceName fieldName argName
     <> detailedMessageGen
       (renderField typename fieldName argName)
       (maybe (msgValidation typename) (const $ renderField typename fieldName Nothing) argName)
       errorType
-partialImplements (Field fieldname argName _) errorType = undefined
 
 -- Interface field TestInterface.name expected but User does not provide it.
 -- Interface field TestInterface.name expects type String! but User.name is type Int!.
