@@ -9,15 +9,7 @@ module Data.Morpheus.Validation.Document.Interface
 where
 
 import Data.Morpheus.Error.Document.Interface
-  ( Field (..),
-    INTERFACE,
-    ImplementsError (..),
-    TYPE,
-    TYPE,
-    TypeEntity (..),
-    inArgument,
-    inField,
-    inInterface,
+  ( ImplementsError (..),
     partialImplements,
   )
 import Data.Morpheus.Internal.Utils
@@ -42,9 +34,16 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Validation (selectType)
 import Data.Morpheus.Types.Internal.Validation.SchemaValidator
-  ( SchemaValidator,
+  ( Field (..),
+    ON_INTERFACE,
+    ON_TYPE,
+    SchemaValidator,
+    TypeEntity (..),
     TypeSystemContext (..),
     constraintInterface,
+    inArgument,
+    inField,
+    inInterface,
   )
 import Data.Morpheus.Validation.Internal.Directive (validateDirectives)
 import Relude hiding (empty, local)
@@ -52,7 +51,7 @@ import Relude hiding (empty, local)
 validateImplements ::
   [TypeName] ->
   FieldsDefinition OUT CONST ->
-  SchemaValidator (TypeEntity TYPE) [TypeName]
+  SchemaValidator (TypeEntity ON_TYPE) [TypeName]
 validateImplements objectImplements objectFields =
   ( traverse selectInterface objectImplements
       >>= traverse_ (mustBeSubset objectFields)
@@ -68,7 +67,7 @@ selectInterface = selectType >=> constraintInterface
 mustBeSubset ::
   FieldsDefinition OUT CONST ->
   (TypeName, FieldsDefinition OUT CONST) ->
-  SchemaValidator (TypeEntity TYPE) ()
+  SchemaValidator (TypeEntity ON_TYPE) ()
 mustBeSubset objFields (typeName, fields) =
   inInterface typeName $
     traverse_ (checkInterfaceField objFields) fields
@@ -76,7 +75,7 @@ mustBeSubset objFields (typeName, fields) =
 checkInterfaceField ::
   FieldsDefinition OUT CONST ->
   FieldDefinition OUT CONST ->
-  SchemaValidator (TypeEntity INTERFACE) ()
+  SchemaValidator (TypeEntity ON_INTERFACE) ()
 checkInterfaceField
   objFields
   interfaceField@FieldDefinition
@@ -90,9 +89,9 @@ checkInterfaceField
       err = failImplements Missing
 
 class StructuralCompatibility a where
-  isCompatibleTo :: a -> a -> SchemaValidator (Field INTERFACE) ()
+  isCompatibleTo :: a -> a -> SchemaValidator (Field ON_INTERFACE) ()
 
-isCompatibleBy :: StructuralCompatibility a => (t -> a) -> t -> t -> SchemaValidator (Field INTERFACE) ()
+isCompatibleBy :: StructuralCompatibility a => (t -> a) -> t -> t -> SchemaValidator (Field ON_INTERFACE) ()
 isCompatibleBy f a b = f a `isCompatibleTo` f b
 
 instance StructuralCompatibility (FieldDefinition OUT CONST) where
@@ -122,7 +121,7 @@ instance StructuralCompatibility TypeRef where
 
 failImplements ::
   ImplementsError ->
-  SchemaValidator (Field INTERFACE) a
+  SchemaValidator (Field ON_INTERFACE) a
 failImplements err = do
   x <- asks local
   failure $ partialImplements x err

@@ -1,7 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -10,86 +9,26 @@ module Data.Morpheus.Error.Document.Interface
   ( unknownInterface,
     ImplementsError (..),
     partialImplements,
-    Field (..),
-    TypeEntity (..),
-    inArgument,
-    inField,
-    inInterface,
-    inType,
-    into,
-    PLACE (..),
-    INTERFACE,
-    TYPE,
   )
 where
 
 import Data.Morpheus.Types.Internal.AST.Base
-  ( FieldName (..),
-    TypeName (..),
+  ( TypeName (..),
     ValidationError,
     msgValidation,
   )
 import Data.Morpheus.Types.Internal.AST.Type (TypeRef)
 import Data.Morpheus.Types.Internal.Validation.SchemaValidator
-  ( SchemaValidator,
+  ( Field (..),
+    InterfaceName (..),
+    ON_INTERFACE,
+    TypeEntity (..),
     renderField,
-    withLocalContext,
   )
 import Relude
 
 unknownInterface :: TypeName -> ValidationError
 unknownInterface name = "Unknown Interface " <> msgValidation name <> "."
-
-inInterface ::
-  TypeName ->
-  SchemaValidator (TypeEntity 'INTERFACE) v ->
-  SchemaValidator (TypeEntity 'TYPE) v
-inInterface name = withLocalContext (\t -> t {interfaceName = OnInterface name})
-
-inType ::
-  TypeName ->
-  SchemaValidator (TypeEntity 'TYPE) v ->
-  SchemaValidator () v
-inType name = withLocalContext (const (TypeEntity OnType name))
-
-into ::
-  TypeEntity p ->
-  SchemaValidator (TypeEntity p) v ->
-  SchemaValidator () v
-into = withLocalContext . const
-
-inField ::
-  FieldName ->
-  SchemaValidator (Field p) v ->
-  SchemaValidator (TypeEntity p) v
-inField fname = withLocalContext (Field fname Nothing)
-
-inArgument ::
-  FieldName ->
-  SchemaValidator (Field p) v ->
-  SchemaValidator (Field p) v
-inArgument aname = withLocalContext (\field -> field {fieldArgument = Just aname})
-
-data PLACE = INTERFACE | TYPE
-
-type INTERFACE = 'INTERFACE
-
-type TYPE = 'TYPE
-
-data InterfaceName (p :: PLACE) where
-  OnInterface :: TypeName -> InterfaceName 'INTERFACE
-  OnType :: InterfaceName 'TYPE
-
-data TypeEntity (p :: PLACE) = TypeEntity
-  { interfaceName :: InterfaceName p,
-    typeName :: TypeName
-  }
-
-data Field p = Field
-  { fieldName :: FieldName,
-    fieldArgument :: Maybe FieldName,
-    fieldOf :: TypeEntity p
-  }
 
 data ImplementsError
   = UnexpectedType
@@ -98,7 +37,7 @@ data ImplementsError
       }
   | Missing
 
-partialImplements :: Field 'INTERFACE -> ImplementsError -> ValidationError
+partialImplements :: Field ON_INTERFACE -> ImplementsError -> ValidationError
 partialImplements (Field fieldName argName (TypeEntity (OnInterface interfaceName) typename)) errorType =
   "Interface field " <> maybe "" (const "argument ") argName
     <> renderField interfaceName fieldName argName
