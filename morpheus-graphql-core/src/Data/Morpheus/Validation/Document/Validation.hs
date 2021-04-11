@@ -20,7 +20,7 @@ where
 
 import Data.Morpheus.Error.Document.Interface
   ( Field (..),
-    TypeSystemElement (..),
+    TypeEntity (..),
     inField,
     inType,
   )
@@ -50,7 +50,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeCategory,
     TypeContent (..),
     TypeDefinition (..),
-    TypeName,
     TypeRef (..),
     Typed (..),
     UnionMember (..),
@@ -60,7 +59,6 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Morpheus.Types.Internal.Config (Config (..))
 import Data.Morpheus.Types.Internal.Validation
   ( InputSource (..),
-    InputValidator,
     startInput,
     validateOptional,
   )
@@ -91,38 +89,6 @@ instance ValidateSchema CONST where
 
 instance ValidateSchema VALID where
   validateSchema _ _ = pure
-
-getTypeAndFieldName :: SchemaValidator Field (TypeName, FieldName)
-getTypeAndFieldName = do
-  Field fName _ t <- asks local
-  pure (getTypeName t, fName)
-  where
-    getTypeName (Type x) = x
-    getTypeName (Interface _ x) = x
-
-validateArgumentDefaultValue ::
-  FieldName ->
-  TypeRef ->
-  FieldContent TRUE IN CONST ->
-  SchemaValidator Field (FieldContent TRUE IN VALID)
-validateArgumentDefaultValue argName fieldType (DefaultInputValue value) =
-  do
-    (typeName, fName) <- getTypeAndFieldName
-    v <-
-      startInput
-        (SourceInputField typeName fName (Just argName))
-        (validateDefaultValue fieldType value)
-    pure (DefaultInputValue v)
-
-validateDefaultValue ::
-  TypeRef ->
-  Value CONST ->
-  InputValidator
-    CONST
-    (TypeSystemContext Field)
-    (Value VALID)
-validateDefaultValue typeRef =
-  validateInputByTypeRef (Typed typeRef)
 
 ----- TypeCheck -------------------------------
 ---
@@ -174,7 +140,7 @@ typeDirectiveLocation DataUnion {} = UNION
 typeDirectiveLocation DataInterface {} = INTERFACE
 
 instance TypeCheck (TypeContent TRUE cat) where
-  type TypeContext (TypeContent TRUE cat) = TypeSystemElement
+  type TypeContext (TypeContent TRUE cat) = TypeEntity
   typeCheck DataObject {objectImplements, objectFields} =
     DataObject
       <$> validateImplements objectImplements objectFields
@@ -189,17 +155,21 @@ instance TypeCheck (TypeContent TRUE cat) where
   typeCheck (DataInterface fields) = DataInterface <$> traverse typeCheck fields
 
 instance FieldDirectiveLocation cat => TypeCheck (FieldDefinition cat) where
-  type TypeContext (FieldDefinition cat) = TypeSystemElement
-  typeCheck field@FieldDefinition {..} =
+  type TypeContext (FieldDefinition cat) = TypeEntity
+  typeCheck FieldDefinition {..} =
     inField
       fieldName
       ( FieldDefinition
           fieldDescription
           fieldName
           fieldType
-          <$> validateOptional (checkFieldContent field) fieldContent
+          <$> validateOptional checkFieldContent fieldContent
           <*> validateDirectives (directiveLocation (Proxy @cat)) fieldDirectives
       )
+    where
+      checkFieldContent :: FieldContent TRUE cat CONST -> SchemaValidator Field (FieldContent TRUE cat VALID)
+      checkFieldContent (FieldArgs args) = FieldArgs <$> traverse typeCheck args
+      checkFieldContent (DefaultInputValue value) = DefaultInputValue <$> validateDefaultValue fieldType Nothing value
 
 class FieldDirectiveLocation (cat :: TypeCategory) where
   directiveLocation :: Proxy cat -> DirectiveLocation
@@ -210,18 +180,6 @@ instance FieldDirectiveLocation OUT where
 instance FieldDirectiveLocation IN where
   directiveLocation _ = INPUT_FIELD_DEFINITION
 
-checkFieldContent ::
-  FieldDefinition cat CONST ->
-  FieldContent TRUE cat CONST ->
-  SchemaValidator Field (FieldContent TRUE cat VALID)
-checkFieldContent _ (FieldArgs argsDef) = FieldArgs <$> traverse typeCheck argsDef
-checkFieldContent FieldDefinition {fieldType} (DefaultInputValue value) = do
-  (typeName, fName) <- getTypeAndFieldName
-  DefaultInputValue
-    <$> startInput
-      (SourceInputField typeName fName Nothing)
-      (validateDefaultValue fieldType value)
-
 instance TypeCheck DirectiveDefinition where
   typeCheck DirectiveDefinition {directiveDefinitionArgs = arguments, ..} =
     inType "Directive" $ inField directiveDefinitionName $ do
@@ -230,23 +188,35 @@ instance TypeCheck DirectiveDefinition where
 
 instance TypeCheck ArgumentDefinition where
   type TypeContext ArgumentDefinition = Field
-
   typeCheck (ArgumentDefinition FieldDefinition {..}) =
     ArgumentDefinition
       <$> ( FieldDefinition
               fieldDescription
               fieldName
               fieldType
-              <$> validateOptional (validateArgumentDefaultValue fieldName fieldType) fieldContent
+              <$> validateOptional checkArgumentDefaultValue fieldContent
               <*> validateDirectives ARGUMENT_DEFINITION fieldDirectives
           )
+    where
+      checkArgumentDefaultValue (DefaultInputValue value) =
+        DefaultInputValue
+          <$> validateDefaultValue fieldType (Just fieldName) value
+
+validateDefaultValue ::
+  TypeRef ->
+  Maybe FieldName ->
+  Value CONST ->
+  SchemaValidator Field (Value VALID)
+validateDefaultValue typeRef argName value = do
+  Field fName _ (TypeEntity _ typeName) <- asks local
+  startInput (SourceInputField typeName fName argName) (validateInputByTypeRef (Typed typeRef) value)
 
 instance TypeCheck DataEnumValue where
-  type TypeContext DataEnumValue = TypeSystemElement
+  type TypeContext DataEnumValue = TypeEntity
   typeCheck DataEnumValue {enumDirectives = directives, ..} =
     DataEnumValue enumDescription enumName
       <$> validateDirectives ENUM_VALUE directives
 
 instance TypeCheck (UnionMember cat) where
-  type TypeContext (UnionMember cat) = TypeSystemElement
+  type TypeContext (UnionMember cat) = TypeEntity
   typeCheck UnionMember {..} = pure UnionMember {..}

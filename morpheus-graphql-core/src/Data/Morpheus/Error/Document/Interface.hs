@@ -8,7 +8,7 @@ module Data.Morpheus.Error.Document.Interface
     ImplementsError (..),
     partialImplements,
     Field (..),
-    TypeSystemElement (..),
+    TypeEntity (..),
     inArgument,
     inField,
     inInterface,
@@ -36,29 +36,26 @@ unknownInterface name = "Unknown Interface " <> msgValidation name <> "."
 
 inInterface ::
   TypeName ->
-  SchemaValidator TypeSystemElement v ->
-  SchemaValidator TypeSystemElement v
-inInterface interfaceName = withLocalContext replace
-  where
-    replace (Interface _ t) = Interface interfaceName t
-    replace (Type t) = Interface interfaceName t
+  SchemaValidator TypeEntity v ->
+  SchemaValidator TypeEntity v
+inInterface name = withLocalContext (\t -> t {interfaceName = Just name})
 
 inType ::
   TypeName ->
-  SchemaValidator TypeSystemElement v ->
+  SchemaValidator TypeEntity v ->
   SchemaValidator () v
-inType name = withLocalContext (const (Type name))
+inType name = withLocalContext (const (TypeEntity Nothing name))
 
 into ::
-  TypeSystemElement ->
-  SchemaValidator TypeSystemElement v ->
+  TypeEntity ->
+  SchemaValidator TypeEntity v ->
   SchemaValidator () v
 into = withLocalContext . const
 
 inField ::
   FieldName ->
   SchemaValidator Field v ->
-  SchemaValidator TypeSystemElement v
+  SchemaValidator TypeEntity v
 inField fname = withLocalContext (Field fname Nothing)
 
 inArgument ::
@@ -67,17 +64,15 @@ inArgument ::
   SchemaValidator Field v
 inArgument aname = withLocalContext (\field -> field {fieldArgument = Just aname})
 
-data TypeSystemElement
-  = Interface
-      { interfaceName :: TypeName,
-        typeName :: TypeName
-      }
-  | Type TypeName
+data TypeEntity = TypeEntity
+  { interfaceName :: Maybe TypeName,
+    typeName :: TypeName
+  }
 
 data Field = Field
   { fieldName :: FieldName,
     fieldArgument :: Maybe FieldName,
-    fieldOf :: TypeSystemElement
+    fieldOf :: TypeEntity
   }
 
 data ImplementsError
@@ -88,14 +83,14 @@ data ImplementsError
   | Missing
 
 partialImplements :: Field -> ImplementsError -> ValidationError
-partialImplements (Field fieldName argName (Interface interfaceName typename)) errorType =
+partialImplements (Field fieldName argName (TypeEntity (Just interfaceName) typename)) errorType =
   "Interface field " <> maybe "" (const "argument ") argName
     <> renderField interfaceName fieldName argName
     <> detailedMessageGen
       (renderField typename fieldName argName)
       (maybe (msgValidation typename) (const $ renderField typename fieldName Nothing) argName)
       errorType
-partialImplements (Field fieldname argName Type {}) errorType = undefined
+partialImplements (Field fieldname argName _) errorType = undefined
 
 -- Interface field TestInterface.name expected but User does not provide it.
 -- Interface field TestInterface.name expects type String! but User.name is type Int!.

@@ -11,7 +11,7 @@ where
 import Data.Morpheus.Error.Document.Interface
   ( Field (..),
     ImplementsError (..),
-    TypeSystemElement (..),
+    TypeEntity (..),
     inArgument,
     inField,
     inInterface,
@@ -49,7 +49,7 @@ import Relude hiding (empty, local)
 validateImplements ::
   [TypeName] ->
   FieldsDefinition OUT CONST ->
-  SchemaValidator TypeSystemElement [TypeName]
+  SchemaValidator TypeEntity [TypeName]
 validateImplements objectImplements objectFields =
   ( traverse selectInterface objectImplements
       >>= traverse_ (mustBeSubset objectFields)
@@ -65,7 +65,7 @@ selectInterface = selectType >=> constraintInterface
 mustBeSubset ::
   FieldsDefinition OUT CONST ->
   (TypeName, FieldsDefinition OUT CONST) ->
-  SchemaValidator TypeSystemElement ()
+  SchemaValidator TypeEntity ()
 mustBeSubset objFields (typeName, fields) =
   inInterface typeName $
     traverse_ (checkInterfaceField objFields) fields
@@ -73,7 +73,7 @@ mustBeSubset objFields (typeName, fields) =
 checkInterfaceField ::
   FieldsDefinition OUT CONST ->
   FieldDefinition OUT CONST ->
-  SchemaValidator TypeSystemElement ()
+  SchemaValidator TypeEntity ()
 checkInterfaceField
   objFields
   interfaceField@FieldDefinition
