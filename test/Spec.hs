@@ -28,6 +28,9 @@ import qualified Feature.Schema.API as Schema
   )
 import qualified Feature.TypeCategoryCollision.Fail.API as TypeCategoryCollisionFail
 import qualified Feature.TypeCategoryCollision.Success.API as TypeCategoryCollisionSuccess
+import qualified Feature.TypeGuards.API as TypeGuards
+  ( api,
+  )
 import qualified Feature.TypeInference.API as Inference
   ( api,
   )
@@ -57,6 +60,7 @@ main = do
   inputObject <- testFeature InputObject.api "Feature/Input/Object"
   defaultValue <- testFeature DefaultValue.api "Feature/Input/DefaultValue"
   inference <- testFeature Inference.api "Feature/TypeInference"
+  typeGuards <- testFeature TypeGuards.api "Feature/TypeGuards"
   subscription <- testSubsriptions
   typecatColisionFail <- testFeature TypeCategoryCollisionFail.api "Feature/TypeCategoryCollision/Fail"
   typecatColisionSuccess <- testFeature TypeCategoryCollisionSuccess.api "Feature/TypeCategoryCollision/Success"
@@ -73,6 +77,7 @@ main = do
           inputObject,
           testSchemaRendering,
           inference,
+          typeGuards,
           subscription,
           defaultValue,
           typecatColisionFail,

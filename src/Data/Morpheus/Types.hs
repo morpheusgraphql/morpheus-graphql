@@ -57,6 +57,7 @@ module Data.Morpheus.Types
     RenderGQL,
     render,
     GQLTypeOptions (..),
+    Guard (..),
   )
 where
 
@@ -96,7 +97,7 @@ import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     GQLTypeOptions (..),
   )
-import Data.Morpheus.Server.Types.Types (Undefined (..))
+import Data.Morpheus.Server.Types.Types
 import Data.Morpheus.Types.GQLScalar
   ( DecodeScalar (..),
     EncodeScalar (..),

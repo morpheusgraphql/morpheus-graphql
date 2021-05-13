@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -5,14 +6,14 @@
 module Data.Morpheus.Server.Types.Types
   ( Undefined (..),
     Pair (..),
-    -- MapKind (..),
-    -- mapKindFromList,
+    Guard (..),
   )
 where
 
 import GHC.Generics
   ( Generic,
   )
+import GHC.TypeLits (Symbol)
 import Prelude
   ( Show,
   )
@@ -24,3 +25,6 @@ data Pair k v = Pair
     value :: v
   }
   deriving (Generic)
+
+newtype Guard (name :: Symbol) interface union
+  = Guard union
