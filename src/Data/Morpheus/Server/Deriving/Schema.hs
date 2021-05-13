@@ -72,7 +72,8 @@ import Data.Morpheus.Server.Types.SchemaT
     withInput,
   )
 import Data.Morpheus.Server.Types.Types
-  ( Pair,
+  ( Guard,
+    Pair,
   )
 import Data.Morpheus.Types.GQLScalar
   ( DecodeScalar (..),
@@ -217,6 +218,16 @@ instance DeriveType cat (Pair k v) => DeriveKindedType cat CUSTOM (k, v) where
 -- Map
 instance DeriveType cat [Pair k v] => DeriveKindedType cat CUSTOM (Map k v) where
   deriveKindedType _ = deriveType (Proxy @[Pair k v])
+
+-- Guard TODO: real implementation
+instance
+  DeriveTypeConstraint OUT interface =>
+  DeriveKindedType OUT CUSTOM (Guard n interface u)
+  where
+  deriveKindedType _ =
+    updateByContent
+      deriveInterfaceContent
+      (KindedProxy :: KindedProxy OUT interface)
 
 instance
   ( GQLType b,

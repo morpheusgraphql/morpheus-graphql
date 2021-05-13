@@ -47,7 +47,7 @@ data ImplementsCharacter (m :: * -> *)
   | Creature {name :: Text, age :: Int}
   deriving (Generic, GQLType)
 
-type Characters m = Guard "character" Character (ImplementsCharacter m)
+type Characters m = Guard "Character" Character (ImplementsCharacter m)
 
 newtype Query (m :: * -> *) = Query
   { characters :: [Characters m]
