@@ -9,6 +9,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Types.GQLType
@@ -55,7 +56,8 @@ import Data.Morpheus.Server.Types.SchemaT
     TypeFingerprint (..),
   )
 import Data.Morpheus.Server.Types.Types
-  ( Pair,
+  ( Guard,
+    Pair,
     Undefined (..),
   )
 import Data.Morpheus.Types.ID (ID)
@@ -89,6 +91,7 @@ import Data.Typeable
     typeRep,
     typeRepTyCon,
   )
+import GHC.TypeLits (KnownSymbol, symbolVal)
 import Relude hiding (Undefined, intercalate)
 
 data TypeData = TypeData
@@ -258,6 +261,21 @@ instance GQLType ()
 instance Typeable m => GQLType (Undefined m) where
   type KIND (Undefined m) = WRAPPER
   __isEmptyType _ = True
+
+instance
+  ( KnownSymbol name
+  ) =>
+  GQLType (Guard name interface union)
+  where
+  type KIND (Guard name interface union) = CUSTOM
+  __type _ _ =
+    TypeData
+      { gqlTypeName = typename,
+        gqlFingerprint = InternalFingerprint typename,
+        gqlWrappers = mkBaseType
+      }
+    where
+      typename = TypeName $ pack $ symbolVal $ Proxy @name
 
 instance GQLType a => GQLType (Maybe a) where
   type KIND (Maybe a) = WRAPPER
