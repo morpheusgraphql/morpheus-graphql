@@ -2,7 +2,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -39,9 +38,6 @@ data Deity (m :: * -> *) = Deity
   }
   deriving (Generic, GQLType)
 
-deityRes :: Deity m
-deityRes = Deity {name = "Morpheus", power = "Shapeshift"}
-
 data ImplementsCharacter (m :: * -> *)
   = ImplementsDeity (Deity m)
   | Creature {name :: Text, age :: Int}
@@ -56,9 +52,19 @@ newtype Query (m :: * -> *) = Query
 
 resolveCharacters :: [Characters m]
 resolveCharacters =
-  [ Guard (ImplementsDeity deityRes),
-    Guard (Creature {name = "Lamia", age = 205})
-  ]
+  Guard
+    <$> [ ImplementsDeity
+            ( Deity
+                { name = "Morpheus",
+                  age = 2000,
+                  power = "Shapeshift"
+                }
+            ),
+          Creature
+            { name = "Lamia",
+              age = 205
+            }
+        ]
 
 rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =

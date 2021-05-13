@@ -1,7 +1,5 @@
 {
   "data": {
-    "object": "MonsterHydra (Hydra {name = \"someName\", age = 12})",
-    "record": "Cerberus {name = \"someName\"}",
-    "enum": "UnidentifiedMonster"
+    "characters": []
   }
 }
