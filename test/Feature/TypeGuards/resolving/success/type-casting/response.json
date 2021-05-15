@@ -1,5 +1,17 @@
 {
   "data": {
-    "characters": []
+    "characters": [
+      {
+        "__typename": "Deity",
+        "name": "Morpheus",
+        "power": "Shapeshift",
+        "age": 2000
+      },
+      {
+        "__typename": "Creature",
+        "name": "Lamia",
+        "age": 205
+      }
+    ]
   }
 }

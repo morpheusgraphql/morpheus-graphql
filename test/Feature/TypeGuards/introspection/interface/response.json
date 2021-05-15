@@ -2,7 +2,10 @@
   "data": {
     "__type": {
       "kind": "INTERFACE",
-      "possibleTypes": [],
+      "possibleTypes": [
+        { "kind": "OBJECT", "ofType": null, "name": "Deity" },
+        { "kind": "OBJECT", "ofType": null, "name": "Creature" }
+      ],
       "enumValues": null,
       "interfaces": null,
       "inputFields": null,

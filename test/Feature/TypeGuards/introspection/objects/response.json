@@ -5,7 +5,7 @@
       "possibleTypes": null,
       "enumValues": null,
       "interfaces": [
-        { "kind": "INTERFACE", "name": "Characters", "ofType": null }
+        { "kind": "INTERFACE", "ofType": null, "name": "Character" }
       ],
       "inputFields": null,
       "fields": [
@@ -50,7 +50,7 @@
       "possibleTypes": null,
       "enumValues": null,
       "interfaces": [
-        { "kind": "INTERFACE", "name": "Characters", "ofType": null }
+        { "kind": "INTERFACE", "ofType": null, "name": "Character" }
       ],
       "inputFields": null,
       "fields": [
