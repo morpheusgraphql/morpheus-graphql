@@ -142,7 +142,7 @@ joinClusters ::
   FragmentValidator s (SelectionContent VALID)
 joinClusters selSet =
   traverse joinCluster
-    >=> fmap UnionSelection . fromElems
+    >=> fmap (UnionSelection selSet) . fromElems
   where
     joinCluster (typeName, fragments) = UnionTag typeName <$> join (selSet : fragments)
 

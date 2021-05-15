@@ -106,9 +106,8 @@ toSchema ::
 toSchema (SchemaT v) = do
   ((q, m, s), typeDefs) <- v
   (typeDefinitions, implements) <- execUpdates (Map.empty, Map.empty) typeDefs
-
   types <- map (insertImplements implements) <$> checkTypeCollisions (Map.toList typeDefinitions)
-  traceShow implements $ defineSchemaWith types (optionalType q, optionalType m, optionalType s)
+  defineSchemaWith types (optionalType q, optionalType m, optionalType s)
 
 insertImplements :: Map TypeName [TypeName] -> TypeDefinition c CONST -> TypeDefinition c CONST
 insertImplements x TypeDefinition {typeContent = DataObject {..}, ..} =

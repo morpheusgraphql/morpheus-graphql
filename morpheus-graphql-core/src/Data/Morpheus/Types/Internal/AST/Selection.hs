@@ -121,7 +121,7 @@ type Fragments (s :: Stage) = OrdMap FieldName (Fragment s)
 data SelectionContent (s :: Stage) where
   SelectionField :: SelectionContent s
   SelectionSet :: SelectionSet s -> SelectionContent s
-  UnionSelection :: UnionSelection VALID -> SelectionContent VALID
+  UnionSelection :: SelectionSet VALID -> UnionSelection VALID -> SelectionContent VALID
 
 renderSelectionSet :: SelectionSet VALID -> Rendering
 renderSelectionSet = renderObject . elems
@@ -129,7 +129,8 @@ renderSelectionSet = renderObject . elems
 instance RenderGQL (SelectionContent VALID) where
   renderGQL SelectionField = ""
   renderGQL (SelectionSet selSet) = renderSelectionSet selSet
-  renderGQL (UnionSelection unionSets) = renderObject (elems unionSets)
+  -- TODO: render interface fields
+  renderGQL (UnionSelection interfaceFields unionSets) = renderObject (elems unionSets)
 
 instance
   ( Monad m,
@@ -139,7 +140,7 @@ instance
   SemigroupM m (SelectionContent s)
   where
   mergeM path (SelectionSet s1) (SelectionSet s2) = SelectionSet <$> mergeM path s1 s2
-  mergeM path (UnionSelection u1) (UnionSelection u2) = UnionSelection <$> mergeM path u1 u2
+  mergeM path (UnionSelection m1 u1) (UnionSelection m2 u2) = UnionSelection <$> mergeM path m1 m2 <*> mergeM path u1 u2
   mergeM path oldC currentC
     | oldC == currentC = pure oldC
     | otherwise =
