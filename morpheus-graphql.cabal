@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e598c0357da50ef616b0f59cebcc47ce4475f6548d500e79cd75172d4830a554
+-- hash: cbbda27e31715667f4a5269d1e74d1d52454941fbfe78d4fab53a9d25a6377c0
 
 name:           morpheus-graphql
 version:        0.17.0
@@ -170,9 +170,11 @@ data-files:
     test/Feature/Schema/nameCollision/query.gql
     test/Feature/TypeCategoryCollision/Fail/failOnColision/query.gql
     test/Feature/TypeCategoryCollision/Success/prefixed/query.gql
-    test/Feature/TypeGuards/introspection/query.gql
+    test/Feature/TypeGuards/introspection/interface/query.gql
+    test/Feature/TypeGuards/introspection/objects/query.gql
     test/Feature/TypeGuards/resolving/fail/query.gql
-    test/Feature/TypeGuards/resolving/success/query.gql
+    test/Feature/TypeGuards/resolving/success/interface-fields/query.gql
+    test/Feature/TypeGuards/resolving/success/type-casting/query.gql
     test/Feature/TypeInference/introspection/enum/query.gql
     test/Feature/TypeInference/introspection/input-union/empty/query.gql
     test/Feature/TypeInference/introspection/input-union/input-union/query.gql
@@ -372,9 +374,11 @@ data-files:
     test/Feature/TypeCategoryCollision/Success/cases.json
     test/Feature/TypeCategoryCollision/Success/prefixed/response.json
     test/Feature/TypeGuards/cases.json
-    test/Feature/TypeGuards/introspection/response.json
+    test/Feature/TypeGuards/introspection/interface/response.json
+    test/Feature/TypeGuards/introspection/objects/response.json
     test/Feature/TypeGuards/resolving/fail/response.json
-    test/Feature/TypeGuards/resolving/success/response.json
+    test/Feature/TypeGuards/resolving/success/interface-fields/response.json
+    test/Feature/TypeGuards/resolving/success/type-casting/response.json
     test/Feature/TypeInference/cases.json
     test/Feature/TypeInference/introspection/enum/response.json
     test/Feature/TypeInference/introspection/input-union/empty/response.json

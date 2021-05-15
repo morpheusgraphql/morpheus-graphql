@@ -1,6 +1,10 @@
 [
   {
-    "path": "introspection",
+    "path": "introspection/interface",
+    "description": "TODO:"
+  },
+  {
+    "path": "introspection/objects",
     "description": "TODO:"
   },
   {
@@ -8,7 +12,11 @@
     "description": "TODO:"
   },
   {
-    "path": "resolving/success",
+    "path": "resolving/success/interface-fields",
+    "description": "TODO:"
+  },
+  {
+    "path": "resolving/success/type-casting",
     "description": "TODO:"
   }
 ]
