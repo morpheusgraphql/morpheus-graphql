@@ -201,13 +201,15 @@ __encode obj sel@Selection {selectionContent} = encodeNode obj selectionContent
       unionRef >>= resolveObject currentSelection
       where
         currentSelection = pickSelection typename selections
-    encodeNode (ResUnion name _) _ =
-      failure ("union Resolver " <> msg name <> " should only recieve UnionSelection")
+    encodeNode (ResUnion _ unionRef) (SelectionSet selection) =
+      unionRef >>= resolveObject selection
+    encodeNode (ResUnion name _) SelectionField =
+      failure ("union Resolver " <> msg name <> " cant resolve  SelectionField")
     -- SCALARS
     encodeNode ResNull _ = pure Null
     encodeNode (ResScalar x) SelectionField = pure $ Scalar x
     encodeNode ResScalar {} _ =
-      failure ("scalar Resolver should only recieve SelectionField" :: Message)
+      failure ("scalar Resolver should only receive SelectionField" :: Message)
 
 runDataResolver ::
   ( Monad m,

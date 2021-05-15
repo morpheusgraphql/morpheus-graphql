@@ -133,7 +133,7 @@ injectResult ::
 injectResult (ResultT (Identity x)) =
   cleanEvents $ ResultT (pure x)
 
--- clear evets and starts new resolver with diferenct type of events but with same value
+-- clear events and starts new resolver with different type of events but with same value
 -- use properly. only if you know what you are doing
 clearStateResolverEvents :: (Functor m) => ResolverStateT e m a -> ResolverStateT e' m a
 clearStateResolverEvents = mapResolverState cleanEvents
