@@ -4,6 +4,8 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -11,6 +13,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# OPTIONS_GHC -Wno-unused-imports #-}
 
 module Data.Morpheus.Server.Deriving.Schema
   ( compileTimeSchemaValidation,
@@ -99,6 +102,8 @@ import Data.Morpheus.Types.Internal.AST
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
+    UnionMember (memberName),
+    ValidationError,
     fieldsToArguments,
   )
 import Data.Morpheus.Utils.Kinded
@@ -112,6 +117,7 @@ import Data.Morpheus.Utils.Kinded
 import Data.Proxy (Proxy (..))
 import GHC.Generics (Generic, Rep)
 import Language.Haskell.TH (Exp, Q)
+import Relude
 import Prelude
   ( ($),
     (.),
@@ -221,13 +227,20 @@ instance DeriveType cat [Pair k v] => DeriveKindedType cat CUSTOM (Map k v) wher
 
 -- Guard TODO: real implementation
 instance
-  DeriveTypeConstraint OUT interface =>
-  DeriveKindedType OUT CUSTOM (Guard n interface u)
+  ( DeriveTypeConstraint OUT interface,
+    DeriveTypeConstraint OUT union
+  ) =>
+  DeriveKindedType OUT CUSTOM (Guard n interface union)
   where
-  deriveKindedType _ =
-    updateByContent
-      deriveInterfaceContent
-      (KindedProxy :: KindedProxy OUT interface)
+  deriveKindedType _ = do
+    updateByContent deriveInterfaceContent (KindedProxy :: KindedProxy OUT interface)
+    content <- deriveTypeContent (OutputType :: KindedType OUT union)
+    x <- transform content
+    pure (traceShow x ())
+    where
+      transform :: TypeContent TRUE OUT CONST -> SchemaT OUT [TypeName]
+      transform DataUnion {unionMembers} = pure (memberName <$> unionMembers)
+      transform _ = failure ["guarded type must be an union" :: ValidationError]
 
 instance
   ( GQLType b,

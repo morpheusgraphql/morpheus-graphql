@@ -1,10 +1,57 @@
 {
   "data": {
-    "__type": {
-      "kind": "INTERFACE",
-      "possibleTypes": [],
+    "deity": {
+      "kind": "OBJECT",
+      "possibleTypes": null,
       "enumValues": null,
-      "interfaces": null,
+      "interfaces": [
+        { "kind": "INTERFACE", "name": "Characters", "ofType": null }
+      ],
+      "inputFields": null,
+      "fields": [
+        {
+          "name": "name",
+          "deprecationReason": null,
+          "isDeprecated": false,
+          "type": {
+            "kind": "NON_NULL",
+            "ofType": { "kind": "SCALAR", "ofType": null, "name": "String" },
+            "name": null
+          },
+          "args": []
+        },
+        {
+          "name": "age",
+          "deprecationReason": null,
+          "isDeprecated": false,
+          "type": {
+            "kind": "NON_NULL",
+            "ofType": { "kind": "SCALAR", "ofType": null, "name": "Int" },
+            "name": null
+          },
+          "args": []
+        },
+        {
+          "name": "power",
+          "deprecationReason": null,
+          "isDeprecated": false,
+          "type": {
+            "kind": "NON_NULL",
+            "ofType": { "kind": "SCALAR", "ofType": null, "name": "String" },
+            "name": null
+          },
+          "args": []
+        }
+      ],
+      "name": "Deity"
+    },
+    "creature": {
+      "kind": "OBJECT",
+      "possibleTypes": null,
+      "enumValues": null,
+      "interfaces": [
+        { "kind": "INTERFACE", "name": "Characters", "ofType": null }
+      ],
       "inputFields": null,
       "fields": [
         {
@@ -30,7 +77,7 @@
           "args": []
         }
       ],
-      "name": "Character"
+      "name": "Creature"
     }
   }
 }
