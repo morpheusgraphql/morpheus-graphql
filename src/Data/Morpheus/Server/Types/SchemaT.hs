@@ -20,6 +20,7 @@ module Data.Morpheus.Server.Types.SchemaT
     toSchema,
     withInput,
     withInterface,
+    extendImplements,
   )
 where
 
@@ -60,7 +61,7 @@ data TypeFingerprint
       Ord
     )
 
-type MyMap = Map TypeFingerprint (TypeDefinition ANY CONST)
+type MyMap = (Map TypeFingerprint (TypeDefinition ANY CONST), Map TypeName [TypeName])
 
 -- Helper Functions
 newtype SchemaT (cat :: TypeCategory) a = SchemaT
@@ -103,10 +104,9 @@ toSchema ::
   Eventless (Schema CONST)
 toSchema (SchemaT v) = do
   ((q, m, s), typeDefs) <- v
-  types <-
-    execUpdates Map.empty typeDefs
-      >>= checkTypeCollisions . Map.toList
-  defineSchemaWith types (optionalType q, optionalType m, optionalType s)
+  (typeDefinitions, implementConnections) <- execUpdates (Map.empty, Map.empty) typeDefs
+  types <- checkTypeCollisions (Map.toList typeDefinitions)
+  traceShow implementConnections defineSchemaWith types (optionalType q, optionalType m, optionalType s)
 
 withInput :: SchemaT IN a -> SchemaT OUT a
 withInput (SchemaT x) = SchemaT x
@@ -164,8 +164,16 @@ updateSchema fingerprint f x =
   SchemaT $ pure ((), [upLib])
   where
     upLib :: MyMap -> Eventless MyMap
-    upLib lib
-      | Map.member fingerprint lib = pure lib
+    upLib (lib, conn)
+      | Map.member fingerprint lib = pure (lib, conn)
       | otherwise = do
         (type', updates) <- runSchemaT (f x)
-        execUpdates lib ((pure . Map.insert fingerprint (toAny type')) : updates)
+        execUpdates (lib, conn) (update type' : updates)
+      where
+        update t (ts, c) = pure (Map.insert fingerprint (toAny t) ts, c)
+
+extendImplements :: TypeName -> [TypeName] -> SchemaT cat' ()
+extendImplements interface types = SchemaT $ pure ((), [upLib])
+  where
+    upLib :: MyMap -> Eventless MyMap
+    upLib (lib, con) = pure (lib, Map.insert interface types con)

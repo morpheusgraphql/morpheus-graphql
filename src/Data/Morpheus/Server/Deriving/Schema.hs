@@ -71,6 +71,7 @@ import Data.Morpheus.Server.Types.GQLType
   )
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
+    extendImplements,
     toSchema,
     withInput,
   )
@@ -235,8 +236,8 @@ instance
   deriveKindedType _ = do
     updateByContent deriveInterfaceContent (KindedProxy :: KindedProxy OUT interface)
     content <- deriveTypeContent (OutputType :: KindedType OUT union)
-    x <- transform content
-    pure (traceShow x ())
+    unionNames <- transform content
+    extendImplements "Characters" unionNames
     where
       transform :: TypeContent TRUE OUT CONST -> SchemaT OUT [TypeName]
       transform DataUnion {unionMembers} = pure (memberName <$> unionMembers)
