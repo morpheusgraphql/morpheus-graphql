@@ -165,7 +165,7 @@ subTypesBySelection _ dType Selection {selectionContent = SelectionField} =
   leafType dType
 subTypesBySelection path dType Selection {selectionContent = SelectionSet selectionSet} =
   genRecordType path (typeFrom [] dType) dType selectionSet
-subTypesBySelection path dType Selection {selectionContent = UnionSelection unionSelections} =
+subTypesBySelection path dType Selection {selectionContent = UnionSelection interface unionSelections} =
   do
     (clientCons, subTypes, requests) <-
       unzip3 <$> traverse getUnionType (elems unionSelections)
