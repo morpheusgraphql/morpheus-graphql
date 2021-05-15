@@ -8,6 +8,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -104,9 +105,25 @@ toSchema ::
   Eventless (Schema CONST)
 toSchema (SchemaT v) = do
   ((q, m, s), typeDefs) <- v
-  (typeDefinitions, implementConnections) <- execUpdates (Map.empty, Map.empty) typeDefs
-  types <- checkTypeCollisions (Map.toList typeDefinitions)
-  traceShow implementConnections defineSchemaWith types (optionalType q, optionalType m, optionalType s)
+  (typeDefinitions, implements) <- execUpdates (Map.empty, Map.empty) typeDefs
+
+  types <- map (insertImplements implements) <$> checkTypeCollisions (Map.toList typeDefinitions)
+  traceShow implements $ defineSchemaWith types (optionalType q, optionalType m, optionalType s)
+
+insertImplements :: Map TypeName [TypeName] -> TypeDefinition c CONST -> TypeDefinition c CONST
+insertImplements x TypeDefinition {typeContent = DataObject {..}, ..} =
+  TypeDefinition
+    { typeContent =
+        DataObject
+          { objectImplements = objectImplements <> implements,
+            ..
+          },
+      ..
+    }
+  where
+    implements :: [TypeName]
+    implements = Map.findWithDefault [] typeName x
+insertImplements _ t = t
 
 withInput :: SchemaT IN a -> SchemaT OUT a
 withInput (SchemaT x) = SchemaT x
@@ -175,5 +192,8 @@ updateSchema fingerprint f x =
 extendImplements :: TypeName -> [TypeName] -> SchemaT cat' ()
 extendImplements interface types = SchemaT $ pure ((), [upLib])
   where
+    -- TODO: what happens if interface name collides?
     upLib :: MyMap -> Eventless MyMap
-    upLib (lib, con) = pure (lib, Map.insert interface types con)
+    upLib (lib, con) = pure (lib, foldr insertInterface con types)
+    insertInterface :: TypeName -> Map TypeName [TypeName] -> Map TypeName [TypeName]
+    insertInterface = Map.alter (Just . (interface :) . fromMaybe [])

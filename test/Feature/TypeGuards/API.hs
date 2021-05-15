@@ -38,12 +38,12 @@ data Deity (m :: * -> *) = Deity
   }
   deriving (Generic, GQLType)
 
-data ImplementsCharacter (m :: * -> *)
+data Implements (m :: * -> *)
   = ImplementsDeity (Deity m)
   | Creature {name :: Text, age :: Int}
   deriving (Generic, GQLType)
 
-type Characters m = Guard "Character" Character (ImplementsCharacter m)
+type Characters m = Guard "Character" Character (Implements m)
 
 newtype Query (m :: * -> *) = Query
   { characters :: [Characters m]

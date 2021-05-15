@@ -234,11 +234,13 @@ instance
   DeriveKindedType OUT CUSTOM (Guard n interface union)
   where
   deriveKindedType _ = do
-    updateByContent deriveInterfaceContent (KindedProxy :: KindedProxy OUT interface)
+    updateByContent deriveInterfaceContent interfaceProxy
     content <- deriveTypeContent (OutputType :: KindedType OUT union)
     unionNames <- transform content
-    extendImplements "Characters" unionNames
+    extendImplements (gqlTypeName (__typeData interfaceProxy)) unionNames
     where
+      interfaceProxy :: KindedProxy OUT interface
+      interfaceProxy = KindedProxy
       transform :: TypeContent TRUE OUT CONST -> SchemaT OUT [TypeName]
       transform DataUnion {unionMembers} = pure (memberName <$> unionMembers)
       transform _ = failure ["guarded type must be an union" :: ValidationError]
