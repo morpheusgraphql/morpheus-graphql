@@ -36,7 +36,6 @@ import Data.Morpheus.App.Internal.Resolving
 import Data.Morpheus.Kind
   ( CUSTOM,
     DerivingKind,
-    INTERFACE,
     SCALAR,
     TYPE,
     WRAPPER,
@@ -120,14 +119,6 @@ instance
     Monad m
   ) =>
   EncodeKind TYPE m a
-  where
-  encodeKind = pure . exploreResolvers . unContextValue
-
-instance
-  ( EncodeConstraint m a,
-    Monad m
-  ) =>
-  EncodeKind INTERFACE m a
   where
   encodeKind = pure . exploreResolvers . unContextValue
 

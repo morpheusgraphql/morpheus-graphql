@@ -206,9 +206,6 @@ instance (GQLType a, DeriveType cat a) => DeriveKindedType cat WRAPPER (f a) whe
 instance (GQLType a, DecodeScalar a) => DeriveKindedType cat SCALAR a where
   deriveKindedType = updateByContent deriveScalarContent . setKind (Proxy @LEAF)
 
-instance DeriveTypeConstraint OUT a => DeriveKindedType OUT INTERFACE a where
-  deriveKindedType = updateByContent deriveInterfaceContent . setKind (Proxy @OUT)
-
 instance DeriveTypeConstraint OUT a => DeriveKindedType OUT TYPE a where
   deriveKindedType = deriveOutputType
 

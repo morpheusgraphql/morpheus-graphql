@@ -60,7 +60,6 @@ import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
     insertType,
     updateSchema,
-    withInterface,
   )
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
@@ -149,13 +148,8 @@ builder ::
   KindedType kind a ->
   [ConsRep (TyContent kind)] ->
   SchemaT cat (TypeContent TRUE kind CONST)
-builder scope [ConsRep {consFields}] = buildObj <$> withInterface (sequence (implements scope))
-  where
-    buildObj interfaces = wrapFields interfaces scope (mkFieldsDefinition consFields)
-builder scope cons = genericUnion cons
-  where
-    typeData = __typeData scope
-    genericUnion = mkUnionType scope . analyseRep (gqlTypeName typeData)
+builder scope [ConsRep {consFields}] = pure $ wrapFields [] scope (mkFieldsDefinition consFields)
+builder scope cons = mkUnionType scope $ analyseRep (gqlTypeName (__typeData scope)) cons
 
 class UpdateDef value where
   updateDef :: GQLType a => f a -> value -> value

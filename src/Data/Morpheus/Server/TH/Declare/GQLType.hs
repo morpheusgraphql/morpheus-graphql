@@ -25,7 +25,6 @@ import Data.Maybe (Maybe (..), maybe)
 import Data.Morpheus.Internal.TH
   ( apply,
     applyVars,
-    toName,
     typeInstanceDec,
   )
 import Data.Morpheus.Internal.Utils
@@ -47,10 +46,8 @@ import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     GQLTypeOptions (..),
   )
-import Data.Morpheus.Types (Resolver, interface)
 import Data.Morpheus.Types.Internal.AST
-  ( ANY,
-    ArgumentsDefinition,
+  ( ArgumentsDefinition,
     DataEnumValue (..),
     Description,
     Directives,
@@ -60,7 +57,6 @@ import Data.Morpheus.Types.Internal.AST
     FieldsDefinition,
     IN,
     OUT,
-    QUERY,
     TRUE,
     Token,
     TypeContent (..),
@@ -69,7 +65,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeName (..),
     Value,
   )
-import Data.Proxy (Proxy (..))
 import Language.Haskell.TH
 import Prelude
   ( ($),
@@ -79,12 +74,6 @@ import Prelude
     null,
     otherwise,
   )
-
-interfaceF :: Name -> ExpQ
-interfaceF name = [|interface (Proxy :: (Proxy ($(conT name) (Resolver QUERY () Maybe))))|]
-
-introspectInterface :: TypeName -> ExpQ
-introspectInterface = interfaceF . toName
 
 dropNamespaceOptions :: TypeKind -> TypeName -> GQLTypeOptions -> GQLTypeOptions
 dropNamespaceOptions KindEnum tName opt = opt {constructorTagModifier = stripConstructorNamespace tName}
@@ -99,7 +88,6 @@ deriveGQLType
       functions =
         funDProxy
           [ ('description, [|tDescription|]),
-            ('implements, implementsFunc),
             ('typeOptions, typeOptionsFunc),
             ('getDescriptions, fieldDescriptionsFunc),
             ('getDirectives, fieldDirectivesFunc),
@@ -107,7 +95,6 @@ deriveGQLType
           ]
         where
           tDescription = typeOriginal >>= typeDescription
-          implementsFunc = listE $ fmap introspectInterface (interfacesFrom typeOriginal)
           typeOptionsFunc
             | namespace = [|dropNamespaceOptions tKind tName|]
             | otherwise = [|id|]
@@ -138,10 +125,6 @@ deriveGQLType
           deriveInstance insName tyName = do
             typeN <- headSig
             pure $ typeInstanceDec insName typeN (ConT tyName)
-
-interfacesFrom :: Maybe (TypeDefinition ANY s) -> [TypeName]
-interfacesFrom (Just TypeDefinition {typeContent = DataObject {objectImplements}}) = objectImplements
-interfacesFrom _ = []
 
 fmapFieldValues :: (FieldDefinition IN s -> Maybe a) -> (FieldDefinition OUT s -> Maybe a) -> Maybe (TypeDefinition c s) -> Map FieldName a
 fmapFieldValues f g = maybe empty (collectFieldValues f g)

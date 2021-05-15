@@ -15,7 +15,6 @@
 module Data.Morpheus.Server.Types.GQLType
   ( GQLType
       ( KIND,
-        implements,
         description,
         getDescriptions,
         typeOptions,
@@ -52,8 +51,7 @@ import Data.Morpheus.Kind
     toValue,
   )
 import Data.Morpheus.Server.Types.SchemaT
-  ( SchemaT,
-    TypeFingerprint (..),
+  ( TypeFingerprint (..),
   )
 import Data.Morpheus.Server.Types.Types
   ( Guard,
@@ -67,7 +65,6 @@ import Data.Morpheus.Types.Internal.AST
     Description,
     Directives,
     FieldName,
-    OUT,
     QUERY,
     TypeCategory (..),
     TypeName (..),
@@ -197,9 +194,6 @@ __isObjectKind _ = isObject $ toValue (Proxy @(KIND a))
 class ToValue (KIND a) => GQLType a where
   type KIND a :: DerivingKind
   type KIND a = TYPE
-
-  implements :: f a -> [SchemaT OUT TypeName]
-  implements _ = []
 
   description :: f a -> Maybe Text
   description _ = Nothing

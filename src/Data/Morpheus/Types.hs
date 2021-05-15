@@ -10,7 +10,7 @@
 
 -- | GQL Types
 module Data.Morpheus.Types
-  ( GQLType (KIND, description, implements, getDescriptions, typeOptions, getDirectives),
+  ( GQLType (KIND, description, getDescriptions, typeOptions, getDirectives),
     EncodeScalar (..),
     EncodeWrapper (..),
     DecodeScalar (..),

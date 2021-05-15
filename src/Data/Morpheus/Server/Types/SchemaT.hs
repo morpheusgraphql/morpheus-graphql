@@ -20,7 +20,6 @@ module Data.Morpheus.Server.Types.SchemaT
     TypeFingerprint (..),
     toSchema,
     withInput,
-    withInterface,
     extendImplements,
   )
 where
@@ -126,9 +125,6 @@ insertImplements _ t = t
 
 withInput :: SchemaT IN a -> SchemaT OUT a
 withInput (SchemaT x) = SchemaT x
-
-withInterface :: SchemaT OUT a -> SchemaT ct a
-withInterface (SchemaT x) = SchemaT x
 
 checkTypeCollisions :: [(TypeFingerprint, TypeDefinition k a)] -> Eventless [TypeDefinition k a]
 checkTypeCollisions = fmap Map.elems . foldlM collectTypes Map.empty
