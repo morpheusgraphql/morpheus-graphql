@@ -150,6 +150,7 @@ module Data.Morpheus.Types.Internal.AST
     unitTypeName,
     mkBaseType,
     mkMaybeType,
+    isPossibleInterfaceType,
   )
 where
 

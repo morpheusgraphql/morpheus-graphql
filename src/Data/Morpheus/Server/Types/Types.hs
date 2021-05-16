@@ -13,7 +13,6 @@ where
 import GHC.Generics
   ( Generic,
   )
-import GHC.TypeLits (Symbol)
 import Prelude
   ( Show,
   )
@@ -26,5 +25,5 @@ data Pair k v = Pair
   }
   deriving (Generic)
 
-newtype Guard (name :: Symbol) interface union
+newtype Guard interface union
   = Guard union

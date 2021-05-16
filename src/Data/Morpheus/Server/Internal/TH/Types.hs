@@ -11,13 +11,15 @@ module Data.Morpheus.Server.Internal.TH.Types
 where
 
 import Data.Morpheus.Types.Internal.AST
-  ( ANY,
+  ( ArgumentsDefinition,
     ConsD (..),
+    Description,
+    Directives,
     FieldDefinition,
-    IN,
-    TypeDefinition,
+    FieldName,
     TypeKind,
     TypeName,
+    Value,
   )
 import Relude
 
@@ -34,13 +36,17 @@ toServerField = ServerFieldDefinition False Nothing
 type ServerConsD cat s = ConsD (ServerFieldDefinition cat s)
 
 --- Core
-data ServerTypeDefinition cat s = ServerTypeDefinition
-  { tName :: TypeName,
-    typeArgD :: [ServerTypeDefinition IN s],
-    tCons :: [ServerConsD cat s],
-    tKind :: TypeKind,
-    typeOriginal :: Maybe (TypeDefinition ANY s)
-  }
+data ServerTypeDefinition cat s
+  = ServerTypeDefinition
+      { tName :: TypeName,
+        tCons :: [ServerConsD cat s],
+        tKind :: TypeKind,
+        gqlTypeDescription :: Maybe Text,
+        gqlTypeDescriptions :: Map Text Description,
+        gqlTypeDirectives :: Map Text (Directives s),
+        gqlTypeFieldContents :: Map FieldName (Maybe (Value s), Maybe (ArgumentsDefinition s))
+      }
+  | ServerInterfaceDefinition TypeName TypeName TypeName
   deriving (Show)
 
 type ServerDec = Reader ServerDecContext

@@ -88,7 +88,6 @@ import Data.Typeable
     typeRep,
     typeRepTyCon,
   )
-import GHC.TypeLits (KnownSymbol, symbolVal)
 import Relude hiding (Undefined, intercalate)
 
 data TypeData = TypeData
@@ -256,20 +255,16 @@ instance Typeable m => GQLType (Undefined m) where
   type KIND (Undefined m) = WRAPPER
   __isEmptyType _ = True
 
-instance
-  ( KnownSymbol name
-  ) =>
-  GQLType (Guard name interface union)
-  where
-  type KIND (Guard name interface union) = CUSTOM
-  __type _ _ =
+instance Typeable interface => GQLType (Guard interface union) where
+  type KIND (Guard interface union) = CUSTOM
+  __type _ cat =
     TypeData
       { gqlTypeName = typename,
         gqlFingerprint = InternalFingerprint typename,
         gqlWrappers = mkBaseType
       }
     where
-      typename = TypeName $ pack $ symbolVal $ Proxy @name
+      typename = gqlTypeName $ deriveTypeData (Proxy @interface) (const id) cat
 
 instance GQLType a => GQLType (Maybe a) where
   type KIND (Maybe a) = WRAPPER

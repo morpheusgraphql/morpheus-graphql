@@ -41,6 +41,7 @@ import Data.Morpheus.Types
   ( DecodeScalar (..),
     EncodeScalar (..),
     GQLType (..),
+    Guard (..),
     ID,
     MUTATION,
     Resolver,
@@ -102,7 +103,7 @@ instance DecodeScalar Euro where
           (round (fromIntegral x / 100 :: Double))
           (mod x 100)
       )
-  decodeScalar _ = Left "invalid currency!"
+  decodeScalar _ = Left "Invalid currency!"
 
 instance EncodeScalar Euro where
   encodeScalar (Euro x y) = Int (x * 100 + y)
@@ -147,13 +148,28 @@ root =
                 { sharedTypeName = pure "some name"
                 },
           queryTestInterface =
-            pure
-              Account
-                { accountName = pure "Value from Interface!"
-                },
+            pure $
+              map
+                Guard
+                [ AccountPossibleTypesUser user,
+                  AccountPossibleTypesCompany
+                    Company
+                      { companyName =
+                          pure "XYZ"
+                      }
+                ],
           queryTestInput = pure . pack . show
         }
     -------------------------------------------------------------
+    user =
+      User
+        { userName = pure "Test Name",
+          userEmail = pure "Test Mail",
+          userAddress = const $ lift (getDBAddress (Content 12)),
+          userOffice = constRes Nothing,
+          userHome = pure CityIDHH,
+          userEntity = pure []
+        }
     mutationResolver =
       Mutation
         { mutationCreateUser = resolveCreateUser,
@@ -248,7 +264,7 @@ getDBUser _ = do
             pure
               [ MyUnionAddress
                   Address
-                    { addressCity = pure "city",
+                    { addressCity = pure "City",
                       addressStreet = pure "street",
                       addressHouseNumber = pure 1
                     },

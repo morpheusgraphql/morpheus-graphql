@@ -21,7 +21,6 @@ import Data.Morpheus.Types
   )
 import Data.Text
   ( Text,
-    pack,
   )
 import GHC.Generics (Generic)
 
@@ -43,7 +42,7 @@ data Implements (m :: * -> *)
   | Creature {name :: Text, age :: Int}
   deriving (Generic, GQLType)
 
-type Characters m = Guard "Character" Character (Implements m)
+type Characters m = Guard Character (Implements m)
 
 newtype Query (m :: * -> *) = Query
   { characters :: [Characters m]

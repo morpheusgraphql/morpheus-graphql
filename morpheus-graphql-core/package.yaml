@@ -53,7 +53,7 @@ library:
   ghc-options: -Wall
 
 tests:
-  morpheus-test:
+  morpheus-graphql-core-test:
     main: Spec.hs
     source-dirs: test
     ghc-options: -Wall

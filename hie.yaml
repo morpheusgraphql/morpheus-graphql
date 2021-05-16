@@ -2,25 +2,38 @@ cradle:
   stack:
     stackYaml: "./stack.yaml"
     components:
-      - path: "./morpheus-graphql-core"
+      - path: "./morpheus-graphql-core/src"
         component: "morpheus-graphql-core:lib"
-      - path: "./morpheus-graphql-core/test"
-        component: "morpheus-graphql-core:test:morpheus-test"
-      - path: "./src"
-        component: "morpheus-graphql:lib"
-      - path: "./src/test"
-        component: "morpheus-graphql:test:morpheus-test"
+
       - path: "./morpheus-graphql-app/src"
         component: "morpheus-graphql-app:lib"
+
+      - path: "./src"
+        component: "morpheus-graphql:lib"
+
+      - path: "./morpheus-graphql-client/src"
+        component: "morpheus-graphql-client:lib"
+
+      ## test
+      - path: "./morpheus-graphql-core/test"
+        component: "morpheus-graphql-core:test:morpheus-graphql-core-test"
+
+      - path: "./src/test"
+        component: "morpheus-graphql:test:morpheus-graphql-test"
+
       - path: "./morpheus-graphql-app/test"
-        component: "morpheus-graphql-app:test:morpheus-test"
+        component: "morpheus-graphql-app:test:morpheus-graphql-app-test"
+
+      - path: "./morpheus-graphql-client/test"
+        component: "morpheus-graphql-client:test:morpheus-graphql-client-test"
+
+      ## benchmarks
+
       - path: "./morpheus-graphql-benchmarks"
         component: "morpheus-graphql-benchmarks:bench:morpheus-bench"
-      - path: "./morpheus-graphql-client"
-        component: "morpheus-graphql-client:lib"
-      - path: "./morpheus-graphql-client/test"
-        component: "morpheus-graphql-client:test:morpheus-client-test"
+
       ## exe
+
       - path: "./morpheus-graphql-examples-client"
         component: "morpheus-graphql-examples-client:exe:morpheus-client-example"
       - path: "./morpheus-graphql-examples-scotty"

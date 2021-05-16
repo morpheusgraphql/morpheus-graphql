@@ -61,6 +61,10 @@ type Address {
   houseNumber: Int! @deprecated
 }
 
+type Company implements Account {
+  name: String!
+}
+
 """
 my custom description for user
 """
@@ -98,7 +102,7 @@ type Query {
   fail1: Int!
   fail2: Int!
   shared: SharedType!
-  testInterface: Account!
+  testInterface: [Account!]!
   testInput(i1: Coordinates, i2: String = "some value"): String!
 }
 

@@ -46,7 +46,7 @@ library:
   ghc-options: -Wall
 
 tests:
-  morpheus-test:
+  morpheus-graphql-test:
     main: Spec.hs
     source-dirs: test
     ghc-options: -Wall

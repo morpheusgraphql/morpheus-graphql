@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: cbbda27e31715667f4a5269d1e74d1d52454941fbfe78d4fab53a9d25a6377c0
+-- hash: 503848ee15c4129cb074d5a9ffbdb071e029c70c9405b5a6c88c97fadc5b5379
 
 name:           morpheus-graphql
 version:        0.17.0
@@ -459,7 +459,7 @@ library
     , vector >=0.12.0.1 && <0.13
   default-language: Haskell2010
 
-test-suite morpheus-test
+test-suite morpheus-graphql-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:

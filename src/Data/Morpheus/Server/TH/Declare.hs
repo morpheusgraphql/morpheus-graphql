@@ -3,6 +3,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# OPTIONS_GHC -Wno-unused-imports #-}
 
 module Data.Morpheus.Server.TH.Declare
   ( declare,
@@ -44,14 +45,6 @@ instance Declare (TypeDec s) where
   declare namespace (OutputType typeD) = declare namespace typeD
 
 instance Declare (ServerTypeDefinition cat s) where
-  declare ctx typeD@ServerTypeDefinition {typeArgD} =
-    do
-      typeDef <- declareServerType ctx typeD
-      argTypes <- traverse (declareServerType ctx) typeArgD
-      pure $ typeDef <> concat argTypes
-
-declareServerType :: ServerDecContext -> ServerTypeDefinition cat s -> Q [Dec]
-declareServerType ctx argType = do
-  typeClasses <- deriveGQLType ctx argType
-  let defs = runReader (declareType argType) ctx
-  pure (defs <> typeClasses)
+  declare ctx typeDef = do
+    typeClasses <- deriveGQLType ctx typeDef
+    pure (runReader (declareType typeDef) ctx <> typeClasses)

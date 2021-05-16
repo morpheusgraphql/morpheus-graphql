@@ -30,6 +30,7 @@ import Data.Morpheus.Types
     GQLRequest,
     GQLResponse,
     GQLType (..),
+    Guard (..),
     ID (..),
     RootResolver (..),
     ScalarValue (..),
@@ -94,9 +95,17 @@ root =
             queryTestUnion = Just . TestUnionUser <$> queryUser,
             queryPerson =
               pure
-                Person
-                  { personName = pure (Just "test Person Name")
-                  },
+                ( Guard
+                    ( PersonPossibleTypesUser
+                        User
+                          { userName = pure "test Person Name",
+                            userEmail = pure "",
+                            userAddress = resolveAddress,
+                            userOffice = resolveAddress,
+                            userFriend = pure Nothing
+                          }
+                    )
+                ),
             queryTestEnum =
               \QueryTestEnumArgs
                  { queryTestEnumArgsEnum

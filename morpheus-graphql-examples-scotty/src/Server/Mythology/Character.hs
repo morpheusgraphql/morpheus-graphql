@@ -1,9 +1,9 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Server.Mythology.Character
@@ -13,12 +13,12 @@ module Server.Mythology.Character
     someHuman,
     someDeity,
     Person,
+    PersonGuard,
+    resolvePersons,
   )
 where
 
-import Data.Morpheus.Kind (INTERFACE)
-import Data.Morpheus.Types (GQLType (..), interface)
-import Data.Proxy (Proxy (..))
+import Data.Morpheus.Types (GQLType (..), Guard (..))
 import Data.Text (Text)
 import GHC.Generics (Generic)
 import Server.Mythology.Place
@@ -27,10 +27,7 @@ import Server.Mythology.Place
   )
 
 newtype Person = Person {name :: Text}
-  deriving (Generic)
-
-instance GQLType Person where
-  type KIND Person = INTERFACE
+  deriving (Generic, GQLType)
 
 data Deity = Deity
   { name :: Text, -- Non-Nullable Field
@@ -38,15 +35,22 @@ data Deity = Deity
     realm :: Realm,
     bornAt :: Maybe City
   }
-  deriving (Generic)
-
-instance GQLType Deity where
-  implements _ = [interface (Proxy @Person)]
+  deriving (Generic, GQLType)
 
 data Human m = Human
   { name :: m Text,
     bornAt :: m City
   }
+  deriving (Generic, GQLType)
+
+type PersonGuard m = Guard Person (UnionPerson m)
+
+resolvePersons :: Applicative m => [PersonGuard m]
+resolvePersons = Guard <$> [UnionPersonDeity someDeity, UnionPersonHuman someHuman]
+
+data UnionPerson m
+  = UnionPersonDeity Deity
+  | UnionPersonHuman (Human m)
   deriving (Generic, GQLType)
 
 someHuman :: Applicative m => Human m

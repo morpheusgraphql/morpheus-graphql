@@ -27,8 +27,7 @@ import Data.Morpheus.Internal.TH
     vars,
   )
 import Data.Morpheus.Kind
-  ( INTERFACE,
-    SCALAR,
+  ( SCALAR,
     TYPE,
     WRAPPER,
   )
@@ -60,11 +59,11 @@ import Language.Haskell.TH
   )
 import Relude hiding (Type)
 
-m_ :: String
-m_ = "m"
+m_ :: Name
+m_ = mkName "m"
 
 m' :: Type
-m' = VarT (mkName m_)
+m' = VarT m_
 
 isParametrizedResolverType :: TypeName -> [TypeDefinition ANY s] -> Q Bool
 isParametrizedResolverType "__TypeKind" _ = pure False
@@ -91,7 +90,7 @@ funDProxy = map fun
   where
     fun (name, body) = funDSimple name [_'] body
 
-tyConArgs :: TypeKind -> [String]
+tyConArgs :: TypeKind -> [Name]
 tyConArgs kind
   | isResolverType kind = [m_]
   | otherwise = []
@@ -102,17 +101,16 @@ withPure = AppE (VarE 'pure)
 typeNameStringE :: TypeName -> Exp
 typeNameStringE = LitE . StringL . (unpack . readTypeName)
 
-constraintTypeable :: Type -> Type
-constraintTypeable name = apply ''Typeable [name]
+constraintTypeable :: Type -> Q Type
+constraintTypeable name = pure $ apply ''Typeable [name]
 
-mkTypeableConstraints :: [String] -> CxtQ
-mkTypeableConstraints args = cxt $ map (pure . constraintTypeable) (vars args)
+mkTypeableConstraints :: [Name] -> CxtQ
+mkTypeableConstraints = cxt . map constraintTypeable . vars
 
 kindName :: TypeKind -> Name
 kindName KindScalar = ''SCALAR
 kindName KindList = ''WRAPPER
 kindName KindNonNull = ''WRAPPER
-kindName KindInterface = ''INTERFACE
 kindName _ = ''TYPE
 
 isSubscription :: TypeKind -> Bool
