@@ -13,6 +13,7 @@ genDocs:
 
 clean:
 	find . -name "*.cabal" -exec rm -rf {} \;
+	stack clean
 
 lint: 
 	curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s .

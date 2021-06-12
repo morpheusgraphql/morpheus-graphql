@@ -32,7 +32,6 @@ import Data.Morpheus.Server.Internal.TH.Types
   )
 import Data.Morpheus.Server.Internal.TH.Utils
   ( funDProxy,
-    kindName,
     mkTypeableConstraints,
     tyConArgs,
   )
@@ -48,6 +47,11 @@ import Language.Haskell.TH
 import Relude
 
 dropNamespaceOptions :: TypeKind -> TypeName -> GQLTypeOptions -> GQLTypeOptions
+dropNamespaceOptions KindInterface tName opt =
+  opt
+    { typeNameModifier = const (stripConstructorNamespace "Interface"),
+      fieldLabelModifier = stripFieldNamespace tName
+    }
 dropNamespaceOptions KindEnum tName opt = opt {constructorTagModifier = stripConstructorNamespace tName}
 dropNamespaceOptions _ tName opt = opt {fieldLabelModifier = stripFieldNamespace tName}
 
@@ -61,7 +65,8 @@ deriveGQLType
       gqlTypeDescription,
       gqlTypeDescriptions,
       gqlTypeDirectives,
-      gqlTypeFieldContents
+      gqlTypeFieldContents,
+      gqlKind
     } =
     pure <$> instanceD constrains headType (typeFamilies : functions)
     where
@@ -86,4 +91,4 @@ deriveGQLType
       -------------------------------------------------
       typeFamilies = do
         currentType <- applyVars tName typeArgs
-        pure $ typeInstanceDec ''KIND currentType (ConT (kindName tKind))
+        pure $ typeInstanceDec ''KIND currentType (ConT gqlKind)

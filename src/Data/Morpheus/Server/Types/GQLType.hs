@@ -95,6 +95,7 @@ data TypeData = TypeData
     gqlWrappers :: TypeWrapper,
     gqlFingerprint :: TypeFingerprint
   }
+  deriving (Show)
 
 data GQLTypeOptions = GQLTypeOptions
   { fieldLabelModifier :: String -> String,
@@ -255,16 +256,9 @@ instance Typeable m => GQLType (Undefined m) where
   type KIND (Undefined m) = WRAPPER
   __isEmptyType _ = True
 
-instance Typeable interface => GQLType (Guard interface union) where
-  type KIND (Guard interface union) = CUSTOM
-  __type _ cat =
-    TypeData
-      { gqlTypeName = typename,
-        gqlFingerprint = InternalFingerprint typename,
-        gqlWrappers = mkBaseType
-      }
-    where
-      typename = gqlTypeName $ deriveTypeData (Proxy @interface) (const id) cat
+instance (GQLType interface) => GQLType (Guard interface possibleTypes) where
+  type KIND (Guard interface possibleTypes) = CUSTOM
+  __type _ = __type (Proxy @interface)
 
 instance GQLType a => GQLType (Maybe a) where
   type KIND (Maybe a) = WRAPPER

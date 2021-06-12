@@ -96,15 +96,13 @@ root =
             queryPerson =
               pure
                 ( Guard
-                    ( PersonPossibleTypesUser
-                        User
-                          { userName = pure "test Person Name",
-                            userEmail = pure "",
-                            userAddress = resolveAddress,
-                            userOffice = resolveAddress,
-                            userFriend = pure Nothing
-                          }
-                    )
+                    User
+                      { userName = pure "test Person Name",
+                        userEmail = pure "",
+                        userAddress = resolveAddress,
+                        userOffice = resolveAddress,
+                        userFriend = pure Nothing
+                      }
                 ),
             queryTestEnum =
               \QueryTestEnumArgs

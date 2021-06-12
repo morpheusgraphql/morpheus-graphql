@@ -27,7 +27,7 @@ import Data.Morpheus.Server.Internal.TH.Types
     ServerTypeDefinition (..),
     toServerField,
   )
-import Data.Morpheus.Server.Internal.TH.Utils (isParametrizedResolverType)
+import Data.Morpheus.Server.Internal.TH.Utils (isParametrizedResolverType, kindName)
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentDefinition (..),
@@ -84,7 +84,10 @@ toTHDefinitions namespace schema = concat <$> traverse generateTypes schema
           }
 
 mkInterfaceName :: TypeName -> TypeName
-mkInterfaceName = (<> "Interface")
+mkInterfaceName = ("Interface" <>)
+
+mkPossibleTypesName :: TypeName -> TypeName
+mkPossibleTypesName = ("PossibleTypes" <>)
 
 genTypeDefinition :: TypeDefinition ANY s -> ServerQ s [TypeDec s]
 genTypeDefinition
@@ -102,6 +105,7 @@ genTypeDefinition
       gqlTypeDescription = typeDescription
       gqlTypeDescriptions = getDesc typeDef
       gqlTypeDirectives = getDirs typeDef
+      gqlKind = kindName tKind
       gqlTypeFieldContents =
         collectFieldValues
           (fmap getDefaultValue . fieldContent)
@@ -167,13 +171,14 @@ data BuildPlan s
   | ConsOUT [TypeDec s] [ServerConsD OUT s]
 
 genInterfaceUnion :: TypeName -> ServerQ s [TypeDec s]
-genInterfaceUnion interfaceName = do
-  schema' <- asks schema
-  let members = map typeName $ catMaybes (isPossibleInterfaceType interfaceName <$> schema')
-  pure $
-    map
-      OutputType
-      [ ServerInterfaceDefinition interfaceName (mkInterfaceName interfaceName) tName,
+genInterfaceUnion interfaceName =
+  map OutputType . mkInterface . map typeName . mapMaybe (isPossibleInterfaceType interfaceName)
+    <$> asks schema
+  where
+    mkInterface [] = []
+    mkInterface [possibleTypeName] = [mkGuardWithPossibleType possibleTypeName]
+    mkInterface members =
+      [ mkGuardWithPossibleType tName,
         ServerTypeDefinition
           { tName,
             tCons = map unionCon members,
@@ -181,11 +186,12 @@ genInterfaceUnion interfaceName = do
             gqlTypeDescription = Nothing,
             gqlTypeDescriptions = mempty,
             gqlTypeDirectives = mempty,
-            gqlTypeFieldContents = mempty
+            gqlTypeFieldContents = mempty,
+            gqlKind = kindName KindUnion
           }
       ]
-  where
-    tName = interfaceName <> "PossibleTypes"
+    mkGuardWithPossibleType = ServerInterfaceDefinition interfaceName (mkInterfaceName interfaceName)
+    tName = mkPossibleTypesName interfaceName
     unionCon memberName =
       mkCons
         cName
@@ -276,7 +282,8 @@ genArgumentType
                 gqlTypeDescription = Nothing,
                 gqlTypeDescriptions = mempty,
                 gqlTypeDirectives = mempty,
-                gqlTypeFieldContents = mempty
+                gqlTypeFieldContents = mempty,
+                gqlKind = kindName KindInputObject
               }
         ]
 genArgumentType _ = pure []

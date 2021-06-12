@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e3cf28c96239664348f24634d4cf287edb5eec36d65b13e5bcd46a30c700450f
+-- hash: 374f431e9d58035364095353a8104f4be43aa326253f5a8ad2122f6a7507a4b3
 
 name:           morpheus-graphql-benchmarks
 version:        0.17.0
@@ -34,7 +34,7 @@ source-repository head
   type: git
   location: https://github.com/nalchevanidze/morpheus-graphql
 
-benchmark morpheus-bench
+benchmark morpheus-graphql-bench
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:

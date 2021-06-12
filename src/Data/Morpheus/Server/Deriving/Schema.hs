@@ -234,8 +234,10 @@ instance
     updateByContent deriveInterfaceContent interfaceProxy
     content <- deriveTypeContent (OutputType :: KindedType OUT union)
     unionNames <- transform content
-    extendImplements (gqlTypeName (__typeData interfaceProxy)) unionNames
+    extendImplements interfaceName unionNames
     where
+      interfaceName :: TypeName
+      interfaceName = gqlTypeName (__typeData interfaceProxy)
       interfaceProxy :: KindedProxy OUT interface
       interfaceProxy = KindedProxy
       unionProxy :: KindedProxy OUT union

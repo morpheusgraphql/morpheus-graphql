@@ -21,6 +21,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeName,
     Value,
   )
+import Language.Haskell.TH (Name)
 import Relude
 
 data ServerFieldDefinition cat s = ServerFieldDefinition
@@ -44,7 +45,8 @@ data ServerTypeDefinition cat s
         gqlTypeDescription :: Maybe Text,
         gqlTypeDescriptions :: Map Text Description,
         gqlTypeDirectives :: Map Text (Directives s),
-        gqlTypeFieldContents :: Map FieldName (Maybe (Value s), Maybe (ArgumentsDefinition s))
+        gqlTypeFieldContents :: Map FieldName (Maybe (Value s), Maybe (ArgumentsDefinition s)),
+        gqlKind :: Name
       }
   | ServerInterfaceDefinition TypeName TypeName TypeName
   deriving (Show)

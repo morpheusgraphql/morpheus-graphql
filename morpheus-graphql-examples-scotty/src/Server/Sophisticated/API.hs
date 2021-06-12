@@ -151,11 +151,11 @@ root =
             pure $
               map
                 Guard
-                [ AccountPossibleTypesUser user,
-                  AccountPossibleTypesCompany
+                [ PossibleTypesAccountUser user,
+                  PossibleTypesAccountCompany
                     Company
                       { companyName =
-                          pure "XYZ"
+                          pure "MY Company Name"
                       }
                 ],
           queryTestInput = pure . pack . show

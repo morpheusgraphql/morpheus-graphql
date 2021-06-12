@@ -18,7 +18,7 @@ cradle:
       - path: "./morpheus-graphql-core/test"
         component: "morpheus-graphql-core:test:morpheus-graphql-core-test"
 
-      - path: "./src/test"
+      - path: "./test"
         component: "morpheus-graphql:test:morpheus-graphql-test"
 
       - path: "./morpheus-graphql-app/test"
@@ -30,13 +30,15 @@ cradle:
       ## benchmarks
 
       - path: "./morpheus-graphql-benchmarks"
-        component: "morpheus-graphql-benchmarks:bench:morpheus-bench"
+        component: "morpheus-graphql-benchmarks:bench:morpheus-graphql-bench"
 
       ## exe
 
       - path: "./morpheus-graphql-examples-client"
         component: "morpheus-graphql-examples-client:exe:morpheus-client-example"
+
       - path: "./morpheus-graphql-examples-scotty"
         component: "morpheus-graphql-examples-scotty:exe:scotty-server"
+
       - path: "./morpheus-graphql-examples-servant"
         component: "morpheus-graphql-examples-servant:exe:servant-server"

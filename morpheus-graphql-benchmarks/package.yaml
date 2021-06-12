@@ -30,7 +30,7 @@ dependencies:
   - graphql               >= 0.11
 
 benchmarks:
-  morpheus-bench:
+  morpheus-graphql-bench:
     main: Main.hs
     source-dirs: src
     ghc-options:
