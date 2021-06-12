@@ -27,13 +27,14 @@ import Data.Morpheus.Internal.Utils
     stripFieldNamespace,
   )
 import Data.Morpheus.Server.Internal.TH.Types
-  ( ServerDecContext (..),
+  ( GQLTypeDefinition (..),
+    ServerDec,
+    ServerDecContext (..),
     ServerTypeDefinition (..),
   )
 import Data.Morpheus.Server.Internal.TH.Utils
   ( funDProxy,
     mkTypeableConstraints,
-    tyConArgs,
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
@@ -55,40 +56,51 @@ dropNamespaceOptions KindInterface tName opt =
 dropNamespaceOptions KindEnum tName opt = opt {constructorTagModifier = stripConstructorNamespace tName}
 dropNamespaceOptions _ tName opt = opt {fieldLabelModifier = stripFieldNamespace tName}
 
-deriveGQLType :: ServerDecContext -> ServerTypeDefinition cat s -> Q [Dec]
-deriveGQLType _ ServerInterfaceDefinition {} = pure []
+deriveGQLType :: ServerTypeDefinition s -> ServerDec [Dec]
+deriveGQLType ServerInterfaceDefinition {} = pure []
 deriveGQLType
-  ServerDecContext {namespace}
   ServerTypeDefinition
     { tName,
       tKind,
-      gqlTypeDescription,
-      gqlTypeDescriptions,
-      gqlTypeDirectives,
-      gqlTypeFieldContents,
-      gqlKind
-    } =
-    pure <$> instanceD constrains headType (typeFamilies : functions)
+      typeParameters,
+      gql
+    } = do
+    let constrains = mkTypeableConstraints typeParameters
+    let typeSignature = apply ''GQLType [applyVars tName typeParameters]
+    methods <- defineMethods tName tKind typeParameters gql
+    gqlTypeDeclaration <- lift (instanceD constrains typeSignature methods)
+    pure [gqlTypeDeclaration]
+
+defineTypeOptions :: TypeName -> TypeKind -> ServerDec [DecQ]
+defineTypeOptions tName kind = do
+  ServerDecContext {namespace} <- ask
+  pure $ funDProxy [('typeOptions, [|dropNamespaceOptions kind tName|]) | namespace]
+
+defineMethods :: TypeName -> TypeKind -> [Name] -> Maybe (GQLTypeDefinition s) -> ServerDec [Q Dec]
+defineMethods tName kind _ Nothing = defineTypeOptions tName kind
+defineMethods
+  tName
+  kind
+  typeParameters
+  ( Just
+      GQLTypeDefinition
+        { gqlTypeDescription,
+          gqlTypeDescriptions,
+          gqlTypeDirectives,
+          gqlTypeDefaultValues,
+          gqlKind
+        }
+    ) = do
+    options <- defineTypeOptions tName kind
+    pure (typeFamilies : functions <> options)
     where
       functions =
         funDProxy
           [ ('description, [|gqlTypeDescription|]),
-            ('typeOptions, typeOptionsFunc),
             ('getDescriptions, [|gqlTypeDescriptions|]),
             ('getDirectives, [|gqlTypeDirectives|]),
-            ('getFieldContents, [|gqlTypeFieldContents|])
+            ('getDefaultValues, [|gqlTypeDefaultValues|])
           ]
-        where
-          typeOptionsFunc
-            | namespace = [|dropNamespaceOptions tKind tName|]
-            | otherwise = [|id|]
-      --------------------------------
-      typeArgs = tyConArgs tKind
-      --------------------------------
-      headType = apply ''GQLType [applyVars tName typeArgs]
-      ---------------------------------------------------
-      constrains = mkTypeableConstraints typeArgs
-      -------------------------------------------------
       typeFamilies = do
-        currentType <- applyVars tName typeArgs
+        currentType <- applyVars tName typeParameters
         pure $ typeInstanceDec ''KIND currentType (ConT gqlKind)

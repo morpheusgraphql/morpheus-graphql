@@ -6,32 +6,35 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.TH.Transform
   ( toTHDefinitions,
-    TypeDec (..),
   )
 where
 
 import Data.Morpheus.Internal.Utils
   ( capitalTypeName,
     elems,
-    empty,
     singleton,
   )
 import Data.Morpheus.Server.Internal.TH.Types
-  ( ServerConsD,
+  ( GQLTypeDefinition (..),
+    ServerConsD,
     ServerFieldDefinition (..),
     ServerTypeDefinition (..),
     toServerField,
   )
-import Data.Morpheus.Server.Internal.TH.Utils (isParametrizedResolverType, kindName)
+import Data.Morpheus.Server.Internal.TH.Utils
+  ( isParametrizedResolverType,
+    kindName,
+    m_,
+  )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentDefinition (..),
-    ArgumentsDefinition,
     ConsD (..),
     DataEnumValue (..),
     Description,
@@ -53,6 +56,7 @@ import Data.Morpheus.Types.Internal.AST
     Value,
     hsTypeName,
     isPossibleInterfaceType,
+    isResolverType,
     kindOf,
     mkConsEnum,
     mkTypeRef,
@@ -61,20 +65,15 @@ import Data.Morpheus.Types.Internal.AST
 import Language.Haskell.TH
 import Relude hiding (empty, get)
 
-data TypeDec s
-  = InputType
-      (ServerTypeDefinition IN s)
-  | OutputType (ServerTypeDefinition OUT s)
-
 toTHDefinitions ::
   forall s.
   Bool ->
   [TypeDefinition ANY s] ->
-  Q [TypeDec s]
+  Q [ServerTypeDefinition s]
 toTHDefinitions namespace schema = concat <$> traverse generateTypes schema
   where
     --------------------------------------------
-    generateTypes :: TypeDefinition ANY s -> Q [TypeDec s]
+    generateTypes :: TypeDefinition ANY s -> Q [ServerTypeDefinition s]
     generateTypes typeDef =
       runReaderT
         (genTypeDefinition typeDef)
@@ -89,7 +88,7 @@ mkInterfaceName = ("Interface" <>)
 mkPossibleTypesName :: TypeName -> TypeName
 mkPossibleTypesName = ("PossibleTypes" <>)
 
-genTypeDefinition :: TypeDefinition ANY s -> ServerQ s [TypeDec s]
+genTypeDefinition :: TypeDefinition ANY s -> ServerQ s [ServerTypeDefinition s]
 genTypeDefinition
   typeDef@TypeDefinition
     { typeName = originalTypeName,
@@ -102,36 +101,39 @@ genTypeDefinition
         _ -> originalTypeName
       tKind = kindOf typeDef
       tName = hsTypeName typeName
-      gqlTypeDescription = typeDescription
-      gqlTypeDescriptions = getDesc typeDef
-      gqlTypeDirectives = getDirs typeDef
-      gqlKind = kindName tKind
-      gqlTypeFieldContents =
-        collectFieldValues
-          (fmap getDefaultValue . fieldContent)
-          (fmap getDefaultValue . fieldContent)
-          typeDef
+      gql =
+        Just
+          GQLTypeDefinition
+            { gqlTypeDescription = typeDescription,
+              gqlTypeDescriptions = getDesc typeDef,
+              gqlTypeDirectives = getDirs typeDef,
+              gqlKind = kindName tKind,
+              gqlTypeDefaultValues =
+                fromList
+                  $ mapMaybe getDefaultValue
+                  $ getInputFields typeDef
+            }
+      typeParameters
+        | isResolverType tKind = [m_]
+        | otherwise = []
       -------------------------
-      withType (ConsIN tCons) = [InputType ServerTypeDefinition {..}]
-      withType (ConsOUT others tCons) = OutputType ServerTypeDefinition {..} : others
+      withType (ConsIN tCons) = [ServerTypeDefinition {..}]
+      withType (ConsOUT others tCons) = ServerTypeDefinition {..} : others
 
 toHSTypeRef :: TypeRef -> TypeRef
 toHSTypeRef TypeRef {typeConName, ..} = TypeRef {typeConName = hsTypeName typeConName, ..}
 
-toHSFieldDefinition :: FieldDefinition cat s -> FieldDefinition cat s
-toHSFieldDefinition field = field {fieldType = toHSTypeRef (fieldType field)}
+toHSServerFieldDefinition :: ServerFieldDefinition -> ServerFieldDefinition
+toHSServerFieldDefinition ServerFieldDefinition {..} = ServerFieldDefinition {fieldType = toHSTypeRef fieldType, ..}
 
-toHSServerFieldDefinition :: ServerFieldDefinition cat s -> ServerFieldDefinition cat s
-toHSServerFieldDefinition field = field {originalField = toHSFieldDefinition (originalField field)}
-
-mkCons :: TypeName -> [ServerFieldDefinition cat s] -> ServerConsD cat s
+mkCons :: TypeName -> [ServerFieldDefinition] -> ServerConsD
 mkCons typename fields =
   ConsD
     { cName = hsTypeName typename,
       cFields = fmap toHSServerFieldDefinition fields
     }
 
-mkObjectCons :: TypeName -> [ServerFieldDefinition cat s] -> [ServerConsD cat s]
+mkObjectCons :: TypeName -> [ServerFieldDefinition] -> [ServerConsD]
 mkObjectCons typeName fields = [mkCons typeName fields]
 
 mkArgsTypeName :: Bool -> TypeName -> FieldName -> TypeName
@@ -143,14 +145,14 @@ mkArgsTypeName namespace typeName fieldName
 
 mkObjectField ::
   FieldDefinition OUT s ->
-  ServerQ s (ServerFieldDefinition OUT s)
+  ServerQ s ServerFieldDefinition
 mkObjectField
-  originalField@FieldDefinition
+  FieldDefinition
     { fieldName,
       fieldContent,
-      fieldType = TypeRef {typeConName}
+      fieldType
     } = do
-    isParametrized <- lift . isParametrizedResolverType typeConName =<< asks schema
+    isParametrized <- lift . isParametrizedResolverType (typeConName fieldType) =<< asks schema
     genName <- asks toArgsTypeName
     pure
       ServerFieldDefinition
@@ -167,12 +169,12 @@ mkObjectField
       fieldCont _ _ = Nothing
 
 data BuildPlan s
-  = ConsIN [ServerConsD IN s]
-  | ConsOUT [TypeDec s] [ServerConsD OUT s]
+  = ConsIN [ServerConsD]
+  | ConsOUT [ServerTypeDefinition s] [ServerConsD]
 
-genInterfaceUnion :: TypeName -> ServerQ s [TypeDec s]
+genInterfaceUnion :: TypeName -> ServerQ s [ServerTypeDefinition s]
 genInterfaceUnion interfaceName =
-  map OutputType . mkInterface . map typeName . mapMaybe (isPossibleInterfaceType interfaceName)
+  mkInterface . map typeName . mapMaybe (isPossibleInterfaceType interfaceName)
     <$> asks schema
   where
     mkInterface [] = []
@@ -183,11 +185,8 @@ genInterfaceUnion interfaceName =
           { tName,
             tCons = map unionCon members,
             tKind = KindUnion,
-            gqlTypeDescription = Nothing,
-            gqlTypeDescriptions = mempty,
-            gqlTypeDirectives = mempty,
-            gqlTypeFieldContents = mempty,
-            gqlKind = kindName KindUnion
+            typeParameters = [m_],
+            gql = Nothing
           }
       ]
     mkGuardWithPossibleType = ServerInterfaceDefinition interfaceName (mkInterfaceName interfaceName)
@@ -199,14 +198,8 @@ genInterfaceUnion interfaceName =
           ServerFieldDefinition
             { isParametrized = True,
               argumentsTypeName = Nothing,
-              originalField =
-                FieldDefinition
-                  { fieldName = "un" <> toFieldName cName,
-                    fieldType = mkTypeRef utName,
-                    fieldDescription = Nothing,
-                    fieldDirectives = empty,
-                    fieldContent = Nothing
-                  }
+              fieldName = "un" <> toFieldName cName,
+              fieldType = mkTypeRef utName
             }
       where
         cName = hsTypeName tName <> utName
@@ -242,14 +235,8 @@ genTypeContent typeName (DataUnion members) =
           ServerFieldDefinition
             { isParametrized = True,
               argumentsTypeName = Nothing,
-              originalField =
-                FieldDefinition
-                  { fieldName = "un" <> toFieldName cName,
-                    fieldType = mkTypeRef utName,
-                    fieldDescription = Nothing,
-                    fieldDirectives = empty,
-                    fieldContent = Nothing
-                  }
+              fieldName = "un" <> toFieldName cName,
+              fieldType = mkTypeRef utName
             }
       where
         cName = hsTypeName typeName <> utName
@@ -262,10 +249,10 @@ data TypeContext s = TypeContext
 
 type ServerQ s = ReaderT (TypeContext s) Q
 
-genArgumentTypes :: FieldsDefinition OUT s -> ServerQ s [TypeDec s]
+genArgumentTypes :: FieldsDefinition OUT s -> ServerQ s [ServerTypeDefinition s]
 genArgumentTypes = fmap concat . traverse genArgumentType . elems
 
-genArgumentType :: FieldDefinition OUT s -> ServerQ s [TypeDec s]
+genArgumentType :: FieldDefinition OUT s -> ServerQ s [ServerTypeDefinition s]
 genArgumentType
   FieldDefinition
     { fieldName,
@@ -273,20 +260,32 @@ genArgumentType
     }
     | not (null arguments) = do
       tName <- (fieldName &) <$> asks toArgsTypeName
+      let argumentFields = argument <$> elems arguments
       pure
-        [ InputType $
-            ServerTypeDefinition
-              { tName,
-                tCons = [mkCons tName $ map (toServerField . argument) (elems arguments)],
-                tKind = KindInputObject,
-                gqlTypeDescription = Nothing,
-                gqlTypeDescriptions = mempty,
-                gqlTypeDirectives = mempty,
-                gqlTypeFieldContents = mempty,
-                gqlKind = kindName KindInputObject
-              }
+        [ ServerTypeDefinition
+            { tName,
+              tCons = [mkCons tName (toServerField <$> argumentFields)],
+              tKind = KindInputObject,
+              typeParameters = [],
+              gql =
+                Just
+                  ( GQLTypeDefinition
+                      { gqlKind = kindName KindInputObject,
+                        gqlTypeDescription = Nothing,
+                        gqlTypeDescriptions = fromList (mapMaybe mkFieldDescription argumentFields),
+                        gqlTypeDirectives = fromList (mkFieldDirective <$> argumentFields),
+                        gqlTypeDefaultValues = fromList (mapMaybe getDefaultValue argumentFields)
+                      }
+                  )
+            }
         ]
 genArgumentType _ = pure []
+
+mkFieldDescription :: FieldDefinition cat s -> Maybe (Text, Description)
+mkFieldDescription FieldDefinition {..} = (readName fieldName,) <$> fieldDescription
+
+mkFieldDirective :: FieldDefinition cat s -> (Text, Directives s)
+mkFieldDirective FieldDefinition {..} = (readName fieldName, fieldDirectives)
 
 ---
 
@@ -349,27 +348,10 @@ instance Meta (FieldDefinition c s) (Directives s) where
     | null fieldDirectives = []
     | otherwise = [(readName fieldName, fieldDirectives)]
 
-collectFieldValues ::
-  (FieldDefinition IN s -> Maybe a) ->
-  (FieldDefinition OUT s -> Maybe a) ->
-  TypeDefinition c s ->
-  Map FieldName a
-collectFieldValues _ g TypeDefinition {typeContent = DataObject {objectFields}} = getFieldValues g objectFields
-collectFieldValues f _ TypeDefinition {typeContent = DataInputObject {inputObjectFields}} = getFieldValues f inputObjectFields
-collectFieldValues _ g TypeDefinition {typeContent = DataInterface {interfaceFields}} = getFieldValues g interfaceFields
-collectFieldValues _ _ _ = mempty
+getInputFields :: TypeDefinition c s -> [FieldDefinition IN s]
+getInputFields TypeDefinition {typeContent = DataInputObject {inputObjectFields}} = elems inputObjectFields
+getInputFields _ = []
 
-getFieldValues :: (FieldDefinition c s -> Maybe a) -> FieldsDefinition c s -> Map FieldName a
-getFieldValues f = fromList . notNulls . fmap (getFieldValue f) . elems
-
-notNulls :: [(k, Maybe a)] -> [(k, a)]
-notNulls [] = []
-notNulls ((_, Nothing) : xs) = notNulls xs
-notNulls ((name, Just x) : xs) = (name, x) : notNulls xs
-
-getFieldValue :: (FieldDefinition c s -> Maybe a) -> FieldDefinition c s -> (FieldName, Maybe a)
-getFieldValue f field = (fieldName field, f field)
-
-getDefaultValue :: FieldContent TRUE c s -> (Maybe (Value s), Maybe (ArgumentsDefinition s))
-getDefaultValue DefaultInputValue {defaultInputValue} = (Just defaultInputValue, Nothing)
-getDefaultValue (FieldArgs args) = (Nothing, Just args)
+getDefaultValue :: FieldDefinition c s -> Maybe (Text, Value s)
+getDefaultValue FieldDefinition {fieldName, fieldContent = Just DefaultInputValue {defaultInputValue}} = Just (readName fieldName, defaultInputValue)
+getDefaultValue _ = Nothing

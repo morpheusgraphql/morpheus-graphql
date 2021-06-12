@@ -12,7 +12,6 @@ module Data.Morpheus.Server.Internal.TH.Utils
     mkTypeableConstraints,
     m',
     m_,
-    tyConArgs,
     funDProxy,
     isParametrizedResolverType,
     isSubscription,
@@ -89,11 +88,6 @@ funDProxy :: [(Name, ExpQ)] -> [DecQ]
 funDProxy = map fun
   where
     fun (name, body) = funDSimple name [_'] body
-
-tyConArgs :: TypeKind -> [Name]
-tyConArgs kind
-  | isResolverType kind = [m_]
-  | otherwise = []
 
 withPure :: Exp -> Exp
 withPure = AppE (VarE 'pure)

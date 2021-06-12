@@ -68,8 +68,7 @@ import Data.Morpheus.Types.Internal.AST
     Directives,
     FieldContent (..),
     FieldDefinition (..),
-    FieldName,
-    FieldName (..),
+    FieldName (FieldName),
     FieldsDefinition,
     IN,
     LEAF,
@@ -91,6 +90,7 @@ import Data.Morpheus.Types.Internal.AST
     mkTypeRef,
     mkUnionMember,
     msg,
+    readName,
     unitFieldName,
     unitTypeName,
     unsafeFromFields,
@@ -128,14 +128,14 @@ failureOnlyObject proxy =
     $ globalErrorMessage
     $ msg (gqlTypeName $ __typeData proxy) <> " should have only one nonempty constructor"
 
-type TyContentM kind = (SchemaT kind (Maybe (FieldContent TRUE kind CONST)))
+type TyContentM kind = (SchemaT kind (TyContent kind))
 
 type TyContent kind = Maybe (FieldContent TRUE kind CONST)
 
 unpackM :: FieldRep (TyContentM k) -> SchemaT k (FieldRep (TyContent k))
-unpackM FieldRep {..} =
-  FieldRep fieldSelector fieldTypeRef fieldIsObject
-    <$> fieldValue
+unpackM FieldRep {..} = do
+  cont <- fieldValue
+  pure (FieldRep {fieldValue = cont, ..})
 
 unpackCons :: ConsRep (TyContentM k) -> SchemaT k (ConsRep (TyContent k))
 unpackCons ConsRep {..} = ConsRep consName <$> traverse unpackM consFields
@@ -164,16 +164,6 @@ instance UpdateDef (TypeContent TRUE c CONST) where
   updateDef proxy (DataEnum enums) = DataEnum $ fmap (updateDef proxy) enums
   updateDef _ x = x
 
-instance GetFieldContent cat => UpdateDef (FieldDefinition cat CONST) where
-  updateDef proxy FieldDefinition {fieldName, fieldType, fieldContent} =
-    FieldDefinition
-      { fieldName,
-        fieldDescription = lookupDescription (readName fieldName) proxy,
-        fieldDirectives = lookupDirectives (readName fieldName) proxy,
-        fieldContent = getFieldContent fieldName fieldContent proxy,
-        ..
-      }
-
 instance UpdateDef (DataEnumValue CONST) where
   updateDef proxy DataEnumValue {enumName} =
     DataEnumValue
@@ -187,21 +177,6 @@ lookupDescription name = (name `M.lookup`) . getDescriptions
 
 lookupDirectives :: GQLType a => Token -> f a -> Directives CONST
 lookupDirectives name = fromMaybe [] . (name `M.lookup`) . getDirectives
-
-class GetFieldContent c where
-  getFieldContent :: GQLType a => FieldName -> Maybe (FieldContent TRUE c CONST) -> f a -> Maybe (FieldContent TRUE c CONST)
-
-instance GetFieldContent IN where
-  getFieldContent name val proxy =
-    case name `M.lookup` getFieldContents proxy of
-      Just (Just x, _) -> Just (DefaultInputValue x)
-      _ -> val
-
-instance GetFieldContent OUT where
-  getFieldContent name args proxy =
-    case name `M.lookup` getFieldContents proxy of
-      Just (_, Just x) -> Just (FieldArgs x)
-      _ -> args
 
 updateByContent ::
   (GQLType a, CategoryValue kind) =>
@@ -263,12 +238,31 @@ wrapFields :: [TypeName] -> KindedType kind a -> FieldsDefinition kind CONST -> 
 wrapFields _ InputType = DataInputObject
 wrapFields interfaces OutputType = DataObject interfaces
 
-mkFieldsDefinition :: [FieldRep (Maybe (FieldContent TRUE kind CONST))] -> FieldsDefinition kind CONST
-mkFieldsDefinition = unsafeFromFields . fmap fieldByRep
+mkFieldsDefinition :: f a -> [FieldRep (Maybe (FieldContent TRUE kind CONST))] -> FieldsDefinition kind CONST
+mkFieldsDefinition proxy = unsafeFromFields . fmap (fieldByRep proxy)
 
-fieldByRep :: FieldRep (Maybe (FieldContent TRUE kind CONST)) -> FieldDefinition kind CONST
-fieldByRep FieldRep {fieldSelector, fieldTypeRef, fieldValue} =
-  mkField fieldValue fieldSelector fieldTypeRef
+fieldByRep :: f a -> FieldRep (Maybe (FieldContent TRUE kind CONST)) -> FieldDefinition kind CONST
+fieldByRep
+  proxy
+  FieldRep
+    { fieldSelector = fieldName,
+      fieldTypeRef = fieldType,
+      fieldValue
+    } =
+    let key = readName fieldName
+     in FieldDefinition
+          { fieldName,
+            fieldDescription = lookupDescription key proxy,
+            fieldDirectives = lookupDirectives key proxy,
+            fieldContent = getFieldContent fieldName proxy <|> fieldValue,
+            ..
+          }
+
+class GetFieldContent kind where
+  getFieldContent :: GQLType a => FieldName -> f a -> Maybe (FieldContent TRUE kind CONST)
+
+instance GetFieldContent IN where
+  getFieldContent (FieldName key) proxy = DefaultInputValue <$> key `M.lookup` getDefaultValues proxy
 
 buildUnions ::
   PackObject kind =>

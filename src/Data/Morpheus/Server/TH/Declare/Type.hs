@@ -31,38 +31,37 @@ import Data.Morpheus.Server.Internal.TH.Utils
   ( isSubscription,
     m',
     m_,
-    tyConArgs,
   )
-import Data.Morpheus.Types (Guard (..))
+import Data.Morpheus.Types (TypeGuard)
 import Data.Morpheus.Types.Internal.AST
   ( ConsD (..),
-    FieldDefinition (..),
     FieldName (..),
     TypeKind (..),
     TypeName (..),
     isResolverType,
   )
-import Language.Haskell.TH hiding (Guard)
+import Language.Haskell.TH
 import Relude hiding (Type)
 
-declareType :: ServerTypeDefinition cat s -> ServerDec [Dec]
+declareType :: ServerTypeDefinition s -> ServerDec [Dec]
 declareType (ServerInterfaceDefinition name interfaceName unionName) =
   pure
     [ TySynD
         (toName name)
         [PlainTV m_]
-        (apply ''Guard [apply interfaceName [m'], apply unionName [m']])
+        (apply ''TypeGuard [apply interfaceName [m'], apply unionName [m']])
     ]
 declareType ServerTypeDefinition {tKind = KindScalar} = pure []
 declareType
   ServerTypeDefinition
     { tName,
       tCons,
-      tKind
+      tKind,
+      typeParameters
     } =
     do
       cons <- declareCons tKind tName tCons
-      let vars = map (PlainTV . toName) (tyConArgs tKind)
+      let vars = map (PlainTV . toName) typeParameters
       let name = toName tName
       pure [DataD [] name vars Nothing cons (derive tKind)]
 
@@ -79,7 +78,7 @@ deriveClasses classNames = DerivClause Nothing (map ConT classNames)
 declareCons ::
   TypeKind ->
   TypeName ->
-  [ServerConsD cat s] ->
+  [ServerConsD] ->
   ServerDec [Con]
 declareCons tKind tName = traverse consR
   where
@@ -91,10 +90,10 @@ declareCons tKind tName = traverse consR
 declareField ::
   TypeKind ->
   TypeName ->
-  ServerFieldDefinition cat s ->
+  ServerFieldDefinition ->
   ServerDec (Name, Bang, Type)
 declareField tKind tName field = do
-  fieldName <- fieldTypeName tName (fieldName $ originalField field)
+  fieldName <- fieldTypeName tName (fieldName field)
   pure
     ( fieldName,
       Bang NoSourceUnpackedness NoSourceStrictness,
@@ -103,13 +102,13 @@ declareField tKind tName field = do
 
 renderFieldType ::
   TypeKind ->
-  ServerFieldDefinition cat s ->
+  ServerFieldDefinition ->
   Type
 renderFieldType
   tKind
   ServerFieldDefinition
     { isParametrized,
-      originalField = FieldDefinition {fieldType},
+      fieldType,
       argumentsTypeName
     } =
     withFieldWrappers tKind argumentsTypeName (declareTypeRef renderTypeName fieldType)

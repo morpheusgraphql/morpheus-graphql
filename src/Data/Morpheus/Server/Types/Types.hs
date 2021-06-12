@@ -6,7 +6,7 @@
 module Data.Morpheus.Server.Types.Types
   ( Undefined (..),
     Pair (..),
-    Guard (..),
+    TypeGuard (..),
   )
 where
 
@@ -25,5 +25,6 @@ data Pair k v = Pair
   }
   deriving (Generic)
 
-newtype Guard interface union
-  = Guard union
+data TypeGuard interface union
+  = ResolveInterface interface
+  | ResolveType union

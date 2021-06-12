@@ -13,7 +13,6 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# OPTIONS_GHC -Wno-unused-imports #-}
 
 module Data.Morpheus.Server.Deriving.Schema
   ( compileTimeSchemaValidation,
@@ -27,11 +26,6 @@ where
 
 -- MORPHEUS
 
-import Control.Applicative (Applicative (..))
-import Control.Monad ((>=>), (>>=))
-import Data.Functor (($>), (<$>), Functor (..))
-import Data.Map (Map)
-import Data.Maybe (Maybe (..))
 import Data.Morpheus.App.Internal.Resolving
   ( Resolver,
     resultOr,
@@ -43,7 +37,6 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Kind
   ( CUSTOM,
     DerivingKind,
-    INTERFACE,
     SCALAR,
     TYPE,
     WRAPPER,
@@ -76,8 +69,8 @@ import Data.Morpheus.Server.Types.SchemaT
     withInput,
   )
 import Data.Morpheus.Server.Types.Types
-  ( Guard,
-    Pair,
+  ( Pair,
+    TypeGuard,
   )
 import Data.Morpheus.Types.GQLScalar
   ( DecodeScalar (..),
@@ -87,6 +80,7 @@ import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition,
     CONST,
     CONST,
+    FieldContent (..),
     FieldContent (..),
     FieldsDefinition,
     GQLErrors,
@@ -115,15 +109,9 @@ import Data.Morpheus.Utils.Kinded
     outputType,
     setKind,
   )
-import Data.Proxy (Proxy (..))
-import GHC.Generics (Generic, Rep)
+import GHC.Generics (Rep)
 import Language.Haskell.TH (Exp, Q)
 import Relude
-import Prelude
-  ( ($),
-    (.),
-    Bool (..),
-  )
 
 type SchemaConstraints event (m :: * -> *) query mutation subscription =
   ( DeriveTypeConstraintOpt OUT (query (Resolver QUERY event m)),
@@ -182,7 +170,7 @@ deriveSchema _ = resultOr failure pure schema
 -- |  Generates internal GraphQL Schema for query validation and introspection rendering
 class DeriveType (kind :: TypeCategory) (a :: *) where
   deriveType :: f a -> SchemaT kind ()
-  deriveContent :: f a -> SchemaT kind (Maybe (FieldContent TRUE kind CONST))
+  deriveContent :: f a -> TyContentM kind
 
 instance (GQLType a, DeriveKindedType cat (KIND a) a) => DeriveType cat a where
   deriveType _ = deriveKindedType (KindedProxy :: KindedProxy (KIND a) a)
@@ -191,7 +179,7 @@ instance (GQLType a, DeriveKindedType cat (KIND a) a) => DeriveType cat a where
 -- | DeriveType With specific Kind: 'kind': object, scalar, enum ...
 class DeriveKindedType (cat :: TypeCategory) (kind :: DerivingKind) a where
   deriveKindedType :: kinded kind a -> SchemaT cat ()
-  deriveKindedContent :: kinded kind a -> SchemaT cat (Maybe (FieldContent TRUE cat CONST))
+  deriveKindedContent :: kinded kind a -> TyContentM cat
   deriveKindedContent _ = pure Nothing
 
 type DeriveTypeConstraint kind a =
@@ -214,6 +202,7 @@ instance DeriveTypeConstraint IN a => DeriveKindedType IN TYPE a where
 
 instance DeriveType cat a => DeriveKindedType cat CUSTOM (Resolver o e m a) where
   deriveKindedType _ = deriveType (Proxy @a)
+  deriveKindedContent _ = deriveContent (Proxy @a)
 
 -- Tuple
 instance DeriveType cat (Pair k v) => DeriveKindedType cat CUSTOM (k, v) where
@@ -223,17 +212,16 @@ instance DeriveType cat (Pair k v) => DeriveKindedType cat CUSTOM (k, v) where
 instance DeriveType cat [Pair k v] => DeriveKindedType cat CUSTOM (Map k v) where
   deriveKindedType _ = deriveType (Proxy @[Pair k v])
 
--- Guard TODO: real implementation
 instance
   ( DeriveTypeConstraint OUT interface,
     DeriveTypeConstraint OUT union
   ) =>
-  DeriveKindedType OUT CUSTOM (Guard interface union)
+  DeriveKindedType OUT CUSTOM (TypeGuard interface union)
   where
   deriveKindedType _ = do
     updateByContent deriveInterfaceContent interfaceProxy
     content <- deriveTypeContent (OutputType :: KindedType OUT union)
-    unionNames <- transform content
+    unionNames <- getUnionNames content
     extendImplements interfaceName unionNames
     where
       interfaceName :: TypeName
@@ -242,10 +230,10 @@ instance
       interfaceProxy = KindedProxy
       unionProxy :: KindedProxy OUT union
       unionProxy = KindedProxy
-      transform :: TypeContent TRUE OUT CONST -> SchemaT OUT [TypeName]
-      transform DataUnion {unionMembers} = pure (memberName <$> unionMembers)
-      transform DataObject {} = pure [gqlTypeName (__typeData unionProxy)]
-      transform _ = failure ["guarded type must be an union or object" :: ValidationError]
+      getUnionNames :: TypeContent TRUE OUT CONST -> SchemaT OUT [TypeName]
+      getUnionNames DataUnion {unionMembers} = pure (memberName <$> unionMembers)
+      getUnionNames DataObject {} = pure [gqlTypeName (__typeData unionProxy)]
+      getUnionNames _ = failure ["guarded type must be an union or object" :: ValidationError]
 
 instance
   ( GQLType b,

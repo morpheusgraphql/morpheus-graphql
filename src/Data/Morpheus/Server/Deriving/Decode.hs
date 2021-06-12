@@ -216,10 +216,10 @@ class DecodeRep (f :: * -> *) where
 
 instance (Datatype d, DecodeRep f) => DecodeRep (M1 D d f) where
   tags _ = tags (Proxy @f)
-  decodeRep value =
-    withTypeName
-      (datatypeNameProxy (Proxy @d))
-      (M1 <$> decodeRep value)
+  decodeRep value = do
+    gqlOptions <- asks options
+    let typeName = datatypeNameProxy gqlOptions (Proxy @d)
+    withTypeName typeName (M1 <$> decodeRep value)
 
 instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
   tags _ = tags (Proxy @a) <> tags (Proxy @b)

@@ -15,8 +15,8 @@ import Data.Morpheus.Types
   ( GQLRequest,
     GQLResponse,
     GQLType (..),
-    Guard (..),
     RootResolver (..),
+    TypeGuard (..),
     Undefined (..),
   )
 import Data.Text
@@ -42,7 +42,7 @@ data Implements (m :: * -> *)
   | Creature {name :: Text, age :: Int}
   deriving (Generic, GQLType)
 
-type Characters m = Guard Character (Implements m)
+type Characters m = TypeGuard Character (Implements m)
 
 newtype Query (m :: * -> *) = Query
   { characters :: [Characters m]
@@ -51,7 +51,7 @@ newtype Query (m :: * -> *) = Query
 
 resolveCharacters :: [Characters m]
 resolveCharacters =
-  Guard
+  ResolveType
     <$> [ ImplementsDeity
             ( Deity
                 { name = "Morpheus",

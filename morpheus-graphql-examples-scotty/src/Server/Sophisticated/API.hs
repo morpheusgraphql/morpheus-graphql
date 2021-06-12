@@ -41,7 +41,6 @@ import Data.Morpheus.Types
   ( DecodeScalar (..),
     EncodeScalar (..),
     GQLType (..),
-    Guard (..),
     ID,
     MUTATION,
     Resolver,
@@ -51,6 +50,7 @@ import Data.Morpheus.Types
     RootResolver (..),
     ScalarValue (..),
     SubscriptionField,
+    TypeGuard (..),
     WithOperation,
     constRes,
     liftEither,
@@ -103,7 +103,7 @@ instance DecodeScalar Euro where
           (round (fromIntegral x / 100 :: Double))
           (mod x 100)
       )
-  decodeScalar _ = Left "Invalid currency!"
+  decodeScalar _ = Left "Invalid Currency!"
 
 instance EncodeScalar Euro where
   encodeScalar (Euro x y) = Int (x * 100 + y)
@@ -137,7 +137,7 @@ root =
         { queryUser = resolveUser,
           queryAnimal = resolveAnimal,
           querySet = const $ pure $ S.fromList [1, 2, 4],
-          querySomeMap = pure $ M.fromList [("robin", 1), ("carl", 2)],
+          querySomeMap = pure $ M.fromList [("Robin", 1), ("carl", 2)],
           queryWrapped1 = constRes $ A (0, "some value"),
           queryWrapped2 = pure $ A "",
           queryFail1 = fail "fail example!!",
@@ -148,16 +148,21 @@ root =
                 { sharedTypeName = pure "some name"
                 },
           queryTestInterface =
-            pure $
-              map
-                Guard
-                [ PossibleTypesAccountUser user,
-                  PossibleTypesAccountCompany
-                    Company
-                      { companyName =
-                          pure "MY Company Name"
+            pure
+              [ ResolveInterface
+                  ( InterfaceAccount
+                      { interfaceAccountName = pure "myName"
                       }
-                ],
+                  ),
+                ResolveType (PossibleTypesAccountUser user),
+                ResolveType
+                  ( PossibleTypesAccountCompany
+                      Company
+                        { companyName =
+                            pure "MY Company Name"
+                        }
+                  )
+              ],
           queryTestInput = pure . pack . show
         }
     -------------------------------------------------------------

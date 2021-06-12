@@ -57,7 +57,7 @@ module Data.Morpheus.Types
     RenderGQL,
     render,
     GQLTypeOptions (..),
-    Guard (..),
+    TypeGuard (..),
   )
 where
 
@@ -203,9 +203,9 @@ constRes :: (WithOperation o, Monad m) => b -> a -> Resolver o e m b
 constRes = const . pure
 
 constMutRes :: Monad m => [e] -> a -> args -> ResolverM e m a
-constMutRes events value = const $ do
+constMutRes events v = const $ do
   publish events
-  pure value
+  pure v
 
 {-# DEPRECATED failRes "use \"fail\" from \"MonadFail\"" #-}
 failRes ::

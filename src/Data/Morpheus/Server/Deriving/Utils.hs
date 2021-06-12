@@ -92,8 +92,8 @@ import Relude
     zipWith,
   )
 
-datatypeNameProxy :: forall f (d :: Meta). Datatype d => f d -> TypeName
-datatypeNameProxy _ = TypeName $ pack $ datatypeName (undefined :: (M1 D d f a))
+datatypeNameProxy :: forall f (d :: Meta). Datatype d => GQLTypeOptions -> f d -> TypeName
+datatypeNameProxy options _ = TypeName $ pack $ typeNameModifier options False $ datatypeName (undefined :: (M1 D d f a))
 
 conNameProxy :: forall f (c :: Meta). Constructor c => GQLTypeOptions -> f c -> TypeName
 conNameProxy options _ =
@@ -134,7 +134,7 @@ class TypeRep (c :: * -> Constraint) (v :: *) f where
 
 instance (Datatype d, TypeRep c v f) => TypeRep c v (M1 D d f) where
   typeRep fun _ = typeRep fun (Proxy @f)
-  toTypeRep fun (M1 src) = (toTypeRep fun src) {tyName = datatypeNameProxy (Proxy @d)}
+  toTypeRep fun@(opt, _, _) (M1 src) = (toTypeRep fun src) {tyName = datatypeNameProxy opt (Proxy @d)}
 
 -- | recursion for Object types, both of them : 'INPUT_OBJECT' and 'OBJECT'
 instance (TypeRep c v a, TypeRep c v b) => TypeRep c v (a :+: b) where

@@ -30,10 +30,10 @@ import Data.Morpheus.Types
     GQLRequest,
     GQLResponse,
     GQLType (..),
-    Guard (..),
     ID (..),
     RootResolver (..),
     ScalarValue (..),
+    TypeGuard (..),
     Undefined (..),
     liftEither,
     subscribe,
@@ -95,7 +95,7 @@ root =
             queryTestUnion = Just . TestUnionUser <$> queryUser,
             queryPerson =
               pure
-                ( Guard
+                ( ResolveType
                     User
                       { userName = pure "test Person Name",
                         userEmail = pure "",

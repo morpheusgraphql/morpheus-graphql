@@ -29,7 +29,7 @@ import Data.Morpheus.Server.Internal.TH.Types
   ( ServerDecContext (..),
   )
 import Data.Morpheus.Server.TH.Declare
-  ( declare,
+  ( runDeclare,
   )
 import Data.Morpheus.Server.TH.Transform
   ( toTHDefinitions,
@@ -67,4 +67,4 @@ compileDocument ctx documentTXT =
   case parseTypeDefinitions (LB.pack documentTXT) of
     Failure errors -> fail (renderGQLErrors errors)
     Success {result = schema, warnings} ->
-      gqlWarnings warnings >> toTHDefinitions (namespace ctx) schema >>= declare ctx
+      gqlWarnings warnings >> toTHDefinitions (namespace ctx) schema >>= runDeclare ctx

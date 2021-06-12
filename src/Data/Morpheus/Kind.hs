@@ -60,15 +60,16 @@ type TYPE = 'TYPE
 -- | GraphQL Scalar: Int, Float, String, Boolean or any user defined custom Scalar type
 type SCALAR = 'SCALAR
 
--- | GraphQL interface
-type INTERFACE = 'TYPE
-
 -- | GraphQL Arrays , Resolvers and NonNull fields
 type WRAPPER = 'WRAPPER
 
 type CUSTOM = 'CUSTOM
 
 -- deprecated types
+
+{-# DEPRECATED INTERFACE "use: deriving(GQLType), will be automatically inferred" #-}
+
+type INTERFACE = 'TYPE
 
 {-# DEPRECATED ENUM "use: deriving(GQLType), will be automatically inferred" #-}
 

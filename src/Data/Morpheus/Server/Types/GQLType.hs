@@ -19,7 +19,8 @@ module Data.Morpheus.Server.Types.GQLType
         getDescriptions,
         typeOptions,
         getDirectives,
-        getFieldContents
+        getDefaultValues,
+        getDefaultArgumentValues
       ),
     GQLTypeOptions
       ( fieldLabelModifier,
@@ -54,17 +55,16 @@ import Data.Morpheus.Server.Types.SchemaT
   ( TypeFingerprint (..),
   )
 import Data.Morpheus.Server.Types.Types
-  ( Guard,
-    Pair,
+  ( Pair,
+    TypeGuard,
     Undefined (..),
   )
 import Data.Morpheus.Types.ID (ID)
 import Data.Morpheus.Types.Internal.AST
-  ( ArgumentsDefinition,
+  ( ArgumentDefinition,
     CONST,
     Description,
     Directives,
-    FieldName,
     QUERY,
     TypeCategory (..),
     TypeName (..),
@@ -207,14 +207,11 @@ class ToValue (KIND a) => GQLType a where
   getDirectives :: f a -> Map Text (Directives CONST)
   getDirectives _ = mempty
 
-  getFieldContents ::
-    f a ->
-    Map
-      FieldName
-      ( Maybe (Value CONST),
-        Maybe (ArgumentsDefinition CONST)
-      )
-  getFieldContents _ = mempty
+  getDefaultValues :: f a -> Map Text (Value CONST)
+  getDefaultValues _ = mempty
+
+  getDefaultArgumentValues :: f a -> [ArgumentDefinition CONST]
+  getDefaultArgumentValues _ = mempty
 
   __isEmptyType :: f a -> Bool
   __isEmptyType _ = False
@@ -256,8 +253,8 @@ instance Typeable m => GQLType (Undefined m) where
   type KIND (Undefined m) = WRAPPER
   __isEmptyType _ = True
 
-instance (GQLType interface) => GQLType (Guard interface possibleTypes) where
-  type KIND (Guard interface possibleTypes) = CUSTOM
+instance (GQLType interface) => GQLType (TypeGuard interface possibleTypes) where
+  type KIND (TypeGuard interface possibleTypes) = CUSTOM
   __type _ = __type (Proxy @interface)
 
 instance GQLType a => GQLType (Maybe a) where

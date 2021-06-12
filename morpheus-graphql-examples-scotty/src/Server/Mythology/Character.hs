@@ -18,7 +18,7 @@ module Server.Mythology.Character
   )
 where
 
-import Data.Morpheus.Types (GQLType (..), Guard (..))
+import Data.Morpheus.Types (GQLType (..), TypeGuard (..))
 import Data.Text (Text)
 import GHC.Generics (Generic)
 import Server.Mythology.Place
@@ -43,10 +43,10 @@ data Human m = Human
   }
   deriving (Generic, GQLType)
 
-type PersonGuard m = Guard Person (UnionPerson m)
+type PersonGuard m = TypeGuard Person (UnionPerson m)
 
 resolvePersons :: Applicative m => [PersonGuard m]
-resolvePersons = Guard <$> [UnionPersonDeity someDeity, UnionPersonHuman someHuman]
+resolvePersons = ResolveType <$> [UnionPersonDeity someDeity, UnionPersonHuman someHuman]
 
 data UnionPerson m
   = UnionPersonDeity Deity
