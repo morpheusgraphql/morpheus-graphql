@@ -135,7 +135,9 @@ consName kind (TypeName name) conName =
 
 -- withArgs: t => a -> t
 withArgs :: TypeName -> Type -> Type
-withArgs argsTypename = AppT (AppT (ConT ''(->)) (ConT (toName argsTypename)))
+withArgs argsTypename = InfixT (ConT (toName argsTypename)) ''Function
+
+type Function = (->)
 
 withMonad :: Type -> Type
 withMonad = AppT m'

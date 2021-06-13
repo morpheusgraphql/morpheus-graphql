@@ -99,7 +99,7 @@ defineMethods
           [ ('description, [|gqlTypeDescription|]),
             ('getDescriptions, [|gqlTypeDescriptions|]),
             ('getDirectives, [|gqlTypeDirectives|]),
-            ('getDefaultValues, [|gqlTypeDefaultValues|])
+            ('defaultValues, [|gqlTypeDefaultValues|])
           ]
       typeFamilies = do
         currentType <- applyVars tName typeParameters

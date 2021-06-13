@@ -9,7 +9,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Types.GQLType
@@ -19,8 +18,7 @@ module Data.Morpheus.Server.Types.GQLType
         getDescriptions,
         typeOptions,
         getDirectives,
-        getDefaultValues,
-        getDefaultArgumentValues
+        defaultValues
       ),
     GQLTypeOptions
       ( fieldLabelModifier,
@@ -61,8 +59,7 @@ import Data.Morpheus.Server.Types.Types
   )
 import Data.Morpheus.Types.ID (ID)
 import Data.Morpheus.Types.Internal.AST
-  ( ArgumentDefinition,
-    CONST,
+  ( CONST,
     Description,
     Directives,
     QUERY,
@@ -207,11 +204,8 @@ class ToValue (KIND a) => GQLType a where
   getDirectives :: f a -> Map Text (Directives CONST)
   getDirectives _ = mempty
 
-  getDefaultValues :: f a -> Map Text (Value CONST)
-  getDefaultValues _ = mempty
-
-  getDefaultArgumentValues :: f a -> [ArgumentDefinition CONST]
-  getDefaultArgumentValues _ = mempty
+  defaultValues :: f a -> Map Text (Value CONST)
+  defaultValues _ = mempty
 
   __isEmptyType :: f a -> Bool
   __isEmptyType _ = False

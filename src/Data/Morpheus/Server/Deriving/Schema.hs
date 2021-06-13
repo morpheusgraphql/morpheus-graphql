@@ -41,21 +41,29 @@ import Data.Morpheus.Kind
     TYPE,
     WRAPPER,
   )
+import Data.Morpheus.Server.Deriving.Schema.Enum
+  ( buildEnumTypeContent,
+  )
 import Data.Morpheus.Server.Deriving.Schema.Internal
   ( KindedType (..),
+    TyContent,
     TyContentM,
-    UpdateDef (..),
-    asObjectType,
-    builder,
     fromSchema,
-    unpackMs,
     updateByContent,
+  )
+import Data.Morpheus.Server.Deriving.Schema.Object
+  ( asObjectType,
+    buildObjectTypeContent,
     withObject,
   )
+import Data.Morpheus.Server.Deriving.Schema.Union (buildUnionTypeContent)
 import Data.Morpheus.Server.Deriving.Utils
-  ( TypeConstraint (..),
+  ( ConsRep (..),
+    TypeConstraint (..),
     TypeRep (..),
+    isEmptyConstraint,
     toRep,
+    unpackMonad,
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
@@ -284,5 +292,15 @@ deriveTypeContent ::
   KindedType kind a ->
   SchemaT kind (TypeContent TRUE kind CONST)
 deriveTypeContent kindedProxy =
-  unpackMs (toRep (fieldContentConstraint kindedProxy) kindedProxy)
-    >>= fmap (updateDef kindedProxy) . builder kindedProxy
+  unpackMonad
+    (toRep (fieldContentConstraint kindedProxy) kindedProxy)
+    >>= buildTypeContent kindedProxy
+
+buildTypeContent ::
+  (GQLType a, CategoryValue kind) =>
+  KindedType kind a ->
+  [ConsRep (TyContent kind)] ->
+  SchemaT kind (TypeContent TRUE kind CONST)
+buildTypeContent scope cons | all isEmptyConstraint cons = buildEnumTypeContent scope (consName <$> cons)
+buildTypeContent scope [ConsRep {consFields}] = buildObjectTypeContent scope consFields
+buildTypeContent scope cons = buildUnionTypeContent scope cons
