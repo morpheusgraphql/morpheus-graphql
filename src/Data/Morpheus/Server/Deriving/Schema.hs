@@ -210,7 +210,6 @@ instance DeriveTypeConstraint IN a => DeriveKindedType IN TYPE a where
 
 instance DeriveType cat a => DeriveKindedType cat CUSTOM (Resolver o e m a) where
   deriveKindedType _ = deriveType (Proxy @a)
-  deriveKindedContent _ = deriveContent (Proxy @a)
 
 -- Tuple
 instance DeriveType cat (Pair k v) => DeriveKindedType cat CUSTOM (k, v) where
@@ -301,6 +300,6 @@ buildTypeContent ::
   KindedType kind a ->
   [ConsRep (TyContent kind)] ->
   SchemaT kind (TypeContent TRUE kind CONST)
-buildTypeContent scope cons | all isEmptyConstraint cons = buildEnumTypeContent scope (consName <$> cons)
 buildTypeContent scope [ConsRep {consFields}] = buildObjectTypeContent scope consFields
+buildTypeContent scope cons | all isEmptyConstraint cons = buildEnumTypeContent scope (consName <$> cons)
 buildTypeContent scope cons = buildUnionTypeContent scope cons

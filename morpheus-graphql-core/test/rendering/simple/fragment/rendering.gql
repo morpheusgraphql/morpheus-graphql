@@ -1,17 +1,9 @@
 query {
-  character {
-    ... on Character {
-      __typename
+  deity {
+    name
+    power
+    friends {
       name
-    }
-    ... on Deity {
-      __typename
-      name
-    }
-    ... on Hero {
-      __typename
-      name
-      hobby
     }
   }
 }

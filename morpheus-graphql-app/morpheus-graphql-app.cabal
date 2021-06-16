@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: bbbfcbd006701c8d25e1c236bbefe66618a3f2c136a52239e3d2fac1eb39b31d
+-- hash: 6c3deb28dcc836bdf75b000417e8c69156baab225da3522f3d90e46d3c456ec0
 
 name:           morpheus-graphql-app
 version:        0.17.0
@@ -35,15 +35,15 @@ data-files:
     test/api/validation/fragment/on-type/query.gql
     test/api/validation/fragment/on-union-type/query.gql
     test/api/validation/fragment/schema.gql
-    test/merge/schema/query-subscription-mutation/api/app.gql
-    test/merge/schema/query-subscription-mutation/api/ext.gql
-    test/merge/schema/query-subscription-mutation/expected/ok.gql
-    test/merge/schema/query-subscription-mutation/request/mutation/query.gql
-    test/merge/schema/query-subscription-mutation/request/query/query.gql
-    test/merge/schema/simple-query/api/app.gql
-    test/merge/schema/simple-query/api/ext.gql
-    test/merge/schema/simple-query/expected/ok.gql
-    test/merge/schema/simple-query/request/query/query.gql
+    test/merge/schema/query-subscription-mutation/app.gql
+    test/merge/schema/query-subscription-mutation/ext.gql
+    test/merge/schema/query-subscription-mutation/mutation/query.gql
+    test/merge/schema/query-subscription-mutation/query/query.gql
+    test/merge/schema/query-subscription-mutation/rendering.gql
+    test/merge/schema/simple-query/app.gql
+    test/merge/schema/simple-query/ext.gql
+    test/merge/schema/simple-query/query/query.gql
+    test/merge/schema/simple-query/rendering.gql
     test/api/deity/interface/response.json
     test/api/deity/resolvers.json
     test/api/deity/simple/response.json
@@ -56,13 +56,13 @@ data-files:
     test/api/validation/fragment/on-type/response.json
     test/api/validation/fragment/on-union-type/response.json
     test/api/validation/fragment/resolvers.json
-    test/merge/schema/query-subscription-mutation/api/app.json
-    test/merge/schema/query-subscription-mutation/api/ext.json
-    test/merge/schema/query-subscription-mutation/request/mutation/response.json
-    test/merge/schema/query-subscription-mutation/request/query/response.json
-    test/merge/schema/simple-query/api/app.json
-    test/merge/schema/simple-query/api/ext.json
-    test/merge/schema/simple-query/request/query/response.json
+    test/merge/schema/query-subscription-mutation/app.json
+    test/merge/schema/query-subscription-mutation/ext.json
+    test/merge/schema/query-subscription-mutation/mutation/response.json
+    test/merge/schema/query-subscription-mutation/query/response.json
+    test/merge/schema/simple-query/app.json
+    test/merge/schema/simple-query/ext.json
+    test/merge/schema/simple-query/query/response.json
 
 source-repository head
   type: git
@@ -128,6 +128,7 @@ test-suite morpheus-graphql-app-test
     , megaparsec >=7.0.0 && <10.0.0
     , morpheus-graphql-app
     , morpheus-graphql-core >=0.17.0 && <0.18.0
+    , morpheus-graphql-test
     , mtl >=2.0 && <=3.0
     , relude >=0.3.0
     , scientific >=0.3.6.2 && <0.4

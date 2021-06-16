@@ -5,13 +5,20 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Utils.Schema
-  ( testSchema,
+  ( runSchemaTest,
   )
 where
 
-import Data.Aeson ((.:), (.=), FromJSON (..), ToJSON (..), Value (..), eitherDecode, encode, object)
-import qualified Data.ByteString.Lazy as L (readFile)
-import Data.ByteString.Lazy.Char8 (ByteString)
+import Data.Aeson
+  ( (.:),
+    (.=),
+    FromJSON (..),
+    ToJSON (..),
+    Value (..),
+    eitherDecode,
+    encode,
+    object,
+  )
 import Data.Morpheus.Core (parseFullSchema)
 import Data.Morpheus.Internal.Ext
   ( Eventless,
@@ -23,25 +30,17 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
   )
 import Data.Text (pack)
-import Relude hiding (ByteString, toString)
-import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.HUnit (testCase)
-import Utils.Utils
-  ( CaseTree (..),
-    FileUrl (..),
-    caseFailure,
-    scanSchemaTests,
-    toString,
+import Relude hiding (ByteString)
+import Test.Morpheus.Utils
+  ( FileUrl (..),
+    ReadSource (..),
+    assertEqualFailure,
   )
+import Test.Tasty (TestTree)
+import Test.Tasty.HUnit (testCase)
 
-readSource :: FilePath -> IO ByteString
-readSource = L.readFile
-
-readSchema :: FilePath -> IO (Eventless (Schema VALID))
-readSchema = fmap parseFullSchema . readSource . (<> "/schema.gql")
-
-readResponse :: FilePath -> IO Response
-readResponse = fmap (either AesonError id . eitherDecode) . readSource . (<> "/response.json")
+readResponse :: ToString t => t -> IO Response
+readResponse = fmap (either AesonError id . eitherDecode) . readResponseFile
 
 data Response
   = OK
@@ -60,21 +59,13 @@ instance ToJSON Response where
   toJSON (Errors err) = object ["errors" .= toJSON err]
   toJSON (AesonError err) = String (pack err)
 
-toTests :: CaseTree -> TestTree
-toTests CaseTree {caseUrl, children = Left {}} = schemaCase caseUrl
-toTests CaseTree {caseUrl = FileUrl {fileName}, children = Right children} =
-  testGroup
-    fileName
-    (fmap toTests children)
-
-testSchema :: IO TestTree
-testSchema = toTests <$> scanSchemaTests "test/schema"
-
-schemaCase :: FileUrl -> TestTree
-schemaCase url = testCase (fileName url) $ do
-  schema <- readSchema (toString url)
-  expected <- readResponse (toString url)
-  assertion expected schema
+runSchemaTest :: FileUrl -> [FileUrl] -> [TestTree]
+runSchemaTest url _ =
+  [ testCase (fileName url) $ do
+      schema <- parseFullSchema <$> readSchemaFile url
+      expected <- readResponse url
+      assertion expected schema
+  ]
 
 assertion :: Response -> Eventless (Schema VALID) -> IO ()
 assertion OK Success {} = pure ()
@@ -82,8 +73,8 @@ assertion Errors {errors = err} Failure {errors}
   | err == errors =
     pure
       ()
-assertion expected Success {} = caseFailure (encode expected) "OK"
+assertion expected Success {} = assertEqualFailure (encode expected) "OK"
 assertion expected Failure {errors} =
-  caseFailure
+  assertEqualFailure
     (encode expected)
     (encode (Errors errors))

@@ -51,6 +51,7 @@ tests:
     source-dirs: test
     ghc-options: -Wall
     dependencies:
+      - morpheus-graphql-test
       - morpheus-graphql-core           >= 0.17.0        && <  0.18.0
       - directory                       >= 1.0
       - relude                          >= 0.3.0

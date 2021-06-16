@@ -59,6 +59,7 @@ tests:
     ghc-options: -Wall
     dependencies:
       - morpheus-graphql-core
+      - morpheus-graphql-test
       - tasty
       - tasty-hunit
       - aeson

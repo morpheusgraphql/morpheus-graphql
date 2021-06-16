@@ -4,11 +4,12 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Utils.Rendering
-  ( test,
+  ( runRenderingTest,
   )
 where
 
 import Data.Aeson (encode)
+import qualified Data.ByteString.Lazy as L (readFile)
 import Data.ByteString.Lazy.Char8
   ( ByteString,
   )
@@ -16,58 +17,63 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Morpheus.Core
   ( defaultConfig,
     parseRequestWith,
+    parseSchema,
     render,
   )
 import Data.Morpheus.Internal.Ext
   ( Eventless,
     Result (..),
+    resultOr,
+  )
+import Data.Morpheus.Types.IO
+  ( GQLRequest (..),
   )
 import Data.Morpheus.Types.Internal.AST
-  ( FieldName (..),
-    Operation,
+  ( Operation,
+    Schema,
     VALID,
   )
-import qualified Data.Text as T
 import Relude hiding (ByteString)
+import Test.Morpheus.Utils
+  ( FileUrl (..),
+    assertEqualFailure,
+    assertValidSchemaFailure,
+    getVariables,
+    readQueryFile,
+    readSchemaFile,
+  )
 import Test.Tasty
   ( TestTree,
-    testGroup,
   )
 import Test.Tasty.HUnit
   ( assertFailure,
     testCase,
   )
-import Utils.Utils
-  ( assertValidSchema,
-    getRequest,
-    readSource,
-  )
 
 assertion :: ByteString -> Eventless (Operation VALID) -> IO ()
-assertion expected Success {result = actual}
-  | expected == actualValue = pure ()
-  | otherwise =
-    assertFailure
-      ("expected: \n\n " <> show expected <> " \n\n but got: \n\n " <> show actualValue)
-  where
-    actualValue = render actual
+assertion expected Success {result} = assertEqualFailure expected (render result)
 assertion _ Failure {errors} = assertFailure $ LB.unpack (encode errors)
 
-test :: FieldName -> [FieldName] -> TestTree
-test apiPath requestPath =
-  testGroup (T.unpack $ readName apiPath) $
-    fmap (testRendering apiPath) requestPath
+runRenderingTest :: FileUrl -> [FileUrl] -> [TestTree]
+runRenderingTest url = map (testRendering url)
 
-getExpectedRendering :: FieldName -> IO ByteString
-getExpectedRendering = readSource . (<> "/rendering.gql")
+assertValidSchema :: String -> IO (Schema VALID)
+assertValidSchema = readSchemaFile >=> resultOr assertValidSchemaFailure pure . parseSchema
+
+getRequest :: String -> IO GQLRequest
+getRequest p =
+  GQLRequest
+    Nothing
+    <$> readQueryFile p
+    <*> getVariables p
 
 testRendering ::
-  FieldName ->
-  FieldName ->
+  FileUrl ->
+  FileUrl ->
   TestTree
-testRendering apiPath path = testCase (T.unpack $ readName path) $ do
-  schema <- assertValidSchema apiPath
-  let fullPath = apiPath <> "/" <> path
+testRendering schemaPath path = testCase (fileName path) $ do
+  schema <- assertValidSchema (toString schemaPath)
+  let fullPath = toString path
   actual <- parseRequestWith defaultConfig schema <$> getRequest fullPath
-  expected <- getExpectedRendering fullPath
+  expected <- L.readFile (toString $ fullPath <> "/rendering.gql")
   assertion expected actual

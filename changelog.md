@@ -1,8 +1,19 @@
 # Changelog
 
+## Unreleased Changes
+
+### new Features
+
+- `TypeGuards` as an alternative for interfaces
+
+### Breaking Changes
+
+- removed `implements`field from `GQLType`
+- deprecated kind `INTERFACE`
+
 ## 0.17.0 - 25.02.2021
 
-## new features
+### new features
 
 - (issue [#543](https://github.com/morpheusgraphql/morpheus-graphql/issues/543) & [#558](https://github.com/morpheusgraphql/morpheus-graphql/issues/558)): `GQLTypeOptions` supports new option `typeNameModifier`.
   Before the schema failed if you wanted to use the same type for input and output, and the user had no control over the eventual GraphQL type name of the generated schema. Now with this option you can

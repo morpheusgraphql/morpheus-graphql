@@ -7,32 +7,28 @@ module Main
 where
 
 import Relude
+import Test.Morpheus.Utils
+  ( deepScan,
+    runCaseTree,
+  )
 import Test.Tasty
   ( defaultMain,
     testGroup,
   )
 import Utils.Api
-  ( apiTest,
+  ( runApiTest,
   )
-import qualified Utils.MergeSchema as MergeSchema
+import Utils.MergeSchema
+  ( runMergeTest,
+  )
 
 main :: IO ()
 main = do
-  mergeSchema <- MergeSchema.test
+  mergeTests <- runCaseTree runMergeTest <$> deepScan "merge"
+  apiTests <- runCaseTree runApiTest <$> deepScan "api"
   defaultMain $
     testGroup
-      "core tests"
-      [ mergeSchema,
-        apiTest "api/deity" ["simple", "interface"],
-        apiTest
-          "api/validation/fragment"
-          [ "on-type",
-            "on-interface",
-            "on-interface-inline",
-            "on-union-type",
-            "fail-unknown-field-on-interface",
-            "on-interface-type-casting",
-            "on-interface-type-casting-inline",
-            "on-interface-fail-without-casting"
-          ]
+      "App Tests"
+      [ mergeTests,
+        apiTests
       ]
