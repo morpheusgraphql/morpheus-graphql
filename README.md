@@ -109,7 +109,7 @@ Template Haskell Generates types: `Query` , `Deity`, `DeityArgs`, that can be us
 ### with Native Haskell Types
 
 To define a GraphQL API with Morpheus we start by defining the API Schema as a native Haskell data type,
-which derives the `Generic` typeClass. Lazily resolvable fields on this `Query` type are defined via `a -> ResolverQ () IO b`, representing resolving a set of arguments `a` to a concrete value `b`.
+which derives the `Generic` type class. Using the `DeriveAnyClass` language extension we then also derive instances for the `GQLType` type class. Lazily resolvable fields on this `Query` type are defined via `a -> ResolverQ () IO b`, representing resolving a set of arguments `a` to a concrete value `b`.
 
 ```haskell
 data Query m = Query
@@ -119,12 +119,12 @@ data Query m = Query
 data Deity = Deity
   { fullName :: Text         -- Non-Nullable Field
   , power    :: Maybe Text   -- Nullable Field
-  } deriving (Generic,GQLType)
+  } deriving (Generic, GQLType)
 
 data DeityArgs = DeityArgs
   { name      :: Text        -- Required Argument
   , mythology :: Maybe Text  -- Optional Argument
-  } deriving (Generic)
+  } deriving (Generic, GQLType)
 ```
 
 For each field in the `Query` type defined via `a -> m b` (like `deity`) we will define a resolver implementation that provides the values during runtime by referring to
@@ -137,13 +137,13 @@ data DeityArgs = DeityArgs
   { name      :: Text        -- Required Argument
   , mythology :: Maybe Text  -- Optional Argument
   , type'     :: Text
-  } deriving (Generic)
+  } deriving (Generic, GQLType)
 ```
 
 The field name in the final request will be `type` instead of `type'`. The Morpheus request parser converts each of the reserved identities in Haskell 2010 to their corresponding names internally. This also applies to selections.
 
 ```haskell
-resolveDeity :: DeityArgs -> ResolverQ e () Deity
+resolveDeity :: DeityArgs -> ResolverQ () IO Deity
 resolveDeity DeityArgs { name, mythology } = liftEither $ dbDeity name mythology
 
 askDB :: Text -> Maybe Text -> IO (Either String Deity)
