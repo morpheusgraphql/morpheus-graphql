@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -6,7 +7,6 @@ module Main
   )
 where
 
-import Data.Aeson (toJSON)
 import Data.Morpheus.Types (GQLRequest (..), GQLResponse (..))
 import qualified Feature.Holistic.API as Holistic
   ( api,
@@ -48,60 +48,62 @@ import Rendering.TestSchemaRendering (testSchemaRendering)
 import Subscription.Test (testSubsriptions)
 import Test.Morpheus.Utils
   ( FileUrl (..),
-    assertEqualResponse,
     cd,
     deepScan,
-    getRequestBy,
-    getResponse,
+    foldCaseTree,
     recursiveScan,
-    runCaseTree,
     scanDirectories,
+    testApi,
   )
 import Test.Tasty
   ( TestTree,
     defaultMain,
     testGroup,
   )
-import Test.Tasty.HUnit (testCase)
 
-testByFiles2 :: (GQLRequest -> IO GQLResponse) -> FileUrl -> [FileUrl] -> [TestTree]
-testByFiles2 testApi url _ =
-  [ testCase (fileName url) $ do
-      expectedResponse <- getResponse url
-      actualResponse <- getRequestBy (GQLRequest Nothing) url >>= testApi
-      assertEqualResponse expectedResponse (toJSON actualResponse)
-  ]
+mkUrl :: FilePath -> FileUrl
+mkUrl fileName =
+  FileUrl
+    { filePath = ["Feature", "test"],
+      fileName,
+      isDir = True
+    }
 
 testFeature2 :: (GQLRequest -> IO GQLResponse) -> FilePath -> IO TestTree
-testFeature2 api name = do
-  tests <- deepScan ("Feature/" <> name <> "/tests")
-  pure $ runCaseTree (testByFiles2 api) tests
+testFeature2 api name =
+  foldCaseTree (testApi api)
+    <$> deepScan ("Feature/" <> name <> "/tests")
 
-testFeature :: FileUrl -> (GQLRequest -> IO GQLResponse) -> FilePath -> IO TestTree
-testFeature url api name = do
-  tests <- recursiveScan scanDirectories (cd url name)
-  pure $ runCaseTree (testByFiles2 api) tests
+testFeature :: FilePath -> (GQLRequest -> IO GQLResponse, FilePath) -> IO TestTree
+testFeature groupName (api, name) =
+  foldCaseTree (testApi api)
+    <$> recursiveScan scanDirectories (cd (mkUrl groupName) name)
+
+testFeatures :: FilePath -> [(GQLRequest -> IO GQLResponse, FilePath)] -> IO TestTree
+testFeatures name cases =
+  testGroup name
+    <$> traverse
+      (testFeature name)
+      cases
 
 testInputs :: IO TestTree
 testInputs =
-  testGroup "input"
-    <$> traverse
-      (uncurry (testFeature (FileUrl ["Feature", "test"] "Input")))
-      [ (Variables.api, "variables"),
-        (Enums.api, "enums"),
-        (Scalars.api, "scalars"),
-        (Objects.api, "objects"),
-        (DefaultValues.api, "default-values")
-      ]
+  testFeatures
+    "Input"
+    [ (Variables.api, "variables"),
+      (Enums.api, "enums"),
+      (Scalars.api, "scalars"),
+      (Objects.api, "objects"),
+      (DefaultValues.api, "default-values")
+    ]
 
 testTypeCategory :: IO TestTree
 testTypeCategory =
-  testGroup "TypeCategoryCollision"
-    <$> traverse
-      (uncurry (testFeature (FileUrl ["Feature", "test"] "TypeCategoryCollision")))
-      [ (TypeCategoryCollisionSuccess.api, "success"),
-        (TypeCategoryCollisionFail.api, "fail")
-      ]
+  testFeatures
+    "TypeCategoryCollision"
+    [ (TypeCategoryCollisionSuccess.api, "success"),
+      (TypeCategoryCollisionFail.api, "fail")
+    ]
 
 main :: IO ()
 main = do

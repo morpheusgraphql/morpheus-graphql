@@ -4,9 +4,9 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e23db6c9ef449c32ff47897fac3f204665d44fa0b0bf73e6225d2e91e52593ea
+-- hash: 667b271e47b7545116224ba6b55e6af3e0524c6b9dab44b9c10a74a2322aacf2
 
-name:           morpheus-graphql-test
+name:           morpheus-graphql-tests
 version:        0.17.0
 synopsis:       Morpheus GraphQL Test
 category:       web, graphql, test
@@ -26,7 +26,7 @@ library
   exposed-modules:
       Test.Morpheus.Utils
   other-modules:
-      Paths_morpheus_graphql_test
+      Paths_morpheus_graphql_tests
   hs-source-dirs:
       src
   ghc-options: -Wall
@@ -39,4 +39,5 @@ library
     , tasty
     , tasty-hunit
     , text >=1.2.3.0 && <1.3
+    , unordered-containers
   default-language: Haskell2010
