@@ -4,108 +4,71 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Utils.MergeSchema
-  ( test,
+  ( runMergeTest,
   )
 where
 
-import Data.Aeson (decode, encode)
-import qualified Data.Aeson as A
 import qualified Data.ByteString.Lazy as L (readFile)
 import Data.Morpheus.App
   ( App (..),
     AppData (..),
     mkApp,
     mkApp,
-    runAppStream,
   )
 import Data.Morpheus.App.Internal.Resolving
-  ( ResponseStream,
-    ResultT (..),
-    resultOr,
+  ( resultOr,
   )
 import Data.Morpheus.Core
   ( parseSchema,
     render,
   )
-import Data.Morpheus.Types.IO
 import Data.Morpheus.Types.Internal.AST
-  ( FieldName (..),
-    Schema,
+  ( Schema,
     VALID,
-    Value,
   )
-import Data.Text (unpack)
 import Relude
+import Test.Morpheus.Utils
+  ( FileUrl (..),
+    assertEqualFailure,
+  )
 import Test.Tasty
   ( TestTree,
-    testGroup,
   )
 import Test.Tasty.HUnit
   ( assertFailure,
     testCase,
   )
 import Utils.Utils
-  ( caseFailure,
-    expectedResponse,
-    getRequest,
-    getResolver,
+  ( getResolver,
+    testRequest,
   )
 
-readSchema :: FieldName -> IO (Schema VALID)
-readSchema (FieldName p) = L.readFile (unpack p) >>= (resultOr (fail . show) pure . parseSchema)
+readSchema :: FilePath -> IO (Schema VALID)
+readSchema p = L.readFile p >>= (resultOr (fail . show) pure . parseSchema)
 
-loadApi :: FieldName -> IO (App () Identity)
+loadApi :: FilePath -> IO (App () Identity)
 loadApi url = do
-  schema <- readSchema ("test/" <> url <> ".gql")
-  resolvers <- getResolver ("test/" <> url <> ".json")
+  schema <- readSchema (url <> ".gql")
+  resolvers <- getResolver (url <> ".json")
   pure $ mkApp schema resolvers
 
+readApi :: FileUrl -> IO (App () Identity)
+readApi url = do
+  schema <- loadApi (toString url <> "/app")
+  extension <- loadApi (toString url <> "/ext")
+  pure (schema <> extension)
+
+runMergeTest :: FileUrl -> [FileUrl] -> [TestTree]
+runMergeTest url assets = testSchema url : map (testRequest (readApi url)) assets
+
+testSchema :: FileUrl -> TestTree
+testSchema caseUrl = testCase
+  "schema"
+  $ do
+    api <- readApi caseUrl
+    schema <- readSchema (toString caseUrl <> "/rendering.gql")
+    schemaAssertion api schema
+
 schemaAssertion :: App () Identity -> Schema VALID -> IO ()
-schemaAssertion (App AppData {appSchema}) expectedSchema
-  | render expectedSchema == render appSchema = pure ()
-  | otherwise = caseFailure (render expectedSchema) (render appSchema)
+schemaAssertion (App AppData {appSchema}) expectedSchema = assertEqualFailure (render expectedSchema) (render appSchema)
 schemaAssertion (FailApp gqlerror) _ = assertFailure $ " error: " <> show gqlerror
-
-schemaCase :: (FieldName, [FieldName]) -> IO TestTree
-schemaCase (url, files) = do
-  schema <- loadApi (url <> "/api/app")
-  extension <- loadApi (url <> "/api/ext")
-  let api = schema <> extension
-  pure $
-    testGroup
-      (show url)
-      [ testCase
-          "Schema"
-          (readSchema ("test/" <> url <> "/expected/ok.gql") >>= schemaAssertion api),
-        testGroup
-          "Requests"
-          (fmap (testApiRequest api url) files)
-      ]
-
-test :: IO TestTree
-test =
-  testGroup
-    "merge schema"
-    <$> traverse
-      schemaCase
-      [ ("merge/schema/simple-query", ["query"]),
-        ("merge/schema/query-subscription-mutation", ["query", "mutation"])
-      ]
-
-assertion :: A.Value -> ResponseStream e Identity (Value VALID) -> IO ()
-assertion expected (ResultT (Identity actual))
-  | Just expected == decode actualValue = pure ()
-  | otherwise = caseFailure (encode expected) actualValue
-  where
-    actualValue = encode (renderResponse actual)
-
-testApiRequest ::
-  App () Identity ->
-  FieldName ->
-  FieldName ->
-  TestTree
-testApiRequest api base path = testCase (unpack $ readName path) $ do
-  let fullPath = base <> "/request/" <> path
-  actual <- runAppStream api <$> getRequest fullPath
-  expected <- expectedResponse fullPath
-  assertion expected actual

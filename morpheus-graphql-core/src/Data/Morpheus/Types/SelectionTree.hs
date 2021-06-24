@@ -42,10 +42,11 @@ instance SelectionTree (Selection VALID) where
   getChildrenList node = case selectionContent node of
     SelectionField -> mempty
     (SelectionSet deeperSel) -> elems deeperSel
-    (UnionSelection sel) ->
-      concatMap
-        (elems . unionTagSelection)
-        (elems sel)
+    (UnionSelection interfaceSelection sel) ->
+      elems interfaceSelection
+        <> concatMap
+          (elems . unionTagSelection)
+          (elems sel)
 
   getName =
     fromString

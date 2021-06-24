@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -5,8 +6,7 @@
 module Data.Morpheus.Server.Types.Types
   ( Undefined (..),
     Pair (..),
-    -- MapKind (..),
-    -- mapKindFromList,
+    TypeGuard (..),
   )
 where
 
@@ -24,3 +24,7 @@ data Pair k v = Pair
     value :: v
   }
   deriving (Generic)
+
+data TypeGuard interface union
+  = ResolveInterface interface
+  | ResolveType union

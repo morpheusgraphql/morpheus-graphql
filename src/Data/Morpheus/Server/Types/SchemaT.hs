@@ -8,6 +8,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -19,7 +20,7 @@ module Data.Morpheus.Server.Types.SchemaT
     TypeFingerprint (..),
     toSchema,
     withInput,
-    withInterface,
+    extendImplements,
   )
 where
 
@@ -60,7 +61,7 @@ data TypeFingerprint
       Ord
     )
 
-type MyMap = Map TypeFingerprint (TypeDefinition ANY CONST)
+type MyMap = (Map TypeFingerprint (TypeDefinition ANY CONST), Map TypeName [TypeName])
 
 -- Helper Functions
 newtype SchemaT (cat :: TypeCategory) a = SchemaT
@@ -103,16 +104,27 @@ toSchema ::
   Eventless (Schema CONST)
 toSchema (SchemaT v) = do
   ((q, m, s), typeDefs) <- v
-  types <-
-    execUpdates Map.empty typeDefs
-      >>= checkTypeCollisions . Map.toList
+  (typeDefinitions, implements) <- execUpdates (Map.empty, Map.empty) typeDefs
+  types <- map (insertImplements implements) <$> checkTypeCollisions (Map.toList typeDefinitions)
   defineSchemaWith types (optionalType q, optionalType m, optionalType s)
+
+insertImplements :: Map TypeName [TypeName] -> TypeDefinition c CONST -> TypeDefinition c CONST
+insertImplements x TypeDefinition {typeContent = DataObject {..}, ..} =
+  TypeDefinition
+    { typeContent =
+        DataObject
+          { objectImplements = objectImplements <> implements,
+            ..
+          },
+      ..
+    }
+  where
+    implements :: [TypeName]
+    implements = Map.findWithDefault [] typeName x
+insertImplements _ t = t
 
 withInput :: SchemaT IN a -> SchemaT OUT a
 withInput (SchemaT x) = SchemaT x
-
-withInterface :: SchemaT OUT a -> SchemaT ct a
-withInterface (SchemaT x) = SchemaT x
 
 checkTypeCollisions :: [(TypeFingerprint, TypeDefinition k a)] -> Eventless [TypeDefinition k a]
 checkTypeCollisions = fmap Map.elems . foldlM collectTypes Map.empty
@@ -164,8 +176,19 @@ updateSchema fingerprint f x =
   SchemaT $ pure ((), [upLib])
   where
     upLib :: MyMap -> Eventless MyMap
-    upLib lib
-      | Map.member fingerprint lib = pure lib
+    upLib (lib, conn)
+      | Map.member fingerprint lib = pure (lib, conn)
       | otherwise = do
         (type', updates) <- runSchemaT (f x)
-        execUpdates lib ((pure . Map.insert fingerprint (toAny type')) : updates)
+        execUpdates (lib, conn) (update type' : updates)
+      where
+        update t (ts, c) = pure (Map.insert fingerprint (toAny t) ts, c)
+
+extendImplements :: TypeName -> [TypeName] -> SchemaT cat' ()
+extendImplements interface types = SchemaT $ pure ((), [upLib])
+  where
+    -- TODO: what happens if interface name collides?
+    upLib :: MyMap -> Eventless MyMap
+    upLib (lib, con) = pure (lib, foldr insertInterface con types)
+    insertInterface :: TypeName -> Map TypeName [TypeName] -> Map TypeName [TypeName]
+    insertInterface = Map.alter (Just . (interface :) . fromMaybe [])

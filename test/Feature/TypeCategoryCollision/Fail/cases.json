@@ -1,6 +1,0 @@
-[
-  {
-    "path": "failOnColision",
-    "description": "fail if type was used as input and output type without prefixes"
-  }
-]

@@ -8,6 +8,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
@@ -18,7 +19,6 @@ module Data.Morpheus.Server.Deriving.Utils
     conNameProxy,
     isRecordProxy,
     selNameProxy,
-    ResRep (..),
     TypeRep (..),
     ConsRep (..),
     TypeConstraint (..),
@@ -30,11 +30,10 @@ module Data.Morpheus.Server.Deriving.Utils
     toValue,
     isUnionRef,
     fieldTypeName,
+    unpackMonad,
   )
 where
 
-import Data.Functor (Functor (..))
-import Data.Functor.Identity (Identity (..))
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     GQLTypeOptions (..),
@@ -54,12 +53,9 @@ import Data.Morpheus.Utils.Kinded
   ( CategoryValue (..),
     kinded,
   )
-import Data.Proxy (Proxy (..))
-import Data.Semigroup (Semigroup (..))
 import Data.Text
   ( pack,
   )
-import GHC.Exts (Constraint)
 import GHC.Generics
   ( (:*:) (..),
     (:+:) (..),
@@ -81,19 +77,9 @@ import GHC.Generics
     selName,
   )
 import Relude
-  ( ($),
-    (.),
-    Bool (..),
-    Eq (..),
-    Int,
-    otherwise,
-    show,
-    undefined,
-    zipWith,
-  )
 
-datatypeNameProxy :: forall f (d :: Meta). Datatype d => f d -> TypeName
-datatypeNameProxy _ = TypeName $ pack $ datatypeName (undefined :: (M1 D d f a))
+datatypeNameProxy :: forall f (d :: Meta). Datatype d => GQLTypeOptions -> f d -> TypeName
+datatypeNameProxy options _ = TypeName $ pack $ typeNameModifier options False $ datatypeName (undefined :: (M1 D d f a))
 
 conNameProxy :: forall f (c :: Meta). Constructor c => GQLTypeOptions -> f c -> TypeName
 conNameProxy options _ =
@@ -134,7 +120,7 @@ class TypeRep (c :: * -> Constraint) (v :: *) f where
 
 instance (Datatype d, TypeRep c v f) => TypeRep c v (M1 D d f) where
   typeRep fun _ = typeRep fun (Proxy @f)
-  toTypeRep fun (M1 src) = (toTypeRep fun src) {tyName = datatypeNameProxy (Proxy @d)}
+  toTypeRep fun@(opt, _, _) (M1 src) = (toTypeRep fun src) {tyName = datatypeNameProxy opt (Proxy @d)}
 
 -- | recursion for Object types, both of them : 'INPUT_OBJECT' and 'OBJECT'
 instance (TypeRep c v a, TypeRep c v b) => TypeRep c v (a :+: b) where
@@ -234,12 +220,16 @@ data FieldRep (a :: *) = FieldRep
   }
   deriving (Functor)
 
-data ResRep (a :: *)
-  = ResRep
-      { unionRef :: [TypeName],
-        unionCons :: [ConsRep a]
-      }
-  | EnumRep {enumCons :: [TypeName]}
+unpackMonadFromField :: Monad m => FieldRep (m a) -> m (FieldRep a)
+unpackMonadFromField FieldRep {..} = do
+  cont <- fieldValue
+  pure (FieldRep {fieldValue = cont, ..})
+
+unpackMonadFromCons :: Monad m => ConsRep (m a) -> m (ConsRep a)
+unpackMonadFromCons ConsRep {..} = ConsRep consName <$> traverse unpackMonadFromField consFields
+
+unpackMonad :: Monad m => [ConsRep (m a)] -> m [ConsRep a]
+unpackMonad = traverse unpackMonadFromCons
 
 isEmptyConstraint :: ConsRep a -> Bool
 isEmptyConstraint ConsRep {consFields = []} = True

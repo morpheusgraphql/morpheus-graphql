@@ -10,6 +10,7 @@ packages:
   - morpheus-graphql-client
   - morpheus-graphql-core
   - morpheus-graphql-app
+  - morpheus-graphql-test
   - .
 
 extra-deps:

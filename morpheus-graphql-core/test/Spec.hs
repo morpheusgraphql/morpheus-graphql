@@ -7,42 +7,28 @@ module Main
 where
 
 import Relude
+import Test.Morpheus.Utils
+  ( deepScan,
+    runCaseTree,
+  )
 import Test.Tasty
   ( defaultMain,
     testGroup,
   )
-import qualified Utils.Rendering as Rendering
+import Utils.Rendering
+  ( runRenderingTest,
+  )
 import Utils.Schema
-  ( testSchema,
+  ( runSchemaTest,
   )
 
 main :: IO ()
 main = do
-  schema <- testSchema
+  schema <- runCaseTree runSchemaTest <$> deepScan "schema"
+  renderings <- runCaseTree runRenderingTest <$> deepScan "rendering"
   defaultMain $
     testGroup
       "core tests"
       [ schema,
-        Rendering.test
-          "rendering/simple"
-          [ "simple",
-            "nested",
-            "query",
-            "mutation",
-            "subscription",
-            "directive"
-          ],
-        Rendering.test
-          "rendering/union"
-          [ "interface",
-            "union"
-          ],
-        Rendering.test
-          "rendering/variable"
-          [ "simple",
-            "input",
-            "enum",
-            "list",
-            "include-exclude"
-          ]
+        renderings
       ]

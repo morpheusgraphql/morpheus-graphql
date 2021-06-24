@@ -50,6 +50,7 @@ import Data.Morpheus.Types
     RootResolver (..),
     ScalarValue (..),
     SubscriptionField,
+    TypeGuard (..),
     WithOperation,
     constRes,
     liftEither,
@@ -102,7 +103,7 @@ instance DecodeScalar Euro where
           (round (fromIntegral x / 100 :: Double))
           (mod x 100)
       )
-  decodeScalar _ = Left "invalid currency!"
+  decodeScalar _ = Left "Invalid Currency!"
 
 instance EncodeScalar Euro where
   encodeScalar (Euro x y) = Int (x * 100 + y)
@@ -136,7 +137,7 @@ root =
         { queryUser = resolveUser,
           queryAnimal = resolveAnimal,
           querySet = const $ pure $ S.fromList [1, 2, 4],
-          querySomeMap = pure $ M.fromList [("robin", 1), ("carl", 2)],
+          querySomeMap = pure $ M.fromList [("Robin", 1), ("carl", 2)],
           queryWrapped1 = constRes $ A (0, "some value"),
           queryWrapped2 = pure $ A "",
           queryFail1 = fail "fail example!!",
@@ -148,12 +149,32 @@ root =
                 },
           queryTestInterface =
             pure
-              Account
-                { accountName = pure "Value from Interface!"
-                },
+              [ ResolveInterface
+                  ( InterfaceAccount
+                      { interfaceAccountName = pure "myName"
+                      }
+                  ),
+                ResolveType (PossibleTypesAccountUser user),
+                ResolveType
+                  ( PossibleTypesAccountCompany
+                      Company
+                        { companyName =
+                            pure "MY Company Name"
+                        }
+                  )
+              ],
           queryTestInput = pure . pack . show
         }
     -------------------------------------------------------------
+    user =
+      User
+        { userName = pure "Test Name",
+          userEmail = pure "Test Mail",
+          userAddress = const $ lift (getDBAddress (Content 12)),
+          userOffice = constRes Nothing,
+          userHome = pure CityIDHH,
+          userEntity = pure []
+        }
     mutationResolver =
       Mutation
         { mutationCreateUser = resolveCreateUser,
@@ -248,7 +269,7 @@ getDBUser _ = do
             pure
               [ MyUnionAddress
                   Address
-                    { addressCity = pure "city",
+                    { addressCity = pure "City",
                       addressStreet = pure "street",
                       addressHouseNumber = pure 1
                     },

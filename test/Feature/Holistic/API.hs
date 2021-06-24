@@ -33,6 +33,7 @@ import Data.Morpheus.Types
     ID (..),
     RootResolver (..),
     ScalarValue (..),
+    TypeGuard (..),
     Undefined (..),
     liftEither,
     subscribe,
@@ -94,9 +95,15 @@ root =
             queryTestUnion = Just . TestUnionUser <$> queryUser,
             queryPerson =
               pure
-                Person
-                  { personName = pure (Just "test Person Name")
-                  },
+                ( ResolveType
+                    User
+                      { userName = pure "test Person Name",
+                        userEmail = pure "",
+                        userAddress = resolveAddress,
+                        userOffice = resolveAddress,
+                        userFriend = pure Nothing
+                      }
+                ),
             queryTestEnum =
               \QueryTestEnumArgs
                  { queryTestEnumArgsEnum

@@ -49,6 +49,7 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     possibleTypes,
     possibleInterfaceTypes,
     defineSchemaWith,
+    isPossibleInterfaceType,
   )
 where
 

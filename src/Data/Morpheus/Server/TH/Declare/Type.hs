@@ -30,11 +30,11 @@ import Data.Morpheus.Server.Internal.TH.Types
 import Data.Morpheus.Server.Internal.TH.Utils
   ( isSubscription,
     m',
-    tyConArgs,
+    m_,
   )
+import Data.Morpheus.Types (TypeGuard)
 import Data.Morpheus.Types.Internal.AST
   ( ConsD (..),
-    FieldDefinition (..),
     FieldName (..),
     TypeKind (..),
     TypeName (..),
@@ -43,26 +43,27 @@ import Data.Morpheus.Types.Internal.AST
 import Language.Haskell.TH
 import Relude hiding (Type)
 
-declareType :: ServerTypeDefinition cat s -> ServerDec [Dec]
+declareType :: ServerTypeDefinition s -> ServerDec [Dec]
+declareType (ServerInterfaceDefinition name interfaceName unionName) =
+  pure
+    [ TySynD
+        (toName name)
+        [PlainTV m_]
+        (apply ''TypeGuard [apply interfaceName [m'], apply unionName [m']])
+    ]
 declareType ServerTypeDefinition {tKind = KindScalar} = pure []
 declareType
   ServerTypeDefinition
     { tName,
       tCons,
-      tKind
+      tKind,
+      typeParameters
     } =
     do
       cons <- declareCons tKind tName tCons
-      let vars = map (PlainTV . toName) (tyConArgs tKind)
-      pure
-        [ DataD
-            []
-            (toName tName)
-            vars
-            Nothing
-            cons
-            (derive tKind)
-        ]
+      let vars = map (PlainTV . toName) typeParameters
+      let name = toName tName
+      pure [DataD [] name vars Nothing cons (derive tKind)]
 
 derive :: TypeKind -> [DerivClause]
 derive tKind = [deriveClasses (''Generic : derivingList)]
@@ -77,7 +78,7 @@ deriveClasses classNames = DerivClause Nothing (map ConT classNames)
 declareCons ::
   TypeKind ->
   TypeName ->
-  [ServerConsD cat s] ->
+  [ServerConsD] ->
   ServerDec [Con]
 declareCons tKind tName = traverse consR
   where
@@ -86,36 +87,28 @@ declareCons tKind tName = traverse consR
         <$> consName tKind tName cName
         <*> traverse (declareField tKind tName) cFields
 
-consName :: TypeKind -> TypeName -> TypeName -> ServerDec Name
-consName KindEnum (TypeName name) conName = do
-  namespace' <- asks namespace
-  if namespace'
-    then pure $ toName $ nameSpaceType [FieldName name] conName
-    else pure (toName conName)
-consName _ _ conName = pure (toName conName)
-
 declareField ::
   TypeKind ->
   TypeName ->
-  ServerFieldDefinition cat s ->
+  ServerFieldDefinition ->
   ServerDec (Name, Bang, Type)
 declareField tKind tName field = do
-  namespace' <- asks namespace
+  fieldName <- fieldTypeName tName (fieldName field)
   pure
-    ( fieldTypeName namespace' tName (fieldName $ originalField field),
+    ( fieldName,
       Bang NoSourceUnpackedness NoSourceStrictness,
       renderFieldType tKind field
     )
 
 renderFieldType ::
   TypeKind ->
-  ServerFieldDefinition cat s ->
+  ServerFieldDefinition ->
   Type
 renderFieldType
   tKind
   ServerFieldDefinition
     { isParametrized,
-      originalField = FieldDefinition {fieldType},
+      fieldType,
       argumentsTypeName
     } =
     withFieldWrappers tKind argumentsTypeName (declareTypeRef renderTypeName fieldType)
@@ -125,29 +118,29 @@ renderFieldType
         | isParametrized = (`apply` [m'])
         | otherwise = toCon
 
-fieldTypeName :: Bool -> TypeName -> FieldName -> Name
-fieldTypeName namespace tName fieldName
-  | namespace = toName (nameSpaceField tName fieldName)
-  | otherwise = toName fieldName
+fieldTypeName :: TypeName -> FieldName -> ServerDec Name
+fieldTypeName tName fieldName = do
+  namespace <- asks namespace
+  pure $ toName $
+    if namespace
+      then nameSpaceField tName fieldName
+      else fieldName
 
--- withSubscriptionField: t => SubscriptionField t
-withSubscriptionField :: TypeKind -> Type -> Type
-withSubscriptionField kind x
-  | isSubscription kind = AppT (ConT ''SubscriptionField) x
-  | otherwise = x
+consName :: TypeKind -> TypeName -> TypeName -> ServerDec Name
+consName kind (TypeName name) conName =
+  toName . genName <$> asks namespace
+  where
+    genName True | kind == KindEnum = nameSpaceType [FieldName name] conName
+    genName _ = conName
 
 -- withArgs: t => a -> t
 withArgs :: TypeName -> Type -> Type
-withArgs argsTypename = AppT (AppT arrowType argType)
-  where
-    argType = ConT $ toName argsTypename
-    arrowType = ConT ''Arrow
+withArgs argsTypename = InfixT (ConT (toName argsTypename)) ''Function
 
--- withMonad: t => m t
+type Function = (->)
+
 withMonad :: Type -> Type
 withMonad = AppT m'
-
-type Arrow = (->)
 
 ------------------------------------------------
 withFieldWrappers ::
@@ -164,3 +157,9 @@ withFieldWrappers kind _
     withSubscriptionField kind
       . withMonad
   | otherwise = id
+
+-- withSubscriptionField: t => SubscriptionField t
+withSubscriptionField :: TypeKind -> Type -> Type
+withSubscriptionField kind x
+  | isSubscription kind = AppT (ConT ''SubscriptionField) x
+  | otherwise = x

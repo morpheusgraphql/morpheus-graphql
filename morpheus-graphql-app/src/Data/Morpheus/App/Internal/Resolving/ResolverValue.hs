@@ -27,7 +27,8 @@ import Data.Morpheus.App.Internal.Resolving.ResolverState
   )
 import Data.Morpheus.Error (subfieldsNotSelected)
 import Data.Morpheus.Internal.Ext
-  ( SemigroupM (..),
+  ( (<:>),
+    SemigroupM (..),
   )
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
@@ -197,17 +198,19 @@ __encode obj sel@Selection {selectionContent} = encodeNode obj selectionContent
       encodeNode (mkUnion name mkEnumNull) unionSel
     encodeNode ResEnum {} _ = failure ("wrong selection on enum value" :: Message)
     -- UNION
-    encodeNode (ResUnion typename unionRef) (UnionSelection selections) =
-      unionRef >>= resolveObject currentSelection
-      where
-        currentSelection = pickSelection typename selections
-    encodeNode (ResUnion name _) _ =
-      failure ("union Resolver " <> msg name <> " should only recieve UnionSelection")
+    encodeNode (ResUnion typename unionRef) (UnionSelection interface selections) = do
+      unionRes <- unionRef
+      selection <- interface <:> pickSelection typename selections
+      resolveObject selection unionRes
+    encodeNode (ResUnion _ unionRef) (SelectionSet selection) =
+      unionRef >>= resolveObject selection
+    encodeNode (ResUnion name _) SelectionField =
+      failure ("union Resolver " <> msg name <> " cant resolve  SelectionField")
     -- SCALARS
     encodeNode ResNull _ = pure Null
     encodeNode (ResScalar x) SelectionField = pure $ Scalar x
     encodeNode ResScalar {} _ =
-      failure ("scalar Resolver should only recieve SelectionField" :: Message)
+      failure ("scalar Resolver should only receive SelectionField" :: Message)
 
 runDataResolver ::
   ( Monad m,
@@ -235,7 +238,7 @@ withObject ::
 withObject __typename f Selection {selectionName, selectionContent, selectionPosition} = checkContent selectionContent
   where
     checkContent (SelectionSet selection) = f selection
-    checkContent (UnionSelection unionSel) =
+    checkContent (UnionSelection interfaceSel unionSel) =
       f (selectOr empty unionTagSelection __typename unionSel)
     checkContent _ = failure [toGQLError $ subfieldsNotSelected selectionName "" selectionPosition]
 

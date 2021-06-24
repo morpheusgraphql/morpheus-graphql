@@ -33,7 +33,6 @@ data DerivingKind
   = SCALAR
   | TYPE
   | WRAPPER
-  | INTERFACE
   | CUSTOM
 
 class ToValue (a :: DerivingKind) where
@@ -48,15 +47,11 @@ instance ToValue 'WRAPPER where
 instance ToValue 'TYPE where
   toValue _ = TYPE
 
-instance ToValue 'INTERFACE where
-  toValue _ = INTERFACE
-
 instance ToValue 'CUSTOM where
   toValue _ = CUSTOM
 
 isObject :: DerivingKind -> Bool
 isObject TYPE = True
-isObject INTERFACE = True
 isObject _ = False
 
 -- | GraphQL input, type, union , enum
@@ -65,15 +60,16 @@ type TYPE = 'TYPE
 -- | GraphQL Scalar: Int, Float, String, Boolean or any user defined custom Scalar type
 type SCALAR = 'SCALAR
 
--- | GraphQL interface
-type INTERFACE = 'INTERFACE
-
 -- | GraphQL Arrays , Resolvers and NonNull fields
 type WRAPPER = 'WRAPPER
 
 type CUSTOM = 'CUSTOM
 
 -- deprecated types
+
+{-# DEPRECATED INTERFACE "use: deriving(GQLType), will be automatically inferred" #-}
+
+type INTERFACE = 'TYPE
 
 {-# DEPRECATED ENUM "use: deriving(GQLType), will be automatically inferred" #-}
 

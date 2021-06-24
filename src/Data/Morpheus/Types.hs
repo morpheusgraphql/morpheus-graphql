@@ -10,7 +10,7 @@
 
 -- | GQL Types
 module Data.Morpheus.Types
-  ( GQLType (KIND, description, implements, getDescriptions, typeOptions, getDirectives),
+  ( GQLType (KIND, description, getDescriptions, typeOptions, getDirectives),
     EncodeScalar (..),
     EncodeWrapper (..),
     DecodeScalar (..),
@@ -57,6 +57,7 @@ module Data.Morpheus.Types
     RenderGQL,
     render,
     GQLTypeOptions (..),
+    TypeGuard (..),
   )
 where
 
@@ -96,7 +97,7 @@ import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     GQLTypeOptions (..),
   )
-import Data.Morpheus.Server.Types.Types (Undefined (..))
+import Data.Morpheus.Server.Types.Types
 import Data.Morpheus.Types.GQLScalar
   ( DecodeScalar (..),
     EncodeScalar (..),
@@ -202,9 +203,9 @@ constRes :: (WithOperation o, Monad m) => b -> a -> Resolver o e m b
 constRes = const . pure
 
 constMutRes :: Monad m => [e] -> a -> args -> ResolverM e m a
-constMutRes events value = const $ do
+constMutRes events v = const $ do
   publish events
-  pure value
+  pure v
 
 {-# DEPRECATED failRes "use \"fail\" from \"MonadFail\"" #-}
 failRes ::

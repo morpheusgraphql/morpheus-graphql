@@ -1,0 +1,26 @@
+name: morpheus-graphql-test
+version: 0.17.0
+github: "nalchevanidze/morpheus-graphql"
+license: MIT
+author: "Daviti Nalchevanidze"
+category: web, graphql, test
+synopsis: Morpheus GraphQL Test
+maintainer: "d.nalchevanidze@gmail.com"
+homepage: https://morpheusgraphql.com
+copyright: "(c) 2019 Daviti Nalchevanidze"
+
+dependencies:
+  - base                  >= 4.7       && <  5
+  - relude                >= 0.3.0
+  - bytestring            >= 0.10.4    && <  0.11
+  - text                  >= 1.2.3.0   && <  1.3
+  - tasty
+  - tasty-hunit
+  - aeson
+  - directory >= 1.0
+
+library:
+  source-dirs: src
+  exposed-modules:
+    - Test.Morpheus.Utils
+  ghc-options: -Wall

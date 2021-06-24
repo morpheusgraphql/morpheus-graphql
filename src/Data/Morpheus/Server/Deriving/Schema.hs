@@ -4,6 +4,8 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -24,11 +26,6 @@ where
 
 -- MORPHEUS
 
-import Control.Applicative (Applicative (..))
-import Control.Monad ((>=>), (>>=))
-import Data.Functor (($>), (<$>), Functor (..))
-import Data.Map (Map)
-import Data.Maybe (Maybe (..))
 import Data.Morpheus.App.Internal.Resolving
   ( Resolver,
     resultOr,
@@ -40,26 +37,33 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Kind
   ( CUSTOM,
     DerivingKind,
-    INTERFACE,
     SCALAR,
     TYPE,
     WRAPPER,
   )
+import Data.Morpheus.Server.Deriving.Schema.Enum
+  ( buildEnumTypeContent,
+  )
 import Data.Morpheus.Server.Deriving.Schema.Internal
   ( KindedType (..),
+    TyContent,
     TyContentM,
-    UpdateDef (..),
-    asObjectType,
-    builder,
     fromSchema,
-    unpackMs,
     updateByContent,
+  )
+import Data.Morpheus.Server.Deriving.Schema.Object
+  ( asObjectType,
+    buildObjectTypeContent,
     withObject,
   )
+import Data.Morpheus.Server.Deriving.Schema.Union (buildUnionTypeContent)
 import Data.Morpheus.Server.Deriving.Utils
-  ( TypeConstraint (..),
+  ( ConsRep (..),
+    TypeConstraint (..),
     TypeRep (..),
+    isEmptyConstraint,
     toRep,
+    unpackMonad,
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
@@ -68,11 +72,13 @@ import Data.Morpheus.Server.Types.GQLType
   )
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
+    extendImplements,
     toSchema,
     withInput,
   )
 import Data.Morpheus.Server.Types.Types
   ( Pair,
+    TypeGuard,
   )
 import Data.Morpheus.Types.GQLScalar
   ( DecodeScalar (..),
@@ -82,6 +88,7 @@ import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition,
     CONST,
     CONST,
+    FieldContent (..),
     FieldContent (..),
     FieldsDefinition,
     GQLErrors,
@@ -98,6 +105,8 @@ import Data.Morpheus.Types.Internal.AST
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
+    UnionMember (memberName),
+    ValidationError,
     fieldsToArguments,
   )
 import Data.Morpheus.Utils.Kinded
@@ -108,14 +117,9 @@ import Data.Morpheus.Utils.Kinded
     outputType,
     setKind,
   )
-import Data.Proxy (Proxy (..))
-import GHC.Generics (Generic, Rep)
+import GHC.Generics (Rep)
 import Language.Haskell.TH (Exp, Q)
-import Prelude
-  ( ($),
-    (.),
-    Bool (..),
-  )
+import Relude
 
 type SchemaConstraints event (m :: * -> *) query mutation subscription =
   ( DeriveTypeConstraintOpt OUT (query (Resolver QUERY event m)),
@@ -174,7 +178,7 @@ deriveSchema _ = resultOr failure pure schema
 -- |  Generates internal GraphQL Schema for query validation and introspection rendering
 class DeriveType (kind :: TypeCategory) (a :: *) where
   deriveType :: f a -> SchemaT kind ()
-  deriveContent :: f a -> SchemaT kind (Maybe (FieldContent TRUE kind CONST))
+  deriveContent :: f a -> TyContentM kind
 
 instance (GQLType a, DeriveKindedType cat (KIND a) a) => DeriveType cat a where
   deriveType _ = deriveKindedType (KindedProxy :: KindedProxy (KIND a) a)
@@ -183,7 +187,7 @@ instance (GQLType a, DeriveKindedType cat (KIND a) a) => DeriveType cat a where
 -- | DeriveType With specific Kind: 'kind': object, scalar, enum ...
 class DeriveKindedType (cat :: TypeCategory) (kind :: DerivingKind) a where
   deriveKindedType :: kinded kind a -> SchemaT cat ()
-  deriveKindedContent :: kinded kind a -> SchemaT cat (Maybe (FieldContent TRUE cat CONST))
+  deriveKindedContent :: kinded kind a -> TyContentM cat
   deriveKindedContent _ = pure Nothing
 
 type DeriveTypeConstraint kind a =
@@ -197,9 +201,6 @@ instance (GQLType a, DeriveType cat a) => DeriveKindedType cat WRAPPER (f a) whe
 
 instance (GQLType a, DecodeScalar a) => DeriveKindedType cat SCALAR a where
   deriveKindedType = updateByContent deriveScalarContent . setKind (Proxy @LEAF)
-
-instance DeriveTypeConstraint OUT a => DeriveKindedType OUT INTERFACE a where
-  deriveKindedType = updateByContent deriveInterfaceContent . setKind (Proxy @OUT)
 
 instance DeriveTypeConstraint OUT a => DeriveKindedType OUT TYPE a where
   deriveKindedType = deriveOutputType
@@ -217,6 +218,29 @@ instance DeriveType cat (Pair k v) => DeriveKindedType cat CUSTOM (k, v) where
 -- Map
 instance DeriveType cat [Pair k v] => DeriveKindedType cat CUSTOM (Map k v) where
   deriveKindedType _ = deriveType (Proxy @[Pair k v])
+
+instance
+  ( DeriveTypeConstraint OUT interface,
+    DeriveTypeConstraint OUT union
+  ) =>
+  DeriveKindedType OUT CUSTOM (TypeGuard interface union)
+  where
+  deriveKindedType _ = do
+    updateByContent deriveInterfaceContent interfaceProxy
+    content <- deriveTypeContent (OutputType :: KindedType OUT union)
+    unionNames <- getUnionNames content
+    extendImplements interfaceName unionNames
+    where
+      interfaceName :: TypeName
+      interfaceName = gqlTypeName (__typeData interfaceProxy)
+      interfaceProxy :: KindedProxy OUT interface
+      interfaceProxy = KindedProxy
+      unionProxy :: KindedProxy OUT union
+      unionProxy = KindedProxy
+      getUnionNames :: TypeContent TRUE OUT CONST -> SchemaT OUT [TypeName]
+      getUnionNames DataUnion {unionMembers} = pure (memberName <$> unionMembers)
+      getUnionNames DataObject {} = pure [gqlTypeName (__typeData unionProxy)]
+      getUnionNames _ = failure ["guarded type must be an union or object" :: ValidationError]
 
 instance
   ( GQLType b,
@@ -267,5 +291,15 @@ deriveTypeContent ::
   KindedType kind a ->
   SchemaT kind (TypeContent TRUE kind CONST)
 deriveTypeContent kindedProxy =
-  unpackMs (toRep (fieldContentConstraint kindedProxy) kindedProxy)
-    >>= fmap (updateDef kindedProxy) . builder kindedProxy
+  unpackMonad
+    (toRep (fieldContentConstraint kindedProxy) kindedProxy)
+    >>= buildTypeContent kindedProxy
+
+buildTypeContent ::
+  (GQLType a, CategoryValue kind) =>
+  KindedType kind a ->
+  [ConsRep (TyContent kind)] ->
+  SchemaT kind (TypeContent TRUE kind CONST)
+buildTypeContent scope [ConsRep {consFields}] = buildObjectTypeContent scope consFields
+buildTypeContent scope cons | all isEmptyConstraint cons = buildEnumTypeContent scope (consName <$> cons)
+buildTypeContent scope cons = buildUnionTypeContent scope cons

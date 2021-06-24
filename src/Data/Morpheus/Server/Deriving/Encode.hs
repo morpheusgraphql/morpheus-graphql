@@ -36,7 +36,6 @@ import Data.Morpheus.App.Internal.Resolving
 import Data.Morpheus.Kind
   ( CUSTOM,
     DerivingKind,
-    INTERFACE,
     SCALAR,
     TYPE,
     WRAPPER,
@@ -61,6 +60,7 @@ import Data.Morpheus.Server.Deriving.Utils
 import Data.Morpheus.Server.Types.GQLType (GQLType (..))
 import Data.Morpheus.Server.Types.Types
   ( Pair (..),
+    TypeGuard (..),
   )
 import Data.Morpheus.Types
   ( RootResolver (..),
@@ -122,14 +122,6 @@ instance
   where
   encodeKind = pure . exploreResolvers . unContextValue
 
-instance
-  ( EncodeConstraint m a,
-    Monad m
-  ) =>
-  EncodeKind INTERFACE m a
-  where
-  encodeKind = pure . exploreResolvers . unContextValue
-
 --  Tuple  (a,b)
 instance
   Encode m (Pair k v) =>
@@ -140,6 +132,11 @@ instance
 --  Map
 instance (Monad m, Encode m [Pair k v]) => EncodeKind CUSTOM m (Map k v) where
   encodeKind = encode . fmap (uncurry Pair) . M.toList . unContextValue
+
+--  INTERFACE Types
+instance (Monad m, EncodeConstraint m guard, EncodeConstraint m union) => EncodeKind CUSTOM m (TypeGuard guard union) where
+  encodeKind (ContextValue (ResolveType value)) = pure (exploreResolvers value)
+  encodeKind (ContextValue (ResolveInterface value)) = pure (exploreResolvers value)
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
 instance

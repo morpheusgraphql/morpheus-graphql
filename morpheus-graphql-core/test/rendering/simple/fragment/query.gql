@@ -1,12 +1,13 @@
 query {
-  character {
-    ...OnCharacter
-    ... on Hero {
-      hobby
-    }
+  deity {
+    ...OnDeity
   }
 }
 
-fragment OnCharacter on Character {
+fragment OnDeity on Deity {
   name
+  power
+  friends {
+    name
+  }
 }

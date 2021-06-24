@@ -25,7 +25,9 @@ import GHC.Generics (Generic)
 import Server.Mythology.Character
   ( Deity,
     Human,
+    PersonGuard,
     dbDeity,
+    resolvePersons,
     someDeity,
     someHuman,
   )
@@ -49,7 +51,8 @@ data Character m
 
 data Query m = Query
   { deity :: DeityArgs -> m Deity,
-    character :: [Character m]
+    character :: [Character m],
+    persons :: [PersonGuard m]
   }
   deriving (Generic, GQLType)
 
@@ -81,7 +84,12 @@ resolveCharacter =
 rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =
   RootResolver
-    { queryResolver = Query {deity = resolveDeity, character = resolveCharacter},
+    { queryResolver =
+        Query
+          { deity = resolveDeity,
+            character = resolveCharacter,
+            persons = resolvePersons
+          },
       mutationResolver = Undefined,
       subscriptionResolver = Undefined
     }

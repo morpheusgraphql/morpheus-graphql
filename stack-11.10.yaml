@@ -10,6 +10,7 @@ packages:
   - morpheus-graphql-core
   - morpheus-graphql-subscriptions
   - morpheus-graphql-app
+  - morpheus-graphql-test
   - .
 
 allow-newer: true

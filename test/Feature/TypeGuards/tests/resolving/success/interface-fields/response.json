@@ -1,0 +1,8 @@
+{
+  "data": {
+    "characters": [
+      { "name": "Morpheus", "age": 2000 },
+      { "name": "Lamia", "age": 205 }
+    ]
+  }
+}
