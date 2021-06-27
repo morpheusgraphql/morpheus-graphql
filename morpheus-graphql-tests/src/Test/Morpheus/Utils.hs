@@ -6,26 +6,18 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Test.Morpheus.Utils
-  ( getVariables,
-    deepScan,
+  ( deepScan,
     FileUrl (..),
     CaseTree (..),
     ReadSource (..),
     scanDirectories,
     recursiveScan,
-    assertEqualFailure,
-    assertValidSchemaFailure,
     runCaseTree,
-    getResponse,
     cd,
     getRequest,
-    assertEqualResponse,
     foldCaseTree,
-    assertResponse,
     getResolverValues,
-    Response (..),
     responseAssertion,
-    readResponse,
     renderingAssertion,
     assertValidSchema,
     select,
@@ -35,6 +27,7 @@ module Test.Morpheus.Utils
     readRenderingFile,
     getSchema,
     testApi,
+    assertRes,
   )
 where
 
@@ -270,6 +263,15 @@ instance (ToJSON e) => ToJSON (Response e) where
   toJSON OK = String "OK"
   toJSON (ExpectedErrors err) = object ["errors" .= toJSON err]
   toJSON (UnexpectedError err) = String (fromString err)
+
+assertRes ::
+  (FromJSON err, Eq err, ToJSON err) =>
+  (FileUrl -> Either err a) ->
+  FileUrl ->
+  TestTree
+assertRes schema url = testCase (fileName url) $ do
+  expected <- readResponse url
+  responseAssertion expected schema
 
 responseAssertion :: (Eq err, ToJSON err) => Response err -> Either err a -> IO ()
 responseAssertion OK Right {} = pure ()

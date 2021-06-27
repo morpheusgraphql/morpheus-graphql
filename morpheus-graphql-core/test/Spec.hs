@@ -18,6 +18,7 @@ import Data.Morpheus.Internal.Ext (resultOr)
 import Relude hiding (ByteString)
 import Test.Morpheus.Utils
   ( FileUrl (..),
+    assertRes,
     deepScan,
     foldCaseTree,
     getRequest,
@@ -36,11 +37,7 @@ import Test.Tasty
 import Test.Tasty.HUnit (testCase)
 
 runSchemaTest :: FileUrl -> TestTree
-runSchemaTest url =
-  testCase (fileName url) $ do
-    schema <- resultOr Left Right . parseSchema <$> readSchemaFile url
-    expected <- readResponse url
-    responseAssertion expected schema
+runSchemaTest = assertRes (fmap (resultOr Left Right . parseSchema) . readSchemaFile)
 
 renderRequest :: FileUrl -> FileUrl -> IO (Either ByteString ByteString)
 renderRequest schemaUrl url = do
