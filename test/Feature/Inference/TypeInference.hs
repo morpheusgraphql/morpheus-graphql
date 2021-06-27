@@ -5,7 +5,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Feature.TypeInference.API
+module Feature.Inference.TypeInference
   ( api,
   )
 where

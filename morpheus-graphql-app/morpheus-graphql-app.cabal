@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: fc3fce1639c86e69f9eb06f00d9111c9d60195ba13bdb9a20db5a0cb40b4e9fd
+-- hash: 9420fa3c832fe489ea93777ec90ccecfb66c669df4c4bf57e9cd7a921bea6ff1
 
 name:           morpheus-graphql-app
 version:        0.17.0
@@ -35,13 +35,13 @@ data-files:
     test/api/validation/fragment/on-type/query.gql
     test/api/validation/fragment/on-union-type/query.gql
     test/api/validation/fragment/schema.gql
-    test/merge/schema/query-subscription-mutation/app.gql
-    test/merge/schema/query-subscription-mutation/ext.gql
+    test/merge/schema/query-subscription-mutation/app-ext.gql
+    test/merge/schema/query-subscription-mutation/app-main.gql
     test/merge/schema/query-subscription-mutation/mutation/query.gql
     test/merge/schema/query-subscription-mutation/query/query.gql
     test/merge/schema/query-subscription-mutation/rendering.gql
-    test/merge/schema/simple-query/app.gql
-    test/merge/schema/simple-query/ext.gql
+    test/merge/schema/simple-query/app-ext.gql
+    test/merge/schema/simple-query/app-main.gql
     test/merge/schema/simple-query/query/query.gql
     test/merge/schema/simple-query/rendering.gql
     test/api/deity/interface/response.json
@@ -56,12 +56,12 @@ data-files:
     test/api/validation/fragment/on-type/response.json
     test/api/validation/fragment/on-union-type/response.json
     test/api/validation/fragment/resolvers.json
-    test/merge/schema/query-subscription-mutation/app.json
-    test/merge/schema/query-subscription-mutation/ext.json
+    test/merge/schema/query-subscription-mutation/app-ext.json
+    test/merge/schema/query-subscription-mutation/app-main.json
     test/merge/schema/query-subscription-mutation/mutation/response.json
     test/merge/schema/query-subscription-mutation/query/response.json
-    test/merge/schema/simple-query/app.json
-    test/merge/schema/simple-query/ext.json
+    test/merge/schema/simple-query/app-ext.json
+    test/merge/schema/simple-query/app-main.json
     test/merge/schema/simple-query/query/response.json
 
 source-repository head

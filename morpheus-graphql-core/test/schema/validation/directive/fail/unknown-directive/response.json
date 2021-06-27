@@ -1,57 +1,55 @@
-{
-  "errors": [
-    {
-      "message": "Unknown Directive \"DirectveA\".",
-      "locations": [{ "line": 1, "column": 17 }]
-    },
-    {
-      "message": "Unknown Directive \"DirectveB\".",
-      "locations": [{ "line": 3, "column": 15 }]
-    },
-    {
-      "message": "Unknown Directive \"DirectveB\".",
-      "locations": [{ "line": 4, "column": 9 }]
-    },
-    {
-      "message": "Unknown Directive \"DirectveC\".",
-      "locations": [{ "line": 7, "column": 8 }]
-    },
-    {
-      "message": "Unknown Directive \"DirectveC\".",
-      "locations": [{ "line": 8, "column": 17 }]
-    },
-    {
-      "message": "Unknown Directive \"DirectveC\".",
-      "locations": [{ "line": 11, "column": 8 }]
-    },
-    {
-      "message": "Unknown Directive \"DirectveC\".",
-      "locations": [{ "line": 12, "column": 17 }]
-    },
-    {
-      "message": "Unknown Directive \"DirectveD\".",
-      "locations": [{ "line": 15, "column": 15 }]
-    },
-    {
-      "message": "Unknown Directive \"DirectveE\".",
-      "locations": [{ "line": 17, "column": 14 }]
-    },
-    {
-      "message": "Unknown Directive \"DirectveE\".",
-      "locations": [{ "line": 18, "column": 14 }]
-    },
+[
+  {
+    "message": "Unknown Directive \"DirectveA\".",
+    "locations": [{ "line": 1, "column": 17 }]
+  },
+  {
+    "message": "Unknown Directive \"DirectveB\".",
+    "locations": [{ "line": 3, "column": 15 }]
+  },
+  {
+    "message": "Unknown Directive \"DirectveB\".",
+    "locations": [{ "line": 4, "column": 9 }]
+  },
+  {
+    "message": "Unknown Directive \"DirectveC\".",
+    "locations": [{ "line": 7, "column": 8 }]
+  },
+  {
+    "message": "Unknown Directive \"DirectveC\".",
+    "locations": [{ "line": 8, "column": 17 }]
+  },
+  {
+    "message": "Unknown Directive \"DirectveC\".",
+    "locations": [{ "line": 11, "column": 8 }]
+  },
+  {
+    "message": "Unknown Directive \"DirectveC\".",
+    "locations": [{ "line": 12, "column": 17 }]
+  },
+  {
+    "message": "Unknown Directive \"DirectveD\".",
+    "locations": [{ "line": 15, "column": 15 }]
+  },
+  {
+    "message": "Unknown Directive \"DirectveE\".",
+    "locations": [{ "line": 17, "column": 14 }]
+  },
+  {
+    "message": "Unknown Directive \"DirectveE\".",
+    "locations": [{ "line": 18, "column": 14 }]
+  },
 
-    {
-      "message": "Unknown Directive \"DirectveF\".",
-      "locations": [{ "line": 22, "column": 12 }]
-    },
-    {
-      "message": "Unknown Directive \"DirectveF\".",
-      "locations": [{ "line": 23, "column": 34 }]
-    },
-    {
-      "message": "Unknown Directive \"DirectveF\".",
-      "locations": [{ "line": 23, "column": 17 }]
-    }
-  ]
-}
+  {
+    "message": "Unknown Directive \"DirectveF\".",
+    "locations": [{ "line": 22, "column": 12 }]
+  },
+  {
+    "message": "Unknown Directive \"DirectveF\".",
+    "locations": [{ "line": 23, "column": 17 }]
+  },
+  {
+    "message": "Unknown Directive \"DirectveF\".",
+    "locations": [{ "line": 23, "column": 34 }]
+  }
+]

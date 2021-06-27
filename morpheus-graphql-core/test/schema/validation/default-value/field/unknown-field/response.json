@@ -1,16 +1,14 @@
-{
-  "errors": [
-    {
-      "message": "Field Input3.field got invalid default value. Unknown Field \"field2\".",
-      "locations": []
-    },
-    {
-      "message": "Field Input3.field got invalid default value. in field \"field\": Unknown Field \"field2\".",
-      "locations": []
-    },
-    {
-      "message": "Field Input3.field got invalid default value. in field \"field\": Unknown Field \"field3\".",
-      "locations": []
-    }
-  ]
-}
+[
+  {
+    "message": "Field Input3.field got invalid default value. Unknown Field \"field2\".",
+    "locations": []
+  },
+  {
+    "message": "Field Input3.field got invalid default value. in field \"field\": Unknown Field \"field2\".",
+    "locations": []
+  },
+  {
+    "message": "Field Input3.field got invalid default value. in field \"field\": Unknown Field \"field3\".",
+    "locations": []
+  }
+]

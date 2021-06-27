@@ -17,6 +17,7 @@ module Data.Morpheus.Ext.Result
     PushEvents (..),
     resultOr,
     sortErrors,
+    toEither,
   )
 where
 
@@ -131,3 +132,6 @@ mapEvent func (ResultT ma) = ResultT $ mapEv <$> ma
     mapEv Success {result, warnings, events} =
       Success {result, warnings, events = fmap func events}
     mapEv (Failure err) = Failure err
+
+toEither :: Result e b -> Either GQLErrors b
+toEither = resultOr Left Right

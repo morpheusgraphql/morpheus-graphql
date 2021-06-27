@@ -4,8 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 
--- fail if type was used as input and output type without prefixes
-module Feature.TypeCategoryCollision.Fail
+module Feature.Collision.CategoryCollisionSuccess
   ( api,
   )
 where
@@ -15,6 +14,7 @@ import Data.Morpheus.Types
   ( GQLRequest,
     GQLResponse,
     GQLType (..),
+    GQLTypeOptions (..),
     RootResolver (..),
     Undefined (..),
   )
@@ -27,7 +27,14 @@ data Deity = Deity
   { name :: Text,
     age :: Int
   }
-  deriving (Show, Generic, GQLType)
+  deriving (Show, Generic)
+
+nonClashingTypeNameModifier :: Bool -> String -> String
+nonClashingTypeNameModifier True original = "Input" ++ original
+nonClashingTypeNameModifier False original = original
+
+instance GQLType Deity where
+  typeOptions _ opt = opt {typeNameModifier = nonClashingTypeNameModifier}
 
 newtype DeityArgs = DeityArgs
   { input :: Deity

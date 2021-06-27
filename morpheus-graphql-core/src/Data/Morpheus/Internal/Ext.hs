@@ -16,6 +16,7 @@ module Data.Morpheus.Internal.Ext
     (<:>),
     resolveWith,
     runResolutionT,
+    toEither,
   )
 where
 

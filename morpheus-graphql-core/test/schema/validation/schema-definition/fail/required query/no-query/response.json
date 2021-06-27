@@ -1,8 +1,6 @@
-{
-  "errors": [
-    {
-      "message": "Query root type must be provided.",
-      "locations": []
-    }
-  ]
-}
+[
+  {
+    "message": "Query root type must be provided.",
+    "locations": []
+  }
+]

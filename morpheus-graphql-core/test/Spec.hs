@@ -6,53 +6,48 @@ module Main
   )
 where
 
-import Data.Aeson (encode)
-import Data.ByteString.Lazy (ByteString)
 import Data.Morpheus.Core
   ( defaultConfig,
     parseRequestWith,
     parseSchema,
     render,
   )
-import Data.Morpheus.Internal.Ext (resultOr)
+import Data.Morpheus.Internal.Ext
+  ( toEither,
+  )
 import Relude hiding (ByteString)
-import Test.Morpheus.Utils
-  ( FileUrl (..),
-    assertRes,
+import Test.Morpheus
+  ( FileUrl,
     deepScan,
-    foldCaseTree,
-    getRequest,
-    getSchema,
-    readResponse,
-    readSchemaFile,
-    renderingAssertion,
-    responseAssertion,
-    runCaseTree,
+    mainTest,
+    mkUrl,
+    scan,
+    testQueryRendering,
+    testSchema,
   )
 import Test.Tasty
   ( TestTree,
-    defaultMain,
-    testGroup,
   )
-import Test.Tasty.HUnit (testCase)
 
 runSchemaTest :: FileUrl -> TestTree
-runSchemaTest = assertRes (fmap (resultOr Left Right . parseSchema) . readSchemaFile)
-
-renderRequest :: FileUrl -> FileUrl -> IO (Either ByteString ByteString)
-renderRequest schemaUrl url = do
-  schema <- getSchema (resultOr Left Right . parseSchema) schemaUrl
-  resultOr (Left . encode) (Right . render)
-    . parseRequestWith defaultConfig schema
-    <$> getRequest url
+runSchemaTest = testSchema (toEither . parseSchema)
 
 runRenderingTest :: FileUrl -> [FileUrl] -> [TestTree]
-runRenderingTest url = map (renderingAssertion (renderRequest url))
+runRenderingTest url =
+  map
+    ( testQueryRendering
+        (parseQuery, toEither . parseSchema)
+        url
+    )
+  where
+    parseQuery schema =
+      second render . toEither
+        . parseRequestWith defaultConfig schema
 
 main :: IO ()
 main =
-  sequence
-    [ foldCaseTree runSchemaTest <$> deepScan "schema",
-      runCaseTree runRenderingTest <$> deepScan "rendering"
+  mainTest
+    "Core tests"
+    [ scan runSchemaTest (mkUrl "schema"),
+      deepScan runRenderingTest (mkUrl "rendering")
     ]
-    >>= defaultMain . testGroup "core tests"

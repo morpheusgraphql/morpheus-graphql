@@ -1,11 +1,11 @@
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Feature.TypeGuards.API
+-- fail if type was used as input and output type without prefixes
+module Feature.Collision.CategoryCollisionFail
   ( api,
   )
 where
@@ -16,7 +16,6 @@ import Data.Morpheus.Types
     GQLResponse,
     GQLType (..),
     RootResolver (..),
-    TypeGuard (..),
     Undefined (..),
   )
 import Data.Text
@@ -24,53 +23,35 @@ import Data.Text
   )
 import GHC.Generics (Generic)
 
-data Character = Hydra
+data Deity = Deity
   { name :: Text,
     age :: Int
   }
   deriving (Show, Generic, GQLType)
 
-data Deity (m :: * -> *) = Deity
-  { name :: Text,
-    age :: Int,
-    power :: Text
+newtype DeityArgs = DeityArgs
+  { input :: Deity
   }
-  deriving (Generic, GQLType)
-
-data Implements (m :: * -> *)
-  = ImplementsDeity (Deity m)
-  | Creature {name :: Text, age :: Int}
-  deriving (Generic, GQLType)
-
-type Characters m = TypeGuard Character (Implements m)
+  deriving (Show, Generic, GQLType)
 
 newtype Query (m :: * -> *) = Query
-  { characters :: [Characters m]
+  { deity :: DeityArgs -> m Deity
   }
   deriving (Generic, GQLType)
-
-resolveCharacters :: [Characters m]
-resolveCharacters =
-  ResolveType
-    <$> [ ImplementsDeity
-            ( Deity
-                { name = "Morpheus",
-                  age = 2000,
-                  power = "Shapeshift"
-                }
-            ),
-          Creature
-            { name = "Lamia",
-              age = 205
-            }
-        ]
 
 rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =
   RootResolver
     { queryResolver =
         Query
-          { characters = resolveCharacters
+          { deity =
+              const $
+                pure
+                  Deity
+                    { name =
+                        "Morpheus",
+                      age = 1000
+                    }
           },
       mutationResolver = Undefined,
       subscriptionResolver = Undefined

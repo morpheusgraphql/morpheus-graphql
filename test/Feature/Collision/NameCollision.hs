@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Feature.Schema.API
+module Feature.Collision.NameCollision
   ( api,
   )
 where
@@ -11,7 +11,7 @@ where
 import Data.Morpheus (interpreter)
 import Data.Morpheus.Types (GQLRequest, GQLResponse, GQLType (..), RootResolver (..), Undefined (..))
 import Data.Text (Text)
-import qualified Feature.Schema.A2 as A2 (A (..))
+import qualified Feature.Collision.NameCollisionHelper as A2 (A (..))
 import GHC.Generics (Generic)
 
 data A = A

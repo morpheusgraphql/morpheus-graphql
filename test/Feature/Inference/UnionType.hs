@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Feature.UnionType.API
+module Feature.Inference.UnionType
   ( api,
   )
 where

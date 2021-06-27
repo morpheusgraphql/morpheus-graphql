@@ -23,5 +23,5 @@ dependencies:
 library:
   source-dirs: src
   exposed-modules:
-    - Test.Morpheus.Utils
+    - Test.Morpheus
   ghc-options: -Wall

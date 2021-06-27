@@ -1,4 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.App.Internal.Resolving.RootResolverValue
@@ -7,6 +8,7 @@ module Data.Morpheus.App.Internal.Resolving.RootResolverValue
   )
 where
 
+import qualified Data.Aeson as A
 import Data.Morpheus.App.Internal.Resolving.Event
   ( EventHandler (..),
   )
@@ -24,7 +26,11 @@ import Data.Morpheus.App.Internal.Resolving.ResolverState
   )
 import Data.Morpheus.App.Internal.Resolving.ResolverValue
   ( ResolverValue (..),
+    mkValue,
     resolveObject,
+  )
+import Data.Morpheus.Internal.Utils
+  ( selectOr,
   )
 import Data.Morpheus.Types.Internal.AST
   ( MUTATION,
@@ -34,7 +40,7 @@ import Data.Morpheus.Types.Internal.AST
     SUBSCRIPTION,
     Selection,
     VALID,
-    Value,
+    Value (..),
   )
 import Relude hiding
   ( Show,
@@ -48,6 +54,20 @@ data RootResolverValue e m = RootResolverValue
     subscription :: ResolverState (ResolverValue (Resolver SUBSCRIPTION e m)),
     channelMap :: Maybe (Selection VALID -> ResolverState (Channel e))
   }
+
+instance Monad m => A.FromJSON (RootResolverValue e m) where
+  parseJSON res =
+    pure
+      RootResolverValue
+        { query = lookupRes "query" res,
+          mutation = lookupRes "mutation" res,
+          subscription = lookupRes "subscription" res,
+          channelMap = Nothing
+        }
+
+lookupRes :: (Monad m, Monad m') => Text -> A.Value -> m (ResolverValue m')
+lookupRes name (A.Object fields) = pure (selectOr ResNull mkValue name fields)
+lookupRes _ _ = pure ResNull
 
 runRootDataResolver ::
   (Monad m, LiftOperation o) =>
