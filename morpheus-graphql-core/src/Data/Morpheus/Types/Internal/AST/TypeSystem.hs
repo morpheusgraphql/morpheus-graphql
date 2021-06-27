@@ -54,6 +54,7 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
 where
 
 -- MORPHEUS
+
 import Data.Morpheus.Error.NameCollision
   ( NameCollision (..),
   )
@@ -90,7 +91,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     OperationType (..),
     TRUE,
     Token,
-    TypeName,
+    TypeName (TypeName),
     ValidationError,
     ValidationErrors,
     isNotSystemTypeName,
@@ -137,6 +138,7 @@ import Data.Morpheus.Types.Internal.AST.Union
 import Data.Morpheus.Types.Internal.AST.Value
   ( Value (..),
   )
+import qualified Data.Text as T
 import Instances.TH.Lift ()
 import Language.Haskell.TH.Syntax (Lift (..))
 import Relude hiding
@@ -256,7 +258,7 @@ data SchemaDefinition = SchemaDefinition
 instance RenderGQL SchemaDefinition where
   renderGQL = renderSchemaDefinition . elems . unSchemaDefinition
 
-renderSchemaDefinition :: RenderGQL a => [a] -> Rendering
+renderSchemaDefinition :: [RootOperationTypeDefinition] -> Rendering
 renderSchemaDefinition entries = "schema" <> renderObject entries <> newline
 
 instance Selectable OperationType RootOperationTypeDefinition SchemaDefinition where
@@ -655,16 +657,26 @@ popByKey types (RootOperationTypeDefinition opType name) = case lookupWith typeN
 -- OTHER
 --------------------------------------------------------------------------------------------------
 
+hasDefaultOperationName :: RootOperationTypeDefinition -> Bool
+hasDefaultOperationName
+  RootOperationTypeDefinition
+    { rootOperationType,
+      rootOperationTypeDefinitionName = TypeName name
+    } = show rootOperationType == T.unpack name
+
 instance RenderGQL (Schema s) where
   renderGQL schema =
-    intercalate newline (fmap renderGQL visibleTypes <> [renderSchemaDefinition entries])
+    intercalate newline (fmap renderGQL visibleTypes <> schemaDefinition)
     where
+      schemaDefinition
+        | all hasDefaultOperationName entries = []
+        | otherwise = [renderSchemaDefinition entries]
       entries =
-        RootOperationTypeDefinition Query (typeName $ query schema)
-          : catMaybes
-            [ RootOperationTypeDefinition Mutation . typeName <$> mutation schema,
-              RootOperationTypeDefinition Subscription . typeName <$> subscription schema
-            ]
+        catMaybes
+          [ RootOperationTypeDefinition Query . typeName <$> Just (query schema),
+            RootOperationTypeDefinition Mutation . typeName <$> mutation schema,
+            RootOperationTypeDefinition Subscription . typeName <$> subscription schema
+          ]
       visibleTypes = filter (isNotSystemTypeName . typeName) (elems schema)
 
 instance RenderGQL (TypeDefinition a s) where
