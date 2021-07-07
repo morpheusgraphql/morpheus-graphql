@@ -176,7 +176,16 @@ newtype FieldName = FieldName {readName :: Text}
   deriving
     (Generic)
   deriving newtype
-    (Show, Ord, Eq, IsString, Hashable, Semigroup, FromJSON, ToJSON)
+    ( Show,
+      Ord,
+      Eq,
+      IsString,
+      ToString,
+      Hashable,
+      Semigroup,
+      FromJSON,
+      ToJSON
+    )
 
 instance Lift FieldName where
   lift = liftString . readName
@@ -208,6 +217,7 @@ newtype TypeName = TypeName {readTypeName :: Text}
       Ord,
       Eq,
       IsString,
+      ToString,
       Hashable,
       Semigroup,
       FromJSON,

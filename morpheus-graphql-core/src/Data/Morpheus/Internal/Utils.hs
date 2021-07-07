@@ -53,8 +53,7 @@ import Data.Morpheus.Ext.Map
   )
 import Data.Morpheus.Ext.Selectable
 import Data.Morpheus.Types.Internal.AST.Base
-  ( FieldName,
-    FieldName (..),
+  ( FieldName (..),
     Token,
     TypeName (..),
     ValidationErrors,
