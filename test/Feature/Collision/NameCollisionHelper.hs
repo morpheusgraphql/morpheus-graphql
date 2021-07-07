@@ -2,7 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Feature.Schema.A2
+module Feature.Collision.NameCollisionHelper
   ( A (..),
   )
 where

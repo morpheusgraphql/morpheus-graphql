@@ -1,14 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Subscription.Test (testSubsriptions) where
+module Subscription.Test (testSubscriptions) where
 
 import qualified Subscription.API as TS
 import Subscription.Case.ApolloRequest (testApolloRequest)
 import Subscription.Case.Publishing (testPublishing)
 import Test.Tasty (TestTree, testGroup)
 
-testSubsriptions :: IO TestTree
-testSubsriptions = do
+testSubscriptions :: IO TestTree
+testSubscriptions = do
   subscription <- testApolloRequest TS.app
   publishing <- testPublishing
   return $ testGroup "Subscription" [subscription, publishing]

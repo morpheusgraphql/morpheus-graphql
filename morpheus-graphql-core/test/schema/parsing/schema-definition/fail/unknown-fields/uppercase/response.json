@@ -1,8 +1,6 @@
-{
-  "errors": [
-    {
-      "message": "offset=43:\nunexpected 'Q'\nexpecting '#', '}', or OperationType\n",
-      "locations": [{ "line": 6, "column": 3 }]
-    }
-  ]
-}
+[
+  {
+    "message": "offset=43:\nunexpected 'Q'\nexpecting '#', '}', or OperationType\n",
+    "locations": [{ "line": 6, "column": 3 }]
+  }
+]

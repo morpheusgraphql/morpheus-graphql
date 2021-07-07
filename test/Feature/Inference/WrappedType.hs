@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Feature.WrappedTypeName.API
+module Feature.Inference.WrappedType
   ( api,
   )
 where

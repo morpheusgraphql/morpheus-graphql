@@ -18,10 +18,12 @@ module Data.Morpheus.App
     mkApp,
     runAppStream,
     MapAPI (..),
+    eitherSchema,
   )
 where
 
 import qualified Data.Aeson as A
+import Data.ByteString.Lazy (ByteString)
 import Data.Morpheus.App.Internal.Resolving
   ( ResolverContext (..),
     ResponseStream,
@@ -43,6 +45,7 @@ import Data.Morpheus.Core
     defaultConfig,
     internalSchema,
     parseRequestWith,
+    render,
   )
 import Data.Morpheus.Internal.Ext ((<:>))
 import Data.Morpheus.Internal.Utils
@@ -65,7 +68,7 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
     Value,
   )
-import Relude hiding (empty)
+import Relude hiding (ByteString, empty)
 
 mkApp :: ValidateSchema s => Schema s -> RootResolverValue e m -> App e m
 mkApp appSchema appResolvers =
@@ -159,3 +162,7 @@ withDebugger :: App e m -> App e m
 withDebugger App {app = AppData {appConfig = Config {..}, ..}} =
   App {app = AppData {appConfig = Config {debug = True, ..}, ..}, ..}
 withDebugger x = x
+
+eitherSchema :: App event m -> Either GQLErrors ByteString
+eitherSchema (App AppData {appSchema}) = Right (render appSchema)
+eitherSchema (FailApp errors) = Left errors

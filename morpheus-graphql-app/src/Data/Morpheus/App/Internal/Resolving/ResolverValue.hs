@@ -18,9 +18,17 @@ module Data.Morpheus.App.Internal.Resolving.ResolverValue
     mkEnum,
     mkEnumNull,
     mkObject,
+    mkBoolean,
+    mkFloat,
+    mkInt,
+    mkList,
+    mkNull,
+    mkString,
+    mkValue,
   )
 where
 
+import qualified Data.Aeson as A
 import qualified Data.HashMap.Lazy as HM
 import Data.Morpheus.App.Internal.Resolving.ResolverState
   ( ResolverContext (..),
@@ -34,11 +42,12 @@ import Data.Morpheus.Internal.Utils
   ( Failure (..),
     empty,
     keyOf,
+    mapTuple,
     selectOr,
     traverseCollection,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( FieldName,
+  ( FieldName (FieldName),
     GQLErrors,
     InternalError,
     Message,
@@ -48,6 +57,7 @@ import Data.Morpheus.Types.Internal.AST
     Selection (..),
     SelectionContent (..),
     SelectionSet,
+    Token,
     TypeName (..),
     UnionSelection,
     UnionTag (..),
@@ -56,11 +66,13 @@ import Data.Morpheus.Types.Internal.AST
     ValidationErrors,
     Value (..),
     Value (..),
+    decodeScientific,
     msg,
     toGQLError,
     unitFieldName,
     unitTypeName,
   )
+import qualified Data.Vector as V
 import Relude hiding (Show, empty)
 import Prelude (Show (..))
 
@@ -262,3 +274,41 @@ resolveObject selectionSet (ResObject drv@ResolverObject {__typename}) =
       local (\ctx -> ctx {currentSelection, currentTypeName = __typename}) $
         ObjectEntry (keyOf currentSelection) <$> lookupRes currentSelection drv
 resolveObject _ _ = failure ("expected object as resolver" :: InternalError)
+
+mkString :: Token -> ResolverValue m
+mkString = ResScalar . String
+
+mkFloat :: Double -> ResolverValue m
+mkFloat = ResScalar . Float
+
+mkInt :: Int -> ResolverValue m
+mkInt = ResScalar . Int
+
+mkBoolean :: Bool -> ResolverValue m
+mkBoolean = ResScalar . Boolean
+
+mkList :: [ResolverValue m] -> ResolverValue m
+mkList = ResList
+
+mkNull :: ResolverValue m
+mkNull = ResNull
+
+unPackName :: A.Value -> TypeName
+unPackName (A.String x) = TypeName x
+unPackName _ = "__JSON__"
+
+mkValue ::
+  (Monad m) =>
+  A.Value ->
+  ResolverValue m
+mkValue (A.Object v) =
+  mkObject
+    (maybe "__JSON__" unPackName $ HM.lookup "__typename" v)
+    $ fmap
+      (mapTuple FieldName (pure . mkValue))
+      (HM.toList v)
+mkValue (A.Array ls) = mkList (fmap mkValue (V.toList ls))
+mkValue A.Null = mkNull
+mkValue (A.Number x) = ResScalar (decodeScientific x)
+mkValue (A.String x) = ResScalar (String x)
+mkValue (A.Bool x) = ResScalar (Boolean x)
