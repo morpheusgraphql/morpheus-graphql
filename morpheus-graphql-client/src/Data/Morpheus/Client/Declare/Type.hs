@@ -28,9 +28,9 @@ import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ConsD (..),
     FieldDefinition (..),
-    FieldName,
+    FieldName (..),
     TypeKind (..),
-    TypeName,
+    TypeName (..),
     VALID,
   )
 import Language.Haskell.TH
@@ -61,7 +61,7 @@ declareCons TypeNameTH {namespace, typename} clientCons
   | isEnum clientCons = map consE clientCons
   | otherwise = map consR clientCons
   where
-    consE ConsD {cName} = NormalC (mkConName namespace (typename <> cName)) []
+    consE ConsD {cName} = NormalC (mkTypeName namespace typename cName) []
     consR ConsD {cName, cFields} =
       RecC
         (mkConName namespace cName)
@@ -73,6 +73,9 @@ declareField FieldDefinition {fieldName, fieldType} =
     Bang NoSourceUnpackedness NoSourceStrictness,
     declareTypeRef toCon fieldType
   )
+
+mkTypeName :: [FieldName] -> TypeName -> TypeName -> Name
+mkTypeName namespace (TypeName typename) = mkConName (namespace <> [FieldName typename])
 
 mkConName :: [FieldName] -> TypeName -> Name
 mkConName namespace = toName . nameSpaceType namespace

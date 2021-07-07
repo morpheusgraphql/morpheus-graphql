@@ -2,8 +2,9 @@ enum City {
   Athens
   Sparta
   Corinth
-  Delphi
-  Argos
+  # test lowercase enum
+  delphi
+  argos
 }
 
 type Query {
