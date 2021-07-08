@@ -116,6 +116,9 @@ class Collection a coll | coll -> a where
 instance Collection a [a] where
   singleton x = [x]
 
+instance Collection a (NonEmpty a) where
+  singleton x = x :| []
+
 instance KeyOf k v => Collection v (HashMap k v) where
   singleton x = HM.singleton (keyOf x) x
 

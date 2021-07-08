@@ -1,9 +1,7 @@
 query {
   character {
-    ... on Character {
-      __typename
-      name
-    }
+    __typename
+    name
     ... on Deity {
       __typename
       name

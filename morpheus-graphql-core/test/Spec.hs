@@ -8,6 +8,7 @@ where
 
 import Data.Morpheus.Core
   ( defaultConfig,
+    parseRequest,
     parseRequestWith,
     parseSchema,
     render,
@@ -22,12 +23,16 @@ import Test.Morpheus
     mainTest,
     mkUrl,
     scan,
+    testQuery,
     testQueryRendering,
     testSchema,
   )
 import Test.Tasty
   ( TestTree,
   )
+
+runQueryTest :: FileUrl -> TestTree
+runQueryTest = testQuery (toEither . parseRequest)
 
 runSchemaTest :: FileUrl -> TestTree
 runSchemaTest = testSchema (toEither . parseSchema)
@@ -48,6 +53,7 @@ main :: IO ()
 main =
   mainTest
     "Core tests"
-    [ scan runSchemaTest (mkUrl "schema"),
+    [ scan runQueryTest (mkUrl "query"),
+      scan runSchemaTest (mkUrl "schema"),
       deepScan runRenderingTest (mkUrl "rendering")
     ]

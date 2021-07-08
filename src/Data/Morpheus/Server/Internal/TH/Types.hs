@@ -14,8 +14,7 @@ module Data.Morpheus.Server.Internal.TH.Types
 where
 
 import Data.Morpheus.Types.Internal.AST
-  ( ArgumentDefinition,
-    ConsD (..),
+  ( ConsD (..),
     Description,
     Directives,
     FieldDefinition (..),

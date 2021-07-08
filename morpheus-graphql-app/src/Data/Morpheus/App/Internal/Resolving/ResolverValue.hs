@@ -40,7 +40,6 @@ import Data.Morpheus.Internal.Ext
   )
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
-    empty,
     keyOf,
     mapTuple,
     selectOr,
@@ -59,7 +58,6 @@ import Data.Morpheus.Types.Internal.AST
     SelectionSet,
     Token,
     TypeName (..),
-    UnionSelection,
     UnionTag (..),
     VALID,
     ValidValue,
@@ -212,7 +210,7 @@ __encode obj sel@Selection {selectionContent} = encodeNode obj selectionContent
     -- UNION
     encodeNode (ResUnion typename unionRef) (UnionSelection interface selections) = do
       unionRes <- unionRef
-      selection <- interface <:> pickSelection typename selections
+      selection <- selectOr (pure interface) ((interface <:>) . unionTagSelection) typename selections
       resolveObject selection unionRes
     encodeNode (ResUnion _ unionRef) (SelectionSet selection) =
       unionRef >>= resolveObject selection
@@ -236,9 +234,6 @@ runDataResolver ::
   m ValidValue
 runDataResolver res = asks currentSelection >>= __encode res
 
-pickSelection :: TypeName -> UnionSelection VALID -> SelectionSet VALID
-pickSelection = selectOr empty unionTagSelection
-
 withObject ::
   ( Monad m,
     Failure GQLErrors m
@@ -251,7 +246,7 @@ withObject __typename f Selection {selectionName, selectionContent, selectionPos
   where
     checkContent (SelectionSet selection) = f selection
     checkContent (UnionSelection interfaceSel unionSel) =
-      f (selectOr empty unionTagSelection __typename unionSel)
+      f (selectOr interfaceSel unionTagSelection __typename unionSel)
     checkContent _ = failure [toGQLError $ subfieldsNotSelected selectionName "" selectionPosition]
 
 resolveObject ::

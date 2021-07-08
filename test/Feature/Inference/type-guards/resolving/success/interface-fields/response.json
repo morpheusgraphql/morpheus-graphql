@@ -1,8 +1,8 @@
 {
   "data": {
     "characters": [
-      { "name": "Morpheus", "age": 2000 },
-      { "name": "Lamia", "age": 205 }
+      { "age": 2000, "name": "Morpheus", "__typename": "Deity" },
+      { "age": 205, "name": "Lamia", "__typename": "Creature" }
     ]
   }
 }

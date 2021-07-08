@@ -58,6 +58,10 @@ instance
   where
   renderGQL = maybe "" renderGQL
 
+instance (RenderGQL l, RenderGQL r) => RenderGQL (Either l r) where
+  renderGQL (Left x) = renderGQL x
+  renderGQL (Right x) = renderGQL x
+
 instance RenderGQL ByteString where
   renderGQL = Rendering . const
 

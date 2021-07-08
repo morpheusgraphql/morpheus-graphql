@@ -14,21 +14,16 @@ module Data.Morpheus.Validation.Query.UnionSelection
   )
 where
 
-import Data.List (lookup)
 import Data.Morpheus.Ext.SemigroupM
-  ( (<:>),
-    join,
+  ( join,
   )
 import Data.Morpheus.Internal.Utils
   ( elems,
     empty,
     fromElems,
-    member,
-    singleton,
   )
 import Data.Morpheus.Types.Internal.AST
   ( DataUnion,
-    FieldName,
     Fragment (..),
     IMPLEMENTABLE,
     Position (..),
@@ -78,13 +73,6 @@ splitFragment f types (InlineFragment fragment@Fragment {fragmentType}) =
 pureFirst :: a1 -> ([a1], [a2])
 pureFirst x = ([x], [])
 
-joinExploredSelection :: [([UnionTag], [Selection RAW])] -> FragmentValidator s ([UnionTag], SelectionSet RAW)
-joinExploredSelection i = do
-  let (x, y) = unzip i
-  let x' = concat x
-  let y' = concat y
-  (x',) <$> fromElems y'
-
 exploreFragments ::
   (ResolveFragment s) =>
   ( Fragment RAW ->
@@ -93,36 +81,50 @@ exploreFragments ::
   [TypeDefinition IMPLEMENTABLE VALID] ->
   SelectionSet RAW ->
   FragmentValidator s ([UnionTag], SelectionSet RAW)
-exploreFragments validateFragment types selectionSet =
-  traverse (splitFragment validateFragment types) (elems selectionSet)
-    >>= joinExploredSelection
+exploreFragments validateFragment types selectionSet = do
+  (tags, selections) <- unzip <$> traverse (splitFragment validateFragment types) (elems selectionSet)
+  selectionPosition <- fromMaybe (Position 0 0) <$> asksScope position
+  (concat tags,)
+    <$> fromElems
+      ( ( Selection
+            { selectionName = "__typename",
+              selectionAlias = Nothing,
+              selectionPosition,
+              selectionArguments = empty,
+              selectionContent = SelectionField,
+              selectionDirectives = empty
+            }
+        )
+          : concat selections
+      )
 
--- sorts Fragment by contitional Types
+-- sorts Fragment by conditional Types
 -- [
 --   ( Type for Tag User , [ Fragment for User] )
 --   ( Type for Tag Product , [ Fragment for Product] )
 -- ]
 tagUnionFragments ::
-  Bool ->
-  [TypeDefinition IMPLEMENTABLE VALID] ->
   [UnionTag] ->
+  [TypeDefinition IMPLEMENTABLE VALID] ->
   [(TypeName, [SelectionSet VALID])]
-tagUnionFragments hasTypeName types fragments
-  | hasTypeName = categorizeType <$> types
-  | otherwise = filter notEmpty (categorizeType <$> types)
+tagUnionFragments fragments = filter (not . null . snd) . map categorizeType
   where
-    notEmpty = not . null . snd
+    -- TODO: fragments should be merged and not selected by type
     categorizeType ::
       TypeDefinition IMPLEMENTABLE VALID ->
       (TypeName, [SelectionSet VALID])
-    categorizeType datatype = (typeName datatype, unionTagSelection <$> filter matches fragments)
-      where
-        matches = (`elem` subTypes datatype) . unionTagName
+    categorizeType datatype =
+      ( typeName datatype,
+        unionTagSelection
+          <$> filter
+            (isSubTypeOf datatype . unionTagName)
+            fragments
+      )
 
-subTypes :: TypeDefinition a s -> [TypeName]
-subTypes TypeDefinition {typeName, typeContent = DataObject {objectImplements}} =
-  typeName : objectImplements
-subTypes TypeDefinition {typeName} = [typeName]
+isSubTypeOf :: TypeDefinition a s -> TypeName -> Bool
+isSubTypeOf TypeDefinition {typeName, typeContent = DataObject {objectImplements}} name =
+  name `elem` (typeName : objectImplements)
+isSubTypeOf TypeDefinition {typeName} name = typeName == name
 
 {-
     - all Variable and Fragment references will be: resolved and validated
@@ -140,28 +142,13 @@ joinClusters ::
   SelectionSet VALID ->
   [(TypeName, [SelectionSet VALID])] ->
   FragmentValidator s (SelectionContent VALID)
-joinClusters selSet =
-  traverse joinCluster
-    >=> fmap (UnionSelection selSet) . fromElems
+joinClusters selSet [] = pure (SelectionSet selSet)
+joinClusters selSet typedSelections =
+  traverse mkUnionTag typedSelections
+    >>= fmap (UnionSelection selSet) . fromElems
   where
-    joinCluster (typeName, fragments) = UnionTag typeName <$> join (selSet : fragments)
-
-withTypename ::
-  SelectionSet VALID ->
-  FragmentValidator s (SelectionSet VALID)
-withTypename sel = do
-  selectionPosition <- fromMaybe (Position 0 0) <$> asksScope position
-  sel
-    <:> singleton
-      ( Selection
-          { selectionName = "__typename",
-            selectionAlias = Nothing,
-            selectionPosition,
-            selectionArguments = empty,
-            selectionContent = SelectionField,
-            selectionDirectives = empty
-          }
-      )
+    mkUnionTag :: (TypeName, [SelectionSet VALID]) -> FragmentValidator s UnionTag
+    mkUnionTag (typeName, fragments) = UnionTag typeName <$> join (selSet :| fragments)
 
 validateInterfaceSelection ::
   ResolveFragment s =>
@@ -173,28 +160,19 @@ validateInterfaceSelection ::
 validateInterfaceSelection
   validateFragment
   validate
-  typeDef
+  typeDef@TypeDefinition {typeName}
   inputSelectionSet = do
     possibleTypes <- askInterfaceTypes typeDef
     (spreads, selectionSet) <- exploreFragments validateFragment possibleTypes inputSelectionSet
     validSelectionSet <- validate typeDef selectionSet
-    let categories = tagUnionFragments (isTypenameSelected selectionSet) possibleTypes spreads
-    if null categories
-      then pure (SelectionSet validSelectionSet)
-      else do
-        validSelectionSetWithTypename <- withTypename validSelectionSet
-        joinClusters validSelectionSetWithTypename (insertDefault (typeName typeDef) categories)
-
-insertDefault :: TypeName -> [(TypeName, [a])] -> [(TypeName, [a])]
-insertDefault interfaceName categories
-  | isJust (lookup interfaceName categories) = categories
-  | otherwise = (interfaceName, []) : categories
+    let tags = tagUnionFragments spreads possibleTypes
+    let interfaces = concatMap snd $ filter ((typeName ==) . fst) tags
+    let onlyTypes = filter ((typeName /=) . fst) tags
+    xs <- join (validSelectionSet :| interfaces)
+    joinClusters xs onlyTypes
 
 mkUnionRootType :: FragmentValidator s (TypeDefinition IMPLEMENTABLE VALID)
 mkUnionRootType = (`mkType` DataObject [] empty) <$> asksScope currentTypeName
-
-isTypenameSelected :: SelectionSet s -> Bool
-isTypenameSelected = member ("__typename" :: FieldName)
 
 validateUnionSelection ::
   ResolveFragment s =>
@@ -211,4 +189,4 @@ validateUnionSelection validateFragment validate members selectionSet = do
   (spreads, selSet) <- exploreFragments validateFragment unionTypes selectionSet
   typeDef <- mkUnionRootType
   validSelection <- validate typeDef selSet
-  joinClusters validSelection (tagUnionFragments (isTypenameSelected selectionSet) unionTypes spreads)
+  joinClusters validSelection (tagUnionFragments spreads unionTypes)
