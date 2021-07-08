@@ -16,6 +16,7 @@ module Test.Morpheus
     testSchema,
     testQueryRendering,
     renderingAssertion,
+    testQuery,
     -- main
     mainTest,
   )
@@ -58,6 +59,15 @@ testApi ::
 testApi api =
   assertResponse
     (fmap expects . api <=< getQuery)
+
+testQuery ::
+  (FromJSON req, ToJSON err, Eq err, FromJSON err) =>
+  (req -> Either err a) ->
+  FileUrl ->
+  TestTree
+testQuery f =
+  assertResponse
+    (fmap (fromEither . f) . getQuery)
 
 testSchema ::
   (ToJSON err, Eq err, FromJSON err) =>

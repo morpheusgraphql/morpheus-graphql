@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 8d883c138331cf0b98c4e7446a02737e8a68a40f9f13a5f6344b6bdf93e10a38
+-- hash: 452b2bbcf41dc9cb31658c60d9ac0b445ac419b5ce9d6063983fd737655fad76
 
 name:           morpheus-graphql-core
 version:        0.17.0
@@ -23,6 +23,8 @@ extra-source-files:
     changelog.md
     README.md
 data-files:
+    test/query/parsing/selection-set/empty-selection/query.gql
+    test/query/parsing/selection-set/non-empty-selection/query.gql
     test/rendering/simple/directive/query.gql
     test/rendering/simple/directive/rendering.gql
     test/rendering/simple/fragment/query.gql
@@ -94,6 +96,8 @@ data-files:
     "test/schema/validation/schema-definition/fail/required query/schema-with-query/schema.gql"
     test/schema/validation/schema-definition/fail/unknown-type/unknown/schema.gql
     test/schema/validation/schema-definition/ok/full/schema.gql
+    test/query/parsing/selection-set/empty-selection/response.json
+    test/query/parsing/selection-set/non-empty-selection/response.json
     test/rendering/variable/enum/variables.json
     test/rendering/variable/include-exclude/variables.json
     test/rendering/variable/input/variables.json

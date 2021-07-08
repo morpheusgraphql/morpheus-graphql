@@ -18,13 +18,16 @@ import Data.Morpheus.Error.Selection
   ( hasNoSubfields,
     subfieldsNotSelected,
   )
+import Data.Morpheus.Ext.Empty (Empty (..))
+import Data.Morpheus.Ext.MergeSet
+  ( toNonEmpty,
+  )
 import Data.Morpheus.Ext.SemigroupM
-  ( concatTraverse,
+  ( join,
   )
 import Data.Morpheus.Internal.Utils
-  ( Failure (..),
-    elems,
-    empty,
+  ( Elems (..),
+    Failure (..),
     keyOf,
     singleton,
   )
@@ -84,7 +87,7 @@ import Data.Morpheus.Validation.Query.UnionSelection
   ( validateInterfaceSelection,
     validateUnionSelection,
   )
-import Relude hiding (empty)
+import Relude hiding (empty, join)
 
 selectionsWithoutTypename :: SelectionSet VALID -> [Selection VALID]
 selectionsWithoutTypename = filter (("__typename" /=) . keyOf) . elems
@@ -143,15 +146,15 @@ processSelectionDirectives ::
   DirectiveLocation ->
   Directives RAW ->
   (Directives VALID -> FragmentValidator s (SelectionSet VALID)) ->
-  FragmentValidator s (SelectionSet VALID)
+  FragmentValidator s (Maybe (SelectionSet VALID))
 processSelectionDirectives location rawDirectives sel = do
   directives <- validateDirectives location rawDirectives
   include <- shouldIncludeSelection directives
   selection <- sel directives
   pure $
     if include
-      then selection
-      else empty
+      then Just selection
+      else Nothing
 
 validateFragmentSelection :: (ResolveFragment s) => Fragment RAW -> FragmentValidator s (SelectionSet VALID)
 validateFragmentSelection f@Fragment {fragmentSelection} = do
@@ -169,11 +172,13 @@ validateSelectionSet ::
   TypeDefinition IMPLEMENTABLE VALID ->
   SelectionSet RAW ->
   FragmentValidator s (SelectionSet VALID)
-validateSelectionSet typeDef =
-  concatTraverse validateSelection
+validateSelectionSet typeDef selectionSet =
+  traverse validateSelection (elems selectionSet)
+    >>= toNonEmpty . catMaybes
+    >>= join
   where
     -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
-    validateSelection :: Selection RAW -> FragmentValidator s (SelectionSet VALID)
+    validateSelection :: Selection RAW -> FragmentValidator s (Maybe (SelectionSet VALID))
     validateSelection
       sel@Selection
         { selectionName,

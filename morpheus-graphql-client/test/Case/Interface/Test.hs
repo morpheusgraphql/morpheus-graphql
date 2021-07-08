@@ -88,39 +88,40 @@ testInterface = testCase "test interfaces" $ do
         ( MyQuery
             { character =
                 [ CharacterDeity
-                    { name = "Deity Name",
-                      power = "Deity Power",
-                      __typename = "Deity"
+                    { __typename = "Deity",
+                      name = "Deity Name",
+                      power = "Deity Power"
                     },
                   CharacterCharacter
-                    { name = "Character Name",
-                      __typename = "Character"
+                    { __typename = "Character",
+                      name = "Character Name"
                     },
                   CharacterHero
-                    { name = "Hero Name",
-                      hobby = "Deity Power",
-                      __typename = "Hero"
+                    { __typename = "Hero",
+                      name = "Hero Name",
+                      hobby = "Deity Power"
                     }
                 ],
               character2 =
                 [ Character2Character
-                    { name1 = "test name",
+                    { __typename = "Character",
+                      name1 = "test name",
                       name = "test name"
                     }
                 ],
               character3 =
                 [ Character3Hero
-                    { hobby = "Hero Hobby",
-                      name2 = "Hero name2",
-                      __typename = "Hero"
+                    { __typename = "Hero",
+                      hobby = "Hero Hobby",
+                      name2 = "Hero name2"
                     },
                   Character3Deity
-                    { name2 = "Hero name2",
-                      __typename = "Deity"
+                    { __typename = "Deity",
+                      name2 = "Hero name2"
                     },
                   Character3Character
-                    { name2 = "Character name2",
-                      __typename = "Character"
+                    { __typename = "Character",
+                      name2 = "Character name2"
                     }
                 ],
               character4 =
@@ -128,8 +129,8 @@ testInterface = testCase "test interfaces" $ do
                     { __typename = "Character"
                     },
                   Character4Hero
-                    { hobby = "Hero Hobby",
-                      __typename = "Hero"
+                    { __typename = "Hero",
+                      hobby = "Hero Hobby"
                     },
                   Character4Character
                     { __typename = "Deity"

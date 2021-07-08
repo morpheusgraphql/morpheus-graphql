@@ -18,6 +18,9 @@ class Elems a coll | coll -> a where
 instance Elems a (HashMap k a) where
   elems = HM.elems
 
+instance Elems a (NonEmpty a) where
+  elems (x :| xs) = x : xs
+
 instance Elems a [a] where
   elems = id
 

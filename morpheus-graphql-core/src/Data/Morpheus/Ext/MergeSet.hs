@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE DeriveTraversable #-}
@@ -6,15 +7,18 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Ext.MergeSet
   ( MergeSet,
+    toNonEmpty,
   )
 where
 
 import Data.Morpheus.Ext.Elems (Elems (..))
-import Data.Morpheus.Ext.Empty (Empty (..))
 import Data.Morpheus.Ext.Map
   ( fromListT,
     resolveWith,
@@ -34,6 +38,7 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Types.Internal.AST.Base
   ( FieldName,
     Ref,
+    ValidationError,
     ValidationErrors,
   )
 import Data.Morpheus.Types.Internal.AST.Stage
@@ -46,19 +51,24 @@ import Relude
 
 -- set with mergeable components
 newtype MergeSet (dups :: Stage) k a = MergeSet
-  { unpack :: [a]
+  { unpack :: NonEmpty a
   }
   deriving
     ( Show,
       Eq,
       Functor,
       Foldable,
-      Lift,
       Traversable,
       Collection a,
-      Elems a,
-      Empty
+      Elems a
     )
+
+instance Lift a => Lift (MergeSet (dups :: Stage) k a) where
+  lift (MergeSet (x :| xs)) = [|MergeSet (x :| xs)|]
+
+#if MIN_VERSION_template_haskell(2,16,0)
+  liftTyped (MergeSet (x :| xs))  = [|| MergeSet (x :| xs) ||]
+#endif
 
 instance (KeyOf k a) => Selectable k a (MergeSet opt k a) where
   selectOr fb f key (MergeSet ls) = maybe fb f (find ((key ==) . keyOf) ls)
@@ -82,9 +92,13 @@ resolveMergable ::
     Failure ValidationErrors m
   ) =>
   [Ref FieldName] ->
-  [a] ->
+  NonEmpty a ->
   m (MergeSet dups k a)
-resolveMergable path xs = runResolutionT (fromListT (toPair <$> xs)) (MergeSet . fmap snd) (resolveWith (resolveConflict path))
+resolveMergable path (x :| xs) = runResolutionT (fromListT (toPair <$> (x : xs))) (MergeSet . fromList . map snd) (resolveWith (resolveConflict path))
+
+toNonEmpty :: Failure ValidationErrors f => [a] -> f (NonEmpty a)
+toNonEmpty [] = failure ["empty selection sets are not supported." :: ValidationError]
+toNonEmpty (x : xs) = pure (x :| xs)
 
 instance
   ( KeyOf k a,
@@ -95,13 +109,13 @@ instance
   ) =>
   FromElems m a (MergeSet VALID k a)
   where
-  fromElems = resolveMergable []
+  fromElems = resolveMergable [] <=< toNonEmpty
 
 instance Applicative m => SemigroupM m (MergeSet RAW k a) where
   mergeM _ (MergeSet x) (MergeSet y) = pure $ MergeSet $ x <> y
 
-instance Applicative m => FromElems m a (MergeSet RAW k a) where
-  fromElems = pure . MergeSet
+instance (Applicative m, Failure ValidationErrors m) => FromElems m a (MergeSet RAW k a) where
+  fromElems = fmap MergeSet . toNonEmpty
 
 resolveConflict ::
   ( Monad m,

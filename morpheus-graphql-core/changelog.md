@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- the parser reports invalid empty selection sets
 - The parser is compliant with the GQL specification and supports all valid characters #581
 - The parser performance improvement: on average 3-4 times faster, in some cases more than 100 times faster.
 

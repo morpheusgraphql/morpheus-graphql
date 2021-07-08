@@ -19,7 +19,8 @@
     "character2": [
       {
         "name1": "test name",
-        "name": "test name"
+        "name": "test name",
+        "__typename": "Character"
       }
     ],
     "character3": [

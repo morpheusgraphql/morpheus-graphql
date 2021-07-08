@@ -129,8 +129,13 @@ renderSelectionSet = renderObject . elems
 instance RenderGQL (SelectionContent VALID) where
   renderGQL SelectionField = ""
   renderGQL (SelectionSet selSet) = renderSelectionSet selSet
-  -- TODO: render interface fields
-  renderGQL (UnionSelection interfaceFields unionSets) = renderObject (elems unionSets)
+  renderGQL (UnionSelection interfaceFields unionSets) =
+    renderObject unionSelectionElements
+    where
+      unionSelectionElements :: [Either (Selection VALID) UnionTag]
+      unionSelectionElements =
+        map Left (elems interfaceFields)
+          <> map Right (elems unionSets)
 
 instance
   ( Monad m,

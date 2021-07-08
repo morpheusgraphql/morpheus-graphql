@@ -168,7 +168,11 @@ subTypesBySelection path dType Selection {selectionContent = SelectionSet select
 subTypesBySelection path dType Selection {selectionContent = UnionSelection interface unionSelections} =
   do
     (clientCons, subTypes, requests) <-
-      unzip3 <$> traverse getUnionType (elems unionSelections)
+      unzip3
+        <$> traverse
+          getUnionType
+          ( UnionTag (typeName dType) interface : elems unionSelections
+          )
     pure
       ( ClientTypeDefinition
           { clientTypeName = TypeNameTH path (typeFrom [] dType),
