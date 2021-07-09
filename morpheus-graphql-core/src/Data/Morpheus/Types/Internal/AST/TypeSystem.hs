@@ -91,10 +91,8 @@ import Data.Morpheus.Types.Internal.AST.Base
     OperationType (..),
     TRUE,
     Token,
-    TypeName (TypeName),
     ValidationError,
     ValidationErrors,
-    isNotSystemTypeName,
     msgValidation,
     toOperationType,
   )
@@ -103,6 +101,11 @@ import Data.Morpheus.Types.Internal.AST.Fields
     DirectiveDefinition (..),
     Directives,
     FieldsDefinition,
+  )
+import Data.Morpheus.Types.Internal.AST.Name
+  ( TypeName,
+    isNotSystemTypeName,
+    unpackName,
   )
 import Data.Morpheus.Types.Internal.AST.Stage
   ( CONST,
@@ -661,8 +664,8 @@ hasDefaultOperationName :: RootOperationTypeDefinition -> Bool
 hasDefaultOperationName
   RootOperationTypeDefinition
     { rootOperationType,
-      rootOperationTypeDefinitionName = TypeName name
-    } = show rootOperationType == T.unpack name
+      rootOperationTypeDefinitionName = name
+    } = show rootOperationType == T.unpack (unpackName name)
 
 instance RenderGQL (Schema s) where
   renderGQL schema =

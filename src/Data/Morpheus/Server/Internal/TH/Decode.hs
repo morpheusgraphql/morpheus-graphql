@@ -30,7 +30,7 @@ import Data.Morpheus.Types.Internal.AST
     ObjectEntry (..),
     ScalarValue,
     Token,
-    TypeName (..),
+    TypeName,
     VALID,
     ValidObject,
     ValidValue,
@@ -39,7 +39,14 @@ import Data.Morpheus.Types.Internal.AST
     msg,
     msgInternal,
   )
-import Relude hiding (empty)
+import Relude
+  ( (.),
+    Applicative (pure),
+    Either (..),
+    Monad ((>>=)),
+    Semigroup ((<>)),
+    either,
+  )
 
 withInputObject ::
   Failure InternalError m =>

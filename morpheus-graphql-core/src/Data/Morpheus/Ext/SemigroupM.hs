@@ -23,9 +23,11 @@ import Data.Morpheus.Internal.Utils
     failOnDuplicates,
   )
 import Data.Morpheus.Types.Internal.AST.Base
-  ( FieldName,
-    Ref,
+  ( Ref,
     ValidationErrors,
+  )
+import Data.Morpheus.Types.Internal.AST.Name
+  ( FieldName,
   )
 import Relude hiding (empty, join)
 

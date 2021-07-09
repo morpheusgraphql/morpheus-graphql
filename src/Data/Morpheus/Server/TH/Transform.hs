@@ -16,7 +16,7 @@ module Data.Morpheus.Server.TH.Transform
 where
 
 import Data.Morpheus.Internal.Utils
-  ( capitalTypeName,
+  ( camelCaseTypeName,
     elems,
     singleton,
   )
@@ -41,7 +41,7 @@ import Data.Morpheus.Types.Internal.AST
     Directives,
     FieldContent (..),
     FieldDefinition (..),
-    FieldName (..),
+    FieldName,
     FieldsDefinition,
     IN,
     OUT,
@@ -50,17 +50,16 @@ import Data.Morpheus.Types.Internal.AST
     TypeContent (..),
     TypeDefinition (..),
     TypeKind (..),
-    TypeName (..),
+    TypeName,
     TypeRef (..),
     UnionMember (..),
     Value,
-    hsTypeName,
     isPossibleInterfaceType,
     isResolverType,
     kindOf,
     mkConsEnum,
     mkTypeRef,
-    toFieldName,
+    unpackName,
   )
 import Language.Haskell.TH
 import Relude hiding (empty, get)
@@ -100,7 +99,7 @@ genTypeDefinition
         DataInterface {} -> mkInterfaceName originalTypeName
         _ -> originalTypeName
       tKind = kindOf typeDef
-      tName = hsTypeName typeName
+      tName = typeName
       gql =
         Just
           GQLTypeDefinition
@@ -120,17 +119,11 @@ genTypeDefinition
       withType (ConsIN tCons) = [ServerTypeDefinition {..}]
       withType (ConsOUT others tCons) = ServerTypeDefinition {..} : others
 
-toHSTypeRef :: TypeRef -> TypeRef
-toHSTypeRef TypeRef {typeConName, ..} = TypeRef {typeConName = hsTypeName typeConName, ..}
-
-toHSServerFieldDefinition :: ServerFieldDefinition -> ServerFieldDefinition
-toHSServerFieldDefinition ServerFieldDefinition {..} = ServerFieldDefinition {fieldType = toHSTypeRef fieldType, ..}
-
 mkCons :: TypeName -> [ServerFieldDefinition] -> ServerConsD
 mkCons typename fields =
   ConsD
-    { cName = hsTypeName typename,
-      cFields = fmap toHSServerFieldDefinition fields
+    { cName = typename,
+      cFields = fields
     }
 
 mkObjectCons :: TypeName -> [ServerFieldDefinition] -> [ServerConsD]
@@ -138,10 +131,10 @@ mkObjectCons typeName fields = [mkCons typeName fields]
 
 mkArgsTypeName :: Bool -> TypeName -> FieldName -> TypeName
 mkArgsTypeName namespace typeName fieldName
-  | namespace = hsTypeName typeName <> argTName
+  | namespace = typeName <> argTName
   | otherwise = argTName
   where
-    argTName = capitalTypeName (fieldName <> "Args")
+    argTName = camelCaseTypeName [fieldName] "Args"
 
 mkObjectField ::
   FieldDefinition OUT s ->
@@ -198,12 +191,11 @@ genInterfaceUnion interfaceName =
           ServerFieldDefinition
             { isParametrized = True,
               argumentsTypeName = Nothing,
-              fieldName = "un" <> toFieldName cName,
-              fieldType = mkTypeRef utName
+              fieldName = coerce ("un" <> cName),
+              fieldType = mkTypeRef memberName
             }
       where
-        cName = hsTypeName tName <> utName
-        utName = hsTypeName memberName
+        cName = tName <> memberName
 
 genTypeContent ::
   TypeName ->
@@ -235,12 +227,11 @@ genTypeContent typeName (DataUnion members) =
           ServerFieldDefinition
             { isParametrized = True,
               argumentsTypeName = Nothing,
-              fieldName = "un" <> toFieldName cName,
-              fieldType = mkTypeRef utName
+              fieldName = coerce ("un" <> cName),
+              fieldType = mkTypeRef memberName
             }
       where
-        cName = hsTypeName typeName <> utName
-        utName = hsTypeName memberName
+        cName = typeName <> memberName
 
 data TypeContext s = TypeContext
   { toArgsTypeName :: FieldName -> TypeName,
@@ -282,10 +273,10 @@ genArgumentType
 genArgumentType _ = pure []
 
 mkFieldDescription :: FieldDefinition cat s -> Maybe (Text, Description)
-mkFieldDescription FieldDefinition {..} = (readName fieldName,) <$> fieldDescription
+mkFieldDescription FieldDefinition {..} = (unpackName fieldName,) <$> fieldDescription
 
 mkFieldDirective :: FieldDefinition cat s -> (Text, Directives s)
-mkFieldDirective FieldDefinition {..} = (readName fieldName, fieldDirectives)
+mkFieldDirective FieldDefinition {..} = (unpackName fieldName, fieldDirectives)
 
 ---
 
@@ -325,13 +316,13 @@ instance
   get _ = []
 
 instance Meta (DataEnumValue s) Description where
-  get DataEnumValue {enumName, enumDescription = Just x} = [(readTypeName enumName, x)]
+  get DataEnumValue {enumName, enumDescription = Just x} = [(unpackName enumName, x)]
   get _ = []
 
 instance Meta (DataEnumValue s) (Directives s) where
   get DataEnumValue {enumName, enumDirectives}
     | null enumDirectives = []
-    | otherwise = [(readTypeName enumName, enumDirectives)]
+    | otherwise = [(unpackName enumName, enumDirectives)]
 
 instance
   Meta (FieldDefinition c s) v =>
@@ -340,18 +331,22 @@ instance
   get = concatMap get . elems
 
 instance Meta (FieldDefinition c s) Description where
-  get FieldDefinition {fieldName, fieldDescription = Just x} = [(readName fieldName, x)]
+  get FieldDefinition {fieldName, fieldDescription = Just x} = [(unpackName fieldName, x)]
   get _ = []
 
 instance Meta (FieldDefinition c s) (Directives s) where
   get FieldDefinition {fieldName, fieldDirectives}
     | null fieldDirectives = []
-    | otherwise = [(readName fieldName, fieldDirectives)]
+    | otherwise = [(unpackName fieldName, fieldDirectives)]
 
 getInputFields :: TypeDefinition c s -> [FieldDefinition IN s]
 getInputFields TypeDefinition {typeContent = DataInputObject {inputObjectFields}} = elems inputObjectFields
 getInputFields _ = []
 
 getDefaultValue :: FieldDefinition c s -> Maybe (Text, Value s)
-getDefaultValue FieldDefinition {fieldName, fieldContent = Just DefaultInputValue {defaultInputValue}} = Just (readName fieldName, defaultInputValue)
+getDefaultValue
+  FieldDefinition
+    { fieldName,
+      fieldContent = Just DefaultInputValue {defaultInputValue}
+    } = Just (unpackName fieldName, defaultInputValue)
 getDefaultValue _ = Nothing

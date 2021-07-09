@@ -57,25 +57,26 @@ import Data.Morpheus.Rendering.RenderGQL
     space,
   )
 import Data.Morpheus.Types.Internal.AST.Base
-  ( FieldName,
-    Message,
+  ( Message,
     Msg (..),
     OperationType (..),
     Position,
     Ref (..),
-    TypeName (..),
     ValidationError (..),
     ValidationErrors,
-    intercalateName,
     msg,
     msgValidation,
-    readName,
   )
 import Data.Morpheus.Types.Internal.AST.Fields
   ( Arguments,
     Directives,
     renderArgumentValues,
     renderDirectives,
+  )
+import Data.Morpheus.Types.Internal.AST.Name
+  ( FieldName,
+    TypeName,
+    intercalate,
   )
 import Data.Morpheus.Types.Internal.AST.Stage
   ( RAW,
@@ -95,7 +96,7 @@ import Data.Morpheus.Types.Internal.AST.Value
     VariableDefinitions,
   )
 import Language.Haskell.TH.Syntax (Lift (..))
-import Relude
+import Relude hiding (intercalate)
 
 data Fragment (stage :: Stage) = Fragment
   { fragmentName :: FieldName,
@@ -151,7 +152,7 @@ instance
     | otherwise =
       failure
         [ ValidationError
-            { validationMessage = msg (intercalateName "." $ fmap refName path),
+            { validationMessage = msg (intercalate "." $ fmap refName path),
               validationLocations = fmap refPosition path
             }
         ]
@@ -338,7 +339,7 @@ instance RenderGQL (Operation VALID) where
         <> newline
 
 getOperationName :: Maybe FieldName -> TypeName
-getOperationName = maybe "AnonymousOperation" (TypeName . readName)
+getOperationName = maybe "AnonymousOperation" coerce
 
 getOperationDataType :: Failure ValidationError m => Operation s -> Schema VALID -> m (TypeDefinition OBJECT VALID)
 getOperationDataType Operation {operationType = Query} lib = pure (query lib)

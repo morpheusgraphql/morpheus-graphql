@@ -29,10 +29,12 @@ import Data.Morpheus.Internal.TH
     v',
     vars,
   )
-import Data.Morpheus.Internal.Utils (nameSpaceField)
+import Data.Morpheus.Internal.Utils
+  ( camelCaseFieldName,
+  )
 import Data.Morpheus.Types.Internal.AST
   ( FieldDefinition (..),
-    TypeName (..),
+    TypeName,
     isNullable,
   )
 import Language.Haskell.TH
@@ -101,7 +103,7 @@ mkEntryWith ::
 mkEntryWith conName f FieldDefinition {fieldName} =
   AppE
     (AppE (VarE f) (toString fieldName))
-    (toVar $ nameSpaceField conName fieldName)
+    (toVar $ camelCaseFieldName conName fieldName)
 
 -- |
 -- input:
@@ -116,4 +118,4 @@ mkEntryWith conName f FieldDefinition {fieldName} =
 destructRecord :: TypeName -> [FieldDefinition cat s] -> PatQ
 destructRecord conName fields = conP (toName conName) (vars names)
   where
-    names = map (nameSpaceField conName . fieldName) fields
+    names = map (camelCaseFieldName conName . fieldName) fields

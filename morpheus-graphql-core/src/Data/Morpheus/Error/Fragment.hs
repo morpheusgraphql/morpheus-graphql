@@ -10,13 +10,15 @@ where
 -- MORPHEUS
 import Data.Morpheus.Error.Utils (validationErrorMessage)
 import Data.Morpheus.Types.Internal.AST.Base
-  ( FieldName,
-    Position,
+  ( Position,
     Ref (..),
-    TypeName,
     ValidationError (..),
     msg,
     msgSepBy,
+  )
+import Data.Morpheus.Types.Internal.AST.Name
+  ( FieldName,
+    TypeName,
   )
 import Relude
 

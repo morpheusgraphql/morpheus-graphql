@@ -71,7 +71,7 @@ import Data.Morpheus.Rendering.RenderGQL
 import Data.Morpheus.Types.Internal.AST
   ( Directive (..),
     FieldDefinition (..),
-    FieldName (..),
+    FieldName,
     Fragments,
     GQLError (..),
     GQLErrors,
@@ -87,23 +87,25 @@ import Data.Morpheus.Types.Internal.AST
     TypeCategory,
     TypeDefinition (..),
     TypeKind (..),
-    TypeName (..),
+    TypeName,
     TypeRef (..),
     TypeWrapper,
     VALID,
     ValidationError (..),
     Variable (..),
     VariableDefinitions,
-    intercalateName,
+    intercalate,
     kindOf,
     msg,
     msgValidation,
+    unpackName,
   )
 import Data.Morpheus.Types.Internal.Config (Config (..))
 import Relude hiding
   ( Constraint,
     asks,
     get,
+    intercalate,
   )
 
 data Prop = Prop
@@ -116,7 +118,7 @@ type Path = [Prop]
 
 renderPath :: Path -> ValidationError
 renderPath [] = ""
-renderPath path = "in field " <> msgValidation (intercalateName "." $ fmap propName path) <> ": "
+renderPath path = "in field " <> msgValidation (intercalate "." $ fmap propName path) <> ": "
 
 renderInputPrefix :: InputContext c -> ValidationError
 renderInputPrefix InputContext {inputPath, inputSource} =
@@ -131,10 +133,10 @@ renderSource SourceInputField {sourceTypeName, sourceFieldName, sourceArgumentNa
   "Field " <> renderField sourceTypeName sourceFieldName sourceArgumentName <> " got invalid default value. "
 
 renderField :: TypeName -> FieldName -> Maybe FieldName -> ValidationError
-renderField (TypeName tname) (FieldName fname) arg =
-  msgValidation (tname <> "." <> fname <> renderArg arg)
+renderField tname fname arg =
+  msgValidation (unpackName tname <> "." <> unpackName fname <> renderArg arg)
   where
-    renderArg (Just (FieldName argName)) = "(" <> argName <> ":)"
+    renderArg (Just argName) = "(" <> unpackName argName <> ":)"
     renderArg Nothing = ""
 
 data ScopeKind

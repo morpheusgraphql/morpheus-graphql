@@ -38,8 +38,8 @@ import Data.Morpheus.Parsing.Request.Selection
 import Data.Morpheus.Types.IO (GQLRequest (..))
 import Data.Morpheus.Types.Internal.AST
   ( ExecutableDocument (..),
-    FieldName (..),
     Variables,
+    packName,
     replaceValue,
   )
 import Relude hiding
@@ -73,5 +73,5 @@ parseRequest GQLRequest {query, variables} =
     toVariables :: Maybe Aeson.Value -> Variables
     toVariables (Just (Aeson.Object x)) = unsafeFromList $ toMorpheusValue <$> toList x
       where
-        toMorpheusValue (key, value) = (FieldName key, replaceValue value)
+        toMorpheusValue (key, value) = (packName key, replaceValue value)
     toVariables _ = empty

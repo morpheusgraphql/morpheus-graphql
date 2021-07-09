@@ -19,8 +19,8 @@ import Data.Morpheus.Client.Internal.Utils
   ( isEnum,
   )
 import Data.Morpheus.Internal.TH
-  ( declareTypeRef,
-    nameSpaceType,
+  ( camelCaseTypeName,
+    declareTypeRef,
     toCon,
     toName,
   )
@@ -28,9 +28,9 @@ import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ConsD (..),
     FieldDefinition (..),
-    FieldName (..),
+    FieldName,
     TypeKind (..),
-    TypeName (..),
+    TypeName,
     VALID,
   )
 import Language.Haskell.TH
@@ -75,7 +75,7 @@ declareField FieldDefinition {fieldName, fieldType} =
   )
 
 mkTypeName :: [FieldName] -> TypeName -> TypeName -> Name
-mkTypeName namespace (TypeName typename) = mkConName (namespace <> [FieldName typename])
+mkTypeName namespace typename = mkConName namespace . camelCaseTypeName [typename]
 
 mkConName :: [FieldName] -> TypeName -> Name
-mkConName namespace = toName . nameSpaceType namespace
+mkConName namespace = toName . camelCaseTypeName namespace

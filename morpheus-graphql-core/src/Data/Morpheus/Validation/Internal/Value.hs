@@ -37,7 +37,7 @@ import Data.Morpheus.Types.Internal.AST
     TRUE,
     TypeContent (..),
     TypeDefinition (..),
-    TypeName (..),
+    TypeName,
     TypeRef (..),
     TypeWrapper (..),
     Typed (..),
@@ -54,8 +54,8 @@ import Data.Morpheus.Types.Internal.AST
     mkTypeRef,
     msg,
     msgValidation,
+    packName,
     toCategory,
-    toFieldName,
     typed,
     unitFieldName,
     unitTypeName,
@@ -212,7 +212,7 @@ mkInputUnionValue
   UnionMember
     { memberName,
       nullary
-    } = Object . singleton . ObjectEntry (toFieldName memberName) . packNullary
+    } = Object . singleton . ObjectEntry (coerce memberName) . packNullary
     where
       packNullary
         | nullary = Object . singleton . ObjectEntry unitFieldName
@@ -308,10 +308,10 @@ validateEnum ::
   Value valueS ->
   InputValidator schemaS c ValidValue
 validateEnum enumValues value@(Scalar (String enumValue))
-  | TypeName enumValue `elem` tags = do
+  | packName enumValue `elem` tags = do
     isFromVariable <- isVariableValue
     if isFromVariable
-      then pure (Enum (TypeName enumValue))
+      then pure (Enum (packName enumValue))
       else violation Nothing value
   where
     tags = fmap enumName enumValues

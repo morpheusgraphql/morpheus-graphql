@@ -18,8 +18,8 @@ module Data.Morpheus.Internal.TH
     applyVars,
     declareTypeRef,
     funDSimple,
-    nameSpaceField,
-    nameSpaceType,
+    camelCaseFieldName,
+    camelCaseTypeName,
     toCon,
     toVar,
     ToName (..),
@@ -30,20 +30,20 @@ module Data.Morpheus.Internal.TH
   )
 where
 
-import Data.Morpheus.Internal.Utils
-  ( capitalize,
-    nameSpaceField,
-    nameSpaceType,
-  )
 import Data.Morpheus.Types.Internal.AST
-  ( FieldName (..),
-    TypeName (..),
-    TypeRef (..),
+  ( TypeRef (..),
     TypeWrapper (..),
-    convertToHaskellName,
-    readName,
   )
-import Data.Text (unpack)
+import Data.Morpheus.Types.Internal.AST.Name
+  ( FieldName,
+    TypeName,
+    camelCaseFieldName,
+    camelCaseTypeName,
+    toHaskellName,
+    toHaskellTypeName,
+    unpackName,
+  )
+import qualified Data.Text as T
 import Language.Haskell.TH
 import Relude hiding
   ( ToString (..),
@@ -86,10 +86,10 @@ instance ToName Name where
   toName = id
 
 instance ToName TypeName where
-  toName = mkName . unpack . capitalize . readTypeName
+  toName = mkName . toHaskellTypeName
 
 instance ToName FieldName where
-  toName = mkName . unpack . readName . convertToHaskellName
+  toName = mkName . toHaskellName
 
 class ToString a b where
   toString :: a -> b
@@ -98,13 +98,13 @@ instance ToString a b => ToString a (Q b) where
   toString = pure . toString
 
 instance ToString TypeName Lit where
-  toString = stringL . unpack . readTypeName
+  toString = stringL . T.unpack . unpackName
 
 instance ToString TypeName Pat where
   toString = LitP . toString
 
 instance ToString FieldName Lit where
-  toString (FieldName x) = stringL (unpack x)
+  toString = stringL . T.unpack . unpackName
 
 instance ToString TypeName Exp where
   toString = LitE . toString

@@ -43,11 +43,12 @@ import Data.Morpheus.Server.Types.GQLType
     defaultTypeOptions,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( FieldName (..),
+  ( FieldName,
     TypeCategory,
-    TypeName (..),
+    TypeName,
     TypeRef (..),
-    convertToJSONName,
+    fromHaskellName,
+    packName,
   )
 import Data.Morpheus.Utils.Kinded
   ( CategoryValue (..),
@@ -76,18 +77,21 @@ import GHC.Generics
     datatypeName,
     selName,
   )
-import Relude
+import Relude hiding (undefined)
+import Prelude (undefined)
 
 datatypeNameProxy :: forall f (d :: Meta). Datatype d => GQLTypeOptions -> f d -> TypeName
-datatypeNameProxy options _ = TypeName $ pack $ typeNameModifier options False $ datatypeName (undefined :: (M1 D d f a))
+datatypeNameProxy options _ = packName $ pack $ typeNameModifier options False $ datatypeName (undefined :: (M1 D d f a))
 
 conNameProxy :: forall f (c :: Meta). Constructor c => GQLTypeOptions -> f c -> TypeName
 conNameProxy options _ =
-  TypeName $ pack $ constructorTagModifier options $ conName (undefined :: M1 C c U1 a)
+  packName $ pack $ constructorTagModifier options $ conName (undefined :: M1 C c U1 a)
 
 selNameProxy :: forall f (s :: Meta). Selector s => GQLTypeOptions -> f s -> FieldName
 selNameProxy options _ =
-  convertToJSONName $ FieldName $ pack $ fieldLabelModifier options $ selName (undefined :: M1 S s f a)
+  fromHaskellName
+    $ fieldLabelModifier options
+    $ selName (undefined :: M1 S s f a)
 
 isRecordProxy :: forall f (c :: Meta). Constructor c => f c -> Bool
 isRecordProxy _ = conIsRecord (undefined :: (M1 C c f a))
@@ -239,7 +243,7 @@ isEmptyConstraint _ = False
 enumerate :: [FieldRep a] -> [FieldRep a]
 enumerate = zipWith setFieldName ([0 ..] :: [Int])
   where
-    setFieldName i field = field {fieldSelector = FieldName $ "_" <> pack (show i)}
+    setFieldName i field = field {fieldSelector = packName $ "_" <> pack (show i)}
 
 fieldTypeName :: FieldRep k -> TypeName
 fieldTypeName = typeConName . fieldTypeRef

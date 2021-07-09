@@ -40,7 +40,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeContent (..),
     TypeContent,
     TypeDefinition (..),
-    TypeName (..),
+    TypeName,
     TypeRef,
     Typed,
     UnionMember (..),

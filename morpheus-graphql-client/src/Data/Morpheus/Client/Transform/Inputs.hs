@@ -49,7 +49,6 @@ import Data.Morpheus.Types.Internal.AST
     Variable (..),
     VariableDefinitions,
     getOperationName,
-    hsTypeName,
     mkConsEnum,
     toAny,
   )
@@ -83,7 +82,7 @@ renderArguments variables cName
               fieldContent = Nothing,
               fieldType =
                 TypeRef
-                  { typeConName = hsTypeName typeConName,
+                  { typeConName = typeConName,
                     typeWrappers
                   },
               fieldDescription = Nothing,

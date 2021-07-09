@@ -25,10 +25,11 @@ import Data.Morpheus.Types.Internal.AST
     TRUE,
     TypeContent (..),
     TypeDefinition,
-    TypeName (..),
+    TypeName,
     mkEnumContent,
     mkType,
     unitTypeName,
+    unpackName,
   )
 import Data.Morpheus.Utils.Kinded
   ( KindedType (..),
@@ -42,8 +43,8 @@ mkEnumValue :: GQLType a => f a -> TypeName -> DataEnumValue CONST
 mkEnumValue proxy enumName =
   DataEnumValue
     { enumName,
-      enumDescription = lookupDescription proxy (readTypeName enumName),
-      enumDirectives = lookupDirectives proxy (readTypeName enumName)
+      enumDescription = lookupDescription proxy (unpackName enumName),
+      enumDirectives = lookupDirectives proxy (unpackName enumName)
     }
 
 defineEnumUnit :: SchemaT cat ()

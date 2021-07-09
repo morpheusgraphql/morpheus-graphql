@@ -42,7 +42,7 @@ import Data.Morpheus.Server.Types.GQLType
   )
 import Data.Morpheus.Types.Internal.AST
   ( TypeKind (..),
-    TypeName (..),
+    TypeName,
   )
 import Language.Haskell.TH
 import Relude

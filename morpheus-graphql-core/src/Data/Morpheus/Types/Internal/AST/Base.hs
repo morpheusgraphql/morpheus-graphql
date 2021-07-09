@@ -7,7 +7,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -15,27 +14,18 @@ module Data.Morpheus.Types.Internal.AST.Base
   ( Ref (..),
     Position (..),
     Message (..),
-    FieldName,
     Description,
     OperationType (..),
     QUERY,
     MUTATION,
     SUBSCRIPTION,
     Token,
-    isNotSystemTypeName,
-    sysFields,
-    hsTypeName,
     toOperationType,
     GQLError (..),
     GQLErrors,
     TRUE,
     FALSE,
-    TypeName,
     Msg (..),
-    intercalateName,
-    toFieldName,
-    convertToJSONName,
-    convertToHaskellName,
     InternalError (..),
     msgInternal,
     ValidationError (..),
@@ -43,8 +33,6 @@ module Data.Morpheus.Types.Internal.AST.Base
     ValidationErrors,
     withPosition,
     toGQLError,
-    unitTypeName,
-    unitFieldName,
   )
 where
 
@@ -64,9 +52,9 @@ import Data.Morpheus.Rendering.RenderGQL
     renderGQL,
   )
 import Data.Morpheus.Types.Internal.AST.Name
-  ( FieldName,
-    Name (..),
+  ( Name,
     TypeName,
+    unpackName,
   )
 import Data.Text (intercalate, pack)
 import qualified Data.Text as T
@@ -153,9 +141,6 @@ class Msg a where
   msgSepBy :: Text -> [a] -> Message
   msgSepBy t = Message . intercalate t . fmap (readMessage . msg)
 
-instance Msg TypeName where
-  msg Name {unName} = Message $ "\"" <> unName <> "\""
-
 instance Msg Message where
   msg = id
 
@@ -174,16 +159,8 @@ instance Msg Text where
 instance Msg Value where
   msg = msg . encode
 
-instance Msg FieldName where
-  msg Name {unName} = Message $ "\"" <> unName <> "\""
-
-intercalateName :: FieldName -> [FieldName] -> FieldName
-intercalateName (Name x) = Name . intercalate x . fmap unName
-{-# INLINE intercalateName #-}
-
-toFieldName :: TypeName -> FieldName
-toFieldName = Name . unName
-{-# INLINE toFieldName #-}
+instance Msg (Name t) where
+  msg name = Message $ "\"" <> unpackName name <> "\""
 
 liftTypedString :: IsString a => Token -> Q (TExp a)
 liftTypedString = unsafeTExpCoerce . stringE . T.unpack
@@ -256,90 +233,9 @@ data Ref name = Ref
 instance Ord name => Ord (Ref name) where
   compare (Ref x _) (Ref y _) = compare x y
 
-isNotSystemTypeName :: TypeName -> Bool
-isNotSystemTypeName =
-  ( `notElem`
-      [ "__Schema",
-        "__Type",
-        "__Directive",
-        "__TypeKind",
-        "__Field",
-        "__DirectiveLocation",
-        "__InputValue",
-        "__EnumValue",
-        "String",
-        "Float",
-        "Int",
-        "Boolean",
-        "ID"
-      ]
-  )
-{-# INLINE isNotSystemTypeName #-}
-
-sysFields :: [FieldName]
-sysFields = ["__typename", "__schema", "__type"]
-{-# INLINE sysFields #-}
-
-hsTypeName :: TypeName -> TypeName
-hsTypeName "String" = "Text"
-hsTypeName "Boolean" = "Bool"
-hsTypeName "Float" = "Double"
-hsTypeName name = name
-{-# INLINE hsTypeName #-}
-
 toOperationType :: TypeName -> Maybe OperationType
 toOperationType "Subscription" = Just Subscription
 toOperationType "Mutation" = Just Mutation
 toOperationType "Query" = Just Query
 toOperationType _ = Nothing
 {-# INLINE toOperationType #-}
-
--- handle reserved Names
-isReserved :: FieldName -> Bool
-isReserved "case" = True
-isReserved "class" = True
-isReserved "data" = True
-isReserved "default" = True
-isReserved "deriving" = True
-isReserved "do" = True
-isReserved "else" = True
-isReserved "foreign" = True
-isReserved "if" = True
-isReserved "import" = True
-isReserved "in" = True
-isReserved "infix" = True
-isReserved "infixl" = True
-isReserved "infixr" = True
-isReserved "instance" = True
-isReserved "let" = True
-isReserved "module" = True
-isReserved "newtype" = True
-isReserved "of" = True
-isReserved "then" = True
-isReserved "type" = True
-isReserved "where" = True
-isReserved "_" = True
-isReserved _ = False
-{-# INLINE isReserved #-}
-
-convertToJSONName :: FieldName -> FieldName
-convertToJSONName (Name hsName)
-  | not (T.null hsName) && isReserved (Name name) && (T.last hsName == '\'') = Name name
-  | otherwise = Name hsName
-  where
-    name = T.init hsName
-{-# INLINE convertToJSONName #-}
-
-convertToHaskellName :: FieldName -> FieldName
-convertToHaskellName name
-  | isReserved name = name <> "'"
-  | otherwise = name
-{-# INLINE convertToHaskellName #-}
-
-unitTypeName :: TypeName
-unitTypeName = "Unit"
-{-# INLINE unitTypeName #-}
-
-unitFieldName :: FieldName
-unitFieldName = "_"
-{-# INLINE unitFieldName #-}

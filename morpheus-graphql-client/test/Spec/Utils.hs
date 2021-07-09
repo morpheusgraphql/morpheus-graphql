@@ -18,7 +18,8 @@ import Data.Morpheus.Client
   )
 import Data.Morpheus.Types.Internal.AST
   ( ExecutableDocument,
-    FieldName (..),
+    FieldName,
+    unpackName,
   )
 import Data.Semigroup ((<>))
 import qualified Data.Text as T
@@ -36,7 +37,7 @@ import Prelude
   )
 
 path :: FieldName -> FilePath
-path (FieldName name) = "test/Case/" <> T.unpack name
+path name = "test/Case/" <> T.unpack (unpackName name)
 
 withProject :: FilePath -> FilePath
 withProject = ("morpheus-graphql-client/" <>)

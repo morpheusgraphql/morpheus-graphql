@@ -10,12 +10,11 @@ module Data.Morpheus.Types.SelectionTree where
 
 import Data.Morpheus.Internal.Utils (elems, keyOf)
 import Data.Morpheus.Types.Internal.AST
-  ( FieldName (..),
-    Selection (..),
-    Selection (selectionContent),
-    SelectionContent (SelectionField, SelectionSet, UnionSelection),
+  ( Selection (..),
+    SelectionContent (..),
     UnionTag (..),
     VALID,
+    unpackName,
   )
 import Data.Text (unpack)
 import Relude
@@ -51,5 +50,5 @@ instance SelectionTree (Selection VALID) where
   getName =
     fromString
       . unpack
-      . readName
+      . unpackName
       . keyOf

@@ -39,9 +39,10 @@ import Data.Morpheus.Types.Internal.AST
     ScalarValue (..),
     Schema (..),
     TypeDefinition (..),
-    TypeName (..),
+    TypeName,
     VALID,
     Value (..),
+    packName,
   )
 import Relude hiding (empty)
 
@@ -90,7 +91,7 @@ schemaAPI schema =
         handleArg
           Argument
             { argumentValue = (Scalar (String typename))
-            } = findType (TypeName typename) schema
+            } = findType (packName typename) schema
         handleArg _ = pure mkNull
 
 withSystemFields ::

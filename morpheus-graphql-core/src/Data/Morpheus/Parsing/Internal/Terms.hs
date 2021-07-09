@@ -54,11 +54,12 @@ import Data.Morpheus.Parsing.Internal.SourceText
 import qualified Data.Morpheus.Types.Internal.AST as AST
 import Data.Morpheus.Types.Internal.AST
   ( Description,
-    FieldName (..),
+    FieldName,
     Ref (..),
-    TypeName (..),
+    TypeName,
     TypeRef (..),
     TypeWrapper (..),
+    packName,
   )
 import Relude hiding (ByteString, empty, many)
 import Text.Megaparsec
@@ -163,11 +164,11 @@ name =
 {-# INLINE name #-}
 
 parseName :: Parser FieldName
-parseName = FieldName <$> name
+parseName = packName <$> name
 {-# INLINE parseName #-}
 
 parseTypeName :: Parser TypeName
-parseTypeName = TypeName <$> name
+parseTypeName = packName <$> name
 {-# INLINE parseTypeName #-}
 
 keyword :: ByteString -> Parser ()

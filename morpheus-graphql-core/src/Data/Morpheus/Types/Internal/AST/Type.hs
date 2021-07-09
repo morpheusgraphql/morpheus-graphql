@@ -25,10 +25,12 @@ import Data.Morpheus.Rendering.RenderGQL
     renderGQL,
   )
 import Data.Morpheus.Types.Internal.AST.Base
-  ( FieldName (..),
-    Msg (..),
+  ( Msg (..),
     OperationType,
-    TypeName (..),
+  )
+import Data.Morpheus.Types.Internal.AST.Name
+  ( TypeName,
+    packName,
   )
 import qualified Data.Text.Lazy as LT
 import Data.Text.Lazy.Encoding (decodeUtf8)
@@ -150,7 +152,7 @@ renderNonNull True = "!"
 renderNonNull False = ""
 
 instance Msg TypeRef where
-  msg = msg . FieldName . LT.toStrict . decodeUtf8 . render
+  msg = msg . packName . LT.toStrict . decodeUtf8 . render
 
 class Nullable a where
   isNullable :: a -> Bool
