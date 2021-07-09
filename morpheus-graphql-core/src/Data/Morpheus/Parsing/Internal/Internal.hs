@@ -22,15 +22,7 @@ import Data.Morpheus.Types.Internal.AST
     Position (..),
     msg,
   )
-import Relude
-  ( ($),
-    (.),
-    Applicative (..),
-    Either (..),
-    Functor (..),
-    Void,
-    fst,
-  )
+import Relude hiding (ByteString)
 import Text.Megaparsec
   ( ParseError,
     ParseErrorBundle
@@ -78,7 +70,8 @@ parseErrorToGQLError :: (ParseError ByteString MyError, SourcePos) -> GQLError
 parseErrorToGQLError (err, position) =
   GQLError
     { message = msg (parseErrorPretty err),
-      locations = [toLocation position]
+      locations = [toLocation position],
+      extensions = Nothing
     }
 
 bundleToErrors ::
