@@ -21,7 +21,19 @@ validationErrorMessage :: Maybe Position -> Message -> ValidationError
 validationErrorMessage pos message = ValidationError message (maybeToList pos)
 
 errorMessage :: Position -> Message -> GQLErrors
-errorMessage position message = [GQLError {message, locations = [position]}]
+errorMessage position message =
+  [ GQLError
+      { message,
+        locations = [position],
+        extensions = Nothing
+      }
+  ]
 
 globalErrorMessage :: Message -> GQLErrors
-globalErrorMessage message = [GQLError {message, locations = []}]
+globalErrorMessage message =
+  [ GQLError
+      { message,
+        locations = [],
+        extensions = Nothing
+      }
+  ]

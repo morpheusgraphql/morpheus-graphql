@@ -443,7 +443,7 @@ instance SetWith (OperationContext s1 s2) CurrentSelection where
 instance Failure [ValidationError] (Validator s ctx) where
   failure errors = do
     ctx <- Validator ask
-    failValidator (fmap (fromValidatinError ctx) errors)
+    failValidator (fromValidationError ctx <$> errors)
 
 instance Failure ValidationError (Validator s ctx) where
   failure err = failure [err]
@@ -451,15 +451,16 @@ instance Failure ValidationError (Validator s ctx) where
 failValidator :: GQLErrors -> Validator s ctx a
 failValidator = Validator . lift . failure
 
-fromValidatinError :: ValidatorContext s ctx -> ValidationError -> GQLError
-fromValidatinError
+fromValidationError :: ValidatorContext s ctx -> ValidationError -> GQLError
+fromValidationError
   context@ValidatorContext
     { config
     }
   (ValidationError text locations) =
     GQLError
       { message,
-        locations
+        locations,
+        extensions = Nothing
       }
     where
       message
