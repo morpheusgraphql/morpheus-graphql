@@ -50,9 +50,12 @@ where
 
 import Data.Aeson
   ( FromJSON,
-    ToJSON,
+    Options (..),
+    ToJSON (..),
     Value,
+    defaultOptions,
     encode,
+    genericToJSON,
   )
 import Data.ByteString.Lazy (ByteString)
 import Data.Char (toLower)
@@ -130,7 +133,7 @@ withPosition pos (ValidationError m ps) = ValidationError m (ps <> maybeToList p
 type ValidationErrors = [ValidationError]
 
 toGQLError :: ValidationError -> GQLError
-toGQLError (ValidationError m p) = GQLError m p
+toGQLError (ValidationError m p) = GQLError m p Nothing
 {-# INLINE toGQLError #-}
 
 -- instance Lift InternalError where
@@ -264,9 +267,13 @@ instance Eq Position where
 
 data GQLError = GQLError
   { message :: Message,
-    locations :: [Position]
+    locations :: [Position],
+    extensions :: Maybe Value
   }
-  deriving (Show, Eq, Generic, FromJSON, ToJSON)
+  deriving (Show, Eq, Generic, FromJSON)
+
+instance ToJSON GQLError where
+  toJSON = genericToJSON (defaultOptions {omitNothingFields = True})
 
 type GQLErrors = [GQLError]
 

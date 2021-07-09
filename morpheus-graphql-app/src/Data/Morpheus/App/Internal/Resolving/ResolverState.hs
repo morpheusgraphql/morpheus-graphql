@@ -152,14 +152,16 @@ resolverFailureMessage
             <> ": "
             <> message
             <> withInternalContext ctx,
-        locations = [selectionPosition]
+        locations = [selectionPosition],
+        extensions = Nothing
       }
 
 renderInternalResolverError :: ResolverContext -> InternalError -> GQLError
 renderInternalResolverError ctx@ResolverContext {currentSelection} message =
   GQLError
     { message = msg message <> ". " <> renderContext ctx,
-      locations = [selectionPosition currentSelection]
+      locations = [selectionPosition currentSelection],
+      extensions = Nothing
     }
 
 withInternalContext :: ResolverContext -> Message
