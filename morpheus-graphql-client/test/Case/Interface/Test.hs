@@ -115,7 +115,7 @@ testInterface = testCase "test interfaces" $ do
                       hobby = "Hero Hobby",
                       name2 = "Hero name2"
                     },
-                  Character3Deity
+                  Character3Character
                     { __typename = "Deity",
                       name2 = "Hero name2"
                     },
