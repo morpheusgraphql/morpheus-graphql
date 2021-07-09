@@ -108,7 +108,6 @@ leafType TypeDefinition {typeName, typeContent} = fromKind typeContent
 typeFrom :: [FieldName] -> TypeDefinition a VALID -> TypeName
 typeFrom path TypeDefinition {typeName, typeContent} = __typeFrom typeContent
   where
-    __typeFrom DataScalar {} = typeName
     __typeFrom DataObject {} = camelCaseTypeName path typeName
     __typeFrom DataInterface {} = camelCaseTypeName path typeName
     __typeFrom DataUnion {} = camelCaseTypeName path typeName

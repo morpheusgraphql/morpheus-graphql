@@ -32,7 +32,7 @@ import Data.Morpheus.Types.Internal.AST
     IN,
     TRUE,
     TypeContent (..),
-    TypeName (..),
+    TypeName,
     UnionMember (..),
     mkNullaryMember,
     mkUnionMember,

@@ -73,11 +73,9 @@ import Data.Morpheus.Types.Internal.AST.Base
   )
 import Data.Morpheus.Types.Internal.AST.DirectiveLocation (DirectiveLocation)
 import Data.Morpheus.Types.Internal.AST.Name
-  ( isNotSystemFieldName,
-  )
-import Data.Morpheus.Types.Internal.AST.Name
   ( FieldName,
     TypeName,
+    isNotSystemFieldName,
   )
 import Data.Morpheus.Types.Internal.AST.Stage
   ( Stage,

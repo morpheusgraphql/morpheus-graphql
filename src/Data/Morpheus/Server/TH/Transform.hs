@@ -176,7 +176,7 @@ genInterfaceUnion interfaceName =
       [ mkGuardWithPossibleType tName,
         ServerTypeDefinition
           { tName,
-            tCons = map unionCon members,
+            tCons = map (mkUnionFieldDefinition tName) members,
             tKind = KindUnion,
             typeParameters = [m_],
             gql = Nothing
@@ -184,18 +184,6 @@ genInterfaceUnion interfaceName =
       ]
     mkGuardWithPossibleType = ServerInterfaceDefinition interfaceName (mkInterfaceName interfaceName)
     tName = mkPossibleTypesName interfaceName
-    unionCon memberName =
-      mkCons
-        cName
-        $ singleton
-          ServerFieldDefinition
-            { isParametrized = True,
-              argumentsTypeName = Nothing,
-              fieldName = coerce ("un" <> cName),
-              fieldType = mkTypeRef memberName
-            }
-      where
-        cName = tName <> memberName
 
 genTypeContent ::
   TypeName ->
@@ -220,18 +208,21 @@ genTypeContent typeName DataObject {objectFields} =
 genTypeContent typeName (DataUnion members) =
   pure $ ConsOUT [] (fmap unionCon members)
   where
-    unionCon UnionMember {memberName} =
-      mkCons
-        cName
-        $ singleton
-          ServerFieldDefinition
-            { isParametrized = True,
-              argumentsTypeName = Nothing,
-              fieldName = coerce ("un" <> cName),
-              fieldType = mkTypeRef memberName
-            }
-      where
-        cName = typeName <> memberName
+    unionCon UnionMember {memberName} = mkUnionFieldDefinition typeName memberName
+
+mkUnionFieldDefinition :: TypeName -> TypeName -> ServerConsD
+mkUnionFieldDefinition typeName memberName =
+  mkCons
+    cName
+    $ singleton
+      ServerFieldDefinition
+        { isParametrized = True,
+          argumentsTypeName = Nothing,
+          fieldName = coerce ("un" <> cName),
+          fieldType = mkTypeRef memberName
+        }
+  where
+    cName = typeName <> memberName
 
 data TypeContext s = TypeContext
   { toArgsTypeName :: FieldName -> TypeName,

@@ -76,15 +76,11 @@ renderArguments variables cName
         }
       where
         fieldD :: Variable RAW -> FieldDefinition ANY VALID
-        fieldD Variable {variableName, variableType = TypeRef {typeConName, typeWrappers}} =
+        fieldD Variable {variableName, variableType} =
           FieldDefinition
             { fieldName = variableName,
               fieldContent = Nothing,
-              fieldType =
-                TypeRef
-                  { typeConName = typeConName,
-                    typeWrappers
-                  },
+              fieldType = variableType,
               fieldDescription = Nothing,
               fieldDirectives = empty
             }

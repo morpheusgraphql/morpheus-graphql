@@ -68,7 +68,7 @@ import Data.Morpheus.Types.Internal.AST
     Message,
     Object,
     ObjectEntry (..),
-    TypeName (..),
+    TypeName,
     VALID,
     ValidObject,
     ValidValue,
