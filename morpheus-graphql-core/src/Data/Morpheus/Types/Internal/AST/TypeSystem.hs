@@ -90,7 +90,9 @@ import Data.Morpheus.Types.Internal.AST.Base
   ( Description,
     TRUE,
     Token,
-    ValidationError,
+  )
+import Data.Morpheus.Types.Internal.AST.Error
+  ( ValidationError,
     ValidationErrors,
     msgValidation,
   )

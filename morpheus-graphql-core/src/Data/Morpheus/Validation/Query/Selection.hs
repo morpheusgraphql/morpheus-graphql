@@ -53,13 +53,13 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     UnionTag (..),
     VALID,
-    ValidationError (..),
+    ValidationError,
+    at,
     isLeaf,
     msgValidation,
     possibleTypes,
     toCategory,
     typed,
-    withPosition,
   )
 import Data.Morpheus.Types.Internal.Validation
   ( FragmentValidator,
@@ -101,12 +101,11 @@ singleTopLevelSelection _ _ = pure ()
 
 singleTopLevelSelectionError :: Maybe FieldName -> Selection VALID -> ValidationError
 singleTopLevelSelectionError name Selection {selectionPosition} =
-  withPosition (Just selectionPosition) $
-    subscriptionName
+  ( maybe "Anonymous Subscription" (("Subscription " <>) . msgValidation) name
       <> " must select "
       <> "only one top level field."
-  where
-    subscriptionName = maybe "Anonymous Subscription" (("Subscription " <>) . msgValidation) name
+  )
+    `at` selectionPosition
 
 validateOperation ::
   Operation RAW ->

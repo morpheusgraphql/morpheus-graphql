@@ -8,14 +8,14 @@ module Data.Morpheus.Error.Variable
   )
 where
 
-import Data.Morpheus.Error.Utils (validationErrorMessage)
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     Ref (..),
     TypeRef,
     ValidationError,
     Variable (..),
-    msg,
+    at,
+    msgValidation,
   )
 import Relude
 
@@ -25,23 +25,22 @@ incompatibleVariableType
   (Ref variableName argPosition)
   Variable {variableType}
   argumentType =
-    validationErrorMessage (Just argPosition) text
-    where
-      text =
-        "Variable "
-          <> msg ("$" <> variableName)
-          <> " of type "
-          <> msg variableType
-          <> " used in position expecting type "
-          <> msg argumentType
-          <> "."
+    ( "Variable "
+        <> msgValidation ("$" <> variableName)
+        <> " of type "
+        <> msgValidation variableType
+        <> " used in position expecting type "
+        <> msgValidation argumentType
+        <> "."
+    )
+      `at` argPosition
 
 uninitializedVariable :: Variable s -> ValidationError
 uninitializedVariable Variable {variableName, variableType, variablePosition} =
-  validationErrorMessage
-    (Just variablePosition)
-    $ "Variable "
-      <> msg ("$" <> variableName)
+  ( "Variable "
+      <> msgValidation ("$" <> variableName)
       <> " of required type "
-      <> msg variableType
+      <> msgValidation variableType
       <> " was not provided."
+  )
+    `at` variablePosition

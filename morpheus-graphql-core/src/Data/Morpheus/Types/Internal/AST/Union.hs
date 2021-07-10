@@ -94,7 +94,7 @@ getInputUnionValue ::
   Either Message (TypeName, Value stage)
 getInputUnionValue hm =
   case elems hm of
-    [] -> failure ("Exclusive input objects must provide a value for at least one field." :: Message)
+    [] -> Left "Exclusive input objects must provide a value for at least one field."
     [ObjectEntry name value] -> pure (coerce name, value)
     _ -> failure ("Exclusive input objects are not allowed to provide values for multiple fields." :: Message)
 

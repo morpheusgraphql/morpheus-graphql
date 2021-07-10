@@ -28,7 +28,6 @@ import Data.Morpheus.Core
   ( defaultConfig,
     validateSchema,
   )
-import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Internal.Ext
   ( Eventless,
   )
@@ -45,7 +44,6 @@ import Data.Morpheus.Types.Internal.AST
     CONST,
     FieldDefinition,
     IN,
-    Message,
     OUT,
     OperationType (..),
     RootOperationTypeDefinition (..),
@@ -55,6 +53,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef (..),
     TypeWrapper (..),
     VALID,
+    ValidationError,
     ValidationErrors,
     buildSchema,
     createScalarType,
@@ -64,7 +63,7 @@ import Data.Morpheus.Types.Internal.AST
     mkObjectField,
     mkType,
     mkUnionContent,
-    msg,
+    msgValidation,
     toAny,
   )
 import Relude hiding
@@ -75,12 +74,12 @@ import Relude hiding
   )
 import Prelude (show)
 
-decoderError :: Message -> Eventless a
-decoderError = failure . globalErrorMessage
+decoderError :: ValidationError -> Eventless a
+decoderError x = failure [x]
 
 decodeIntrospection :: ByteString -> Eventless (AST.Schema VALID)
 decodeIntrospection jsonDoc = case jsonSchema of
-  Left errors -> decoderError $ msg errors
+  Left errors -> decoderError $ msgValidation errors
   Right
     JSONResponse
       { responseData =
@@ -93,7 +92,7 @@ decodeIntrospection jsonDoc = case jsonSchema of
       schemaDef <- mkSchemaDef schema
       gqlTypes <- concat <$> traverse parse types
       buildSchema (Just schemaDef, gqlTypes, empty) >>= validate
-  Right res -> decoderError (msg $ show res)
+  Right res -> decoderError (msgValidation $ show res)
   where
     validate :: AST.Schema CONST -> Eventless (AST.Schema VALID)
     validate = validateSchema False defaultConfig
@@ -159,7 +158,7 @@ fieldTypeFromJSON :: Type -> Eventless TypeRef
 fieldTypeFromJSON Type {kind = NON_NULL, ofType = Just ofType} = withListNonNull <$> fieldTypeFromJSON ofType
 fieldTypeFromJSON Type {kind = LIST, ofType = Just ofType} = withList <$> fieldTypeFromJSON ofType
 fieldTypeFromJSON Type {name = Just name} = pure (TypeRef name mkMaybeType)
-fieldTypeFromJSON x = decoderError $ "Unsupported Field" <> msg (show x)
+fieldTypeFromJSON x = decoderError $ "Unsupported Field" <> msgValidation (show x)
 
 withList :: TypeRef -> TypeRef
 withList (TypeRef name x) = TypeRef name (TypeList x False)

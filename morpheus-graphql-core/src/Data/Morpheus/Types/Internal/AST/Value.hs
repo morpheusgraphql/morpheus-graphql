@@ -65,7 +65,10 @@ import Data.Morpheus.Types.Internal.AST.Base
   ( Msg (..),
     Position,
     Ref (..),
-    ValidationError (..),
+  )
+import Data.Morpheus.Types.Internal.AST.Error
+  ( ValidationError,
+    at,
     msgValidation,
   )
 import Data.Morpheus.Types.Internal.AST.Name
@@ -150,10 +153,8 @@ instance KeyOf FieldName (Variable s) where
 
 instance NameCollision (Variable s) where
   nameCollision Variable {variableName, variablePosition} =
-    ValidationError
-      { validationMessage = "There can Be only One Variable Named " <> msg variableName,
-        validationLocations = [variablePosition]
-      }
+    ("There can Be only One Variable Named " <> msgValidation variableName)
+      `at` variablePosition
 
 type VariableDefinitions s = OrdMap FieldName (Variable s)
 

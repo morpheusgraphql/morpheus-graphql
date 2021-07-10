@@ -15,10 +15,10 @@ import Data.ByteString.Lazy.Char8 (unpack)
 import Data.Morpheus.Error.Utils (errorMessage)
 import Data.Morpheus.Types.Internal.AST.Base
   ( Description,
-    GQLErrors,
     Ref (..),
     msg,
   )
+import Data.Morpheus.Types.Internal.AST.Error (GQLErrors)
 import Data.Morpheus.Types.Internal.AST.Name
   ( FieldName,
   )

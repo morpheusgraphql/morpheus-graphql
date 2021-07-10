@@ -18,6 +18,7 @@ import Data.Char (toLower)
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
   )
+import Data.Morpheus.Types.Internal.AST.Base (Msg (..))
 import Data.Morpheus.Types.Internal.AST.Name (TypeName)
 import Language.Haskell.TH.Syntax
   ( Lift,
@@ -55,3 +56,8 @@ toOperationType "Mutation" = Just Mutation
 toOperationType "Query" = Just Query
 toOperationType _ = Nothing
 {-# INLINE toOperationType #-}
+
+instance Msg OperationType where
+  msg Query = msg ("query" :: TypeName)
+  msg Mutation = msg ("mutation" :: TypeName)
+  msg Subscription = msg ("subscription" :: TypeName)

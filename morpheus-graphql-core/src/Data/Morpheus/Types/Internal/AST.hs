@@ -121,15 +121,14 @@ module Data.Morpheus.Types.Internal.AST
     UnionSelection,
     SchemaDefinition (..),
     buildSchema,
-    InternalError (..),
-    ValidationError (..),
+    InternalError,
+    ValidationError,
     msgInternal,
     getOperationDataType,
     Typed (Typed),
     typed,
     untyped,
     msgValidation,
-    withPosition,
     ValidationErrors,
     toGQLError,
     LEAF,
@@ -151,6 +150,10 @@ module Data.Morpheus.Types.Internal.AST
     isPossibleInterfaceType,
     packName,
     unpackName,
+    at,
+    atPositions,
+    mapError,
+    readErrorMessage,
   )
 where
 
@@ -158,6 +161,7 @@ import Data.Morpheus.Ext.OrdMap (OrdMap (..))
 import Data.Morpheus.Ext.SafeHashMap (SafeHashMap)
 import Data.Morpheus.Types.Internal.AST.Base
 import Data.Morpheus.Types.Internal.AST.DirectiveLocation (DirectiveLocation (..))
+import Data.Morpheus.Types.Internal.AST.Error
 import Data.Morpheus.Types.Internal.AST.Fields
 import Data.Morpheus.Types.Internal.AST.Name
 import Data.Morpheus.Types.Internal.AST.OperationType

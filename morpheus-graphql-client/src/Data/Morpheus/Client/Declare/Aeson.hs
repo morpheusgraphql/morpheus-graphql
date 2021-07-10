@@ -54,11 +54,11 @@ import Data.Morpheus.Types.GQLScalar
 import Data.Morpheus.Types.Internal.AST
   ( ConsD (..),
     FieldName,
-    Message,
+    InternalError,
     TypeKind (..),
     TypeName,
     isResolverType,
-    msg,
+    msgInternal,
   )
 import qualified Data.Text as T
 import Language.Haskell.TH
@@ -83,7 +83,7 @@ aesonDeclarations kind
   | isResolverType kind = [deriveFromJSON]
   | otherwise = [deriveToJSON]
 
-failure :: Message -> Q a
+failure :: InternalError -> Q a
 failure = fail . show
 
 deriveScalarJSON :: [ClientTypeDefinition -> DecQ]
@@ -107,7 +107,7 @@ deriveFromJSON :: ClientTypeDefinition -> DecQ
 deriveFromJSON ClientTypeDefinition {clientCons = [], clientTypeName} =
   failure $
     "Type "
-      <> msg (typename clientTypeName)
+      <> msgInternal (typename clientTypeName)
       <> " Should Have at least one Constructor"
 deriveFromJSON
   ClientTypeDefinition

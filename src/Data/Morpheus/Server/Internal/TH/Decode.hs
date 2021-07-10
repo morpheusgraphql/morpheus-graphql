@@ -36,7 +36,6 @@ import Data.Morpheus.Types.Internal.AST
     ValidValue,
     Value (..),
     getInputUnionValue,
-    msg,
     msgInternal,
   )
 import Relude
@@ -83,7 +82,7 @@ withScalar typename decodeScalar value = case toScalar value >>= decodeScalar of
   Left message ->
     failure
       ( typeMismatch
-          ("SCALAR(" <> msg typename <> ")" <> msg message)
+          ("SCALAR(" <> msgInternal typename <> ")" <> msgInternal message)
           value
       )
 
@@ -94,7 +93,7 @@ handleEither :: Failure InternalError m => Either Message a -> m a
 handleEither = either (failure . msgInternal) pure
 
 -- if value is already validated but value has different type
-typeMismatch :: Message -> Value s -> InternalError
+typeMismatch :: InternalError -> Value s -> InternalError
 typeMismatch text jsType =
-  "Type mismatch! expected:" <> msgInternal text <> ", got: "
+  "Type mismatch! expected:" <> text <> ", got: "
     <> msgInternal jsType

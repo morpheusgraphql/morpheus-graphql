@@ -24,10 +24,10 @@ where
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
   )
-import Data.Morpheus.Types.Internal.AST.Base
+import Data.Morpheus.Types.Internal.AST.Error
   ( GQLError (..),
     GQLErrors,
-    ValidationError (..),
+    ValidationError,
     toGQLError,
   )
 import Relude

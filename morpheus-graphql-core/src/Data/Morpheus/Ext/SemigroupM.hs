@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Ext.SemigroupM
@@ -24,7 +25,9 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST.Base
   ( Ref,
-    ValidationErrors,
+  )
+import Data.Morpheus.Types.Internal.AST.Error
+  ( ValidationErrors,
   )
 import Data.Morpheus.Types.Internal.AST.Name
   ( FieldName,

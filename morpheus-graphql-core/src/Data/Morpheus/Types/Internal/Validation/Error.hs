@@ -38,13 +38,13 @@ import Data.Morpheus.Types.Internal.AST
     TypeCategory,
     TypeName,
     TypeRef (..),
-    ValidationError (..),
+    ValidationError,
     Variable (..),
     VariableDefinitions,
+    at,
+    atPositions,
     getOperationName,
-    msg,
     msgValidation,
-    withPosition,
   )
 import Data.Morpheus.Types.Internal.Validation.Validator
   ( CurrentSelection (..),
@@ -64,25 +64,21 @@ instance Unused (OperationContext s1 s2) (Variable s) where
   unused
     OperationContext {selection = CurrentSelection {operationName}}
     Variable {variableName, variablePosition} =
-      ValidationError
-        { validationMessage =
-            "Variable " <> msg ("$" <> variableName)
-              <> " is never used in operation "
-              <> msg (getOperationName operationName)
-              <> ".",
-          validationLocations = [variablePosition]
-        }
+      ( "Variable " <> msgValidation ("$" <> variableName)
+          <> " is never used in operation "
+          <> msgValidation (getOperationName operationName)
+          <> "."
+      )
+        `at` variablePosition
 
 instance Unused (OperationContext s1 s2) (Fragment s) where
   unused
     _
     Fragment {fragmentName, fragmentPosition} =
-      ValidationError
-        { validationMessage =
-            "Fragment " <> msg fragmentName
-              <> " is never used.",
-          validationLocations = [fragmentPosition]
-        }
+      ( "Fragment " <> msgValidation fragmentName
+          <> " is never used."
+      )
+        `at` fragmentPosition
 
 class MissingRequired c ctx where
   missingRequired :: Scope -> ctx -> Ref FieldName -> c -> ValidationError
@@ -93,17 +89,15 @@ instance MissingRequired (Arguments s) ctx where
     _
     Ref {refName}
     _ =
-      ValidationError
-        { validationMessage =
-            inScope kind
-              <> " argument "
-              <> msg refName
-              <> " is required but not provided.",
-          validationLocations = maybeToList position
-        }
+      ( inScope kind
+          <> " argument "
+          <> msgValidation refName
+          <> " is required but not provided."
+      )
+        `atPositions` position
       where
-        inScope DIRECTIVE = "Directive " <> msg ("@" <> fieldname)
-        inScope _ = "Field " <> msg fieldname
+        inScope DIRECTIVE = "Directive " <> msgValidation ("@" <> fieldname)
+        inScope _ = "Field " <> msgValidation fieldname
 
 instance MissingRequired (Object s) (InputContext ctx) where
   missingRequired
@@ -111,14 +105,13 @@ instance MissingRequired (Object s) (InputContext ctx) where
     ctx
     Ref {refName}
     _ =
-      withPosition
-        position
-        ( renderInputPrefix
-            ctx
-            <> "Undefined Field "
-            <> msgValidation refName
-            <> "."
-        )
+      ( renderInputPrefix
+          ctx
+          <> "Undefined Field "
+          <> msgValidation refName
+          <> "."
+      )
+        `atPositions` position
 
 instance MissingRequired (VariableDefinitions s) (OperationContext s1 s2) where
   missingRequired
@@ -128,15 +121,13 @@ instance MissingRequired (VariableDefinitions s) (OperationContext s1 s2) where
       }
     Ref {refName, refPosition}
     _ =
-      ValidationError
-        { validationMessage =
-            "Variable "
-              <> msg refName
-              <> " is not defined by operation "
-              <> msg (getOperationName operationName)
-              <> ".",
-          validationLocations = [refPosition]
-        }
+      ( "Variable "
+          <> msgValidation refName
+          <> " is not defined by operation "
+          <> msgValidation (getOperationName operationName)
+          <> "."
+      )
+        `at` refPosition
 
 class Unknown c ref ctx where
   -- type UnknownSelector c
@@ -145,24 +136,21 @@ class Unknown c ref ctx where
 -- {...H} -> "Unknown fragment \"H\"."
 instance Unknown (Fragments s) (Ref FieldName) ctx where
   unknown _ _ _ Ref {refName, refPosition} =
-    ValidationError
-      { validationMessage = "Unknown Fragment " <> msg refName <> ".",
-        validationLocations = [refPosition]
-      }
+    ("Unknown Fragment " <> msgValidation refName <> ".") `at` refPosition
 
 instance Unknown (Schema s) (Ref TypeName) ctx where
   unknown _ _ _ Ref {refName, refPosition} =
-    ValidationError
-      { validationMessage = "Unknown type " <> msg refName <> ".",
-        validationLocations = [refPosition]
-      }
+    ("Unknown type " <> msgValidation refName <> ".") `at` refPosition
 
 instance Unknown (FieldDefinition OUT s) (Argument CONST) ctx where
   unknown _ _ FieldDefinition {fieldName} Argument {argumentName, argumentPosition} =
-    ValidationError
-      { validationMessage = "Unknown Argument " <> msg argumentName <> " on Field " <> msg fieldName <> ".",
-        validationLocations = [argumentPosition]
-      }
+    ( "Unknown Argument "
+        <> msgValidation argumentName
+        <> " on Field "
+        <> msgValidation fieldName
+        <> "."
+    )
+      `at` argumentPosition
 
 instance Unknown (FieldsDefinition IN s) (ObjectEntry valueS) (InputContext ctx) where
   unknown
@@ -170,22 +158,26 @@ instance Unknown (FieldsDefinition IN s) (ObjectEntry valueS) (InputContext ctx)
     ctx
     _
     ObjectEntry {entryName} =
-      withPosition position $
-        renderInputPrefix ctx <> "Unknown Field " <> msgValidation entryName <> "."
+      ( renderInputPrefix ctx
+          <> "Unknown Field "
+          <> msgValidation entryName
+          <> "."
+      )
+        `atPositions` position
 
 instance Unknown (DirectiveDefinition s) (Argument s') ctx where
   unknown _ _ DirectiveDefinition {directiveDefinitionName} Argument {argumentName, argumentPosition} =
-    ValidationError
-      { validationMessage = "Unknown Argument " <> msg argumentName <> " on Directive " <> msg directiveDefinitionName <> ".",
-        validationLocations = [argumentPosition]
-      }
+    ( "Unknown Argument "
+        <> msgValidation argumentName
+        <> " on Directive "
+        <> msgValidation directiveDefinitionName
+        <> "."
+    )
+      `at` argumentPosition
 
 instance Unknown (DirectiveDefinitions s) (Directive s') ctx where
   unknown _ _ _ Directive {directiveName, directivePosition} =
-    ValidationError
-      { validationMessage = "Unknown Directive " <> msg directiveName <> ".",
-        validationLocations = [directivePosition]
-      }
+    ("Unknown Directive " <> msgValidation directiveName <> ".") `at` directivePosition
 
 instance Unknown (FieldsDefinition OUT s) (Ref FieldName) (OperationContext s1 s2) where
   unknown Scope {currentTypeName} _ _ = unknownSelectionField currentTypeName
@@ -195,15 +187,13 @@ class KindViolation (t :: TypeCategory) ctx where
 
 instance KindViolation IMPLEMENTABLE (Fragment s) where
   kindViolation _ Fragment {fragmentName, fragmentType, fragmentPosition} =
-    ValidationError
-      { validationMessage =
-          "Fragment "
-            <> msg fragmentName
-            <> " cannot condition on non composite type "
-            <> msg fragmentType
-            <> ".",
-        validationLocations = [fragmentPosition]
-      }
+    ( "Fragment "
+        <> msgValidation fragmentName
+        <> " cannot condition on non composite type "
+        <> msgValidation fragmentType
+        <> "."
+    )
+      `at` fragmentPosition
 
 instance KindViolation IN (Variable s) where
   kindViolation
@@ -213,12 +203,10 @@ instance KindViolation IN (Variable s) where
         variablePosition,
         variableType = TypeRef {typeConName}
       } =
-      ValidationError
-        { validationMessage =
-            "Variable "
-              <> msg ("$" <> variableName)
-              <> " cannot be non-input type "
-              <> msg typeConName
-              <> ".",
-          validationLocations = [variablePosition]
-        }
+      ( "Variable "
+          <> msgValidation ("$" <> variableName)
+          <> " cannot be non-input type "
+          <> msgValidation typeConName
+          <> "."
+      )
+        `at` variablePosition

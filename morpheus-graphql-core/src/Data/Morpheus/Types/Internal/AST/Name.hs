@@ -41,6 +41,10 @@ import Data.Morpheus.Rendering.RenderGQL
     fromText,
     renderGQL,
   )
+import Data.Morpheus.Types.Internal.AST.Base
+  ( Message (..),
+    Msg (..),
+  )
 import qualified Data.Text as T
 import Language.Haskell.TH
   ( stringE,
@@ -75,6 +79,9 @@ newtype Name (t :: NAME) = Name {unpackName :: Text}
       FromJSON,
       ToJSON
     )
+
+instance Msg (Name t) where
+  msg name = Message $ "\"" <> unpackName name <> "\""
 
 packName :: Text -> Name t
 packName = Name

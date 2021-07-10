@@ -28,7 +28,6 @@ import Data.Morpheus.Types.Internal.AST
     FieldName,
     FieldsDefinition,
     IN,
-    Message,
     Object,
     ObjectEntry (..),
     Ref (..),
@@ -44,15 +43,16 @@ import Data.Morpheus.Types.Internal.AST
     UnionMember (..),
     VALID,
     ValidValue,
+    ValidationError,
     Value (..),
     Variable (..),
     Variable (..),
     VariableContent (..),
+    atPositions,
     isNullable,
     isSubtype,
     mkMaybeType,
     mkTypeRef,
-    msg,
     msgValidation,
     packName,
     toCategory,
@@ -60,7 +60,6 @@ import Data.Morpheus.Types.Internal.AST
     unitFieldName,
     unitTypeName,
     untyped,
-    withPosition,
   )
 import Data.Morpheus.Types.Internal.Validation
   ( InputContext,
@@ -82,7 +81,7 @@ import Data.Morpheus.Types.Internal.Validation
 import Relude
 
 violation ::
-  Maybe Message ->
+  Maybe ValidationError ->
   Value s ->
   InputValidator schemaS ctx a
 violation message value = do
@@ -93,13 +92,14 @@ violation message value = do
     } <-
     asksScope id
   prefix <- inputMessagePrefix
-  failure
-    $ withPosition position
-    $ prefix
-      <> typeViolation
-        (TypeRef currentTypeName currentTypeWrappers)
-        value
-      <> maybe "" ((" " <>) . msgValidation) message
+  failure $
+    ( prefix
+        <> typeViolation
+          (TypeRef currentTypeName currentTypeWrappers)
+          value
+        <> maybe "" (" " <>) message
+    )
+      `atPositions` position
 
 checkTypeCompatibility ::
   TypeRef ->
@@ -191,7 +191,7 @@ validatInputUnion ::
   InputValidator schemaS ctx (Value VALID)
 validatInputUnion inputUnion rawFields =
   case constraintInputUnion inputUnion rawFields of
-    Left message -> violation (Just message) (Object rawFields)
+    Left message -> violation (Just $ msgValidation message) (Object rawFields)
     Right (name, value) -> validatInputUnionMember name value
 
 validatInputUnionMember ::
@@ -263,7 +263,7 @@ validateScalar ScalarDefinition {validateValue} value = do
   case validateValue scalarValue of
     Right _ -> pure scalarValue
     Left "" -> violation Nothing value
-    Left message -> violation (Just $ msg message) value
+    Left message -> violation (Just $ msgValidation message) value
   where
     toScalar :: TypeName -> Value s -> InputValidator schemaS ctx ValidValue
     toScalar typeName (Scalar x) | isValidDefault typeName x = pure (Scalar x)
