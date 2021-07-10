@@ -7,7 +7,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.AST.Base
@@ -16,40 +15,20 @@ module Data.Morpheus.Types.Internal.AST.Base
     Message (..),
     Description,
     Token,
-    GQLError (..),
-    GQLErrors,
     TRUE,
     FALSE,
     Msg (..),
-    InternalError (..),
-    msgInternal,
-    ValidationError (..),
-    msgValidation,
-    ValidationErrors,
-    withPosition,
-    toGQLError,
   )
 where
 
 import Data.Aeson
   ( FromJSON,
-    Options (..),
     ToJSON (..),
     Value,
-    defaultOptions,
     encode,
-    genericToJSON,
   )
 import Data.ByteString.Lazy (ByteString)
-import Data.Morpheus.Types.Internal.AST.Name
-  ( Name,
-    TypeName,
-    unpackName,
-  )
-import Data.Morpheus.Types.Internal.AST.OperationType
-  ( OperationType (..),
-  )
-import Data.Text (intercalate, pack)
+import Data.Text (pack)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import Data.Text.Lazy.Encoding (decodeUtf8)
@@ -90,55 +69,11 @@ instance Lift Message where
   liftTyped = liftTypedString . readMessage
 #endif
 
-newtype InternalError = InternalError
-  { readInternalError :: Text
-  }
-  deriving
-    (Generic)
-  deriving newtype
-    (Show, Eq, Ord, IsString, Semigroup, Hashable, FromJSON, ToJSON)
-
-data ValidationError = ValidationError
-  { validationMessage :: Message,
-    validationLocations :: [Position]
-  }
-  deriving (Show)
-
-instance IsString ValidationError where
-  fromString = (`ValidationError` []) . msg
-
-instance Semigroup ValidationError where
-  ValidationError m1 p1 <> ValidationError m2 p2 =
-    ValidationError (m1 <> m2) (p1 <> p2)
-
-withPosition :: Maybe Position -> ValidationError -> ValidationError
-withPosition pos (ValidationError m ps) = ValidationError m (ps <> maybeToList pos)
-{-# INLINE withPosition #-}
-
-type ValidationErrors = [ValidationError]
-
-toGQLError :: ValidationError -> GQLError
-toGQLError (ValidationError m p) = GQLError m p Nothing
-{-# INLINE toGQLError #-}
-
-msgInternal :: (Msg a) => a -> InternalError
-msgInternal = InternalError . readMessage . msg
-{-# INLINE msgInternal #-}
-
-msgValidation :: (Msg a) => a -> ValidationError
-msgValidation = (`ValidationError` []) . msg
-{-# INLINE msgValidation #-}
-
 class Msg a where
   msg :: a -> Message
-  msgSepBy :: Text -> [a] -> Message
-  msgSepBy t = Message . intercalate t . fmap (readMessage . msg)
 
 instance Msg Message where
   msg = id
-
-instance Msg InternalError where
-  msg = Message . ("Internal Error! " <>) . readInternalError
 
 instance Msg String where
   msg = Message . pack
@@ -151,9 +86,6 @@ instance Msg Text where
 
 instance Msg Value where
   msg = msg . encode
-
-instance Msg (Name t) where
-  msg name = Message $ "\"" <> unpackName name <> "\""
 
 liftTypedString :: IsString a => Token -> Q (TExp a)
 liftTypedString = unsafeTExpCoerce . stringE . T.unpack
@@ -179,23 +111,6 @@ instance Ord Position where
 -- but different Positions should be Equal
 instance Eq Position where
   _ == _ = True
-
-data GQLError = GQLError
-  { message :: Message,
-    locations :: [Position],
-    extensions :: Maybe Value
-  }
-  deriving (Show, Eq, Generic, FromJSON)
-
-instance ToJSON GQLError where
-  toJSON = genericToJSON (defaultOptions {omitNothingFields = True})
-
-type GQLErrors = [GQLError]
-
-instance Msg OperationType where
-  msg Query = msg ("query" :: TypeName)
-  msg Mutation = msg ("mutation" :: TypeName)
-  msg Subscription = msg ("subscription" :: TypeName)
 
 -- | Document Reference with its Position
 --

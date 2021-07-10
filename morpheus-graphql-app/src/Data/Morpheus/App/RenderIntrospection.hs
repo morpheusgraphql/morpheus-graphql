@@ -49,7 +49,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldsDefinition,
     GQLErrors,
     IN,
-    Message,
+    InternalError,
     OUT,
     QUERY,
     Schema,
@@ -68,7 +68,7 @@ import Data.Morpheus.Types.Internal.AST
     lookupDeprecated,
     lookupDeprecatedReason,
     mkInputUnionFields,
-    msg,
+    msgInternal,
     possibleInterfaceTypes,
     unpackName,
   )
@@ -77,7 +77,7 @@ import Relude
 
 class
   ( Monad m,
-    Failure Message m,
+    Failure InternalError m,
     Failure GQLErrors m
   ) =>
   WithSchema m
@@ -93,7 +93,7 @@ selectType ::
   m (TypeDefinition ANY VALID)
 selectType name =
   getSchema
-    >>= selectBy (" INTERNAL: INTROSPECTION Type not Found: \"" <> msg name <> "\"") name
+    >>= selectBy ("INTROSPECTION Type not Found: \"" <> msgInternal name <> "\"") name
 
 class RenderIntrospection a where
   render :: (Monad m, WithSchema m) => a -> m (ResolverValue m)
@@ -349,7 +349,7 @@ implementedInterface name =
     >>= renderContent
   where
     renderContent typeDef@TypeDefinition {typeContent = DataInterface {}} = render typeDef
-    renderContent _ = failure ("Type " <> msg name <> " must be an Interface" :: Message)
+    renderContent _ = failure ("Type " <> msgInternal name <> " must be an Interface")
 
 renderName ::
   ( RenderIntrospection name,

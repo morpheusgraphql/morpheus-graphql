@@ -46,7 +46,7 @@ import Data.Morpheus.Ext.Map
     runResolutionT,
   )
 import Data.Morpheus.Ext.Selectable
-import Data.Morpheus.Types.Internal.AST.Base
+import Data.Morpheus.Types.Internal.AST.Error
   ( ValidationErrors,
   )
 import Data.Morpheus.Types.Internal.AST.Name

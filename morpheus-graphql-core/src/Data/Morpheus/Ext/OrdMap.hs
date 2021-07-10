@@ -9,6 +9,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Ext.OrdMap
@@ -36,7 +37,7 @@ import Data.Morpheus.Internal.Utils
     Selectable (..),
     toPair,
   )
-import Data.Morpheus.Types.Internal.AST.Base (ValidationErrors)
+import Data.Morpheus.Types.Internal.AST.Error (ValidationErrors)
 import Language.Haskell.TH.Syntax (Lift (..))
 import Relude
 

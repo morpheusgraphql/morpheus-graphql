@@ -9,17 +9,16 @@ where
 
 import Data.Morpheus.Types.Internal.AST.Base
   ( Position,
-    ValidationError (..),
+  )
+import Data.Morpheus.Types.Internal.AST.Error
+  ( ValidationError,
+    at,
   )
 
 mutationIsNotDefined :: Position -> ValidationError
 mutationIsNotDefined position =
-  ValidationError
-    "Schema is not configured for mutations."
-    [position]
+  "Schema is not configured for mutations." `at` position
 
 subscriptionIsNotDefined :: Position -> ValidationError
 subscriptionIsNotDefined position =
-  ValidationError
-    "Schema is not configured for subscriptions."
-    [position]
+  "Schema is not configured for subscriptions." `at` position

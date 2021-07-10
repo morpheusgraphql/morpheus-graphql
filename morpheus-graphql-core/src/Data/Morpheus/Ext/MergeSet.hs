@@ -37,7 +37,9 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST.Base
   ( Ref,
-    ValidationError,
+  )
+import Data.Morpheus.Types.Internal.AST.Error
+  ( ValidationError,
     ValidationErrors,
   )
 import Data.Morpheus.Types.Internal.AST.Name

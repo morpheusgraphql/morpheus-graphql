@@ -24,7 +24,6 @@ module Data.Morpheus.Types.Internal.Validation.Validator
     Constraint (..),
     withScope,
     withScopeType,
-    withPosition,
     inField,
     inputMessagePrefix,
     InputSource (..),
@@ -52,12 +51,10 @@ module Data.Morpheus.Types.Internal.Validation.Validator
     DirectiveValidator,
     ValidatorContext (..),
     FragmentValidator,
+    withPosition,
   )
 where
 
-import Data.Morpheus.Error.Utils
-  ( validationErrorMessage,
-  )
 import Data.Morpheus.Ext.Result
   ( Eventless,
   )
@@ -91,11 +88,13 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef (..),
     TypeWrapper,
     VALID,
-    ValidationError (..),
+    ValidationError,
     Variable (..),
     VariableDefinitions,
+    atPositions,
     intercalate,
     kindOf,
+    mapError,
     msg,
     msgValidation,
     unpackName,
@@ -457,17 +456,11 @@ fromValidationError :: ValidatorContext s ctx -> ValidationError -> GQLError
 fromValidationError
   context@ValidatorContext
     { config
-    }
-  (ValidationError text locations) =
-    GQLError
-      { message,
-        locations,
-        extensions = Nothing
-      }
+    } = mapError message
     where
       message
-        | debug config = text <> renderContext context
-        | otherwise = text
+        | debug config = (<> renderContext context)
+        | otherwise = id
 
 -- can be only used for internal errors
 instance
@@ -476,13 +469,12 @@ instance
   where
   failure inputMessage = do
     ctx <- Validator ask
-    failure
-      ( validationErrorMessage
-          (position $ scope ctx)
-          $ msg
-            inputMessage
-            <> renderContext ctx
+    let positions = maybeToList $ position (scope ctx)
+    failure $
+      ( coerce inputMessage
+          <> msgValidation (renderContext ctx)
       )
+        `atPositions` positions
 
 renderContext :: ValidatorContext s ctx -> Message
 renderContext

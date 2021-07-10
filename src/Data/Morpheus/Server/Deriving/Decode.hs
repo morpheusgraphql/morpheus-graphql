@@ -65,7 +65,6 @@ import Data.Morpheus.Types.Internal.AST
     IN,
     InternalError,
     LEAF,
-    Message,
     Object,
     ObjectEntry (..),
     TypeName,
@@ -73,7 +72,7 @@ import Data.Morpheus.Types.Internal.AST
     ValidObject,
     ValidValue,
     Value (..),
-    msg,
+    msgInternal,
   )
 import Data.Morpheus.Utils.Kinded
   ( KindedProxy (..),
@@ -136,7 +135,7 @@ decodeType = fmap to . (`runReaderT` context) . decodeRep
 
 decideUnion ::
   ( Functor m,
-    Failure Message m
+    Failure InternalError m
   ) =>
   ([TypeName], value -> m (f1 a)) ->
   ([TypeName], value -> m (f2 a)) ->
@@ -151,7 +150,7 @@ decideUnion (left, f1) (right, f2) name value
   | otherwise =
     failure $
       "Constructor \""
-        <> msg name
+        <> msgInternal name
         <> "\" could not find in Union"
 
 traverseUnion ::

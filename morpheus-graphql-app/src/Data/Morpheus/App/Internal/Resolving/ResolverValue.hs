@@ -7,6 +7,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.App.Internal.Resolving.ResolverValue
@@ -48,7 +49,6 @@ import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     GQLErrors,
     InternalError,
-    Message,
     ObjectEntry (..),
     Ref,
     ScalarValue (..),
@@ -64,7 +64,7 @@ import Data.Morpheus.Types.Internal.AST
     Value (..),
     Value (..),
     decodeScientific,
-    msg,
+    msgInternal,
     packName,
     toGQLError,
     unitFieldName,
@@ -135,7 +135,6 @@ lookupRes ::
     MonadReader ResolverContext m,
     Failure GQLErrors m,
     Failure ValidationErrors m,
-    Failure Message m,
     Failure InternalError m
   ) =>
   Selection VALID ->
@@ -185,7 +184,6 @@ __encode ::
   forall m.
   ( Monad m,
     MonadReader ResolverContext m,
-    Failure Message m,
     Failure GQLErrors m,
     Failure ValidationErrors m,
     Failure InternalError m
@@ -207,7 +205,7 @@ __encode obj sel@Selection {selectionContent} = encodeNode obj selectionContent
     encodeNode (ResEnum enum) SelectionField = pure $ Scalar $ String $ unpackName enum
     encodeNode (ResEnum name) unionSel@UnionSelection {} =
       encodeNode (mkUnion name mkEnumNull) unionSel
-    encodeNode ResEnum {} _ = failure ("wrong selection on enum value" :: Message)
+    encodeNode ResEnum {} _ = failure ("wrong selection on enum value" :: InternalError)
     -- UNION
     encodeNode (ResUnion typename unionRef) (UnionSelection interface selections) = do
       unionRes <- unionRef
@@ -216,17 +214,16 @@ __encode obj sel@Selection {selectionContent} = encodeNode obj selectionContent
     encodeNode (ResUnion _ unionRef) (SelectionSet selection) =
       unionRef >>= resolveObject selection
     encodeNode (ResUnion name _) SelectionField =
-      failure ("union Resolver " <> msg name <> " cant resolve  SelectionField")
+      failure ("union Resolver " <> msgInternal name <> " cant resolve  SelectionField")
     -- SCALARS
     encodeNode ResNull _ = pure Null
     encodeNode (ResScalar x) SelectionField = pure $ Scalar x
     encodeNode ResScalar {} _ =
-      failure ("scalar Resolver should only receive SelectionField" :: Message)
+      failure ("scalar Resolver should only receive SelectionField" :: InternalError)
 
 runDataResolver ::
   ( Monad m,
     MonadReader ResolverContext m,
-    Failure Message m,
     Failure GQLErrors m,
     Failure ValidationErrors m,
     Failure InternalError m
@@ -256,8 +253,7 @@ resolveObject ::
     MonadReader ResolverContext m,
     Failure ValidationErrors m,
     Failure InternalError m,
-    Failure GQLErrors m,
-    Failure Message m
+    Failure GQLErrors m
   ) =>
   SelectionSet VALID ->
   ResolverValue m ->

@@ -53,7 +53,7 @@ import Data.Morpheus.Types.Internal.AST
     getOperationDataType,
     getOperationName,
     mkTypeRef,
-    msg,
+    msgInternal,
     toAny,
   )
 import Relude hiding (empty, show)
@@ -214,8 +214,8 @@ getFieldType
       withTypeContent DataInterface {interfaceFields} =
         selectBy selError selectionName interfaceFields >>= processDeprecation
       withTypeContent dt =
-        failure (compileError $ "Type should be output Object \"" <> msg (show dt))
-      selError = compileError $ "can't find field " <> msg selectionName <> " on type: " <> msg (show typeContent)
+        failure (compileError $ "Type should be output Object \"" <> msgInternal (show dt))
+      selError = compileError $ "can't find field " <> msgInternal selectionName <> " on type: " <> msgInternal (show typeContent)
       processDeprecation
         FieldDefinition
           { fieldType = alias@TypeRef {typeConName},

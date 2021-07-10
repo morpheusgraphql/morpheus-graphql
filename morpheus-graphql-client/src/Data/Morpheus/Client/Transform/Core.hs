@@ -25,7 +25,6 @@ import Data.Morpheus.Client.Internal.Types
   )
 import Data.Morpheus.Error
   ( deprecatedField,
-    globalErrorMessage,
   )
 import Data.Morpheus.Internal.Ext
   ( Eventless,
@@ -41,7 +40,7 @@ import Data.Morpheus.Types.Internal.AST
     Directives,
     FieldName,
     GQLErrors,
-    Message,
+    InternalError,
     RAW,
     Ref (..),
     Schema (..),
@@ -55,7 +54,7 @@ import Data.Morpheus.Types.Internal.AST
     isNotSystemTypeName,
     lookupDeprecated,
     lookupDeprecatedReason,
-    msg,
+    msgInternal,
     toGQLError,
   )
 import Relude
@@ -85,12 +84,11 @@ newtype UpdateT m a = UpdateT {updateTState :: a -> m a}
 resolveUpdates :: Monad m => a -> [UpdateT m a] -> m a
 resolveUpdates a = foldlM (&) a . fmap updateTState
 
-compileError :: Message -> GQLErrors
-compileError x =
-  globalErrorMessage $ "Unhandled Compile Time Error: \"" <> x <> "\" ;"
+compileError :: InternalError -> GQLErrors
+compileError x = [toGQLError ("Unhandled Compile Time Error: \"" <> x <> "\" ;")]
 
 getType :: TypeName -> Converter (TypeDefinition ANY VALID)
-getType typename = asks fst >>= selectBy (compileError $ " can't find Type" <> msg typename) typename
+getType typename = asks fst >>= selectBy (compileError $ " can't find Type" <> msgInternal typename) typename
 
 customScalarTypes :: TypeName -> [TypeName]
 customScalarTypes typeName

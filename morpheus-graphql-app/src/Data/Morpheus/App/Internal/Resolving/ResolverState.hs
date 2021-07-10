@@ -45,15 +45,19 @@ import Data.Morpheus.Internal.Ext
 import Data.Morpheus.Types.Internal.AST
   ( GQLError (..),
     GQLErrors,
-    InternalError (..),
+    InternalError,
     Message,
     Operation,
     Schema,
     Selection (..),
     TypeName,
     VALID,
-    ValidationError (..),
+    ValidationError,
+    at,
     msg,
+    msgInternal,
+    readErrorMessage,
+    toGQLError,
   )
 import Relude
 
@@ -104,7 +108,7 @@ instance (Monad m) => Failure InternalError (ResolverStateT e m) where
 instance Monad m => Failure [ValidationError] (ResolverStateT e m) where
   failure messages = do
     ctx <- asks id
-    failure $ fmap (resolverFailureMessage ctx . validationMessage) messages
+    failure $ fmap (resolverFailureMessage ctx . readErrorMessage) messages
 
 instance (Monad m) => Failure GQLErrors (ResolverStateT e m) where
   failure = ResolverStateT . lift . failure
@@ -157,12 +161,10 @@ resolverFailureMessage
       }
 
 renderInternalResolverError :: ResolverContext -> InternalError -> GQLError
-renderInternalResolverError ctx@ResolverContext {currentSelection} message =
-  GQLError
-    { message = msg message <> ". " <> renderContext ctx,
-      locations = [selectionPosition currentSelection],
-      extensions = Nothing
-    }
+renderInternalResolverError ctx@ResolverContext {currentSelection} err =
+  toGQLError $
+    (err <> ". " <> msgInternal (renderContext ctx))
+      `at` selectionPosition currentSelection
 
 withInternalContext :: ResolverContext -> Message
 withInternalContext ResolverContext {config = Config {debug = False}} = ""

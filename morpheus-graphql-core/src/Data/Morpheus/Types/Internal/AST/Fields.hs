@@ -65,13 +65,14 @@ import Data.Morpheus.Rendering.RenderGQL
   )
 import Data.Morpheus.Types.Internal.AST.Base
   ( Description,
-    Msg (..),
     Position,
     TRUE,
-    ValidationError (..),
-    msgValidation,
   )
 import Data.Morpheus.Types.Internal.AST.DirectiveLocation (DirectiveLocation)
+import Data.Morpheus.Types.Internal.AST.Error
+  ( at,
+    msgValidation,
+  )
 import Data.Morpheus.Types.Internal.AST.Name
   ( FieldName,
     TypeName,
@@ -120,10 +121,8 @@ instance RenderGQL (Argument s) where
 
 instance NameCollision (Argument s) where
   nameCollision Argument {argumentName, argumentPosition} =
-    ValidationError
-      { validationMessage = "There can Be only One Argument Named " <> msg argumentName,
-        validationLocations = [argumentPosition]
-      }
+    ("There can Be only One Argument Named " <> msgValidation argumentName)
+      `at` argumentPosition
 
 type Arguments (s :: Stage) = OrdMap FieldName (Argument s)
 

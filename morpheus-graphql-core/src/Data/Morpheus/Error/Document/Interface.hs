@@ -12,7 +12,7 @@ module Data.Morpheus.Error.Document.Interface
   )
 where
 
-import Data.Morpheus.Types.Internal.AST.Base
+import Data.Morpheus.Types.Internal.AST.Error
   ( ValidationError,
     msgValidation,
   )

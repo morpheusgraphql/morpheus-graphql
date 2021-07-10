@@ -28,7 +28,6 @@ import qualified Data.Map as Map
 import Data.Morpheus.App.Internal.Resolving
   ( Eventless,
   )
-import Data.Morpheus.Error (globalErrorMessage)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
   )
@@ -44,7 +43,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeName,
     defineSchemaWith,
-    msg,
+    msgValidation,
     toAny,
   )
 import GHC.Fingerprint.Type (Fingerprint)
@@ -141,15 +140,15 @@ checkTypeCollisions = fmap Map.elems . foldlM collectTypes Map.empty
 failureRequirePrefix :: TypeName -> Eventless b
 failureRequirePrefix typename =
   failure
-    $ globalErrorMessage
-    $ "It appears that the Haskell type "
-      <> msg typename
-      <> " was used as both input and output type, which is not allowed by GraphQL specifications."
-      <> "\n\n "
-      <> "If you supply \"typeNameModifier\" in \"GQLType.typeOptions\", "
-      <> "you can override the default type names for "
-      <> msg typename
-      <> " to solve this problem."
+    [ "It appears that the Haskell type "
+        <> msgValidation typename
+        <> " was used as both input and output type, which is not allowed by GraphQL specifications."
+        <> "\n\n "
+        <> "If you supply \"typeNameModifier\" in \"GQLType.typeOptions\", "
+        <> "you can override the default type names for "
+        <> msgValidation typename
+        <> " to solve this problem."
+    ]
 
 withSameCategory :: TypeFingerprint -> TypeFingerprint
 withSameCategory (TypeableFingerprint _ xs) = TypeableFingerprint OUT xs

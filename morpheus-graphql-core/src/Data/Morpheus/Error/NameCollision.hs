@@ -6,7 +6,7 @@ module Data.Morpheus.Error.NameCollision
 where
 
 import Data.Morpheus.Ext.Map (Indexed (..))
-import Data.Morpheus.Types.Internal.AST.Base
+import Data.Morpheus.Types.Internal.AST.Error
   ( ValidationError,
   )
 import Relude

@@ -57,13 +57,14 @@ import Data.Morpheus.Rendering.RenderGQL
     space,
   )
 import Data.Morpheus.Types.Internal.AST.Base
-  ( Message,
-    Msg (..),
-    Position,
+  ( Position,
     Ref (..),
-    ValidationError (..),
+  )
+import Data.Morpheus.Types.Internal.AST.Error
+  ( ValidationError,
     ValidationErrors,
-    msg,
+    at,
+    atPositions,
     msgValidation,
   )
 import Data.Morpheus.Types.Internal.AST.Fields
@@ -110,9 +111,8 @@ data Fragment (stage :: Stage) = Fragment
 -- ERRORs
 instance NameCollision (Fragment s) where
   nameCollision Fragment {fragmentName, fragmentPosition} =
-    ValidationError
-      ("There can be only one fragment named " <> msg fragmentName <> ".")
-      [fragmentPosition]
+    ("There can be only one fragment named " <> msgValidation fragmentName <> ".")
+      `at` fragmentPosition
 
 instance KeyOf FieldName (Fragment s) where
   keyOf = fragmentName
@@ -151,10 +151,8 @@ instance
     | oldC == currentC = pure oldC
     | otherwise =
       failure
-        [ ValidationError
-            { validationMessage = msg (intercalate "." $ fmap refName path),
-              validationLocations = fmap refPosition path
-            }
+        [ msgValidation (intercalate "." $ fmap refName path)
+            `atPositions` fmap refPosition path
         ]
 
 deriving instance Show (SelectionContent a)
@@ -181,13 +179,11 @@ instance RenderGQL UnionTag where
 mergeConflict :: [Ref FieldName] -> ValidationError -> ValidationErrors
 mergeConflict [] err = [err]
 mergeConflict refs@(rootField : xs) err =
-  [ ValidationError
-      { validationMessage = renderSubfields <> validationMessage err,
-        validationLocations = fmap refPosition refs <> validationLocations err
-      }
+  [ (renderSubfields `atPositions` fmap refPosition refs)
+      <> err
   ]
   where
-    fieldConflicts ref = msg (refName ref) <> " conflict because "
+    fieldConflicts ref = msgValidation (refName ref) <> " conflict because "
     renderSubfield ref txt = txt <> "subfields " <> fieldConflicts ref
     renderStart = "Fields " <> fieldConflicts rootField
     renderSubfields =
@@ -235,7 +231,7 @@ instance KeyOf FieldName (Selection s) where
       } = fromMaybe selectionName selectionAlias
   keyOf _ = ""
 
-useDifferentAliases :: Message
+useDifferentAliases :: ValidationError
 useDifferentAliases =
   "Use different aliases on the "
     <> "fields to fetch both if this was intentional."
@@ -276,13 +272,13 @@ instance
           | selectionName old == selectionName current = pure $ selectionName current
           | otherwise =
             failure $ mergeConflict path $
-              ValidationError
-                { validationMessage =
-                    "" <> msg (selectionName old) <> " and " <> msg (selectionName current)
-                      <> " are different fields. "
-                      <> useDifferentAliases,
-                  validationLocations = [pos1, pos2]
-                }
+              ( msgValidation (selectionName old)
+                  <> " and "
+                  <> msgValidation (selectionName current)
+                  <> " are different fields. "
+                  <> useDifferentAliases
+              )
+                `atPositions` [pos1, pos2]
         ---------------------
         -- alias name is relevant only if they collide by allies like:
         --   { user1: user
@@ -296,15 +292,10 @@ instance
           | selectionArguments old == selectionArguments current = pure $ selectionArguments current
           | otherwise =
             failure $ mergeConflict currentPath $
-              ValidationError
-                { validationMessage = "they have differing arguments. " <> useDifferentAliases,
-                  validationLocations = [pos1, pos2]
-                }
+              ("they have differing arguments. " <> useDifferentAliases)
+                `atPositions` [pos1, pos2]
   mergeM path _ _ =
-    failure $
-      mergeConflict
-        path
-        ("INTERNAL: can't merge. " <> msgValidation useDifferentAliases :: ValidationError)
+    failure $ mergeConflict path ("INTERNAL: can't merge. " <> useDifferentAliases)
 
 deriving instance Show (Selection a)
 
