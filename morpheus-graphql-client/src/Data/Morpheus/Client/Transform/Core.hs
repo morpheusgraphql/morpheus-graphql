@@ -33,7 +33,7 @@ import Data.Morpheus.Internal.Ext
   )
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
-    nameSpaceType,
+    camelCaseTypeName,
     selectBy,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -52,7 +52,6 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
     ValidationError,
     VariableDefinitions,
-    hsTypeName,
     isNotSystemTypeName,
     lookupDeprecated,
     lookupDeprecatedReason,
@@ -109,10 +108,9 @@ leafType TypeDefinition {typeName, typeContent} = fromKind typeContent
 typeFrom :: [FieldName] -> TypeDefinition a VALID -> TypeName
 typeFrom path TypeDefinition {typeName, typeContent} = __typeFrom typeContent
   where
-    __typeFrom DataScalar {} = hsTypeName typeName
-    __typeFrom DataObject {} = nameSpaceType path typeName
-    __typeFrom DataInterface {} = nameSpaceType path typeName
-    __typeFrom DataUnion {} = nameSpaceType path typeName
+    __typeFrom DataObject {} = camelCaseTypeName path typeName
+    __typeFrom DataInterface {} = camelCaseTypeName path typeName
+    __typeFrom DataUnion {} = camelCaseTypeName path typeName
     __typeFrom _ = typeName
 
 deprecationWarning :: Directives VALID -> (FieldName, Ref FieldName) -> Converter ()

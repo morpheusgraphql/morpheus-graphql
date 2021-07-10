@@ -41,7 +41,7 @@ import Data.Morpheus.Server.Deriving.Utils
   )
 import Data.Morpheus.Server.Types.GQLType (GQLType)
 import Data.Morpheus.Types.Internal.AST
-  ( FieldName (..),
+  ( FieldName,
     InternalError,
     OUT,
     SUBSCRIPTION,

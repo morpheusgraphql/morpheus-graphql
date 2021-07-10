@@ -36,10 +36,12 @@ import Data.Morpheus.Internal.Utils
     toPair,
   )
 import Data.Morpheus.Types.Internal.AST.Base
-  ( FieldName,
-    Ref,
+  ( Ref,
     ValidationError,
     ValidationErrors,
+  )
+import Data.Morpheus.Types.Internal.AST.Name
+  ( FieldName,
   )
 import Data.Morpheus.Types.Internal.AST.Stage
   ( RAW,

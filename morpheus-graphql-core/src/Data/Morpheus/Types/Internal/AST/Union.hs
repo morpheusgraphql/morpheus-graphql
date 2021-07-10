@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveLift #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -30,17 +31,17 @@ import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
   )
 import Data.Morpheus.Types.Internal.AST.Base
-  ( FieldName (..),
-    Message (..),
+  ( Message (..),
     Msg (..),
-    TypeName (..),
-    toFieldName,
-    unitTypeName,
   )
 import Data.Morpheus.Types.Internal.AST.Fields
   ( FieldDefinition (..),
     FieldsDefinition,
     unsafeFromFields,
+  )
+import Data.Morpheus.Types.Internal.AST.Name
+  ( TypeName,
+    unitTypeName,
   )
 import Data.Morpheus.Types.Internal.AST.Stage
   ( Stage,
@@ -94,7 +95,7 @@ getInputUnionValue ::
 getInputUnionValue hm =
   case elems hm of
     [] -> failure ("Exclusive input objects must provide a value for at least one field." :: Message)
-    [ObjectEntry (FieldName name) value] -> pure (TypeName name, value)
+    [ObjectEntry name value] -> pure (coerce name, value)
     _ -> failure ("Exclusive input objects are not allowed to provide values for multiple fields." :: Message)
 
 constraintInputUnion ::
@@ -119,7 +120,7 @@ mkInputUnionFields = unsafeFromFields . fmap mkInputUnionField
 mkInputUnionField :: UnionMember IN s -> FieldDefinition IN s
 mkInputUnionField UnionMember {memberName, nullary} =
   FieldDefinition
-    { fieldName = toFieldName memberName,
+    { fieldName = coerce memberName,
       fieldDescription = Nothing,
       fieldContent = Nothing,
       fieldType =

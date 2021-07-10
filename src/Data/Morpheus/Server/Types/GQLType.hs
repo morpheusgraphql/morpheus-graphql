@@ -64,11 +64,13 @@ import Data.Morpheus.Types.Internal.AST
     Directives,
     QUERY,
     TypeCategory (..),
-    TypeName (..),
+    TypeName,
     TypeWrapper (..),
     Value,
     mkBaseType,
+    packName,
     toNullable,
+    unpackName,
   )
 import Data.Morpheus.Utils.Kinded (CategoryValue (..))
 import Data.Text
@@ -119,7 +121,7 @@ __typeData ::
 __typeData proxy = __type proxy (categoryValue (Proxy @kind))
 
 getTypename :: Typeable a => f a -> TypeName
-getTypename = TypeName . intercalate "" . getTypeConstructorNames
+getTypename = packName . intercalate "" . getTypeConstructorNames
 
 getTypeConstructorNames :: Typeable a => f a -> [Text]
 getTypeConstructorNames = fmap (pack . tyConName . replacePairCon) . getTypeConstructors
@@ -130,12 +132,12 @@ getTypeConstructors = ignoreResolver . splitTyConApp . typeRep
 deriveTypeData :: Typeable a => f a -> (Bool -> String -> String) -> TypeCategory -> TypeData
 deriveTypeData proxy typeNameModifier cat =
   TypeData
-    { gqlTypeName = TypeName . pack $ typeNameModifier (cat == IN) originalTypeName,
+    { gqlTypeName = packName . pack $ typeNameModifier (cat == IN) originalTypeName,
       gqlWrappers = mkBaseType,
       gqlFingerprint = getFingerprint cat proxy
     }
   where
-    originalTypeName = unpack . readTypeName $ getTypename proxy
+    originalTypeName = unpack . unpackName $ getTypename proxy
 
 getFingerprint :: Typeable a => TypeCategory -> f a -> TypeFingerprint
 getFingerprint category = TypeableFingerprint category . fmap tyConFingerprint . getTypeConstructors

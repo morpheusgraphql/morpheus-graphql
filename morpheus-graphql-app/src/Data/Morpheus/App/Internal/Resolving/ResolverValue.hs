@@ -46,7 +46,7 @@ import Data.Morpheus.Internal.Utils
     traverseCollection,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( FieldName (FieldName),
+  ( FieldName,
     GQLErrors,
     InternalError,
     Message,
@@ -57,7 +57,7 @@ import Data.Morpheus.Types.Internal.AST
     SelectionContent (..),
     SelectionSet,
     Token,
-    TypeName (..),
+    TypeName,
     UnionTag (..),
     VALID,
     ValidValue,
@@ -66,9 +66,11 @@ import Data.Morpheus.Types.Internal.AST
     Value (..),
     decodeScientific,
     msg,
+    packName,
     toGQLError,
     unitFieldName,
     unitTypeName,
+    unpackName,
   )
 import qualified Data.Vector as V
 import Relude hiding (Show, empty)
@@ -142,7 +144,7 @@ lookupRes ::
   m ValidValue
 lookupRes Selection {selectionName}
   | selectionName == "__typename" =
-    pure . Scalar . String . readTypeName . __typename
+    pure . Scalar . String . unpackName . __typename
   | otherwise =
     maybe
       (pure Null)
@@ -203,7 +205,7 @@ __encode obj sel@Selection {selectionContent} = encodeNode obj selectionContent
     -- Object -----------------
     encodeNode objDrv@(ResObject ResolverObject {__typename}) _ = withObject __typename (`resolveObject` objDrv) sel
     -- ENUM
-    encodeNode (ResEnum enum) SelectionField = pure $ Scalar $ String $ readTypeName enum
+    encodeNode (ResEnum enum) SelectionField = pure $ Scalar $ String $ unpackName enum
     encodeNode (ResEnum name) unionSel@UnionSelection {} =
       encodeNode (mkUnion name mkEnumNull) unionSel
     encodeNode ResEnum {} _ = failure ("wrong selection on enum value" :: Message)
@@ -289,7 +291,7 @@ mkNull :: ResolverValue m
 mkNull = ResNull
 
 unPackName :: A.Value -> TypeName
-unPackName (A.String x) = TypeName x
+unPackName (A.String x) = packName x
 unPackName _ = "__JSON__"
 
 mkValue ::
@@ -300,7 +302,7 @@ mkValue (A.Object v) =
   mkObject
     (maybe "__JSON__" unPackName $ HM.lookup "__typename" v)
     $ fmap
-      (mapTuple FieldName (pure . mkValue))
+      (mapTuple packName (pure . mkValue))
       (HM.toList v)
 mkValue (A.Array ls) = mkList (fmap mkValue (V.toList ls))
 mkValue A.Null = mkNull

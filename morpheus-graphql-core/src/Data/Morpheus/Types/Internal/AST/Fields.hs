@@ -65,17 +65,18 @@ import Data.Morpheus.Rendering.RenderGQL
   )
 import Data.Morpheus.Types.Internal.AST.Base
   ( Description,
-    FieldName,
-    FieldName (..),
     Msg (..),
     Position,
     TRUE,
-    TypeName,
     ValidationError (..),
     msgValidation,
-    sysFields,
   )
 import Data.Morpheus.Types.Internal.AST.DirectiveLocation (DirectiveLocation)
+import Data.Morpheus.Types.Internal.AST.Name
+  ( FieldName,
+    TypeName,
+    isNotSystemFieldName,
+  )
 import Data.Morpheus.Types.Internal.AST.Stage
   ( Stage,
   )
@@ -284,7 +285,7 @@ instance Nullable (FieldDefinition cat s) where
   toNullable field = field {fieldType = toNullable (fieldType field)}
 
 fieldVisibility :: FieldDefinition cat s -> Bool
-fieldVisibility FieldDefinition {fieldName} = fieldName `notElem` sysFields
+fieldVisibility = isNotSystemFieldName . fieldName
 
 mkField ::
   Maybe (FieldContent TRUE cat s) ->

@@ -14,9 +14,9 @@ import Data.Morpheus.App.Internal.Resolving
   )
 import Data.Morpheus.Internal.TH
   ( apply,
+    camelCaseFieldName,
+    camelCaseTypeName,
     declareTypeRef,
-    nameSpaceField,
-    nameSpaceType,
     toCon,
     toName,
   )
@@ -35,9 +35,9 @@ import Data.Morpheus.Server.Internal.TH.Utils
 import Data.Morpheus.Types (TypeGuard)
 import Data.Morpheus.Types.Internal.AST
   ( ConsD (..),
-    FieldName (..),
+    FieldName,
     TypeKind (..),
-    TypeName (..),
+    TypeName,
     isResolverType,
   )
 import Language.Haskell.TH
@@ -123,14 +123,14 @@ fieldTypeName tName fieldName = do
   namespace <- asks namespace
   pure $ toName $
     if namespace
-      then nameSpaceField tName fieldName
+      then camelCaseFieldName tName fieldName
       else fieldName
 
 consName :: TypeKind -> TypeName -> TypeName -> ServerDec Name
-consName kind (TypeName name) conName =
+consName kind name conName =
   toName . genName <$> asks namespace
   where
-    genName True | kind == KindEnum = nameSpaceType [FieldName name] conName
+    genName True | kind == KindEnum = camelCaseTypeName [name] conName
     genName _ = conName
 
 -- withArgs: t => a -> t

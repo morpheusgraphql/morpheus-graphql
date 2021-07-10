@@ -13,9 +13,11 @@ module Data.Morpheus.Error.Document.Interface
 where
 
 import Data.Morpheus.Types.Internal.AST.Base
-  ( TypeName (..),
-    ValidationError,
+  ( ValidationError,
     msgValidation,
+  )
+import Data.Morpheus.Types.Internal.AST.Name
+  ( TypeName,
   )
 import Data.Morpheus.Types.Internal.AST.Type (TypeRef)
 import Data.Morpheus.Types.Internal.Validation.SchemaValidator

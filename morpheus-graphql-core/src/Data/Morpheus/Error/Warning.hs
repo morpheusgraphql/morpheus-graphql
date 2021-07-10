@@ -15,10 +15,12 @@ import Data.ByteString.Lazy.Char8 (unpack)
 import Data.Morpheus.Error.Utils (errorMessage)
 import Data.Morpheus.Types.Internal.AST.Base
   ( Description,
-    FieldName,
     GQLErrors,
     Ref (..),
     msg,
+  )
+import Data.Morpheus.Types.Internal.AST.Name
+  ( FieldName,
   )
 import Language.Haskell.TH (Q, reportWarning)
 import Relude

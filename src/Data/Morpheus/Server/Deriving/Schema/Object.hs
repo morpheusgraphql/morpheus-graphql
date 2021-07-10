@@ -42,7 +42,6 @@ import Data.Morpheus.Types.Internal.AST
   ( CONST,
     FieldContent (..),
     FieldDefinition (..),
-    FieldName (..),
     FieldsDefinition,
     Msg (msg),
     OBJECT,
@@ -56,6 +55,7 @@ import Data.Morpheus.Types.Internal.AST
     mkTypeRef,
     unitFieldName,
     unitTypeName,
+    unpackName,
     unsafeFromFields,
   )
 import Data.Morpheus.Utils.Kinded
@@ -142,4 +142,4 @@ setGQLTypeProps proxy FieldDefinition {..} =
       ..
     }
   where
-    key = readName fieldName
+    key = unpackName fieldName

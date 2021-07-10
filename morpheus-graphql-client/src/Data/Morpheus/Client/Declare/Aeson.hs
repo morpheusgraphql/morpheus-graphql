@@ -45,7 +45,7 @@ import Data.Morpheus.Internal.TH
     v',
   )
 import Data.Morpheus.Internal.Utils
-  ( nameSpaceType,
+  ( camelCaseTypeName,
   )
 import Data.Morpheus.Types.GQLScalar
   ( scalarFromJSON,
@@ -56,10 +56,9 @@ import Data.Morpheus.Types.Internal.AST
     FieldName,
     Message,
     TypeKind (..),
-    TypeName (..),
+    TypeName,
     isResolverType,
     msg,
-    toFieldName,
   )
 import qualified Data.Text as T
 import Language.Haskell.TH
@@ -135,13 +134,13 @@ aesonObject tNamespace con@ConsD {cName} =
         (AppE (VarE 'withObject) name)
         (LamE [v'] body)
     name :: Exp
-    name = toString (nameSpaceType tNamespace cName)
+    name = toString (camelCaseTypeName tNamespace cName)
 
 aesonObjectBody :: [FieldName] -> ClientConsD cat -> ExpQ
 aesonObjectBody namespace ConsD {cName, cFields} =
   decodeObjectE
     entry
-    (nameSpaceType namespace cName)
+    (camelCaseTypeName namespace cName)
     cFields
 
 entry :: Bool -> Name
@@ -178,7 +177,7 @@ takeValueType _ _ = fail "expected Object"
 
 namespaced :: TypeNameTH -> TypeName
 namespaced TypeNameTH {namespace, typename} =
-  nameSpaceType namespace typename
+  camelCaseTypeName namespace typename
 
 defineFromJSON :: TypeNameTH -> ExpQ -> DecQ
 defineFromJSON name expr = instanceD (cxt []) typeDef body
@@ -192,7 +191,7 @@ aesonFromJSONEnumBody TypeNameTH {typename} = matchWith (Just (v', failExp)) f
     f :: ClientConsD cat -> (PatQ, ExpQ)
     f ConsD {cName} =
       ( toString cName,
-        appE [|pure|] $ toCon $ nameSpaceType [toFieldName typename] cName
+        appE [|pure|] $ toCon $ camelCaseTypeName [typename] cName
       )
 
 aesonToJSONEnumBody :: TypeNameTH -> [ClientConsD cat] -> ExpQ
@@ -200,7 +199,7 @@ aesonToJSONEnumBody TypeNameTH {typename} = matchWith Nothing f
   where
     f :: ClientConsD cat -> (PatQ, ExpQ)
     f ConsD {cName} =
-      ( conP (toName $ nameSpaceType [toFieldName typename] cName) [],
+      ( conP (toName $ camelCaseTypeName [typename] cName) [],
         toString cName
       )
 

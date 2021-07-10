@@ -7,10 +7,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Internal.Utils
-  ( capitalize,
-    nameSpaceField,
-    nameSpaceType,
-    capitalTypeName,
+  ( camelCaseTypeName,
+    camelCaseFieldName,
     Collection (..),
     Selectable (..),
     FromElems (..),
@@ -38,7 +36,6 @@ where
 import Data.ByteString.Lazy (ByteString)
 import Data.Char
   ( toLower,
-    toUpper,
   )
 import qualified Data.HashMap.Lazy as HM
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
@@ -53,10 +50,13 @@ import Data.Morpheus.Ext.Map
   )
 import Data.Morpheus.Ext.Selectable
 import Data.Morpheus.Types.Internal.AST.Base
-  ( FieldName (..),
-    Token,
-    TypeName (..),
-    ValidationErrors,
+  ( ValidationErrors,
+  )
+import Data.Morpheus.Types.Internal.AST.Name
+  ( Name (..),
+    TypeName,
+    camelCaseFieldName,
+    camelCaseTypeName,
   )
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
@@ -77,14 +77,8 @@ fromLBS = LT.toStrict . decodeUtf8
 prop :: (b -> b -> m b) -> (a -> b) -> a -> a -> m b
 prop f fSel a1 a2 = f (fSel a1) (fSel a2)
 
-nameSpaceType :: [FieldName] -> TypeName -> TypeName
-nameSpaceType list (TypeName name) = TypeName . T.concat $ fmap capitalize (fmap readName list <> [name])
-
-nameSpaceField :: TypeName -> FieldName -> FieldName
-nameSpaceField (TypeName nSpace) (FieldName name) = FieldName (uncapitalize nSpace <> capitalize name)
-
 dropPrefix :: TypeName -> String -> String
-dropPrefix (TypeName name) = drop (T.length name)
+dropPrefix name = drop (T.length $ unpackName name)
 
 stripConstructorNamespace :: TypeName -> String -> String
 stripConstructorNamespace = dropPrefix
@@ -94,20 +88,6 @@ stripFieldNamespace prefix = __uncapitalize . dropPrefix prefix
   where
     __uncapitalize [] = []
     __uncapitalize (x : xs) = toLower x : xs
-
-capitalize :: Text -> Text
-capitalize = mapFstChar toUpper
-
-uncapitalize :: Text -> Text
-uncapitalize = mapFstChar toLower
-
-mapFstChar :: (Char -> Char) -> Token -> Token
-mapFstChar f x
-  | T.null x = x
-  | otherwise = T.singleton (f $ T.head x) <> T.tail x
-
-capitalTypeName :: FieldName -> TypeName
-capitalTypeName = TypeName . capitalize . readName
 
 --(KEY v ~ k) =>
 class Collection a coll | coll -> a where

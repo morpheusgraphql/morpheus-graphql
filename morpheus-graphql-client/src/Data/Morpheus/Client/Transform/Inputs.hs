@@ -49,7 +49,6 @@ import Data.Morpheus.Types.Internal.AST
     Variable (..),
     VariableDefinitions,
     getOperationName,
-    hsTypeName,
     mkConsEnum,
     toAny,
   )
@@ -77,15 +76,11 @@ renderArguments variables cName
         }
       where
         fieldD :: Variable RAW -> FieldDefinition ANY VALID
-        fieldD Variable {variableName, variableType = TypeRef {typeConName, typeWrappers}} =
+        fieldD Variable {variableName, variableType} =
           FieldDefinition
             { fieldName = variableName,
               fieldContent = Nothing,
-              fieldType =
-                TypeRef
-                  { typeConName = hsTypeName typeConName,
-                    typeWrappers
-                  },
+              fieldType = variableType,
               fieldDescription = Nothing,
               fieldDirectives = empty
             }

@@ -55,7 +55,6 @@ import Data.Morpheus.Types.Internal.AST
     mkTypeRef,
     msg,
     toAny,
-    toFieldName,
   )
 import Relude hiding (empty, show)
 import Prelude (show)
@@ -231,4 +230,6 @@ getFieldType
             checkDeprecated =
               deprecationWarning
                 fieldDirectives
-                (toFieldName typeName, Ref {refName = selectionName, refPosition = selectionPosition})
+                ( coerce typeName,
+                  Ref {refName = selectionName, refPosition = selectionPosition}
+                )

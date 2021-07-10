@@ -9,9 +9,8 @@ module Data.Morpheus.Types.Internal.AST.TH
   )
 where
 
-import Data.Morpheus.Types.Internal.AST.Base
+import Data.Morpheus.Types.Internal.AST.Name
   ( TypeName,
-    hsTypeName,
   )
 import Data.Morpheus.Types.Internal.AST.TypeSystem
   ( DataEnumValue (..),
@@ -25,4 +24,4 @@ data ConsD f = ConsD
   deriving (Show)
 
 mkConsEnum :: DataEnumValue s -> ConsD f
-mkConsEnum DataEnumValue {enumName} = ConsD {cName = hsTypeName enumName, cFields = []}
+mkConsEnum DataEnumValue {enumName} = ConsD {cName = enumName, cFields = []}

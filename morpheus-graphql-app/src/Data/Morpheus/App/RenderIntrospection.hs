@@ -45,7 +45,7 @@ import Data.Morpheus.Types.Internal.AST
     Directives,
     FieldContent (..),
     FieldDefinition (..),
-    FieldName (..),
+    FieldName,
     FieldsDefinition,
     GQLErrors,
     IN,
@@ -57,7 +57,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeContent (..),
     TypeDefinition (..),
     TypeKind (..),
-    TypeName (..),
+    TypeName,
     TypeRef (..),
     TypeWrapper (BaseType, TypeList),
     UnionMember (..),
@@ -70,6 +70,7 @@ import Data.Morpheus.Types.Internal.AST
     mkInputUnionFields,
     msg,
     possibleInterfaceTypes,
+    unpackName,
   )
 import Data.Text (pack)
 import Relude
@@ -98,10 +99,10 @@ class RenderIntrospection a where
   render :: (Monad m, WithSchema m) => a -> m (ResolverValue m)
 
 instance RenderIntrospection TypeName where
-  render = pure . mkString . readTypeName
+  render = pure . mkString . unpackName
 
 instance RenderIntrospection FieldName where
-  render = pure . mkString . readName
+  render = pure . mkString . unpackName
 
 instance RenderIntrospection Description where
   render = pure . mkString

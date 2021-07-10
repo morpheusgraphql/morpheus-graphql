@@ -63,14 +63,17 @@ import Data.Morpheus.Rendering.RenderGQL
     space,
   )
 import Data.Morpheus.Types.Internal.AST.Base
-  ( FieldName,
-    FieldName (..),
-    Msg (..),
+  ( Msg (..),
     Position,
     Ref (..),
-    TypeName (..),
     ValidationError (..),
     msgValidation,
+  )
+import Data.Morpheus.Types.Internal.AST.Name
+  ( FieldName,
+    TypeName,
+    packName,
+    unpackName,
   )
 import Data.Morpheus.Types.Internal.AST.Stage
   ( CONST,
@@ -175,7 +178,7 @@ data ObjectEntry (s :: Stage) = ObjectEntry
   deriving (Eq, Show)
 
 instance RenderGQL (ObjectEntry a) where
-  renderGQL (ObjectEntry (FieldName name) value) = fromText name <> ": " <> renderGQL value
+  renderGQL (ObjectEntry name value) = fromText (unpackName name) <> ": " <> renderGQL value
 
 instance NameCollision (ObjectEntry s) where
   nameCollision ObjectEntry {entryName} =
@@ -222,14 +225,14 @@ instance A.ToJSON (Value a) where
   toJSON (ResolvedVariable _ Variable {variableValue = ValidVariableValue x}) =
     A.toJSON x
   toJSON (VariableValue Ref {refName}) =
-    A.String $ "($ref:" <> readName refName <> ")"
+    A.String $ "($ref:" <> unpackName refName <> ")"
   toJSON Null = A.Null
-  toJSON (Enum (TypeName x)) = A.String x
+  toJSON (Enum x) = A.String (unpackName x)
   toJSON (Scalar x) = A.toJSON x
   toJSON (List x) = A.toJSON x
   toJSON (Object fields) = A.object $ fmap toEntry (elems fields)
     where
-      toEntry (ObjectEntry (FieldName name) value) = name A..= A.toJSON value
+      toEntry (ObjectEntry name value) = unpackName name A..= A.toJSON value
 
   -------------------------------------------
   toEncoding (ResolvedVariable _ Variable {variableValue = ValidVariableValue x}) =
@@ -242,7 +245,7 @@ instance A.ToJSON (Value a) where
   toEncoding (List x) = A.toEncoding x
   toEncoding (Object ordMap) = A.pairs $ renderSeries encodeField (elems ordMap)
     where
-      encodeField (ObjectEntry (FieldName key) value) = key A..= value
+      encodeField (ObjectEntry key value) = unpackName key A..= value
 
 -- fixes GHC 8.2.2, which can't deduce (Semigroup p) from context (Monoid p)
 renderSeries :: (Semigroup p, Monoid p) => (e -> p) -> [e] -> p
@@ -261,7 +264,7 @@ replaceValue (A.String v) = mkString v
 replaceValue (A.Object v) =
   mkObject $
     fmap
-      (mapTuple FieldName replaceValue)
+      (mapTuple packName replaceValue)
       (M.toList v)
 replaceValue (A.Array li) = List (fmap replaceValue (V.toList li))
 replaceValue A.Null = Null

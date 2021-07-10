@@ -35,7 +35,7 @@ import Data.Morpheus.Types.Internal.AST
     DirectiveLocation (..),
     FieldContent (..),
     FieldDefinition (..),
-    FieldName (..),
+    FieldName,
     IN,
     OUT,
     Schema (..),

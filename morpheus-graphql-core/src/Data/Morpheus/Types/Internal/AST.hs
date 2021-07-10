@@ -9,7 +9,7 @@ module Data.Morpheus.Types.Internal.AST
   ( Ref (..),
     Position (..),
     Message,
-    FieldName (..),
+    FieldName,
     Description,
     Stage,
     CONST,
@@ -20,8 +20,8 @@ module Data.Morpheus.Types.Internal.AST
     Object,
     replaceValue,
     decodeScientific,
-    convertToJSONName,
-    convertToHaskellName,
+    fromHaskellName,
+    toHaskellName,
     RawValue,
     ValidValue,
     RawObject,
@@ -82,7 +82,6 @@ module Data.Morpheus.Types.Internal.AST
     lookupDeprecated,
     lookupDeprecatedReason,
     lookupWith,
-    hsTypeName,
     ExecutableDocument (..),
     Variables,
     unsafeFromFields,
@@ -100,11 +99,10 @@ module Data.Morpheus.Types.Internal.AST
     toAny,
     TRUE,
     FALSE,
-    TypeName (..),
+    TypeName,
     Token,
     Msg (..),
-    intercalateName,
-    toFieldName,
+    intercalate,
     fieldsToArguments,
     mkConsEnum,
     Directives,
@@ -151,6 +149,8 @@ module Data.Morpheus.Types.Internal.AST
     mkBaseType,
     mkMaybeType,
     isPossibleInterfaceType,
+    packName,
+    unpackName,
   )
 where
 
@@ -159,6 +159,7 @@ import Data.Morpheus.Ext.SafeHashMap (SafeHashMap)
 import Data.Morpheus.Types.Internal.AST.Base
 import Data.Morpheus.Types.Internal.AST.DirectiveLocation (DirectiveLocation (..))
 import Data.Morpheus.Types.Internal.AST.Fields
+import Data.Morpheus.Types.Internal.AST.Name
 import Data.Morpheus.Types.Internal.AST.Selection
 import Data.Morpheus.Types.Internal.AST.Stage
 import Data.Morpheus.Types.Internal.AST.TH

@@ -35,9 +35,10 @@ import Data.Morpheus.Types.Internal.AST
     OperationType (..),
     TypeDefinition (..),
     TypeKind (..),
-    TypeName (..),
+    TypeName,
     isResolverType,
     lookupWith,
+    unpackName,
   )
 import Data.Text (unpack)
 import Language.Haskell.TH
@@ -93,7 +94,7 @@ withPure :: Exp -> Exp
 withPure = AppE (VarE 'pure)
 
 typeNameStringE :: TypeName -> Exp
-typeNameStringE = LitE . StringL . (unpack . readTypeName)
+typeNameStringE = LitE . StringL . (unpack . unpackName)
 
 constraintTypeable :: Type -> Q Type
 constraintTypeable name = pure $ apply ''Typeable [name]

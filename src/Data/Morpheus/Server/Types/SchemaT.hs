@@ -42,7 +42,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeCategory (..),
     TypeContent (..),
     TypeDefinition (..),
-    TypeName (..),
+    TypeName,
     defineSchemaWith,
     msg,
     toAny,
