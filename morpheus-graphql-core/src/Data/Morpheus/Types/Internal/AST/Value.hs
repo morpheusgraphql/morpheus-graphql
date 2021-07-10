@@ -53,7 +53,6 @@ import Data.Morpheus.Ext.OrdMap
 import Data.Morpheus.Internal.Utils
   ( KeyOf (..),
     elems,
-    mapTuple,
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
@@ -264,7 +263,7 @@ replaceValue (A.String v) = mkString v
 replaceValue (A.Object v) =
   mkObject $
     fmap
-      (mapTuple packName replaceValue)
+      (bimap packName replaceValue)
       (M.toList v)
 replaceValue (A.Array li) = List (fmap replaceValue (V.toList li))
 replaceValue A.Null = Null

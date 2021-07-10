@@ -88,13 +88,11 @@ import Data.Morpheus.Rendering.RenderGQL
   )
 import Data.Morpheus.Types.Internal.AST.Base
   ( Description,
-    OperationType (..),
     TRUE,
     Token,
     ValidationError,
     ValidationErrors,
     msgValidation,
-    toOperationType,
   )
 import Data.Morpheus.Types.Internal.AST.Fields
   ( Directive,
@@ -106,6 +104,10 @@ import Data.Morpheus.Types.Internal.AST.Name
   ( TypeName,
     isNotSystemTypeName,
     unpackName,
+  )
+import Data.Morpheus.Types.Internal.AST.OperationType
+  ( OperationType (..),
+    toOperationType,
   )
 import Data.Morpheus.Types.Internal.AST.Stage
   ( CONST,

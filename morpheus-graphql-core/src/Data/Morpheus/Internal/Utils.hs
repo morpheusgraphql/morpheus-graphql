@@ -16,9 +16,6 @@ module Data.Morpheus.Internal.Utils
     KeyOf (..),
     toPair,
     selectBy,
-    mapFst,
-    mapSnd,
-    mapTuple,
     traverseCollection,
     prop,
     stripFieldNamespace,
@@ -132,16 +129,6 @@ instance
   fromElems xs = runResolutionT (fromListT (toPair <$> xs)) HM.fromList failOnDuplicates
 
 -- Merge Object with of Failure as an Option
-
-mapFst :: (a -> a') -> (a, b) -> (a', b)
-mapFst f (a, b) = (f a, b)
-
-mapSnd :: (b -> b') -> (a, b) -> (a, b')
-mapSnd f (a, b) = (a, f b)
-
-mapTuple :: (a -> a') -> (b -> b') -> (a, b) -> (a', b')
-mapTuple f1 f2 (a, b) = (f1 a, f2 b)
-
 failOnDuplicates :: (Failure ValidationErrors m, NameCollision a) => NonEmpty a -> m a
 failOnDuplicates (x :| xs)
   | null xs = pure x

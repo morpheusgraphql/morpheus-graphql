@@ -15,12 +15,7 @@ module Data.Morpheus.Types.Internal.AST.Base
     Position (..),
     Message (..),
     Description,
-    OperationType (..),
-    QUERY,
-    MUTATION,
-    SUBSCRIPTION,
     Token,
-    toOperationType,
     GQLError (..),
     GQLErrors,
     TRUE,
@@ -46,15 +41,13 @@ import Data.Aeson
     genericToJSON,
   )
 import Data.ByteString.Lazy (ByteString)
-import Data.Char (toLower)
-import Data.Morpheus.Rendering.RenderGQL
-  ( RenderGQL (..),
-    renderGQL,
-  )
 import Data.Morpheus.Types.Internal.AST.Name
   ( Name,
     TypeName,
     unpackName,
+  )
+import Data.Morpheus.Types.Internal.AST.OperationType
+  ( OperationType (..),
   )
 import Data.Text (intercalate, pack)
 import qualified Data.Text as T
@@ -199,25 +192,10 @@ instance ToJSON GQLError where
 
 type GQLErrors = [GQLError]
 
-data OperationType
-  = Query
-  | Subscription
-  | Mutation
-  deriving (Show, Eq, Lift, Generic, Hashable)
-
-instance RenderGQL OperationType where
-  renderGQL = fromString . fmap toLower . show
-
 instance Msg OperationType where
   msg Query = msg ("query" :: TypeName)
   msg Mutation = msg ("mutation" :: TypeName)
   msg Subscription = msg ("subscription" :: TypeName)
-
-type QUERY = 'Query
-
-type MUTATION = 'Mutation
-
-type SUBSCRIPTION = 'Subscription
 
 -- | Document Reference with its Position
 --
@@ -232,10 +210,3 @@ data Ref name = Ref
 
 instance Ord name => Ord (Ref name) where
   compare (Ref x _) (Ref y _) = compare x y
-
-toOperationType :: TypeName -> Maybe OperationType
-toOperationType "Subscription" = Just Subscription
-toOperationType "Mutation" = Just Mutation
-toOperationType "Query" = Just Query
-toOperationType _ = Nothing
-{-# INLINE toOperationType #-}

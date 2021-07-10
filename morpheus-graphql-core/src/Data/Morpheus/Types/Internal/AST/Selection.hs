@@ -59,7 +59,6 @@ import Data.Morpheus.Rendering.RenderGQL
 import Data.Morpheus.Types.Internal.AST.Base
   ( Message,
     Msg (..),
-    OperationType (..),
     Position,
     Ref (..),
     ValidationError (..),
@@ -78,6 +77,7 @@ import Data.Morpheus.Types.Internal.AST.Name
     TypeName,
     intercalate,
   )
+import Data.Morpheus.Types.Internal.AST.OperationType (OperationType (..))
 import Data.Morpheus.Types.Internal.AST.Stage
   ( RAW,
     Stage,

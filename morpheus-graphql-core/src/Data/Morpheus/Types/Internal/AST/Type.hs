@@ -26,11 +26,13 @@ import Data.Morpheus.Rendering.RenderGQL
   )
 import Data.Morpheus.Types.Internal.AST.Base
   ( Msg (..),
-    OperationType,
   )
 import Data.Morpheus.Types.Internal.AST.Name
   ( TypeName,
     packName,
+  )
+import Data.Morpheus.Types.Internal.AST.OperationType
+  ( OperationType (..),
   )
 import qualified Data.Text.Lazy as LT
 import Data.Text.Lazy.Encoding (decodeUtf8)

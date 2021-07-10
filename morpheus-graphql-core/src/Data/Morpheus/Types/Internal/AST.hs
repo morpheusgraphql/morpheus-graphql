@@ -160,6 +160,7 @@ import Data.Morpheus.Types.Internal.AST.Base
 import Data.Morpheus.Types.Internal.AST.DirectiveLocation (DirectiveLocation (..))
 import Data.Morpheus.Types.Internal.AST.Fields
 import Data.Morpheus.Types.Internal.AST.Name
+import Data.Morpheus.Types.Internal.AST.OperationType
 import Data.Morpheus.Types.Internal.AST.Selection
 import Data.Morpheus.Types.Internal.AST.Stage
 import Data.Morpheus.Types.Internal.AST.TH
