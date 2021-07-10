@@ -41,7 +41,6 @@ import Data.Morpheus.Internal.Ext
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     keyOf,
-    mapTuple,
     selectOr,
     traverseCollection,
   )
@@ -302,7 +301,7 @@ mkValue (A.Object v) =
   mkObject
     (maybe "__JSON__" unPackName $ HM.lookup "__typename" v)
     $ fmap
-      (mapTuple packName (pure . mkValue))
+      (bimap packName (pure . mkValue))
       (HM.toList v)
 mkValue (A.Array ls) = mkList (fmap mkValue (V.toList ls))
 mkValue A.Null = mkNull
