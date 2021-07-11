@@ -27,8 +27,7 @@ import Data.Morpheus.App.RenderIntrospection
   )
 import Data.Morpheus.Internal.Ext ((<:>))
 import Data.Morpheus.Internal.Utils
-  ( elems,
-    empty,
+  ( empty,
     selectOr,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -43,11 +42,12 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
     Value (..),
     packName,
+    typeDefinitions,
   )
 import Relude hiding (empty)
 
 resolveTypes :: (Monad m, WithSchema m) => Schema VALID -> m (ResolverValue m)
-resolveTypes schema = mkList <$> traverse render (elems schema)
+resolveTypes schema = mkList <$> traverse render (typeDefinitions schema)
 
 renderOperation ::
   (Monad m, WithSchema m) =>

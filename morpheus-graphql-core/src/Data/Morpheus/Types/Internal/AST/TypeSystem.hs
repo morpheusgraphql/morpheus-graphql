@@ -50,6 +50,7 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     possibleInterfaceTypes,
     defineSchemaWith,
     isPossibleInterfaceType,
+    typeDefinitions,
   )
 where
 
@@ -70,8 +71,7 @@ import Data.Morpheus.Ext.SemigroupM
     SemigroupM (..),
   )
 import Data.Morpheus.Internal.Utils
-  ( Elems (..),
-    Empty (..),
+  ( Empty (..),
     Failure (..),
     FromElems (..),
     KeyOf (..),
@@ -263,7 +263,7 @@ data SchemaDefinition = SchemaDefinition
   deriving (Show)
 
 instance RenderGQL SchemaDefinition where
-  renderGQL = renderSchemaDefinition . elems . unSchemaDefinition
+  renderGQL = renderSchemaDefinition . toList . unSchemaDefinition
 
 renderSchemaDefinition :: [RootOperationTypeDefinition] -> Rendering
 renderSchemaDefinition entries = "schema" <> renderObject entries <> newline
@@ -309,10 +309,9 @@ type TypeLib s = SafeHashMap TypeName (TypeDefinition ANY s)
 instance Selectable TypeName (TypeDefinition ANY s) (Schema s) where
   selectOr fb f name lib = maybe fb f (lookupDataType name lib)
 
-instance Elems (TypeDefinition ANY s) (Schema s) where
-  elems Schema {..} =
-    elems types
-      <> concatMap fromOperation [Just query, mutation, subscription]
+typeDefinitions :: Schema s -> [TypeDefinition ANY s]
+typeDefinitions Schema {..} =
+  toList types <> concatMap fromOperation [Just query, mutation, subscription]
 
 instance
   ( Monad m,
@@ -477,7 +476,10 @@ possibleInterfaceTypes ::
   TypeName ->
   Schema s ->
   [TypeDefinition ANY s]
-possibleInterfaceTypes name schema = mapMaybe (isPossibleInterfaceType name) (elems schema)
+possibleInterfaceTypes name schema =
+  mapMaybe
+    (isPossibleInterfaceType name)
+    (typeDefinitions schema)
 
 isPossibleInterfaceType ::
   TypeName ->
@@ -684,7 +686,7 @@ instance RenderGQL (Schema s) where
             RootOperationTypeDefinition Mutation . typeName <$> mutation schema,
             RootOperationTypeDefinition Subscription . typeName <$> subscription schema
           ]
-      visibleTypes = filter (isNotSystemTypeName . typeName) (elems schema)
+      visibleTypes = filter (isNotSystemTypeName . typeName) (typeDefinitions schema)
 
 instance RenderGQL (TypeDefinition a s) where
   renderGQL TypeDefinition {typeName, typeContent} = __render typeContent <> newline

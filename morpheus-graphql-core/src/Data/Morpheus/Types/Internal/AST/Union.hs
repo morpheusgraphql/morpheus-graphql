@@ -24,7 +24,6 @@ where
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     KeyOf (..),
-    elems,
     selectBy,
   )
 import Data.Morpheus.Rendering.RenderGQL
@@ -93,7 +92,7 @@ getInputUnionValue ::
   Object stage ->
   Either Message (TypeName, Value stage)
 getInputUnionValue hm =
-  case elems hm of
+  case toList hm of
     [] -> Left "Exclusive input objects must provide a value for at least one field."
     [ObjectEntry name value] -> pure (coerce name, value)
     _ -> failure ("Exclusive input objects are not allowed to provide values for multiple fields." :: Message)

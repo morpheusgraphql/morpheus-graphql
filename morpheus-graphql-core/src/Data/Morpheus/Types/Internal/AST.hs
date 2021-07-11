@@ -154,6 +154,7 @@ module Data.Morpheus.Types.Internal.AST
     atPositions,
     mapError,
     readErrorMessage,
+    typeDefinitions,
   )
 where
 

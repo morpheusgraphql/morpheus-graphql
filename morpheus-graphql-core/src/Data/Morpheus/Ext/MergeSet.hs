@@ -18,7 +18,6 @@ module Data.Morpheus.Ext.MergeSet
   )
 where
 
-import Data.Morpheus.Ext.Elems (Elems (..))
 import Data.Morpheus.Ext.Map
   ( fromListT,
     resolveWith,
@@ -63,8 +62,7 @@ newtype MergeSet (dups :: Stage) k a = MergeSet
       Functor,
       Foldable,
       Traversable,
-      Collection a,
-      Elems a
+      Collection a
     )
 
 instance Lift a => Lift (MergeSet (dups :: Stage) k a) where

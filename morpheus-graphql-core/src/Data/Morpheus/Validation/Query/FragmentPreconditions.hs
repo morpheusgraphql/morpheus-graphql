@@ -23,7 +23,6 @@ import Data.Morpheus.Internal.Graph
   )
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
-    elems,
     selectOr,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -47,8 +46,8 @@ checkUnusedFragments :: SelectionSet RAW -> BaseValidator ()
 checkUnusedFragments selectionSet = do
   fragments <- askFragments
   checkUnused
-    (usedFragments fragments (elems selectionSet))
-    (elems fragments)
+    (usedFragments fragments (toList selectionSet))
+    (toList fragments)
 
 usedFragments :: Fragments RAW -> [Selection RAW] -> [Node FieldName]
 usedFragments fragments = concatMap findAllUses
@@ -78,7 +77,7 @@ checkFragmentPreconditions selection =
     *> checkUnusedFragments selection
 
 exploreSpreads :: BaseValidator (Graph FieldName)
-exploreSpreads = fmap exploreFragmentSpreads . elems <$> askFragments
+exploreSpreads = fmap exploreFragmentSpreads . toList <$> askFragments
 
 exploreFragmentSpreads :: Fragment RAW -> Edges FieldName
 exploreFragmentSpreads Fragment {fragmentName, fragmentSelection, fragmentPosition} =

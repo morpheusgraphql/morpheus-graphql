@@ -19,8 +19,7 @@ import Data.Morpheus.Ext.SemigroupM
   ( join,
   )
 import Data.Morpheus.Internal.Utils
-  ( elems,
-    empty,
+  ( empty,
     fromElems,
     selectOr,
   )
@@ -81,7 +80,7 @@ exploreFragments ::
   SelectionSet RAW ->
   FragmentValidator s ([UnionTag], SelectionSet RAW)
 exploreFragments validateFragment types selectionSet = do
-  (tags, selections) <- partitionEithers <$> traverse (splitFragment validateFragment types) (elems selectionSet)
+  (tags, selections) <- partitionEithers <$> traverse (splitFragment validateFragment types) (toList selectionSet)
   selectionPosition <- fromMaybe (Position 0 0) <$> asksScope position
   (tags,)
     <$> fromElems

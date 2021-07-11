@@ -22,7 +22,6 @@ where
 
 import qualified Data.HashMap.Lazy as HM
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
-import Data.Morpheus.Ext.Elems (Elems)
 import Data.Morpheus.Ext.Empty (Empty)
 import Data.Morpheus.Ext.SemigroupM
   ( (<:>),
@@ -52,7 +51,6 @@ newtype SafeHashMap k a = SafeHashMap
   deriving newtype
     ( Collection a,
       Selectable k a,
-      Elems a,
       Empty
     )
 

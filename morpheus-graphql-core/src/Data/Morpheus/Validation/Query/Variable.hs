@@ -12,7 +12,6 @@ where
 import Data.Morpheus.Error.Variable (uninitializedVariable)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
-    elems,
     selectOr,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -123,7 +122,7 @@ resolveOperationVariables
       checkUnusedVariables :: BaseValidator ()
       checkUnusedVariables = do
         uses <- allVariableRefs [operationSelection]
-        checkUnused uses (elems operationArguments)
+        checkUnused uses (toList operationArguments)
 
 lookupAndValidateValueOnBody ::
   Variables ->

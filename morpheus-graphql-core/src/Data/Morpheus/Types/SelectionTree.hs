@@ -8,7 +8,7 @@
 -- Description : A simple interface for Morpheus internal Selection Set's representation.
 module Data.Morpheus.Types.SelectionTree where
 
-import Data.Morpheus.Internal.Utils (elems, keyOf)
+import Data.Morpheus.Internal.Utils (keyOf)
 import Data.Morpheus.Types.Internal.AST
   ( Selection (..),
     SelectionContent (..),
@@ -40,12 +40,12 @@ instance SelectionTree (Selection VALID) where
 
   getChildrenList node = case selectionContent node of
     SelectionField -> mempty
-    (SelectionSet deeperSel) -> elems deeperSel
+    (SelectionSet deeperSel) -> toList deeperSel
     (UnionSelection interfaceSelection sel) ->
-      elems interfaceSelection
+      toList interfaceSelection
         <> concatMap
-          (elems . unionTagSelection)
-          (elems sel)
+          (toList . unionTagSelection)
+          (toList sel)
 
   getName =
     fromString

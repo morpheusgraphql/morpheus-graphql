@@ -26,8 +26,7 @@ import Data.Morpheus.Ext.SemigroupM
   ( join,
   )
 import Data.Morpheus.Internal.Utils
-  ( Elems (..),
-    Failure (..),
+  ( Failure (..),
     keyOf,
     singleton,
   )
@@ -90,7 +89,7 @@ import Data.Morpheus.Validation.Query.UnionSelection
 import Relude hiding (empty, join)
 
 selectionsWithoutTypename :: SelectionSet VALID -> [Selection VALID]
-selectionsWithoutTypename = filter (("__typename" /=) . keyOf) . elems
+selectionsWithoutTypename = filter (("__typename" /=) . keyOf) . toList
 
 singleTopLevelSelection :: Operation RAW -> SelectionSet VALID -> SelectionValidator ()
 singleTopLevelSelection Operation {operationType = Subscription, operationName} selSet =
@@ -172,7 +171,7 @@ validateSelectionSet ::
   SelectionSet RAW ->
   FragmentValidator s (SelectionSet VALID)
 validateSelectionSet typeDef selectionSet =
-  traverse validateSelection (elems selectionSet)
+  traverse validateSelection (toList selectionSet)
     >>= toNonEmpty . catMaybes
     >>= join
   where

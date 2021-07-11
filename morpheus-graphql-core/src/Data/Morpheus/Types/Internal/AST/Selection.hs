@@ -47,7 +47,6 @@ import Data.Morpheus.Ext.SemigroupM (SemigroupM (..))
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     KeyOf (..),
-    elems,
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
@@ -125,7 +124,7 @@ data SelectionContent (s :: Stage) where
   UnionSelection :: SelectionSet VALID -> UnionSelection VALID -> SelectionContent VALID
 
 renderSelectionSet :: SelectionSet VALID -> Rendering
-renderSelectionSet = renderObject . elems
+renderSelectionSet = renderObject . toList
 
 instance RenderGQL (SelectionContent VALID) where
   renderGQL SelectionField = ""
@@ -135,8 +134,8 @@ instance RenderGQL (SelectionContent VALID) where
     where
       unionSelectionElements :: [Either (Selection VALID) UnionTag]
       unionSelectionElements =
-        map Left (elems interfaceFields)
-          <> map Right (elems unionSets)
+        map Left (toList interfaceFields)
+          <> map Right (toList unionSets)
 
 instance
   ( Monad m,

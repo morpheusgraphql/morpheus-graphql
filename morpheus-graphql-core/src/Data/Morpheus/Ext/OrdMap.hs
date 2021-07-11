@@ -20,7 +20,6 @@ where
 
 import qualified Data.HashMap.Lazy as HM
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
-import Data.Morpheus.Ext.Elems (Elems (..))
 import Data.Morpheus.Ext.Empty (Empty (..))
 import Data.Morpheus.Ext.Map
   ( Indexed (..),
@@ -81,9 +80,6 @@ instance (NameCollision a, Monad m, KeyOf k a, Failure ValidationErrors m) => Se
 
 instance (NameCollision a, Monad m, Failure ValidationErrors m, KeyOf k a, Hashable k) => FromElems m a (OrdMap k a) where
   fromElems values = OrdMap <$> fromElems (indexed (toPair <$> values))
-
-instance (Eq k, Hashable k) => Elems a (OrdMap k a) where
-  elems = getElements
 
 unsafeFromList ::
   (Hashable k, Eq k) =>

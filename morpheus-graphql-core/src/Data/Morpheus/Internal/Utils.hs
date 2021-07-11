@@ -23,10 +23,9 @@ module Data.Morpheus.Internal.Utils
     fromLBS,
     toLBS,
     mergeT,
-    Elems (..),
-    size,
     failOnDuplicates,
     Empty (..),
+    elems,
   )
 where
 
@@ -36,7 +35,6 @@ import Data.Char
   )
 import qualified Data.HashMap.Lazy as HM
 import Data.Morpheus.Error.NameCollision (NameCollision (..))
-import Data.Morpheus.Ext.Elems (Elems (..), size)
 import Data.Morpheus.Ext.Empty
 import Data.Morpheus.Ext.Failure (Failure (..))
 import Data.Morpheus.Ext.KeyOf (KeyOf (..), toPair)
@@ -86,6 +84,10 @@ stripFieldNamespace prefix = __uncapitalize . dropPrefix prefix
     __uncapitalize [] = []
     __uncapitalize (x : xs) = toLower x : xs
 
+{-# DEPRECATED elems "use Foldable.toList" #-}
+elems :: Foldable t => t a -> [a]
+elems = toList
+
 --(KEY v ~ k) =>
 class Collection a coll | coll -> a where
   singleton :: a -> coll
@@ -102,21 +104,21 @@ instance KeyOf k v => Collection v (HashMap k v) where
 traverseCollection ::
   ( Monad f,
     KeyOf k b,
-    Elems a (t a),
     FromElems f b (t' b),
-    Failure ValidationErrors f
+    Failure ValidationErrors f,
+    Foldable t
   ) =>
   (a -> f b) ->
   t a ->
   f (t' b)
-traverseCollection f a = fromElems =<< traverse f (elems a)
+traverseCollection f a = fromElems =<< traverse f (toList a)
 
 -- list Like Collections
 class FromElems m a coll | coll -> a where
   fromElems :: [a] -> m coll
 
-mergeT :: (KeyOf k a, Monad m, Elems a c) => c -> c -> ResolutionT k a c m c
-mergeT x y = fromListT (toPair <$> (elems x <> elems y))
+mergeT :: (KeyOf k a, Foldable t, Monad m) => t a -> t a -> ResolutionT k a c m c
+mergeT x y = fromListT (toPair <$> (toList x <> toList y))
 
 instance
   ( NameCollision a,

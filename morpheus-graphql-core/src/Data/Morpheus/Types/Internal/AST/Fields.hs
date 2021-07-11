@@ -48,8 +48,7 @@ import Data.Morpheus.Ext.OrdMap
     unsafeFromList,
   )
 import Data.Morpheus.Internal.Utils
-  ( Elems (..),
-    Empty (..),
+  ( Empty (..),
     KeyOf (..),
     Selectable (..),
     toPair,
@@ -127,7 +126,7 @@ instance NameCollision (Argument s) where
 type Arguments (s :: Stage) = OrdMap FieldName (Argument s)
 
 renderArgumentValues :: Arguments s -> Rendering
-renderArgumentValues = renderArguments . filter notNull . elems
+renderArgumentValues = renderArguments . filter notNull . toList
   where
     notNull Argument {argumentValue = Null} = False
     notNull _ = True
@@ -277,7 +276,7 @@ instance RenderGQL (FieldDefinition cat s) where
     renderEntry fieldName fieldType
 
 instance RenderGQL (FieldsDefinition cat s) where
-  renderGQL = renderObject . filter fieldVisibility . elems
+  renderGQL = renderObject . filter fieldVisibility . toList
 
 instance Nullable (FieldDefinition cat s) where
   isNullable = isNullable . fieldType
@@ -329,7 +328,7 @@ type InputValueDefinition = FieldDefinition IN
 type ArgumentsDefinition s = OrdMap FieldName (ArgumentDefinition s)
 
 instance RenderGQL (ArgumentsDefinition s) where
-  renderGQL = renderArguments . elems
+  renderGQL = renderArguments . toList
 
 instance RenderGQL (ArgumentDefinition s) where
   renderGQL = renderGQL . argument
