@@ -13,16 +13,18 @@ module Data.Morpheus.Types.Internal.AST.Union
   ( constraintInputUnion,
     mkUnionMember,
     mkNullaryMember,
-    DataUnion,
-    DataInputUnion,
+    UnionTypeDefinition,
     UnionMember (..),
     mkInputUnionFields,
     getInputUnionValue,
   )
 where
 
+import Data.Mergeable
+import Data.Mergeable.SafeHashMap
 import Data.Morpheus.Internal.Utils
-  ( Failure (..),
+  ( Empty (empty),
+    Failure (..),
     KeyOf (..),
     selectBy,
   )
@@ -51,7 +53,6 @@ import Data.Morpheus.Types.Internal.AST.Type
   )
 import Data.Morpheus.Types.Internal.AST.TypeCategory
   ( IN,
-    OUT,
     TypeCategory,
   )
 import Data.Morpheus.Types.Internal.AST.Value
@@ -60,7 +61,7 @@ import Data.Morpheus.Types.Internal.AST.Value
     Value (..),
   )
 import Language.Haskell.TH.Syntax (Lift (..))
-import Relude
+import Relude hiding (empty)
 
 mkUnionMember :: TypeName -> UnionMember cat s
 mkUnionMember name = UnionMember name False
@@ -74,9 +75,10 @@ data UnionMember (cat :: TypeCategory) (s :: Stage) = UnionMember
   }
   deriving (Show, Lift, Eq)
 
-type DataUnion s = [UnionMember OUT s]
+instance NameCollision (UnionMember c s) where
+  nameCollision = undefined
 
-type DataInputUnion s = [UnionMember IN s]
+type UnionTypeDefinition k s = SafeHashMap TypeName (UnionMember k s)
 
 instance RenderGQL (UnionMember cat s) where
   renderGQL = renderGQL . memberName
@@ -99,22 +101,22 @@ getInputUnionValue hm =
 
 constraintInputUnion ::
   forall stage schemaStage.
-  [UnionMember IN schemaStage] ->
+  UnionTypeDefinition IN schemaStage ->
   Object stage ->
   Either Message (UnionMember IN schemaStage, Value stage)
 constraintInputUnion tags hm = do
   (name, value) <- getInputUnionValue hm
   (,value) <$> isPossibleInputUnion tags name
 
-isPossibleInputUnion :: [UnionMember IN s] -> TypeName -> Either Message (UnionMember IN s)
+isPossibleInputUnion :: UnionTypeDefinition IN s -> TypeName -> Either Message (UnionMember IN s)
 isPossibleInputUnion tags name =
   selectBy
     (msg name <> " is not possible union type")
     name
     tags
 
-mkInputUnionFields :: [UnionMember IN s] -> FieldsDefinition IN s
-mkInputUnionFields = unsafeFromFields . fmap mkInputUnionField
+mkInputUnionFields :: Foldable t => t (UnionMember IN s) -> FieldsDefinition IN s
+mkInputUnionFields = unsafeFromFields . fmap mkInputUnionField . toList
 
 mkInputUnionField :: UnionMember IN s -> FieldDefinition IN s
 mkInputUnionField UnionMember {memberName, nullary} =
@@ -127,7 +129,7 @@ mkInputUnionField UnionMember {memberName, nullary} =
           { typeConName,
             typeWrappers = mkMaybeType
           },
-      fieldDirectives = []
+      fieldDirectives = empty
     }
   where
     typeConName

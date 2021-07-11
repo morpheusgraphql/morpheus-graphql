@@ -10,7 +10,7 @@ module Data.Morpheus.Internal.Utils
   ( camelCaseTypeName,
     camelCaseFieldName,
     Collection (..),
-    Selectable (..),
+    IsMap (..),
     FromElems (..),
     Failure (..),
     KeyOf (..),
@@ -23,9 +23,14 @@ module Data.Morpheus.Internal.Utils
     fromLBS,
     toLBS,
     mergeT,
-    failOnDuplicates,
     Empty (..),
     elems,
+    HistoryT,
+    addPath,
+    startHistory,
+    mergeConcat,
+    (<:>),
+    selectOr,
   )
 where
 
@@ -34,21 +39,25 @@ import Data.Char
   ( toLower,
   )
 import qualified Data.HashMap.Lazy as HM
-import Data.Morpheus.Error.NameCollision (NameCollision (..))
+import Data.Mergeable
+  ( Merge (merge),
+    NameCollision (..),
+    ResolutionT,
+    fromListT,
+    mergeConcat,
+    mergeNoDuplicates,
+  )
+import Data.Mergeable.IsMap
 import Data.Morpheus.Ext.Empty
 import Data.Morpheus.Ext.Failure (Failure (..))
 import Data.Morpheus.Ext.KeyOf (KeyOf (..), toPair)
-import Data.Morpheus.Ext.Map
-  ( ResolutionT,
-    fromListT,
-    runResolutionT,
-  )
-import Data.Morpheus.Ext.Selectable
+import Data.Morpheus.Types.Internal.AST.Base (Ref)
 import Data.Morpheus.Types.Internal.AST.Error
   ( ValidationErrors,
   )
 import Data.Morpheus.Types.Internal.AST.Name
-  ( Name (..),
+  ( FieldName,
+    Name (..),
     TypeName,
     camelCaseFieldName,
     camelCaseTypeName,
@@ -62,6 +71,17 @@ import Relude hiding
     decodeUtf8,
     encodeUtf8,
   )
+
+(<:>) :: (Merge (HistoryT m) a, Monad m) => a -> a -> m a
+x <:> y = startHistory (merge x y)
+
+addPath :: MonadReader [a1] m => a1 -> m a2 -> m a2
+addPath p = local (\xs -> xs <> [p])
+
+type HistoryT = ReaderT [Ref FieldName]
+
+startHistory :: HistoryT m a -> m a
+startHistory x = runReaderT x []
 
 toLBS :: Text -> ByteString
 toLBS = encodeUtf8 . LT.fromStrict
@@ -128,10 +148,4 @@ instance
   ) =>
   FromElems m a (HashMap k a)
   where
-  fromElems xs = runResolutionT (fromListT (toPair <$> xs)) HM.fromList failOnDuplicates
-
--- Merge Object with of Failure as an Option
-failOnDuplicates :: (Failure ValidationErrors m, NameCollision a) => NonEmpty a -> m a
-failOnDuplicates (x :| xs)
-  | null xs = pure x
-  | otherwise = failure $ fmap nameCollision (x : xs)
+  fromElems xs = mergeNoDuplicates HM.fromList (toPair <$> xs)

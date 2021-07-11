@@ -192,21 +192,21 @@ genTypeContent ::
 genTypeContent _ DataScalar {} = pure (ConsIN [])
 genTypeContent _ (DataEnum tags) = pure $ ConsIN (fmap mkConsEnum tags)
 genTypeContent typeName (DataInputObject fields) =
-  pure $ ConsIN $ mkObjectCons typeName $ map toServerField $ elems fields
+  pure $ ConsIN $ mkObjectCons typeName $ map toServerField $ toList fields
 genTypeContent _ DataInputUnion {} = fail "Input Unions not Supported"
 genTypeContent typeName DataInterface {interfaceFields} =
   ConsOUT
     <$> ((<>) <$> genArgumentTypes interfaceFields <*> genInterfaceUnion typeName)
     <*> ( mkObjectCons (mkInterfaceName typeName)
-            <$> traverse mkObjectField (elems interfaceFields)
+            <$> traverse mkObjectField (toList interfaceFields)
         )
 genTypeContent typeName DataObject {objectFields} =
   ConsOUT <$> genArgumentTypes objectFields
     <*> ( mkObjectCons typeName
-            <$> traverse mkObjectField (elems objectFields)
+            <$> traverse mkObjectField (toList objectFields)
         )
 genTypeContent typeName (DataUnion members) =
-  pure $ ConsOUT [] (fmap unionCon members)
+  pure $ ConsOUT [] (unionCon <$> toList members)
   where
     unionCon UnionMember {memberName} = mkUnionFieldDefinition typeName memberName
 

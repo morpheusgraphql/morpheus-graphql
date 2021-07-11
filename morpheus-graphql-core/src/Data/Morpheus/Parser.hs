@@ -13,7 +13,7 @@ import Data.Morpheus.Ext.Result
   ( Eventless,
     sortErrors,
   )
-import Data.Morpheus.Ext.SemigroupM ((<:>))
+import Data.Morpheus.Internal.Utils ((<:>))
 import Data.Morpheus.Parsing.Document.TypeSystem
   ( parseTypeDefinitions,
   )

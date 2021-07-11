@@ -11,7 +11,7 @@ module Data.Morpheus.Error
   )
 where
 
-import Data.Morpheus.Error.NameCollision (NameCollision (..))
+import Data.Mergeable (NameCollision (..))
 import Data.Morpheus.Error.Selection
   ( subfieldsNotSelected,
   )

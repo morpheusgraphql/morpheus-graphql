@@ -12,6 +12,7 @@ module Data.Morpheus.Validation.Query.FragmentPreconditions
   )
 where
 
+import Data.Mergeable
 import Data.Morpheus.Error.Fragment
   ( cannotSpreadWithinItself,
   )
@@ -45,13 +46,13 @@ import Relude
 checkUnusedFragments :: SelectionSet RAW -> BaseValidator ()
 checkUnusedFragments selectionSet = do
   fragments <- askFragments
-  checkUnused
-    (usedFragments fragments (toList selectionSet))
-    (toList fragments)
+  usages <- usedFragments fragments selectionSet
+  checkUnused usages fragments
 
-usedFragments :: Fragments RAW -> [Selection RAW] -> [Node FieldName]
-usedFragments fragments = concatMap findAllUses
+usedFragments :: Fragments RAW -> SelectionSet RAW -> BaseValidator (HashMap FieldName [Node FieldName])
+usedFragments fragments = collect . map toEntry . concatMap findAllUses . toList
   where
+    toEntry (Ref x y) = (x, [Ref x y])
     findUsesSelectionContent :: SelectionContent RAW -> [Node FieldName]
     findUsesSelectionContent (SelectionSet selectionSet) =
       concatMap findAllUses selectionSet

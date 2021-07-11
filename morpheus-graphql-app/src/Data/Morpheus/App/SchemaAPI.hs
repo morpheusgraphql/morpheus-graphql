@@ -47,7 +47,7 @@ import Data.Morpheus.Types.Internal.AST
 import Relude hiding (empty)
 
 resolveTypes :: (Monad m, WithSchema m) => Schema VALID -> m (ResolverValue m)
-resolveTypes schema = mkList <$> traverse render (typeDefinitions schema)
+resolveTypes schema = mkList <$> traverse render (toList $ typeDefinitions schema)
 
 renderOperation ::
   (Monad m, WithSchema m) =>
@@ -61,7 +61,7 @@ findType ::
   TypeName ->
   Schema VALID ->
   m (ResolverValue m)
-findType = selectOr (pure mkNull) render
+findType name = selectOr (pure mkNull) render name . typeDefinitions
 
 schemaResolver ::
   (Monad m, WithSchema m) =>
@@ -75,7 +75,7 @@ schemaResolver schema@Schema {query, mutation, subscription, directiveDefinition
         ("queryType", renderOperation (Just query)),
         ("mutationType", renderOperation mutation),
         ("subscriptionType", renderOperation subscription),
-        ("directives", render directiveDefinitions)
+        ("directives", render $ toList directiveDefinitions)
       ]
 
 schemaAPI :: Monad m => Schema VALID -> ResolverValue (Resolver QUERY e m)

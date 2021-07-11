@@ -30,7 +30,8 @@ module Data.Morpheus.Types.Internal.AST.Selection
 where
 
 import Data.Foldable (foldr')
-import Data.Morpheus.Error.NameCollision
+import Data.Mergeable (Merge (..))
+import Data.Mergeable
   ( NameCollision (..),
   )
 import Data.Morpheus.Error.Operation
@@ -43,10 +44,12 @@ import Data.Morpheus.Ext.MergeSet
 import Data.Morpheus.Ext.OrdMap
   ( OrdMap,
   )
-import Data.Morpheus.Ext.SemigroupM (SemigroupM (..))
 import Data.Morpheus.Internal.Utils
-  ( Failure (..),
+  ( (<:>),
+    Failure (..),
+    HistoryT,
     KeyOf (..),
+    addPath,
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
@@ -140,15 +143,16 @@ instance RenderGQL (SelectionContent VALID) where
 instance
   ( Monad m,
     Failure ValidationErrors m,
-    SemigroupM m (SelectionSet s)
+    Merge (HistoryT m) (SelectionSet s)
   ) =>
-  SemigroupM m (SelectionContent s)
+  Merge (HistoryT m) (SelectionContent s)
   where
-  mergeM path (SelectionSet s1) (SelectionSet s2) = SelectionSet <$> mergeM path s1 s2
-  mergeM path (UnionSelection m1 u1) (UnionSelection m2 u2) = UnionSelection <$> mergeM path m1 m2 <*> mergeM path u1 u2
-  mergeM path oldC currentC
+  merge (SelectionSet s1) (SelectionSet s2) = SelectionSet <$> merge s1 s2
+  merge (UnionSelection m1 u1) (UnionSelection m2 u2) = UnionSelection <$> merge m1 m2 <*> merge u1 u2
+  merge oldC currentC
     | oldC == currentC = pure oldC
-    | otherwise =
+    | otherwise = do
+      path <- ask
       failure
         [ msgValidation (intercalate "." $ fmap refName path)
             `atPositions` fmap refPosition path
@@ -175,25 +179,36 @@ instance RenderGQL UnionTag where
       <> renderGQL unionTagName
       <> renderSelectionSet unionTagSelection
 
-mergeConflict :: [Ref FieldName] -> ValidationError -> ValidationErrors
-mergeConflict [] err = [err]
-mergeConflict refs@(rootField : xs) err =
-  [ (renderSubfields `atPositions` fmap refPosition refs)
-      <> err
-  ]
+mergeConflict :: (Monad m, Failure [ValidationError] m) => ValidationError -> HistoryT m a
+mergeConflict err = do
+  path <- ask
+  __mergeConflict path
   where
-    fieldConflicts ref = msgValidation (refName ref) <> " conflict because "
-    renderSubfield ref txt = txt <> "subfields " <> fieldConflicts ref
-    renderStart = "Fields " <> fieldConflicts rootField
-    renderSubfields =
-      foldr'
-        renderSubfield
-        renderStart
-        xs
+    __mergeConflict :: (Monad m, Failure [ValidationError] m) => [Ref FieldName] -> HistoryT m a
+    __mergeConflict [] = failure [err]
+    __mergeConflict refs@(rootField : xs) =
+      failure
+        [ (renderSubfields `atPositions` fmap refPosition refs)
+            <> err
+        ]
+      where
+        fieldConflicts ref = msgValidation (refName ref) <> " conflict because "
+        renderSubfield ref txt = txt <> "subfields " <> fieldConflicts ref
+        renderStart = "Fields " <> fieldConflicts rootField
+        renderSubfields =
+          foldr'
+            renderSubfield
+            renderStart
+            xs
 
-instance (Monad m, Failure ValidationErrors m) => SemigroupM m UnionTag where
-  mergeM path (UnionTag oldTag oldSel) (UnionTag _ currentSel) =
-    UnionTag oldTag <$> mergeM path oldSel currentSel
+instance
+  ( Monad m,
+    Failure ValidationErrors m
+  ) =>
+  Merge (HistoryT m) UnionTag
+  where
+  merge (UnionTag oldTag oldSel) (UnionTag _ currentSel) =
+    UnionTag oldTag <$> merge oldSel currentSel
 
 type UnionSelection (s :: Stage) = MergeSet s TypeName UnionTag
 
@@ -237,64 +252,71 @@ useDifferentAliases =
 
 instance
   ( Monad m,
-    SemigroupM m (SelectionSet a),
-    Failure ValidationErrors m
+    Failure ValidationErrors m,
+    Merge (HistoryT m) (SelectionSet s)
   ) =>
-  SemigroupM m (Selection a)
+  Merge (HistoryT m) (Selection s)
   where
-  mergeM
-    path
-    old@Selection {selectionPosition = pos1}
-    current@Selection {selectionPosition = pos2} =
-      do
-        selectionName <- mergeName
-        let currentPath = path <> [Ref selectionName pos1]
-        selectionArguments <- mergeArguments currentPath
-        selectionContent <- mergeM currentPath (selectionContent old) (selectionContent current)
+  merge = mergeSelection
+
+mergeSelection ::
+  ( Monad m,
+    Failure ValidationErrors m,
+    Merge (HistoryT m) (SelectionSet s)
+  ) =>
+  Selection s ->
+  Selection s ->
+  HistoryT m (Selection s)
+mergeSelection
+  old@Selection {selectionPosition = pos1}
+  current@Selection {selectionPosition = pos2} =
+    do
+      selectionName <- mergeName [pos1, pos2] old current
+      addPath (Ref selectionName pos1) $ do
+        selectionArguments <- mergeArguments
+        selectionContent <- merge (selectionContent old) (selectionContent current)
+        dirs <- selectionDirectives old <:> selectionDirectives current
         pure $
           Selection
             { selectionAlias = mergeAlias,
               selectionPosition = pos1,
-              selectionDirectives = selectionDirectives old <> selectionDirectives current,
+              selectionDirectives = dirs,
               ..
             }
-      where
-        -- passes if:
+    where
+      mergeAlias
+        | all (isJust . selectionAlias) [old, current] = selectionAlias old
+        | otherwise = Nothing
+      --- arguments must be equal
+      mergeArguments
+        | selectionArguments old == selectionArguments current = pure $ selectionArguments current
+        | otherwise =
+          mergeConflict $
+            ("they have differing arguments. " <> useDifferentAliases)
+              `atPositions` [pos1, pos2]
+mergeSelection _ _ = mergeConflict ("INTERNAL: can't merge. " <> useDifferentAliases)
 
-        --     user1: user
-        --   }
-        -- fails if:
-
-        --     user1: product
-        --   }
-        mergeName
-          | selectionName old == selectionName current = pure $ selectionName current
-          | otherwise =
-            failure $ mergeConflict path $
-              ( msgValidation (selectionName old)
-                  <> " and "
-                  <> msgValidation (selectionName current)
-                  <> " are different fields. "
-                  <> useDifferentAliases
-              )
-                `atPositions` [pos1, pos2]
-        ---------------------
-        -- alias name is relevant only if they collide by allies like:
-        --   { user1: user
-        --     user1: user
-        --   }
-        mergeAlias
-          | all (isJust . selectionAlias) [old, current] = selectionAlias old
-          | otherwise = Nothing
-        --- arguments must be equal
-        mergeArguments currentPath
-          | selectionArguments old == selectionArguments current = pure $ selectionArguments current
-          | otherwise =
-            failure $ mergeConflict currentPath $
-              ("they have differing arguments. " <> useDifferentAliases)
-                `atPositions` [pos1, pos2]
-  mergeM path _ _ =
-    failure $ mergeConflict path ("INTERNAL: can't merge. " <> useDifferentAliases)
+-- fails if alias matches but name not:
+--   { user1: user
+--     user1: product
+--   }
+mergeName ::
+  (Monad m, Failure [ValidationError] m, Foldable t) =>
+  t Position ->
+  Selection s1 ->
+  Selection s2 ->
+  HistoryT m FieldName
+mergeName pos old current
+  | selectionName old == selectionName current = pure $ selectionName current
+  | otherwise =
+    mergeConflict $
+      ( msgValidation (selectionName old)
+          <> " and "
+          <> msgValidation (selectionName current)
+          <> " are different fields. "
+          <> useDifferentAliases
+      )
+        `atPositions` pos
 
 deriving instance Show (Selection a)
 

@@ -16,6 +16,7 @@ module Data.Morpheus.Server.Deriving.Channels
   )
 where
 
+import qualified Data.HashMap.Lazy as HM
 import Data.Morpheus.App.Internal.Resolving
   ( Channel,
     Resolver,
@@ -24,7 +25,6 @@ import Data.Morpheus.App.Internal.Resolving
   )
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
-    elems,
     selectBy,
   )
 import Data.Morpheus.Server.Deriving.Decode
@@ -75,28 +75,25 @@ channelResolver value = fmap _unpackChannel . channelSelector
     channelSelector = selectBySelection (exploreChannels value)
 
 selectBySelection ::
-  [(FieldName, ChannelRes e)] ->
+  HashMap FieldName (ChannelRes e) ->
   Selection VALID ->
   ResolverState (DerivedChannel e)
 selectBySelection channels = withSubscriptionSelection >=> selectSubscription channels
 
 selectSubscription ::
-  [(FieldName, ChannelRes e)] ->
+  HashMap FieldName (ChannelRes e) ->
   Selection VALID ->
   ResolverState (DerivedChannel e)
 selectSubscription channels sel@Selection {selectionName} =
   selectBy
-    onFail
+    ("invalid subscription: no channel is selected." :: InternalError)
     selectionName
     channels
-    >>= onSucc
-  where
-    onFail = "invalid subscription: no channel is selected." :: InternalError
-    onSucc (_, f) = f sel
+    >>= (sel &)
 
 withSubscriptionSelection :: Selection VALID -> ResolverState (Selection VALID)
 withSubscriptionSelection Selection {selectionContent = SelectionSet selSet} =
-  case elems selSet of
+  case toList selSet of
     [sel] -> pure sel
     _ -> failure ("invalid subscription: there can be only one top level selection" :: InternalError)
 withSubscriptionSelection _ = failure ("invalid subscription: expected selectionSet" :: InternalError)
@@ -123,9 +120,10 @@ type ExploreConstraint e a =
     TypeRep (GetChannel e) (ChannelRes e) (Rep a)
   )
 
-exploreChannels :: forall e a. ExploreConstraint e a => a -> [(FieldName, ChannelRes e)]
+exploreChannels :: forall e a. ExploreConstraint e a => a -> HashMap FieldName (ChannelRes e)
 exploreChannels =
-  convertNode
+  HM.fromList
+    . convertNode
     . toValue
       ( TypeConstraint (getChannel . runIdentity) :: TypeConstraint (GetChannel e) (ChannelRes e) Identity
       )

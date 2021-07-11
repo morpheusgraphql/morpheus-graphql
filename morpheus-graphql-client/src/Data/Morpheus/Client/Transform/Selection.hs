@@ -204,7 +204,7 @@ getFieldType
           { fieldName = "__typename",
             fieldDescription = Nothing,
             fieldType = mkTypeRef "String",
-            fieldDirectives = [],
+            fieldDirectives = empty,
             fieldContent = Nothing
           }
     | otherwise = withTypeContent typeContent

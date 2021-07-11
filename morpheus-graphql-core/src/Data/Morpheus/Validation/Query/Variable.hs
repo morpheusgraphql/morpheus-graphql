@@ -9,6 +9,7 @@ module Data.Morpheus.Validation.Query.Variable
   )
 where
 
+import Data.Mergeable
 import Data.Morpheus.Error.Variable (uninitializedVariable)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
@@ -23,6 +24,7 @@ import Data.Morpheus.Types.Internal.AST
     IN,
     ObjectEntry (..),
     Operation (..),
+    Position,
     RAW,
     RawValue,
     Ref (..),
@@ -50,7 +52,7 @@ import Data.Morpheus.Types.Internal.Validation
     Constraint (..),
     InputSource (..),
     askFragments,
-    askSchema,
+    askTypeDefinitions,
     checkUnused,
     constraint,
     selectKnown,
@@ -80,9 +82,10 @@ instance ExploreRefs (Argument RAW) where
 mapSelection :: (Selection RAW -> BaseValidator [b]) -> SelectionSet RAW -> BaseValidator [b]
 mapSelection f = fmap concat . traverse f
 
-allVariableRefs :: [SelectionSet RAW] -> BaseValidator [Ref FieldName]
-allVariableRefs = fmap concat . traverse (mapSelection searchRefs)
+allVariableRefs :: [SelectionSet RAW] -> BaseValidator (HashMap FieldName [Position])
+allVariableRefs = collect <=< fmap (map toEntry . concat) . traverse (mapSelection searchRefs)
   where
+    toEntry (Ref x y) = (x, [y])
     exploreSelectionContent :: SelectionContent RAW -> BaseValidator [Ref FieldName]
     exploreSelectionContent SelectionField = pure []
     exploreSelectionContent (SelectionSet selSet) = mapSelection searchRefs selSet
@@ -140,7 +143,7 @@ lookupAndValidateValueOnBody
     } =
     withPosition variablePosition $
       toVariable
-        <$> ( askSchema
+        <$> ( askTypeDefinitions
                 >>= selectKnown (Ref typeConName variablePosition)
                 >>= constraint INPUT var
                 >>= checkType getVariable defaultValue

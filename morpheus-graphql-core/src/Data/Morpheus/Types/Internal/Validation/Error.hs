@@ -18,24 +18,21 @@ where
 import Data.Morpheus.Error.Selection (unknownSelectionField)
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
+    ArgumentDefinition,
     Arguments,
-    CONST,
     Directive (..),
     DirectiveDefinition (..),
-    DirectiveDefinitions,
     FieldDefinition (..),
     FieldName,
-    FieldsDefinition,
     Fragment (..),
-    Fragments,
     IMPLEMENTABLE,
     IN,
     OUT,
     Object,
     ObjectEntry (..),
     Ref (..),
-    Schema,
     TypeCategory,
+    TypeDefinition,
     TypeName,
     TypeRef (..),
     ValidationError,
@@ -129,30 +126,35 @@ instance MissingRequired (VariableDefinitions s) (OperationContext s1 s2) where
       )
         `at` refPosition
 
-class Unknown c ref ctx where
+class Unknown (a :: *) ref ctx where
   -- type UnknownSelector c
-  unknown :: Scope -> ctx -> c -> ref -> ValidationError
+  unknown :: Scope -> ctx -> f a -> ref -> ValidationError
 
 -- {...H} -> "Unknown fragment \"H\"."
-instance Unknown (Fragments s) (Ref FieldName) ctx where
+instance Unknown (Fragment s) (Ref FieldName) ctx where
   unknown _ _ _ Ref {refName, refPosition} =
     ("Unknown Fragment " <> msgValidation refName <> ".") `at` refPosition
 
-instance Unknown (Schema s) (Ref TypeName) ctx where
+instance Unknown (TypeDefinition k s) (Ref TypeName) ctx where
   unknown _ _ _ Ref {refName, refPosition} =
     ("Unknown type " <> msgValidation refName <> ".") `at` refPosition
 
-instance Unknown (FieldDefinition OUT s) (Argument CONST) ctx where
-  unknown _ _ FieldDefinition {fieldName} Argument {argumentName, argumentPosition} =
+instance Unknown (ArgumentDefinition s) (Argument s') ctx where
+  unknown Scope {kind, fieldname} _ _ Argument {argumentName, argumentPosition} =
     ( "Unknown Argument "
         <> msgValidation argumentName
-        <> " on Field "
-        <> msgValidation fieldName
+        <> " on "
+        <> scope kind
+        <> " "
+        <> msgValidation fieldname
         <> "."
     )
       `at` argumentPosition
+    where
+      scope DIRECTIVE = "Directive"
+      scope _ = "Field"
 
-instance Unknown (FieldsDefinition IN s) (ObjectEntry valueS) (InputContext ctx) where
+instance Unknown (FieldDefinition IN s) (ObjectEntry valueS) (InputContext ctx) where
   unknown
     Scope {position}
     ctx
@@ -165,21 +167,11 @@ instance Unknown (FieldsDefinition IN s) (ObjectEntry valueS) (InputContext ctx)
       )
         `atPositions` position
 
-instance Unknown (DirectiveDefinition s) (Argument s') ctx where
-  unknown _ _ DirectiveDefinition {directiveDefinitionName} Argument {argumentName, argumentPosition} =
-    ( "Unknown Argument "
-        <> msgValidation argumentName
-        <> " on Directive "
-        <> msgValidation directiveDefinitionName
-        <> "."
-    )
-      `at` argumentPosition
-
-instance Unknown (DirectiveDefinitions s) (Directive s') ctx where
+instance Unknown (DirectiveDefinition s) (Directive s') ctx where
   unknown _ _ _ Directive {directiveName, directivePosition} =
     ("Unknown Directive " <> msgValidation directiveName <> ".") `at` directivePosition
 
-instance Unknown (FieldsDefinition OUT s) (Ref FieldName) (OperationContext s1 s2) where
+instance Unknown (FieldDefinition OUT s) (Ref FieldName) ctx where
   unknown Scope {currentTypeName} _ _ = unknownSelectionField currentTypeName
 
 class KindViolation (t :: TypeCategory) ctx where

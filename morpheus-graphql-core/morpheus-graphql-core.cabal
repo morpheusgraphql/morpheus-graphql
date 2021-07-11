@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f93c00b23e6ac60f0e9bf98fa24924c3122f5266609ddc6f8250340ae7a40658
+-- hash: 4729c22772a128bc8cac57b679079ecafa1f55c1eaaea2da92cdf6ec87316d72
 
 name:           morpheus-graphql-core
 version:        0.17.0
@@ -162,10 +162,15 @@ library
       Data.Morpheus.Internal.Utils
       Data.Morpheus.Internal.Ext
   other-modules:
+      Data.Mergeable
+      Data.Mergeable.Internal.Merge
+      Data.Mergeable.Internal.NameCollision
+      Data.Mergeable.Internal.Resolution
+      Data.Mergeable.IsMap
+      Data.Mergeable.SafeHashMap
       Data.Morpheus.Error.Document.Interface
       Data.Morpheus.Error.Fragment
       Data.Morpheus.Error.Input
-      Data.Morpheus.Error.NameCollision
       Data.Morpheus.Error.Operation
       Data.Morpheus.Error.Selection
       Data.Morpheus.Error.Utils
@@ -174,13 +179,9 @@ library
       Data.Morpheus.Ext.Empty
       Data.Morpheus.Ext.Failure
       Data.Morpheus.Ext.KeyOf
-      Data.Morpheus.Ext.Map
       Data.Morpheus.Ext.MergeSet
       Data.Morpheus.Ext.OrdMap
       Data.Morpheus.Ext.Result
-      Data.Morpheus.Ext.SafeHashMap
-      Data.Morpheus.Ext.Selectable
-      Data.Morpheus.Ext.SemigroupM
       Data.Morpheus.Internal.Graph
       Data.Morpheus.Parser
       Data.Morpheus.Parsing.Document.TypeSystem

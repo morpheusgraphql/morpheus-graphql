@@ -1,11 +1,11 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Error.NameCollision
+module Data.Mergeable.Internal.NameCollision
   ( NameCollision (..),
   )
 where
 
-import Data.Morpheus.Ext.Map (Indexed (..))
+import Data.Mergeable.Internal.Resolution (Indexed (..))
 import Data.Morpheus.Types.Internal.AST.Error
   ( ValidationError,
   )

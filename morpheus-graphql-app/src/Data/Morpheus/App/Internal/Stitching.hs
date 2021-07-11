@@ -15,7 +15,7 @@ import Data.Morpheus.App.Internal.Resolving (RootResolverValue)
 import qualified Data.Morpheus.App.Internal.Resolving as R (RootResolverValue (..))
 import Data.Morpheus.Error (NameCollision (..))
 import Data.Morpheus.Internal.Ext
-  ( SemigroupM (..),
+  ( Merge (merge),
     resolveWith,
     runResolutionT,
     unsafeFromList,
@@ -26,15 +26,15 @@ import Data.Morpheus.Internal.Utils
     prop,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( Directive,
-    DirectiveDefinition,
+  ( Directives,
+    DirectivesDefinition,
     FieldDefinition,
     FieldsDefinition,
     Schema (..),
     TRUE,
     TypeContent (..),
     TypeDefinition (..),
-    TypeLib,
+    TypeDefinitions,
     ValidationErrors,
   )
 import Relude hiding (optional)
@@ -65,14 +65,14 @@ instance Stitching (Schema s) where
       <*> prop (optional stitchOperation) subscription s1 s2
       <*> prop stitch directiveDefinitions s1 s2
 
-instance Stitching (TypeLib s) where
+instance Stitching (TypeDefinitions s) where
   stitch x y = runResolutionT (mergeT x y) unsafeFromList (resolveWith stitch)
 
-instance Stitching [DirectiveDefinition s] where
-  stitch = concatM
+instance Stitching (DirectivesDefinition s) where
+  stitch = merge
 
-instance Stitching [Directive s] where
-  stitch = concatM
+instance Stitching (Directives s) where
+  stitch = merge
 
 optional :: Applicative f => (t -> t -> f t) -> Maybe t -> Maybe t -> f (Maybe t)
 optional _ Nothing y = pure y
@@ -114,11 +114,11 @@ instance Stitching (FieldDefinition cat s) where
     | old == new = pure old
     | otherwise = failure [nameCollision new]
 
-rootProp :: (Monad m, SemigroupM m b) => (a -> m b) -> a -> a -> m b
+rootProp :: (Monad m, Merge m b) => (a -> m b) -> a -> a -> m b
 rootProp f x y = do
   x' <- f x
   y' <- f y
-  mergeM [] x' y'
+  merge x' y'
 
 stitchSubscriptions :: Failure ValidationErrors m => Maybe a -> Maybe a -> m (Maybe a)
 stitchSubscriptions Just {} Just {} = failure (["can't merge  subscription applications"] :: ValidationErrors)

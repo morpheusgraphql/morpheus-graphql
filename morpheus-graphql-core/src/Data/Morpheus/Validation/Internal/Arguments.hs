@@ -18,9 +18,6 @@ module Data.Morpheus.Validation.Internal.Arguments
   )
 where
 
-import Data.Morpheus.Internal.Utils
-  ( empty,
-  )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
     ArgumentDefinition (..),
@@ -38,7 +35,7 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
     Value (..),
     VariableDefinitions,
-    fieldContentArgs,
+    fieldArguments,
     typed,
   )
 import Data.Morpheus.Types.Internal.Validation
@@ -115,12 +112,12 @@ validateFieldArguments ::
   FieldDefinition OUT VALID ->
   Arguments RAW ->
   FragmentValidator s (Arguments VALID)
-validateFieldArguments fieldDef@FieldDefinition {fieldContent} =
+validateFieldArguments field =
   validateArguments
-    (`selectKnown` fieldDef)
-    argsDef
+    (`selectKnown` arguments)
+    arguments
   where
-    argsDef = maybe empty fieldContentArgs fieldContent
+    arguments = fieldArguments field
 
 validateDirectiveArguments ::
   ArgumentsConstraints ctx schemaStage valueStage =>
@@ -128,11 +125,11 @@ validateDirectiveArguments ::
   Arguments valueStage ->
   Validator schemaStage ctx (Arguments VALID)
 validateDirectiveArguments
-  directiveDef@DirectiveDefinition
+  DirectiveDefinition
     { directiveDefinitionArgs
     } =
     validateArguments
-      (`selectKnown` directiveDef)
+      (`selectKnown` directiveDefinitionArgs)
       directiveDefinitionArgs
 
 validateArguments ::

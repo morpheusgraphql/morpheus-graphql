@@ -23,7 +23,6 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
     DataEnumValue (..),
-    DataInputUnion,
     FieldDefinition (..),
     FieldName,
     FieldsDefinition,
@@ -41,6 +40,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeWrapper (..),
     Typed (..),
     UnionMember (..),
+    UnionTypeDefinition,
     VALID,
     ValidValue,
     ValidationError,
@@ -186,7 +186,7 @@ validateUnwrapped _ value = violation Nothing value
 -- INPUT UNION
 validatInputUnion ::
   ValidateWithDefault ctx schemaS s =>
-  DataInputUnion schemaS ->
+  UnionTypeDefinition IN schemaS ->
   Object s ->
   InputValidator schemaS ctx (Value VALID)
 validatInputUnion inputUnion rawFields =

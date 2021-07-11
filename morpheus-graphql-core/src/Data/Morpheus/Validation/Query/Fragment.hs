@@ -22,7 +22,8 @@ import Data.Morpheus.Error.Fragment
   ( cannotBeSpreadOnType,
   )
 import Data.Morpheus.Internal.Utils
-  ( Failure (..),
+  ( Empty (empty),
+    Failure (..),
   )
 import Data.Morpheus.Types.Internal.AST
   ( Directives,
@@ -33,7 +34,6 @@ import Data.Morpheus.Types.Internal.AST
     Position,
     RAW,
     Ref (..),
-    Schema,
     SelectionSet,
     Stage,
     Stage,
@@ -46,11 +46,11 @@ import Data.Morpheus.Types.Internal.Validation
   ( Constraint (..),
     FragmentValidator,
     askFragments,
-    askSchema,
+    askTypeDefinitions,
     constraint,
     selectKnown,
   )
-import Relude
+import Relude hiding (empty)
 
 class ResolveFragment (s :: Stage) where
   resolveValidFragment ::
@@ -95,7 +95,7 @@ onlyValidateFrag validate f@Fragment {..} =
     <$> validate f <*> validateFragmentDirectives fragmentDirectives
 
 validateFragmentDirectives :: Directives RAW -> FragmentValidator s (Directives VALID)
-validateFragmentDirectives _ = pure [] --TODO: validate fragment directives
+validateFragmentDirectives _ = pure empty --TODO: validate fragment directives
 
 castFragmentType ::
   Maybe FieldName ->
@@ -115,6 +115,5 @@ resolveSpread allowedTargets ref@Ref {refName, refPosition} =
 
 selectFragmentType :: Fragment RAW -> FragmentValidator s (TypeDefinition IMPLEMENTABLE VALID)
 selectFragmentType fr@Fragment {fragmentType, fragmentPosition} = do
-  (schema :: Schema VALID) <- askSchema
-  typeDef <- selectKnown (Ref fragmentType fragmentPosition) schema
+  typeDef <- askTypeDefinitions >>= selectKnown (Ref fragmentType fragmentPosition)
   constraint IMPLEMENTABLE fr typeDef

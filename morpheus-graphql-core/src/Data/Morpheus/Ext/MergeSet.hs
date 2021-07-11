@@ -2,6 +2,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -18,31 +19,22 @@ module Data.Morpheus.Ext.MergeSet
   )
 where
 
-import Data.Morpheus.Ext.Map
-  ( fromListT,
-    resolveWith,
-    runResolutionT,
-  )
-import Data.Morpheus.Ext.SemigroupM
-  ( SemigroupM (..),
+import qualified Data.List as L
+import Data.Mergeable
+  ( Merge (..),
+    recursiveMerge,
   )
 import Data.Morpheus.Internal.Utils
-  ( Collection (..),
+  ( Collection (singleton),
     Failure (..),
     FromElems (..),
+    IsMap (..),
     KeyOf (..),
-    Selectable (..),
     toPair,
-  )
-import Data.Morpheus.Types.Internal.AST.Base
-  ( Ref,
   )
 import Data.Morpheus.Types.Internal.AST.Error
   ( ValidationError,
     ValidationErrors,
-  )
-import Data.Morpheus.Types.Internal.AST.Name
-  ( FieldName,
   )
 import Data.Morpheus.Types.Internal.AST.Stage
   ( RAW,
@@ -53,50 +45,57 @@ import Language.Haskell.TH.Syntax (Lift (..))
 import Relude
 
 -- set with mergeable components
-newtype MergeSet (dups :: Stage) k a = MergeSet
-  { unpack :: NonEmpty a
+newtype MergeSet (s :: Stage) k a = MergeSet
+  { unpack :: NonEmpty (k, a)
   }
   deriving
     ( Show,
       Eq,
       Functor,
       Foldable,
-      Traversable,
-      Collection a
+      Traversable
     )
 
-instance Lift a => Lift (MergeSet (dups :: Stage) k a) where
+instance KeyOf k a => Collection a (MergeSet s k a) where
+  singleton = MergeSet . (:| []) . toPair
+
+instance (Lift a, Lift k) => Lift (MergeSet (s :: Stage) k a) where
   lift (MergeSet (x :| xs)) = [|MergeSet (x :| xs)|]
 
 #if MIN_VERSION_template_haskell(2,16,0)
   liftTyped (MergeSet (x :| xs))  = [|| MergeSet (x :| xs) ||]
 #endif
 
-instance (KeyOf k a) => Selectable k a (MergeSet opt k a) where
-  selectOr fb f key (MergeSet ls) = maybe fb f (find ((key ==) . keyOf) ls)
+instance
+  ( Hashable k,
+    Eq k
+  ) =>
+  IsMap k (MergeSet opt k)
+  where
+  lookup key (MergeSet (x :| xs)) = L.lookup key (x : xs)
 
 instance
-  ( KeyOf k a,
-    SemigroupM m a,
+  ( Merge m a,
     Monad m,
     Failure ValidationErrors m,
-    Eq a
-  ) =>
-  SemigroupM m (MergeSet VALID k a)
-  where
-  mergeM path (MergeSet x) (MergeSet y) = resolveMergable path (x <> y)
-
-resolveMergable ::
-  ( KeyOf k a,
-    Monad m,
     Eq a,
-    SemigroupM m a,
-    Failure ValidationErrors m
+    Hashable k,
+    Eq k
   ) =>
-  [Ref FieldName] ->
-  NonEmpty a ->
-  m (MergeSet dups k a)
-resolveMergable path (x :| xs) = runResolutionT (fromListT (toPair <$> (x : xs))) (MergeSet . fromList . map snd) (resolveWith (resolveConflict path))
+  Merge m (MergeSet VALID k a)
+  where
+  merge (MergeSet x) (MergeSet y) = resolveMergeable (x <> y)
+
+resolveMergeable ::
+  ( Monad m,
+    Eq a,
+    Merge m a,
+    Hashable k,
+    Eq k
+  ) =>
+  NonEmpty (k, a) ->
+  m (MergeSet s k a)
+resolveMergeable (x :| xs) = recursiveMerge (MergeSet . fromList) (x : xs)
 
 toNonEmpty :: Failure ValidationErrors f => [a] -> f (NonEmpty a)
 toNonEmpty [] = failure ["empty selection sets are not supported." :: ValidationError]
@@ -104,32 +103,17 @@ toNonEmpty (x : xs) = pure (x :| xs)
 
 instance
   ( KeyOf k a,
-    SemigroupM m a,
     Monad m,
     Failure ValidationErrors m,
+    Merge m a,
     Eq a
   ) =>
   FromElems m a (MergeSet VALID k a)
   where
-  fromElems = resolveMergable [] <=< toNonEmpty
+  fromElems = resolveMergeable . fmap toPair <=< toNonEmpty
 
-instance Applicative m => SemigroupM m (MergeSet RAW k a) where
-  mergeM _ (MergeSet x) (MergeSet y) = pure $ MergeSet $ x <> y
+instance Monad m => Merge m (MergeSet RAW k a) where
+  merge (MergeSet x) (MergeSet y) = pure $ MergeSet $ x <> y
 
-instance (Applicative m, Failure ValidationErrors m) => FromElems m a (MergeSet RAW k a) where
-  fromElems = fmap MergeSet . toNonEmpty
-
-resolveConflict ::
-  ( Monad m,
-    Eq a,
-    KeyOf k a,
-    SemigroupM m a,
-    Failure ValidationErrors m
-  ) =>
-  [Ref FieldName] ->
-  a ->
-  a ->
-  m a
-resolveConflict path oldValue newValue
-  | oldValue == newValue = pure oldValue
-  | otherwise = mergeM path oldValue newValue
+instance (Applicative m, Failure ValidationErrors m, KeyOf k a) => FromElems m a (MergeSet RAW k a) where
+  fromElems = fmap (MergeSet . fmap toPair) . toNonEmpty

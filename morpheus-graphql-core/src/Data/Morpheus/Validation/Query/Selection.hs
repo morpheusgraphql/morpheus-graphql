@@ -22,13 +22,12 @@ import Data.Morpheus.Ext.Empty (Empty (..))
 import Data.Morpheus.Ext.MergeSet
   ( toNonEmpty,
   )
-import Data.Morpheus.Ext.SemigroupM
-  ( join,
-  )
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     keyOf,
+    mergeConcat,
     singleton,
+    startHistory,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Arguments,
@@ -173,7 +172,7 @@ validateSelectionSet ::
 validateSelectionSet typeDef selectionSet =
   traverse validateSelection (toList selectionSet)
     >>= toNonEmpty . catMaybes
-    >>= join
+    >>= startHistory . mergeConcat
   where
     -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
     validateSelection :: Selection RAW -> FragmentValidator s (Maybe (SelectionSet VALID))

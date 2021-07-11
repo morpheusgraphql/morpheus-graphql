@@ -19,21 +19,19 @@ module Data.Morpheus.Ext.OrdMap
 where
 
 import qualified Data.HashMap.Lazy as HM
-import Data.Morpheus.Error.NameCollision (NameCollision (..))
-import Data.Morpheus.Ext.Empty (Empty (..))
-import Data.Morpheus.Ext.Map
+import Data.Mergeable
   ( Indexed (..),
+    Merge (..),
+    NameCollision (..),
     indexed,
   )
-import Data.Morpheus.Ext.SemigroupM
-  ( SemigroupM (..),
-  )
+import Data.Morpheus.Ext.Empty (Empty (..))
 import Data.Morpheus.Internal.Utils
   ( Collection (..),
     Failure,
     FromElems (..),
+    IsMap (..),
     KeyOf (..),
-    Selectable (..),
     toPair,
   )
 import Data.Morpheus.Types.Internal.AST.Error (ValidationErrors)
@@ -72,11 +70,11 @@ getElements = fmap indexedValue . sortOn index . toList . mapEntries
 instance (KeyOf k a, Hashable k) => Collection a (OrdMap k a) where
   singleton x = OrdMap $ HM.singleton (keyOf x) (Indexed 0 (keyOf x) x)
 
-instance (Eq k, Hashable k) => Selectable k a (OrdMap k a) where
-  selectOr fb f key OrdMap {mapEntries} = maybe fb (f . indexedValue) (HM.lookup key mapEntries)
+instance (Eq k, Hashable k) => IsMap k (OrdMap k) where
+  lookup key OrdMap {mapEntries} = indexedValue <$> lookup key mapEntries
 
-instance (NameCollision a, Monad m, KeyOf k a, Failure ValidationErrors m) => SemigroupM m (OrdMap k a) where
-  mergeM ref (OrdMap x) (OrdMap y) = OrdMap <$> mergeM ref x y
+instance (NameCollision a, Monad m, KeyOf k a, Failure ValidationErrors m) => Merge m (OrdMap k a) where
+  merge (OrdMap x) (OrdMap y) = OrdMap <$> merge x y
 
 instance (NameCollision a, Monad m, Failure ValidationErrors m, KeyOf k a, Hashable k) => FromElems m a (OrdMap k a) where
   fromElems values = OrdMap <$> fromElems (indexed (toPair <$> values))

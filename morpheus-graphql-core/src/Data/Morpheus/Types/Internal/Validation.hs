@@ -55,13 +55,14 @@ module Data.Morpheus.Types.Internal.Validation
     FragmentValidator,
     askInterfaceTypes,
     validateOptional,
+    askTypeDefinitions,
   )
 where
 
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
+    IsMap,
     KeyOf (..),
-    Selectable,
     member,
     selectBy,
     selectOr,
@@ -75,9 +76,6 @@ import Data.Morpheus.Types.Internal.AST
     Position (..),
     Ref (..),
     TRUE,
-    TypeCategory,
-    TypeContent (..),
-    TypeDefinition (..),
     TypeName,
     ValidationError,
     Value (..),
@@ -86,6 +84,9 @@ import Data.Morpheus.Types.Internal.AST
     isNullable,
     msgValidation,
   )
+-- Resolution,
+
+import Data.Morpheus.Types.Internal.AST.TypeSystem
 import Data.Morpheus.Types.Internal.Validation.Error
   ( KindViolation (..),
     MissingRequired (..),
@@ -99,40 +100,6 @@ import Data.Morpheus.Types.Internal.Validation.Internal
     getOperationType,
   )
 import Data.Morpheus.Types.Internal.Validation.Validator
-  ( BaseValidator,
-    Constraint (..),
-    CurrentSelection (..),
-    DirectiveValidator,
-    FragmentValidator,
-    GetWith (..),
-    InputContext,
-    InputSource (..),
-    InputValidator,
-    MonadContext (..),
-    OperationContext (..),
-    Prop (..),
-    -- Resolution,
-    Scope (..),
-    ScopeKind (..),
-    SelectionValidator,
-    SetWith (..),
-    Validator (..),
-    ValidatorContext (..),
-    askFragments,
-    askSchema,
-    askVariables,
-    asks,
-    asksScope,
-    inField,
-    inputMessagePrefix,
-    inputValueSource,
-    runValidator,
-    startInput,
-    withDirective,
-    withPosition,
-    withScope,
-    withScopeType,
-  )
 import Relude hiding
   ( Constraint,
     asks,
@@ -141,8 +108,8 @@ import Relude hiding
 validateOptional :: Applicative f => (a -> f b) -> Maybe a -> f (Maybe b)
 validateOptional = traverse
 
-getUnused :: (KeyOf k b, Selectable k a c) => c -> [b] -> [b]
-getUnused uses = filter (not . (`member` uses) . keyOf)
+getUnused :: (KeyOf k b, IsMap k c, Foldable t) => c a -> t b -> [b]
+getUnused uses = filter (not . (`member` uses) . keyOf) . toList
 
 failOnUnused :: Unused ctx b => [b] -> Validator s ctx ()
 failOnUnused x
@@ -153,11 +120,12 @@ failOnUnused x
 
 checkUnused ::
   ( KeyOf k b,
-    Selectable k a ca,
-    Unused ctx b
+    IsMap k c,
+    Unused ctx b,
+    Foldable t
   ) =>
-  ca ->
-  [b] ->
+  c a ->
+  t b ->
   Validator s ctx ()
 checkUnused uses = failOnUnused . getUnused uses
 
@@ -175,12 +143,12 @@ constraint INPUT ctx x = maybe (failure [kindViolation INPUT ctx]) pure (fromAny
 constraint target ctx _ = failure [kindViolation target ctx]
 
 selectRequired ::
-  ( Selectable FieldName value c,
-    MissingRequired c ctx
+  ( IsMap FieldName c,
+    MissingRequired (c a) ctx
   ) =>
   Ref FieldName ->
-  c ->
-  Validator s ctx value
+  c a ->
+  Validator s ctx a
 selectRequired selector container =
   do
     ValidatorContext {scope, validatorCTX} <- Validator ask
@@ -190,15 +158,15 @@ selectRequired selector container =
       container
 
 selectWithDefaultValue ::
-  forall ctx values value s validValue.
-  ( Selectable FieldName value values,
-    MissingRequired values ctx,
+  forall ctx c s validValue a.
+  ( IsMap FieldName c,
+    MissingRequired (c a) ctx,
     MonadContext (Validator s) s ctx
   ) =>
   (Value s -> Validator s ctx validValue) ->
-  (value -> Validator s ctx validValue) ->
+  (a -> Validator s ctx validValue) ->
   FieldDefinition IN s ->
-  values ->
+  c a ->
   Validator s ctx validValue
 selectWithDefaultValue
   f
@@ -232,17 +200,17 @@ selectType ::
   TypeName ->
   Validator s ctx (TypeDefinition ANY s)
 selectType name =
-  askSchema >>= selectBy err name
+  askSchema >>= maybe (failure err) pure . lookupDataType name
   where
     err = "Unknown Type " <> msgValidation name <> "." :: ValidationError
 
 selectKnown ::
-  ( Selectable k a c,
-    Unknown c sel ctx,
+  ( IsMap k c,
+    Unknown a sel ctx,
     KeyOf k sel
   ) =>
   sel ->
-  c ->
+  c a ->
   Validator s ctx a
 selectKnown selector lib =
   do

@@ -8,7 +8,6 @@ module Data.Morpheus.Internal.Ext
     ResultT (..),
     cleanEvents,
     resultOr,
-    SemigroupM (..),
     mapEvent,
     unpackEvents,
     sortErrors,
@@ -17,15 +16,16 @@ module Data.Morpheus.Internal.Ext
     resolveWith,
     runResolutionT,
     toEither,
+    Merge (..),
   )
 where
 
+import Data.Mergeable
+import qualified Data.Mergeable.SafeHashMap as SHM
 import Data.Morpheus.Ext.KeyOf
-import Data.Morpheus.Ext.Map
 import qualified Data.Morpheus.Ext.OrdMap as OM
 import Data.Morpheus.Ext.Result
-import qualified Data.Morpheus.Ext.SafeHashMap as SHM
-import Data.Morpheus.Ext.SemigroupM
+import Data.Morpheus.Internal.Utils ((<:>))
 import Relude
 
 class UnsafeFromList f where

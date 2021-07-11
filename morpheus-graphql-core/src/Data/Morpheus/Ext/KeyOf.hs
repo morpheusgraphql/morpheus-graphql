@@ -8,7 +8,7 @@ module Data.Morpheus.Ext.KeyOf
   )
 where
 
-import Data.Morpheus.Ext.Map
+import Data.Mergeable
   ( Indexed (..),
   )
 import Data.Morpheus.Types.Internal.AST.Base

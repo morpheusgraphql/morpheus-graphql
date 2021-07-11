@@ -23,7 +23,7 @@ module Data.Morpheus.Types.Internal.AST.Fields
     FieldsDefinition,
     FieldContent (..),
     InputFieldsDefinition,
-    DirectiveDefinitions,
+    DirectivesDefinition,
     DirectiveDefinition (..),
     Directives,
     Directive (..),
@@ -32,7 +32,7 @@ module Data.Morpheus.Types.Internal.AST.Fields
     lookupDeprecatedReason,
     unsafeFromFields,
     fieldsToArguments,
-    fieldContentArgs,
+    fieldArguments,
     mkObjectField,
     mkField,
     renderArgumentValues,
@@ -40,17 +40,19 @@ module Data.Morpheus.Types.Internal.AST.Fields
   )
 where
 
-import Data.Morpheus.Error.NameCollision
+import Data.Mergeable
   ( NameCollision (..),
   )
+import Data.Mergeable.SafeHashMap (SafeHashMap)
 import Data.Morpheus.Ext.OrdMap
   ( OrdMap,
     unsafeFromList,
   )
 import Data.Morpheus.Internal.Utils
   ( Empty (..),
+    IsMap (..),
     KeyOf (..),
-    Selectable (..),
+    selectOr,
     toPair,
   )
 import Data.Morpheus.Rendering.RenderGQL
@@ -140,6 +142,9 @@ data Directive (s :: Stage) = Directive
   }
   deriving (Show, Lift, Eq)
 
+instance NameCollision (Directive s) where
+  nameCollision = undefined
+
 instance KeyOf FieldName (Directive s) where
   keyOf = directiveName
 
@@ -148,14 +153,14 @@ instance RenderGQL (Directive s) where
     "@" <> renderGQL directiveName
       <> renderArgumentValues directiveArgs
 
-type Directives s = [Directive s]
+type Directives s = SafeHashMap FieldName (Directive s)
 
 renderDirectives :: Directives s -> Rendering
 renderDirectives xs
   | null dirs = ""
   | otherwise = space <> intercalate space (fmap renderGQL dirs)
   where
-    dirs = filter notSystem xs
+    dirs = filter notSystem (toList xs)
     notSystem Directive {directiveName = "include"} = False
     notSystem Directive {directiveName = "skip"} = False
     notSystem _ = True
@@ -168,20 +173,19 @@ data DirectiveDefinition s = DirectiveDefinition
   }
   deriving (Show, Lift)
 
-type DirectiveDefinitions s = [DirectiveDefinition s]
+instance NameCollision (DirectiveDefinition s) where
+  nameCollision = undefined
+
+type DirectivesDefinition s = SafeHashMap FieldName (DirectiveDefinition s)
 
 instance KeyOf FieldName (DirectiveDefinition s) where
   keyOf = directiveDefinitionName
 
-instance Selectable FieldName (ArgumentDefinition s) (DirectiveDefinition s) where
-  selectOr fb f key DirectiveDefinition {directiveDefinitionArgs} =
-    selectOr fb f key directiveDefinitionArgs
+-- instance IsMap FieldName (ArgumentDefinition s) (DirectiveDefinition s) where
+--   lookup key DirectiveDefinition {directiveDefinitionArgs} = lookup key directiveDefinitionArgs
 
-lookupDeprecated :: [Directive s] -> Maybe (Directive s)
-lookupDeprecated = find isDeprecation
-  where
-    isDeprecation Directive {directiveName = "deprecated"} = True
-    isDeprecation _ = False
+lookupDeprecated :: Directives s -> Maybe (Directive s)
+lookupDeprecated = lookup "deprecated"
 
 lookupDeprecatedReason :: Directive s -> Maybe Description
 lookupDeprecatedReason Directive {directiveArgs} =
@@ -234,7 +238,7 @@ data FieldDefinition (cat :: TypeCategory) (s :: Stage) = FieldDefinition
     fieldName :: FieldName,
     fieldType :: TypeRef,
     fieldContent :: Maybe (FieldContent TRUE cat s),
-    fieldDirectives :: [Directive s]
+    fieldDirectives :: Directives s
   }
   deriving (Show, Lift, Eq)
 
@@ -248,9 +252,9 @@ data FieldContent (bool :: Bool) (cat :: TypeCategory) (s :: Stage) where
     } ->
     FieldContent (OUT <=? cat) cat s
 
-fieldContentArgs :: FieldContent b cat s -> ArgumentsDefinition s
-fieldContentArgs (FieldArgs args) = args
-fieldContentArgs _ = empty
+fieldArguments :: FieldDefinition c s -> ArgumentsDefinition s
+fieldArguments FieldDefinition {fieldContent = Just (FieldArgs args)} = args
+fieldArguments _ = empty
 
 deriving instance Eq (FieldContent bool cat s)
 
@@ -260,10 +264,6 @@ deriving instance Lift (FieldContent bool cat s)
 
 instance KeyOf FieldName (FieldDefinition cat s) where
   keyOf = fieldName
-
-instance Selectable FieldName (ArgumentDefinition s) (FieldDefinition OUT s) where
-  selectOr fb f key FieldDefinition {fieldContent = Just (FieldArgs args)} = selectOr fb f key args
-  selectOr fb _ _ _ = fb
 
 instance NameCollision (FieldDefinition cat s) where
   nameCollision FieldDefinition {fieldName} =
@@ -296,7 +296,7 @@ mkField fieldContent fieldName fieldType =
       fieldContent,
       fieldDescription = Nothing,
       fieldType,
-      fieldDirectives = []
+      fieldDirectives = empty
     }
 
 mkObjectField ::

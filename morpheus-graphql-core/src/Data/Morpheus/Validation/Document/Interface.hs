@@ -16,9 +16,9 @@ import Data.Morpheus.Error.Document.Interface
   )
 import Data.Morpheus.Internal.Utils
   ( KeyOf (..),
-    Selectable (..),
     empty,
     failure,
+    selectOr,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentDefinition (..),

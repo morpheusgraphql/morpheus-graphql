@@ -70,6 +70,7 @@ import Data.Morpheus.Types.Internal.AST
     mkInputUnionFields,
     msgInternal,
     possibleInterfaceTypes,
+    typeDefinitions,
     unpackName,
   )
 import Data.Text (pack)
@@ -94,6 +95,7 @@ selectType ::
 selectType name =
   getSchema
     >>= selectBy ("INTROSPECTION Type not Found: \"" <> msgInternal name <> "\"") name
+      . typeDefinitions
 
 class RenderIntrospection a where
   render :: (Monad m, WithSchema m) => a -> m (ResolverValue m)
@@ -173,7 +175,7 @@ instance RenderIntrospection (TypeDefinition cat VALID) where
         renderContent (DataUnion union) =
           __type
             KindUnion
-            [("possibleTypes", render union)]
+            [("possibleTypes", render $ toList union)]
         renderContent (DataInputUnion members) =
           mkType
             KindInputObject
@@ -202,7 +204,7 @@ instance
   RenderIntrospection (FieldDefinition cat s) =>
   RenderIntrospection (FieldsDefinition cat s)
   where
-  render = render . filter fieldVisibility . elems
+  render = render . filter fieldVisibility . toList 
 
 instance RenderIntrospection (FieldContent TRUE IN VALID) where
   render = render . defaultInputValue

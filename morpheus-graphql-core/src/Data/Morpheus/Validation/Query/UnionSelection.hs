@@ -15,28 +15,30 @@ module Data.Morpheus.Validation.Query.UnionSelection
 where
 
 import qualified Data.HashMap.Lazy as HM
-import Data.Morpheus.Ext.SemigroupM
-  ( join,
-  )
+import Data.Mergeable.SafeHashMap
 import Data.Morpheus.Internal.Utils
   ( empty,
     fromElems,
+    mergeConcat,
     selectOr,
+    startHistory,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( DataUnion,
-    Fragment (..),
+  ( Fragment (..),
     IMPLEMENTABLE,
+    OUT,
     Position (..),
     RAW,
     Selection (..),
     SelectionContent (..),
     SelectionSet,
     SelectionSet,
+    TypeCategory,
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
     UnionTag (..),
+    UnionTypeDefinition,
     VALID,
     mkType,
     toCategory,
@@ -76,11 +78,11 @@ exploreFragments ::
   ( Fragment RAW ->
     FragmentValidator s (SelectionSet VALID)
   ) ->
-  [TypeDefinition IMPLEMENTABLE VALID] ->
+  SafeHashMap TypeName (TypeDefinition IMPLEMENTABLE VALID) ->
   SelectionSet RAW ->
   FragmentValidator s ([UnionTag], SelectionSet RAW)
 exploreFragments validateFragment types selectionSet = do
-  (tags, selections) <- partitionEithers <$> traverse (splitFragment validateFragment types) (toList selectionSet)
+  (tags, selections) <- partitionEithers <$> traverse (splitFragment validateFragment (toList types)) (toList selectionSet)
   selectionPosition <- fromMaybe (Position 0 0) <$> asksScope position
   (tags,)
     <$> fromElems
@@ -103,7 +105,7 @@ exploreFragments validateFragment types selectionSet = do
 -- ]
 tagUnionFragments ::
   [UnionTag] ->
-  [TypeDefinition IMPLEMENTABLE VALID] ->
+  SafeHashMap TypeName (TypeDefinition IMPLEMENTABLE VALID) ->
   HashMap TypeName [SelectionSet VALID]
 tagUnionFragments fragments types = fmap categorizeType getSelectedTypes
   where
@@ -138,10 +140,10 @@ joinClusters selSet typedSelections
   | null typedSelections = pure (SelectionSet selSet)
   | otherwise =
     traverse mkUnionTag (HM.toList typedSelections)
-      >>= fmap (UnionSelection selSet) . fromElems
+      >>= fmap (UnionSelection selSet) . startHistory . fromElems
   where
     mkUnionTag :: (TypeName, [SelectionSet VALID]) -> FragmentValidator s UnionTag
-    mkUnionTag (typeName, fragments) = UnionTag typeName <$> join (selSet :| fragments)
+    mkUnionTag (typeName, fragments) = UnionTag typeName <$> startHistory (mergeConcat (selSet :| fragments))
 
 validateInterfaceSelection ::
   ResolveFragment s =>
@@ -160,7 +162,7 @@ validateInterfaceSelection
     validSelectionSet <- validate typeDef selectionSet
     let tags = tagUnionFragments spreads possibleTypes
     let interfaces = selectOr [] id typeName tags
-    defaultSelection <- join (validSelectionSet :| interfaces)
+    defaultSelection <- startHistory $ mergeConcat (validSelectionSet :| interfaces)
     joinClusters defaultSelection (HM.delete typeName tags)
 
 mkUnionRootType :: FragmentValidator s (TypeDefinition IMPLEMENTABLE VALID)
@@ -170,7 +172,7 @@ validateUnionSelection ::
   ResolveFragment s =>
   (Fragment RAW -> FragmentValidator s (SelectionSet VALID)) ->
   (TypeDefinition IMPLEMENTABLE VALID -> SelectionSet RAW -> FragmentValidator s (SelectionSet VALID)) ->
-  DataUnion VALID ->
+  UnionTypeDefinition OUT VALID ->
   SelectionSet RAW ->
   FragmentValidator s (SelectionContent VALID)
 validateUnionSelection validateFragment validate members selectionSet = do

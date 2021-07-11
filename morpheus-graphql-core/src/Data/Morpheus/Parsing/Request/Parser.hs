@@ -13,10 +13,10 @@ import qualified Data.Aeson as Aeson
   ( Value (..),
   )
 import Data.HashMap.Lazy (toList)
+import Data.Mergeable.SafeHashMap (unsafeFromList)
 import Data.Morpheus.Ext.Result
   ( Eventless,
   )
-import Data.Morpheus.Ext.SafeHashMap (unsafeFromList)
 import Data.Morpheus.Internal.Utils
   ( empty,
     fromElems,

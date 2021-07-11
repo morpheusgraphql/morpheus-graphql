@@ -43,7 +43,7 @@ import qualified Data.Aeson as A
   )
 import Data.Foldable (foldr')
 import qualified Data.HashMap.Lazy as M
-import Data.Morpheus.Error.NameCollision
+import Data.Mergeable
   ( NameCollision (..),
   )
 import Data.Morpheus.Ext.OrdMap
