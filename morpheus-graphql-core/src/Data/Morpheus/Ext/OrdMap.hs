@@ -14,7 +14,6 @@
 
 module Data.Morpheus.Ext.OrdMap
   ( OrdMap (..),
-    unsafeFromList,
   )
 where
 
@@ -30,7 +29,7 @@ import Data.Morpheus.Ext.Empty (Empty (..))
 import Data.Morpheus.Internal.Utils
   ( Failure,
     FromElems (..),
-    KeyOf (..),
+    KeyOf,
     toPair,
   )
 import Data.Morpheus.Types.Internal.AST.Error (ValidationErrors)
@@ -67,19 +66,14 @@ getElements :: (Eq k, Hashable k) => OrdMap k b -> [b]
 getElements = fmap indexedValue . sortOn index . toList . mapEntries
 
 instance (Eq k, Hashable k) => IsMap k (OrdMap k) where
+  unsafeFromList = OrdMap . HM.fromList . fmap withKey . indexed
+    where
+      withKey idx = (indexedKey idx, idx)
   singleton k x = OrdMap $ HM.singleton k (Indexed 0 k x)
   lookup key OrdMap {mapEntries} = indexedValue <$> lookup key mapEntries
 
-instance (NameCollision a, Monad m, KeyOf k a, Failure ValidationErrors m) => Merge m (OrdMap k a) where
+instance (NameCollision a, Eq k, Hashable k, Monad m, Failure ValidationErrors m) => Merge m (OrdMap k a) where
   merge (OrdMap x) (OrdMap y) = OrdMap <$> merge x y
 
 instance (NameCollision a, Monad m, Failure ValidationErrors m, KeyOf k a, Hashable k) => FromElems m a (OrdMap k a) where
   fromElems values = OrdMap <$> fromElems (indexed (toPair <$> values))
-
-unsafeFromList ::
-  (Hashable k, Eq k) =>
-  [(k, a)] ->
-  OrdMap k a
-unsafeFromList = OrdMap . HM.fromList . fmap withKey . indexed
-  where
-    withKey idx = (indexedKey idx, idx)

@@ -32,6 +32,8 @@ module Data.Morpheus.Internal.Utils
     (<:>),
     selectOr,
     member,
+    unsafeFromList,
+    insert,
   )
 where
 
@@ -41,15 +43,17 @@ import Data.Char
   )
 import qualified Data.HashMap.Lazy as HM
 import Data.Mergeable
-  ( Merge (merge),
+  ( IsMap (fromMap),
+    Merge (merge),
     NameCollision (..),
     ResolutionT,
     fromListT,
     mergeConcat,
     mergeNoDuplicates,
   )
-import Data.Mergeable.IsMap (IsMap, member, selectBy, selectOr)
+import Data.Mergeable.IsMap (IsMap, member, selectBy, selectOr, unsafeFromList)
 import qualified Data.Mergeable.IsMap as M
+import Data.Mergeable.SafeHashMap (SafeHashMap)
 import Data.Morpheus.Ext.Empty
 import Data.Morpheus.Ext.Failure (Failure (..))
 import Data.Morpheus.Ext.KeyOf (KeyOf (..), toPair)
@@ -128,6 +132,20 @@ traverseCollection f a = fromElems =<< traverse f (toList a)
 -- list Like Collections
 class FromElems m a coll | coll -> a where
   fromElems :: [a] -> m coll
+
+instance (NameCollision a, Failure ValidationErrors m, Monad m, KeyOf k a, Hashable k) => FromElems m a (SafeHashMap k a) where
+  fromElems = fmap fromMap . fromElems
+
+insert ::
+  ( NameCollision a,
+    KeyOf k a,
+    Monad m,
+    Failure ValidationErrors m
+  ) =>
+  a ->
+  SafeHashMap k a ->
+  m (SafeHashMap k a)
+insert x = merge (singleton x)
 
 mergeT :: (KeyOf k a, Foldable t, Monad m) => t a -> t a -> ResolutionT k a c m c
 mergeT x y = fromListT (toPair <$> (toList x <> toList y))

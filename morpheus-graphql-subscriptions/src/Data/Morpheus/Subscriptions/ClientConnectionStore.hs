@@ -35,8 +35,7 @@ import Data.Morpheus.App.Internal.Resolving
   ( EventHandler (..),
   )
 import Data.Morpheus.Internal.Utils
-  ( Collection (..),
-    Empty (..),
+  ( Empty (..),
     KeyOf (..),
   )
 import Data.Morpheus.Subscriptions.Apollo
@@ -223,9 +222,6 @@ instance KeyOf UUID (ClientConnection m) where
 
 instance Empty (ClientConnectionStore (Event ch con) m) where
   empty = ClientConnectionStore empty HM.empty HM.empty
-
-instance Collection (ClientConnection m) (ClientConnectionStore (Event ch con) m) where
-  singleton x = ClientConnectionStore (singleton x) HM.empty HM.empty
 
 mapConnections ::
   ( HashMap UUID (ClientConnection m) -> HashMap UUID (ClientConnection m)

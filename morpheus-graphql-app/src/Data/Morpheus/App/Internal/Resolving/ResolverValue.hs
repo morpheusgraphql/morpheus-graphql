@@ -50,7 +50,6 @@ import Data.Morpheus.Types.Internal.AST
     GQLErrors,
     InternalError,
     ObjectEntry (..),
-    Ref,
     ScalarValue (..),
     Selection (..),
     SelectionContent (..),

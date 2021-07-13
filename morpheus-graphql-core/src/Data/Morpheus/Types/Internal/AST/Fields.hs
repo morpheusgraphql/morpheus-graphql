@@ -47,13 +47,13 @@ import Data.Mergeable
 import Data.Mergeable.SafeHashMap (SafeHashMap)
 import Data.Morpheus.Ext.OrdMap
   ( OrdMap,
-    unsafeFromList,
   )
 import Data.Morpheus.Internal.Utils
   ( Empty (..),
     KeyOf (..),
     selectOr,
     toPair,
+    unsafeFromList,
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),

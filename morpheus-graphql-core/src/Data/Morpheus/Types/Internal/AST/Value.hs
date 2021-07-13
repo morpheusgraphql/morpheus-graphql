@@ -48,10 +48,10 @@ import Data.Mergeable
   )
 import Data.Morpheus.Ext.OrdMap
   ( OrdMap,
-    unsafeFromList,
   )
 import Data.Morpheus.Internal.Utils
   ( KeyOf (..),
+    unsafeFromList,
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),

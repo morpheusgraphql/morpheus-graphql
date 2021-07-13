@@ -60,14 +60,13 @@ where
 
 import qualified Data.HashMap.Lazy as HM
 import Data.Mergeable
-  ( Merge (..),
-    NameCollision (..), IsMap (lookup)
+  ( IsMap (lookup),
+    Merge (..),
+    NameCollision (..),
+    toMap,
   )
 import Data.Mergeable.SafeHashMap
   ( SafeHashMap,
-    insert,
-    toHashMap,
-    unsafeFromList,
   )
 import Data.Morpheus.Ext.OrdMap
   ( OrdMap,
@@ -79,8 +78,10 @@ import Data.Morpheus.Internal.Utils
     FromElems (..),
     IsMap (..),
     KeyOf (..),
+    insert,
     selectOr,
     toPair,
+    unsafeFromList,
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
@@ -305,7 +306,7 @@ instance RenderGQL RootOperationTypeDefinition where
 type TypeDefinitions s = SafeHashMap TypeName (TypeDefinition ANY s)
 
 typeDefinitions :: Schema s -> HashMap TypeName (TypeDefinition ANY s)
-typeDefinitions Schema {..} = toHashMap types <> HM.fromList operations
+typeDefinitions Schema {..} = toMap types <> HM.fromList operations
   where
     operations = map (toPair . toAny) $ catMaybes [Just query, mutation, subscription]
 

@@ -18,7 +18,6 @@ where
 import Data.Morpheus.Internal.Utils
   ( camelCaseTypeName,
     elems,
-    singleton,
   )
 import Data.Morpheus.Server.Internal.TH.Types
   ( GQLTypeDefinition (..),
@@ -214,13 +213,13 @@ mkUnionFieldDefinition :: TypeName -> TypeName -> ServerConsD
 mkUnionFieldDefinition typeName memberName =
   mkCons
     cName
-    $ singleton
-      ServerFieldDefinition
+    [ ServerFieldDefinition
         { isParametrized = True,
           argumentsTypeName = Nothing,
           fieldName = coerce ("un" <> cName),
           fieldType = mkTypeRef memberName
         }
+    ]
   where
     cName = typeName <> memberName
 

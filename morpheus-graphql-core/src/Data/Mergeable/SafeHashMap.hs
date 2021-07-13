@@ -15,9 +15,6 @@
 
 module Data.Mergeable.SafeHashMap
   ( SafeHashMap,
-    unsafeFromList,
-    insert,
-    toHashMap,
   )
 where
 
@@ -26,12 +23,10 @@ import Data.Mergeable
   ( Merge (..),
     NameCollision (..),
   )
-import Data.Mergeable.IsMap (IsMap (singleton))
+import Data.Mergeable.IsMap (IsMap)
 import Data.Morpheus.Ext.Empty (Empty)
-import Data.Morpheus.Internal.Utils
+import Data.Morpheus.Ext.Failure
   ( Failure (..),
-    FromElems (..),
-    KeyOf (..),
   )
 import Data.Morpheus.Types.Internal.AST.Error (ValidationErrors)
 import Language.Haskell.TH.Syntax (Lift (..))
@@ -61,23 +56,3 @@ instance (Lift a, Lift k, Eq k, Hashable k) => Lift (SafeHashMap k a) where
 
 instance (NameCollision a, Monad m, Hashable k, Eq k, Failure ValidationErrors m) => Merge m (SafeHashMap k a) where
   merge (SafeHashMap x) (SafeHashMap y) = SafeHashMap <$> merge x y
-
-instance (NameCollision a, Failure ValidationErrors m, Monad m, KeyOf k a, Hashable k) => FromElems m a (SafeHashMap k a) where
-  fromElems = fmap SafeHashMap . fromElems
-
-toHashMap :: SafeHashMap k a -> HashMap k a
-toHashMap = unpackSafeHashMap
-
-unsafeFromList :: (Eq k, Hashable k) => [(k, a)] -> SafeHashMap k a
-unsafeFromList = SafeHashMap . HM.fromList
-
-insert ::
-  ( NameCollision a,
-    KeyOf k a,
-    Monad m,
-    Failure ValidationErrors m
-  ) =>
-  a ->
-  SafeHashMap k a ->
-  m (SafeHashMap k a)
-insert x = merge (singleton (keyOf x) x)
