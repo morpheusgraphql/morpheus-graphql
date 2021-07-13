@@ -30,9 +30,9 @@ module Data.Morpheus.Types.Internal.AST.Selection
 where
 
 import Data.Foldable (foldr')
-import Data.Mergeable (Merge (..))
 import Data.Mergeable
-  ( NameCollision (..),
+  ( Merge (..),
+    NameCollision (..),
   )
 import Data.Morpheus.Error.Operation
   ( mutationIsNotDefined,
@@ -77,6 +77,7 @@ import Data.Morpheus.Types.Internal.AST.Fields
   )
 import Data.Morpheus.Types.Internal.AST.Name
   ( FieldName,
+    FragmentName,
     TypeName,
     intercalate,
   )
@@ -102,7 +103,7 @@ import Language.Haskell.TH.Syntax (Lift (..))
 import Relude hiding (intercalate)
 
 data Fragment (stage :: Stage) = Fragment
-  { fragmentName :: FieldName,
+  { fragmentName :: FragmentName,
     fragmentType :: TypeName,
     fragmentPosition :: Position,
     fragmentSelection :: SelectionSet stage,
@@ -116,10 +117,10 @@ instance NameCollision (Fragment s) where
     ("There can be only one fragment named " <> msgValidation fragmentName <> ".")
       `at` fragmentPosition
 
-instance KeyOf FieldName (Fragment s) where
+instance KeyOf FragmentName (Fragment s) where
   keyOf = fragmentName
 
-type Fragments (s :: Stage) = OrdMap FieldName (Fragment s)
+type Fragments (s :: Stage) = OrdMap FragmentName (Fragment s)
 
 data SelectionContent (s :: Stage) where
   SelectionField :: SelectionContent s
@@ -225,7 +226,7 @@ data Selection (s :: Stage) where
     } ->
     Selection s
   InlineFragment :: Fragment RAW -> Selection RAW
-  Spread :: Directives RAW -> Ref FieldName -> Selection RAW
+  Spread :: Directives RAW -> Ref FragmentName -> Selection RAW
 
 instance RenderGQL (Selection VALID) where
   renderGQL

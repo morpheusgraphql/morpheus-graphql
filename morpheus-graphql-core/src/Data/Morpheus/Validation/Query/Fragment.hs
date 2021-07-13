@@ -27,8 +27,8 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( Directives,
-    FieldName,
     Fragment (..),
+    FragmentName,
     Fragments,
     IMPLEMENTABLE,
     Position,
@@ -56,7 +56,7 @@ class ResolveFragment (s :: Stage) where
   resolveValidFragment ::
     (Fragment RAW -> FragmentValidator s (SelectionSet VALID)) ->
     [TypeName] ->
-    Ref FieldName ->
+    Ref FragmentName ->
     FragmentValidator s UnionTag
 
 instance ResolveFragment VALID where
@@ -98,7 +98,7 @@ validateFragmentDirectives :: Directives RAW -> FragmentValidator s (Directives 
 validateFragmentDirectives _ = pure empty --TODO: validate fragment directives
 
 castFragmentType ::
-  Maybe FieldName ->
+  Maybe FragmentName ->
   Position ->
   [TypeName] ->
   Fragment s ->
@@ -107,7 +107,7 @@ castFragmentType key position typeMembers fragment@Fragment {fragmentType}
   | fragmentType `elem` typeMembers = pure fragment
   | otherwise = failure $ cannotBeSpreadOnType key fragmentType position typeMembers
 
-resolveSpread :: [TypeName] -> Ref FieldName -> FragmentValidator s (Fragment s)
+resolveSpread :: [TypeName] -> Ref FragmentName -> FragmentValidator s (Fragment s)
 resolveSpread allowedTargets ref@Ref {refName, refPosition} =
   askFragments
     >>= selectKnown ref

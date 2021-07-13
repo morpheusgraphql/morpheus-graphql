@@ -41,7 +41,8 @@ module Data.Morpheus.Types.Internal.AST.Fields
 where
 
 import Data.Mergeable
-  ( NameCollision (..),
+  ( IsMap (lookup),
+    NameCollision (..),
   )
 import Data.Mergeable.SafeHashMap (SafeHashMap)
 import Data.Morpheus.Ext.OrdMap
@@ -50,7 +51,6 @@ import Data.Morpheus.Ext.OrdMap
   )
 import Data.Morpheus.Internal.Utils
   ( Empty (..),
-    IsMap (..),
     KeyOf (..),
     selectOr,
     toPair,

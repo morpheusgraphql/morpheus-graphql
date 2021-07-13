@@ -11,9 +11,11 @@ module Data.Mergeable
     resolveWith,
     runResolutionT,
     collect,
+    IsMap (..),
   )
 where
 
 import Data.Mergeable.Internal.Merge
 import Data.Mergeable.Internal.NameCollision
 import Data.Mergeable.Internal.Resolution
+import Data.Mergeable.IsMap

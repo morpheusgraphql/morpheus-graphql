@@ -206,7 +206,7 @@ selectType name =
 
 selectKnown ::
   ( IsMap k c,
-    Unknown a sel ctx,
+    Unknown sel ctx,
     KeyOf k sel
   ) =>
   sel ->
@@ -216,6 +216,6 @@ selectKnown selector lib =
   do
     ValidatorContext {scope, validatorCTX} <- Validator ask
     selectBy
-      (unknown scope validatorCTX lib selector)
+      (unknown scope validatorCTX selector)
       (keyOf selector)
       lib

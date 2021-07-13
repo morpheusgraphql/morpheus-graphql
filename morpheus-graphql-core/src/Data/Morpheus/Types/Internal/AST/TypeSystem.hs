@@ -61,7 +61,7 @@ where
 import qualified Data.HashMap.Lazy as HM
 import Data.Mergeable
   ( Merge (..),
-    NameCollision (..),
+    NameCollision (..), IsMap (lookup)
   )
 import Data.Mergeable.SafeHashMap
   ( SafeHashMap,

@@ -14,17 +14,21 @@ import qualified Data.HashMap.Lazy as HM
 import Data.Morpheus.Ext.Failure (Failure (..))
 import Relude
 
-class IsMap k c | c -> k where
-  lookup :: k -> c a -> Maybe a
+class IsMap k m | m -> k where
+  singleton :: k -> a -> m a
 
-  member :: k -> c a -> Bool
+  lookup :: k -> m a -> Maybe a
+
+  member :: k -> m a -> Bool
   member = selectOr False (const True)
 
 -- instance KeyOf k a => IsMap k [a] where
 --   lookup key = find ((key ==) . keyOf)
 
 instance (Eq k, Hashable k) => IsMap k (HashMap k) where
+  singleton = HM.singleton
   lookup = HM.lookup
+  member = HM.member
 
 selectBy :: (Failure e m, IsMap k c, Monad m) => e -> k -> c a -> m a
 selectBy err = selectOr (failure err) pure

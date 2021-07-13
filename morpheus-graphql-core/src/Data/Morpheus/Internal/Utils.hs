@@ -9,8 +9,8 @@
 module Data.Morpheus.Internal.Utils
   ( camelCaseTypeName,
     camelCaseFieldName,
-    Collection (..),
-    IsMap (..),
+    singleton,
+    IsMap,
     FromElems (..),
     Failure (..),
     KeyOf (..),
@@ -31,6 +31,7 @@ module Data.Morpheus.Internal.Utils
     mergeConcat,
     (<:>),
     selectOr,
+    member,
   )
 where
 
@@ -47,7 +48,8 @@ import Data.Mergeable
     mergeConcat,
     mergeNoDuplicates,
   )
-import Data.Mergeable.IsMap
+import Data.Mergeable.IsMap (IsMap, member, selectBy, selectOr)
+import qualified Data.Mergeable.IsMap as M
 import Data.Morpheus.Ext.Empty
 import Data.Morpheus.Ext.Failure (Failure (..))
 import Data.Morpheus.Ext.KeyOf (KeyOf (..), toPair)
@@ -108,18 +110,8 @@ stripFieldNamespace prefix = __uncapitalize . dropPrefix prefix
 elems :: Foldable t => t a -> [a]
 elems = toList
 
---(KEY v ~ k) =>
-class Collection a coll | coll -> a where
-  singleton :: a -> coll
-
-instance Collection a [a] where
-  singleton x = [x]
-
-instance Collection a (NonEmpty a) where
-  singleton x = x :| []
-
-instance KeyOf k v => Collection v (HashMap k v) where
-  singleton x = HM.singleton (keyOf x) x
+singleton :: (IsMap k m, KeyOf k a) => a -> m a
+singleton x = M.singleton (keyOf x) x
 
 traverseCollection ::
   ( Monad f,

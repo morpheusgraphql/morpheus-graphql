@@ -26,12 +26,11 @@ import Data.Mergeable
   ( Merge (..),
     NameCollision (..),
   )
+import Data.Mergeable.IsMap (IsMap (singleton))
 import Data.Morpheus.Ext.Empty (Empty)
 import Data.Morpheus.Internal.Utils
-  ( Collection (..),
-    Failure (..),
+  ( Failure (..),
     FromElems (..),
-    IsMap (..),
     KeyOf (..),
   )
 import Data.Morpheus.Types.Internal.AST.Error (ValidationErrors)
@@ -49,8 +48,7 @@ newtype SafeHashMap k a = SafeHashMap
       Traversable
     )
   deriving newtype
-    ( Collection a,
-      IsMap k,
+    ( IsMap k,
       Empty
     )
 
@@ -82,4 +80,4 @@ insert ::
   a ->
   SafeHashMap k a ->
   m (SafeHashMap k a)
-insert x = merge (singleton x)
+insert x = merge (singleton (keyOf x) x)

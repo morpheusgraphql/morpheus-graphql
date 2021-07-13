@@ -24,11 +24,10 @@ import Data.Mergeable
   ( Merge (..),
     recursiveMerge,
   )
+import Data.Mergeable.IsMap (IsMap (..))
 import Data.Morpheus.Internal.Utils
-  ( Collection (singleton),
-    Failure (..),
+  ( Failure (..),
     FromElems (..),
-    IsMap (..),
     KeyOf (..),
     toPair,
   )
@@ -56,9 +55,6 @@ newtype MergeSet (s :: Stage) k a = MergeSet
       Traversable
     )
 
-instance KeyOf k a => Collection a (MergeSet s k a) where
-  singleton = MergeSet . (:| []) . toPair
-
 instance (Lift a, Lift k) => Lift (MergeSet (s :: Stage) k a) where
   lift (MergeSet (x :| xs)) = [|MergeSet (x :| xs)|]
 
@@ -72,6 +68,7 @@ instance
   ) =>
   IsMap k (MergeSet opt k)
   where
+  singleton k x = MergeSet ((k, x) :| [])
   lookup key (MergeSet (x :| xs)) = L.lookup key (x : xs)
 
 instance

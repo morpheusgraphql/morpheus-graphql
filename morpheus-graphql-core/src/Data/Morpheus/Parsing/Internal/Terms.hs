@@ -61,6 +61,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeWrapper (..),
     packName,
   )
+import Data.Morpheus.Types.Internal.AST.Name (Name)
 import Relude hiding (ByteString, empty, many)
 import Text.Megaparsec
   ( (<?>),
@@ -163,7 +164,7 @@ name =
     {-# INLINE isContinueChar #-}
 {-# INLINE name #-}
 
-parseName :: Parser FieldName
+parseName :: Parser (Name t)
 parseName = packName <$> name
 {-# INLINE parseName #-}
 
