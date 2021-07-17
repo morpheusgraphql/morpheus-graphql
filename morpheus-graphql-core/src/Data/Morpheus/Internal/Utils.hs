@@ -51,7 +51,7 @@ import Data.Mergeable
     mergeConcat,
     mergeNoDuplicates,
   )
-import Data.Mergeable.IsMap (IsMap, member, selectBy, selectOr, unsafeFromList)
+import Data.Mergeable.IsMap (member, selectBy, selectOr, unsafeFromList)
 import qualified Data.Mergeable.IsMap as M
 import Data.Mergeable.SafeHashMap (SafeHashMap)
 import Data.Morpheus.Ext.Empty

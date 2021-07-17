@@ -1,5 +1,5 @@
 query bla($x: Boolean! = false, $y: Boolean! = true) {
-  user @skip(if: $x) @deprecated {
+  user @skip(if: $x) {
     case1: name
   }
   user @include(if: $x) @deprecated {
@@ -9,7 +9,7 @@ query bla($x: Boolean! = false, $y: Boolean! = true) {
   user2: user @skip(if: $y) @deprecated {
     case1: name
   }
-  user2: user @include(if: $y) @deprecated {
+  user2: user @include(if: $y) {
     case2: name
   }
 }

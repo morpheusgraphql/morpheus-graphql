@@ -44,7 +44,6 @@ import Data.Mergeable
   ( IsMap (lookup),
     NameCollision (..),
   )
-import Data.Mergeable.SafeHashMap (SafeHashMap)
 import Data.Morpheus.Ext.OrdMap
   ( OrdMap,
   )
@@ -143,7 +142,10 @@ data Directive (s :: Stage) = Directive
   deriving (Show, Lift, Eq)
 
 instance NameCollision (Directive s) where
-  nameCollision = undefined
+  nameCollision Directive {directiveName} =
+    "The directive "
+      <> msgValidation ("@" <> directiveName)
+      <> " can only be used once at his location."
 
 instance KeyOf FieldName (Directive s) where
   keyOf = directiveName
@@ -153,7 +155,7 @@ instance RenderGQL (Directive s) where
     "@" <> renderGQL directiveName
       <> renderArgumentValues directiveArgs
 
-type Directives s = SafeHashMap FieldName (Directive s)
+type Directives s = OrdMap FieldName (Directive s)
 
 renderDirectives :: Directives s -> Rendering
 renderDirectives xs
@@ -174,9 +176,12 @@ data DirectiveDefinition s = DirectiveDefinition
   deriving (Show, Lift)
 
 instance NameCollision (DirectiveDefinition s) where
-  nameCollision = undefined
+  nameCollision DirectiveDefinition {directiveDefinitionName} =
+    "There can Be only One DirectiveDefinition Named "
+      <> msgValidation directiveDefinitionName
+      <> "."
 
-type DirectivesDefinition s = SafeHashMap FieldName (DirectiveDefinition s)
+type DirectivesDefinition s = OrdMap FieldName (DirectiveDefinition s)
 
 instance KeyOf FieldName (DirectiveDefinition s) where
   keyOf = directiveDefinitionName

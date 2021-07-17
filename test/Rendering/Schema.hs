@@ -12,32 +12,30 @@
 
 module Rendering.Schema
   ( proxy,
-    path,
   )
 where
 
-import Data.Morpheus.Document (importGQLDocumentWithNamespace)
+import Data.Morpheus.Document
+  ( importGQLDocumentWithNamespace,
+  )
 import Data.Morpheus.Types
   ( DecodeScalar (..),
-    ID (..),
-    RootResolver (..),
-    Undefined (..),
+    ID,
+    RootResolver,
+    Undefined,
   )
-import Data.Proxy (Proxy (..))
-import Data.Text (Text)
-import GHC.Generics (Generic)
+import Relude hiding (Undefined)
 
-data TestScalar
-  = TestScalar
-  deriving (Show, Generic)
+data TestScalar = TestScalar
+  deriving (Show)
 
 instance DecodeScalar TestScalar where
   decodeScalar _ = pure TestScalar
 
 importGQLDocumentWithNamespace "test/Rendering/schema.gql"
 
-path :: String
-path = "test/Rendering/schema.gql"
+type APIResolver e (m :: * -> *) =
+  RootResolver m e MyQuery MyMutation Undefined
 
-proxy :: Proxy (RootResolver IO () MyQuery MyMutation Undefined)
-proxy = Proxy @(RootResolver IO () MyQuery MyMutation Undefined)
+proxy :: Proxy (APIResolver () IO)
+proxy = Proxy

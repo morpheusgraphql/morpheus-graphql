@@ -20,11 +20,9 @@ module Data.Morpheus.Types.Internal.Validation.Internal
   )
 where
 
-import Data.Mergeable.SafeHashMap (SafeHashMap)
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     FromElems (fromElems),
-    selectBy,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
@@ -36,15 +34,12 @@ import Data.Morpheus.Types.Internal.AST
     OUT,
     Operation,
     Operation (..),
+    OrdMap,
     TRUE,
     ToOBJECT,
     Token,
-    TypeContent (..),
-    TypeContent,
-    TypeDefinition (..),
     TypeName,
     TypeRef,
-    Typed,
     UnionMember (..),
     VALID,
     ValidationErrors,
@@ -52,10 +47,7 @@ import Data.Morpheus.Types.Internal.AST
     fromCategory,
     getOperationDataType,
     msgInternal,
-    possibleInterfaceTypes,
     typeConName,
-    typed,
-    untyped,
   )
 import Data.Morpheus.Types.Internal.AST.TypeSystem
 import Data.Morpheus.Types.Internal.Validation.Validator
@@ -98,7 +90,7 @@ askInterfaceTypes ::
     FromCategory (TypeContent TRUE) ANY IMPLEMENTABLE
   ) =>
   TypeDefinition IMPLEMENTABLE s ->
-  m c (SafeHashMap TypeName (TypeDefinition IMPLEMENTABLE s))
+  m c (OrdMap TypeName (TypeDefinition IMPLEMENTABLE s))
 askInterfaceTypes typeDef@TypeDefinition {typeName} =
   askSchema
     >>= traverse (validate . fromCategory) . possibleInterfaceTypes typeName

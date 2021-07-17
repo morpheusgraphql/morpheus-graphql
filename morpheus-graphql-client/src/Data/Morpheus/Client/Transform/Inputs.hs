@@ -29,8 +29,7 @@ import Data.Morpheus.Client.Transform.Core
     typeFrom,
   )
 import Data.Morpheus.Internal.Utils
-  ( elems,
-    empty,
+  ( empty,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
@@ -70,7 +69,7 @@ renderArguments variables cName
           clientCons =
             [ ConsD
                 { cName,
-                  cFields = fieldD <$> elems variables
+                  cFields = fieldD <$> toList variables
                 }
             ]
         }
@@ -96,7 +95,7 @@ renderNonOutputTypes ::
   [TypeName] ->
   Converter [ClientTypeDefinition]
 renderNonOutputTypes leafTypes = do
-  variables <- asks (elems . snd)
+  variables <- asks (toList . snd)
   inputTypeRequests <- resolveUpdates [] $ fmap (UpdateT . exploreInputTypeNames . typeConName . variableType) variables
   concat <$> traverse buildInputType (removeDuplicates $ inputTypeRequests <> leafTypes)
 
@@ -110,7 +109,7 @@ exploreInputTypeNames name collected
         scanType (DataInputObject fields) =
           resolveUpdates
             (name : collected)
-            (toInputTypeD <$> elems fields)
+            (toInputTypeD <$> toList fields)
           where
             toInputTypeD :: FieldDefinition IN VALID -> UpdateT Converter [TypeName]
             toInputTypeD FieldDefinition {fieldType = TypeRef {typeConName}} =
@@ -128,7 +127,7 @@ buildInputType name = getType name >>= generateTypes
       where
         subTypes :: TypeContent TRUE ANY VALID -> Converter [ClientTypeDefinition]
         subTypes (DataInputObject inputFields) = do
-          fields <- traverse toClientFieldDefinition (elems inputFields)
+          fields <- traverse toClientFieldDefinition (toList inputFields)
           pure
             [ mkInputType
                 typeName

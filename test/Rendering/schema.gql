@@ -1,16 +1,18 @@
+scalar TestScalar
+
 enum TestEnum {
   EnumA
   EnumB
   EnumC
 }
 
-type Address {
-  street: [[[[String!]!]!]]
-}
-
 input Coordinates {
   latitude: TestScalar!
   longitude: Int!
+}
+
+type Address {
+  street: [[[[String!]!]!]]
 }
 
 type User {
@@ -20,8 +22,6 @@ type User {
 }
 
 union TestUnion = User | Address
-
-scalar TestScalar
 
 type MyQuery {
   user: User!

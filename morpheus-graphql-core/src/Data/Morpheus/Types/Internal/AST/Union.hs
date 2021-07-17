@@ -21,7 +21,7 @@ module Data.Morpheus.Types.Internal.AST.Union
 where
 
 import Data.Mergeable
-import Data.Mergeable.SafeHashMap
+import Data.Morpheus.Ext.OrdMap
 import Data.Morpheus.Internal.Utils
   ( Empty (empty),
     Failure (..),
@@ -35,6 +35,7 @@ import Data.Morpheus.Types.Internal.AST.Base
   ( Message (..),
     Msg (..),
   )
+import Data.Morpheus.Types.Internal.AST.Error (msgValidation)
 import Data.Morpheus.Types.Internal.AST.Fields
   ( FieldDefinition (..),
     FieldsDefinition,
@@ -76,9 +77,11 @@ data UnionMember (cat :: TypeCategory) (s :: Stage) = UnionMember
   deriving (Show, Lift, Eq)
 
 instance NameCollision (UnionMember c s) where
-  nameCollision = undefined
+  nameCollision UnionMember {memberName} =
+    "There can Be only one union variant named "
+      <> msgValidation memberName
 
-type UnionTypeDefinition k s = SafeHashMap TypeName (UnionMember k s)
+type UnionTypeDefinition k s = OrdMap TypeName (UnionMember k s)
 
 instance RenderGQL (UnionMember cat s) where
   renderGQL = renderGQL . memberName

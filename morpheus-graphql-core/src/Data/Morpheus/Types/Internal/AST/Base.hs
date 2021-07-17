@@ -102,10 +102,14 @@ data Position = Position
   { line :: Int,
     column :: Int
   }
-  deriving (Show, Generic, FromJSON, ToJSON, Lift)
-
-instance Ord Position where
-  compare x y = compare (line x) (line y)
+  deriving
+    ( Show,
+      Ord,
+      Generic,
+      FromJSON,
+      ToJSON,
+      Lift
+    )
 
 -- Positions 2 Value with same structure
 -- but different Positions should be Equal

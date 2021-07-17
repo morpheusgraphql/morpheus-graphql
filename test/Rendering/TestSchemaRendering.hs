@@ -6,15 +6,17 @@ module Rendering.TestSchemaRendering
   )
 where
 
-import Data.ByteString.Lazy.Char8 (readFile)
+import qualified Data.ByteString.Lazy.Char8 as T
 import Data.Morpheus.Document (toGraphQLDocument)
-import Rendering.Schema (path, proxy)
+import Relude hiding (ByteString, readFile)
+import Rendering.Schema (proxy)
+import Test.Morpheus (file, mkUrl, renderingAssertion)
 import Test.Tasty (TestTree)
-import Test.Tasty.HUnit (assertEqual, testCase)
-import Prelude (($))
+
+xyz :: b -> IO (Either String T.ByteString)
+xyz =
+  const $ pure $ Right $
+    toGraphQLDocument proxy
 
 testSchemaRendering :: TestTree
-testSchemaRendering = testCase "Test Rendering" $ do
-  let schema = toGraphQLDocument proxy
-  expected <- readFile path
-  assertEqual "test schema Rendering" expected schema
+testSchemaRendering = renderingAssertion xyz (file (mkUrl "Rendering") "schema")

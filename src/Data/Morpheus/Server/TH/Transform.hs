@@ -17,7 +17,6 @@ where
 
 import Data.Morpheus.Internal.Utils
   ( camelCaseTypeName,
-    elems,
   )
 import Data.Morpheus.Server.Internal.TH.Types
   ( GQLTypeDefinition (..),
@@ -231,7 +230,7 @@ data TypeContext s = TypeContext
 type ServerQ s = ReaderT (TypeContext s) Q
 
 genArgumentTypes :: FieldsDefinition OUT s -> ServerQ s [ServerTypeDefinition s]
-genArgumentTypes = fmap concat . traverse genArgumentType . elems
+genArgumentTypes = fmap concat . traverse genArgumentType . toList
 
 genArgumentType :: FieldDefinition OUT s -> ServerQ s [ServerTypeDefinition s]
 genArgumentType
@@ -241,7 +240,7 @@ genArgumentType
     }
     | not (null arguments) = do
       tName <- (fieldName &) <$> asks toArgsTypeName
-      let argumentFields = argument <$> elems arguments
+      let argumentFields = argument <$> toList arguments
       pure
         [ ServerTypeDefinition
             { tName,
@@ -318,7 +317,7 @@ instance
   Meta (FieldDefinition c s) v =>
   Meta (FieldsDefinition c s) v
   where
-  get = concatMap get . elems
+  get = concatMap get . toList
 
 instance Meta (FieldDefinition c s) Description where
   get FieldDefinition {fieldName, fieldDescription = Just x} = [(unpackName fieldName, x)]
@@ -330,7 +329,7 @@ instance Meta (FieldDefinition c s) (Directives s) where
     | otherwise = [(unpackName fieldName, fieldDirectives)]
 
 getInputFields :: TypeDefinition c s -> [FieldDefinition IN s]
-getInputFields TypeDefinition {typeContent = DataInputObject {inputObjectFields}} = elems inputObjectFields
+getInputFields TypeDefinition {typeContent = DataInputObject {inputObjectFields}} = toList inputObjectFields
 getInputFields _ = []
 
 getDefaultValue :: FieldDefinition c s -> Maybe (Text, Value s)

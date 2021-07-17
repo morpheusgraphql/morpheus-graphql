@@ -66,6 +66,8 @@ getElements :: (Eq k, Hashable k) => OrdMap k b -> [b]
 getElements = fmap indexedValue . sortOn index . toList . mapEntries
 
 instance (Eq k, Hashable k) => IsMap k (OrdMap k) where
+  fromMap = undefined
+  toMap = fmap indexedValue . mapEntries
   unsafeFromList = OrdMap . HM.fromList . fmap withKey . indexed
     where
       withKey idx = (indexedKey idx, idx)
