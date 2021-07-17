@@ -53,16 +53,16 @@ class Fetch a where
     (Monad m, Show a, ToJSON (Args a), FromJSON a) =>
     String ->
     FieldName ->
-    (ByteString -> m ByteString) ->
+    (ByteString -> m (Either String ByteString)) ->
     Args a ->
     m (Either String a)
-  __fetch strQuery opName trans vars = (eitherDecode >=> processResponse) <$> trans (encode gqlReq)
+  __fetch strQuery opName trans vars = (>>= eitherDecode >=> processResponse) <$> trans (encode gqlReq)
     where
       gqlReq = GQLRequest {operationName = Just opName, query = pack strQuery, variables = fixVars (toJSON vars)}
       -------------------------------------------------------------
       processResponse JSONResponse {responseData = Just x} = Right x
       processResponse invalidResponse = Left (show invalidResponse)
-  fetch :: (Monad m, FromJSON a) => (ByteString -> m ByteString) -> Args a -> m (Either String a)
+  fetch :: (Monad m, FromJSON a) => (ByteString -> m (Either String ByteString)) -> Args a -> m (Either String a)
 
 deriveFetch :: Type -> TypeName -> String -> Q [Dec]
 deriveFetch resultType typeName queryString =
