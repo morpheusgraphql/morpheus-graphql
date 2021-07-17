@@ -26,6 +26,7 @@ import Data.Morpheus.Internal.Ext
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     empty,
+    keyOf,
     selectBy,
   )
 import Data.Morpheus.Types.Internal.AST

@@ -306,9 +306,12 @@ instance RenderGQL RootOperationTypeDefinition where
 type TypeDefinitions s = SafeHashMap TypeName (TypeDefinition ANY s)
 
 typeDefinitions :: Schema s -> HashMap TypeName (TypeDefinition ANY s)
-typeDefinitions Schema {..} = toMap types <> HM.fromList operations
+typeDefinitions schema@Schema {..} = toMap types <> HM.fromList operations
   where
-    operations = map (toPair . toAny) $ catMaybes [Just query, mutation, subscription]
+    operations = map toPair $ rootTypeDefinitions schema
+
+rootTypeDefinitions :: Schema s -> [TypeDefinition ANY s]
+rootTypeDefinitions Schema {..} = map toAny $ catMaybes [Just query, mutation, subscription]
 
 instance
   ( Monad m,
@@ -440,6 +443,12 @@ data TypeDefinition (a :: TypeCategory) (s :: Stage) = TypeDefinition
   }
   deriving (Show, Lift, Eq)
 
+instance Ord (TypeDefinition k s) where
+  compare a b =
+    compare
+      (indexOf $ typeContent a)
+      (indexOf $ typeContent b)
+
 instance KeyOf TypeName (TypeDefinition a s) where
   keyOf = typeName
 
@@ -538,6 +547,15 @@ deriving instance Show (TypeContent a b s)
 deriving instance Eq (TypeContent a b s)
 
 deriving instance Lift (TypeContent a b s)
+
+indexOf :: TypeContent b a s -> Int
+indexOf DataScalar {} = 0
+indexOf DataEnum {} = 1
+indexOf DataInputObject {} = 2
+indexOf DataInputUnion {} = 3
+indexOf DataInterface {} = 4
+indexOf DataObject {} = 5
+indexOf DataUnion {} = 6
 
 instance Strictness (TypeContent TRUE k s) where
   isResolverType DataObject {} = True
@@ -668,7 +686,7 @@ hasDefaultOperationName
     } = show rootOperationType == T.unpack (unpackName name)
 
 instance RenderGQL (Schema s) where
-  renderGQL schema =
+  renderGQL schema@Schema {..} =
     intercalate newline (fmap renderGQL visibleTypes <> schemaDefinition)
     where
       schemaDefinition
@@ -676,11 +694,15 @@ instance RenderGQL (Schema s) where
         | otherwise = [renderSchemaDefinition entries]
       entries =
         catMaybes
-          [ RootOperationTypeDefinition Query . typeName <$> Just (query schema),
-            RootOperationTypeDefinition Mutation . typeName <$> mutation schema,
-            RootOperationTypeDefinition Subscription . typeName <$> subscription schema
+          [ RootOperationTypeDefinition Query . typeName <$> Just query,
+            RootOperationTypeDefinition Mutation . typeName <$> mutation,
+            RootOperationTypeDefinition Subscription . typeName <$> subscription
           ]
-      visibleTypes = filter (isNotSystemTypeName . typeName) (toList $ typeDefinitions schema)
+      visibleTypes =
+        filter
+          (isNotSystemTypeName . typeName)
+          (sort $ toList types)
+          <> rootTypeDefinitions schema
 
 instance RenderGQL (TypeDefinition a s) where
   renderGQL TypeDefinition {typeName, typeContent} = __render typeContent <> newline
