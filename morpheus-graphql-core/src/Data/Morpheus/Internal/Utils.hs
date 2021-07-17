@@ -43,7 +43,7 @@ import Data.Char
   )
 import qualified Data.HashMap.Lazy as HM
 import Data.Mergeable
-  ( IsMap (fromMap),
+  ( IsMap,
     Merge (merge),
     NameCollision (..),
     ResolutionT,
@@ -53,7 +53,7 @@ import Data.Mergeable
   )
 import Data.Mergeable.IsMap (member, selectBy, selectOr, unsafeFromList)
 import qualified Data.Mergeable.IsMap as M
-import Data.Mergeable.SafeHashMap (SafeHashMap)
+import Data.Mergeable.SafeHashMap (SafeHashMap, fromHashMap)
 import Data.Morpheus.Ext.Empty
 import Data.Morpheus.Ext.Failure (Failure (..))
 import Data.Morpheus.Ext.KeyOf (KeyOf (..), toPair)
@@ -134,7 +134,7 @@ class FromElems m a coll | coll -> a where
   fromElems :: [a] -> m coll
 
 instance (NameCollision a, Failure ValidationErrors m, Monad m, KeyOf k a, Hashable k) => FromElems m a (SafeHashMap k a) where
-  fromElems = fmap fromMap . fromElems
+  fromElems = fmap fromHashMap . fromElems
 
 insert ::
   ( NameCollision a,

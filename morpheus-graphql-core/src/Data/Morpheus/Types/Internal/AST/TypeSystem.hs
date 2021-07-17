@@ -63,10 +63,10 @@ import Data.Mergeable
   ( IsMap (lookup),
     Merge (..),
     NameCollision (..),
-    toMap,
   )
 import Data.Mergeable.SafeHashMap
   ( SafeHashMap,
+    toHashMap,
   )
 import Data.Morpheus.Ext.OrdMap
   ( OrdMap,
@@ -306,7 +306,7 @@ instance RenderGQL RootOperationTypeDefinition where
 type TypeDefinitions s = SafeHashMap TypeName (TypeDefinition ANY s)
 
 typeDefinitions :: Schema s -> HashMap TypeName (TypeDefinition ANY s)
-typeDefinitions schema@Schema {..} = toMap types <> HM.fromList operations
+typeDefinitions schema@Schema {..} = toHashMap types <> HM.fromList operations
   where
     operations = map toPair $ rootTypeDefinitions schema
 

@@ -15,7 +15,7 @@ module Data.Morpheus.Validation.Query.UnionSelection
 where
 
 import qualified Data.HashMap.Lazy as HM
-import Data.Mergeable.SafeHashMap
+import Data.Morpheus.Ext.OrdMap
 import Data.Morpheus.Internal.Utils
   ( empty,
     fromElems,
@@ -23,25 +23,27 @@ import Data.Morpheus.Internal.Utils
     selectOr,
     startHistory,
   )
-import Data.Morpheus.Types.Internal.AST
+import Data.Morpheus.Types.Internal.AST.Base (Position (..))
+import Data.Morpheus.Types.Internal.AST.Name (TypeName)
+import Data.Morpheus.Types.Internal.AST.Selection
   ( Fragment (..),
-    IMPLEMENTABLE,
-    OUT,
-    Position (..),
-    RAW,
     Selection (..),
     SelectionContent (..),
     SelectionSet,
     SelectionSet,
-    TypeCategory,
-    TypeContent (..),
-    TypeDefinition (..),
-    TypeName,
     UnionTag (..),
-    UnionTypeDefinition,
-    VALID,
-    mkType,
+  )
+import Data.Morpheus.Types.Internal.AST.Stage (RAW, VALID)
+import Data.Morpheus.Types.Internal.AST.TypeCategory
+  ( IMPLEMENTABLE,
+    OUT,
     toCategory,
+  )
+import Data.Morpheus.Types.Internal.AST.TypeSystem
+  ( TypeContent (..),
+    TypeDefinition (..),
+    UnionTypeDefinition,
+    mkType,
   )
 import Data.Morpheus.Types.Internal.Validation
   ( FragmentValidator,
@@ -78,7 +80,7 @@ exploreFragments ::
   ( Fragment RAW ->
     FragmentValidator s (SelectionSet VALID)
   ) ->
-  SafeHashMap TypeName (TypeDefinition IMPLEMENTABLE VALID) ->
+  OrdMap TypeName (TypeDefinition IMPLEMENTABLE VALID) ->
   SelectionSet RAW ->
   FragmentValidator s ([UnionTag], SelectionSet RAW)
 exploreFragments validateFragment types selectionSet = do
@@ -105,7 +107,7 @@ exploreFragments validateFragment types selectionSet = do
 -- ]
 tagUnionFragments ::
   [UnionTag] ->
-  SafeHashMap TypeName (TypeDefinition IMPLEMENTABLE VALID) ->
+  OrdMap TypeName (TypeDefinition IMPLEMENTABLE VALID) ->
   HashMap TypeName [SelectionSet VALID]
 tagUnionFragments fragments types = fmap categorizeType getSelectedTypes
   where

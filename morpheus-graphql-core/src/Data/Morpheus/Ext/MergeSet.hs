@@ -14,7 +14,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Ext.MergeSet
-  ( MergeSet,
+  ( MergeMap,
     toNonEmpty,
   )
 where
@@ -35,16 +35,10 @@ import Data.Morpheus.Types.Internal.AST.Error
   ( ValidationError,
     ValidationErrors,
   )
-import Data.Morpheus.Types.Internal.AST.Stage
-  ( RAW,
-    Stage,
-    VALID,
-  )
 import Language.Haskell.TH.Syntax (Lift (..))
 import Relude
 
--- set with mergeable components
-newtype MergeSet (s :: Stage) k a = MergeSet
+newtype MergeMap (dups :: Bool) k a = MergeSet
   { unpack :: NonEmpty (k, a)
   }
   deriving
@@ -55,7 +49,7 @@ newtype MergeSet (s :: Stage) k a = MergeSet
       Traversable
     )
 
-instance (Lift a, Lift k) => Lift (MergeSet (s :: Stage) k a) where
+instance (Lift a, Lift k) => Lift (MergeMap dups k a) where
   lift (MergeSet (x :| xs)) = [|MergeSet (x :| xs)|]
 
 #if MIN_VERSION_template_haskell(2,16,0)
@@ -63,25 +57,27 @@ instance (Lift a, Lift k) => Lift (MergeSet (s :: Stage) k a) where
 #endif
 
 instance
-  ( Hashable k,
-    Eq k
-  ) =>
-  IsMap k (MergeSet opt k)
+  (Hashable k, Eq k) =>
+  IsMap k (MergeMap dups k)
   where
+  unsafeFromList (x : xs) = MergeSet (x :| xs)
+  unsafeFromList [] = error "empty selection sets are not supported."
   singleton k x = MergeSet ((k, x) :| [])
   lookup key (MergeSet (x :| xs)) = L.lookup key (x : xs)
 
 instance
-  ( Merge m a,
-    Monad m,
-    Failure ValidationErrors m,
+  ( Monad m,
     Eq a,
+    Merge m a,
     Hashable k,
     Eq k
   ) =>
-  Merge m (MergeSet VALID k a)
+  Merge m (MergeMap 'False k a)
   where
   merge (MergeSet x) (MergeSet y) = resolveMergeable (x <> y)
+
+instance Monad m => Merge m (MergeMap 'True k a) where
+  merge (MergeSet x) (MergeSet y) = pure $ MergeSet $ x <> y
 
 resolveMergeable ::
   ( Monad m,
@@ -91,7 +87,7 @@ resolveMergeable ::
     Eq k
   ) =>
   NonEmpty (k, a) ->
-  m (MergeSet s k a)
+  m (MergeMap dups k a)
 resolveMergeable (x :| xs) = recursiveMerge (MergeSet . fromList) (x : xs)
 
 toNonEmpty :: Failure ValidationErrors f => [a] -> f (NonEmpty a)
@@ -105,12 +101,9 @@ instance
     Merge m a,
     Eq a
   ) =>
-  FromElems m a (MergeSet VALID k a)
+  FromElems m a (MergeMap 'False k a)
   where
   fromElems = resolveMergeable . fmap toPair <=< toNonEmpty
 
-instance Monad m => Merge m (MergeSet RAW k a) where
-  merge (MergeSet x) (MergeSet y) = pure $ MergeSet $ x <> y
-
-instance (Applicative m, Failure ValidationErrors m, KeyOf k a) => FromElems m a (MergeSet RAW k a) where
+instance (Applicative m, Failure ValidationErrors m, KeyOf k a) => FromElems m a (MergeMap 'True k a) where
   fromElems = fmap (MergeSet . fmap toPair) . toNonEmpty

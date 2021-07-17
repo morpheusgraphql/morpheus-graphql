@@ -15,9 +15,6 @@ import Data.Morpheus.Ext.Failure (Failure (..))
 import Relude
 
 class IsMap k m | m -> k where
-  fromMap :: HashMap k a -> m a
-  toMap :: m a -> HashMap k a
-
   unsafeFromList :: [(k, a)] -> m a
 
   singleton :: k -> a -> m a
@@ -28,8 +25,6 @@ class IsMap k m | m -> k where
   member = selectOr False (const True)
 
 instance (Eq k, Hashable k) => IsMap k (HashMap k) where
-  fromMap = id
-  toMap = id
   unsafeFromList = HM.fromList
   singleton = HM.singleton
   lookup = HM.lookup

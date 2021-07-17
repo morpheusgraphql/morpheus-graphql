@@ -39,7 +39,7 @@ import Data.Morpheus.Error.Operation
     subscriptionIsNotDefined,
   )
 import Data.Morpheus.Ext.MergeSet
-  ( MergeSet,
+  ( MergeMap,
   )
 import Data.Morpheus.Ext.OrdMap
   ( OrdMap,
@@ -83,7 +83,8 @@ import Data.Morpheus.Types.Internal.AST.Name
   )
 import Data.Morpheus.Types.Internal.AST.OperationType (OperationType (..))
 import Data.Morpheus.Types.Internal.AST.Stage
-  ( RAW,
+  ( ALLOW_DUPLICATES,
+    RAW,
     Stage,
     VALID,
   )
@@ -100,7 +101,8 @@ import Data.Morpheus.Types.Internal.AST.Value
     VariableDefinitions,
   )
 import Language.Haskell.TH.Syntax (Lift (..))
-import Relude hiding (intercalate)
+import Relude hiding (intercalate, show)
+import Prelude (show)
 
 data Fragment (stage :: Stage) = Fragment
   { fragmentName :: FragmentName,
@@ -125,7 +127,11 @@ type Fragments (s :: Stage) = OrdMap FragmentName (Fragment s)
 data SelectionContent (s :: Stage) where
   SelectionField :: SelectionContent s
   SelectionSet :: SelectionSet s -> SelectionContent s
-  UnionSelection :: SelectionSet VALID -> UnionSelection VALID -> SelectionContent VALID
+  UnionSelection ::
+    { defaultSelection :: SelectionSet VALID,
+      conditionalSelections :: UnionSelection VALID
+    } ->
+    SelectionContent VALID
 
 renderSelectionSet :: SelectionSet VALID -> Rendering
 renderSelectionSet = renderObject . toList
@@ -211,9 +217,9 @@ instance
   merge (UnionTag oldTag oldSel) (UnionTag _ currentSel) =
     UnionTag oldTag <$> merge oldSel currentSel
 
-type UnionSelection (s :: Stage) = MergeSet s TypeName UnionTag
+type UnionSelection (s :: Stage) = MergeMap (ALLOW_DUPLICATES s) TypeName UnionTag
 
-type SelectionSet (s :: Stage) = MergeSet s FieldName (Selection s)
+type SelectionSet (s :: Stage) = MergeMap (ALLOW_DUPLICATES s) FieldName (Selection s)
 
 data Selection (s :: Stage) where
   Selection ::
@@ -295,7 +301,10 @@ mergeSelection
           mergeConflict $
             ("they have differing arguments. " <> useDifferentAliases)
               `atPositions` [pos1, pos2]
-mergeSelection _ _ = mergeConflict ("INTERNAL: can't merge. " <> useDifferentAliases)
+mergeSelection x y = mergeConflict ("INTERNAL: can't merge. " <> msgValue x <> msgValue y <> useDifferentAliases)
+
+msgValue :: Show a => a -> ValidationError
+msgValue = msgValidation . show
 
 -- fails if alias matches but name not:
 --   { user1: user
