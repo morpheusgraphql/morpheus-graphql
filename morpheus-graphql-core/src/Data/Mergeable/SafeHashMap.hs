@@ -16,7 +16,6 @@
 module Data.Mergeable.SafeHashMap
   ( SafeHashMap,
     toHashMap,
-    fromHashMap,
   )
 where
 
@@ -48,9 +47,6 @@ newtype SafeHashMap k a = SafeHashMap
     ( IsMap k,
       Empty
     )
-
-fromHashMap :: HashMap k a -> SafeHashMap k a
-fromHashMap = SafeHashMap
 
 toHashMap :: SafeHashMap k a -> HashMap k a
 toHashMap = unpackSafeHashMap

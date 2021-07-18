@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -6,12 +7,15 @@ module Data.Mergeable.IsMap
   ( IsMap (..),
     selectBy,
     selectOr,
-    selectOrBy,
+    FromList (..),
   )
 where
 
 import qualified Data.HashMap.Lazy as HM
+import Data.Mergeable.Internal.Merge (mergeNoDuplicates)
+import Data.Mergeable.Internal.NameCollision (NameCollision)
 import Data.Morpheus.Ext.Failure (Failure (..))
+import Data.Morpheus.Types.Internal.AST.Error (ValidationErrors)
 import Relude
 
 class IsMap k m | m -> k where
@@ -36,5 +40,8 @@ selectBy err = selectOr (failure err) pure
 selectOr :: IsMap k c => d -> (a -> d) -> k -> c a -> d
 selectOr fb f key lib = maybe fb f (lookup key lib)
 
-selectOrBy :: IsMap k c => (t -> c a) -> d -> (a -> d) -> k -> t -> d
-selectOrBy f' fb f key = selectOr fb f key . f'
+class FromList m map k a where
+  fromList :: (Monad m, Failure ValidationErrors m) => [(k, a)] -> m (map k a)
+
+instance (Hashable k, Eq k, NameCollision a) => FromList m HashMap k a where
+  fromList = mergeNoDuplicates HM.fromList

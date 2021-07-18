@@ -75,7 +75,6 @@ import Data.Morpheus.Internal.Utils
   ( (<:>),
     Empty (..),
     Failure (..),
-    FromElems (..),
     IsMap (..),
     KeyOf (..),
     insert,
@@ -313,20 +312,15 @@ typeDefinitions schema@Schema {..} = toHashMap types <> HM.fromList operations
 rootTypeDefinitions :: Schema s -> [TypeDefinition ANY s]
 rootTypeDefinitions Schema {..} = map toAny $ catMaybes [Just query, mutation, subscription]
 
-instance
-  ( Monad m,
-    Failure ValidationErrors m
-  ) =>
-  FromElems m (TypeDefinition ANY s) (Schema s)
-  where
-  fromElems types =
-    traverse3
-      (popByKey types)
-      ( RootOperationTypeDefinition Query "Query",
-        RootOperationTypeDefinition Mutation "Mutation",
-        RootOperationTypeDefinition Subscription "Subscription"
-      )
-      >>= defineSchemaWith types
+mkSchema :: (Monad m, Failure ValidationErrors m) => [TypeDefinition ANY s] -> m (Schema s)
+mkSchema types =
+  traverse3
+    (popByKey types)
+    ( RootOperationTypeDefinition Query "Query",
+      RootOperationTypeDefinition Mutation "Mutation",
+      RootOperationTypeDefinition Subscription "Subscription"
+    )
+    >>= defineSchemaWith types
 
 defineSchemaWith ::
   ( Monad f,
@@ -370,7 +364,7 @@ buildSchema ::
     DirectivesDefinition s
   ) ->
   m (Schema s)
-buildSchema (Nothing, types, dirs) = fromElems types >>= withDirectives dirs
+buildSchema (Nothing, types, dirs) = mkSchema types >>= withDirectives dirs
 buildSchema (Just schemaDef, types, dirs) =
   traverse3 selectOp (Query, Mutation, Subscription)
     >>= defineSchemaWith types

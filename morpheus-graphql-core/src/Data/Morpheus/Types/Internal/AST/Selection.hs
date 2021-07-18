@@ -32,14 +32,12 @@ where
 import Data.Foldable (foldr')
 import Data.Mergeable
   ( Merge (..),
+    MergeMap,
     NameCollision (..),
   )
 import Data.Morpheus.Error.Operation
   ( mutationIsNotDefined,
     subscriptionIsNotDefined,
-  )
-import Data.Morpheus.Ext.MergeSet
-  ( MergeMap,
   )
 import Data.Morpheus.Ext.OrdMap
   ( OrdMap,

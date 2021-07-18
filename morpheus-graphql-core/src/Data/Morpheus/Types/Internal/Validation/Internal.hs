@@ -22,7 +22,7 @@ where
 
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
-    FromElems (fromElems),
+    fromElems,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,

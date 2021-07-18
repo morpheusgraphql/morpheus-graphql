@@ -14,14 +14,14 @@ module Data.Morpheus.Validation.Query.Selection
   )
 where
 
+import Data.Mergeable
+  ( toNonEmpty,
+  )
 import Data.Morpheus.Error.Selection
   ( hasNoSubfields,
     subfieldsNotSelected,
   )
 import Data.Morpheus.Ext.Empty (Empty (..))
-import Data.Morpheus.Ext.MergeSet
-  ( toNonEmpty,
-  )
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
     keyOf,

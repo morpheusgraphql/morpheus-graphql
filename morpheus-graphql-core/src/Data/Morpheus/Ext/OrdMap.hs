@@ -25,16 +25,16 @@ import Data.Mergeable
     NameCollision (..),
     indexed,
   )
+import Data.Mergeable.IsMap (FromList (..))
 import Data.Morpheus.Ext.Empty (Empty (..))
 import Data.Morpheus.Internal.Utils
   ( Failure,
-    FromElems (..),
     KeyOf,
     toPair,
   )
 import Data.Morpheus.Types.Internal.AST.Error (ValidationErrors)
 import Language.Haskell.TH.Syntax (Lift (..))
-import Relude
+import Relude hiding (fromList)
 
 -- OrdMap
 newtype OrdMap k a = OrdMap
@@ -75,5 +75,13 @@ instance (Eq k, Hashable k) => IsMap k (OrdMap k) where
 instance (NameCollision a, Eq k, Hashable k, Monad m, Failure ValidationErrors m) => Merge m (OrdMap k a) where
   merge (OrdMap x) (OrdMap y) = OrdMap <$> merge x y
 
-instance (NameCollision a, Monad m, Failure ValidationErrors m, KeyOf k a, Hashable k) => FromElems m a (OrdMap k a) where
-  fromElems values = OrdMap <$> fromElems (indexed (toPair <$> values))
+instance
+  ( NameCollision a,
+    Monad m,
+    Failure ValidationErrors m,
+    KeyOf k a,
+    Hashable k
+  ) =>
+  FromList m OrdMap k a
+  where
+  fromList = fmap OrdMap . fromList . map toPair . indexed

@@ -1,7 +1,7 @@
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -11,7 +11,6 @@ module Data.Morpheus.Internal.Utils
     camelCaseFieldName,
     singleton,
     IsMap,
-    FromElems (..),
     Failure (..),
     KeyOf (..),
     toPair,
@@ -34,6 +33,7 @@ module Data.Morpheus.Internal.Utils
     member,
     unsafeFromList,
     insert,
+    fromElems,
   )
 where
 
@@ -41,7 +41,6 @@ import Data.ByteString.Lazy (ByteString)
 import Data.Char
   ( toLower,
   )
-import qualified Data.HashMap.Lazy as HM
 import Data.Mergeable
   ( IsMap,
     Merge (merge),
@@ -49,11 +48,10 @@ import Data.Mergeable
     ResolutionT,
     fromListT,
     mergeConcat,
-    mergeNoDuplicates,
   )
-import Data.Mergeable.IsMap (member, selectBy, selectOr, unsafeFromList)
+import Data.Mergeable.IsMap (FromList (..), member, selectBy, selectOr, unsafeFromList)
 import qualified Data.Mergeable.IsMap as M
-import Data.Mergeable.SafeHashMap (SafeHashMap, fromHashMap)
+import Data.Mergeable.SafeHashMap (SafeHashMap)
 import Data.Morpheus.Ext.Empty
 import Data.Morpheus.Ext.Failure (Failure (..))
 import Data.Morpheus.Ext.KeyOf (KeyOf (..), toPair)
@@ -76,6 +74,7 @@ import Relude hiding
   ( ByteString,
     decodeUtf8,
     encodeUtf8,
+    fromList,
   )
 
 (<:>) :: (Merge (HistoryT m) a, Monad m) => a -> a -> m a
@@ -118,23 +117,26 @@ singleton :: (IsMap k m, KeyOf k a) => a -> m a
 singleton x = M.singleton (keyOf x) x
 
 traverseCollection ::
-  ( Monad f,
+  ( Monad m,
+    Failure ValidationErrors m,
     KeyOf k b,
-    FromElems f b (t' b),
-    Failure ValidationErrors f,
+    FromList m map k b,
     Foldable t
   ) =>
-  (a -> f b) ->
+  (a -> m b) ->
   t a ->
-  f (t' b)
+  m (map k b)
 traverseCollection f a = fromElems =<< traverse f (toList a)
 
--- list Like Collections
-class FromElems m a coll | coll -> a where
-  fromElems :: [a] -> m coll
-
-instance (NameCollision a, Failure ValidationErrors m, Monad m, KeyOf k a, Hashable k) => FromElems m a (SafeHashMap k a) where
-  fromElems = fmap fromHashMap . fromElems
+fromElems ::
+  ( Monad m,
+    Failure ValidationErrors m,
+    KeyOf k a,
+    FromList m map k a
+  ) =>
+  [a] ->
+  m (map k a)
+fromElems = fromList . map toPair
 
 insert ::
   ( NameCollision a,
@@ -149,13 +151,3 @@ insert x = merge (singleton x)
 
 mergeT :: (KeyOf k a, Foldable t, Monad m) => t a -> t a -> ResolutionT k a c m c
 mergeT x y = fromListT (toPair <$> (toList x <> toList y))
-
-instance
-  ( NameCollision a,
-    Failure ValidationErrors m,
-    KeyOf k a,
-    Monad m
-  ) =>
-  FromElems m a (HashMap k a)
-  where
-  fromElems xs = mergeNoDuplicates HM.fromList (toPair <$> xs)

@@ -17,7 +17,7 @@ module Data.Morpheus.Parsing.Internal.Pattern
 where
 
 import Data.ByteString.Lazy.Internal (ByteString)
-import Data.Morpheus.Internal.Utils (FromElems (fromElems))
+import Data.Morpheus.Internal.Utils (fromElems)
 import Data.Morpheus.Parsing.Internal.Arguments
   ( maybeArguments,
   )
