@@ -33,6 +33,7 @@ import Data.Morpheus.Internal.Ext
   )
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
+    empty,
     fromElems,
   )
 import qualified Data.Morpheus.Types.Internal.AST as AST
@@ -69,6 +70,7 @@ import Data.Morpheus.Types.Internal.AST
 import Relude hiding
   ( ByteString,
     Type,
+    empty,
     fromList,
     show,
   )

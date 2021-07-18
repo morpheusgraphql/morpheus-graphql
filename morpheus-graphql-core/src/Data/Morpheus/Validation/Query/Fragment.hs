@@ -22,18 +22,18 @@ import Data.Morpheus.Error.Fragment
   ( cannotBeSpreadOnType,
   )
 import Data.Morpheus.Internal.Utils
-  ( Failure (..),
+  ( Empty (empty),
+    Failure (..),
   )
 import Data.Morpheus.Types.Internal.AST
   ( Directives,
-    FieldName,
     Fragment (..),
+    FragmentName,
     Fragments,
     IMPLEMENTABLE,
     Position,
     RAW,
     Ref (..),
-    Schema,
     SelectionSet,
     Stage,
     Stage,
@@ -46,17 +46,17 @@ import Data.Morpheus.Types.Internal.Validation
   ( Constraint (..),
     FragmentValidator,
     askFragments,
-    askSchema,
+    askTypeDefinitions,
     constraint,
     selectKnown,
   )
-import Relude
+import Relude hiding (empty)
 
 class ResolveFragment (s :: Stage) where
   resolveValidFragment ::
     (Fragment RAW -> FragmentValidator s (SelectionSet VALID)) ->
     [TypeName] ->
-    Ref FieldName ->
+    Ref FragmentName ->
     FragmentValidator s UnionTag
 
 instance ResolveFragment VALID where
@@ -95,10 +95,10 @@ onlyValidateFrag validate f@Fragment {..} =
     <$> validate f <*> validateFragmentDirectives fragmentDirectives
 
 validateFragmentDirectives :: Directives RAW -> FragmentValidator s (Directives VALID)
-validateFragmentDirectives _ = pure [] --TODO: validate fragment directives
+validateFragmentDirectives _ = pure empty --TODO: validate fragment directives
 
 castFragmentType ::
-  Maybe FieldName ->
+  Maybe FragmentName ->
   Position ->
   [TypeName] ->
   Fragment s ->
@@ -107,7 +107,7 @@ castFragmentType key position typeMembers fragment@Fragment {fragmentType}
   | fragmentType `elem` typeMembers = pure fragment
   | otherwise = failure $ cannotBeSpreadOnType key fragmentType position typeMembers
 
-resolveSpread :: [TypeName] -> Ref FieldName -> FragmentValidator s (Fragment s)
+resolveSpread :: [TypeName] -> Ref FragmentName -> FragmentValidator s (Fragment s)
 resolveSpread allowedTargets ref@Ref {refName, refPosition} =
   askFragments
     >>= selectKnown ref
@@ -115,6 +115,5 @@ resolveSpread allowedTargets ref@Ref {refName, refPosition} =
 
 selectFragmentType :: Fragment RAW -> FragmentValidator s (TypeDefinition IMPLEMENTABLE VALID)
 selectFragmentType fr@Fragment {fragmentType, fragmentPosition} = do
-  (schema :: Schema VALID) <- askSchema
-  typeDef <- selectKnown (Ref fragmentType fragmentPosition) schema
+  typeDef <- askTypeDefinitions >>= selectKnown (Ref fragmentType fragmentPosition)
   constraint IMPLEMENTABLE fr typeDef

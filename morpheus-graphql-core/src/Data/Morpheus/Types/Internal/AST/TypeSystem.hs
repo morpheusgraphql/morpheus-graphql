@@ -23,14 +23,13 @@
 module Data.Morpheus.Types.Internal.AST.TypeSystem
   ( ScalarDefinition (..),
     DataEnum,
-    DataUnion,
+    UnionTypeDefinition,
     TypeContent (..),
     TypeDefinition (..),
     Schema (..),
     DataEnumValue (..),
-    TypeLib,
+    TypeDefinitions,
     TypeCategory,
-    DataInputUnion,
     mkEnumContent,
     mkUnionContent,
     mkType,
@@ -50,32 +49,38 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     possibleInterfaceTypes,
     defineSchemaWith,
     isPossibleInterfaceType,
+    typeDefinitions,
+    lookupDataType,
   )
 where
 
 -- MORPHEUS
 
-import Data.Morpheus.Error.NameCollision
-  ( NameCollision (..),
+-- MORPHEUS
+
+import qualified Data.HashMap.Lazy as HM
+import Data.Mergeable
+  ( IsMap (lookup),
+    Merge (..),
+    NameCollision (..),
+  )
+import Data.Mergeable.SafeHashMap
+  ( SafeHashMap,
+    toHashMap,
   )
 import Data.Morpheus.Ext.OrdMap
   ( OrdMap,
   )
-import Data.Morpheus.Ext.SafeHashMap
-  ( SafeHashMap,
-    insert,
-  )
-import Data.Morpheus.Ext.SemigroupM
-  ( (<:>),
-    SemigroupM (..),
-  )
 import Data.Morpheus.Internal.Utils
-  ( Elems (..),
+  ( (<:>),
     Empty (..),
     Failure (..),
-    FromElems (..),
+    IsMap (..),
     KeyOf (..),
-    Selectable (..),
+    insert,
+    selectOr,
+    toPair,
+    unsafeFromList,
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
@@ -97,9 +102,9 @@ import Data.Morpheus.Types.Internal.AST.Error
     msgValidation,
   )
 import Data.Morpheus.Types.Internal.AST.Fields
-  ( Directive,
-    DirectiveDefinition (..),
+  ( DirectiveDefinition (..),
     Directives,
+    DirectivesDefinition,
     FieldsDefinition,
   )
 import Data.Morpheus.Types.Internal.AST.Name
@@ -137,8 +142,7 @@ import Data.Morpheus.Types.Internal.AST.TypeCategory
     type (<=?),
   )
 import Data.Morpheus.Types.Internal.AST.Union
-  ( DataInputUnion,
-    DataUnion,
+  ( UnionTypeDefinition,
     mkInputUnionFields,
     mkUnionMember,
   )
@@ -195,7 +199,7 @@ instance Lift ScalarDefinition where
 data DataEnumValue s = DataEnumValue
   { enumDescription :: Maybe Description,
     enumName :: TypeName,
-    enumDirectives :: [Directive s]
+    enumDirectives :: Directives s
   }
   deriving (Show, Lift, Eq)
 
@@ -211,11 +215,11 @@ instance RenderGQL (DataEnumValue s) where
 --    OperationType: NamedType
 
 data Schema (s :: Stage) = Schema
-  { types :: TypeLib s,
+  { types :: TypeDefinitions s,
     query :: TypeDefinition OBJECT s,
     mutation :: Maybe (TypeDefinition OBJECT s),
     subscription :: Maybe (TypeDefinition OBJECT s),
-    directiveDefinitions :: [DirectiveDefinition s]
+    directiveDefinitions :: DirectivesDefinition s
   }
   deriving (Show, Lift)
 
@@ -223,17 +227,15 @@ instance
   ( Monad m,
     Failure ValidationErrors m
   ) =>
-  SemigroupM
-    m
-    (Schema s)
+  Merge m (Schema s)
   where
-  mergeM _ s1 s2 =
+  merge s1 s2 =
     Schema
-      <$> (types s1 <:> types s2)
+      <$> merge (types s1) (types s2)
       <*> mergeOperation (query s1) (query s2)
       <*> mergeOptional (mutation s1) (mutation s2)
       <*> mergeOptional (subscription s1) (subscription s2)
-      <*> pure (directiveDefinitions s1 <> directiveDefinitions s2)
+      <*> directiveDefinitions s1 <:> directiveDefinitions s2
 
 mergeOptional ::
   (Monad m, Failure ValidationErrors m) =>
@@ -253,7 +255,7 @@ mergeOperation
   TypeDefinition {typeContent = DataObject i1 fields1}
   TypeDefinition {typeContent = DataObject i2 fields2, ..} =
     do
-      fields <- fields1 <:> fields2
+      fields <- merge fields1 fields2
       pure $ TypeDefinition {typeContent = DataObject (i1 <> i2) fields, ..}
 
 data SchemaDefinition = SchemaDefinition
@@ -263,14 +265,10 @@ data SchemaDefinition = SchemaDefinition
   deriving (Show)
 
 instance RenderGQL SchemaDefinition where
-  renderGQL = renderSchemaDefinition . elems . unSchemaDefinition
+  renderGQL = renderSchemaDefinition . toList . unSchemaDefinition
 
 renderSchemaDefinition :: [RootOperationTypeDefinition] -> Rendering
 renderSchemaDefinition entries = "schema" <> renderObject entries <> newline
-
-instance Selectable OperationType RootOperationTypeDefinition SchemaDefinition where
-  selectOr fallback f key SchemaDefinition {unSchemaDefinition} =
-    selectOr fallback f key unSchemaDefinition
 
 instance NameCollision SchemaDefinition where
   nameCollision _ = "There can Be only One SchemaDefinition."
@@ -304,30 +302,25 @@ instance RenderGQL RootOperationTypeDefinition where
         rootOperationTypeDefinitionName
       } = renderEntry rootOperationType rootOperationTypeDefinitionName
 
-type TypeLib s = SafeHashMap TypeName (TypeDefinition ANY s)
+type TypeDefinitions s = SafeHashMap TypeName (TypeDefinition ANY s)
 
-instance Selectable TypeName (TypeDefinition ANY s) (Schema s) where
-  selectOr fb f name lib = maybe fb f (lookupDataType name lib)
-
-instance Elems (TypeDefinition ANY s) (Schema s) where
-  elems Schema {..} =
-    elems types
-      <> concatMap fromOperation [Just query, mutation, subscription]
-
-instance
-  ( Monad m,
-    Failure ValidationErrors m
-  ) =>
-  FromElems m (TypeDefinition ANY s) (Schema s)
+typeDefinitions :: Schema s -> HashMap TypeName (TypeDefinition ANY s)
+typeDefinitions schema@Schema {..} = toHashMap types <> HM.fromList operations
   where
-  fromElems types =
-    traverse3
-      (popByKey types)
-      ( RootOperationTypeDefinition Query "Query",
-        RootOperationTypeDefinition Mutation "Mutation",
-        RootOperationTypeDefinition Subscription "Subscription"
-      )
-      >>= defineSchemaWith types
+    operations = map toPair $ rootTypeDefinitions schema
+
+rootTypeDefinitions :: Schema s -> [TypeDefinition ANY s]
+rootTypeDefinitions Schema {..} = map toAny $ catMaybes [Just query, mutation, subscription]
+
+mkSchema :: (Monad m, Failure ValidationErrors m) => [TypeDefinition ANY s] -> m (Schema s)
+mkSchema types =
+  traverse3
+    (popByKey types)
+    ( RootOperationTypeDefinition Query "Query",
+      RootOperationTypeDefinition Mutation "Mutation",
+      RootOperationTypeDefinition Subscription "Subscription"
+    )
+    >>= defineSchemaWith types
 
 defineSchemaWith ::
   ( Monad f,
@@ -352,29 +345,30 @@ excludeTypes exclusionTypes = filter ((`notElem` blacklist) . typeName)
     blacklist = fmap typeName (catMaybes exclusionTypes)
 
 withDirectives ::
-  [DirectiveDefinition s] ->
+  (Monad m, Failure [ValidationError] m) =>
+  DirectivesDefinition s ->
   Schema s ->
-  Schema s
-withDirectives dirs Schema {..} =
-  Schema
-    { directiveDefinitions = directiveDefinitions <> dirs,
-      ..
-    }
+  m (Schema s)
+withDirectives dirs Schema {..} = do
+  dirs' <- directiveDefinitions <:> dirs
+  pure $
+    Schema
+      { directiveDefinitions = dirs',
+        ..
+      }
 
 buildSchema ::
   (Monad m, Failure ValidationErrors m) =>
   ( Maybe SchemaDefinition,
     [TypeDefinition ANY s],
-    [DirectiveDefinition s]
+    DirectivesDefinition s
   ) ->
   m (Schema s)
-buildSchema (Nothing, types, dirs) = withDirectives dirs <$> fromElems types
+buildSchema (Nothing, types, dirs) = mkSchema types >>= withDirectives dirs
 buildSchema (Just schemaDef, types, dirs) =
-  withDirectives
-    dirs
-    <$> ( traverse3 selectOp (Query, Mutation, Subscription)
-            >>= defineSchemaWith types
-        )
+  traverse3 selectOp (Query, Mutation, Subscription)
+    >>= defineSchemaWith types
+    >>= withDirectives dirs
   where
     selectOp op = selectOperation schemaDef op types
 
@@ -400,8 +394,8 @@ selectOperation ::
   OperationType ->
   [TypeDefinition ANY s] ->
   f (Maybe (TypeDefinition OBJECT s))
-selectOperation schemaDef operationType lib =
-  selectOr (pure Nothing) (typeReference lib) operationType schemaDef
+selectOperation SchemaDefinition {unSchemaDefinition} operationType lib =
+  selectOr (pure Nothing) (typeReference lib) operationType unSchemaDefinition
 
 initTypeLib :: TypeDefinition OBJECT s -> Schema s
 initTypeLib query =
@@ -423,7 +417,7 @@ lookupDataType name Schema {types, query, mutation, subscription} =
   isType name query
     <|> (mutation >>= isType name)
     <|> (subscription >>= isType name)
-    <|> selectOr Nothing Just name types
+    <|> lookup name types
 
 -- 3.4 Types : https://graphql.github.io/graphql-spec/June2018/#sec-Types
 -------------------------------------------------------------------------
@@ -442,6 +436,12 @@ data TypeDefinition (a :: TypeCategory) (s :: Stage) = TypeDefinition
     typeContent :: TypeContent TRUE a s
   }
   deriving (Show, Lift, Eq)
+
+instance Ord (TypeDefinition k s) where
+  compare a b =
+    compare
+      (indexOf $ typeContent a)
+      (indexOf $ typeContent b)
 
 instance KeyOf TypeName (TypeDefinition a s) where
   keyOf = typeName
@@ -477,7 +477,10 @@ possibleInterfaceTypes ::
   TypeName ->
   Schema s ->
   [TypeDefinition ANY s]
-possibleInterfaceTypes name schema = mapMaybe (isPossibleInterfaceType name) (elems schema)
+possibleInterfaceTypes name schema =
+  mapMaybe
+    (isPossibleInterfaceType name)
+    (toList $ typeDefinitions schema)
 
 isPossibleInterfaceType ::
   TypeName ->
@@ -516,7 +519,7 @@ data
     } ->
     CondTypeContent INPUT_OBJECT a s
   DataInputUnion ::
-    { inputUnionMembers :: DataInputUnion s
+    { inputUnionMembers :: UnionTypeDefinition IN s
     } ->
     CondTypeContent IN a s
   DataObject ::
@@ -525,7 +528,7 @@ data
     } ->
     CondTypeContent OBJECT a s
   DataUnion ::
-    { unionMembers :: DataUnion s
+    { unionMembers :: UnionTypeDefinition OUT s
     } ->
     CondTypeContent OUT a s
   DataInterface ::
@@ -538,6 +541,15 @@ deriving instance Show (TypeContent a b s)
 deriving instance Eq (TypeContent a b s)
 
 deriving instance Lift (TypeContent a b s)
+
+indexOf :: TypeContent b a s -> Int
+indexOf DataScalar {} = 0
+indexOf DataEnum {} = 1
+indexOf DataInputObject {} = 2
+indexOf DataInputUnion {} = 3
+indexOf DataInterface {} = 4
+indexOf DataObject {} = 5
+indexOf DataUnion {} = 6
 
 instance Strictness (TypeContent TRUE k s) where
   isResolverType DataObject {} = True
@@ -589,7 +601,7 @@ mkType typeName typeContent =
   TypeDefinition
     { typeName,
       typeDescription = Nothing,
-      typeDirectives = [],
+      typeDirectives = empty,
       typeContent
     }
 
@@ -600,14 +612,14 @@ mkEnumContent :: (LEAF <=! a) => [TypeName] -> TypeContent TRUE a s
 mkEnumContent typeData = DataEnum (fmap mkEnumValue typeData)
 
 mkUnionContent :: [TypeName] -> TypeContent TRUE OUT s
-mkUnionContent typeData = DataUnion $ fmap mkUnionMember typeData
+mkUnionContent typeData = DataUnion $ unsafeFromList $ map (toPair . mkUnionMember) typeData
 
 mkEnumValue :: TypeName -> DataEnumValue s
 mkEnumValue enumName =
   DataEnumValue
     { enumName,
       enumDescription = Nothing,
-      enumDirectives = []
+      enumDirectives = empty
     }
 
 isLeaf :: TypeContent TRUE a s -> Bool
@@ -625,10 +637,6 @@ kindOf TypeDefinition {typeName, typeContent} = __kind typeContent
     __kind DataUnion {} = KindUnion
     __kind DataInputUnion {} = KindInputUnion
     __kind DataInterface {} = KindInterface
-
-fromOperation :: Maybe (TypeDefinition OBJECT s) -> [TypeDefinition ANY s]
-fromOperation (Just datatype) = [toAny datatype]
-fromOperation Nothing = []
 
 defineType ::
   ( Monad m,
@@ -672,7 +680,7 @@ hasDefaultOperationName
     } = show rootOperationType == T.unpack (unpackName name)
 
 instance RenderGQL (Schema s) where
-  renderGQL schema =
+  renderGQL schema@Schema {..} =
     intercalate newline (fmap renderGQL visibleTypes <> schemaDefinition)
     where
       schemaDefinition
@@ -680,11 +688,15 @@ instance RenderGQL (Schema s) where
         | otherwise = [renderSchemaDefinition entries]
       entries =
         catMaybes
-          [ RootOperationTypeDefinition Query . typeName <$> Just (query schema),
-            RootOperationTypeDefinition Mutation . typeName <$> mutation schema,
-            RootOperationTypeDefinition Subscription . typeName <$> subscription schema
+          [ RootOperationTypeDefinition Query . typeName <$> Just query,
+            RootOperationTypeDefinition Mutation . typeName <$> mutation,
+            RootOperationTypeDefinition Subscription . typeName <$> subscription
           ]
-      visibleTypes = filter (isNotSystemTypeName . typeName) (elems schema)
+      visibleTypes =
+        filter
+          (isNotSystemTypeName . typeName)
+          (sort $ toList types)
+          <> rootTypeDefinitions schema
 
 instance RenderGQL (TypeDefinition a s) where
   renderGQL TypeDefinition {typeName, typeContent} = __render typeContent <> newline

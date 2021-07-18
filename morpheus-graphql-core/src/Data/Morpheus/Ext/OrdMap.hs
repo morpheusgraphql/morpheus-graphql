@@ -14,32 +14,27 @@
 
 module Data.Morpheus.Ext.OrdMap
   ( OrdMap (..),
-    unsafeFromList,
   )
 where
 
 import qualified Data.HashMap.Lazy as HM
-import Data.Morpheus.Error.NameCollision (NameCollision (..))
-import Data.Morpheus.Ext.Elems (Elems (..))
-import Data.Morpheus.Ext.Empty (Empty (..))
-import Data.Morpheus.Ext.Map
+import Data.Mergeable
   ( Indexed (..),
+    IsMap (..),
+    Merge (..),
+    NameCollision (..),
     indexed,
   )
-import Data.Morpheus.Ext.SemigroupM
-  ( SemigroupM (..),
-  )
+import Data.Mergeable.IsMap (FromList (..))
+import Data.Morpheus.Ext.Empty (Empty (..))
 import Data.Morpheus.Internal.Utils
-  ( Collection (..),
-    Failure,
-    FromElems (..),
-    KeyOf (..),
-    Selectable (..),
+  ( Failure,
+    KeyOf,
     toPair,
   )
 import Data.Morpheus.Types.Internal.AST.Error (ValidationErrors)
 import Language.Haskell.TH.Syntax (Lift (..))
-import Relude
+import Relude hiding (fromList)
 
 -- OrdMap
 newtype OrdMap k a = OrdMap
@@ -70,25 +65,23 @@ instance (Eq k, Hashable k) => Foldable (OrdMap k) where
 getElements :: (Eq k, Hashable k) => OrdMap k b -> [b]
 getElements = fmap indexedValue . sortOn index . toList . mapEntries
 
-instance (KeyOf k a, Hashable k) => Collection a (OrdMap k a) where
-  singleton x = OrdMap $ HM.singleton (keyOf x) (Indexed 0 (keyOf x) x)
+instance (Eq k, Hashable k) => IsMap k (OrdMap k) where
+  unsafeFromList = OrdMap . HM.fromList . fmap withKey . indexed
+    where
+      withKey idx = (indexedKey idx, idx)
+  singleton k x = OrdMap $ HM.singleton k (Indexed 0 k x)
+  lookup key OrdMap {mapEntries} = indexedValue <$> lookup key mapEntries
 
-instance (Eq k, Hashable k) => Selectable k a (OrdMap k a) where
-  selectOr fb f key OrdMap {mapEntries} = maybe fb (f . indexedValue) (HM.lookup key mapEntries)
+instance (NameCollision a, Eq k, Hashable k, Monad m, Failure ValidationErrors m) => Merge m (OrdMap k a) where
+  merge (OrdMap x) (OrdMap y) = OrdMap <$> merge x y
 
-instance (NameCollision a, Monad m, KeyOf k a, Failure ValidationErrors m) => SemigroupM m (OrdMap k a) where
-  mergeM ref (OrdMap x) (OrdMap y) = OrdMap <$> mergeM ref x y
-
-instance (NameCollision a, Monad m, Failure ValidationErrors m, KeyOf k a, Hashable k) => FromElems m a (OrdMap k a) where
-  fromElems values = OrdMap <$> fromElems (indexed (toPair <$> values))
-
-instance (Eq k, Hashable k) => Elems a (OrdMap k a) where
-  elems = getElements
-
-unsafeFromList ::
-  (Hashable k, Eq k) =>
-  [(k, a)] ->
-  OrdMap k a
-unsafeFromList = OrdMap . HM.fromList . fmap withKey . indexed
+instance
+  ( NameCollision a,
+    Monad m,
+    Failure ValidationErrors m,
+    KeyOf k a,
+    Hashable k
+  ) =>
+  FromList m OrdMap k a
   where
-    withKey idx = (indexedKey idx, idx)
+  fromList = fmap OrdMap . fromList . map toPair . indexed

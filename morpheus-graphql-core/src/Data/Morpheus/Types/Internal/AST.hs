@@ -44,7 +44,7 @@ module Data.Morpheus.Types.Internal.AST
     DataEnum,
     FieldsDefinition,
     ArgumentDefinition (..),
-    DataUnion,
+    UnionTypeDefinition,
     ArgumentsDefinition,
     FieldDefinition (..),
     InputFieldsDefinition,
@@ -62,9 +62,8 @@ module Data.Morpheus.Types.Internal.AST
     Directive (..),
     ConsD (..),
     TypeCategory (..),
-    DataInputUnion,
     VariableContent (..),
-    TypeLib,
+    TypeDefinitions,
     initTypeLib,
     kindOf,
     toNullable,
@@ -106,11 +105,11 @@ module Data.Morpheus.Types.Internal.AST
     fieldsToArguments,
     mkConsEnum,
     Directives,
-    DirectiveDefinitions,
+    DirectivesDefinition,
     DirectiveDefinition (..),
     DirectiveLocation (..),
     FieldContent (..),
-    fieldContentArgs,
+    fieldArguments,
     mkType,
     mkObjectField,
     UnionMember (..),
@@ -154,11 +153,13 @@ module Data.Morpheus.Types.Internal.AST
     atPositions,
     mapError,
     readErrorMessage,
+    typeDefinitions,
+    FragmentName,
   )
 where
 
+import Data.Mergeable.SafeHashMap (SafeHashMap)
 import Data.Morpheus.Ext.OrdMap (OrdMap (..))
-import Data.Morpheus.Ext.SafeHashMap (SafeHashMap)
 import Data.Morpheus.Types.Internal.AST.Base
 import Data.Morpheus.Types.Internal.AST.DirectiveLocation (DirectiveLocation (..))
 import Data.Morpheus.Types.Internal.AST.Error

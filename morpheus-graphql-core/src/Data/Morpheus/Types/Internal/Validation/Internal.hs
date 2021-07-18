@@ -22,7 +22,7 @@ where
 
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
-    selectBy,
+    fromElems,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
@@ -34,26 +34,22 @@ import Data.Morpheus.Types.Internal.AST
     OUT,
     Operation,
     Operation (..),
+    OrdMap,
     TRUE,
     ToOBJECT,
     Token,
-    TypeContent (..),
-    TypeContent,
-    TypeDefinition (..),
     TypeName,
     TypeRef,
-    Typed,
     UnionMember (..),
     VALID,
+    ValidationErrors,
     fromAny,
     fromCategory,
     getOperationDataType,
     msgInternal,
-    possibleInterfaceTypes,
     typeConName,
-    typed,
-    untyped,
   )
+import Data.Morpheus.Types.Internal.AST.TypeSystem
 import Data.Morpheus.Types.Internal.Validation.Validator
   ( MonadContext,
     SelectionValidator,
@@ -77,7 +73,7 @@ __askType ::
   Constraints m c cat s => TypeName -> m c (TypeDefinition cat s)
 __askType name =
   askSchema
-    >>= selectBy (unknownType name) name
+    >>= maybe (failure (unknownType name)) pure . lookupDataType name
     >>= kindConstraint
 
 askTypeMember ::
@@ -88,17 +84,17 @@ askTypeMember = askType2 . typed memberName >=> constraintObject
 
 askInterfaceTypes ::
   ( Failure InternalError (m c),
+    Failure ValidationErrors (m c),
     Monad (m c),
     MonadContext m s c,
     FromCategory (TypeContent TRUE) ANY IMPLEMENTABLE
   ) =>
   TypeDefinition IMPLEMENTABLE s ->
-  m c [TypeDefinition IMPLEMENTABLE s]
+  m c (OrdMap TypeName (TypeDefinition IMPLEMENTABLE s))
 askInterfaceTypes typeDef@TypeDefinition {typeName} =
-  (typeDef :)
-    <$> ( askSchema
-            >>= traverse (validate . fromCategory) . possibleInterfaceTypes typeName
-        )
+  askSchema
+    >>= traverse (validate . fromCategory) . possibleInterfaceTypes typeName
+    >>= fromElems . (typeDef :)
   where
     validate (Just x) = pure x
     validate Nothing = failure ("TODO: invalid interface Types" :: InternalError)

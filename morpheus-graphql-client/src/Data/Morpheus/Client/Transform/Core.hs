@@ -56,6 +56,7 @@ import Data.Morpheus.Types.Internal.AST
     lookupDeprecatedReason,
     msgInternal,
     toGQLError,
+    typeDefinitions,
   )
 import Relude
 
@@ -88,7 +89,9 @@ compileError :: InternalError -> GQLErrors
 compileError x = [toGQLError ("Unhandled Compile Time Error: \"" <> x <> "\" ;")]
 
 getType :: TypeName -> Converter (TypeDefinition ANY VALID)
-getType typename = asks fst >>= selectBy (compileError $ " can't find Type" <> msgInternal typename) typename
+getType typename =
+  asks (typeDefinitions . fst)
+    >>= selectBy (compileError $ " can't find Type" <> msgInternal typename) typename
 
 customScalarTypes :: TypeName -> [TypeName]
 customScalarTypes typeName

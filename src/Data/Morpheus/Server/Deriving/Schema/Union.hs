@@ -6,6 +6,7 @@ module Data.Morpheus.Server.Deriving.Schema.Union
 where
 
 import Data.List (partition)
+import Data.Morpheus.Internal.Utils (fromElems)
 import Data.Morpheus.Server.Deriving.Schema.Enum
   ( defineEnumUnit,
   )
@@ -61,7 +62,7 @@ mkUnionType ::
   [TypeName] ->
   [ConsRep (Maybe (FieldContent TRUE kind CONST))] ->
   SchemaT c (TypeContent TRUE kind CONST)
-mkUnionType p@InputType unionRef unionCons = DataInputUnion <$> typeMembers
+mkUnionType p@InputType unionRef unionCons = DataInputUnion <$> (typeMembers >>= fromElems)
   where
     (nullaryCons, cons) = partition isEmptyConstraint unionCons
     nullaryMembers :: [UnionMember IN CONST]
@@ -76,7 +77,7 @@ mkUnionType p@InputType unionRef unionCons = DataInputUnion <$> typeMembers
       where
         withRefs = fmap mkUnionMember . (unionRef <>)
 mkUnionType p@OutputType unionRef unionCons =
-  DataUnion . map mkUnionMember . (unionRef <>) <$> buildUnions p unionCons
+  DataUnion <$> (buildUnions p unionCons >>= fromElems . map mkUnionMember . (unionRef <>))
 
 buildUnions ::
   KindedType kind a ->

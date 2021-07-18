@@ -3,6 +3,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -14,11 +15,12 @@ where
 
 import Data.ByteString.Lazy (ByteString)
 import Data.Foldable (foldr')
-import Data.Morpheus.Error.NameCollision (NameCollision (..))
+import Data.Mergeable (NameCollision (..))
 import Data.Morpheus.Ext.Result
   ( Eventless,
     failure,
   )
+import Data.Morpheus.Internal.Utils (fromElems)
 import Data.Morpheus.Parsing.Internal.Internal
   ( Parser,
     processParser,
@@ -57,6 +59,7 @@ import Data.Morpheus.Types.Internal.AST
     Description,
     DirectiveDefinition (..),
     Directives,
+    DirectivesDefinition,
     FieldsDefinition,
     OBJECT,
     OUT,
@@ -185,7 +188,8 @@ unionTypeDefinition typeDescription =
       <*> (DataUnion <$> unionMemberTypes)
   where
     unionMemberTypes =
-      equal
+      lift . fromElems
+        =<< equal
         *> pipe (mkUnionMember <$> parseTypeName)
 {-# INLINEABLE unionTypeDefinition #-}
 
@@ -339,9 +343,9 @@ withSchemaDefinition ::
     [DirectiveDefinition CONST]
   ) ->
   Eventless
-    (Maybe SchemaDefinition, [TypeDefinition ANY s], [DirectiveDefinition CONST])
-withSchemaDefinition ([], t, dirs) = pure (Nothing, t, dirs)
-withSchemaDefinition ([x], t, dirs) = pure (Just x, t, dirs)
+    (Maybe SchemaDefinition, [TypeDefinition ANY s], DirectivesDefinition CONST)
+withSchemaDefinition ([], t, dirs) = (Nothing,t,) <$> fromElems dirs
+withSchemaDefinition ([x], t, dirs) = (Just x,t,) <$> fromElems dirs
 withSchemaDefinition (_ : xs, _, _) = failure (fmap nameCollision xs)
 
 parseRawTypeDefinitions :: Parser [RawTypeDefinition]
@@ -355,7 +359,7 @@ typeSystemDefinition ::
   Eventless
     ( Maybe SchemaDefinition,
       [TypeDefinition ANY CONST],
-      [DirectiveDefinition CONST]
+      DirectivesDefinition CONST
     )
 typeSystemDefinition =
   processParser parseRawTypeDefinitions

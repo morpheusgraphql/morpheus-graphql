@@ -25,6 +25,8 @@ module Data.Morpheus.Types.Internal.AST.Name
     intercalate,
     camelCaseTypeName,
     camelCaseFieldName,
+    NAME (..),
+    FragmentName,
   )
 where
 
@@ -64,6 +66,7 @@ import Relude hiding
 data NAME
   = TYPE
   | FIELD
+  | FRAGMENT
 
 newtype Name (t :: NAME) = Name {unpackName :: Text}
   deriving
@@ -103,6 +106,8 @@ instance RenderGQL (Name a) where
 type FieldName = Name 'FIELD
 
 type TypeName = Name 'TYPE
+
+type FragmentName = Name 'FRAGMENT
 
 intercalate :: Name t1 -> [Name t2] -> Name t3
 intercalate (Name x) = Name . T.intercalate x . fmap unpackName

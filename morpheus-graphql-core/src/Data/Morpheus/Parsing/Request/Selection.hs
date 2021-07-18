@@ -31,8 +31,7 @@ import Data.Morpheus.Parsing.Internal.Terms
     spreadLiteral,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( FieldName,
-    Fragment (..),
+  ( Fragment (..),
     Position,
     RAW,
     Ref (..),
@@ -40,6 +39,7 @@ import Data.Morpheus.Types.Internal.AST
     SelectionContent (..),
     SelectionSet,
   )
+import Data.Morpheus.Types.Internal.AST.Name
 import Relude
 import Text.Megaparsec
   ( label,
@@ -125,7 +125,7 @@ inlineFragment = label "InlineFragment" $ do
   fragmentPosition <- spreadLiteral
   InlineFragment <$> fragmentBody "INLINE_FRAGMENT" fragmentPosition
 
-fragmentBody :: FieldName -> Position -> Parser (Fragment RAW)
+fragmentBody :: FragmentName -> Position -> Parser (Fragment RAW)
 fragmentBody fragmentName fragmentPosition = label "FragmentBody" $ do
   fragmentType <- parseTypeCondition
   fragmentDirectives <- optionalDirectives

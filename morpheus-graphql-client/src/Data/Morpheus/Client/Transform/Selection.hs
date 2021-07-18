@@ -25,7 +25,6 @@ import Data.Morpheus.Internal.Ext
   )
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
-    elems,
     empty,
     keyOf,
     selectBy,
@@ -121,7 +120,7 @@ genConsD ::
       [TypeName]
     )
 genConsD path cName datatype selSet = do
-  (cFields, subTypes, requests) <- unzip3 <$> traverse genField (elems selSet)
+  (cFields, subTypes, requests) <- unzip3 <$> traverse genField (toList selSet)
   pure (ConsD {cName, cFields}, concat subTypes, concat requests)
   where
     genField ::
@@ -170,7 +169,7 @@ subTypesBySelection path dType Selection {selectionContent = UnionSelection inte
       unzip3
         <$> traverse
           getUnionType
-          ( UnionTag (typeName dType) interface : elems unionSelections
+          ( UnionTag (typeName dType) interface : toList unionSelections
           )
     pure
       ( ClientTypeDefinition
@@ -204,7 +203,7 @@ getFieldType
           { fieldName = "__typename",
             fieldDescription = Nothing,
             fieldType = mkTypeRef "String",
-            fieldDirectives = [],
+            fieldDirectives = empty,
             fieldContent = Nothing
           }
     | otherwise = withTypeContent typeContent

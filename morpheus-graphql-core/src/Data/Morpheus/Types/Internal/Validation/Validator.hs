@@ -52,6 +52,7 @@ module Data.Morpheus.Types.Internal.Validation.Validator
     ValidatorContext (..),
     FragmentValidator,
     withPosition,
+    askTypeDefinitions,
   )
 where
 
@@ -66,7 +67,8 @@ import Data.Morpheus.Rendering.RenderGQL
     render,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( Directive (..),
+  ( ANY,
+    Directive (..),
     FieldDefinition (..),
     FieldName,
     Fragments,
@@ -97,6 +99,7 @@ import Data.Morpheus.Types.Internal.AST
     mapError,
     msg,
     msgValidation,
+    typeDefinitions,
     unpackName,
   )
 import Data.Morpheus.Types.Internal.Config (Config (..))
@@ -247,6 +250,12 @@ askSchema ::
   ) =>
   m c (Schema s)
 askSchema = getGlobalContext schema
+
+askTypeDefinitions ::
+  ( MonadContext m s c
+  ) =>
+  m c (HashMap TypeName (TypeDefinition ANY s))
+askTypeDefinitions = typeDefinitions <$> getGlobalContext schema
 
 askVariables ::
   ( MonadContext m s c,

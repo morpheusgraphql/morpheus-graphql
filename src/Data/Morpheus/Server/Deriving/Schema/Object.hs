@@ -16,7 +16,8 @@ where
 
 import Data.Morpheus.App.Internal.Resolving (failure)
 import Data.Morpheus.Internal.Utils
-  ( singleton,
+  ( empty,
+    singleton,
   )
 import Data.Morpheus.Server.Deriving.Schema.Enum (defineEnumUnit)
 import Data.Morpheus.Server.Deriving.Schema.Internal
@@ -62,7 +63,7 @@ import Data.Morpheus.Utils.Kinded
     KindedType (..),
     outputType,
   )
-import Relude
+import Relude hiding (empty)
 
 defineObjectType ::
   KindedType kind a ->
@@ -100,7 +101,7 @@ repToFieldDefinition
     FieldDefinition
       { fieldName,
         fieldDescription = mempty,
-        fieldDirectives = mempty,
+        fieldDirectives = empty,
         fieldContent = fieldValue,
         ..
       }

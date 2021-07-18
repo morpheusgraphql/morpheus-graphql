@@ -5,7 +5,7 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Ext.Map
+module Data.Mergeable.Internal.Resolution
   ( Indexed (..),
     indexed,
     fromListT,

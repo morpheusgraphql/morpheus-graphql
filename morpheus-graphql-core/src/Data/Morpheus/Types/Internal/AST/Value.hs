@@ -43,16 +43,15 @@ import qualified Data.Aeson as A
   )
 import Data.Foldable (foldr')
 import qualified Data.HashMap.Lazy as M
-import Data.Morpheus.Error.NameCollision
+import Data.Mergeable
   ( NameCollision (..),
   )
 import Data.Morpheus.Ext.OrdMap
   ( OrdMap,
-    unsafeFromList,
   )
 import Data.Morpheus.Internal.Utils
   ( KeyOf (..),
-    elems,
+    unsafeFromList,
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
@@ -215,7 +214,7 @@ instance RenderGQL (Value a) where
     where
       entries
         | null xs = ""
-        | otherwise = space <> renderInputSeq (elems xs) <> space
+        | otherwise = space <> renderInputSeq (toList xs) <> space
   renderGQL (List list) = "[" <> renderInputSeq list <> "]"
 
 instance Msg (Value a) where
@@ -230,7 +229,7 @@ instance A.ToJSON (Value a) where
   toJSON (Enum x) = A.String (unpackName x)
   toJSON (Scalar x) = A.toJSON x
   toJSON (List x) = A.toJSON x
-  toJSON (Object fields) = A.object $ fmap toEntry (elems fields)
+  toJSON (Object fields) = A.object $ fmap toEntry (toList fields)
     where
       toEntry (ObjectEntry name value) = unpackName name A..= A.toJSON value
 
@@ -243,7 +242,7 @@ instance A.ToJSON (Value a) where
   toEncoding (Enum x) = A.toEncoding x
   toEncoding (Scalar x) = A.toEncoding x
   toEncoding (List x) = A.toEncoding x
-  toEncoding (Object ordMap) = A.pairs $ renderSeries encodeField (elems ordMap)
+  toEncoding (Object ordMap) = A.pairs $ renderSeries encodeField (toList ordMap)
     where
       encodeField (ObjectEntry key value) = unpackName key A..= value
 

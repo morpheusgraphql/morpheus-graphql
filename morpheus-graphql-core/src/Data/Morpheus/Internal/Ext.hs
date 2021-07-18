@@ -8,7 +8,6 @@ module Data.Morpheus.Internal.Ext
     ResultT (..),
     cleanEvents,
     resultOr,
-    SemigroupM (..),
     mapEvent,
     unpackEvents,
     sortErrors,
@@ -17,22 +16,10 @@ module Data.Morpheus.Internal.Ext
     resolveWith,
     runResolutionT,
     toEither,
+    Merge (..),
   )
 where
 
-import Data.Morpheus.Ext.KeyOf
-import Data.Morpheus.Ext.Map
-import qualified Data.Morpheus.Ext.OrdMap as OM
+import Data.Mergeable
 import Data.Morpheus.Ext.Result
-import qualified Data.Morpheus.Ext.SafeHashMap as SHM
-import Data.Morpheus.Ext.SemigroupM
-import Relude
-
-class UnsafeFromList f where
-  unsafeFromList :: (Hashable k, KeyOf k a, Eq k) => [(k, a)] -> f k a
-
-instance UnsafeFromList OM.OrdMap where
-  unsafeFromList = OM.unsafeFromList
-
-instance UnsafeFromList SHM.SafeHashMap where
-  unsafeFromList = SHM.unsafeFromList
+import Data.Morpheus.Internal.Utils ((<:>))

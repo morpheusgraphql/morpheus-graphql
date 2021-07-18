@@ -14,22 +14,20 @@ module Data.Morpheus.Validation.Query.Selection
   )
 where
 
+import Data.Mergeable
+  ( toNonEmpty,
+  )
 import Data.Morpheus.Error.Selection
   ( hasNoSubfields,
     subfieldsNotSelected,
   )
 import Data.Morpheus.Ext.Empty (Empty (..))
-import Data.Morpheus.Ext.MergeSet
-  ( toNonEmpty,
-  )
-import Data.Morpheus.Ext.SemigroupM
-  ( join,
-  )
 import Data.Morpheus.Internal.Utils
-  ( Elems (..),
-    Failure (..),
+  ( Failure (..),
     keyOf,
+    mergeConcat,
     singleton,
+    startHistory,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Arguments,
@@ -90,7 +88,7 @@ import Data.Morpheus.Validation.Query.UnionSelection
 import Relude hiding (empty, join)
 
 selectionsWithoutTypename :: SelectionSet VALID -> [Selection VALID]
-selectionsWithoutTypename = filter (("__typename" /=) . keyOf) . elems
+selectionsWithoutTypename = filter (("__typename" /=) . keyOf) . toList
 
 singleTopLevelSelection :: Operation RAW -> SelectionSet VALID -> SelectionValidator ()
 singleTopLevelSelection Operation {operationType = Subscription, operationName} selSet =
@@ -172,9 +170,9 @@ validateSelectionSet ::
   SelectionSet RAW ->
   FragmentValidator s (SelectionSet VALID)
 validateSelectionSet typeDef selectionSet =
-  traverse validateSelection (elems selectionSet)
+  traverse validateSelection (toList selectionSet)
     >>= toNonEmpty . catMaybes
-    >>= join
+    >>= startHistory . mergeConcat
   where
     -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
     validateSelection :: Selection RAW -> FragmentValidator s (Maybe (SelectionSet VALID))

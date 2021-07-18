@@ -13,18 +13,19 @@ module Data.Morpheus.Types.Internal.AST.Union
   ( constraintInputUnion,
     mkUnionMember,
     mkNullaryMember,
-    DataUnion,
-    DataInputUnion,
+    UnionTypeDefinition,
     UnionMember (..),
     mkInputUnionFields,
     getInputUnionValue,
   )
 where
 
+import Data.Mergeable
+import Data.Morpheus.Ext.OrdMap
 import Data.Morpheus.Internal.Utils
-  ( Failure (..),
+  ( Empty (empty),
+    Failure (..),
     KeyOf (..),
-    elems,
     selectBy,
   )
 import Data.Morpheus.Rendering.RenderGQL
@@ -34,6 +35,7 @@ import Data.Morpheus.Types.Internal.AST.Base
   ( Message (..),
     Msg (..),
   )
+import Data.Morpheus.Types.Internal.AST.Error (msgValidation)
 import Data.Morpheus.Types.Internal.AST.Fields
   ( FieldDefinition (..),
     FieldsDefinition,
@@ -52,7 +54,6 @@ import Data.Morpheus.Types.Internal.AST.Type
   )
 import Data.Morpheus.Types.Internal.AST.TypeCategory
   ( IN,
-    OUT,
     TypeCategory,
   )
 import Data.Morpheus.Types.Internal.AST.Value
@@ -61,7 +62,7 @@ import Data.Morpheus.Types.Internal.AST.Value
     Value (..),
   )
 import Language.Haskell.TH.Syntax (Lift (..))
-import Relude
+import Relude hiding (empty)
 
 mkUnionMember :: TypeName -> UnionMember cat s
 mkUnionMember name = UnionMember name False
@@ -75,9 +76,12 @@ data UnionMember (cat :: TypeCategory) (s :: Stage) = UnionMember
   }
   deriving (Show, Lift, Eq)
 
-type DataUnion s = [UnionMember OUT s]
+instance NameCollision (UnionMember c s) where
+  nameCollision UnionMember {memberName} =
+    "There can Be only one union variant named "
+      <> msgValidation memberName
 
-type DataInputUnion s = [UnionMember IN s]
+type UnionTypeDefinition k s = OrdMap TypeName (UnionMember k s)
 
 instance RenderGQL (UnionMember cat s) where
   renderGQL = renderGQL . memberName
@@ -93,29 +97,29 @@ getInputUnionValue ::
   Object stage ->
   Either Message (TypeName, Value stage)
 getInputUnionValue hm =
-  case elems hm of
+  case toList hm of
     [] -> Left "Exclusive input objects must provide a value for at least one field."
     [ObjectEntry name value] -> pure (coerce name, value)
     _ -> failure ("Exclusive input objects are not allowed to provide values for multiple fields." :: Message)
 
 constraintInputUnion ::
   forall stage schemaStage.
-  [UnionMember IN schemaStage] ->
+  UnionTypeDefinition IN schemaStage ->
   Object stage ->
   Either Message (UnionMember IN schemaStage, Value stage)
 constraintInputUnion tags hm = do
   (name, value) <- getInputUnionValue hm
   (,value) <$> isPossibleInputUnion tags name
 
-isPossibleInputUnion :: [UnionMember IN s] -> TypeName -> Either Message (UnionMember IN s)
+isPossibleInputUnion :: UnionTypeDefinition IN s -> TypeName -> Either Message (UnionMember IN s)
 isPossibleInputUnion tags name =
   selectBy
     (msg name <> " is not possible union type")
     name
     tags
 
-mkInputUnionFields :: [UnionMember IN s] -> FieldsDefinition IN s
-mkInputUnionFields = unsafeFromFields . fmap mkInputUnionField
+mkInputUnionFields :: Foldable t => t (UnionMember IN s) -> FieldsDefinition IN s
+mkInputUnionFields = unsafeFromFields . fmap mkInputUnionField . toList
 
 mkInputUnionField :: UnionMember IN s -> FieldDefinition IN s
 mkInputUnionField UnionMember {memberName, nullary} =
@@ -128,7 +132,7 @@ mkInputUnionField UnionMember {memberName, nullary} =
           { typeConName,
             typeWrappers = mkMaybeType
           },
-      fieldDirectives = []
+      fieldDirectives = empty
     }
   where
     typeConName

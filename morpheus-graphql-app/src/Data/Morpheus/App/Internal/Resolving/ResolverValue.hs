@@ -37,7 +37,7 @@ import Data.Morpheus.App.Internal.Resolving.ResolverState
 import Data.Morpheus.Error (subfieldsNotSelected)
 import Data.Morpheus.Internal.Ext
   ( (<:>),
-    SemigroupM (..),
+    Merge (..),
   )
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
@@ -50,7 +50,6 @@ import Data.Morpheus.Types.Internal.AST
     GQLErrors,
     InternalError,
     ObjectEntry (..),
-    Ref,
     ScalarValue (..),
     Selection (..),
     SelectionContent (..),
@@ -92,13 +91,13 @@ instance
     Failure InternalError f,
     Failure InternalError m
   ) =>
-  SemigroupM f (ResolverValue m)
+  Merge f (ResolverValue m)
   where
-  mergeM _ ResNull ResNull = pure ResNull
-  mergeM _ ResScalar {} x@ResScalar {} = pure x
-  mergeM _ ResEnum {} x@ResEnum {} = pure x
-  mergeM p (ResObject x) (ResObject y) = ResObject <$> mergeM p x y
-  mergeM _ _ _ = failure ("can't merge: incompatible resolvers" :: InternalError)
+  merge ResNull ResNull = pure ResNull
+  merge ResScalar {} x@ResScalar {} = pure x
+  merge ResEnum {} x@ResEnum {} = pure x
+  merge (ResObject x) (ResObject y) = ResObject <$> merge x y
+  merge _ _ = failure ("can't merge: incompatible resolvers" :: InternalError)
 
 type ResolverEntry m = (FieldName, m (ResolverValue m))
 
@@ -115,20 +114,19 @@ instance
     Applicative f,
     Failure InternalError m
   ) =>
-  SemigroupM f (ResolverObject m)
+  Merge f (ResolverObject m)
   where
-  mergeM path (ResolverObject tyname x) (ResolverObject _ y) =
-    pure $ ResolverObject tyname (HM.unionWith (mergeResolver path) x y)
+  merge (ResolverObject tyname x) (ResolverObject _ y) =
+    pure $ ResolverObject tyname (HM.unionWith mergeResolver x y)
 
 mergeResolver ::
-  (Monad m, SemigroupM m a) =>
-  [Ref FieldName] ->
+  (Monad m, Merge m a) =>
   m a ->
   m a ->
   m a
-mergeResolver path a b = do
+mergeResolver a b = do
   a' <- a
-  b >>= mergeM path a'
+  b >>= merge a'
 
 lookupRes ::
   ( Monad m,

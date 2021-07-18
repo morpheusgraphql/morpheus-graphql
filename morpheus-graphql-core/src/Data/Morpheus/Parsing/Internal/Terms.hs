@@ -33,11 +33,12 @@ module Data.Morpheus.Parsing.Internal.Terms
 where
 
 import Data.ByteString.Lazy.Internal (ByteString)
+import Data.Mergeable.IsMap (FromList)
 import Data.Morpheus.Ext.Result (Eventless)
 import Data.Morpheus.Internal.Utils
   ( Empty (..),
-    FromElems (..),
     KeyOf,
+    fromElems,
     fromElems,
     fromLBS,
   )
@@ -61,6 +62,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeWrapper (..),
     packName,
   )
+import Data.Morpheus.Types.Internal.AST.Name (Name)
 import Relude hiding (ByteString, empty, many)
 import Text.Megaparsec
   ( (<?>),
@@ -163,7 +165,7 @@ name =
     {-# INLINE isContinueChar #-}
 {-# INLINE name #-}
 
-parseName :: Parser FieldName
+parseName :: Parser (Name t)
 parseName = packName <$> name
 {-# INLINE parseName #-}
 
@@ -213,7 +215,7 @@ collection :: Parser a -> Parser [a]
 collection entry = braces (entry `sepEndBy` ignoredTokens)
 {-# INLINE collection #-}
 
-setOf :: (FromElems Eventless a coll, KeyOf k a) => Parser a -> Parser coll
+setOf :: (FromList Eventless map k a, KeyOf k a) => Parser a -> Parser (map k a)
 setOf = collection >=> lift . fromElems
 {-# INLINE setOf #-}
 
@@ -225,7 +227,7 @@ parseNonNull :: Parser Bool
 parseNonNull = (symbol BANG $> True) <|> pure False
 {-# INLINE parseNonNull #-}
 
-uniqTuple :: (FromElems Eventless a coll, KeyOf k a) => Parser a -> Parser coll
+uniqTuple :: (FromList Eventless map k a, KeyOf k a) => Parser a -> Parser (map k a)
 uniqTuple parser =
   label "Tuple" $
     parens
@@ -233,7 +235,13 @@ uniqTuple parser =
       >>= lift . fromElems
 {-# INLINE uniqTuple #-}
 
-uniqTupleOpt :: (FromElems Eventless a coll, Empty coll, KeyOf k a) => Parser a -> Parser coll
+uniqTupleOpt ::
+  ( FromList Eventless map k a,
+    Empty (map k a),
+    KeyOf k a
+  ) =>
+  Parser a ->
+  Parser (map k a)
 uniqTupleOpt x = uniqTuple x <|> pure empty
 {-# INLINE uniqTupleOpt #-}
 

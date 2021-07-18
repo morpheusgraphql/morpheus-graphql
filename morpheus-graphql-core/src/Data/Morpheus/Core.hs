@@ -32,9 +32,7 @@ import Data.ByteString.Lazy.Char8
 import Data.Morpheus.Ext.Result
   ( Eventless,
   )
-import Data.Morpheus.Ext.SemigroupM
-  ( (<:>),
-  )
+import Data.Morpheus.Internal.Utils ((<:>))
 import Data.Morpheus.Parser
   ( parseRequest,
     parseRequestWith,

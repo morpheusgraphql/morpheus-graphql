@@ -12,6 +12,7 @@ module Data.Morpheus.Validation.Query.FragmentPreconditions
   )
 where
 
+import Data.Mergeable
 import Data.Morpheus.Error.Fragment
   ( cannotSpreadWithinItself,
   )
@@ -23,12 +24,11 @@ import Data.Morpheus.Internal.Graph
   )
 import Data.Morpheus.Internal.Utils
   ( Failure (..),
-    elems,
     selectOr,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( FieldName,
-    Fragment (..),
+  ( Fragment (..),
+    FragmentName,
     Fragments,
     RAW,
     Ref (..),
@@ -46,18 +46,18 @@ import Relude
 checkUnusedFragments :: SelectionSet RAW -> BaseValidator ()
 checkUnusedFragments selectionSet = do
   fragments <- askFragments
-  checkUnused
-    (usedFragments fragments (elems selectionSet))
-    (elems fragments)
+  usages <- usedFragments fragments selectionSet
+  checkUnused usages fragments
 
-usedFragments :: Fragments RAW -> [Selection RAW] -> [Node FieldName]
-usedFragments fragments = concatMap findAllUses
+usedFragments :: Fragments RAW -> SelectionSet RAW -> BaseValidator (HashMap FragmentName [Node FragmentName])
+usedFragments fragments = collect . map toEntry . concatMap findAllUses . toList
   where
-    findUsesSelectionContent :: SelectionContent RAW -> [Node FieldName]
+    toEntry (Ref x y) = (x, [Ref x y])
+    findUsesSelectionContent :: SelectionContent RAW -> [Node FragmentName]
     findUsesSelectionContent (SelectionSet selectionSet) =
       concatMap findAllUses selectionSet
     findUsesSelectionContent SelectionField = []
-    findAllUses :: Selection RAW -> [Node FieldName]
+    findAllUses :: Selection RAW -> [Node FragmentName]
     findAllUses Selection {selectionContent} =
       findUsesSelectionContent selectionContent
     findAllUses (InlineFragment Fragment {fragmentSelection}) =
@@ -77,15 +77,15 @@ checkFragmentPreconditions selection =
   (exploreSpreads >>= cycleChecking (failure . cannotSpreadWithinItself))
     *> checkUnusedFragments selection
 
-exploreSpreads :: BaseValidator (Graph FieldName)
-exploreSpreads = fmap exploreFragmentSpreads . elems <$> askFragments
+exploreSpreads :: BaseValidator (Graph FragmentName)
+exploreSpreads = fmap exploreFragmentSpreads . toList <$> askFragments
 
-exploreFragmentSpreads :: Fragment RAW -> Edges FieldName
+exploreFragmentSpreads :: Fragment RAW -> Edges FragmentName
 exploreFragmentSpreads Fragment {fragmentName, fragmentSelection, fragmentPosition} =
   (Ref fragmentName fragmentPosition, concatMap scanSpread fragmentSelection)
 
 class ScanSpread a where
-  scanSpread :: a -> [Node FieldName]
+  scanSpread :: a -> [Node FragmentName]
 
 instance ScanSpread (Selection RAW) where
   scanSpread Selection {selectionContent} =

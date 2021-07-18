@@ -17,6 +17,7 @@ module Data.Morpheus.Parsing.Internal.Pattern
 where
 
 import Data.ByteString.Lazy.Internal (ByteString)
+import Data.Morpheus.Internal.Utils (fromElems)
 import Data.Morpheus.Parsing.Internal.Arguments
   ( maybeArguments,
   )
@@ -47,6 +48,7 @@ import Data.Morpheus.Types.Internal.AST
     Description,
     Directive (..),
     DirectiveLocation (..),
+    Directives,
     FieldContent (..),
     FieldDefinition (..),
     FieldName,
@@ -145,7 +147,7 @@ mkField ::
   FieldName ->
   Maybe (FieldContent TRUE cat s) ->
   TypeRef ->
-  [Directive s] ->
+  Directives s ->
   FieldDefinition cat s
 mkField fieldDescription fieldName fieldContent fieldType fieldDirectives =
   FieldDefinition {..}
@@ -168,8 +170,8 @@ inputFieldsDefinition = label "InputFieldsDefinition" $ setOf inputValueDefiniti
 -- Directives[Const]
 -- Directive[Const](list)
 --
-optionalDirectives :: Parse (Value s) => Parser [Directive s]
-optionalDirectives = label "Directives" $ many directive
+optionalDirectives :: Parse (Value s) => Parser (Directives s)
+optionalDirectives = label "Directives" $ many directive >>= lift . fromElems
 {-# INLINEABLE optionalDirectives #-}
 
 -- Directive[Const]

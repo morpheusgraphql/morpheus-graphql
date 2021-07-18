@@ -1,7 +1,7 @@
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -9,9 +9,8 @@
 module Data.Morpheus.Internal.Utils
   ( camelCaseTypeName,
     camelCaseFieldName,
-    Collection (..),
-    Selectable (..),
-    FromElems (..),
+    singleton,
+    IsMap,
     Failure (..),
     KeyOf (..),
     toPair,
@@ -23,10 +22,18 @@ module Data.Morpheus.Internal.Utils
     fromLBS,
     toLBS,
     mergeT,
-    Elems (..),
-    size,
-    failOnDuplicates,
     Empty (..),
+    elems,
+    HistoryT,
+    addPath,
+    startHistory,
+    mergeConcat,
+    (<:>),
+    selectOr,
+    member,
+    unsafeFromList,
+    insert,
+    fromElems,
   )
 where
 
@@ -34,23 +41,27 @@ import Data.ByteString.Lazy (ByteString)
 import Data.Char
   ( toLower,
   )
-import qualified Data.HashMap.Lazy as HM
-import Data.Morpheus.Error.NameCollision (NameCollision (..))
-import Data.Morpheus.Ext.Elems (Elems (..), size)
+import Data.Mergeable
+  ( IsMap,
+    Merge (merge),
+    NameCollision (..),
+    ResolutionT,
+    fromListT,
+    mergeConcat,
+  )
+import Data.Mergeable.IsMap (FromList (..), member, selectBy, selectOr, unsafeFromList)
+import qualified Data.Mergeable.IsMap as M
+import Data.Mergeable.SafeHashMap (SafeHashMap)
 import Data.Morpheus.Ext.Empty
 import Data.Morpheus.Ext.Failure (Failure (..))
 import Data.Morpheus.Ext.KeyOf (KeyOf (..), toPair)
-import Data.Morpheus.Ext.Map
-  ( ResolutionT,
-    fromListT,
-    runResolutionT,
-  )
-import Data.Morpheus.Ext.Selectable
+import Data.Morpheus.Types.Internal.AST.Base (Ref)
 import Data.Morpheus.Types.Internal.AST.Error
   ( ValidationErrors,
   )
 import Data.Morpheus.Types.Internal.AST.Name
-  ( Name (..),
+  ( FieldName,
+    Name (..),
     TypeName,
     camelCaseFieldName,
     camelCaseTypeName,
@@ -63,7 +74,19 @@ import Relude hiding
   ( ByteString,
     decodeUtf8,
     encodeUtf8,
+    fromList,
   )
+
+(<:>) :: (Merge (HistoryT m) a, Monad m) => a -> a -> m a
+x <:> y = startHistory (merge x y)
+
+addPath :: MonadReader [a1] m => a1 -> m a2 -> m a2
+addPath p = local (\xs -> xs <> [p])
+
+type HistoryT = ReaderT [Ref FieldName]
+
+startHistory :: HistoryT m a -> m a
+startHistory x = runReaderT x []
 
 toLBS :: Text -> ByteString
 toLBS = encodeUtf8 . LT.fromStrict
@@ -86,50 +109,45 @@ stripFieldNamespace prefix = __uncapitalize . dropPrefix prefix
     __uncapitalize [] = []
     __uncapitalize (x : xs) = toLower x : xs
 
---(KEY v ~ k) =>
-class Collection a coll | coll -> a where
-  singleton :: a -> coll
+{-# DEPRECATED elems "use Foldable.toList" #-}
+elems :: Foldable t => t a -> [a]
+elems = toList
 
-instance Collection a [a] where
-  singleton x = [x]
-
-instance Collection a (NonEmpty a) where
-  singleton x = x :| []
-
-instance KeyOf k v => Collection v (HashMap k v) where
-  singleton x = HM.singleton (keyOf x) x
+singleton :: (IsMap k m, KeyOf k a) => a -> m a
+singleton x = M.singleton (keyOf x) x
 
 traverseCollection ::
-  ( Monad f,
+  ( Monad m,
+    Failure ValidationErrors m,
     KeyOf k b,
-    Elems a (t a),
-    FromElems f b (t' b),
-    Failure ValidationErrors f
+    FromList m map k b,
+    Foldable t
   ) =>
-  (a -> f b) ->
+  (a -> m b) ->
   t a ->
-  f (t' b)
-traverseCollection f a = fromElems =<< traverse f (elems a)
+  m (map k b)
+traverseCollection f a = fromElems =<< traverse f (toList a)
 
--- list Like Collections
-class FromElems m a coll | coll -> a where
-  fromElems :: [a] -> m coll
-
-mergeT :: (KeyOf k a, Monad m, Elems a c) => c -> c -> ResolutionT k a c m c
-mergeT x y = fromListT (toPair <$> (elems x <> elems y))
-
-instance
-  ( NameCollision a,
+fromElems ::
+  ( Monad m,
     Failure ValidationErrors m,
     KeyOf k a,
-    Monad m
+    FromList m map k a
   ) =>
-  FromElems m a (HashMap k a)
-  where
-  fromElems xs = runResolutionT (fromListT (toPair <$> xs)) HM.fromList failOnDuplicates
+  [a] ->
+  m (map k a)
+fromElems = fromList . map toPair
 
--- Merge Object with of Failure as an Option
-failOnDuplicates :: (Failure ValidationErrors m, NameCollision a) => NonEmpty a -> m a
-failOnDuplicates (x :| xs)
-  | null xs = pure x
-  | otherwise = failure $ fmap nameCollision (x : xs)
+insert ::
+  ( NameCollision a,
+    KeyOf k a,
+    Monad m,
+    Failure ValidationErrors m
+  ) =>
+  a ->
+  SafeHashMap k a ->
+  m (SafeHashMap k a)
+insert x = merge (singleton x)
+
+mergeT :: (KeyOf k a, Foldable t, Monad m) => t a -> t a -> ResolutionT k a c m c
+mergeT x y = fromListT (toPair <$> (toList x <> toList y))

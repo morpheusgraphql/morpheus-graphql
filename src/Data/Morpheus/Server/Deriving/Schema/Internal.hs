@@ -36,6 +36,7 @@ import Data.Morpheus.App.Internal.Resolving
   ( Eventless,
     Result (..),
   )
+import Data.Morpheus.Internal.Utils (empty)
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     TypeData (..),
@@ -61,13 +62,13 @@ import Data.Morpheus.Utils.Kinded
     KindedType (..),
   )
 import Language.Haskell.TH (Exp, Q)
-import Relude
+import Relude hiding (empty)
 
 lookupDescription :: GQLType a => f a -> Text -> Maybe Description
 lookupDescription proxy name = name `M.lookup` getDescriptions proxy
 
 lookupDirectives :: GQLType a => f a -> Text -> Directives CONST
-lookupDirectives proxy name = fromMaybe [] $ name `M.lookup` getDirectives proxy
+lookupDirectives proxy name = fromMaybe empty $ name `M.lookup` getDirectives proxy
 
 lookupFieldContent ::
   GQLType a =>
@@ -101,6 +102,6 @@ updateByContent f proxy =
         ( TypeDefinition
             (description proxy)
             (gqlTypeName (__typeData proxy))
-            []
+            empty
         )
         . f

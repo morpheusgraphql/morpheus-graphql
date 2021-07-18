@@ -20,7 +20,7 @@ import Data.Morpheus.Types.Internal.AST.Error
     msgValidation,
   )
 import Data.Morpheus.Types.Internal.AST.Name
-  ( FieldName,
+  ( FragmentName,
     TypeName,
   )
 import Relude
@@ -37,7 +37,7 @@ import Relude
     {...H} -> "Unknown fragment \"H\"."
 -}
 
-cannotSpreadWithinItself :: NonEmpty (Ref FieldName) -> ValidationError
+cannotSpreadWithinItself :: NonEmpty (Ref FragmentName) -> ValidationError
 cannotSpreadWithinItself (fr :| frs) =
   ( "Cannot spread fragment "
       <> msgValidation (refName fr)
@@ -48,7 +48,7 @@ cannotSpreadWithinItself (fr :| frs) =
     `atPositions` map refPosition (fr : frs)
 
 -- Fragment type mismatch -> "Fragment \"H\" cannot be spread here as objects of type \"Hobby\" can never be of type \"Experience\"."
-cannotBeSpreadOnType :: Maybe FieldName -> TypeName -> Position -> [TypeName] -> ValidationError
+cannotBeSpreadOnType :: Maybe FragmentName -> TypeName -> Position -> [TypeName] -> ValidationError
 cannotBeSpreadOnType key fragmentType position typeMembers =
   ( "Fragment "
       <> getName key

@@ -17,8 +17,6 @@ where
 
 import Data.Morpheus.Internal.Utils
   ( camelCaseTypeName,
-    elems,
-    singleton,
   )
 import Data.Morpheus.Server.Internal.TH.Types
   ( GQLTypeDefinition (..),
@@ -192,21 +190,21 @@ genTypeContent ::
 genTypeContent _ DataScalar {} = pure (ConsIN [])
 genTypeContent _ (DataEnum tags) = pure $ ConsIN (fmap mkConsEnum tags)
 genTypeContent typeName (DataInputObject fields) =
-  pure $ ConsIN $ mkObjectCons typeName $ map toServerField $ elems fields
+  pure $ ConsIN $ mkObjectCons typeName $ map toServerField $ toList fields
 genTypeContent _ DataInputUnion {} = fail "Input Unions not Supported"
 genTypeContent typeName DataInterface {interfaceFields} =
   ConsOUT
     <$> ((<>) <$> genArgumentTypes interfaceFields <*> genInterfaceUnion typeName)
     <*> ( mkObjectCons (mkInterfaceName typeName)
-            <$> traverse mkObjectField (elems interfaceFields)
+            <$> traverse mkObjectField (toList interfaceFields)
         )
 genTypeContent typeName DataObject {objectFields} =
   ConsOUT <$> genArgumentTypes objectFields
     <*> ( mkObjectCons typeName
-            <$> traverse mkObjectField (elems objectFields)
+            <$> traverse mkObjectField (toList objectFields)
         )
 genTypeContent typeName (DataUnion members) =
-  pure $ ConsOUT [] (fmap unionCon members)
+  pure $ ConsOUT [] (unionCon <$> toList members)
   where
     unionCon UnionMember {memberName} = mkUnionFieldDefinition typeName memberName
 
@@ -214,13 +212,13 @@ mkUnionFieldDefinition :: TypeName -> TypeName -> ServerConsD
 mkUnionFieldDefinition typeName memberName =
   mkCons
     cName
-    $ singleton
-      ServerFieldDefinition
+    [ ServerFieldDefinition
         { isParametrized = True,
           argumentsTypeName = Nothing,
           fieldName = coerce ("un" <> cName),
           fieldType = mkTypeRef memberName
         }
+    ]
   where
     cName = typeName <> memberName
 
@@ -232,7 +230,7 @@ data TypeContext s = TypeContext
 type ServerQ s = ReaderT (TypeContext s) Q
 
 genArgumentTypes :: FieldsDefinition OUT s -> ServerQ s [ServerTypeDefinition s]
-genArgumentTypes = fmap concat . traverse genArgumentType . elems
+genArgumentTypes = fmap concat . traverse genArgumentType . toList
 
 genArgumentType :: FieldDefinition OUT s -> ServerQ s [ServerTypeDefinition s]
 genArgumentType
@@ -242,7 +240,7 @@ genArgumentType
     }
     | not (null arguments) = do
       tName <- (fieldName &) <$> asks toArgsTypeName
-      let argumentFields = argument <$> elems arguments
+      let argumentFields = argument <$> toList arguments
       pure
         [ ServerTypeDefinition
             { tName,
@@ -319,7 +317,7 @@ instance
   Meta (FieldDefinition c s) v =>
   Meta (FieldsDefinition c s) v
   where
-  get = concatMap get . elems
+  get = concatMap get . toList
 
 instance Meta (FieldDefinition c s) Description where
   get FieldDefinition {fieldName, fieldDescription = Just x} = [(unpackName fieldName, x)]
@@ -331,7 +329,7 @@ instance Meta (FieldDefinition c s) (Directives s) where
     | otherwise = [(unpackName fieldName, fieldDirectives)]
 
 getInputFields :: TypeDefinition c s -> [FieldDefinition IN s]
-getInputFields TypeDefinition {typeContent = DataInputObject {inputObjectFields}} = elems inputObjectFields
+getInputFields TypeDefinition {typeContent = DataInputObject {inputObjectFields}} = toList inputObjectFields
 getInputFields _ = []
 
 getDefaultValue :: FieldDefinition c s -> Maybe (Text, Value s)

@@ -238,7 +238,7 @@ instance
       unionProxy :: KindedProxy OUT union
       unionProxy = KindedProxy
       getUnionNames :: TypeContent TRUE OUT CONST -> SchemaT OUT [TypeName]
-      getUnionNames DataUnion {unionMembers} = pure (memberName <$> unionMembers)
+      getUnionNames DataUnion {unionMembers} = pure $ toList $ memberName <$> unionMembers
       getUnionNames DataObject {} = pure [gqlTypeName (__typeData unionProxy)]
       getUnionNames _ = failure ["guarded type must be an union or object" :: ValidationError]
 

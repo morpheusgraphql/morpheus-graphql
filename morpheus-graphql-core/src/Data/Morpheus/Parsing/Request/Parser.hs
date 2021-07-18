@@ -16,9 +16,9 @@ import Data.HashMap.Lazy (toList)
 import Data.Morpheus.Ext.Result
   ( Eventless,
   )
-import Data.Morpheus.Ext.SafeHashMap (unsafeFromList)
 import Data.Morpheus.Internal.Utils
-  ( empty,
+  ( IsMap (unsafeFromList),
+    empty,
     fromElems,
     toLBS,
   )

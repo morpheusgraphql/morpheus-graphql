@@ -141,7 +141,7 @@ validateReq inputSchema config request = cleanEvents $ ResultT $ pure $ do
               selectionPosition = operationPosition operation,
               selectionAlias = Nothing,
               selectionContent = SelectionSet (operationSelection operation),
-              selectionDirectives = []
+              selectionDirectives = empty
             }
       }
 
