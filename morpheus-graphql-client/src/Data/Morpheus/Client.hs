@@ -35,7 +35,7 @@ import Data.Morpheus.Core
   ( parseFullSchema,
   )
 import Data.Morpheus.Internal.Ext
-  ( Eventless,
+  ( ValidationResult,
   )
 import Data.Morpheus.QuasiQuoter (gql)
 import Data.Morpheus.Types.GQLScalar
@@ -76,7 +76,7 @@ defineByIntrospectionFile' qFilePath args = qFilePath >>= flip defineByIntrospec
 defineByDocument :: IO ByteString -> (ExecutableDocument, String) -> Q [Dec]
 defineByDocument doc = defineQuery (schemaByDocument doc)
 
-schemaByDocument :: IO ByteString -> IO (Eventless (Schema VALID))
+schemaByDocument :: IO ByteString -> IO (ValidationResult (Schema VALID))
 schemaByDocument = fmap parseFullSchema
 
 defineByIntrospection :: IO ByteString -> (ExecutableDocument, String) -> Q [Dec]

@@ -120,7 +120,6 @@ module Data.Morpheus.Types.Internal.AST
     UnionSelection,
     SchemaDefinition (..),
     buildSchema,
-    InternalError,
     ValidationError,
     msgInternal,
     getOperationDataType,
@@ -129,7 +128,6 @@ module Data.Morpheus.Types.Internal.AST
     untyped,
     msgValidation,
     ValidationErrors,
-    toGQLError,
     LEAF,
     INPUT_OBJECT,
     ToCategory (..),
@@ -151,10 +149,12 @@ module Data.Morpheus.Types.Internal.AST
     unpackName,
     at,
     atPositions,
-    mapError,
-    readErrorMessage,
     typeDefinitions,
     FragmentName,
+    isInternal,
+    internal,
+    Error,
+    Errors,
   )
 where
 

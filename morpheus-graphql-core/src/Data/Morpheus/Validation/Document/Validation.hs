@@ -19,7 +19,7 @@ module Data.Morpheus.Validation.Document.Validation
 where
 
 import Data.Morpheus.Ext.Result
-  ( Eventless,
+  ( ValidationResult,
   )
 import Data.Morpheus.Internal.Utils ((<:>))
 import Data.Morpheus.Schema.Schema
@@ -74,7 +74,7 @@ import Data.Morpheus.Validation.Internal.Value
 import Relude hiding (empty, local)
 
 class ValidateSchema s where
-  validateSchema :: Bool -> Config -> Schema s -> Eventless (Schema VALID)
+  validateSchema :: Bool -> Config -> Schema s -> ValidationResult (Schema VALID)
 
 instance ValidateSchema CONST where
   validateSchema withSystem config schema = do

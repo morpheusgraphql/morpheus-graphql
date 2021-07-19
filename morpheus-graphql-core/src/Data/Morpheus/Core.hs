@@ -30,7 +30,7 @@ import Data.ByteString.Lazy.Char8
   ( ByteString,
   )
 import Data.Morpheus.Ext.Result
-  ( Eventless,
+  ( ValidationResult,
   )
 import Data.Morpheus.Internal.Utils ((<:>))
 import Data.Morpheus.Parser
@@ -58,5 +58,5 @@ import Data.Morpheus.Validation.Query.Validation
   )
 import Relude hiding (ByteString)
 
-parseFullSchema :: ByteString -> Eventless (Schema VALID)
+parseFullSchema :: ByteString -> ValidationResult (Schema VALID)
 parseFullSchema = parseSchema >=> (internalSchema <:>)

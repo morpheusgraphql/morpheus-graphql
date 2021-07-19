@@ -12,6 +12,7 @@ module Data.Morpheus.Validation.Query.FragmentPreconditions
   )
 where
 
+import Control.Monad.Except (throwError)
 import Data.Mergeable
 import Data.Morpheus.Error.Fragment
   ( cannotSpreadWithinItself,
@@ -23,8 +24,7 @@ import Data.Morpheus.Internal.Graph
     cycleChecking,
   )
 import Data.Morpheus.Internal.Utils
-  ( Failure (..),
-    selectOr,
+  ( selectOr,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Fragment (..),
@@ -74,7 +74,7 @@ usedFragments fragments = collect . map toEntry . concatMap findAllUses . toList
 
 checkFragmentPreconditions :: SelectionSet RAW -> BaseValidator ()
 checkFragmentPreconditions selection =
-  (exploreSpreads >>= cycleChecking (failure . cannotSpreadWithinItself))
+  (exploreSpreads >>= cycleChecking (throwError . cannotSpreadWithinItself))
     *> checkUnusedFragments selection
 
 exploreSpreads :: BaseValidator (Graph FragmentName)

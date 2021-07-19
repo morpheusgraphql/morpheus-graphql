@@ -12,6 +12,7 @@ module Data.Morpheus.Client.Transform.Selection
   )
 where
 
+import Control.Monad.Except (MonadError (throwError))
 import Data.Morpheus.Client.Internal.Types
   ( ClientConsD,
     ClientDefinition (..),
@@ -21,11 +22,10 @@ import Data.Morpheus.Client.Internal.Types
 import Data.Morpheus.Client.Transform.Core (Converter (..), compileError, deprecationWarning, getType, leafType, typeFrom)
 import Data.Morpheus.Client.Transform.Inputs (renderNonOutputTypes, renderOperationArguments)
 import Data.Morpheus.Internal.Ext
-  ( Eventless,
+  ( ValidationResult,
   )
 import Data.Morpheus.Internal.Utils
-  ( Failure (..),
-    empty,
+  ( empty,
     keyOf,
     selectBy,
   )
@@ -62,7 +62,7 @@ toClientDefinition ::
   Schema VALID ->
   VariableDefinitions RAW ->
   Operation VALID ->
-  Eventless ClientDefinition
+  ValidationResult ClientDefinition
 toClientDefinition schema vars = flip runReaderT (schema, vars) . runConverter . genOperation
 
 genOperation :: Operation VALID -> Converter ClientDefinition
@@ -213,7 +213,7 @@ getFieldType
       withTypeContent DataInterface {interfaceFields} =
         selectBy selError selectionName interfaceFields >>= processDeprecation
       withTypeContent dt =
-        failure (compileError $ "Type should be output Object \"" <> msgInternal (show dt))
+        throwError (compileError $ "Type should be output Object \"" <> msgInternal (show dt))
       selError = compileError $ "can't find field " <> msgInternal selectionName <> " on type: " <> msgInternal (show typeContent)
       processDeprecation
         FieldDefinition

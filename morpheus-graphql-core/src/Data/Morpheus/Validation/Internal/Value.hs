@@ -14,11 +14,11 @@ module Data.Morpheus.Validation.Internal.Value
   )
 where
 
+import Control.Monad.Except (throwError)
 import Data.Morpheus.Error.Input (typeViolation)
 import Data.Morpheus.Error.Variable (incompatibleVariableType)
 import Data.Morpheus.Internal.Utils
-  ( Failure (..),
-    singleton,
+  ( singleton,
   )
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
@@ -92,7 +92,7 @@ violation message value = do
     } <-
     asksScope id
   prefix <- inputMessagePrefix
-  failure $
+  throwError $
     ( prefix
         <> typeViolation
           (TypeRef currentTypeName currentTypeWrappers)
@@ -108,7 +108,7 @@ checkTypeCompatibility ::
   InputValidator schemaS ctx ValidValue
 checkTypeCompatibility valueType ref var@Variable {variableValue = ValidVariableValue value, variableType}
   | variableType `isSubtype` valueType = pure value
-  | otherwise = failure $ incompatibleVariableType ref var valueType
+  | otherwise = throwError $ incompatibleVariableType ref var valueType
 
 validateInputByTypeRef ::
   ValidateWithDefault c schemaS s =>

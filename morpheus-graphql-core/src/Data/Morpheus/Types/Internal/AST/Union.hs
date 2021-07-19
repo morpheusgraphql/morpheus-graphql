@@ -20,21 +20,22 @@ module Data.Morpheus.Types.Internal.AST.Union
   )
 where
 
+import Control.Monad.Except (throwError)
 import Data.Mergeable (NameCollision (..), OrdMap)
 import Data.Morpheus.Internal.Utils
   ( Empty (empty),
-    Failure (..),
     KeyOf (..),
     selectBy,
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
   )
-import Data.Morpheus.Types.Internal.AST.Base
-  ( Message (..),
+import Data.Morpheus.Types.Internal.AST.Error
+  ( Error,
     Msg (..),
+    ValidationError,
+    msgValidation,
   )
-import Data.Morpheus.Types.Internal.AST.Error (msgValidation)
 import Data.Morpheus.Types.Internal.AST.Fields
   ( FieldDefinition (..),
     FieldsDefinition,
@@ -75,7 +76,7 @@ data UnionMember (cat :: TypeCategory) (s :: Stage) = UnionMember
   }
   deriving (Show, Lift, Eq)
 
-instance NameCollision (UnionMember c s) where
+instance NameCollision Error (UnionMember c s) where
   nameCollision UnionMember {memberName} =
     "There can Be only one union variant named "
       <> msgValidation memberName
@@ -94,23 +95,23 @@ instance KeyOf TypeName (UnionMember cat s) where
 getInputUnionValue ::
   forall stage.
   Object stage ->
-  Either Message (TypeName, Value stage)
+  Either ValidationError (TypeName, Value stage)
 getInputUnionValue hm =
   case toList hm of
-    [] -> Left "Exclusive input objects must provide a value for at least one field."
+    [] -> throwError "Exclusive input objects must provide a value for at least one field."
     [ObjectEntry name value] -> pure (coerce name, value)
-    _ -> failure ("Exclusive input objects are not allowed to provide values for multiple fields." :: Message)
+    _ -> throwError "Exclusive input objects are not allowed to provide values for multiple fields."
 
 constraintInputUnion ::
   forall stage schemaStage.
   UnionTypeDefinition IN schemaStage ->
   Object stage ->
-  Either Message (UnionMember IN schemaStage, Value stage)
+  Either ValidationError (UnionMember IN schemaStage, Value stage)
 constraintInputUnion tags hm = do
   (name, value) <- getInputUnionValue hm
   (,value) <$> isPossibleInputUnion tags name
 
-isPossibleInputUnion :: UnionTypeDefinition IN s -> TypeName -> Either Message (UnionMember IN s)
+isPossibleInputUnion :: UnionTypeDefinition IN s -> TypeName -> Either ValidationError (UnionMember IN s)
 isPossibleInputUnion tags name =
   selectBy
     (msg name <> " is not possible union type")

@@ -24,13 +24,9 @@ module Data.Morpheus.Server.Types.SchemaT
   )
 where
 
+import Control.Monad.Except (MonadError (..))
 import qualified Data.Map as Map
-import Data.Morpheus.App.Internal.Resolving
-  ( Eventless,
-  )
-import Data.Morpheus.Internal.Utils
-  ( Failure (..),
-  )
+import Data.Morpheus.Internal.Ext (ValidationResult)
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     CONST,
@@ -42,6 +38,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
+    ValidationError,
     defineSchemaWith,
     msgValidation,
     toAny,
@@ -65,18 +62,16 @@ type MyMap = (Map TypeFingerprint (TypeDefinition ANY CONST), Map TypeName [Type
 -- Helper Functions
 newtype SchemaT (cat :: TypeCategory) a = SchemaT
   { runSchemaT ::
-      Eventless
+      ValidationResult
         ( a,
-          [MyMap -> Eventless MyMap]
+          [MyMap -> ValidationResult MyMap]
         )
   }
   deriving (Functor)
 
-instance
-  Failure err Eventless =>
-  Failure err (SchemaT c)
-  where
-  failure = SchemaT . failure
+instance MonadError ValidationError (SchemaT c) where
+  throwError = SchemaT . throwError
+  catchError (SchemaT mx) f = SchemaT (catchError mx (runSchemaT . f))
 
 instance Applicative (SchemaT c) where
   pure = SchemaT . pure . (,[])
@@ -100,7 +95,7 @@ toSchema ::
       TypeDefinition OBJECT CONST,
       TypeDefinition OBJECT CONST
     ) ->
-  Eventless (Schema CONST)
+  ValidationResult (Schema CONST)
 toSchema (SchemaT v) = do
   ((q, m, s), typeDefs) <- v
   (typeDefinitions, implements) <- execUpdates (Map.empty, Map.empty) typeDefs
@@ -125,10 +120,10 @@ insertImplements _ t = t
 withInput :: SchemaT IN a -> SchemaT OUT a
 withInput (SchemaT x) = SchemaT x
 
-checkTypeCollisions :: [(TypeFingerprint, TypeDefinition k a)] -> Eventless [TypeDefinition k a]
+checkTypeCollisions :: [(TypeFingerprint, TypeDefinition k a)] -> ValidationResult [TypeDefinition k a]
 checkTypeCollisions = fmap Map.elems . foldlM collectTypes Map.empty
   where
-    collectTypes :: Map (TypeName, TypeFingerprint) (TypeDefinition k a) -> (TypeFingerprint, TypeDefinition k a) -> Eventless (Map (TypeName, TypeFingerprint) (TypeDefinition k a))
+    collectTypes :: Map (TypeName, TypeFingerprint) (TypeDefinition k a) -> (TypeFingerprint, TypeDefinition k a) -> ValidationResult (Map (TypeName, TypeFingerprint) (TypeDefinition k a))
     collectTypes accum (fp, typ) = maybe addType (handleCollision typ) (key `Map.lookup` accum)
       where
         addType = pure $ Map.insert key typ accum
@@ -137,18 +132,17 @@ checkTypeCollisions = fmap Map.elems . foldlM collectTypes Map.empty
         handleCollision TypeDefinition {typeContent = DataScalar {}} TypeDefinition {typeContent = DataScalar {}} = pure accum
         handleCollision TypeDefinition {typeName = name1} _ = failureRequirePrefix name1
 
-failureRequirePrefix :: TypeName -> Eventless b
+failureRequirePrefix :: TypeName -> ValidationResult b
 failureRequirePrefix typename =
-  failure
-    [ "It appears that the Haskell type "
-        <> msgValidation typename
-        <> " was used as both input and output type, which is not allowed by GraphQL specifications."
-        <> "\n\n "
-        <> "If you supply \"typeNameModifier\" in \"GQLType.typeOptions\", "
-        <> "you can override the default type names for "
-        <> msgValidation typename
-        <> " to solve this problem."
-    ]
+  throwError $
+    "It appears that the Haskell type "
+      <> msgValidation typename
+      <> " was used as both input and output type, which is not allowed by GraphQL specifications."
+      <> "\n\n "
+      <> "If you supply \"typeNameModifier\" in \"GQLType.typeOptions\", "
+      <> "you can override the default type names for "
+      <> msgValidation typename
+      <> " to solve this problem."
 
 withSameCategory :: TypeFingerprint -> TypeFingerprint
 withSameCategory (TypeableFingerprint _ xs) = TypeableFingerprint OUT xs
@@ -174,7 +168,7 @@ updateSchema InternalFingerprint {} _ _ = SchemaT $ pure ((), [])
 updateSchema fingerprint f x =
   SchemaT $ pure ((), [upLib])
   where
-    upLib :: MyMap -> Eventless MyMap
+    upLib :: MyMap -> ValidationResult MyMap
     upLib (lib, conn)
       | Map.member fingerprint lib = pure (lib, conn)
       | otherwise = do
@@ -187,7 +181,7 @@ extendImplements :: TypeName -> [TypeName] -> SchemaT cat' ()
 extendImplements interface types = SchemaT $ pure ((), [upLib])
   where
     -- TODO: what happens if interface name collides?
-    upLib :: MyMap -> Eventless MyMap
+    upLib :: MyMap -> ValidationResult MyMap
     upLib (lib, con) = pure (lib, foldr insertInterface con types)
     insertInterface :: TypeName -> Map TypeName [TypeName] -> Map TypeName [TypeName]
     insertInterface = Map.alter (Just . (interface :) . fromMaybe [])

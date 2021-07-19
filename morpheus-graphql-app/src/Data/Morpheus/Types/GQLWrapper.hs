@@ -15,8 +15,8 @@ import Data.Morpheus.App.Internal.Resolving
     SubscriptionField (..),
   )
 import Data.Morpheus.Types.Internal.AST
-  ( Message,
-    ValidValue,
+  ( ValidValue,
+    ValidationError,
     Value (..),
     msg,
   )
@@ -75,7 +75,7 @@ class DecodeWrapper (f :: * -> *) where
     (Monad m, DecodeWrapperConstraint f a) =>
     (ValidValue -> m a) ->
     ValidValue ->
-    ExceptT Message m (f a)
+    ExceptT ValidationError m (f a)
 
 instance DecodeWrapper Maybe where
   decodeWrapper _ Null = pure Nothing
@@ -105,17 +105,17 @@ haveSameSize ::
   ) =>
   Set a ->
   l b ->
-  ExceptT Message m (Set a)
+  ExceptT ValidationError m (Set a)
 haveSameSize setVal listVal
   | length setVal == length listVal = pure setVal
   | otherwise = ExceptT $ pure $ Left (fromString ("Expected a List without duplicates, found " <> show (length listVal - length listVal) <> " duplicates"))
 
 withRefinedList ::
   Monad m =>
-  ([a] -> Either Message (rList a)) ->
+  ([a] -> Either ValidationError (rList a)) ->
   (ValidValue -> m a) ->
   ValidValue ->
-  ExceptT Message m (rList a)
+  ExceptT ValidationError m (rList a)
 withRefinedList refiner decode (List li) = do
   listRes <- lift (traverse decode li)
   case refiner listRes of
@@ -124,7 +124,7 @@ withRefinedList refiner decode (List li) = do
 withRefinedList _ _ isType = ExceptT $ pure $ Left (typeMismatch "List" isType)
 
 -- if value is already validated but value has different type
-typeMismatch :: Message -> Value s -> Message
+typeMismatch :: ValidationError -> Value s -> ValidationError
 typeMismatch text jsType =
   "Type mismatch! expected:" <> msg text <> ", got: "
     <> msg jsType

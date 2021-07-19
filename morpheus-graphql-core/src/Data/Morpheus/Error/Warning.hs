@@ -12,43 +12,46 @@ where
 
 import Data.Aeson (encode)
 import Data.ByteString.Lazy.Char8 (unpack)
-import Data.Morpheus.Error.Utils (errorMessage)
 import Data.Morpheus.Types.Internal.AST.Base
   ( Description,
     Ref (..),
-    msg,
   )
-import Data.Morpheus.Types.Internal.AST.Error (GQLErrors)
+import Data.Morpheus.Types.Internal.AST.Error
+  ( ValidationError,
+    ValidationErrors,
+    at,
+    msg,
+    msgValidation,
+  )
 import Data.Morpheus.Types.Internal.AST.Name
   ( FieldName,
   )
 import Language.Haskell.TH (Q, reportWarning)
 import Relude
 
-renderGQLErrors :: GQLErrors -> String
-renderGQLErrors = unpack . encode
+renderGQLErrors :: ValidationErrors -> String
+renderGQLErrors = unpack . encode . toList
 
-deprecatedEnum :: FieldName -> Ref FieldName -> Maybe Description -> GQLErrors
+-- TODO: implement warnings, is not used
+deprecatedEnum :: FieldName -> Ref FieldName -> Maybe Description -> ValidationError
 deprecatedEnum typeName Ref {refPosition, refName} reason =
-  errorMessage refPosition $
-    "the enum value "
-      <> msg typeName
-      <> "."
-      <> msg refName
-      <> " is deprecated."
-      <> msg (maybe "" (" " <>) reason)
+  "the enum value "
+    <> msg typeName
+    <> "."
+    <> msg refName
+    <> " is deprecated."
+    <> msg (maybe "" (" " <>) reason) `at` refPosition
 
-deprecatedField :: FieldName -> Ref FieldName -> Maybe Description -> GQLErrors
+deprecatedField :: FieldName -> Ref FieldName -> Maybe Description -> ValidationError
 deprecatedField typeName Ref {refPosition, refName} reason =
-  errorMessage refPosition $
-    "the field "
-      <> msg typeName
-      <> "."
-      <> msg refName
-      <> " is deprecated."
-      <> msg (maybe "" (" " <>) reason)
+  "the field "
+    <> msgValidation typeName
+    <> "."
+    <> msgValidation refName
+    <> " is deprecated."
+    <> msgValidation (maybe "" (" " <>) reason) `at` refPosition
 
-gqlWarnings :: GQLErrors -> Q ()
+gqlWarnings :: [ValidationError] -> Q ()
 gqlWarnings [] = pure ()
 gqlWarnings warnings = traverse_ handleWarning warnings
   where

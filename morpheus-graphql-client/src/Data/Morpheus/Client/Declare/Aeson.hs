@@ -54,9 +54,9 @@ import Data.Morpheus.Types.GQLScalar
 import Data.Morpheus.Types.Internal.AST
   ( ConsD (..),
     FieldName,
-    InternalError,
     TypeKind (..),
     TypeName,
+    ValidationError,
     isResolverType,
     msgInternal,
   )
@@ -83,7 +83,7 @@ aesonDeclarations kind
   | isResolverType kind = [deriveFromJSON]
   | otherwise = [deriveToJSON]
 
-failure :: InternalError -> Q a
+failure :: ValidationError -> Q a
 failure = fail . show
 
 deriveScalarJSON :: [ClientTypeDefinition -> DecQ]

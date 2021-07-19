@@ -11,7 +11,8 @@ module Data.Morpheus.Internal.Utils
     camelCaseFieldName,
     singleton,
     IsMap,
-    Failure (..),
+    Failure,
+    failure,
     KeyOf (..),
     toPair,
     selectBy,
@@ -34,9 +35,11 @@ module Data.Morpheus.Internal.Utils
     unsafeFromList,
     insert,
     fromElems,
+    throwMany,
   )
 where
 
+import Control.Monad.Except (MonadError (throwError))
 import Data.ByteString.Lazy (ByteString)
 import Data.Char
   ( toLower,
@@ -48,16 +51,16 @@ import Data.Mergeable
     ResolutionT,
     fromListT,
     mergeConcat,
+    throwMany,
   )
 import Data.Mergeable.IsMap (FromList (..), member, selectBy, selectOr, unsafeFromList)
 import qualified Data.Mergeable.IsMap as M
 import Data.Mergeable.SafeHashMap (SafeHashMap)
 import Data.Morpheus.Ext.Empty
-import Data.Morpheus.Ext.Failure (Failure (..))
 import Data.Morpheus.Ext.KeyOf (KeyOf (..), toPair)
 import Data.Morpheus.Types.Internal.AST.Base (Ref)
 import Data.Morpheus.Types.Internal.AST.Error
-  ( ValidationErrors,
+  ( ValidationError,
   )
 import Data.Morpheus.Types.Internal.AST.Name
   ( FieldName,
@@ -76,6 +79,14 @@ import Relude hiding
     encodeUtf8,
     fromList,
   )
+
+{-# DEPRECATED Failure "use MonadError" #-}
+
+type Failure = MonadError
+
+{-# DEPRECATED failure "use throwError" #-}
+failure :: MonadError e m => e -> m a
+failure = throwError
 
 (<:>) :: (Merge (HistoryT m) a, Monad m) => a -> a -> m a
 x <:> y = startHistory (merge x y)
@@ -118,7 +129,7 @@ singleton x = M.singleton (keyOf x) x
 
 traverseCollection ::
   ( Monad m,
-    Failure ValidationErrors m,
+    Failure ValidationError m,
     KeyOf k b,
     FromList m map k b,
     Foldable t
@@ -130,7 +141,6 @@ traverseCollection f a = fromElems =<< traverse f (toList a)
 
 fromElems ::
   ( Monad m,
-    Failure ValidationErrors m,
     KeyOf k a,
     FromList m map k a
   ) =>
@@ -139,10 +149,9 @@ fromElems ::
 fromElems = fromList . map toPair
 
 insert ::
-  ( NameCollision a,
+  ( NameCollision e a,
     KeyOf k a,
-    Monad m,
-    Failure ValidationErrors m
+    Failure e m
   ) =>
   a ->
   SafeHashMap k a ->

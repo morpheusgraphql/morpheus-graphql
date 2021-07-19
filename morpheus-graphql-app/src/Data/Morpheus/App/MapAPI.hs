@@ -7,6 +7,7 @@ module Data.Morpheus.App.MapAPI
   )
 where
 
+import Control.Monad.Except (MonadError (throwError))
 import Data.Aeson
   ( encode,
   )
@@ -24,9 +25,6 @@ import qualified Data.ByteString.Lazy.Char8 as LB
     toStrict,
   )
 import Data.Morpheus.App.Error (badRequestError)
-import Data.Morpheus.Internal.Utils
-  ( Failure (..),
-  )
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
     GQLResponse (..),
@@ -45,9 +43,9 @@ import Relude hiding
     encodeUtf8,
   )
 
-decodeNoDup :: Failure String m => LB.ByteString -> m GQLRequest
+decodeNoDup :: MonadError String m => LB.ByteString -> m GQLRequest
 decodeNoDup str = case eitherDecodeWith jsonNoDup ifromJSON str of
-  Left (path, x) -> failure $ formatError path x
+  Left (path, x) -> throwError $ formatError path x
   Right value -> pure value
 
 class MapAPI a b where

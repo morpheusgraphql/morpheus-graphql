@@ -1,4 +1,3 @@
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Error.Utils
@@ -12,25 +11,15 @@ import Data.Morpheus.Types.Internal.AST.Base
     Position (..),
   )
 import Data.Morpheus.Types.Internal.AST.Error
-  ( GQLError (..),
-    GQLErrors,
+  ( GQLError,
+    at,
+    msg,
   )
-import Relude hiding (ByteString)
 
-errorMessage :: Position -> Message -> GQLErrors
-errorMessage position message =
-  [ GQLError
-      { message,
-        locations = [position],
-        extensions = Nothing
-      }
-  ]
+{-# DEPRECATED errorMessage "\"my error\" `at` position" #-}
+errorMessage :: Position -> Message -> [GQLError]
+errorMessage position message = [msg message `at` position]
 
-globalErrorMessage :: Message -> GQLErrors
-globalErrorMessage message =
-  [ GQLError
-      { message,
-        locations = [],
-        extensions = Nothing
-      }
-  ]
+{-# DEPRECATED globalErrorMessage "use validation errors" #-}
+globalErrorMessage :: Message -> [GQLError]
+globalErrorMessage message = [msg message]

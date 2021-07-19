@@ -10,6 +10,7 @@ module Data.Morpheus.Validation.Document.Interface
   )
 where
 
+import Control.Monad.Except (throwError)
 import Data.Morpheus.Error.Document.Interface
   ( ImplementsError (..),
     partialImplements,
@@ -17,7 +18,6 @@ import Data.Morpheus.Error.Document.Interface
 import Data.Morpheus.Internal.Utils
   ( KeyOf (..),
     empty,
-    failure,
     selectOr,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -108,4 +108,4 @@ failImplements ::
   SchemaValidator (Field ON_INTERFACE) a
 failImplements err = do
   x <- asks local
-  failure $ partialImplements x err
+  throwError $ partialImplements x err

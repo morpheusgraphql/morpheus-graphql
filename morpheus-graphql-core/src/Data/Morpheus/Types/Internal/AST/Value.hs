@@ -59,12 +59,12 @@ import Data.Morpheus.Rendering.RenderGQL
     space,
   )
 import Data.Morpheus.Types.Internal.AST.Base
-  ( Msg (..),
-    Position,
+  ( Position,
     Ref (..),
   )
 import Data.Morpheus.Types.Internal.AST.Error
-  ( ValidationError,
+  ( Error,
+    Msg (..),
     at,
     msgValidation,
   )
@@ -148,7 +148,7 @@ data Variable (stage :: Stage) = Variable
 instance KeyOf FieldName (Variable s) where
   keyOf = variableName
 
-instance NameCollision (Variable s) where
+instance NameCollision Error (Variable s) where
   nameCollision Variable {variableName, variablePosition} =
     ("There can Be only One Variable Named " <> msgValidation variableName)
       `at` variablePosition
@@ -177,9 +177,10 @@ data ObjectEntry (s :: Stage) = ObjectEntry
 instance RenderGQL (ObjectEntry a) where
   renderGQL (ObjectEntry name value) = fromText (unpackName name) <> ": " <> renderGQL value
 
-instance NameCollision (ObjectEntry s) where
+instance NameCollision Error (ObjectEntry s) where
   nameCollision ObjectEntry {entryName} =
-    "There can Be only One field Named " <> msgValidation entryName :: ValidationError
+    "There can Be only One field Named "
+      <> msgValidation entryName
 
 instance KeyOf FieldName (ObjectEntry s) where
   keyOf = entryName

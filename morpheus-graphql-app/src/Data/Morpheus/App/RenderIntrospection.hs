@@ -15,6 +15,7 @@ module Data.Morpheus.App.RenderIntrospection
   )
 where
 
+import Control.Monad.Except (MonadError (throwError))
 import Data.Morpheus.App.Internal.Resolving
   ( Resolver,
     ResolverContext (..),
@@ -28,9 +29,7 @@ import Data.Morpheus.App.Internal.Resolving
   )
 import qualified Data.Morpheus.Core as GQL
 import Data.Morpheus.Internal.Utils
-  ( Failure,
-    failure,
-    fromLBS,
+  ( fromLBS,
     selectBy,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -46,9 +45,8 @@ import Data.Morpheus.Types.Internal.AST
     FieldDefinition (..),
     FieldName,
     FieldsDefinition,
-    GQLErrors,
     IN,
-    InternalError,
+    Msg (msg),
     OUT,
     QUERY,
     Schema,
@@ -61,8 +59,10 @@ import Data.Morpheus.Types.Internal.AST
     TypeWrapper (BaseType, TypeList),
     UnionMember (..),
     VALID,
+    ValidationError,
     Value (..),
     fieldVisibility,
+    internal,
     kindOf,
     lookupDeprecated,
     lookupDeprecatedReason,
@@ -77,8 +77,7 @@ import Relude
 
 class
   ( Monad m,
-    Failure InternalError m,
-    Failure GQLErrors m
+    MonadError ValidationError m
   ) =>
   WithSchema m
   where
@@ -93,7 +92,7 @@ selectType ::
   m (TypeDefinition ANY VALID)
 selectType name =
   getSchema
-    >>= selectBy ("INTROSPECTION Type not Found: \"" <> msgInternal name <> "\"") name
+    >>= selectBy (internal $ "INTROSPECTION Type not Found: \"" <> msgInternal name <> "\"") name
       . typeDefinitions
 
 class RenderIntrospection a where
@@ -350,7 +349,7 @@ implementedInterface name =
     >>= renderContent
   where
     renderContent typeDef@TypeDefinition {typeContent = DataInterface {}} = render typeDef
-    renderContent _ = failure ("Type " <> msgInternal name <> " must be an Interface")
+    renderContent _ = throwError ("Type " <> msg name <> " must be an Interface")
 
 renderName ::
   ( RenderIntrospection name,

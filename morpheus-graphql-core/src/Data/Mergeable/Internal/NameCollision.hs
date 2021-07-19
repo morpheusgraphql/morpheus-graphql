@@ -1,3 +1,6 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Mergeable.Internal.NameCollision
@@ -6,13 +9,10 @@ module Data.Mergeable.Internal.NameCollision
 where
 
 import Data.Mergeable.Internal.Resolution (Indexed (..))
-import Data.Morpheus.Types.Internal.AST.Error
-  ( ValidationError,
-  )
 import Relude
 
-class NameCollision a where
-  nameCollision :: a -> ValidationError
+class NameCollision e a where
+  nameCollision :: a -> e
 
-instance NameCollision a => NameCollision (Indexed k a) where
+instance NameCollision e a => NameCollision e (Indexed k a) where
   nameCollision = nameCollision . indexedValue

@@ -9,11 +9,11 @@ module Data.Morpheus.Validation.Query.Variable
   )
 where
 
+import Control.Monad.Except (throwError)
 import Data.Mergeable
 import Data.Morpheus.Error.Variable (uninitializedVariable)
 import Data.Morpheus.Internal.Utils
-  ( Failure (..),
-    selectOr,
+  ( selectOr,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
@@ -165,7 +165,7 @@ lookupAndValidateValueOnBody
       checkType Nothing (Just defValue) varType = validator varType True defValue
       checkType Nothing Nothing varType
         | validationMode /= WITHOUT_VARIABLES && not (isNullable variableType) =
-          failure $ uninitializedVariable var
+          throwError $ uninitializedVariable var
         | otherwise =
           returnNull
         where

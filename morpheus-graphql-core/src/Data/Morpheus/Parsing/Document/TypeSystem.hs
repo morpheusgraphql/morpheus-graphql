@@ -15,12 +15,13 @@ where
 
 import Data.ByteString.Lazy (ByteString)
 import Data.Foldable (foldr')
-import Data.Mergeable (NameCollision (..))
+import Data.Mergeable (NameCollision (nameCollision), throwMany)
 import Data.Morpheus.Ext.Result
-  ( Eventless,
-    failure,
+  ( ValidationResult,
   )
-import Data.Morpheus.Internal.Utils (fromElems)
+import Data.Morpheus.Internal.Utils
+  ( fromElems,
+  )
 import Data.Morpheus.Parsing.Internal.Internal
   ( Parser,
     processParser,
@@ -342,11 +343,10 @@ withSchemaDefinition ::
     [TypeDefinition ANY s],
     [DirectiveDefinition CONST]
   ) ->
-  Eventless
-    (Maybe SchemaDefinition, [TypeDefinition ANY s], DirectivesDefinition CONST)
+  ValidationResult (Maybe SchemaDefinition, [TypeDefinition ANY s], DirectivesDefinition CONST)
 withSchemaDefinition ([], t, dirs) = (Nothing,t,) <$> fromElems dirs
 withSchemaDefinition ([x], t, dirs) = (Just x,t,) <$> fromElems dirs
-withSchemaDefinition (_ : xs, _, _) = failure (fmap nameCollision xs)
+withSchemaDefinition (x : xs, _, _) = throwMany (nameCollision <$> (x :| xs))
 
 parseRawTypeDefinitions :: Parser [RawTypeDefinition]
 parseRawTypeDefinitions =
@@ -356,7 +356,7 @@ parseRawTypeDefinitions =
 
 typeSystemDefinition ::
   ByteString ->
-  Eventless
+  ValidationResult
     ( Maybe SchemaDefinition,
       [TypeDefinition ANY CONST],
       DirectivesDefinition CONST
@@ -365,10 +365,10 @@ typeSystemDefinition =
   processParser parseRawTypeDefinitions
     >=> withSchemaDefinition . typePartition
 
-parseTypeDefinitions :: ByteString -> Eventless [TypeDefinition ANY CONST]
+parseTypeDefinitions :: ByteString -> ValidationResult [TypeDefinition ANY CONST]
 parseTypeDefinitions =
   fmap (\d -> [td | RawTypeDefinition td <- d])
     . processParser parseRawTypeDefinitions
 
-parseSchema :: ByteString -> Eventless (Schema CONST)
+parseSchema :: ByteString -> ValidationResult (Schema CONST)
 parseSchema = typeSystemDefinition >=> buildSchema

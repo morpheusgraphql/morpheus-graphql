@@ -10,8 +10,7 @@ where
 
 import Data.ByteString.Lazy (ByteString)
 import Data.Morpheus.Ext.Result
-  ( Eventless,
-    sortErrors,
+  ( ValidationResult,
   )
 import Data.Morpheus.Internal.Utils ((<:>))
 import Data.Morpheus.Parsing.Document.TypeSystem
@@ -45,19 +44,17 @@ import Data.Morpheus.Validation.Query.Validation
 import Relude hiding (ByteString)
 
 parseSchema ::
-  ByteString -> Eventless (Schema VALID)
+  ByteString -> ValidationResult (Schema VALID)
 parseSchema =
-  sortErrors
-    . ( P.parseSchema
-          >=> validateSchema
-            True
-            Config
-              { debug = False,
-                validationMode = FULL_VALIDATION
-              }
-      )
+  P.parseSchema
+    >=> validateSchema
+      True
+      Config
+        { debug = False,
+          validationMode = FULL_VALIDATION
+        }
 
-parseRequestWith :: Config -> Schema VALID -> GQLRequest -> Eventless (Operation VALID)
+parseRequestWith :: Config -> Schema VALID -> GQLRequest -> ValidationResult (Operation VALID)
 parseRequestWith config schema req = do
   qu <- parseRequest req
   fillSchema <- internalSchema <:> schema

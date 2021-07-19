@@ -11,6 +11,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Mergeable.MergeMap
@@ -19,6 +20,7 @@ module Data.Mergeable.MergeMap
   )
 where
 
+import Control.Monad.Except (MonadError (..))
 import qualified Data.List as L
 import qualified Data.List.NonEmpty as NM
 import Data.Mergeable.Internal.Merge
@@ -26,11 +28,6 @@ import Data.Mergeable.Internal.Merge
     recursiveMerge,
   )
 import Data.Mergeable.IsMap (FromList (..), IsMap (..))
-import Data.Morpheus.Ext.Failure (Failure (..))
-import Data.Morpheus.Types.Internal.AST.Error
-  ( ValidationError,
-    ValidationErrors,
-  )
 import Language.Haskell.TH.Syntax (Lift (..))
 import Relude hiding (fromList)
 
@@ -86,12 +83,26 @@ resolveMergeable ::
   m (MergeMap dups k a)
 resolveMergeable (x :| xs) = recursiveMerge (MergeMap . NM.fromList) (x : xs)
 
-toNonEmpty :: Failure ValidationErrors f => [a] -> f (NonEmpty a)
-toNonEmpty [] = failure ["empty selection sets are not supported." :: ValidationError]
+toNonEmpty :: (IsString e, MonadError e f) => [a] -> f (NonEmpty a)
+toNonEmpty [] = throwError $ fromString "empty selection sets are not supported."
 toNonEmpty (x : xs) = pure (x :| xs)
 
-instance (Merge m a, Hashable k, Eq k, Eq a) => FromList m (MergeMap 'False) k a where
+instance
+  ( Hashable k,
+    Eq k,
+    Eq a,
+    IsString e,
+    MonadError e m,
+    Merge m a
+  ) =>
+  FromList m (MergeMap 'False) k a
+  where
   fromList = resolveMergeable <=< toNonEmpty
 
-instance FromList m (MergeMap 'True) k a where
+instance
+  ( IsString e,
+    MonadError e m
+  ) =>
+  FromList m (MergeMap 'True) k a
+  where
   fromList = fmap MergeMap . toNonEmpty

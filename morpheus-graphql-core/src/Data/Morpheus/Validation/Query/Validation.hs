@@ -11,7 +11,7 @@ module Data.Morpheus.Validation.Query.Validation
 where
 
 import Data.Morpheus.Ext.Result
-  ( Eventless,
+  ( ValidationResult,
   )
 import Data.Morpheus.Internal.Utils (empty)
 import Data.Morpheus.Types.Internal.AST
@@ -52,7 +52,7 @@ validateRequest ::
   Config ->
   Schema VALID ->
   ExecutableDocument ->
-  Eventless (Operation VALID)
+  ValidationResult (Operation VALID)
 validateRequest
   config
   schema

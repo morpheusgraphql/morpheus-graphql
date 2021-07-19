@@ -14,6 +14,7 @@ module Data.Morpheus.Validation.Query.Selection
   )
 where
 
+import Control.Monad.Except (throwError)
 import Data.Mergeable
   ( toNonEmpty,
   )
@@ -23,11 +24,11 @@ import Data.Morpheus.Error.Selection
   )
 import Data.Morpheus.Ext.Empty (Empty (..))
 import Data.Morpheus.Internal.Utils
-  ( Failure (..),
-    keyOf,
+  ( keyOf,
     mergeConcat,
     singleton,
     startHistory,
+    throwMany,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Arguments,
@@ -93,7 +94,7 @@ selectionsWithoutTypename = filter (("__typename" /=) . keyOf) . toList
 singleTopLevelSelection :: Operation RAW -> SelectionSet VALID -> SelectionValidator ()
 singleTopLevelSelection Operation {operationType = Subscription, operationName} selSet =
   case selectionsWithoutTypename selSet of
-    (_ : xs) | not (null xs) -> failure $ fmap (singleTopLevelSelectionError operationName) xs
+    (_ : (x : xs)) -> throwMany $ fmap (singleTopLevelSelectionError operationName) (x :| xs)
     _ -> pure ()
 singleTopLevelSelection _ _ = pure ()
 
@@ -258,7 +259,7 @@ validateContentLeaf
   TypeDefinition {typeName, typeContent}
     | isLeaf typeContent = pure SelectionField
     | otherwise =
-      failure $ subfieldsNotSelected selectionName typeName selectionPosition
+      throwError $ subfieldsNotSelected selectionName typeName selectionPosition
 
 validateByTypeContent ::
   forall s.
@@ -294,7 +295,7 @@ validateByTypeContent
           (TypeDefinition {typeContent = DataInterface {..}, ..})
       __validate _ =
         const
-          $ failure
+          $ throwError
           $ hasNoSubfields
             currentSelectionRef
             typeDef

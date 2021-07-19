@@ -11,6 +11,7 @@ module Data.Morpheus.Client.JSONSchema.Parse
   )
 where
 
+import Control.Monad.Except (MonadError (throwError))
 import Data.Aeson
 import Data.ByteString.Lazy (ByteString)
 import Data.Morpheus.Client.JSONSchema.TypeKind (TypeKind (..))
@@ -29,11 +30,10 @@ import Data.Morpheus.Core
     validateSchema,
   )
 import Data.Morpheus.Internal.Ext
-  ( Eventless,
+  ( ValidationResult,
   )
 import Data.Morpheus.Internal.Utils
-  ( Failure (..),
-    empty,
+  ( empty,
     fromElems,
   )
 import qualified Data.Morpheus.Types.Internal.AST as AST
@@ -55,7 +55,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeWrapper (..),
     VALID,
     ValidationError,
-    ValidationErrors,
     buildSchema,
     createScalarType,
     mkEnumContent,
@@ -76,10 +75,10 @@ import Relude hiding
   )
 import Prelude (show)
 
-decoderError :: ValidationError -> Eventless a
-decoderError x = failure [x]
+decoderError :: ValidationError -> ValidationResult a
+decoderError = throwError
 
-decodeIntrospection :: ByteString -> Eventless (AST.Schema VALID)
+decodeIntrospection :: ByteString -> ValidationResult (AST.Schema VALID)
 decodeIntrospection jsonDoc = case jsonSchema of
   Left errors -> decoderError $ msgValidation errors
   Right
@@ -96,13 +95,13 @@ decodeIntrospection jsonDoc = case jsonSchema of
       buildSchema (Just schemaDef, gqlTypes, empty) >>= validate
   Right res -> decoderError (msgValidation $ show res)
   where
-    validate :: AST.Schema CONST -> Eventless (AST.Schema VALID)
+    validate :: AST.Schema CONST -> ValidationResult (AST.Schema VALID)
     validate = validateSchema False defaultConfig
     jsonSchema :: Either String (JSONResponse Introspection)
     jsonSchema = eitherDecode jsonDoc
 
 mkSchemaDef ::
-  (Monad m, Failure ValidationErrors m) =>
+  (Monad m, MonadError ValidationError m) =>
   Schema ->
   m SchemaDefinition
 mkSchemaDef
@@ -121,7 +120,7 @@ mkSchemaDef
         )
 
 class ParseJSONSchema a b where
-  parse :: a -> Eventless b
+  parse :: a -> ValidationResult b
 
 instance ParseJSONSchema Type [TypeDefinition ANY CONST] where
   parse Type {name = Just typeName, kind = SCALAR} =
@@ -156,7 +155,7 @@ instance ParseJSONSchema Field (FieldDefinition OUT CONST) where
 instance ParseJSONSchema InputValue (FieldDefinition IN CONST) where
   parse InputValue {inputName, inputType} = mkField Nothing inputName <$> fieldTypeFromJSON inputType
 
-fieldTypeFromJSON :: Type -> Eventless TypeRef
+fieldTypeFromJSON :: Type -> ValidationResult TypeRef
 fieldTypeFromJSON Type {kind = NON_NULL, ofType = Just ofType} = withListNonNull <$> fieldTypeFromJSON ofType
 fieldTypeFromJSON Type {kind = LIST, ofType = Just ofType} = withList <$> fieldTypeFromJSON ofType
 fieldTypeFromJSON Type {name = Just name} = pure (TypeRef name mkMaybeType)

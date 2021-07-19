@@ -61,25 +61,16 @@ module Data.Morpheus.Types
   )
 where
 
-import Control.Applicative (pure)
-import Control.Monad (Monad ((>>=)))
-import Control.Monad.Fail (fail)
-import Control.Monad.Trans.Class (MonadTrans (..))
-import Data.Either
-  ( Either (..),
-    either,
-  )
+import Control.Monad.Except (MonadError (..))
 import Data.Morpheus.App
   ( App,
   )
 import Data.Morpheus.App.Internal.Resolving
-  ( Failure,
-    PushEvents (..),
+  ( PushEvents (..),
     Resolver,
     ResolverContext (..),
     SubscriptionField,
     WithOperation,
-    failure,
     pushEvents,
     subscribe,
     unsafeInternalContext,
@@ -113,24 +104,14 @@ import Data.Morpheus.Types.IO
   )
 import Data.Morpheus.Types.Internal.AST
   ( MUTATION,
-    Message,
     OUT,
     QUERY,
     SUBSCRIPTION,
     ScalarValue (..),
     TypeName,
-    msg,
+    ValidationError,
   )
-import Data.Proxy
-  ( Proxy (..),
-  )
-import Prelude
-  ( ($),
-    (.),
-    IO,
-    String,
-    const,
-  )
+import Relude hiding (Undefined)
 
 class FlexibleResolver (f :: * -> *) (a :: k) where
   type Flexible (m :: * -> *) a :: *
@@ -216,8 +197,8 @@ failRes ::
   Resolver o e m a
 failRes = fail
 
-liftEither :: (MonadTrans t, Monad (t m), Failure Message (t m)) => Monad m => m (Either String a) -> t m a
-liftEither x = lift x >>= either (failure . msg) pure
+liftEither :: (MonadTrans t, Monad (t m), MonadError ValidationError (t m)) => Monad m => m (Either String a) -> t m a
+liftEither x = lift x >>= either (throwError . fromString) pure
 
 -- | GraphQL Root resolver, also the interpreter generates a GQL schema from it.
 --  'queryResolver' is required, 'mutationResolver' and 'subscriptionResolver' are optional,
