@@ -68,8 +68,9 @@ import Data.Morpheus.Types.Internal.AST.Base
   )
 import Data.Morpheus.Types.Internal.AST.DirectiveLocation (DirectiveLocation)
 import Data.Morpheus.Types.Internal.AST.Error
-  ( at,
-    msgValidation,
+  ( GQLError,
+    at,
+    msg,
   )
 import Data.Morpheus.Types.Internal.AST.Name
   ( FieldName,
@@ -117,9 +118,9 @@ instance RenderGQL (Argument s) where
   renderGQL Argument {argumentName, argumentValue} =
     renderEntry argumentName argumentValue
 
-instance NameCollision (Argument s) where
+instance NameCollision GQLError (Argument s) where
   nameCollision Argument {argumentName, argumentPosition} =
-    ("There can Be only One Argument Named " <> msgValidation argumentName)
+    ("There can Be only One Argument Named " <> msg argumentName)
       `at` argumentPosition
 
 type Arguments (s :: Stage) = OrdMap FieldName (Argument s)
@@ -139,10 +140,10 @@ data Directive (s :: Stage) = Directive
   }
   deriving (Show, Lift, Eq)
 
-instance NameCollision (Directive s) where
+instance NameCollision GQLError (Directive s) where
   nameCollision Directive {directiveName} =
     "The directive "
-      <> msgValidation ("@" <> directiveName)
+      <> msg ("@" <> directiveName)
       <> " can only be used once at his location."
 
 instance KeyOf FieldName (Directive s) where
@@ -173,10 +174,10 @@ data DirectiveDefinition s = DirectiveDefinition
   }
   deriving (Show, Lift)
 
-instance NameCollision (DirectiveDefinition s) where
+instance NameCollision GQLError (DirectiveDefinition s) where
   nameCollision DirectiveDefinition {directiveDefinitionName} =
     "There can Be only One DirectiveDefinition Named "
-      <> msgValidation directiveDefinitionName
+      <> msg directiveDefinitionName
       <> "."
 
 type DirectivesDefinition s = OrdMap FieldName (DirectiveDefinition s)
@@ -268,9 +269,9 @@ deriving instance Lift (FieldContent bool cat s)
 instance KeyOf FieldName (FieldDefinition cat s) where
   keyOf = fieldName
 
-instance NameCollision (FieldDefinition cat s) where
+instance NameCollision GQLError (FieldDefinition cat s) where
   nameCollision FieldDefinition {fieldName} =
-    "There can Be only One field Named " <> msgValidation fieldName
+    "There can Be only One field Named " <> msg fieldName
 
 instance RenderGQL (FieldDefinition cat s) where
   renderGQL FieldDefinition {fieldName, fieldType, fieldContent = Just (FieldArgs args)} =
@@ -344,6 +345,6 @@ newtype ArgumentDefinition s = ArgumentDefinition
 instance KeyOf FieldName (ArgumentDefinition s) where
   keyOf = keyOf . argument
 
-instance NameCollision (ArgumentDefinition s) where
+instance NameCollision GQLError (ArgumentDefinition s) where
   nameCollision ArgumentDefinition {argument} =
-    "There can Be only One argument Named " <> msgValidation (fieldName argument)
+    "There can Be only One argument Named " <> msg (fieldName argument)

@@ -4,134 +4,129 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Ext.Result
-  ( Eventless,
-    Result (..),
-    Failure (..),
+  ( Result (..),
     ResultT (..),
-    unpackEvents,
     mapEvent,
     cleanEvents,
     PushEvents (..),
     resultOr,
     sortErrors,
     toEither,
+    GQLResult,
   )
 where
 
-import Data.Morpheus.Internal.Utils
-  ( Failure (..),
-  )
+import Control.Monad.Except (MonadError (..))
+import qualified Data.List.NonEmpty as NE
 import Data.Morpheus.Types.Internal.AST.Error
   ( GQLError (..),
-    GQLErrors,
-    ValidationError,
-    toGQLError,
+    GQLError,
   )
 import Relude
 
-type Eventless = Result ()
+type GQLResult = Result GQLError
 
 -- EVENTS
 class PushEvents e m where
   pushEvents :: [e] -> m ()
 
-unpackEvents :: Result event a -> [event]
-unpackEvents Success {events} = events
-unpackEvents _ = []
-
 --
 -- Result
 --
 --
-data Result events a
-  = Success {result :: a, warnings :: GQLErrors, events :: [events]}
-  | Failure {errors :: GQLErrors}
+data Result err a
+  = Success {result :: a, warnings :: [err]}
+  | Failure {errors :: NonEmpty err}
   deriving (Functor)
 
-instance Applicative (Result e) where
-  pure x = Success x [] []
-  Success f w1 e1 <*> Success x w2 e2 = Success (f x) (w1 <> w2) (e1 <> e2)
+instance Applicative (Result er) where
+  pure x = Success x []
+  Success f w1 <*> Success x w2 = Success (f x) (w1 <> w2)
   Failure e1 <*> Failure e2 = Failure (e1 <> e2)
-  Failure e <*> Success _ w _ = Failure (e <> w)
-  Success _ w _ <*> Failure e = Failure (e <> w)
+  Failure (e :| es) <*> Success _ w = Failure (e :| es <> w)
+  Success _ w <*> Failure (e :| es) = Failure (e :| es <> w)
 
-instance Monad (Result e) where
+instance Monad (Result er) where
   return = pure
-  Success v w1 e1 >>= fm = case fm v of
-    (Success x w2 e2) -> Success x (w1 <> w2) (e1 <> e2)
-    (Failure e) -> Failure (e <> w1)
+  Success v w1 >>= fm = case fm v of
+    (Success x w2) -> Success x (w1 <> w2)
+    (Failure (e :| es)) -> Failure (e :| es <> w1)
   Failure e >>= _ = Failure e
 
-instance Failure [GQLError] (Result ev) where
-  failure = Failure
+instance Bifunctor Result where
+  bimap f g Success {..} = Success {warnings = f <$> warnings, result = g result, ..}
+  bimap f _ Failure {..} = Failure (f <$> errors)
 
-instance PushEvents events (Result events) where
-  pushEvents events = Success {result = (), warnings = [], events}
+instance MonadError er (Result er) where
+  throwError = Failure . pure
+  catchError (Failure (x :| _)) f = f x
+  catchError x _ = x
 
-instance Failure [ValidationError] (Result ev) where
-  failure = failure . fmap toGQLError
+resultOr :: (NonEmpty err -> a') -> (a -> a') -> Result err a -> a'
+resultOr _ f Success {result} = f result
+resultOr f _ Failure {errors} = f errors
 
-resultOr :: (GQLErrors -> a') -> (a -> a') -> Result e a -> a'
-resultOr _ f (Success x _ _) = f x
-resultOr f _ (Failure e) = f e
-
-sortErrors :: Result e a -> Result e a
-sortErrors (Failure errors) = Failure (sortOn locations errors)
+sortErrors :: Result GQLError a -> Result GQLError a
+sortErrors (Failure errors) = Failure (NE.sortWith locations errors)
 sortErrors x = x
 
 -- ResultT
 newtype ResultT event (m :: * -> *) a = ResultT
-  { runResultT :: m (Result event a)
+  { runResultT :: m (Result GQLError ([event], a))
   }
   deriving (Functor)
 
 instance Applicative m => Applicative (ResultT event m) where
-  pure = ResultT . pure . pure
-  ResultT app1 <*> ResultT app2 = ResultT $ liftA2 (<*>) app1 app2
+  pure = ResultT . pure . pure . ([],)
+  ResultT app1 <*> ResultT app2 = ResultT $ liftA2 (<*>) (fx <$> app1) app2
+    where
+      fx :: Monad f => f ([event], a -> b) -> f (([event], a) -> ([event], b))
+      fx x = do
+        (e', f) <- x
+        pure $ \(e, a) -> (e <> e', f a)
 
 instance Monad m => Monad (ResultT event m) where
   return = pure
   (ResultT m1) >>= mFunc = ResultT $ do
-    result1 <- m1
-    case result1 of
+    result <- m1
+    case result of
       Failure errors -> pure $ Failure errors
-      Success value1 w1 e1 -> do
-        result2 <- runResultT (mFunc value1)
-        case result2 of
-          Failure errors -> pure $ Failure (errors <> w1)
-          Success v2 w2 e2 -> pure $ Success v2 (w1 <> w2) (e1 <> e2)
+      Success (events, value) w1 -> do
+        result' <- runResultT (mFunc value)
+        case result' of
+          Failure (e :| es) -> pure $ Failure (e :| es <> w1)
+          Success (events', value') w2 -> pure $ Success (events <> events', value') (w1 <> w2)
 
 instance MonadTrans (ResultT event) where
-  lift = ResultT . fmap pure
+  lift = ResultT . fmap (pure . ([],))
 
-instance Monad m => Failure GQLErrors (ResultT event m) where
-  failure = ResultT . pure . failure
+instance Monad m => MonadError GQLError (ResultT event m) where
+  throwError = ResultT . pure . throwError
+  catchError (ResultT mx) f = ResultT (mx >>= catchResultError)
+    where
+      catchResultError (Failure (x :| _)) = runResultT (f x)
+      catchResultError x = pure x
 
 instance Applicative m => PushEvents event (ResultT event m) where
-  pushEvents = ResultT . pure . pushEvents
+  pushEvents x = ResultT $ pure $ pure (x, ())
 
 cleanEvents ::
   Functor m =>
   ResultT e m a ->
   ResultT e' m a
-cleanEvents resT = ResultT $ replace <$> runResultT resT
-  where
-    replace (Success v w _) = Success v w []
-    replace (Failure e) = Failure e
+cleanEvents resT = ResultT $ fmap (first (const [])) <$> runResultT resT
 
 mapEvent ::
   Monad m =>
   (e -> e') ->
   ResultT e m value ->
   ResultT e' m value
-mapEvent func (ResultT ma) = ResultT $ mapEv <$> ma
-  where
-    mapEv Success {result, warnings, events} =
-      Success {result, warnings, events = fmap func events}
-    mapEv (Failure err) = Failure err
+mapEvent func (ResultT ma) = ResultT $ fmap (first (map func)) <$> ma
 
-toEither :: Result e b -> Either GQLErrors b
+toEither :: Result err b -> Either (NonEmpty err) b
 toEither = resultOr Left Right

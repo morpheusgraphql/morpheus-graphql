@@ -18,12 +18,12 @@ module Data.Morpheus.Validation.Query.Fragment
   )
 where
 
+import Control.Monad.Except (throwError)
 import Data.Morpheus.Error.Fragment
   ( cannotBeSpreadOnType,
   )
 import Data.Morpheus.Internal.Utils
   ( Empty (empty),
-    Failure (..),
   )
 import Data.Morpheus.Types.Internal.AST
   ( Directives,
@@ -105,7 +105,7 @@ castFragmentType ::
   FragmentValidator s1 (Fragment s)
 castFragmentType key position typeMembers fragment@Fragment {fragmentType}
   | fragmentType `elem` typeMembers = pure fragment
-  | otherwise = failure $ cannotBeSpreadOnType key fragmentType position typeMembers
+  | otherwise = throwError $ cannotBeSpreadOnType key fragmentType position typeMembers
 
 resolveSpread :: [TypeName] -> Ref FragmentName -> FragmentValidator s (Fragment s)
 resolveSpread allowedTargets ref@Ref {refName, refPosition} =

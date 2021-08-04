@@ -38,19 +38,20 @@ import Language.Haskell.TH
 import Language.Haskell.TH.Quote
 import Relude hiding (ByteString)
 
+notSupported :: Text -> a
+notSupported things =
+  error $
+    things
+      <> " are not supported by the GraphQL QuasiQuoter"
+
 gql :: QuasiQuoter
 gql =
   QuasiQuoter
     { quoteExp = gqlExpression . pack,
-      quotePat = notHandled "Patterns",
-      quoteType = notHandled "Types",
-      quoteDec = notHandled "Declarations"
+      quotePat = notSupported "Patterns",
+      quoteType = notSupported "Types",
+      quoteDec = notSupported "Declarations"
     }
-  where
-    notHandled things =
-      error $
-        things
-          <> " are not supported by the GraphQL QuasiQuoter"
 
 gqlExpression :: ByteString -> Q Exp
 gqlExpression queryText = case parseRequest request of
@@ -70,14 +71,10 @@ dsl :: QuasiQuoter
 dsl =
   QuasiQuoter
     { quoteExp = dslExpression . pack,
-      quotePat = notHandled "Patterns",
-      quoteType = notHandled "Types",
-      quoteDec = notHandled "Declarations"
+      quotePat = notSupported "Patterns",
+      quoteType = notSupported "Types",
+      quoteDec = notSupported "Declarations"
     }
-  where
-    notHandled things =
-      error $
-        things <> " are not supported by the GraphQL QuasiQuoter"
 
 dslExpression :: ByteString -> Q Exp
 dslExpression doc = case parseSchema doc of

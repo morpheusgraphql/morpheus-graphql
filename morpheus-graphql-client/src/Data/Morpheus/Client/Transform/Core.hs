@@ -20,6 +20,7 @@ module Data.Morpheus.Client.Transform.Core
   )
 where
 
+import Control.Monad.Except (MonadError (throwError))
 import Data.Morpheus.Client.Internal.Types
   ( ClientTypeDefinition (..),
   )
@@ -27,20 +28,18 @@ import Data.Morpheus.Error
   ( deprecatedField,
   )
 import Data.Morpheus.Internal.Ext
-  ( Eventless,
+  ( GQLResult,
     Result (..),
   )
 import Data.Morpheus.Internal.Utils
-  ( Failure (..),
-    camelCaseTypeName,
+  ( camelCaseTypeName,
     selectBy,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     Directives,
     FieldName,
-    GQLErrors,
-    InternalError,
+    GQLError,
     RAW,
     Ref (..),
     Schema (..),
@@ -49,13 +48,12 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeName,
     VALID,
-    ValidationError,
     VariableDefinitions,
+    internal,
     isNotSystemTypeName,
     lookupDeprecated,
     lookupDeprecatedReason,
-    msgInternal,
-    toGQLError,
+    msg,
     typeDefinitions,
   )
 import Relude
@@ -66,7 +64,7 @@ newtype Converter a = Converter
   { runConverter ::
       ReaderT
         Env
-        Eventless
+        GQLResult
         a
   }
   deriving
@@ -74,24 +72,21 @@ newtype Converter a = Converter
       Applicative,
       Monad,
       MonadReader Env,
-      Failure GQLErrors
+      MonadError GQLError
     )
-
-instance Failure ValidationError Converter where
-  failure err = failure [toGQLError err]
 
 newtype UpdateT m a = UpdateT {updateTState :: a -> m a}
 
 resolveUpdates :: Monad m => a -> [UpdateT m a] -> m a
 resolveUpdates a = foldlM (&) a . fmap updateTState
 
-compileError :: InternalError -> GQLErrors
-compileError x = [toGQLError ("Unhandled Compile Time Error: \"" <> x <> "\" ;")]
+compileError :: GQLError -> GQLError
+compileError x = internal $ "Unhandled Compile Time Error: \"" <> x <> "\" ;"
 
 getType :: TypeName -> Converter (TypeDefinition ANY VALID)
 getType typename =
   asks (typeDefinitions . fst)
-    >>= selectBy (compileError $ " can't find Type" <> msgInternal typename) typename
+    >>= selectBy (compileError $ " can't find Type" <> msg typename) typename
 
 customScalarTypes :: TypeName -> [TypeName]
 customScalarTypes typeName
@@ -104,7 +99,7 @@ leafType TypeDefinition {typeName, typeContent} = fromKind typeContent
     fromKind :: TypeContent TRUE a VALID -> Converter ([ClientTypeDefinition], [TypeName])
     fromKind DataEnum {} = pure ([], [typeName])
     fromKind DataScalar {} = pure ([], customScalarTypes typeName)
-    fromKind _ = failure $ compileError "Invalid schema Expected scalar"
+    fromKind _ = throwError $ compileError "Invalid schema Expected scalar"
 
 typeFrom :: [FieldName] -> TypeDefinition a VALID -> TypeName
 typeFrom path TypeDefinition {typeName, typeContent} = __typeFrom typeContent
@@ -116,11 +111,12 @@ typeFrom path TypeDefinition {typeName, typeContent} = __typeFrom typeContent
 
 deprecationWarning :: Directives VALID -> (FieldName, Ref FieldName) -> Converter ()
 deprecationWarning dirs (typename, ref) = case lookupDeprecated dirs of
-  Just deprecation -> Converter $ lift $ Success {result = (), warnings, events = []}
+  Just deprecation -> Converter $ lift $ Success {result = (), warnings}
     where
       warnings =
-        deprecatedField
-          typename
-          ref
-          (lookupDeprecatedReason deprecation)
+        [ deprecatedField
+            typename
+            ref
+            (lookupDeprecatedReason deprecation)
+        ]
   Nothing -> pure ()

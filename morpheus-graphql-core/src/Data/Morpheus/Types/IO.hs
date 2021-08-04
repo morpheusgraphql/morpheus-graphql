@@ -30,6 +30,7 @@ import Data.Morpheus.Ext.Result
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     GQLError (..),
+    GQLError,
     ValidValue,
   )
 import Relude hiding
@@ -37,8 +38,8 @@ import Relude hiding
     encodeUtf8,
   )
 
-renderResponse :: Result e ValidValue -> GQLResponse
-renderResponse (Failure errors) = Errors (sortOn locations errors)
+renderResponse :: Result GQLError ValidValue -> GQLResponse
+renderResponse (Failure errors) = Errors (sortOn locations $ toList errors)
 renderResponse Success {result} = Data result
 
 -- | GraphQL HTTP Request Body

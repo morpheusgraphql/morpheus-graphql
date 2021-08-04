@@ -14,7 +14,7 @@ import qualified Data.Aeson as Aeson
   )
 import Data.HashMap.Lazy (toList)
 import Data.Morpheus.Ext.Result
-  ( Eventless,
+  ( GQLResult,
   )
 import Data.Morpheus.Internal.Utils
   ( IsMap (unsafeFromList),
@@ -64,7 +64,7 @@ parseExecutableDocument variables =
       <* ignoredTokens
       <* eof
 
-parseRequest :: GQLRequest -> Eventless ExecutableDocument
+parseRequest :: GQLRequest -> GQLResult ExecutableDocument
 parseRequest GQLRequest {query, variables} =
   processParser
     (parseExecutableDocument $ toVariables variables)

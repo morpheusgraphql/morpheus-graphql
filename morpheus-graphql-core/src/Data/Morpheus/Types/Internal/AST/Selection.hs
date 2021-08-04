@@ -29,6 +29,7 @@ module Data.Morpheus.Types.Internal.AST.Selection
   )
 where
 
+import Control.Monad.Except (MonadError (throwError))
 import Data.Foldable (foldr')
 import Data.Mergeable
   ( Merge (..),
@@ -42,7 +43,6 @@ import Data.Morpheus.Error.Operation
   )
 import Data.Morpheus.Internal.Utils
   ( (<:>),
-    Failure (..),
     HistoryT,
     KeyOf (..),
     addPath,
@@ -59,11 +59,10 @@ import Data.Morpheus.Types.Internal.AST.Base
     Ref (..),
   )
 import Data.Morpheus.Types.Internal.AST.Error
-  ( ValidationError,
-    ValidationErrors,
+  ( GQLError,
     at,
     atPositions,
-    msgValidation,
+    msg,
   )
 import Data.Morpheus.Types.Internal.AST.Fields
   ( Arguments,
@@ -110,9 +109,9 @@ data Fragment (stage :: Stage) = Fragment
   deriving (Show, Eq, Lift)
 
 -- ERRORs
-instance NameCollision (Fragment s) where
+instance NameCollision GQLError (Fragment s) where
   nameCollision Fragment {fragmentName, fragmentPosition} =
-    ("There can be only one fragment named " <> msgValidation fragmentName <> ".")
+    ("There can be only one fragment named " <> msg fragmentName <> ".")
       `at` fragmentPosition
 
 instance KeyOf FragmentName (Fragment s) where
@@ -145,7 +144,7 @@ instance RenderGQL (SelectionContent VALID) where
 
 instance
   ( Monad m,
-    Failure ValidationErrors m,
+    MonadError GQLError m,
     Merge (HistoryT m) (SelectionSet s)
   ) =>
   Merge (HistoryT m) (SelectionContent s)
@@ -156,10 +155,10 @@ instance
     | oldC == currentC = pure oldC
     | otherwise = do
       path <- ask
-      failure
-        [ msgValidation (intercalate "." $ fmap refName path)
+      throwError
+        ( msg (intercalate "." $ fmap refName path)
             `atPositions` fmap refPosition path
-        ]
+        )
 
 deriving instance Show (SelectionContent a)
 
@@ -182,20 +181,18 @@ instance RenderGQL UnionTag where
       <> renderGQL unionTagName
       <> renderSelectionSet unionTagSelection
 
-mergeConflict :: (Monad m, Failure [ValidationError] m) => ValidationError -> HistoryT m a
+mergeConflict :: (Monad m, MonadError GQLError m) => GQLError -> HistoryT m a
 mergeConflict err = do
   path <- ask
   __mergeConflict path
   where
-    __mergeConflict :: (Monad m, Failure [ValidationError] m) => [Ref FieldName] -> HistoryT m a
-    __mergeConflict [] = failure [err]
+    __mergeConflict :: (Monad m, MonadError GQLError m) => [Ref FieldName] -> HistoryT m a
+    __mergeConflict [] = throwError err
     __mergeConflict refs@(rootField : xs) =
-      failure
-        [ (renderSubfields `atPositions` fmap refPosition refs)
-            <> err
-        ]
+      throwError
+        (renderSubfields `atPositions` fmap refPosition refs <> err)
       where
-        fieldConflicts ref = msgValidation (refName ref) <> " conflict because "
+        fieldConflicts ref = msg (refName ref) <> " conflict because "
         renderSubfield ref txt = txt <> "subfields " <> fieldConflicts ref
         renderStart = "Fields " <> fieldConflicts rootField
         renderSubfields =
@@ -206,7 +203,7 @@ mergeConflict err = do
 
 instance
   ( Monad m,
-    Failure ValidationErrors m
+    MonadError GQLError m
   ) =>
   Merge (HistoryT m) UnionTag
   where
@@ -248,14 +245,14 @@ instance KeyOf FieldName (Selection s) where
       } = fromMaybe selectionName selectionAlias
   keyOf _ = ""
 
-useDifferentAliases :: ValidationError
+useDifferentAliases :: GQLError
 useDifferentAliases =
   "Use different aliases on the "
     <> "fields to fetch both if this was intentional."
 
 instance
   ( Monad m,
-    Failure ValidationErrors m,
+    MonadError GQLError m,
     Merge (HistoryT m) (SelectionSet s)
   ) =>
   Merge (HistoryT m) (Selection s)
@@ -264,7 +261,7 @@ instance
 
 mergeSelection ::
   ( Monad m,
-    Failure ValidationErrors m,
+    MonadError GQLError m,
     Merge (HistoryT m) (SelectionSet s)
   ) =>
   Selection s ->
@@ -299,15 +296,15 @@ mergeSelection
               `atPositions` [pos1, pos2]
 mergeSelection x y = mergeConflict ("INTERNAL: can't merge. " <> msgValue x <> msgValue y <> useDifferentAliases)
 
-msgValue :: Show a => a -> ValidationError
-msgValue = msgValidation . show
+msgValue :: Show a => a -> GQLError
+msgValue = msg . show
 
 -- fails if alias matches but name not:
 --   { user1: user
 --     user1: product
 --   }
 mergeName ::
-  (Monad m, Failure [ValidationError] m, Foldable t) =>
+  (Monad m, MonadError GQLError m, Foldable t) =>
   t Position ->
   Selection s1 ->
   Selection s2 ->
@@ -316,9 +313,9 @@ mergeName pos old current
   | selectionName old == selectionName current = pure $ selectionName current
   | otherwise =
     mergeConflict $
-      ( msgValidation (selectionName old)
+      ( msg (selectionName old)
           <> " and "
-          <> msgValidation (selectionName current)
+          <> msg (selectionName current)
           <> " are different fields. "
           <> useDifferentAliases
       )
@@ -359,9 +356,9 @@ instance RenderGQL (Operation VALID) where
 getOperationName :: Maybe FieldName -> TypeName
 getOperationName = maybe "AnonymousOperation" coerce
 
-getOperationDataType :: Failure ValidationError m => Operation s -> Schema VALID -> m (TypeDefinition OBJECT VALID)
+getOperationDataType :: MonadError GQLError m => Operation s -> Schema VALID -> m (TypeDefinition OBJECT VALID)
 getOperationDataType Operation {operationType = Query} lib = pure (query lib)
 getOperationDataType Operation {operationType = Mutation, operationPosition} lib =
-  maybe (failure $ mutationIsNotDefined operationPosition) pure (mutation lib)
+  maybe (throwError $ mutationIsNotDefined operationPosition) pure (mutation lib)
 getOperationDataType Operation {operationType = Subscription, operationPosition} lib =
-  maybe (failure $ subscriptionIsNotDefined operationPosition) pure (subscription lib)
+  maybe (throwError $ subscriptionIsNotDefined operationPosition) pure (subscription lib)

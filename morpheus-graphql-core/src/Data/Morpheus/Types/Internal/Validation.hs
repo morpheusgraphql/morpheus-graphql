@@ -59,13 +59,16 @@ module Data.Morpheus.Types.Internal.Validation
   )
 where
 
+-- Resolution,
+
+import Control.Monad.Except (throwError)
 import Data.Morpheus.Internal.Utils
-  ( Failure (..),
-    IsMap,
+  ( IsMap,
     KeyOf (..),
     member,
     selectBy,
     selectOr,
+    throwErrors,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
@@ -77,15 +80,12 @@ import Data.Morpheus.Types.Internal.AST
     Ref (..),
     TRUE,
     TypeName,
-    ValidationError,
     Value (..),
     constraintInputUnion,
     fromAny,
     isNullable,
-    msgValidation,
+    msg,
   )
--- Resolution,
-
 import Data.Morpheus.Types.Internal.AST.TypeSystem
 import Data.Morpheus.Types.Internal.Validation.Error
   ( KindViolation (..),
@@ -112,11 +112,10 @@ getUnused :: (KeyOf k b, IsMap k c, Foldable t) => c a -> t b -> [b]
 getUnused uses = filter (not . (`member` uses) . keyOf) . toList
 
 failOnUnused :: Unused ctx b => [b] -> Validator s ctx ()
-failOnUnused x
-  | null x = pure ()
-  | otherwise = do
-    ctx <- validatorCTX <$> Validator ask
-    failure $ fmap (unused ctx) x
+failOnUnused [] = pure ()
+failOnUnused (x : xs) = do
+  ctx <- validatorCTX <$> Validator ask
+  throwErrors $ unused ctx <$> (x :| xs)
 
 checkUnused ::
   ( KeyOf k b,
@@ -139,8 +138,8 @@ constraint IMPLEMENTABLE _ TypeDefinition {typeContent = DataObject {objectField
   pure TypeDefinition {typeContent = DataObject {objectFields, ..}, ..}
 constraint IMPLEMENTABLE _ TypeDefinition {typeContent = DataInterface fields, ..} =
   pure TypeDefinition {typeContent = DataInterface fields, ..}
-constraint INPUT ctx x = maybe (failure [kindViolation INPUT ctx]) pure (fromAny x)
-constraint target ctx _ = failure [kindViolation target ctx]
+constraint INPUT ctx x = maybe (throwError (kindViolation INPUT ctx)) pure (fromAny x)
+constraint target ctx _ = throwError (kindViolation target ctx)
 
 selectRequired ::
   ( IsMap FieldName c,
@@ -153,7 +152,7 @@ selectRequired selector container =
   do
     ValidatorContext {scope, validatorCTX} <- Validator ask
     selectBy
-      [missingRequired scope validatorCTX selector container]
+      (missingRequired scope validatorCTX selector container)
       (keyOf selector)
       container
 
@@ -194,15 +193,15 @@ selectWithDefaultValue
       failSelection = do
         ValidatorContext {scope, validatorCTX} <- Validator ask
         position <- asksScope position
-        failure [missingRequired scope validatorCTX (Ref fieldName (fromMaybe (Position 0 0) position)) values]
+        throwError $ missingRequired scope validatorCTX (Ref fieldName (fromMaybe (Position 0 0) position)) values
 
 selectType ::
   TypeName ->
   Validator s ctx (TypeDefinition ANY s)
 selectType name =
-  askSchema >>= maybe (failure err) pure . lookupDataType name
+  askSchema >>= maybe (throwError err) pure . lookupDataType name
   where
-    err = "Unknown Type " <> msgValidation name <> "." :: ValidationError
+    err = "Unknown Type " <> msg name <> "."
 
 selectKnown ::
   ( IsMap k c,

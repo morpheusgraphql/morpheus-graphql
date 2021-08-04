@@ -14,6 +14,9 @@ cradle:
       - path: "./morpheus-graphql-client/src"
         component: "morpheus-graphql-client:lib"
 
+      - path: "./morpheus-graphql-subscriptions/src"
+        component: "morpheus-graphql-subscriptions:lib"
+
       ## test
       - path: "./morpheus-graphql-tests/src"
         component: "morpheus-graphql-tests:lib"

@@ -43,9 +43,8 @@ import Data.Morpheus.Rendering.RenderGQL
     fromText,
     renderGQL,
   )
-import Data.Morpheus.Types.Internal.AST.Base
-  ( Message (..),
-    Msg (..),
+import Data.Morpheus.Types.Internal.AST.Error
+  ( Msg (..),
   )
 import qualified Data.Text as T
 import Language.Haskell.TH
@@ -84,7 +83,7 @@ newtype Name (t :: NAME) = Name {unpackName :: Text}
     )
 
 instance Msg (Name t) where
-  msg name = Message $ "\"" <> unpackName name <> "\""
+  msg name = msg $ "\"" <> unpackName name <> "\""
 
 packName :: Text -> Name t
 packName = Name

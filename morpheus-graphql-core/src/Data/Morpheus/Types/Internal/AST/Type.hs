@@ -24,7 +24,7 @@ import Data.Morpheus.Rendering.RenderGQL
     render,
     renderGQL,
   )
-import Data.Morpheus.Types.Internal.AST.Base
+import Data.Morpheus.Types.Internal.AST.Error
   ( Msg (..),
   )
 import Data.Morpheus.Types.Internal.AST.Name

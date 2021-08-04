@@ -13,11 +13,11 @@ import Data.Morpheus.Types.Internal.AST.Base
     Ref (..),
   )
 import Data.Morpheus.Types.Internal.AST.Error
-  ( ValidationError,
+  ( GQLError,
     at,
     atPositions,
     manyMsg,
-    msgValidation,
+    msg,
   )
 import Data.Morpheus.Types.Internal.AST.Name
   ( FragmentName,
@@ -37,10 +37,10 @@ import Relude
     {...H} -> "Unknown fragment \"H\"."
 -}
 
-cannotSpreadWithinItself :: NonEmpty (Ref FragmentName) -> ValidationError
+cannotSpreadWithinItself :: NonEmpty (Ref FragmentName) -> GQLError
 cannotSpreadWithinItself (fr :| frs) =
   ( "Cannot spread fragment "
-      <> msgValidation (refName fr)
+      <> msg (refName fr)
       <> " within itself via "
       <> manyMsg (refName <$> (fr : frs))
       <> "."
@@ -48,17 +48,17 @@ cannotSpreadWithinItself (fr :| frs) =
     `atPositions` map refPosition (fr : frs)
 
 -- Fragment type mismatch -> "Fragment \"H\" cannot be spread here as objects of type \"Hobby\" can never be of type \"Experience\"."
-cannotBeSpreadOnType :: Maybe FragmentName -> TypeName -> Position -> [TypeName] -> ValidationError
+cannotBeSpreadOnType :: Maybe FragmentName -> TypeName -> Position -> [TypeName] -> GQLError
 cannotBeSpreadOnType key fragmentType position typeMembers =
   ( "Fragment "
       <> getName key
       <> "cannot be spread here as objects of type "
       <> manyMsg typeMembers
       <> " can never be of type "
-      <> msgValidation fragmentType
+      <> msg fragmentType
       <> "."
   )
     `at` position
   where
-    getName (Just x) = msgValidation x <> " "
+    getName (Just x) = msg x <> " "
     getName Nothing = ""

@@ -5,6 +5,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -23,6 +24,7 @@ module Data.Morpheus.Subscriptions.Stream
   )
 where
 
+import Control.Monad.Except (throwError)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Morpheus.App.Internal.Resolving
   ( Channel,
@@ -31,12 +33,6 @@ import Data.Morpheus.App.Internal.Resolving
     Result (..),
     ResultT (..),
     runResultT,
-  )
-import Data.Morpheus.Error
-  ( globalErrorMessage,
-  )
-import Data.Morpheus.Internal.Utils
-  ( failure,
   )
 import Data.Morpheus.Subscriptions.Apollo
   ( ApolloAction (..),
@@ -57,7 +53,7 @@ import Data.Morpheus.Types.IO
     GQLResponse (..),
   )
 import Data.Morpheus.Types.Internal.AST
-  ( GQLErrors,
+  ( GQLError,
     VALID,
     Value (..),
   )
@@ -118,13 +114,15 @@ handleResponseStream ::
 handleResponseStream session (ResultT res) =
   SubOutput $ const $ unfoldR <$> res
   where
-    execute Publish {} = apolloError $ globalErrorMessage "websocket can only handle subscriptions, not mutations"
+    execute Publish {} =
+      apolloError
+        ["websocket can only handle subscriptions, not mutations"]
     execute (Subscribe ch subRes) = Right $ startSession ch subRes session
     --------------------------
-    unfoldR Success {events} = traverse execute events
-    unfoldR Failure {errors} = apolloError errors
+    unfoldR Success {result = (events, _)} = traverse execute events
+    unfoldR Failure {errors} = apolloError (toList errors)
     --------------------------
-    apolloError :: GQLErrors -> Either ByteString a
+    apolloError :: [GQLError] -> Either ByteString a
     apolloError = Left . toApolloResponse (sid session) . Errors
 
 handleWSRequest ::
@@ -205,10 +203,10 @@ handleResponseHTTP
   res
   PubContext {eventPublisher} = runResultT (handleRes res execute) >>= runResult
     where
-      runResult Success {result, events} = traverse_ eventPublisher events $> Data result
-      runResult Failure {errors} = pure $ Errors errors
+      runResult Success {result = (events, result)} = traverse_ eventPublisher events $> Data result
+      runResult Failure {errors} = pure $ Errors $ toList errors
       execute (Publish event) = pure event
-      execute Subscribe {} = failure (globalErrorMessage "http server can't handle subscription")
+      execute Subscribe {} = throwError "http server can't handle subscription"
 
 handleRes ::
   (Monad m) =>
@@ -220,13 +218,9 @@ handleRes res execute = ResultT $ runResultT res >>= runResultT . unfoldRes exec
 unfoldRes ::
   (Monad m) =>
   (e -> ResultT e' m e') ->
-  Result e a ->
+  Result GQLError ([e], a) ->
   ResultT e' m a
-unfoldRes execute Success {result, warnings, events} =
-  traverse execute events
-    >>= ( ResultT . pure
-            . Success
-              result
-              warnings
-        )
+unfoldRes execute Success {result = (events, result), ..} = traverse execute events >>= packResultT
+  where
+    packResultT events' = ResultT $ pure $ Success {result = (events', result), ..}
 unfoldRes _ Failure {errors} = ResultT $ pure $ Failure {errors}
