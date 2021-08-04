@@ -3,25 +3,22 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.AST.Error
   ( at,
     atPositions,
-    ValidationError,
-    ValidationErrors,
-    toGQLError,
-    Error,
-    GQLError (..),
+    internal,
+    isInternal,
     GQLErrors,
-    readErrorMessage,
-    mapError,
-    msgValidation,
-    msgInternal,
-    InternalError,
+    GQLError
+      ( message,
+        locations
+      ),
     manyMsg,
+    Msg (..),
   )
 where
 
@@ -31,77 +28,72 @@ import Data.Aeson
     ToJSON (..),
     Value,
     defaultOptions,
+    encode,
     genericToJSON,
   )
+import Data.ByteString.Lazy (ByteString)
 import Data.Morpheus.Types.Internal.AST.Base
   ( Message (..),
-    Msg (..),
     Position (..),
   )
 import qualified Data.Text as T
-import Relude
+import qualified Data.Text.Lazy as LT
+import Data.Text.Lazy.Encoding (decodeUtf8)
+import Relude hiding (ByteString, decodeUtf8)
 
-data ERROR = VALIDATION | INTERNAL
-
-readErrorMessage :: Error a -> Message
-readErrorMessage = errorMessage
-
-data Error (a :: ERROR) = Error
-  { errorMessage :: Message,
-    errorLocations :: [Position]
-  }
-  deriving (Show)
-
-instance IsString (Error t) where
-  fromString = (`Error` []) . msg
-
-instance Semigroup (Error t) where
-  Error m1 p1 <> Error m2 p2 = Error (m1 <> m2) (p1 <> p2)
-
-at :: Error t -> Position -> Error t
-at err pos = atPositions err [pos]
-{-# INLINE at #-}
-
-atPositions :: Foldable t => Error a -> t Position -> Error a
-atPositions (Error m ps) pos = Error m (ps <> toList pos)
-{-# INLINE atPositions #-}
-
-type ValidationError = Error 'VALIDATION
-
-type ValidationErrors = [ValidationError]
-
-toGQLError :: Error t -> GQLError
-toGQLError (Error m p) = GQLError m p Nothing
-{-# INLINE toGQLError #-}
-
-msgValidation :: (Msg a) => a -> ValidationError
-msgValidation = (`Error` []) . msg
-{-# INLINE msgValidation #-}
-
-manyMsg :: (Foldable t, Msg a) => t a -> Error k
-manyMsg = (`Error` []) . Message . T.intercalate ", " . fmap (readMessage . msg) . toList
-
-mapError :: (Message -> Message) -> ValidationError -> GQLError
-mapError f (Error text locations) =
+mkError :: Message -> GQLError
+mkError x =
   GQLError
-    { message = f text,
-      locations,
+    { message = x,
+      locations = [],
+      errorType = Nothing,
       extensions = Nothing
     }
 
-type InternalError = Error 'INTERNAL
+instance IsString GQLError where
+  fromString = mkError . Message . T.pack
 
-msgInternal :: (Msg a) => a -> InternalError
-msgInternal = (`Error` []) . msg
-{-# INLINE msgInternal #-}
+instance Semigroup GQLError where
+  GQLError m1 l1 t1 e1 <> GQLError m2 l2 t2 e2 = GQLError (m1 <> m2) (l1 <> l2) (t1 <> t2) (e1 <> e2)
 
-instance Msg (Error 'INTERNAL) where
-  msg = ("Internal Error! " <>) . errorMessage
+internal :: GQLError -> GQLError
+internal x = x {errorType = Just Internal}
+
+isInternal :: GQLError -> Bool
+isInternal GQLError {errorType = Just Internal} = True
+isInternal _ = False
+
+at :: GQLError -> Position -> GQLError
+at err pos = atPositions err [pos]
+{-# INLINE at #-}
+
+atPositions :: Foldable t => GQLError -> t Position -> GQLError
+atPositions GQLError {..} pos = GQLError {locations = locations <> toList pos, ..}
+{-# INLINE atPositions #-}
+
+manyMsg :: (Foldable t, Msg a) => t a -> GQLError
+manyMsg =
+  mkError . Message . T.intercalate ", "
+    . fmap (readMessage . message . msg)
+    . toList
+
+data ErrorType = Internal
+  deriving
+    ( Show,
+      Eq,
+      Generic,
+      FromJSON,
+      ToJSON
+    )
+
+instance Semigroup ErrorType where
+  Internal <> Internal = Internal
 
 data GQLError = GQLError
   { message :: Message,
     locations :: [Position],
-    extensions :: Maybe Value
+    errorType :: Maybe ErrorType,
+    extensions :: Maybe (Map Text Value)
   }
   deriving
     ( Show,
@@ -113,4 +105,25 @@ data GQLError = GQLError
 instance ToJSON GQLError where
   toJSON = genericToJSON (defaultOptions {omitNothingFields = True})
 
-type GQLErrors = [GQLError]
+type GQLErrors = NonEmpty GQLError
+
+class Msg a where
+  msg :: a -> GQLError
+
+instance Msg GQLError where
+  msg = id
+
+instance Msg String where
+  msg = fromString
+
+instance Msg Message where
+  msg = mkError
+
+instance Msg Text where
+  msg = mkError . Message
+
+instance Msg ByteString where
+  msg = msg . LT.toStrict . decodeUtf8
+
+instance Msg Value where
+  msg = msg . encode

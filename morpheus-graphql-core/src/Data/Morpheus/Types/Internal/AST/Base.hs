@@ -17,21 +17,14 @@ module Data.Morpheus.Types.Internal.AST.Base
     Token,
     TRUE,
     FALSE,
-    Msg (..),
   )
 where
 
 import Data.Aeson
   ( FromJSON,
     ToJSON (..),
-    Value,
-    encode,
   )
-import Data.ByteString.Lazy (ByteString)
-import Data.Text (pack)
 import qualified Data.Text as T
-import qualified Data.Text.Lazy as LT
-import Data.Text.Lazy.Encoding (decodeUtf8)
 import Language.Haskell.TH
   ( ExpQ,
     stringE,
@@ -68,24 +61,6 @@ instance Lift Message where
 #if MIN_VERSION_template_haskell(2,16,0)
   liftTyped = liftTypedString . readMessage
 #endif
-
-class Msg a where
-  msg :: a -> Message
-
-instance Msg Message where
-  msg = id
-
-instance Msg String where
-  msg = Message . pack
-
-instance Msg ByteString where
-  msg = Message . LT.toStrict . decodeUtf8
-
-instance Msg Text where
-  msg = Message
-
-instance Msg Value where
-  msg = msg . encode
 
 liftTypedString :: IsString a => Token -> Q (TExp a)
 liftTypedString = unsafeTExpCoerce . stringE . T.unpack

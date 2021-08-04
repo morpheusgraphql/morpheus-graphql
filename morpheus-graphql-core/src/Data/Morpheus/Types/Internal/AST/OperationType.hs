@@ -18,7 +18,7 @@ import Data.Char (toLower)
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
   )
-import Data.Morpheus.Types.Internal.AST.Base (Msg (..))
+import Data.Morpheus.Types.Internal.AST.Error (Msg (..))
 import Data.Morpheus.Types.Internal.AST.Name (TypeName)
 import Language.Haskell.TH.Syntax
   ( Lift,

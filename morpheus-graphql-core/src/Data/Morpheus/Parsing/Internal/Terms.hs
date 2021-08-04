@@ -34,7 +34,7 @@ where
 
 import Data.ByteString.Lazy.Internal (ByteString)
 import Data.Mergeable.IsMap (FromList)
-import Data.Morpheus.Ext.Result (Eventless)
+import Data.Morpheus.Ext.Result (GQLResult)
 import Data.Morpheus.Internal.Utils
   ( Empty (..),
     KeyOf,
@@ -215,7 +215,7 @@ collection :: Parser a -> Parser [a]
 collection entry = braces (entry `sepEndBy` ignoredTokens)
 {-# INLINE collection #-}
 
-setOf :: (FromList Eventless map k a, KeyOf k a) => Parser a -> Parser (map k a)
+setOf :: (FromList GQLResult map k a, KeyOf k a) => Parser a -> Parser (map k a)
 setOf = collection >=> lift . fromElems
 {-# INLINE setOf #-}
 
@@ -227,7 +227,7 @@ parseNonNull :: Parser Bool
 parseNonNull = (symbol BANG $> True) <|> pure False
 {-# INLINE parseNonNull #-}
 
-uniqTuple :: (FromList Eventless map k a, KeyOf k a) => Parser a -> Parser (map k a)
+uniqTuple :: (FromList GQLResult map k a, KeyOf k a) => Parser a -> Parser (map k a)
 uniqTuple parser =
   label "Tuple" $
     parens
@@ -236,7 +236,7 @@ uniqTuple parser =
 {-# INLINE uniqTuple #-}
 
 uniqTupleOpt ::
-  ( FromList Eventless map k a,
+  ( FromList GQLResult map k a,
     Empty (map k a),
     KeyOf k a
   ) =>

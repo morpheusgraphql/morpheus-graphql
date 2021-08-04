@@ -33,9 +33,9 @@ where
 -- MORPHEUS
 import qualified Data.Map as M
 import Data.Morpheus.App.Internal.Resolving
-  ( Eventless,
-    Result (..),
+  ( Result (..),
   )
+import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Internal.Utils (empty)
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
@@ -78,7 +78,7 @@ lookupFieldContent ::
 lookupFieldContent proxy@InputType key = DefaultInputValue <$> key `M.lookup` defaultValues proxy
 lookupFieldContent OutputType _ = Nothing
 
-fromSchema :: Eventless (Schema VALID) -> Q Exp
+fromSchema :: GQLResult (Schema VALID) -> Q Exp
 fromSchema Success {} = [|()|]
 fromSchema Failure {errors} = fail (show errors)
 

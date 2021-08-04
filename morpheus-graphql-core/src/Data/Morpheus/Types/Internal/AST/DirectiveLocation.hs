@@ -6,7 +6,7 @@ module Data.Morpheus.Types.Internal.AST.DirectiveLocation
   )
 where
 
-import Data.Morpheus.Types.Internal.AST.Base (Msg (..))
+import Data.Morpheus.Types.Internal.AST.Error (Msg (..))
 import Language.Haskell.TH.Syntax (Lift)
 import Relude hiding (Show, show)
 import Prelude (Show (..))

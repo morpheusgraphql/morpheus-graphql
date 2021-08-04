@@ -11,14 +11,14 @@ import Data.Morpheus.Types.Internal.AST.Base
   ( Position,
   )
 import Data.Morpheus.Types.Internal.AST.Error
-  ( ValidationError,
+  ( GQLError,
     at,
   )
 
-mutationIsNotDefined :: Position -> ValidationError
+mutationIsNotDefined :: Position -> GQLError
 mutationIsNotDefined position =
   "Schema is not configured for mutations." `at` position
 
-subscriptionIsNotDefined :: Position -> ValidationError
+subscriptionIsNotDefined :: Position -> GQLError
 subscriptionIsNotDefined position =
   "Schema is not configured for subscriptions." `at` position

@@ -58,6 +58,10 @@ where
 
 -- MORPHEUS
 
+-- MORPHEUS
+
+-- MORPHEUS
+import Control.Monad.Except (MonadError (throwError))
 import qualified Data.HashMap.Lazy as HM
 import Data.Mergeable
   ( IsMap (lookup),
@@ -72,7 +76,6 @@ import Data.Mergeable.SafeHashMap
 import Data.Morpheus.Internal.Utils
   ( (<:>),
     Empty (..),
-    Failure (..),
     IsMap (..),
     KeyOf (..),
     insert,
@@ -95,9 +98,8 @@ import Data.Morpheus.Types.Internal.AST.Base
     Token,
   )
 import Data.Morpheus.Types.Internal.AST.Error
-  ( ValidationError,
-    ValidationErrors,
-    msgValidation,
+  ( GQLError,
+    msg,
   )
 import Data.Morpheus.Types.Internal.AST.Fields
   ( DirectiveDefinition (..),
@@ -223,7 +225,7 @@ data Schema (s :: Stage) = Schema
 
 instance
   ( Monad m,
-    Failure ValidationErrors m
+    MonadError GQLError m
   ) =>
   Merge m (Schema s)
   where
@@ -236,7 +238,7 @@ instance
       <*> directiveDefinitions s1 <:> directiveDefinitions s2
 
 mergeOptional ::
-  (Monad m, Failure ValidationErrors m) =>
+  (Monad m, MonadError GQLError m) =>
   Maybe (TypeDefinition OBJECT s) ->
   Maybe (TypeDefinition OBJECT s) ->
   m (Maybe (TypeDefinition OBJECT s))
@@ -245,7 +247,7 @@ mergeOptional (Just x) Nothing = pure (Just x)
 mergeOptional (Just x) (Just y) = Just <$> mergeOperation x y
 
 mergeOperation ::
-  (Monad m, Failure ValidationErrors m) =>
+  (Monad m, MonadError GQLError m) =>
   TypeDefinition OBJECT s ->
   TypeDefinition OBJECT s ->
   m (TypeDefinition OBJECT s)
@@ -268,7 +270,7 @@ instance RenderGQL SchemaDefinition where
 renderSchemaDefinition :: [RootOperationTypeDefinition] -> Rendering
 renderSchemaDefinition entries = "schema" <> renderObject entries <> newline
 
-instance NameCollision SchemaDefinition where
+instance NameCollision GQLError SchemaDefinition where
   nameCollision _ = "There can Be only One SchemaDefinition."
 
 instance KeyOf TypeName SchemaDefinition where
@@ -286,9 +288,9 @@ data RootOperationTypeDefinition = RootOperationTypeDefinition
   }
   deriving (Show, Eq)
 
-instance NameCollision RootOperationTypeDefinition where
+instance NameCollision GQLError RootOperationTypeDefinition where
   nameCollision RootOperationTypeDefinition {rootOperationType} =
-    "There can Be only One TypeDefinition for schema." <> msgValidation rootOperationType
+    "There can Be only One TypeDefinition for schema." <> msg rootOperationType
 
 instance KeyOf OperationType RootOperationTypeDefinition where
   keyOf = rootOperationType
@@ -310,7 +312,7 @@ typeDefinitions schema@Schema {..} = toHashMap types <> HM.fromList operations
 rootTypeDefinitions :: Schema s -> [TypeDefinition ANY s]
 rootTypeDefinitions Schema {..} = map toAny $ catMaybes [Just query, mutation, subscription]
 
-mkSchema :: (Monad m, Failure ValidationErrors m) => [TypeDefinition ANY s] -> m (Schema s)
+mkSchema :: (Monad m, MonadError GQLError m) => [TypeDefinition ANY s] -> m (Schema s)
 mkSchema types =
   traverse3
     (popByKey types)
@@ -322,7 +324,7 @@ mkSchema types =
 
 defineSchemaWith ::
   ( Monad f,
-    Failure ValidationErrors f
+    MonadError GQLError f
   ) =>
   [TypeDefinition cat s] ->
   ( Maybe (TypeDefinition OBJECT s),
@@ -334,7 +336,7 @@ defineSchemaWith oTypes (Just query, mutation, subscription) = do
   let types = excludeTypes [Just query, mutation, subscription] oTypes
   let schema = (initTypeLib query) {mutation, subscription}
   foldlM (flip defineType) schema types
-defineSchemaWith _ (Nothing, _, _) = failure ["Query root type must be provided." :: ValidationError]
+defineSchemaWith _ (Nothing, _, _) = throwError "Query root type must be provided."
 
 excludeTypes :: [Maybe (TypeDefinition c1 s)] -> [TypeDefinition c2 s] -> [TypeDefinition c2 s]
 excludeTypes exclusionTypes = filter ((`notElem` blacklist) . typeName)
@@ -343,7 +345,7 @@ excludeTypes exclusionTypes = filter ((`notElem` blacklist) . typeName)
     blacklist = fmap typeName (catMaybes exclusionTypes)
 
 withDirectives ::
-  (Monad m, Failure [ValidationError] m) =>
+  (Monad m, MonadError GQLError m) =>
   DirectivesDefinition s ->
   Schema s ->
   m (Schema s)
@@ -356,7 +358,7 @@ withDirectives dirs Schema {..} = do
       }
 
 buildSchema ::
-  (Monad m, Failure ValidationErrors m) =>
+  (Monad m, MonadError GQLError m) =>
   ( Maybe SchemaDefinition,
     [TypeDefinition ANY s],
     DirectivesDefinition s
@@ -374,19 +376,19 @@ traverse3 :: Applicative t => (a -> t b) -> (a, a, a) -> t (b, b, b)
 traverse3 f (a1, a2, a3) = (,,) <$> f a1 <*> f a2 <*> f a3
 
 typeReference ::
-  (Monad m, Failure ValidationErrors m) =>
+  (Monad m, MonadError GQLError m) =>
   [TypeDefinition ANY s] ->
   RootOperationTypeDefinition ->
   m (Maybe (TypeDefinition OBJECT s))
 typeReference types rootOperation =
   popByKey types rootOperation
     >>= maybe
-      (failure ["Unknown type " <> msgValidation (rootOperationTypeDefinitionName rootOperation) <> "."])
+      (throwError $ "Unknown type " <> msg (rootOperationTypeDefinitionName rootOperation) <> ".")
       (pure . Just)
 
 selectOperation ::
   ( Monad f,
-    Failure ValidationErrors f
+    MonadError GQLError f
   ) =>
   SchemaDefinition ->
   OperationType ->
@@ -447,8 +449,9 @@ instance KeyOf TypeName (TypeDefinition a s) where
 instance Strictness (TypeDefinition k s) where
   isResolverType = isResolverType . typeContent
 
-instance NameCollision (TypeDefinition cat s) where
-  nameCollision x = "There can Be only One TypeDefinition Named " <> msgValidation (typeName x) <> "."
+instance NameCollision GQLError (TypeDefinition cat s) where
+  nameCollision x =
+    "There can Be only One TypeDefinition Named " <> msg (typeName x) <> "."
 
 instance
   ToCategory (TypeContent TRUE) cat cat' =>
@@ -638,7 +641,7 @@ kindOf TypeDefinition {typeName, typeContent} = __kind typeContent
 
 defineType ::
   ( Monad m,
-    Failure ValidationErrors m
+    MonadError GQLError m
   ) =>
   TypeDefinition k s ->
   Schema s ->
@@ -651,7 +654,7 @@ lookupWith :: Eq k => (a -> k) -> k -> [a] -> Maybe a
 lookupWith f key = find ((== key) . f)
 
 popByKey ::
-  (Applicative m, Failure ValidationErrors m) =>
+  (MonadError GQLError m) =>
   [TypeDefinition ANY s] ->
   RootOperationTypeDefinition ->
   m (Maybe (TypeDefinition OBJECT s))
@@ -659,11 +662,10 @@ popByKey types (RootOperationTypeDefinition opType name) = case lookupWith typeN
   Just dt@TypeDefinition {typeContent = DataObject {}} ->
     pure (fromAny dt)
   Just {} ->
-    failure
-      [ msgValidation (show opType)
-          <> " root type must be Object type if provided, it cannot be "
-          <> msgValidation name
-      ]
+    throwError $
+      msg (show opType)
+        <> " root type must be Object type if provided, it cannot be "
+        <> msg name
   _ -> pure Nothing
 
 --

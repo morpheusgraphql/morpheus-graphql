@@ -11,6 +11,7 @@ module Data.Morpheus.Client.JSONSchema.Parse
   )
 where
 
+import Control.Monad.Except (MonadError (throwError))
 import Data.Aeson
 import Data.ByteString.Lazy (ByteString)
 import Data.Morpheus.Client.JSONSchema.TypeKind (TypeKind (..))
@@ -29,11 +30,10 @@ import Data.Morpheus.Core
     validateSchema,
   )
 import Data.Morpheus.Internal.Ext
-  ( Eventless,
+  ( GQLResult,
   )
 import Data.Morpheus.Internal.Utils
-  ( Failure (..),
-    empty,
+  ( empty,
     fromElems,
   )
 import qualified Data.Morpheus.Types.Internal.AST as AST
@@ -44,6 +44,7 @@ import Data.Morpheus.Types.Internal.AST
     ArgumentDefinition (..),
     CONST,
     FieldDefinition,
+    GQLError,
     IN,
     OUT,
     OperationType (..),
@@ -54,8 +55,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef (..),
     TypeWrapper (..),
     VALID,
-    ValidationError,
-    ValidationErrors,
     buildSchema,
     createScalarType,
     mkEnumContent,
@@ -64,7 +63,7 @@ import Data.Morpheus.Types.Internal.AST
     mkObjectField,
     mkType,
     mkUnionContent,
-    msgValidation,
+    msg,
     toAny,
   )
 import Relude hiding
@@ -76,12 +75,12 @@ import Relude hiding
   )
 import Prelude (show)
 
-decoderError :: ValidationError -> Eventless a
-decoderError x = failure [x]
+decoderError :: GQLError -> GQLResult a
+decoderError = throwError
 
-decodeIntrospection :: ByteString -> Eventless (AST.Schema VALID)
+decodeIntrospection :: ByteString -> GQLResult (AST.Schema VALID)
 decodeIntrospection jsonDoc = case jsonSchema of
-  Left errors -> decoderError $ msgValidation errors
+  Left errors -> decoderError $ msg errors
   Right
     JSONResponse
       { responseData =
@@ -94,15 +93,15 @@ decodeIntrospection jsonDoc = case jsonSchema of
       schemaDef <- mkSchemaDef schema
       gqlTypes <- concat <$> traverse parse types
       buildSchema (Just schemaDef, gqlTypes, empty) >>= validate
-  Right res -> decoderError (msgValidation $ show res)
+  Right res -> decoderError (msg $ show res)
   where
-    validate :: AST.Schema CONST -> Eventless (AST.Schema VALID)
+    validate :: AST.Schema CONST -> GQLResult (AST.Schema VALID)
     validate = validateSchema False defaultConfig
     jsonSchema :: Either String (JSONResponse Introspection)
     jsonSchema = eitherDecode jsonDoc
 
 mkSchemaDef ::
-  (Monad m, Failure ValidationErrors m) =>
+  (Monad m, MonadError GQLError m) =>
   Schema ->
   m SchemaDefinition
 mkSchemaDef
@@ -121,7 +120,7 @@ mkSchemaDef
         )
 
 class ParseJSONSchema a b where
-  parse :: a -> Eventless b
+  parse :: a -> GQLResult b
 
 instance ParseJSONSchema Type [TypeDefinition ANY CONST] where
   parse Type {name = Just typeName, kind = SCALAR} =
@@ -156,11 +155,11 @@ instance ParseJSONSchema Field (FieldDefinition OUT CONST) where
 instance ParseJSONSchema InputValue (FieldDefinition IN CONST) where
   parse InputValue {inputName, inputType} = mkField Nothing inputName <$> fieldTypeFromJSON inputType
 
-fieldTypeFromJSON :: Type -> Eventless TypeRef
+fieldTypeFromJSON :: Type -> GQLResult TypeRef
 fieldTypeFromJSON Type {kind = NON_NULL, ofType = Just ofType} = withListNonNull <$> fieldTypeFromJSON ofType
 fieldTypeFromJSON Type {kind = LIST, ofType = Just ofType} = withList <$> fieldTypeFromJSON ofType
 fieldTypeFromJSON Type {name = Just name} = pure (TypeRef name mkMaybeType)
-fieldTypeFromJSON x = decoderError $ "Unsupported Field" <> msgValidation (show x)
+fieldTypeFromJSON x = decoderError $ "Unsupported Field" <> msg (show x)
 
 withList :: TypeRef -> TypeRef
 withList (TypeRef name x) = TypeRef name (TypeList x False)

@@ -20,16 +20,16 @@ module Data.Morpheus.Types.Internal.Validation.Internal
   )
 where
 
+import Control.Monad.Except (MonadError (throwError))
 import Data.Morpheus.Internal.Utils
-  ( Failure (..),
-    fromElems,
+  ( fromElems,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     FromCategory,
+    GQLError,
     IMPLEMENTABLE,
     IN,
-    InternalError,
     OBJECT,
     OUT,
     Operation,
@@ -42,11 +42,11 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef,
     UnionMember (..),
     VALID,
-    ValidationErrors,
     fromAny,
     fromCategory,
     getOperationDataType,
-    msgInternal,
+    internal,
+    msg,
     typeConName,
   )
 import Data.Morpheus.Types.Internal.AST.TypeSystem
@@ -73,7 +73,7 @@ __askType ::
   Constraints m c cat s => TypeName -> m c (TypeDefinition cat s)
 __askType name =
   askSchema
-    >>= maybe (failure (unknownType name)) pure . lookupDataType name
+    >>= maybe (throwError (unknownType name)) pure . lookupDataType name
     >>= kindConstraint
 
 askTypeMember ::
@@ -83,8 +83,7 @@ askTypeMember ::
 askTypeMember = askType2 . typed memberName >=> constraintObject
 
 askInterfaceTypes ::
-  ( Failure InternalError (m c),
-    Failure ValidationErrors (m c),
+  ( MonadError GQLError (m c),
     Monad (m c),
     MonadContext m s c,
     FromCategory (TypeContent TRUE) ANY IMPLEMENTABLE
@@ -97,10 +96,10 @@ askInterfaceTypes typeDef@TypeDefinition {typeName} =
     >>= fromElems . (typeDef :)
   where
     validate (Just x) = pure x
-    validate Nothing = failure ("TODO: invalid interface Types" :: InternalError)
+    validate Nothing = throwError (internal "Invalid interface Types")
 
 type Constraints m c cat s =
-  ( Failure InternalError (m c),
+  ( MonadError GQLError (m c),
     Monad (m c),
     MonadContext m s c,
     KindErrors cat,
@@ -110,11 +109,11 @@ type Constraints m c cat s =
 getOperationType :: Operation a -> SelectionValidator (TypeDefinition OBJECT VALID)
 getOperationType operation = askSchema >>= getOperationDataType operation
 
-unknownType :: TypeName -> InternalError
-unknownType name = "Type \"" <> msgInternal name <> "\" can't found in Schema."
+unknownType :: TypeName -> GQLError
+unknownType name = internal $ "Type \"" <> msg name <> "\" can't found in Schema."
 
 type KindConstraint f c =
-  ( Failure InternalError f,
+  ( MonadError GQLError f,
     FromCategory TypeDefinition ANY c
   )
 
@@ -125,7 +124,7 @@ _kindConstraint ::
   f (TypeDefinition k s)
 _kindConstraint err anyType =
   maybe
-    (failure $ violation err (typeName anyType))
+    (throwError $ violation err (typeName anyType))
     pure
     (fromAny anyType)
 
@@ -133,7 +132,7 @@ class KindErrors c where
   kindConstraint :: KindConstraint f c => TypeDefinition ANY s -> f (TypeDefinition c s)
   constraintObject ::
     ( Applicative f,
-      Failure InternalError f
+      MonadError GQLError f
     ) =>
     TypeDefinition c s ->
     f (TypeDefinition (ToOBJECT c) s)
@@ -141,19 +140,20 @@ class KindErrors c where
 instance KindErrors IN where
   kindConstraint = _kindConstraint "input type"
   constraintObject TypeDefinition {typeContent = DataInputObject {..}, ..} = pure TypeDefinition {typeContent = DataInputObject {..}, ..}
-  constraintObject TypeDefinition {typeName} = failure (violation "input object" typeName)
+  constraintObject TypeDefinition {typeName} = throwError (violation "input object" typeName)
 
 instance KindErrors OUT where
   kindConstraint = _kindConstraint "output type"
   constraintObject TypeDefinition {typeContent = DataObject {..}, ..} = pure TypeDefinition {typeContent = DataObject {..}, ..}
-  constraintObject TypeDefinition {typeName} = failure (violation "object" typeName)
+  constraintObject TypeDefinition {typeName} = throwError (violation "object" typeName)
 
 violation ::
   Token ->
   TypeName ->
-  InternalError
+  GQLError
 violation kind typeName =
-  "Type \"" <> msgInternal typeName
-    <> "\" must be an"
-    <> msgInternal kind
-    <> "."
+  internal $
+    "Type \"" <> msg typeName
+      <> "\" must be an"
+      <> msg kind
+      <> "."

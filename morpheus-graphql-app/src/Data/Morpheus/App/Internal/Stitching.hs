@@ -11,6 +11,7 @@ module Data.Morpheus.App.Internal.Stitching
   )
 where
 
+import Control.Monad.Except (MonadError (throwError))
 import Data.Morpheus.App.Internal.Resolving (RootResolverValue)
 import qualified Data.Morpheus.App.Internal.Resolving as R (RootResolverValue (..))
 import Data.Morpheus.Error (NameCollision (..))
@@ -21,8 +22,7 @@ import Data.Morpheus.Internal.Ext
     unsafeFromList,
   )
 import Data.Morpheus.Internal.Utils
-  ( Failure (..),
-    mergeT,
+  ( mergeT,
     prop,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -30,19 +30,19 @@ import Data.Morpheus.Types.Internal.AST
     DirectivesDefinition,
     FieldDefinition,
     FieldsDefinition,
+    GQLError,
     Schema (..),
     TRUE,
     TypeContent (..),
     TypeDefinition (..),
     TypeDefinitions,
-    ValidationErrors,
   )
 import Relude hiding (optional)
 
-equal :: (Eq a, Applicative m, Failure ValidationErrors m) => ValidationErrors -> a -> a -> m a
+equal :: (Eq a, Applicative m, MonadError GQLError m) => GQLError -> a -> a -> m a
 equal err p1 p2
   | p1 == p2 = pure p2
-  | otherwise = failure err
+  | otherwise = throwError err
 
 fstM :: Applicative m => a -> a -> m a
 fstM x _ = pure x
@@ -51,7 +51,7 @@ concatM :: (Applicative m, Semigroup a) => a -> a -> m a
 concatM x = pure . (x <>)
 
 class Stitching a where
-  stitch :: (Monad m, Failure ValidationErrors m) => a -> a -> m a
+  stitch :: (Monad m, MonadError GQLError m) => a -> a -> m a
 
 instance Stitching a => Stitching (Maybe a) where
   stitch = optional stitch
@@ -80,7 +80,7 @@ optional _ (Just x) Nothing = pure (Just x)
 optional f (Just x) (Just y) = Just <$> f x y
 
 stitchOperation ::
-  (Monad m, Failure ValidationErrors m) =>
+  (Monad m, MonadError GQLError m) =>
   TypeDefinition c s ->
   TypeDefinition c s ->
   m (TypeDefinition c s)
@@ -95,7 +95,7 @@ instance Stitching (TypeDefinition cat s) where
   stitch x y =
     TypeDefinition
       <$> prop concatM typeDescription x y
-      <*> prop (equal [nameCollision y]) typeName x y
+      <*> prop (equal $ nameCollision y) typeName x y
       <*> prop stitch typeDirectives x y
       <*> prop stitch typeContent x y
 
@@ -104,7 +104,7 @@ instance Stitching (TypeContent TRUE cat s) where
     DataObject (i1 <> i2) <$> stitch fields1 fields2
   stitch x y
     | x == y = pure y
-    | otherwise = failure (["Schema Stitching works only for objects"] :: ValidationErrors)
+    | otherwise = throwError ("Schema Stitching works only for objects" :: GQLError)
 
 instance Stitching (FieldsDefinition cat s) where
   stitch x y = runResolutionT (mergeT x y) unsafeFromList (resolveWith stitch)
@@ -112,7 +112,7 @@ instance Stitching (FieldsDefinition cat s) where
 instance Stitching (FieldDefinition cat s) where
   stitch old new
     | old == new = pure old
-    | otherwise = failure [nameCollision new]
+    | otherwise = throwError $ nameCollision new
 
 rootProp :: (Monad m, Merge m b) => (a -> m b) -> a -> a -> m b
 rootProp f x y = do
@@ -120,8 +120,8 @@ rootProp f x y = do
   y' <- f y
   merge x' y'
 
-stitchSubscriptions :: Failure ValidationErrors m => Maybe a -> Maybe a -> m (Maybe a)
-stitchSubscriptions Just {} Just {} = failure (["can't merge  subscription applications"] :: ValidationErrors)
+stitchSubscriptions :: MonadError GQLError m => Maybe a -> Maybe a -> m (Maybe a)
+stitchSubscriptions Just {} Just {} = throwError ("can't merge  subscription applications" :: GQLError)
 stitchSubscriptions x Nothing = pure x
 stitchSubscriptions Nothing x = pure x
 

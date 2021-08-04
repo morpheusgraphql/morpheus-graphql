@@ -29,7 +29,6 @@ import Data.Morpheus.App.Internal.Resolving
     ResponseStream,
     ResultT (..),
     RootResolverValue,
-    cleanEvents,
     resultOr,
     runRootResolverValue,
   )
@@ -50,8 +49,8 @@ import Data.Morpheus.Core
 import Data.Morpheus.Internal.Ext ((<:>))
 import Data.Morpheus.Internal.Utils
   ( empty,
-    failure,
     prop,
+    throwErrors,
   )
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
@@ -59,7 +58,8 @@ import Data.Morpheus.Types.IO
     renderResponse,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( GQLErrors,
+  ( GQLError,
+    GQLErrors,
     Operation (..),
     Schema (..),
     Schema (..),
@@ -83,7 +83,7 @@ data App event (m :: * -> *)
 
 instance RenderGQL (App e m) where
   renderGQL App {app} = renderGQL app
-  renderGQL FailApp {appErrors} = renderGQL (A.encode appErrors)
+  renderGQL FailApp {appErrors} = renderGQL $ A.encode $ toList appErrors
 
 instance Monad m => Semigroup (App e m) where
   (FailApp err1) <> (FailApp err2) = FailApp (err1 <> err2)
@@ -124,36 +124,38 @@ validateReq ::
   Config ->
   GQLRequest ->
   ResponseStream event m ResolverContext
-validateReq inputSchema config request = cleanEvents $ ResultT $ pure $ do
+validateReq inputSchema config request = ResultT $ pure $ do
   validSchema <- validateSchema True config inputSchema
   schema <- internalSchema <:> validSchema
   operation <- parseRequestWith config validSchema request
-  pure $
-    ResolverContext
-      { schema,
-        config,
-        operation,
-        currentTypeName = "Root",
-        currentSelection =
-          Selection
-            { selectionName = "Root",
-              selectionArguments = empty,
-              selectionPosition = operationPosition operation,
-              selectionAlias = Nothing,
-              selectionContent = SelectionSet (operationSelection operation),
-              selectionDirectives = empty
-            }
-      }
+  pure
+    ( [],
+      ResolverContext
+        { schema,
+          config,
+          operation,
+          currentTypeName = "Root",
+          currentSelection =
+            Selection
+              { selectionName = "Root",
+                selectionArguments = empty,
+                selectionPosition = operationPosition operation,
+                selectionAlias = Nothing,
+                selectionContent = SelectionSet (operationSelection operation),
+                selectionDirectives = empty
+              }
+        }
+    )
 
 stateless ::
   Functor m =>
   ResponseStream event m (Value VALID) ->
   m GQLResponse
-stateless = fmap renderResponse . runResultT
+stateless = fmap (renderResponse . fmap snd) . runResultT
 
 runAppStream :: Monad m => App event m -> GQLRequest -> ResponseStream event m (Value VALID)
 runAppStream App {app} = runAppData app
-runAppStream FailApp {appErrors} = const $ failure appErrors
+runAppStream FailApp {appErrors} = const $ throwErrors appErrors
 
 runApp :: (MapAPI a b, Monad m) => App e m -> a -> m b
 runApp app = mapAPI (stateless . runAppStream app)
@@ -163,6 +165,6 @@ withDebugger App {app = AppData {appConfig = Config {..}, ..}} =
   App {app = AppData {appConfig = Config {debug = True, ..}, ..}, ..}
 withDebugger x = x
 
-eitherSchema :: App event m -> Either GQLErrors ByteString
+eitherSchema :: App event m -> Either [GQLError] ByteString
 eitherSchema (App AppData {appSchema}) = Right (render appSchema)
-eitherSchema (FailApp errors) = Left errors
+eitherSchema (FailApp errors) = Left (toList errors)

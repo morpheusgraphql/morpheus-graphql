@@ -29,6 +29,7 @@ module Data.Morpheus.App.Internal.Resolving.ResolverValue
   )
 where
 
+import Control.Monad.Except (MonadError (throwError))
 import qualified Data.Aeson as A
 import qualified Data.HashMap.Lazy as HM
 import Data.Morpheus.App.Internal.Resolving.ResolverState
@@ -40,15 +41,14 @@ import Data.Morpheus.Internal.Ext
     Merge (..),
   )
 import Data.Morpheus.Internal.Utils
-  ( Failure (..),
-    keyOf,
+  ( keyOf,
     selectOr,
     traverseCollection,
   )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
-    GQLErrors,
-    InternalError,
+    GQLError,
+    Msg (msg),
     ObjectEntry (..),
     ScalarValue (..),
     Selection (..),
@@ -59,13 +59,11 @@ import Data.Morpheus.Types.Internal.AST
     UnionTag (..),
     VALID,
     ValidValue,
-    ValidationErrors,
     Value (..),
     Value (..),
     decodeScientific,
-    msgInternal,
+    internal,
     packName,
-    toGQLError,
     unitFieldName,
     unitTypeName,
     unpackName,
@@ -88,8 +86,8 @@ instance Show (ResolverValue m) where
 instance
   ( Monad f,
     Monad m,
-    Failure InternalError f,
-    Failure InternalError m
+    MonadError GQLError f,
+    MonadError GQLError m
   ) =>
   Merge f (ResolverValue m)
   where
@@ -97,7 +95,7 @@ instance
   merge ResScalar {} x@ResScalar {} = pure x
   merge ResEnum {} x@ResEnum {} = pure x
   merge (ResObject x) (ResObject y) = ResObject <$> merge x y
-  merge _ _ = failure ("can't merge: incompatible resolvers" :: InternalError)
+  merge _ _ = throwError (internal "can't merge: incompatible resolvers")
 
 type ResolverEntry m = (FieldName, m (ResolverValue m))
 
@@ -112,7 +110,7 @@ instance Show (ResolverObject m) where
 instance
   ( Monad m,
     Applicative f,
-    Failure InternalError m
+    MonadError GQLError m
   ) =>
   Merge f (ResolverObject m)
   where
@@ -131,9 +129,7 @@ mergeResolver a b = do
 lookupRes ::
   ( Monad m,
     MonadReader ResolverContext m,
-    Failure GQLErrors m,
-    Failure ValidationErrors m,
-    Failure InternalError m
+    MonadError GQLError m
   ) =>
   Selection VALID ->
   ResolverObject m ->
@@ -182,9 +178,7 @@ __encode ::
   forall m.
   ( Monad m,
     MonadReader ResolverContext m,
-    Failure GQLErrors m,
-    Failure ValidationErrors m,
-    Failure InternalError m
+    MonadError GQLError m
   ) =>
   ResolverValue m ->
   Selection VALID ->
@@ -203,7 +197,7 @@ __encode obj sel@Selection {selectionContent} = encodeNode obj selectionContent
     encodeNode (ResEnum enum) SelectionField = pure $ Scalar $ String $ unpackName enum
     encodeNode (ResEnum name) unionSel@UnionSelection {} =
       encodeNode (mkUnion name mkEnumNull) unionSel
-    encodeNode ResEnum {} _ = failure ("wrong selection on enum value" :: InternalError)
+    encodeNode ResEnum {} _ = throwError (internal "wrong selection on enum value")
     -- UNION
     encodeNode (ResUnion typename unionRef) (UnionSelection interface selections) = do
       unionRes <- unionRef
@@ -212,19 +206,17 @@ __encode obj sel@Selection {selectionContent} = encodeNode obj selectionContent
     encodeNode (ResUnion _ unionRef) (SelectionSet selection) =
       unionRef >>= resolveObject selection
     encodeNode (ResUnion name _) SelectionField =
-      failure ("union Resolver " <> msgInternal name <> " cant resolve  SelectionField")
+      throwError (internal $ "union Resolver " <> msg name <> " cant resolve  SelectionField")
     -- SCALARS
     encodeNode ResNull _ = pure Null
     encodeNode (ResScalar x) SelectionField = pure $ Scalar x
     encodeNode ResScalar {} _ =
-      failure ("scalar Resolver should only receive SelectionField" :: InternalError)
+      throwError (internal "scalar Resolver should only receive SelectionField")
 
 runDataResolver ::
   ( Monad m,
     MonadReader ResolverContext m,
-    Failure GQLErrors m,
-    Failure ValidationErrors m,
-    Failure InternalError m
+    MonadError GQLError m
   ) =>
   ResolverValue m ->
   m ValidValue
@@ -232,7 +224,7 @@ runDataResolver res = asks currentSelection >>= __encode res
 
 withObject ::
   ( Monad m,
-    Failure GQLErrors m
+    MonadError GQLError m
   ) =>
   TypeName ->
   (SelectionSet VALID -> m value) ->
@@ -243,15 +235,13 @@ withObject __typename f Selection {selectionName, selectionContent, selectionPos
     checkContent (SelectionSet selection) = f selection
     checkContent (UnionSelection interfaceSel unionSel) =
       f (selectOr interfaceSel unionTagSelection __typename unionSel)
-    checkContent _ = failure [toGQLError $ subfieldsNotSelected selectionName "" selectionPosition]
+    checkContent _ = throwError $ subfieldsNotSelected selectionName "" selectionPosition
 
 resolveObject ::
   forall m.
   ( Monad m,
     MonadReader ResolverContext m,
-    Failure ValidationErrors m,
-    Failure InternalError m,
-    Failure GQLErrors m
+    MonadError GQLError m
   ) =>
   SelectionSet VALID ->
   ResolverValue m ->
@@ -263,7 +253,7 @@ resolveObject selectionSet (ResObject drv@ResolverObject {__typename}) =
     resolver currentSelection =
       local (\ctx -> ctx {currentSelection, currentTypeName = __typename}) $
         ObjectEntry (keyOf currentSelection) <$> lookupRes currentSelection drv
-resolveObject _ _ = failure ("expected object as resolver" :: InternalError)
+resolveObject _ _ = throwError (internal "expected object as resolver")
 
 mkString :: Token -> ResolverValue m
 mkString = ResScalar . String

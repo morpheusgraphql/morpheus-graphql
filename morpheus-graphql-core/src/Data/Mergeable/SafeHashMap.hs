@@ -19,6 +19,7 @@ module Data.Mergeable.SafeHashMap
   )
 where
 
+import Control.Monad.Except (MonadError)
 import qualified Data.HashMap.Lazy as HM
 import Data.Mergeable
   ( Merge (..),
@@ -26,10 +27,6 @@ import Data.Mergeable
   )
 import Data.Mergeable.IsMap (IsMap)
 import Data.Morpheus.Ext.Empty (Empty)
-import Data.Morpheus.Ext.Failure
-  ( Failure (..),
-  )
-import Data.Morpheus.Types.Internal.AST.Error (ValidationErrors)
 import Language.Haskell.TH.Syntax (Lift (..))
 import Relude
 
@@ -58,5 +55,5 @@ instance (Lift a, Lift k, Eq k, Hashable k) => Lift (SafeHashMap k a) where
   liftTyped (SafeHashMap x) = let ls = HM.toList x in [||SafeHashMap (HM.fromList ls)||]
 #endif
 
-instance (NameCollision a, Monad m, Hashable k, Eq k, Failure ValidationErrors m) => Merge m (SafeHashMap k a) where
+instance (NameCollision e a, Monad m, Hashable k, Eq k, MonadError e m) => Merge m (SafeHashMap k a) where
   merge (SafeHashMap x) (SafeHashMap y) = SafeHashMap <$> merge x y

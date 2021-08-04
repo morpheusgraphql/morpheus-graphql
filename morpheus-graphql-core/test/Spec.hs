@@ -46,7 +46,7 @@ runRenderingTest url =
     )
   where
     parseQuery schema =
-      second render . toEither
+      toEither . fmap render
         . parseRequestWith defaultConfig schema
 
 main :: IO ()

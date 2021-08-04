@@ -29,7 +29,7 @@ import Data.Morpheus.Error
     renderGQLErrors,
   )
 import Data.Morpheus.Internal.Ext
-  ( Eventless,
+  ( GQLResult,
     Result (..),
   )
 import Data.Morpheus.Types.Internal.AST
@@ -41,7 +41,7 @@ import Data.Morpheus.Types.Internal.AST
 import Language.Haskell.TH
 import Relude
 
-defineQuery :: IO (Eventless (Schema VALID)) -> (ExecutableDocument, String) -> Q [Dec]
+defineQuery :: IO (GQLResult (Schema VALID)) -> (ExecutableDocument, String) -> Q [Dec]
 defineQuery ioSchema (query, src) = do
   schema <- runIO ioSchema
   case schema >>= (`validateWith` query) of
@@ -51,7 +51,7 @@ defineQuery ioSchema (query, src) = do
         warnings
       } -> gqlWarnings warnings >> declareClient src result
 
-validateWith :: Schema VALID -> ExecutableDocument -> Eventless ClientDefinition
+validateWith :: Schema VALID -> ExecutableDocument -> GQLResult ClientDefinition
 validateWith
   schema
   rawRequest@ExecutableDocument

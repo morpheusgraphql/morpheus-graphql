@@ -10,16 +10,14 @@ module Data.Morpheus.Parsing.Internal.Internal
 where
 
 import Data.ByteString.Lazy (ByteString)
-import qualified Data.List.NonEmpty as NonEmpty
 import Data.Morpheus.Ext.Result
-  ( Eventless,
+  ( GQLResult,
     Result (..),
-    failure,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( GQLError (..),
-    GQLErrors,
+  ( GQLError,
     Position (..),
+    at,
     msg,
   )
 import Relude hiding (ByteString)
@@ -52,33 +50,22 @@ toLocation SourcePos {sourceLine, sourceColumn} =
 
 type MyError = Void
 
-type Parser = ParsecT MyError ByteString Eventless
+type Parser = ParsecT MyError ByteString GQLResult
 
 type ErrorBundle = ParseErrorBundle ByteString MyError
 
-processParser :: Parser a -> ByteString -> Eventless a
+processParser :: Parser a -> ByteString -> GQLResult a
 processParser parser txt = case runParserT parser [] txt of
-  Success {result} -> case result of
-    Right root -> pure root
-    Left parseError -> failure (processErrorBundle parseError)
-  Failure {errors} -> failure errors
-
-processErrorBundle :: ErrorBundle -> GQLErrors
-processErrorBundle = fmap parseErrorToGQLError . bundleToErrors
+  Success {result} ->
+    either
+      (Failure . fmap parseErrorToGQLError . bundleToErrors)
+      pure
+      result
+  Failure {errors} -> Failure errors
 
 parseErrorToGQLError :: (ParseError ByteString MyError, SourcePos) -> GQLError
-parseErrorToGQLError (err, position) =
-  GQLError
-    { message = msg (parseErrorPretty err),
-      locations = [toLocation position],
-      extensions = Nothing
-    }
+parseErrorToGQLError (err, position) = msg (parseErrorPretty err) `at` toLocation position
 
-bundleToErrors ::
-  ErrorBundle -> [(ParseError ByteString MyError, SourcePos)]
+bundleToErrors :: ErrorBundle -> NonEmpty (ParseError ByteString MyError, SourcePos)
 bundleToErrors ParseErrorBundle {bundleErrors, bundlePosState} =
-  NonEmpty.toList $ fst $
-    attachSourcePos
-      errorOffset
-      bundleErrors
-      bundlePosState
+  fst $ attachSourcePos errorOffset bundleErrors bundlePosState

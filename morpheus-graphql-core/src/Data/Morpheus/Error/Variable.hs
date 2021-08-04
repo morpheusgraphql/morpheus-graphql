@@ -10,37 +10,37 @@ where
 
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
+    GQLError,
     Ref (..),
     TypeRef,
-    ValidationError,
     Variable (..),
     at,
-    msgValidation,
+    msg,
   )
 import Relude
 
 -- query M ( $v : String ) { a(p:$v) } -> "Variable \"$v\" of type \"String\" used in position expecting type \"LANGUAGE\"."
-incompatibleVariableType :: Ref FieldName -> Variable s -> TypeRef -> ValidationError
+incompatibleVariableType :: Ref FieldName -> Variable s -> TypeRef -> GQLError
 incompatibleVariableType
   (Ref variableName argPosition)
   Variable {variableType}
   argumentType =
     ( "Variable "
-        <> msgValidation ("$" <> variableName)
+        <> msg ("$" <> variableName)
         <> " of type "
-        <> msgValidation variableType
+        <> msg variableType
         <> " used in position expecting type "
-        <> msgValidation argumentType
+        <> msg argumentType
         <> "."
     )
       `at` argPosition
 
-uninitializedVariable :: Variable s -> ValidationError
+uninitializedVariable :: Variable s -> GQLError
 uninitializedVariable Variable {variableName, variableType, variablePosition} =
   ( "Variable "
-      <> msgValidation ("$" <> variableName)
+      <> msg ("$" <> variableName)
       <> " of required type "
-      <> msgValidation variableType
+      <> msg variableType
       <> " was not provided."
   )
     `at` variablePosition

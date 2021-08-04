@@ -13,8 +13,8 @@ module Data.Morpheus.Error.Document.Interface
 where
 
 import Data.Morpheus.Types.Internal.AST.Error
-  ( ValidationError,
-    msgValidation,
+  ( GQLError,
+    msg,
   )
 import Data.Morpheus.Types.Internal.AST.Name
   ( TypeName,
@@ -29,8 +29,8 @@ import Data.Morpheus.Types.Internal.Validation.SchemaValidator
   )
 import Relude
 
-unknownInterface :: TypeName -> ValidationError
-unknownInterface name = "Unknown Interface " <> msgValidation name <> "."
+unknownInterface :: TypeName -> GQLError
+unknownInterface name = "Unknown Interface " <> msg name <> "."
 
 data ImplementsError
   = UnexpectedType
@@ -39,13 +39,13 @@ data ImplementsError
       }
   | Missing
 
-partialImplements :: Field ON_INTERFACE -> ImplementsError -> ValidationError
+partialImplements :: Field ON_INTERFACE -> ImplementsError -> GQLError
 partialImplements (Field fieldName argName (TypeEntity (OnInterface interfaceName) typename)) errorType =
   "Interface field " <> maybe "" (const "argument ") argName
     <> renderField interfaceName fieldName argName
     <> detailedMessageGen
       (renderField typename fieldName argName)
-      (maybe (msgValidation typename) (const $ renderField typename fieldName Nothing) argName)
+      (maybe (msg typename) (const $ renderField typename fieldName Nothing) argName)
       errorType
 
 -- Interface field TestInterface.name expected but User does not provide it.
@@ -53,13 +53,13 @@ partialImplements (Field fieldName argName (TypeEntity (OnInterface interfaceNam
 -- Interface field argument TestInterface.name(id:) expected but User.name does not provide it.
 -- Interface field argument TestInterface.name(id:) expects type ID but User.name(id:) is type String.
 
-detailedMessageGen :: ValidationError -> ValidationError -> ImplementsError -> ValidationError
+detailedMessageGen :: GQLError -> GQLError -> ImplementsError -> GQLError
 detailedMessageGen pl1 _ UnexpectedType {expectedType, foundType} =
   " expects type "
-    <> msgValidation expectedType
+    <> msg expectedType
     <> " but "
     <> pl1
     <> " is type "
-    <> msgValidation foundType
+    <> msg foundType
     <> "."
 detailedMessageGen _ pl2 Missing = " expected but " <> pl2 <> " does not provide it."

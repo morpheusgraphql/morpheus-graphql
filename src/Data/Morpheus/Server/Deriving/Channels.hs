@@ -16,6 +16,7 @@ module Data.Morpheus.Server.Deriving.Channels
   )
 where
 
+import Control.Monad.Except (throwError)
 import qualified Data.HashMap.Lazy as HM
 import Data.Morpheus.App.Internal.Resolving
   ( Channel,
@@ -24,8 +25,7 @@ import Data.Morpheus.App.Internal.Resolving
     SubscriptionField (..),
   )
 import Data.Morpheus.Internal.Utils
-  ( Failure (..),
-    selectBy,
+  ( selectBy,
   )
 import Data.Morpheus.Server.Deriving.Decode
   ( DecodeConstraint,
@@ -42,12 +42,12 @@ import Data.Morpheus.Server.Deriving.Utils
 import Data.Morpheus.Server.Types.GQLType (GQLType)
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
-    InternalError,
     OUT,
     SUBSCRIPTION,
     Selection (..),
     SelectionContent (..),
     VALID,
+    internal,
   )
 import GHC.Generics
 import Relude
@@ -86,7 +86,7 @@ selectSubscription ::
   ResolverState (DerivedChannel e)
 selectSubscription channels sel@Selection {selectionName} =
   selectBy
-    ("invalid subscription: no channel is selected." :: InternalError)
+    (internal "invalid subscription: no channel is selected.")
     selectionName
     channels
     >>= (sel &)
@@ -95,8 +95,8 @@ withSubscriptionSelection :: Selection VALID -> ResolverState (Selection VALID)
 withSubscriptionSelection Selection {selectionContent = SelectionSet selSet} =
   case toList selSet of
     [sel] -> pure sel
-    _ -> failure ("invalid subscription: there can be only one top level selection" :: InternalError)
-withSubscriptionSelection _ = failure ("invalid subscription: expected selectionSet" :: InternalError)
+    _ -> throwError (internal "invalid subscription: there can be only one top level selection")
+withSubscriptionSelection _ = throwError (internal "invalid subscription: expected selectionSet")
 
 class GetChannel e a | a -> e where
   getChannel :: a -> ChannelRes e

@@ -17,9 +17,9 @@ module Data.Morpheus.Validation.Internal.Directive
   )
 where
 
+import Control.Monad.Except (throwError)
 import Data.Morpheus.Internal.Utils
-  ( Failure (..),
-    selectOr,
+  ( selectOr,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
@@ -34,7 +34,7 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
     Value (..),
     at,
-    msgValidation,
+    msg,
   )
 import Data.Morpheus.Types.Internal.Validation
   ( Validator,
@@ -81,8 +81,8 @@ validateDirectiveLocation
   DirectiveDefinition {directiveDefinitionLocations}
     | loc `elem` directiveDefinitionLocations = pure ()
     | otherwise =
-      failure $
-        ("Directive " <> msgValidation directiveName <> " may not to be used on " <> msgValidation loc)
+      throwError $
+        ("Directive " <> msg directiveName <> " may not to be used on " <> msg loc)
           `at` directivePosition
 
 directiveFulfilled ::
@@ -114,9 +114,9 @@ assertArgument ::
   Validator schemaS ctx Bool
 assertArgument asserted Argument {argumentValue = Scalar (Boolean actual)} = pure (asserted == actual)
 assertArgument _ Argument {argumentValue, argumentPosition} =
-  failure $
+  throwError $
     ( "Expected type Boolean!, found "
-        <> msgValidation argumentValue
+        <> msg argumentValue
         <> "."
     )
       `at` argumentPosition
