@@ -3,6 +3,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -19,6 +20,7 @@ module Data.Morpheus.Types.Internal.AST.Error
       ),
     manyMsg,
     Msg (..),
+    Message,
   )
 where
 
@@ -33,28 +35,14 @@ import Data.Aeson
   )
 import Data.ByteString.Lazy (ByteString)
 import Data.Morpheus.Types.Internal.AST.Base
-  ( Message (..),
-    Position (..),
+  ( Position (..),
   )
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import Data.Text.Lazy.Encoding (decodeUtf8)
 import Relude hiding (ByteString, decodeUtf8)
 
-mkError :: Message -> GQLError
-mkError x =
-  GQLError
-    { message = x,
-      locations = [],
-      errorType = Nothing,
-      extensions = Nothing
-    }
-
-instance IsString GQLError where
-  fromString = mkError . Message . T.pack
-
-instance Semigroup GQLError where
-  GQLError m1 l1 t1 e1 <> GQLError m2 l2 t2 e2 = GQLError (m1 <> m2) (l1 <> l2) (t1 <> t2) (e1 <> e2)
+type Message = Text
 
 internal :: GQLError -> GQLError
 internal x = x {errorType = Just Internal}
@@ -73,8 +61,8 @@ atPositions GQLError {..} pos = GQLError {locations = locations <> toList pos, .
 
 manyMsg :: (Foldable t, Msg a) => t a -> GQLError
 manyMsg =
-  mkError . Message . T.intercalate ", "
-    . fmap (readMessage . message . msg)
+  msg . T.intercalate ", "
+    . fmap (message . msg)
     . toList
 
 data ErrorType = Internal
@@ -102,8 +90,14 @@ data GQLError = GQLError
       FromJSON
     )
 
+instance IsString GQLError where
+  fromString = msg
+
 instance ToJSON GQLError where
   toJSON = genericToJSON (defaultOptions {omitNothingFields = True})
+
+instance Semigroup GQLError where
+  GQLError m1 l1 t1 e1 <> GQLError m2 l2 t2 e2 = GQLError (m1 <> m2) (l1 <> l2) (t1 <> t2) (e1 <> e2)
 
 type GQLErrors = NonEmpty GQLError
 
@@ -114,13 +108,16 @@ instance Msg GQLError where
   msg = id
 
 instance Msg String where
-  msg = fromString
-
-instance Msg Message where
-  msg = mkError
+  msg = msg . T.pack
 
 instance Msg Text where
-  msg = mkError . Message
+  msg message =
+    GQLError
+      { message,
+        locations = [],
+        errorType = Nothing,
+        extensions = Nothing
+      }
 
 instance Msg ByteString where
   msg = msg . LT.toStrict . decodeUtf8

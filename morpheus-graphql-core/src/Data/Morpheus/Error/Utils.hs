@@ -7,11 +7,11 @@ module Data.Morpheus.Error.Utils
 where
 
 import Data.Morpheus.Types.Internal.AST.Base
-  ( Message,
-    Position (..),
+  ( Position (..),
   )
 import Data.Morpheus.Types.Internal.AST.Error
   ( GQLError,
+    Message,
     at,
     msg,
   )

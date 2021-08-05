@@ -5,14 +5,12 @@
 {-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.AST.Base
   ( Ref (..),
     Position (..),
-    Message (..),
     Description,
     Token,
     TRUE,
@@ -24,16 +22,8 @@ import Data.Aeson
   ( FromJSON,
     ToJSON (..),
   )
-import qualified Data.Text as T
-import Language.Haskell.TH
-  ( ExpQ,
-    stringE,
-  )
 import Language.Haskell.TH.Syntax
   ( Lift (..),
-    Q,
-    TExp,
-    unsafeTExpCoerce,
   )
 import Relude hiding
   ( ByteString,
@@ -47,28 +37,6 @@ type FALSE = 'False
 
 -- Strings
 type Token = Text
-
--- Error / Warning Messages
-newtype Message = Message {readMessage :: Text}
-  deriving
-    (Generic)
-  deriving newtype
-    (Show, Eq, Ord, IsString, Semigroup, Hashable, FromJSON, ToJSON)
-
-instance Lift Message where
-  lift = liftString . readMessage
-
-#if MIN_VERSION_template_haskell(2,16,0)
-  liftTyped = liftTypedString . readMessage
-#endif
-
-liftTypedString :: IsString a => Token -> Q (TExp a)
-liftTypedString = unsafeTExpCoerce . stringE . T.unpack
-{-# INLINE liftTypedString #-}
-
-liftString :: Token -> ExpQ
-liftString = stringE . T.unpack
-{-# INLINE liftString #-}
 
 -- Description
 type Description = Text
