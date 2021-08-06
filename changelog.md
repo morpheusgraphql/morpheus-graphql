@@ -5,10 +5,15 @@
 ### new Features
 
 - `TypeGuards` as an alternative for interfaces
+- deriving will merge function arguments
+  TODO: example
+- support of Tagged Arguments
+  TODO: example
 
 ### Breaking Changes
 
 - removed `implements`field from `GQLType`
+- removed `interface` from `Morpheus.Types`
 - deprecated kind `INTERFACE`
 
 ## 0.17.0 - 25.02.2021

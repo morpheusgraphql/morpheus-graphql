@@ -11,6 +11,8 @@ import qualified Feature.Collision.CategoryCollisionFail as TypeCategoryCollisio
 import qualified Feature.Collision.CategoryCollisionSuccess as TypeCategoryCollisionSuccess
 import qualified Feature.Collision.NameCollision as NameCollision
 import qualified Feature.Holistic.API as Holistic
+import qualified Feature.Inference.TaggedArguments as TaggedArguments
+import qualified Feature.Inference.TaggedArgumentsFail as TaggedArgumentsFail
 import qualified Feature.Inference.TypeGuards as TypeGuards
 import qualified Feature.Inference.TypeInference as TypeInference
 import qualified Feature.Inference.UnionType as UnionType
@@ -72,7 +74,9 @@ main =
         [ (WrappedType.api, "wrapped-type"),
           (TypeGuards.api, "type-guards"),
           (UnionType.api, "union-type"),
-          (TypeInference.api, "type-inference")
+          (TypeInference.api, "type-inference"),
+          (TaggedArguments.api, "tagged-arguments"),
+          (TaggedArgumentsFail.api, "tagged-arguments-fail")
         ],
       testFeatures
         "Holistic"

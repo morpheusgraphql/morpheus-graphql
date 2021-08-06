@@ -31,6 +31,8 @@ module Data.Morpheus.Server.Deriving.Utils
     isUnionRef,
     fieldTypeName,
     unpackMonad,
+    deriveTypeRef,
+    symbolName,
   )
 where
 
@@ -77,6 +79,7 @@ import GHC.Generics
     datatypeName,
     selName,
   )
+import GHC.TypeLits
 import Relude hiding (undefined)
 import Prelude (undefined)
 
@@ -190,13 +193,16 @@ deriveFieldRep ::
 deriveFieldRep opt pSel kindedProxy v =
   FieldRep
     { fieldSelector = selNameProxy opt pSel,
-      fieldTypeRef =
-        TypeRef
-          { typeConName = gqlTypeName,
-            typeWrappers = gqlWrappers
-          },
+      fieldTypeRef = deriveTypeRef kindedProxy,
       fieldIsObject = __isObjectKind kindedProxy,
       fieldValue = v
+    }
+
+deriveTypeRef :: (GQLType a, CategoryValue kind) => kinded kind a -> TypeRef
+deriveTypeRef kindedProxy =
+  TypeRef
+    { typeConName = gqlTypeName,
+      typeWrappers = gqlWrappers
     }
   where
     TypeData {gqlTypeName, gqlWrappers} = __typeData kindedProxy
@@ -252,3 +258,6 @@ isUnionRef :: TypeName -> ConsRep k -> Bool
 isUnionRef baseName ConsRep {consName, consFields = [fieldRep@FieldRep {fieldIsObject = True}]} =
   consName == baseName <> fieldTypeName fieldRep
 isUnionRef _ _ = False
+
+symbolName :: KnownSymbol a => f a -> FieldName
+symbolName = fromString . symbolVal

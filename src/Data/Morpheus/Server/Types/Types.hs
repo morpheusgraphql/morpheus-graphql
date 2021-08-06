@@ -7,12 +7,14 @@ module Data.Morpheus.Server.Types.Types
   ( Undefined (..),
     Pair (..),
     TypeGuard (..),
+    Arg (..),
   )
 where
 
 import GHC.Generics
   ( Generic,
   )
+import GHC.TypeLits (Symbol)
 import Prelude
   ( Show,
   )
@@ -28,3 +30,9 @@ data Pair k v = Pair
 data TypeGuard interface union
   = ResolveInterface interface
   | ResolveType union
+
+newtype Arg (name :: Symbol) a = Arg {argValue :: a}
+  deriving
+    ( Show,
+      Generic
+    )

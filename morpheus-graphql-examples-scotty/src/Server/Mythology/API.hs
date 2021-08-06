@@ -50,20 +50,24 @@ data Character m
   deriving (Generic, GQLType)
 
 data Query m = Query
-  { deity :: DeityArgs -> m Deity,
+  { deity :: DeityArgs -> DeityArgs2 -> m Deity,
     character :: [Character m],
     persons :: [PersonGuard m]
   }
   deriving (Generic, GQLType)
 
-data DeityArgs = DeityArgs
-  { name :: Text, -- Required Argument
-    bornPlace :: Maybe City -- Optional Argument
+newtype DeityArgs = DeityArgs
+  { name :: Text -- Required Argument
   }
   deriving (Generic, GQLType)
 
-resolveDeity :: DeityArgs -> ResolverQ e IO Deity
-resolveDeity DeityArgs {name, bornPlace} =
+newtype DeityArgs2 = DeityArgs2
+  { bornPlace :: Maybe City -- Optional Argument
+  }
+  deriving (Generic, GQLType)
+
+resolveDeity :: DeityArgs -> DeityArgs2 -> ResolverQ e IO Deity
+resolveDeity DeityArgs {name} DeityArgs2 {bornPlace} =
   liftEither $ dbDeity name bornPlace
 
 resolveCharacter :: Applicative m => [Character m]

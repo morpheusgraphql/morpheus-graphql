@@ -1,0 +1,110 @@
+{
+  "data": {
+    "__type": {
+      "inputFields": null,
+      "kind": "OBJECT",
+      "possibleTypes": null,
+      "interfaces": [],
+      "name": "Query",
+      "enumValues": null,
+      "fields": [
+        {
+          "args": [
+            {
+              "name": "c1",
+              "defaultValue": null,
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": { "kind": "SCALAR", "name": "Int", "ofType": null }
+              }
+            },
+            {
+              "name": "a1",
+              "defaultValue": null,
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": { "kind": "SCALAR", "name": "String", "ofType": null }
+              }
+            },
+            {
+              "name": "b1",
+              "defaultValue": null,
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": { "kind": "SCALAR", "name": "String", "ofType": null }
+              }
+            },
+            {
+              "name": "a2",
+              "defaultValue": null,
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": { "kind": "SCALAR", "name": "Int", "ofType": null }
+              }
+            }
+          ],
+          "isDeprecated": false,
+          "deprecationReason": null,
+          "name": "field1",
+          "type": {
+            "kind": "NON_NULL",
+            "name": null,
+            "ofType": { "kind": "SCALAR", "name": "String", "ofType": null }
+          }
+        },
+        {
+          "args": [
+            {
+              "name": "c1",
+              "defaultValue": null,
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": { "kind": "SCALAR", "name": "Int", "ofType": null }
+              }
+            },
+            {
+              "name": "a1",
+              "defaultValue": null,
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": { "kind": "SCALAR", "name": "String", "ofType": null }
+              }
+            },
+            {
+              "name": "b1",
+              "defaultValue": null,
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": { "kind": "SCALAR", "name": "String", "ofType": null }
+              }
+            },
+            {
+              "name": "a2",
+              "defaultValue": null,
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": { "kind": "SCALAR", "name": "Int", "ofType": null }
+              }
+            }
+          ],
+          "isDeprecated": false,
+          "deprecationReason": null,
+          "name": "field2",
+          "type": {
+            "kind": "NON_NULL",
+            "name": null,
+            "ofType": { "kind": "SCALAR", "name": "String", "ofType": null }
+          }
+        }
+      ]
+    }
+  }
+}
