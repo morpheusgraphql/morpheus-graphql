@@ -242,7 +242,7 @@ instance
   DeriveKindedType OUT CUSTOM (a -> b)
   where
   deriveKindedContent _ = do
-    a <- deriveArgumentDefinition (withKind (Proxy @a))
+    a <- deriveArgumentsDefinition (withKind (Proxy @a))
     b <- deriveKindedContent (KindedProxy :: KindedProxy (KIND b) b)
     case b of
       Just (FieldArgs x) -> Just . FieldArgs <$> (a <:> x)
@@ -256,13 +256,13 @@ deriveInterfaceContent :: DeriveTypeConstraint OUT a => f a -> SchemaT OUT (Type
 deriveInterfaceContent = fmap DataInterface . deriveFields . outputType
 
 class DeriveArguments (k :: DerivingKind) a where
-  deriveArgumentDefinition :: f k a -> SchemaT OUT (ArgumentsDefinition CONST)
+  deriveArgumentsDefinition :: f k a -> SchemaT OUT (ArgumentsDefinition CONST)
 
 instance DeriveTypeConstraint IN a => DeriveArguments TYPE a where
-  deriveArgumentDefinition = withInput . fmap fieldsToArguments . deriveFields . inputType
+  deriveArgumentsDefinition = withInput . fmap fieldsToArguments . deriveFields . inputType
 
 instance (KnownSymbol name, GQLType value) => DeriveArguments CUSTOM (Arg name value) where
-  deriveArgumentDefinition _ = pure $ fieldsToArguments $ singleton $ mkField Nothing argName argTypeRef
+  deriveArgumentsDefinition _ = pure $ fieldsToArguments $ singleton $ mkField Nothing argName argTypeRef
     where
       argName = symbolName (Proxy @name)
       argTypeRef = deriveTypeRef (KindedProxy :: KindedProxy IN value)

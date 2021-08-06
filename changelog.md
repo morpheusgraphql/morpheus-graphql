@@ -7,7 +7,7 @@
 - `TypeGuards` as an alternative for interfaces
 - deriving will merge function arguments
   TODO: example
-- support of Tagged Arguments
+- support of Tagged Arguments by Type `Arg`
   TODO: example
 
 ### Breaking Changes
