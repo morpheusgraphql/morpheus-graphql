@@ -53,7 +53,8 @@ import Data.Morpheus.Server.Types.SchemaT
   ( TypeFingerprint (..),
   )
 import Data.Morpheus.Server.Types.Types
-  ( Pair,
+  ( Arg,
+    Pair,
     TypeGuard,
     Undefined (..),
   )
@@ -249,10 +250,6 @@ instance Typeable m => GQLType (Undefined m) where
   type KIND (Undefined m) = WRAPPER
   __isEmptyType _ = True
 
-instance (GQLType interface) => GQLType (TypeGuard interface possibleTypes) where
-  type KIND (TypeGuard interface possibleTypes) = CUSTOM
-  __type _ = __type (Proxy @interface)
-
 instance GQLType a => GQLType (Maybe a) where
   type KIND (Maybe a) = WRAPPER
   __type _ = wrapper toNullable . __type (Proxy @a)
@@ -287,3 +284,11 @@ instance GQLType a => GQLType (Resolver o e m a) where
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (a, b) where
   type KIND (a, b) = CUSTOM
   __type _ = __type $ Proxy @(Pair a b)
+
+instance (GQLType value) => GQLType (Arg name value) where
+  type KIND (Arg name value) = CUSTOM
+  __type _ = __type (Proxy @value)
+
+instance (GQLType interface) => GQLType (TypeGuard interface possibleTypes) where
+  type KIND (TypeGuard interface possibleTypes) = CUSTOM
+  __type _ = __type (Proxy @interface)

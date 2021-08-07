@@ -51,13 +51,13 @@ module Data.Morpheus.Types
     IORes,
     IOMutRes,
     IOSubRes,
-    interface,
     SubscriptionField,
     App,
     RenderGQL,
     render,
     GQLTypeOptions (..),
     TypeGuard (..),
+    Arg (..),
   )
 where
 
@@ -79,16 +79,15 @@ import Data.Morpheus.Core
   ( RenderGQL,
     render,
   )
-import Data.Morpheus.Server.Deriving.Schema
-  ( DeriveType,
-    SchemaT,
-    deriveImplementsInterface,
-  )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     GQLTypeOptions (..),
   )
 import Data.Morpheus.Server.Types.Types
+  ( Arg (..),
+    TypeGuard (..),
+    Undefined (..),
+  )
 import Data.Morpheus.Types.GQLScalar
   ( DecodeScalar (..),
     EncodeScalar (..),
@@ -105,11 +104,9 @@ import Data.Morpheus.Types.IO
 import Data.Morpheus.Types.Internal.AST
   ( GQLError,
     MUTATION,
-    OUT,
     QUERY,
     SUBSCRIPTION,
     ScalarValue (..),
-    TypeName,
   )
 import Relude hiding (Undefined)
 
@@ -208,6 +205,3 @@ data RootResolver (m :: * -> *) event (query :: (* -> *) -> *) (mut :: (* -> *) 
     mutationResolver :: mut (Resolver MUTATION event m),
     subscriptionResolver :: sub (Resolver SUBSCRIPTION event m)
   }
-
-interface :: (GQLType a, DeriveType OUT a) => Proxy a -> SchemaT OUT TypeName
-interface = deriveImplementsInterface

@@ -17,7 +17,6 @@
 module Data.Morpheus.Server.Deriving.Schema
   ( compileTimeSchemaValidation,
     DeriveType,
-    deriveImplementsInterface,
     deriveSchema,
     SchemaConstraints,
     SchemaT,
@@ -32,6 +31,7 @@ import Data.Morpheus.App.Internal.Resolving
   )
 import Data.Morpheus.Core (defaultConfig, validateSchema)
 import Data.Morpheus.Internal.Ext
+import Data.Morpheus.Internal.Utils (singleton)
 import Data.Morpheus.Kind
   ( CUSTOM,
     DerivingKind,
@@ -39,27 +39,22 @@ import Data.Morpheus.Kind
     TYPE,
     WRAPPER,
   )
-import Data.Morpheus.Server.Deriving.Schema.Enum
-  ( buildEnumTypeContent,
-  )
 import Data.Morpheus.Server.Deriving.Schema.Internal
   ( KindedType (..),
-    TyContent,
     TyContentM,
     fromSchema,
     updateByContent,
   )
 import Data.Morpheus.Server.Deriving.Schema.Object
   ( asObjectType,
-    buildObjectTypeContent,
     withObject,
   )
-import Data.Morpheus.Server.Deriving.Schema.Union (buildUnionTypeContent)
+import Data.Morpheus.Server.Deriving.Schema.TypeContent
 import Data.Morpheus.Server.Deriving.Utils
-  ( ConsRep (..),
-    TypeConstraint (..),
+  ( TypeConstraint (..),
     TypeRep (..),
-    isEmptyConstraint,
+    deriveTypeRef,
+    symbolName,
     toRep,
     unpackMonad,
   )
@@ -75,7 +70,8 @@ import Data.Morpheus.Server.Types.SchemaT
     withInput,
   )
 import Data.Morpheus.Server.Types.Types
-  ( Pair,
+  ( Arg (..),
+    Pair,
     TypeGuard,
   )
 import Data.Morpheus.Types.GQLScalar
@@ -104,16 +100,17 @@ import Data.Morpheus.Types.Internal.AST
     TypeName,
     UnionMember (memberName),
     fieldsToArguments,
+    mkField,
   )
 import Data.Morpheus.Utils.Kinded
   ( CategoryValue (..),
     KindedProxy (..),
     inputType,
-    kinded,
     outputType,
     setKind,
   )
 import GHC.Generics (Rep)
+import GHC.TypeLits
 import Language.Haskell.TH (Exp, Q)
 import Relude
 
@@ -234,14 +231,22 @@ instance
       getUnionNames DataObject {} = pure [gqlTypeName (__typeData unionProxy)]
       getUnionNames _ = throwError "guarded type must be an union or object"
 
+withKind :: Proxy a -> KindedProxy (KIND a) a
+withKind _ = KindedProxy
+
 instance
   ( GQLType b,
-    DeriveType OUT b,
-    DeriveTypeConstraint IN a
+    DeriveKindedType OUT (KIND b) b,
+    DeriveArguments (KIND a) a
   ) =>
-  DeriveKindedType OUT CUSTOM (a -> m b)
+  DeriveKindedType OUT CUSTOM (a -> b)
   where
-  deriveKindedContent _ = Just . FieldArgs <$> deriveArgumentDefinition (Proxy @a)
+  deriveKindedContent _ = do
+    a <- deriveArgumentsDefinition (withKind (Proxy @a))
+    b <- deriveKindedContent (KindedProxy :: KindedProxy (KIND b) b)
+    case b of
+      Just (FieldArgs x) -> Just . FieldArgs <$> (a <:> x)
+      Nothing -> pure $ Just (FieldArgs a)
   deriveKindedType _ = deriveType (outputType $ Proxy @b)
 
 deriveScalarContent :: (DecodeScalar a) => f k a -> SchemaT cat (TypeContent TRUE LEAF CONST)
@@ -250,8 +255,17 @@ deriveScalarContent = pure . DataScalar . scalarValidator
 deriveInterfaceContent :: DeriveTypeConstraint OUT a => f a -> SchemaT OUT (TypeContent TRUE OUT CONST)
 deriveInterfaceContent = fmap DataInterface . deriveFields . outputType
 
-deriveArgumentDefinition :: DeriveTypeConstraint IN a => f a -> SchemaT OUT (ArgumentsDefinition CONST)
-deriveArgumentDefinition = withInput . fmap fieldsToArguments . deriveFields . inputType
+class DeriveArguments (k :: DerivingKind) a where
+  deriveArgumentsDefinition :: f k a -> SchemaT OUT (ArgumentsDefinition CONST)
+
+instance DeriveTypeConstraint IN a => DeriveArguments TYPE a where
+  deriveArgumentsDefinition = withInput . fmap fieldsToArguments . deriveFields . inputType
+
+instance (KnownSymbol name, GQLType value) => DeriveArguments CUSTOM (Arg name value) where
+  deriveArgumentsDefinition _ = pure $ fieldsToArguments $ singleton $ mkField Nothing argName argTypeRef
+    where
+      argName = symbolName (Proxy @name)
+      argTypeRef = deriveTypeRef (KindedProxy :: KindedProxy IN value)
 
 deriveFields :: DeriveTypeConstraint kind a => KindedType kind a -> SchemaT kind (FieldsDefinition kind CONST)
 deriveFields kindedType = deriveTypeContent kindedType >>= withObject kindedType
@@ -264,9 +278,6 @@ deriveOutputType = updateByContent deriveTypeContent . outputType
 
 deriveObjectType :: DeriveTypeConstraint OUT a => f a -> SchemaT OUT (TypeDefinition OBJECT CONST)
 deriveObjectType = asObjectType (deriveFields . outputType)
-
-deriveImplementsInterface :: (GQLType a, DeriveType OUT a) => f a -> SchemaT OUT TypeName
-deriveImplementsInterface x = deriveType (outputType x) $> gqlTypeName (__typeData (kinded (Proxy @OUT) x))
 
 fieldContentConstraint :: f kind a -> TypeConstraint (DeriveType kind) (TyContentM kind) Proxy
 fieldContentConstraint _ = TypeConstraint deriveFieldContent
@@ -286,12 +297,3 @@ deriveTypeContent kindedProxy =
   unpackMonad
     (toRep (fieldContentConstraint kindedProxy) kindedProxy)
     >>= buildTypeContent kindedProxy
-
-buildTypeContent ::
-  (GQLType a, CategoryValue kind) =>
-  KindedType kind a ->
-  [ConsRep (TyContent kind)] ->
-  SchemaT kind (TypeContent TRUE kind CONST)
-buildTypeContent scope [ConsRep {consFields}] = buildObjectTypeContent scope consFields
-buildTypeContent scope cons | all isEmptyConstraint cons = buildEnumTypeContent scope (consName <$> cons)
-buildTypeContent scope cons = buildUnionTypeContent scope cons

@@ -25,7 +25,8 @@ import Data.Morpheus.App.Internal.Resolving
   ( ResolverState,
   )
 import Data.Morpheus.Kind
-  ( DerivingKind,
+  ( CUSTOM,
+    DerivingKind,
     SCALAR,
     TYPE,
     WRAPPER,
@@ -34,6 +35,7 @@ import Data.Morpheus.Server.Deriving.Utils
   ( conNameProxy,
     datatypeNameProxy,
     selNameProxy,
+    symbolName,
   )
 import Data.Morpheus.Server.Internal.TH.Decode
   ( decodeFieldWith,
@@ -52,6 +54,7 @@ import Data.Morpheus.Server.Types.GQLType
     __typeData,
     defaultTypeOptions,
   )
+import Data.Morpheus.Server.Types.Types (Arg (Arg))
 import Data.Morpheus.Types.GQLScalar
   ( DecodeScalar (..),
   )
@@ -79,17 +82,14 @@ import Data.Morpheus.Utils.Kinded
   ( KindedProxy (..),
   )
 import GHC.Generics
+import GHC.TypeLits (KnownSymbol)
 import Relude
 
-type DecodeConstraint a =
-  ( Generic a,
-    GQLType a,
-    DecodeRep (Rep a)
-  )
+type DecodeConstraint a = (DecodeKind (KIND a) a)
 
 -- GENERIC
-decodeArguments :: DecodeConstraint a => Arguments VALID -> ResolverState a
-decodeArguments = decodeType . Object . fmap toEntry
+decodeArguments :: forall a. DecodeConstraint a => Arguments VALID -> ResolverState a
+decodeArguments = decodeKind (Proxy @(KIND a)) . Object . fmap toEntry
   where
     toEntry Argument {..} = ObjectEntry argumentName argumentValue
 
@@ -109,23 +109,32 @@ instance (DecodeScalar a, GQLType a) => DecodeKind SCALAR a where
   decodeKind _ = withScalar (gqlTypeName $ __typeData (KindedProxy :: KindedProxy LEAF a)) decodeScalar
 
 -- INPUT_OBJECT and  INPUT_UNION
-instance DecodeConstraint a => DecodeKind TYPE a where
-  decodeKind _ = decodeType
+instance
+  ( Generic a,
+    GQLType a,
+    DecodeRep (Rep a)
+  ) =>
+  DecodeKind TYPE a
+  where
+  decodeKind _ = fmap to . (`runReaderT` context) . decodeRep
+    where
+      context =
+        Context
+          { options = typeOptions (Proxy @a) defaultTypeOptions,
+            contKind = D_CONS,
+            typeName = ""
+          }
 
 instance (Decode a, DecodeWrapperConstraint f a, DecodeWrapper f) => DecodeKind WRAPPER (f a) where
   decodeKind _ value =
     runExceptT (decodeWrapper decode value)
       >>= handleEither
 
-decodeType :: forall a. DecodeConstraint a => ValidValue -> ResolverState a
-decodeType = fmap to . (`runReaderT` context) . decodeRep
-  where
-    context =
-      Context
-        { options = typeOptions (Proxy @a) defaultTypeOptions,
-          contKind = D_CONS,
-          typeName = ""
-        }
+instance (Decode a, KnownSymbol name) => DecodeKind CUSTOM (Arg name a) where
+  decodeKind _ value = Arg <$> withInputObject fieldDecoder value
+    where
+      fieldDecoder = decodeFieldWith decode fieldName
+      fieldName = symbolName (Proxy @name)
 
 -- data Input  =
 --    InputHuman Human  -- direct link: { __typename: Human, Human: {field: ""} }

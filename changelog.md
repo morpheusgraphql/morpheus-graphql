@@ -6,9 +6,45 @@
 
 - `TypeGuards` as an alternative for interfaces
 
+- deriving will merge function arguments. for example:
+
+  for following data type definitions:
+
+  ```hs
+  data A = A { a1 :: Text, a2 :: Int} deriving (Show, Generic, GQLType)
+  data B = B {b :: Text} deriving (Show, Generic, GQLType)
+  ```
+
+  Haskell field definition
+
+  ```hs
+  myField :: A -> B -> m Text
+  ```
+
+  will generate GraphQL field
+
+  ```gql
+  myField(a1:String!, a2:Int!, b:String!): String!
+  ```
+
+- support of Tagged Arguments. for example:
+
+  Haskell field definition
+
+  ```hs
+  myField :: Arg "a" Int -> Arg "b" (Maybe Text) -> m Text
+  ```
+
+  will generate GraphQL field
+
+  ```gql
+  myField(a:Int!, b:String): String!
+  ```
+
 ### Breaking Changes
 
 - removed `implements`field from `GQLType`
+- removed `interface` from `Morpheus.Types`
 - deprecated kind `INTERFACE`
 
 ## 0.17.0 - 25.02.2021

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b739464d1e47529dc2958ab732d39d39006ac12ce9cc72c5bd6ccfe66b47eb8e
+-- hash: 11d28374f0f6e871cdec86926c45d5957766b401610315969dcb3f0e52abef10
 
 name:           morpheus-graphql
 version:        0.17.0
@@ -114,6 +114,10 @@ data-files:
     test/Feature/Holistic/holistic/selection/unknownField/query.gql
     test/Feature/Holistic/schema-ext.gql
     test/Feature/Holistic/schema.gql
+    test/Feature/Inference/tagged-arguments-fail/introspection/query.gql
+    test/Feature/Inference/tagged-arguments-fail/resolving/query.gql
+    test/Feature/Inference/tagged-arguments/introspection/query.gql
+    test/Feature/Inference/tagged-arguments/resolving/query.gql
     test/Feature/Inference/type-guards/introspection/interface/query.gql
     test/Feature/Inference/type-guards/introspection/objects/query.gql
     test/Feature/Inference/type-guards/resolving/fail/query.gql
@@ -292,6 +296,10 @@ data-files:
     test/Feature/Holistic/holistic/selection/subscription/singleTopLevelField/fail/response.json
     test/Feature/Holistic/holistic/selection/subscription/singleTopLevelField/failAnonymous/response.json
     test/Feature/Holistic/holistic/selection/unknownField/response.json
+    test/Feature/Inference/tagged-arguments-fail/introspection/response.json
+    test/Feature/Inference/tagged-arguments-fail/resolving/response.json
+    test/Feature/Inference/tagged-arguments/introspection/response.json
+    test/Feature/Inference/tagged-arguments/resolving/response.json
     test/Feature/Inference/type-guards/introspection/interface/response.json
     test/Feature/Inference/type-guards/introspection/objects/response.json
     test/Feature/Inference/type-guards/resolving/fail/response.json
@@ -414,6 +422,7 @@ library
       Data.Morpheus.Server.Deriving.Schema.Enum
       Data.Morpheus.Server.Deriving.Schema.Internal
       Data.Morpheus.Server.Deriving.Schema.Object
+      Data.Morpheus.Server.Deriving.Schema.TypeContent
       Data.Morpheus.Server.Deriving.Schema.Union
       Data.Morpheus.Server.Deriving.Utils
       Data.Morpheus.Server.Internal.TH.Decode
@@ -458,6 +467,8 @@ test-suite morpheus-graphql-test
       Feature.Collision.NameCollision
       Feature.Collision.NameCollisionHelper
       Feature.Holistic.API
+      Feature.Inference.TaggedArguments
+      Feature.Inference.TaggedArgumentsFail
       Feature.Inference.TypeGuards
       Feature.Inference.TypeInference
       Feature.Inference.UnionType
