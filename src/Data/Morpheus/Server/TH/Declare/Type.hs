@@ -14,91 +14,65 @@ import Data.Morpheus.App.Internal.Resolving
   )
 import Data.Morpheus.Internal.TH
   ( apply,
-    camelCaseFieldName,
-    camelCaseTypeName,
     declareTypeRef,
     toCon,
     toName,
   )
-import Data.Morpheus.Server.Internal.TH.Types
-  ( ServerConsD,
-    ServerDec,
-    ServerDecContext (..),
+import Data.Morpheus.Server.CodeGen.Types
+  ( ServerConstructorDefinition (..),
     ServerFieldDefinition (..),
     ServerTypeDefinition (..),
   )
-import Data.Morpheus.Server.Internal.TH.Utils
+import Data.Morpheus.Server.TH.Utils
   ( isSubscription,
     m',
     m_,
   )
 import Data.Morpheus.Types (TypeGuard)
 import Data.Morpheus.Types.Internal.AST
-  ( ConsD (..),
-    FieldName,
-    TypeKind (..),
+  ( TypeKind (..),
     TypeName,
     isResolverType,
   )
 import Language.Haskell.TH
 import Relude hiding (Type)
 
-declareType :: ServerTypeDefinition s -> ServerDec [Dec]
+declareType :: ServerTypeDefinition s -> [Dec]
 declareType (ServerInterfaceDefinition name interfaceName unionName) =
-  pure
-    [ TySynD
-        (toName name)
-        [PlainTV m_]
-        (apply ''TypeGuard [apply interfaceName [m'], apply unionName [m']])
-    ]
-declareType ServerTypeDefinition {tKind = KindScalar} = pure []
+  [ TySynD
+      (toName name)
+      [PlainTV m_]
+      (apply ''TypeGuard [apply interfaceName [m'], apply unionName [m']])
+  ]
+declareType ServerTypeDefinition {tKind = KindScalar} = []
 declareType
   ServerTypeDefinition
     { tName,
       tCons,
       tKind,
+      derives,
       typeParameters
-    } =
-    do
-      cons <- declareCons tKind tName tCons
-      let vars = map (PlainTV . toName) typeParameters
-      let name = toName tName
-      pure [DataD [] name vars Nothing cons (derive tKind)]
-
-derive :: TypeKind -> [DerivClause]
-derive tKind = [deriveClasses (''Generic : derivingList)]
-  where
-    derivingList
-      | isResolverType tKind = []
-      | otherwise = [''Show]
+    } = [DataD [] (toName tName) vars Nothing cons [deriveClasses derives]]
+    where
+      cons = map (declareCons tKind) tCons
+      vars = map (PlainTV . toName) typeParameters
 
 deriveClasses :: [Name] -> DerivClause
 deriveClasses classNames = DerivClause Nothing (map ConT classNames)
 
-declareCons ::
-  TypeKind ->
-  TypeName ->
-  [ServerConsD] ->
-  ServerDec [Con]
-declareCons tKind tName = traverse consR
-  where
-    consR ConsD {cName, cFields} =
-      RecC
-        <$> consName tKind tName cName
-        <*> traverse (declareField tKind tName) cFields
-
-declareField ::
-  TypeKind ->
-  TypeName ->
-  ServerFieldDefinition ->
-  ServerDec (Name, Bang, Type)
-declareField tKind tName field = do
-  fieldName <- fieldTypeName tName (fieldName field)
-  pure
-    ( fieldName,
-      Bang NoSourceUnpackedness NoSourceStrictness,
-      renderFieldType tKind field
+declareCons :: TypeKind -> ServerConstructorDefinition -> Con
+declareCons tKind ServerConstructorDefinition {constructorName, constructorFields} =
+  RecC
+    (toName constructorName)
+    ( map (declareField tKind) constructorFields
     )
+
+declareField :: TypeKind -> ServerFieldDefinition -> (Name, Bang, Type)
+declareField tKind field =
+  ( toName (fieldName field),
+    Bang NoSourceUnpackedness NoSourceStrictness,
+    renderFieldType tKind field
+  )
 
 renderFieldType ::
   TypeKind ->
@@ -117,21 +91,6 @@ renderFieldType
       renderTypeName
         | isParametrized = (`apply` [m'])
         | otherwise = toCon
-
-fieldTypeName :: TypeName -> FieldName -> ServerDec Name
-fieldTypeName tName fieldName = do
-  namespace <- asks namespace
-  pure $ toName $
-    if namespace
-      then camelCaseFieldName tName fieldName
-      else fieldName
-
-consName :: TypeKind -> TypeName -> TypeName -> ServerDec Name
-consName kind name conName =
-  toName . genName <$> asks namespace
-  where
-    genName True | kind == KindEnum = camelCaseTypeName [name] conName
-    genName _ = conName
 
 -- withArgs: t => a -> t
 withArgs :: TypeName -> Type -> Type

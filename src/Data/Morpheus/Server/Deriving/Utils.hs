@@ -36,6 +36,10 @@ module Data.Morpheus.Server.Deriving.Utils
   )
 where
 
+import Data.Morpheus.Server.Deriving.Utils.Kinded
+  ( CategoryValue (..),
+    kinded,
+  )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     GQLTypeOptions (..),
@@ -43,10 +47,6 @@ import Data.Morpheus.Server.Types.GQLType
     __isObjectKind,
     __typeData,
     defaultTypeOptions,
-  )
-import Data.Morpheus.Server.Utils.Kinded
-  ( CategoryValue (..),
-    kinded,
   )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,

@@ -3,21 +3,15 @@
 module Data.Morpheus.Error
   ( errorMessage,
     globalErrorMessage,
-    gqlWarnings,
     renderGQLErrors,
     deprecatedField,
     subfieldsNotSelected,
     NameCollision (..),
+    gqlWarnings,
   )
 where
 
-import Data.Mergeable (NameCollision (..))
+import Data.Mergeable
 import Data.Morpheus.Error.Selection
-  ( subfieldsNotSelected,
-  )
 import Data.Morpheus.Error.Utils
 import Data.Morpheus.Error.Warning
-  ( deprecatedField,
-    gqlWarnings,
-    renderGQLErrors,
-  )

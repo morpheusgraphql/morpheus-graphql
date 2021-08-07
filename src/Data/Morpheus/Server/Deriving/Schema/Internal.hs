@@ -37,6 +37,10 @@ import Data.Morpheus.App.Internal.Resolving
   )
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Internal.Utils (empty)
+import Data.Morpheus.Server.Deriving.Utils.Kinded
+  ( CategoryValue (..),
+    KindedType (..),
+  )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     TypeData (..),
@@ -45,10 +49,6 @@ import Data.Morpheus.Server.Types.GQLType
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
     updateSchema,
-  )
-import Data.Morpheus.Server.Utils.Kinded
-  ( CategoryValue (..),
-    KindedType (..),
   )
 import Data.Morpheus.Types.Internal.AST
   ( CONST,

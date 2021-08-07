@@ -19,6 +19,10 @@ import Data.Morpheus.Server.Deriving.Utils
     isEmptyConstraint,
     isUnionRef,
   )
+import Data.Morpheus.Server.Deriving.Utils.Kinded
+  ( CategoryValue,
+    KindedType (..),
+  )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType,
     TypeData (gqlTypeName),
@@ -26,10 +30,6 @@ import Data.Morpheus.Server.Types.GQLType
   )
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
-  )
-import Data.Morpheus.Server.Utils.Kinded
-  ( CategoryValue,
-    KindedType (..),
   )
 import Data.Morpheus.Types.Internal.AST
   ( CONST,

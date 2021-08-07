@@ -22,11 +22,11 @@ import Data.Morpheus.Server.Deriving.Utils
   ( ConsRep (..),
     isEmptyConstraint,
   )
-import Data.Morpheus.Server.Types.GQLType (GQLType)
-import Data.Morpheus.Server.Types.SchemaT (SchemaT)
-import Data.Morpheus.Server.Utils.Kinded
+import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CategoryValue (..),
   )
+import Data.Morpheus.Server.Types.GQLType (GQLType)
+import Data.Morpheus.Server.Types.SchemaT (SchemaT)
 import Data.Morpheus.Types.Internal.AST
 
 buildTypeContent ::

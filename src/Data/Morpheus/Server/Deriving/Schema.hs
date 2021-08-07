@@ -58,6 +58,13 @@ import Data.Morpheus.Server.Deriving.Utils
     toRep,
     unpackMonad,
   )
+import Data.Morpheus.Server.Deriving.Utils.Kinded
+  ( CategoryValue (..),
+    KindedProxy (..),
+    inputType,
+    outputType,
+    setKind,
+  )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     TypeData (..),
@@ -73,13 +80,6 @@ import Data.Morpheus.Server.Types.Types
   ( Arg (..),
     Pair,
     TypeGuard,
-  )
-import Data.Morpheus.Server.Utils.Kinded
-  ( CategoryValue (..),
-    KindedProxy (..),
-    inputType,
-    outputType,
-    setKind,
   )
 import Data.Morpheus.Types.GQLScalar
   ( DecodeScalar (..),

@@ -29,6 +29,11 @@ import Data.Morpheus.Server.Deriving.Utils
   ( ConsRep (..),
     FieldRep (..),
   )
+import Data.Morpheus.Server.Deriving.Utils.Kinded
+  ( CategoryValue (..),
+    KindedType (..),
+    outputType,
+  )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     TypeData (..),
@@ -37,11 +42,6 @@ import Data.Morpheus.Server.Types.GQLType
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
     insertType,
-  )
-import Data.Morpheus.Server.Utils.Kinded
-  ( CategoryValue (..),
-    KindedType (..),
-    outputType,
   )
 import Data.Morpheus.Types.Internal.AST
   ( CONST,

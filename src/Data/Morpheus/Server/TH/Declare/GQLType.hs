@@ -26,13 +26,13 @@ import Data.Morpheus.Internal.Utils
   ( stripConstructorNamespace,
     stripFieldNamespace,
   )
-import Data.Morpheus.Server.Internal.TH.Types
+import Data.Morpheus.Server.CodeGen.Types
   ( GQLTypeDefinition (..),
     ServerDec,
     ServerDecContext (..),
     ServerTypeDefinition (..),
   )
-import Data.Morpheus.Server.Internal.TH.Utils
+import Data.Morpheus.Server.TH.Utils
   ( funDProxy,
     mkTypeableConstraints,
   )

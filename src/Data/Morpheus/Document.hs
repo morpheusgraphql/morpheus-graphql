@@ -10,12 +10,13 @@ module Data.Morpheus.Document
   )
 where
 
+import Data.ByteString.Lazy.Char8 (readFile)
 import Data.Morpheus.Server
+import Data.Morpheus.Server.CodeGen.Types
+  ( ServerDecContext (..),
+  )
 import Data.Morpheus.Server.Deriving.App
   ( RootResolverConstraint,
-  )
-import Data.Morpheus.Server.Internal.TH.Types
-  ( ServerDecContext (..),
   )
 import Data.Morpheus.Server.TH.Compile
   ( compileDocument,
@@ -25,22 +26,18 @@ import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
   ( qAddDependentFile,
   )
-import Relude hiding (ByteString)
+import Relude hiding (ByteString, readFile)
 
 importGQLDocument :: FilePath -> Q [Dec]
-importGQLDocument src = do
-  qAddDependentFile src
-  runIO (readFile src)
-    >>= compileDocument
-      ServerDecContext
-        { namespace = False
-        }
+importGQLDocument =
+  importDeclarations ServerDecContext {namespace = False}
 
 importGQLDocumentWithNamespace :: FilePath -> Q [Dec]
-importGQLDocumentWithNamespace src = do
+importGQLDocumentWithNamespace =
+  importDeclarations ServerDecContext {namespace = True}
+
+importDeclarations :: ServerDecContext -> FilePath -> Q [Dec]
+importDeclarations ctx src = do
   qAddDependentFile src
   runIO (readFile src)
-    >>= compileDocument
-      ServerDecContext
-        { namespace = True
-        }
+    >>= compileDocument ctx

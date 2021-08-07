@@ -11,15 +11,15 @@ import Data.Morpheus.Server.Deriving.Schema.Internal
   ( lookupDescription,
     lookupDirectives,
   )
+import Data.Morpheus.Server.Deriving.Utils.Kinded
+  ( KindedType (..),
+  )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType,
   )
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
     insertType,
-  )
-import Data.Morpheus.Server.Utils.Kinded
-  ( KindedType (..),
   )
 import Data.Morpheus.Types.Internal.AST
   ( CONST,

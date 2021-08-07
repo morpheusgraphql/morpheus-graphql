@@ -26,7 +26,7 @@ import Data.Morpheus.Types.Internal.AST.Error
 import Data.Morpheus.Types.Internal.AST.Name
   ( FieldName,
   )
-import Language.Haskell.TH (Q, reportWarning)
+import Language.Haskell.TH
 import Relude
 
 renderGQLErrors :: GQLErrors -> String

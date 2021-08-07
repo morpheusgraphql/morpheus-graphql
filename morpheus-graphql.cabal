@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4b1de1f105af6246c0a4b440f57ae1c74ba54aee4731f694d9175ebbb21478c9
+-- hash: b2f525c09979b3977905a81f7eb274356bb6f27f7f3d3a2d7e03da9bbfbdf9f1
 
 name:           morpheus-graphql
 version:        0.17.0
@@ -414,6 +414,8 @@ library
       Data.Morpheus.Server
       Data.Morpheus.Document
   other-modules:
+      Data.Morpheus.Server.CodeGen.Transform
+      Data.Morpheus.Server.CodeGen.Types
       Data.Morpheus.Server.Deriving.App
       Data.Morpheus.Server.Deriving.Channels
       Data.Morpheus.Server.Deriving.Decode
@@ -425,19 +427,17 @@ library
       Data.Morpheus.Server.Deriving.Schema.TypeContent
       Data.Morpheus.Server.Deriving.Schema.Union
       Data.Morpheus.Server.Deriving.Utils
-      Data.Morpheus.Server.Internal.TH.Decode
-      Data.Morpheus.Server.Internal.TH.Types
-      Data.Morpheus.Server.Internal.TH.Utils
+      Data.Morpheus.Server.Deriving.Utils.Decode
+      Data.Morpheus.Server.Deriving.Utils.Kinded
       Data.Morpheus.Server.Playground
       Data.Morpheus.Server.TH.Compile
       Data.Morpheus.Server.TH.Declare
       Data.Morpheus.Server.TH.Declare.GQLType
       Data.Morpheus.Server.TH.Declare.Type
-      Data.Morpheus.Server.TH.Transform
+      Data.Morpheus.Server.TH.Utils
       Data.Morpheus.Server.Types.GQLType
       Data.Morpheus.Server.Types.SchemaT
       Data.Morpheus.Server.Types.Types
-      Data.Morpheus.Server.Utils.Kinded
       Paths_morpheus_graphql
   hs-source-dirs:
       src

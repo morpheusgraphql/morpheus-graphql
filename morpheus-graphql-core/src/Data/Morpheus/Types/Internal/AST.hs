@@ -103,7 +103,6 @@ module Data.Morpheus.Types.Internal.AST
     Msg (..),
     intercalate,
     fieldsToArguments,
-    mkConsEnum,
     Directives,
     DirectivesDefinition,
     DirectiveDefinition (..),

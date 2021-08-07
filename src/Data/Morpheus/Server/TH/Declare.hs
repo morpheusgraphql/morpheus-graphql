@@ -9,7 +9,7 @@ module Data.Morpheus.Server.TH.Declare
 where
 
 -- MORPHEUS
-import Data.Morpheus.Server.Internal.TH.Types
+import Data.Morpheus.Server.CodeGen.Types
   ( ServerDec,
     ServerDecContext,
     ServerTypeDefinition,
@@ -33,4 +33,4 @@ instance Declare a => Declare [a] where
   declare = fmap concat . traverse declare
 
 instance Declare (ServerTypeDefinition s) where
-  declare typeDef = (<>) <$> declareType typeDef <*> deriveGQLType typeDef
+  declare typeDef = (declareType typeDef <>) <$> deriveGQLType typeDef

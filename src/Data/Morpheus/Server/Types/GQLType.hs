@@ -49,6 +49,7 @@ import Data.Morpheus.Kind
     isObject,
     toValue,
   )
+import Data.Morpheus.Server.Deriving.Utils.Kinded (CategoryValue (..))
 import Data.Morpheus.Server.Types.SchemaT
   ( TypeFingerprint (..),
   )
@@ -58,7 +59,6 @@ import Data.Morpheus.Server.Types.Types
     TypeGuard,
     Undefined (..),
   )
-import Data.Morpheus.Server.Utils.Kinded (CategoryValue (..))
 import Data.Morpheus.Types.ID (ID)
 import Data.Morpheus.Types.Internal.AST
   ( CONST,

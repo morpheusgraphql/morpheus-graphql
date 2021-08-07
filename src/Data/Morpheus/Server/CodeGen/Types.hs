@@ -1,23 +1,20 @@
 {-# LANGUAGE DisambiguateRecordFields #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Server.Internal.TH.Types
+module Data.Morpheus.Server.CodeGen.Types
   ( ServerTypeDefinition (..),
     ServerDec,
     ServerDecContext (..),
-    ServerConsD,
     ServerFieldDefinition (..),
-    toServerField,
     GQLTypeDefinition (..),
+    ServerConstructorDefinition (..),
+    FIELD_TYPE_WRAPPER (..),
   )
 where
 
 import Data.Morpheus.Types.Internal.AST
-  ( ConsD (..),
-    Description,
+  ( Description,
     Directives,
-    FieldDefinition (..),
     FieldName,
     TypeKind,
     TypeName,
@@ -27,24 +24,17 @@ import Data.Morpheus.Types.Internal.AST
 import Language.Haskell.TH (Name, Q)
 import Relude
 
+data FIELD_TYPE_WRAPPER = MONAD | SUBSCRIPTION
+  deriving (Show)
+
 data ServerFieldDefinition = ServerFieldDefinition
   { isParametrized :: Bool,
     argumentsTypeName :: Maybe TypeName,
     fieldType :: TypeRef,
-    fieldName :: FieldName
+    fieldName :: FieldName,
+    wrappers :: [FIELD_TYPE_WRAPPER]
   }
   deriving (Show)
-
-toServerField :: FieldDefinition c s -> ServerFieldDefinition
-toServerField FieldDefinition {fieldType, fieldName} =
-  ServerFieldDefinition
-    { isParametrized = False,
-      argumentsTypeName = Nothing,
-      fieldType,
-      fieldName
-    }
-
-type ServerConsD = ConsD ServerFieldDefinition
 
 data GQLTypeDefinition s = GQLTypeDefinition
   { gqlKind :: Name,
@@ -55,14 +45,21 @@ data GQLTypeDefinition s = GQLTypeDefinition
   }
   deriving (Show)
 
+data ServerConstructorDefinition = ServerConstructorDefinition
+  { constructorName :: TypeName,
+    constructorFields :: [ServerFieldDefinition]
+  }
+  deriving (Show)
+
 --- Core
 data ServerTypeDefinition s
   = ServerTypeDefinition
       { -- Type Declaration
         tName :: TypeName,
         typeParameters :: [Name],
-        tCons :: [ConsD ServerFieldDefinition],
+        tCons :: [ServerConstructorDefinition],
         tKind :: TypeKind,
+        derives :: [Name],
         -- GQLType methods
         gql :: Maybe (GQLTypeDefinition s)
       }

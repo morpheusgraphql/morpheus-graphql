@@ -4,7 +4,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Server.Internal.TH.Utils
+module Data.Morpheus.Server.TH.Utils
   ( kindName,
     constraintTypeable,
     typeNameStringE,
@@ -13,7 +13,7 @@ module Data.Morpheus.Server.Internal.TH.Utils
     m',
     m_,
     funDProxy,
-    isParametrizedResolverType,
+    isParametrizedHaskellType,
     isSubscription,
   )
 where
@@ -22,7 +22,6 @@ import Data.Morpheus.Internal.TH
   ( _',
     apply,
     funDSimple,
-    toName,
     vars,
   )
 import Data.Morpheus.Kind
@@ -31,13 +30,9 @@ import Data.Morpheus.Kind
     WRAPPER,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( ANY,
-    OperationType (..),
-    TypeDefinition (..),
+  ( OperationType (..),
     TypeKind (..),
     TypeName,
-    isResolverType,
-    lookupWith,
     unpackName,
   )
 import Data.Text (unpack)
@@ -55,7 +50,6 @@ import Language.Haskell.TH
     Type (..),
     cxt,
     mkName,
-    reify,
   )
 import Relude hiding (Type)
 
@@ -65,19 +59,9 @@ m_ = mkName "m"
 m' :: Type
 m' = VarT m_
 
-isParametrizedResolverType :: TypeName -> [TypeDefinition ANY s] -> Q Bool
-isParametrizedResolverType "__TypeKind" _ = pure False
-isParametrizedResolverType "Boolean" _ = pure False
-isParametrizedResolverType "String" _ = pure False
-isParametrizedResolverType "Int" _ = pure False
-isParametrizedResolverType "Float" _ = pure False
-isParametrizedResolverType key lib = case lookupWith typeName key lib of
-  Just x -> pure (isResolverType x)
-  Nothing -> isParametrizedType <$> reify (toName key)
-
-isParametrizedType :: Info -> Bool
-isParametrizedType (TyConI x) = not $ null $ getTypeVariables x
-isParametrizedType _ = False
+isParametrizedHaskellType :: Info -> Bool
+isParametrizedHaskellType (TyConI x) = not $ null $ getTypeVariables x
+isParametrizedHaskellType _ = False
 
 getTypeVariables :: Dec -> [TyVarBndr]
 getTypeVariables (DataD _ _ args _ _ _) = args

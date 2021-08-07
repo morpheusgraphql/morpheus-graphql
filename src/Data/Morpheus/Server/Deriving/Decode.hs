@@ -37,12 +37,15 @@ import Data.Morpheus.Server.Deriving.Utils
     selNameProxy,
     symbolName,
   )
-import Data.Morpheus.Server.Internal.TH.Decode
+import Data.Morpheus.Server.Deriving.Utils.Decode
   ( decodeFieldWith,
     handleEither,
     withInputObject,
     withInputUnion,
     withScalar,
+  )
+import Data.Morpheus.Server.Deriving.Utils.Kinded
+  ( KindedProxy (..),
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType
@@ -55,9 +58,6 @@ import Data.Morpheus.Server.Types.GQLType
     defaultTypeOptions,
   )
 import Data.Morpheus.Server.Types.Types (Arg (Arg))
-import Data.Morpheus.Server.Utils.Kinded
-  ( KindedProxy (..),
-  )
 import Data.Morpheus.Types.GQLScalar
   ( DecodeScalar (..),
   )
