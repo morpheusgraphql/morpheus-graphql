@@ -74,6 +74,13 @@ import Data.Morpheus.Server.Types.Types
     Pair,
     TypeGuard,
   )
+import Data.Morpheus.Server.Utils.Kinded
+  ( CategoryValue (..),
+    KindedProxy (..),
+    inputType,
+    outputType,
+    setKind,
+  )
 import Data.Morpheus.Types.GQLScalar
   ( DecodeScalar (..),
     scalarValidator,
@@ -101,13 +108,6 @@ import Data.Morpheus.Types.Internal.AST
     UnionMember (memberName),
     fieldsToArguments,
     mkField,
-  )
-import Data.Morpheus.Utils.Kinded
-  ( CategoryValue (..),
-    KindedProxy (..),
-    inputType,
-    outputType,
-    setKind,
   )
 import GHC.Generics (Rep)
 import GHC.TypeLits

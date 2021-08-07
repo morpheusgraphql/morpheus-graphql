@@ -46,6 +46,10 @@ import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
     updateSchema,
   )
+import Data.Morpheus.Server.Utils.Kinded
+  ( CategoryValue (..),
+    KindedType (..),
+  )
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
     Description,
@@ -56,10 +60,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeContent (..),
     TypeDefinition (..),
     VALID,
-  )
-import Data.Morpheus.Utils.Kinded
-  ( CategoryValue (..),
-    KindedType (..),
   )
 import Language.Haskell.TH (Exp, Q)
 import Relude hiding (empty)

@@ -55,6 +55,9 @@ import Data.Morpheus.Server.Types.GQLType
     defaultTypeOptions,
   )
 import Data.Morpheus.Server.Types.Types (Arg (Arg))
+import Data.Morpheus.Server.Utils.Kinded
+  ( KindedProxy (..),
+  )
 import Data.Morpheus.Types.GQLScalar
   ( DecodeScalar (..),
   )
@@ -77,9 +80,6 @@ import Data.Morpheus.Types.Internal.AST
     Value (..),
     internal,
     msg,
-  )
-import Data.Morpheus.Utils.Kinded
-  ( KindedProxy (..),
   )
 import GHC.Generics
 import GHC.TypeLits (KnownSymbol)

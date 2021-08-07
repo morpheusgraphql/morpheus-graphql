@@ -44,6 +44,10 @@ import Data.Morpheus.Server.Types.GQLType
     __typeData,
     defaultTypeOptions,
   )
+import Data.Morpheus.Server.Utils.Kinded
+  ( CategoryValue (..),
+    kinded,
+  )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     TypeCategory,
@@ -51,10 +55,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef (..),
     fromHaskellName,
     packName,
-  )
-import Data.Morpheus.Utils.Kinded
-  ( CategoryValue (..),
-    kinded,
   )
 import Data.Text
   ( pack,

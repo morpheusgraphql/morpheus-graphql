@@ -58,6 +58,7 @@ import Data.Morpheus.Server.Types.Types
     TypeGuard,
     Undefined (..),
   )
+import Data.Morpheus.Server.Utils.Kinded (CategoryValue (..))
 import Data.Morpheus.Types.ID (ID)
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
@@ -73,7 +74,6 @@ import Data.Morpheus.Types.Internal.AST
     toNullable,
     unpackName,
   )
-import Data.Morpheus.Utils.Kinded (CategoryValue (..))
 import Data.Text
   ( intercalate,
     pack,

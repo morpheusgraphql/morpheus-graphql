@@ -27,6 +27,10 @@ import Data.Morpheus.Server.Types.GQLType
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
   )
+import Data.Morpheus.Server.Utils.Kinded
+  ( CategoryValue,
+    KindedType (..),
+  )
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
     FieldContent (..),
@@ -37,10 +41,6 @@ import Data.Morpheus.Types.Internal.AST
     UnionMember (..),
     mkNullaryMember,
     mkUnionMember,
-  )
-import Data.Morpheus.Utils.Kinded
-  ( CategoryValue,
-    KindedType (..),
   )
 import Relude
 

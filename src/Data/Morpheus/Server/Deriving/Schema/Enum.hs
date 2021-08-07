@@ -18,6 +18,9 @@ import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
     insertType,
   )
+import Data.Morpheus.Server.Utils.Kinded
+  ( KindedType (..),
+  )
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
     DataEnumValue (..),
@@ -30,9 +33,6 @@ import Data.Morpheus.Types.Internal.AST
     mkType,
     unitTypeName,
     unpackName,
-  )
-import Data.Morpheus.Utils.Kinded
-  ( KindedType (..),
   )
 
 buildEnumTypeContent :: GQLType a => KindedType kind a -> [TypeName] -> SchemaT c (TypeContent TRUE kind CONST)
