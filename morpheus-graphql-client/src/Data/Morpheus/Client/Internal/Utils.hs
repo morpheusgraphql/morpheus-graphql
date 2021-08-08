@@ -6,8 +6,8 @@ module Data.Morpheus.Client.Internal.Utils
   )
 where
 
-import Data.Morpheus.Types.Internal.AST
-  ( ConsD (..),
+import Data.Morpheus.Client.Internal.Types
+  ( ClientConstructorDefinition (cFields),
   )
 import Relude
 
@@ -23,5 +23,5 @@ splitDuplicates = collectElems ([], [])
       | x `elem` collected = collectElems (collected, errors <> [x]) xs
       | otherwise = collectElems (collected <> [x], errors) xs
 
-isEnum :: [ConsD f] -> Bool
+isEnum :: [ClientConstructorDefinition] -> Bool
 isEnum = all (null . cFields)

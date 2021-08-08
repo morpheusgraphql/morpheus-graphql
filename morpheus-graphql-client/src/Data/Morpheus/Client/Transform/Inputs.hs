@@ -13,7 +13,7 @@ module Data.Morpheus.Client.Transform.Inputs
 where
 
 import Data.Morpheus.Client.Internal.Types
-  ( ClientConsD,
+  ( ClientConstructorDefinition (..),
     ClientTypeDefinition (..),
     TypeNameTH (..),
   )
@@ -33,7 +33,7 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
-    ConsD (..),
+    DataEnumValue (DataEnumValue, enumName),
     FieldDefinition (..),
     IN,
     Operation (..),
@@ -66,7 +66,7 @@ renderArguments variables cName
         { clientTypeName = TypeNameTH [] cName,
           clientKind = KindInputObject,
           clientCons =
-            [ ConsD
+            [ ClientConstructorDefinition
                 { cName,
                   cFields = fieldD <$> toList variables
                 }
@@ -131,7 +131,7 @@ buildInputType name = getType name >>= generateTypes
             [ mkInputType
                 typeName
                 KindInputObject
-                [ ConsD
+                [ ClientConstructorDefinition
                     { cName = typeName,
                       cFields = fmap toAny fields
                     }
@@ -153,7 +153,10 @@ buildInputType name = getType name >>= generateTypes
             ]
         subTypes _ = pure []
 
-mkInputType :: TypeName -> TypeKind -> [ClientConsD ANY] -> ClientTypeDefinition
+mkConsEnum :: DataEnumValue s -> ClientConstructorDefinition
+mkConsEnum DataEnumValue {enumName} = ClientConstructorDefinition enumName []
+
+mkInputType :: TypeName -> TypeKind -> [ClientConstructorDefinition] -> ClientTypeDefinition
 mkInputType typename clientKind clientCons =
   ClientTypeDefinition
     { clientTypeName = TypeNameTH [] typename,

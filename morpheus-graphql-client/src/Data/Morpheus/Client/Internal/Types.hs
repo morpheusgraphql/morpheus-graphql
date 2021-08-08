@@ -4,6 +4,7 @@ module Data.Morpheus.Client.Internal.Types
   ( ClientTypeDefinition (..),
     TypeNameTH (..),
     ClientDefinition (..),
+    ClientConstructorDefinition (..),
   )
 where
 
@@ -23,15 +24,15 @@ data TypeNameTH = TypeNameTH
   }
   deriving (Show)
 
-data ClientConstructorDefinition k = ConsD
+data ClientConstructorDefinition = ClientConstructorDefinition
   { cName :: TypeName,
-    cFields :: [FieldDefinition k VALID]
+    cFields :: [FieldDefinition ANY VALID]
   }
   deriving (Show)
 
 data ClientTypeDefinition = ClientTypeDefinition
   { clientTypeName :: TypeNameTH,
-    clientCons :: [ClientConstructorDefinition ANY],
+    clientCons :: [ClientConstructorDefinition],
     clientKind :: TypeKind
   }
   deriving (Show)
