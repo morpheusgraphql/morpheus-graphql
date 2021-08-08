@@ -36,6 +36,7 @@ import Data.Morpheus.Server.CodeGen.Types
   )
 import Data.Morpheus.Server.TH.Utils
   ( isParametrizedHaskellType,
+    isSubscription,
     kindName,
     m_,
   )
@@ -205,21 +206,19 @@ mkObjectField
     } = do
     isParametrized <- lift . isParametrizedResolverType (typeConName fieldType) =<< asks schema
     genName <- asks toArgsTypeName
-    let wrappers = [MONAD]
+    kind <- asks currentKind
+    let subsWrapper = [SUBSCRIPTION | fmap isSubscription kind == Just True]
+    let wrappers = getArgs genName fieldContent <> subsWrapper <> [MONAD]
     fieldName <- genFieldName fName
-    pure
-      ServerFieldDefinition
-        { argumentsTypeName = fieldContent >>= fieldCont genName,
-          ..
-        }
+    pure ServerFieldDefinition {..}
     where
-      fieldCont ::
+      getArgs ::
         (FieldName -> TypeName) ->
-        FieldContent TRUE OUT s ->
-        Maybe TypeName
-      fieldCont genName (FieldArgs args)
-        | not (null args) = Just (genName fName)
-      fieldCont _ _ = Nothing
+        Maybe (FieldContent TRUE OUT s) ->
+        [FIELD_TYPE_WRAPPER]
+      getArgs genName (Just (FieldArgs args))
+        | not (null args) = [ARG (genName fName)]
+      getArgs _ _ = []
 
 data BuildPlan s
   = ConsIN [ServerConstructorDefinition]
@@ -273,7 +272,6 @@ toNonResolverServerField FieldDefinition {fieldType, fieldName = fName} = do
   pure $
     ServerFieldDefinition
       { isParametrized = False,
-        argumentsTypeName = Nothing,
         fieldType,
         fieldName,
         wrappers = []
@@ -317,7 +315,6 @@ mkUnionFieldDefinition typeName memberName =
       constructorFields =
         [ ServerFieldDefinition
             { isParametrized = True,
-              argumentsTypeName = Nothing,
               fieldName = coerce ("un" <> constructorName),
               fieldType = mkTypeRef memberName,
               wrappers = []

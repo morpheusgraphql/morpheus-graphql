@@ -2,15 +2,15 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Document
-  ( gqlDocument,
+  ( toGraphQLDocument,
+    gqlDocument,
     importGQLDocument,
     importGQLDocumentWithNamespace,
     RootResolverConstraint,
-    toGraphQLDocument,
   )
 where
 
-import Data.ByteString.Lazy.Char8 (readFile)
+import Data.ByteString.Lazy.Char8 (ByteString, readFile)
 import Data.Morpheus.Server
 import Data.Morpheus.Server.CodeGen.Types
   ( ServerDecContext (..),
@@ -22,6 +22,7 @@ import Data.Morpheus.Server.TH.Compile
   ( compileDocument,
     gqlDocument,
   )
+import Data.Morpheus.Types
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
   ( qAddDependentFile,
@@ -41,3 +42,10 @@ importDeclarations ctx src = do
   qAddDependentFile src
   runIO (readFile src)
     >>= compileDocument ctx
+
+-- TODO: deprecate
+toGraphQLDocument ::
+  RootResolverConstraint m event query mut sub =>
+  proxy (RootResolver m event query mut sub) ->
+  ByteString
+toGraphQLDocument = printSchema

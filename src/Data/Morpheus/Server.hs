@@ -13,7 +13,7 @@
 module Data.Morpheus.Server
   ( httpPlayground,
     compileTimeSchemaValidation,
-    toGraphQLDocument,
+    printSchema,
   )
 where
 
@@ -41,10 +41,10 @@ import Data.Morpheus.Types (RootResolver)
 import Relude hiding (ByteString)
 
 -- | Generates schema.gql file from 'RootResolver'
-toGraphQLDocument ::
+printSchema ::
   RootResolverConstraint m event query mut sub =>
   proxy (RootResolver m event query mut sub) ->
   ByteString
-toGraphQLDocument =
+printSchema =
   resultOr (pack . show) render
     . deriveSchema

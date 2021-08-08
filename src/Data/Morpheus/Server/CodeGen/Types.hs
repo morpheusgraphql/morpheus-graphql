@@ -24,12 +24,14 @@ import Data.Morpheus.Types.Internal.AST
 import Language.Haskell.TH (Name, Q)
 import Relude
 
-data FIELD_TYPE_WRAPPER = MONAD | SUBSCRIPTION
+data FIELD_TYPE_WRAPPER
+  = MONAD
+  | SUBSCRIPTION
+  | ARG TypeName
   deriving (Show)
 
 data ServerFieldDefinition = ServerFieldDefinition
   { isParametrized :: Bool,
-    argumentsTypeName :: Maybe TypeName,
     fieldType :: TypeRef,
     fieldName :: FieldName,
     wrappers :: [FIELD_TYPE_WRAPPER]

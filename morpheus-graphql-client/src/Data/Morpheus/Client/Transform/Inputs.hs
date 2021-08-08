@@ -48,7 +48,6 @@ import Data.Morpheus.Types.Internal.AST
     Variable (..),
     VariableDefinitions,
     getOperationName,
-    mkConsEnum,
     toAny,
   )
 import Relude hiding (empty)

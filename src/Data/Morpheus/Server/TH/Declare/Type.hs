@@ -19,20 +19,19 @@ import Data.Morpheus.Internal.TH
     toName,
   )
 import Data.Morpheus.Server.CodeGen.Types
-  ( ServerConstructorDefinition (..),
+  ( FIELD_TYPE_WRAPPER (..),
+    ServerConstructorDefinition (..),
     ServerFieldDefinition (..),
     ServerTypeDefinition (..),
   )
 import Data.Morpheus.Server.TH.Utils
-  ( isSubscription,
-    m',
+  ( m',
     m_,
   )
 import Data.Morpheus.Types (TypeGuard)
 import Data.Morpheus.Types.Internal.AST
   ( TypeKind (..),
     TypeName,
-    isResolverType,
   )
 import Language.Haskell.TH
 import Relude hiding (Type)
@@ -49,76 +48,43 @@ declareType
   ServerTypeDefinition
     { tName,
       tCons,
-      tKind,
       derives,
       typeParameters
     } = [DataD [] (toName tName) vars Nothing cons [deriveClasses derives]]
     where
-      cons = map (declareCons tKind) tCons
+      cons = map declareCons tCons
       vars = map (PlainTV . toName) typeParameters
 
 deriveClasses :: [Name] -> DerivClause
 deriveClasses classNames = DerivClause Nothing (map ConT classNames)
 
-declareCons :: TypeKind -> ServerConstructorDefinition -> Con
-declareCons tKind ServerConstructorDefinition {constructorName, constructorFields} =
+declareCons :: ServerConstructorDefinition -> Con
+declareCons ServerConstructorDefinition {constructorName, constructorFields} =
   RecC
     (toName constructorName)
-    ( map (declareField tKind) constructorFields
-    )
+    (map declareField constructorFields)
 
-declareField :: TypeKind -> ServerFieldDefinition -> (Name, Bang, Type)
-declareField tKind field =
-  ( toName (fieldName field),
-    Bang NoSourceUnpackedness NoSourceStrictness,
-    renderFieldType tKind field
-  )
-
-renderFieldType ::
-  TypeKind ->
-  ServerFieldDefinition ->
-  Type
-renderFieldType
-  tKind
+declareField :: ServerFieldDefinition -> (Name, Bang, Type)
+declareField
   ServerFieldDefinition
-    { isParametrized,
+    { fieldName,
+      isParametrized,
       fieldType,
-      argumentsTypeName
+      wrappers
     } =
-    withFieldWrappers tKind argumentsTypeName (declareTypeRef renderTypeName fieldType)
+    ( toName fieldName,
+      Bang NoSourceUnpackedness NoSourceStrictness,
+      foldr applyWrapper (declareTypeRef renderTypeName fieldType) wrappers
+    )
     where
       renderTypeName :: TypeName -> Type
       renderTypeName
         | isParametrized = (`apply` [m'])
         | otherwise = toCon
 
--- withArgs: t => a -> t
-withArgs :: TypeName -> Type -> Type
-withArgs argsTypename = InfixT (ConT (toName argsTypename)) ''Function
+applyWrapper :: FIELD_TYPE_WRAPPER -> Type -> Type
+applyWrapper MONAD = AppT m'
+applyWrapper SUBSCRIPTION = AppT (ConT ''SubscriptionField)
+applyWrapper (ARG typeName) = InfixT (ConT (toName typeName)) ''Function
 
 type Function = (->)
-
-withMonad :: Type -> Type
-withMonad = AppT m'
-
-------------------------------------------------
-withFieldWrappers ::
-  TypeKind ->
-  Maybe TypeName ->
-  Type ->
-  Type
-withFieldWrappers kind (Just argsTypename) =
-  withArgs argsTypename
-    . withSubscriptionField kind
-    . withMonad
-withFieldWrappers kind _
-  | isResolverType kind && (KindUnion /= kind) =
-    withSubscriptionField kind
-      . withMonad
-  | otherwise = id
-
--- withSubscriptionField: t => SubscriptionField t
-withSubscriptionField :: TypeKind -> Type -> Type
-withSubscriptionField kind x
-  | isSubscription kind = AppT (ConT ''SubscriptionField) x
-  | otherwise = x
