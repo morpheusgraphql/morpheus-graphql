@@ -14,7 +14,7 @@ where
 
 import Control.Monad.Except (MonadError (throwError))
 import Data.Morpheus.Client.Internal.Types
-  ( ClientConsD,
+  ( ClientConstructorDefinition (..),
     ClientDefinition (..),
     ClientTypeDefinition (..),
     TypeNameTH (..),
@@ -31,7 +31,6 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
-    ConsD (..),
     FieldDefinition (..),
     FieldName,
     Operation (..),
@@ -115,13 +114,13 @@ genConsD ::
   TypeDefinition ANY VALID ->
   SelectionSet VALID ->
   Converter
-    ( ClientConsD ANY,
+    ( ClientConstructorDefinition,
       [ClientTypeDefinition],
       [TypeName]
     )
 genConsD path cName datatype selSet = do
   (cFields, subTypes, requests) <- unzip3 <$> traverse genField (toList selSet)
-  pure (ConsD {cName, cFields}, concat subTypes, concat requests)
+  pure (ClientConstructorDefinition {cName, cFields}, concat subTypes, concat requests)
   where
     genField ::
       Selection VALID ->

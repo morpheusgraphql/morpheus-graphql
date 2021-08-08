@@ -49,6 +49,7 @@ import Data.Morpheus.Kind
     isObject,
     toValue,
   )
+import Data.Morpheus.Server.Deriving.Utils.Kinded (CategoryValue (..))
 import Data.Morpheus.Server.Types.SchemaT
   ( TypeFingerprint (..),
   )
@@ -73,7 +74,6 @@ import Data.Morpheus.Types.Internal.AST
     toNullable,
     unpackName,
   )
-import Data.Morpheus.Utils.Kinded (CategoryValue (..))
 import Data.Text
   ( intercalate,
     pack,

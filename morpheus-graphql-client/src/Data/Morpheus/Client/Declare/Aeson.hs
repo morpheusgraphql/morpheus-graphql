@@ -28,7 +28,7 @@ import Data.Morpheus.Client.Internal.TH
     mkFieldsE,
   )
 import Data.Morpheus.Client.Internal.Types
-  ( ClientConsD,
+  ( ClientConstructorDefinition (..),
     ClientTypeDefinition (..),
     TypeNameTH (..),
   )
@@ -52,8 +52,7 @@ import Data.Morpheus.Types.GQLScalar
     scalarToJSON,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( ConsD (..),
-    FieldName,
+  ( FieldName,
     GQLError,
     Msg (msg),
     TypeKind (..),
@@ -125,8 +124,8 @@ deriveFromJSON typeD@ClientTypeDefinition {clientTypeName, clientCons}
     defineFromJSON clientTypeName $
       aesonUnionObject typeD
 
-aesonObject :: [FieldName] -> ClientConsD cat -> ExpQ
-aesonObject tNamespace con@ConsD {cName} =
+aesonObject :: [FieldName] -> ClientConstructorDefinition -> ExpQ
+aesonObject tNamespace con@ClientConstructorDefinition {cName} =
   withBody
     <$> aesonObjectBody tNamespace con
   where
@@ -137,8 +136,8 @@ aesonObject tNamespace con@ConsD {cName} =
     name :: Exp
     name = toString (camelCaseTypeName tNamespace cName)
 
-aesonObjectBody :: [FieldName] -> ClientConsD cat -> ExpQ
-aesonObjectBody namespace ConsD {cName, cFields} =
+aesonObjectBody :: [FieldName] -> ClientConstructorDefinition -> ExpQ
+aesonObjectBody namespace ClientConstructorDefinition {cName, cFields} =
   decodeObjectE
     entry
     (camelCaseTypeName namespace cName)
@@ -163,7 +162,7 @@ aesonUnionObject
           . aesonObjectBody
             namespace
           <$> find ((typename ==) . cName) clientCons
-      f cons@ConsD {cName, cFields} =
+      f cons@ClientConstructorDefinition {cName, cFields} =
         ( tupP [toString cName, if null cFields then _' else v'],
           aesonObjectBody namespace cons
         )
@@ -186,20 +185,20 @@ defineFromJSON name expr = instanceD (cxt []) typeDef body
     typeDef = applyCons ''FromJSON [namespaced name]
     body = [funDSimple 'parseJSON [] expr]
 
-aesonFromJSONEnumBody :: TypeNameTH -> [ClientConsD cat] -> ExpQ
+aesonFromJSONEnumBody :: TypeNameTH -> [ClientConstructorDefinition] -> ExpQ
 aesonFromJSONEnumBody TypeNameTH {typename} = matchWith (Just (v', failExp)) f
   where
-    f :: ClientConsD cat -> (PatQ, ExpQ)
-    f ConsD {cName} =
+    f :: ClientConstructorDefinition -> (PatQ, ExpQ)
+    f ClientConstructorDefinition {cName} =
       ( toString cName,
         appE [|pure|] $ toCon $ camelCaseTypeName [typename] cName
       )
 
-aesonToJSONEnumBody :: TypeNameTH -> [ClientConsD cat] -> ExpQ
+aesonToJSONEnumBody :: TypeNameTH -> [ClientConstructorDefinition] -> ExpQ
 aesonToJSONEnumBody TypeNameTH {typename} = matchWith Nothing f
   where
-    f :: ClientConsD cat -> (PatQ, ExpQ)
-    f ConsD {cName} =
+    f :: ClientConstructorDefinition -> (PatQ, ExpQ)
+    f ClientConstructorDefinition {cName} =
       ( conP (toName $ camelCaseTypeName [typename] cName) [],
         toString cName
       )
@@ -214,7 +213,7 @@ deriveToJSON
 deriveToJSON
   ClientTypeDefinition
     { clientTypeName = TypeNameTH {typename},
-      clientCons = [ConsD {cFields}]
+      clientCons = [ClientConstructorDefinition {cFields}]
     } =
     instanceD (cxt []) appHead methods
     where

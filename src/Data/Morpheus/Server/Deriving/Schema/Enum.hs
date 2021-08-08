@@ -11,6 +11,9 @@ import Data.Morpheus.Server.Deriving.Schema.Internal
   ( lookupDescription,
     lookupDirectives,
   )
+import Data.Morpheus.Server.Deriving.Utils.Kinded
+  ( KindedType (..),
+  )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType,
   )
@@ -30,9 +33,6 @@ import Data.Morpheus.Types.Internal.AST
     mkType,
     unitTypeName,
     unpackName,
-  )
-import Data.Morpheus.Utils.Kinded
-  ( KindedType (..),
   )
 
 buildEnumTypeContent :: GQLType a => KindedType kind a -> [TypeName] -> SchemaT c (TypeContent TRUE kind CONST)

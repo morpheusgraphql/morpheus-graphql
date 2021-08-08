@@ -1,4 +1,3 @@
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -13,58 +12,37 @@ where
 --  Morpheus
 
 import qualified Data.ByteString.Lazy.Char8 as LB
-  ( pack,
+import Data.ByteString.Lazy.Char8 (ByteString)
+import Data.Morpheus.Server.CodeGen.Transform
+  ( parseServerTypeDefinitions,
   )
-import Data.Morpheus.App.Internal.Resolving
-  ( Result (..),
-  )
-import Data.Morpheus.Core
-  ( parseTypeDefinitions,
-  )
-import Data.Morpheus.Error
-  ( gqlWarnings,
-    renderGQLErrors,
-  )
-import Data.Morpheus.Server.Internal.TH.Types
+import Data.Morpheus.Server.CodeGen.Types
   ( ServerDecContext (..),
   )
 import Data.Morpheus.Server.TH.Declare
   ( runDeclare,
   )
-import Data.Morpheus.Server.TH.Transform
-  ( toTHDefinitions,
-  )
-import Language.Haskell.TH (Dec, Q)
+import Language.Haskell.TH
 import Language.Haskell.TH.Quote (QuasiQuoter (..))
-import Relude
+import Relude hiding (ByteString)
 
 gqlDocumentNamespace :: QuasiQuoter
-gqlDocumentNamespace =
-  QuasiQuoter
-    { quoteExp = notHandled "Expressions",
-      quotePat = notHandled "Patterns",
-      quoteType = notHandled "Types",
-      quoteDec = compileDocument ServerDecContext {namespace = True}
-    }
-  where
-    notHandled things =
-      error $ things <> " are not supported by the GraphQL QuasiQuoter"
+gqlDocumentNamespace = mkQuasiQuoter ServerDecContext {namespace = True}
 
 gqlDocument :: QuasiQuoter
-gqlDocument =
+gqlDocument = mkQuasiQuoter ServerDecContext {namespace = False}
+
+mkQuasiQuoter :: ServerDecContext -> QuasiQuoter
+mkQuasiQuoter ctx =
   QuasiQuoter
     { quoteExp = notHandled "Expressions",
       quotePat = notHandled "Patterns",
       quoteType = notHandled "Types",
-      quoteDec = compileDocument ServerDecContext {namespace = False}
+      quoteDec = compileDocument ctx . LB.pack
     }
   where
     notHandled things =
       error $ things <> " are not supported by the GraphQL QuasiQuoter"
 
-compileDocument :: ServerDecContext -> String -> Q [Dec]
-compileDocument ctx documentTXT =
-  case parseTypeDefinitions (LB.pack documentTXT) of
-    Failure errors -> fail (renderGQLErrors errors)
-    Success {result = schema, warnings} ->
-      gqlWarnings warnings >> toTHDefinitions (namespace ctx) schema >>= runDeclare ctx
+compileDocument :: ServerDecContext -> ByteString -> Q [Dec]
+compileDocument ctx = parseServerTypeDefinitions ctx >=> runDeclare ctx

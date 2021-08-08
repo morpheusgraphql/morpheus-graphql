@@ -37,6 +37,10 @@ import Data.Morpheus.App.Internal.Resolving
   )
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Internal.Utils (empty)
+import Data.Morpheus.Server.Deriving.Utils.Kinded
+  ( CategoryValue (..),
+    KindedType (..),
+  )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     TypeData (..),
@@ -56,10 +60,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeContent (..),
     TypeDefinition (..),
     VALID,
-  )
-import Data.Morpheus.Utils.Kinded
-  ( CategoryValue (..),
-    KindedType (..),
   )
 import Language.Haskell.TH (Exp, Q)
 import Relude hiding (empty)

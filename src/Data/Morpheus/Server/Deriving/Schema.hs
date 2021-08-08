@@ -58,6 +58,13 @@ import Data.Morpheus.Server.Deriving.Utils
     toRep,
     unpackMonad,
   )
+import Data.Morpheus.Server.Deriving.Utils.Kinded
+  ( CategoryValue (..),
+    KindedProxy (..),
+    inputType,
+    outputType,
+    setKind,
+  )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     TypeData (..),
@@ -101,13 +108,6 @@ import Data.Morpheus.Types.Internal.AST
     UnionMember (memberName),
     fieldsToArguments,
     mkField,
-  )
-import Data.Morpheus.Utils.Kinded
-  ( CategoryValue (..),
-    KindedProxy (..),
-    inputType,
-    outputType,
-    setKind,
   )
 import GHC.Generics (Rep)
 import GHC.TypeLits

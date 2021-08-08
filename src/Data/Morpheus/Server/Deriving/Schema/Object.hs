@@ -29,6 +29,11 @@ import Data.Morpheus.Server.Deriving.Utils
   ( ConsRep (..),
     FieldRep (..),
   )
+import Data.Morpheus.Server.Deriving.Utils.Kinded
+  ( CategoryValue (..),
+    KindedType (..),
+    outputType,
+  )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     TypeData (..),
@@ -57,11 +62,6 @@ import Data.Morpheus.Types.Internal.AST
     unitTypeName,
     unpackName,
     unsafeFromFields,
-  )
-import Data.Morpheus.Utils.Kinded
-  ( CategoryValue (..),
-    KindedType (..),
-    outputType,
   )
 import Relude hiding (empty)
 

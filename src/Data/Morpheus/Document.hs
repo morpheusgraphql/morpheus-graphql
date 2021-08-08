@@ -10,57 +10,42 @@ module Data.Morpheus.Document
   )
 where
 
-import Data.ByteString.Lazy.Char8
-  ( ByteString,
-    pack,
-  )
-import Data.Morpheus.App.Internal.Resolving
-  ( resultOr,
-  )
-import Data.Morpheus.Core
-  ( render,
+import Data.ByteString.Lazy.Char8 (ByteString, readFile)
+import Data.Morpheus.Server
+import Data.Morpheus.Server.CodeGen.Types
+  ( ServerDecContext (..),
   )
 import Data.Morpheus.Server.Deriving.App
   ( RootResolverConstraint,
-    deriveSchema,
-  )
-import Data.Morpheus.Server.Internal.TH.Types
-  ( ServerDecContext (..),
   )
 import Data.Morpheus.Server.TH.Compile
   ( compileDocument,
     gqlDocument,
   )
-import Data.Morpheus.Types (RootResolver)
+import Data.Morpheus.Types
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
   ( qAddDependentFile,
   )
-import Relude hiding (ByteString)
+import Relude hiding (ByteString, readFile)
 
 importGQLDocument :: FilePath -> Q [Dec]
-importGQLDocument src = do
-  qAddDependentFile src
-  runIO (readFile src)
-    >>= compileDocument
-      ServerDecContext
-        { namespace = False
-        }
+importGQLDocument =
+  importDeclarations ServerDecContext {namespace = False}
 
 importGQLDocumentWithNamespace :: FilePath -> Q [Dec]
-importGQLDocumentWithNamespace src = do
+importGQLDocumentWithNamespace =
+  importDeclarations ServerDecContext {namespace = True}
+
+importDeclarations :: ServerDecContext -> FilePath -> Q [Dec]
+importDeclarations ctx src = do
   qAddDependentFile src
   runIO (readFile src)
-    >>= compileDocument
-      ServerDecContext
-        { namespace = True
-        }
+    >>= compileDocument ctx
 
--- | Generates schema.gql file from 'RootResolver'
+-- TODO: deprecate
 toGraphQLDocument ::
   RootResolverConstraint m event query mut sub =>
   proxy (RootResolver m event query mut sub) ->
   ByteString
-toGraphQLDocument =
-  resultOr (pack . show) render
-    . deriveSchema
+toGraphQLDocument = printSchema

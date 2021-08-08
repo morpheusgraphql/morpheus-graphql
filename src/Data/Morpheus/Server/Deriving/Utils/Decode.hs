@@ -4,7 +4,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Server.Internal.TH.Decode
+module Data.Morpheus.Server.Deriving.Utils.Decode
   ( withInputObject,
     withEnum,
     withInputUnion,

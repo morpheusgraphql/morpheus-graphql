@@ -60,7 +60,6 @@ module Data.Morpheus.Types.Internal.AST
     MUTATION,
     SUBSCRIPTION,
     Directive (..),
-    ConsD (..),
     TypeCategory (..),
     VariableContent (..),
     TypeDefinitions,
@@ -103,7 +102,6 @@ module Data.Morpheus.Types.Internal.AST
     Msg (..),
     intercalate,
     fieldsToArguments,
-    mkConsEnum,
     Directives,
     DirectivesDefinition,
     DirectiveDefinition (..),
@@ -162,7 +160,6 @@ import Data.Morpheus.Types.Internal.AST.Name
 import Data.Morpheus.Types.Internal.AST.OperationType
 import Data.Morpheus.Types.Internal.AST.Selection
 import Data.Morpheus.Types.Internal.AST.Stage
-import Data.Morpheus.Types.Internal.AST.TH
 import Data.Morpheus.Types.Internal.AST.Type
 import Data.Morpheus.Types.Internal.AST.TypeCategory
 import Data.Morpheus.Types.Internal.AST.TypeSystem

@@ -5,7 +5,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Utils.Kinded
+module Data.Morpheus.Server.Deriving.Utils.Kinded
   ( KindedProxy (..),
     setType,
     setKind,

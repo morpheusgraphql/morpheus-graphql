@@ -37,12 +37,15 @@ import Data.Morpheus.Server.Deriving.Utils
     selNameProxy,
     symbolName,
   )
-import Data.Morpheus.Server.Internal.TH.Decode
+import Data.Morpheus.Server.Deriving.Utils.Decode
   ( decodeFieldWith,
     handleEither,
     withInputObject,
     withInputUnion,
     withScalar,
+  )
+import Data.Morpheus.Server.Deriving.Utils.Kinded
+  ( KindedProxy (..),
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType
@@ -77,9 +80,6 @@ import Data.Morpheus.Types.Internal.AST
     Value (..),
     internal,
     msg,
-  )
-import Data.Morpheus.Utils.Kinded
-  ( KindedProxy (..),
   )
 import GHC.Generics
 import GHC.TypeLits (KnownSymbol)

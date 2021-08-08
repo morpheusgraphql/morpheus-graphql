@@ -36,6 +36,10 @@ module Data.Morpheus.Server.Deriving.Utils
   )
 where
 
+import Data.Morpheus.Server.Deriving.Utils.Kinded
+  ( CategoryValue (..),
+    kinded,
+  )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     GQLTypeOptions (..),
@@ -51,10 +55,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef (..),
     fromHaskellName,
     packName,
-  )
-import Data.Morpheus.Utils.Kinded
-  ( CategoryValue (..),
-    kinded,
   )
 import Data.Text
   ( pack,
