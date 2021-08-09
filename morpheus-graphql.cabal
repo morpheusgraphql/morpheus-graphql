@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a6cf5b0514514cfe6d6c95d419c382aca05d03c25262f9ca34d7e45c4eb5da37
+-- hash: 522562191c0d316221f8d12085972a944fc834a6ccee874ac96c412dd9d40101
 
 name:           morpheus-graphql
 version:        0.17.0
@@ -414,9 +414,6 @@ library
       Data.Morpheus.Server
       Data.Morpheus.Document
   other-modules:
-      Data.Morpheus.Server.CodeGen
-      Data.Morpheus.Server.CodeGen.Transform
-      Data.Morpheus.Server.CodeGen.Types
       Data.Morpheus.Server.Deriving.App
       Data.Morpheus.Server.Deriving.Channels
       Data.Morpheus.Server.Deriving.Decode
@@ -449,6 +446,7 @@ library
     , bytestring >=0.10.4 && <0.11
     , containers >=0.4.2.1 && <0.7
     , morpheus-graphql-app >=0.17.0 && <0.18.0
+    , morpheus-graphql-code-gen >=0.17.0 && <0.18.0
     , morpheus-graphql-core >=0.17.0 && <0.18.0
     , mtl >=2.0 && <=3.0
     , relude >=0.3.0
@@ -497,6 +495,7 @@ test-suite morpheus-graphql-test
     , containers >=0.4.2.1 && <0.7
     , morpheus-graphql >=0.17.0 && <0.18.0
     , morpheus-graphql-app >=0.17.0 && <0.18.0
+    , morpheus-graphql-code-gen >=0.17.0 && <0.18.0
     , morpheus-graphql-core >=0.17.0 && <0.18.0
     , morpheus-graphql-subscriptions >=0.17.0 && <0.18.0
     , morpheus-graphql-tests >=0.17.0 && <0.18.0

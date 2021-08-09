@@ -261,11 +261,15 @@ class DeriveArguments (k :: DerivingKind) a where
 instance DeriveTypeConstraint IN a => DeriveArguments TYPE a where
   deriveArgumentsDefinition = withInput . fmap fieldsToArguments . deriveFields . inputType
 
-instance (KnownSymbol name, GQLType value) => DeriveArguments CUSTOM (Arg name value) where
-  deriveArgumentsDefinition _ = pure $ fieldsToArguments $ singleton $ mkField Nothing argName argTypeRef
+instance (KnownSymbol name, DeriveType IN a, GQLType a) => DeriveArguments CUSTOM (Arg name a) where
+  deriveArgumentsDefinition _ = do
+    withInput (deriveType proxy)
+    pure $ fieldsToArguments $ singleton $ mkField Nothing argName argTypeRef
     where
+      proxy :: KindedProxy IN a
+      proxy = KindedProxy
       argName = symbolName (Proxy @name)
-      argTypeRef = deriveTypeRef (KindedProxy :: KindedProxy IN value)
+      argTypeRef = deriveTypeRef proxy
 
 deriveFields :: DeriveTypeConstraint kind a => KindedType kind a -> SchemaT kind (FieldsDefinition kind CONST)
 deriveFields kindedType = deriveTypeContent kindedType >>= withObject kindedType

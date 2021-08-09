@@ -14,6 +14,7 @@ module Data.Morpheus.Server
   ( httpPlayground,
     compileTimeSchemaValidation,
     printSchema,
+    RootResolverConstraint,
   )
 where
 

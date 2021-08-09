@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -17,7 +18,7 @@ where
 import Data.FileEmbed (makeRelativeToProject)
 import Data.Morpheus (App, deriveApp)
 import Data.Morpheus.Document (importGQLDocument)
-import Data.Morpheus.Types (RootResolver (..), Undefined (..))
+import Data.Morpheus.Types (Arg (Arg), RootResolver (..), Undefined (..))
 import Data.Text (Text)
 
 importGQLDocument =<< makeRelativeToProject "src/Server/TH/simple.gql"
@@ -30,7 +31,7 @@ rootResolver =
       subscriptionResolver = Undefined
     }
   where
-    deity DeityArgs {name} =
+    deity (Arg name) =
       pure
         Deity
           { name = pure name,

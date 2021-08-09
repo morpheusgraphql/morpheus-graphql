@@ -19,7 +19,6 @@ lint:
 	curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s .
 
 samples:
-	morpheus build morpheus-graphql-cli/samples/source/simple.gql morpheus-graphql-cli/samples/rendering/Simple.hs
-	morpheus build morpheus-graphql-cli/samples/source/mutation.gql morpheus-graphql-cli/samples/rendering/Mutation.hs
-	morpheus build morpheus-graphql-cli/samples/source/subscription.gql morpheus-graphql-cli/samples/rendering/Subscription.hs
-
+	stack clean morpheus-graphql-code-gen
+	stack install --fast --test morpheus-graphql-code-gen
+	morpheus build morpheus-graphql-examples-code-gen/src/**/*.gql --root morpheus-graphql-examples-code-gen/src

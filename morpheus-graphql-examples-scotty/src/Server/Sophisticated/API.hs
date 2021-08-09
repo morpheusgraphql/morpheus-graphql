@@ -38,7 +38,8 @@ import Data.Morpheus.Subscriptions
     Hashable,
   )
 import Data.Morpheus.Types
-  ( DecodeScalar (..),
+  ( Arg (Arg),
+    DecodeScalar (..),
     EncodeScalar (..),
     GQLType (..),
     ID,
@@ -195,9 +196,9 @@ alwaysFail = pure $ Left "fail example"
 resolveUser :: ResolverQ EVENT IO User
 resolveUser = liftEither (getDBUser (Content 2))
 
-resolveAnimal :: QueryAnimalArgs -> ResolverQ EVENT IO Text
-resolveAnimal QueryAnimalArgs {queryAnimalArgsAnimal} =
-  pure (pack $ show queryAnimalArgsAnimal)
+resolveAnimal :: Arg "animal" (Maybe Animal) -> ResolverQ EVENT IO Text
+resolveAnimal (Arg animal) =
+  pure (pack $ show animal)
 
 -- Resolve MUTATIONS
 --

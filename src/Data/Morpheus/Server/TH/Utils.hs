@@ -5,53 +5,48 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.TH.Utils
-  ( kindName,
-    constraintTypeable,
+  ( constraintTypeable,
     typeNameStringE,
     withPure,
     mkTypeableConstraints,
     m',
     m_,
     funDProxy,
-    isParametrizedHaskellType,
-    isSubscription,
+    ServerDec,
+    renderTypeVars,
   )
 where
 
+import Data.Morpheus.CodeGen.Internal.AST
+  ( CodeGenConfig,
+  )
 import Data.Morpheus.Internal.TH
   ( _',
     apply,
     funDSimple,
     vars,
   )
-import Data.Morpheus.Kind
-  ( SCALAR,
-    TYPE,
-    WRAPPER,
-  )
 import Data.Morpheus.Types.Internal.AST
-  ( OperationType (..),
-    TypeKind (..),
-    TypeName,
+  ( TypeName,
     unpackName,
   )
 import Data.Text (unpack)
+import qualified Data.Text as T
 import Language.Haskell.TH
   ( CxtQ,
-    Dec (..),
     DecQ,
     Exp (..),
     ExpQ,
-    Info (..),
     Lit (..),
     Name,
     Q,
-    TyVarBndr,
     Type (..),
     cxt,
     mkName,
   )
 import Relude hiding (Type)
+
+type ServerDec = ReaderT CodeGenConfig Q
 
 m_ :: Name
 m_ = mkName "m"
@@ -59,15 +54,8 @@ m_ = mkName "m"
 m' :: Type
 m' = VarT m_
 
-isParametrizedHaskellType :: Info -> Bool
-isParametrizedHaskellType (TyConI x) = not $ null $ getTypeVariables x
-isParametrizedHaskellType _ = False
-
-getTypeVariables :: Dec -> [TyVarBndr]
-getTypeVariables (DataD _ _ args _ _ _) = args
-getTypeVariables (NewtypeD _ _ args _ _ _) = args
-getTypeVariables (TySynD _ args _) = args
-getTypeVariables _ = []
+renderTypeVars :: [TypeName] -> [Name]
+renderTypeVars = map (mkName . T.unpack . unpackName)
 
 funDProxy :: [(Name, ExpQ)] -> [DecQ]
 funDProxy = map fun
@@ -85,13 +73,3 @@ constraintTypeable name = pure $ apply ''Typeable [name]
 
 mkTypeableConstraints :: [Name] -> CxtQ
 mkTypeableConstraints = cxt . map constraintTypeable . vars
-
-kindName :: TypeKind -> Name
-kindName KindScalar = ''SCALAR
-kindName KindList = ''WRAPPER
-kindName KindNonNull = ''WRAPPER
-kindName _ = ''TYPE
-
-isSubscription :: TypeKind -> Bool
-isSubscription (KindObject (Just Subscription)) = True
-isSubscription _ = False

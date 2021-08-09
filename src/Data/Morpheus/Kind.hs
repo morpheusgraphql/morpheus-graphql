@@ -11,7 +11,7 @@ module Data.Morpheus.Kind
     WRAPPER,
     UNION,
     INPUT_OBJECT,
-    DerivingKind,
+    DerivingKind (..),
     GQL_KIND,
     OUTPUT,
     INPUT,
@@ -34,6 +34,7 @@ data DerivingKind
   | TYPE
   | WRAPPER
   | CUSTOM
+  deriving (Show)
 
 class ToValue (a :: DerivingKind) where
   toValue :: f a -> DerivingKind

@@ -182,11 +182,11 @@ loginResolver LoginArgs {username, password} = do
         $ Session {token = pure tokenUser, user = userResolver userRow}
     Nothing -> fail "Invalid user or password"
 
-getUserResolver :: GetUserArgs -> Composed o Maybe User
-getUserResolver GetUserArgs {id} = do
+getUserResolver :: Arg "id" Int -> Composed o Maybe User
+getUserResolver (Arg argId) = do
   _ <- requireAuthorized
   users <- fmap userTable getDB
-  case find ((== id) . userId) users of
+  case find ((== argId) . userId) users of
     Just userRow -> do
       user <- userResolver userRow
       pure $ Just user
@@ -199,8 +199,8 @@ dogsResolver = do
   traverse dogResolver dogs
 
 -------------------------------------------------------------------------------
-addDogResolver :: AddDogArgs -> Value MUTATION Dog
-addDogResolver AddDogArgs {name} = do
+addDogResolver :: Arg "name" Text -> Value MUTATION Dog
+addDogResolver (Arg name) = do
   currentUserId <- requireAuthorized
   db <- getDB
   let dogs = dogTable db

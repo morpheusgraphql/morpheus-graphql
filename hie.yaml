@@ -17,8 +17,11 @@ cradle:
       - path: "./morpheus-graphql-subscriptions/src"
         component: "morpheus-graphql-subscriptions:lib"
 
-      - path: "./morpheus-graphql-cli/src"
-        component: "morpheus-graphql-cli:exe:morpheus"
+      - path: "./morpheus-graphql-code-gen/src"
+        component: "morpheus-graphql-code-gen:lib"
+
+      - path: "./morpheus-graphql-code-gen/app"
+        component: "morpheus-graphql-code-gen:exe:morpheus"
 
       ## test
       - path: "./morpheus-graphql-tests/src"
@@ -51,3 +54,6 @@ cradle:
 
       - path: "./morpheus-graphql-examples-servant"
         component: "morpheus-graphql-examples-servant:exe:servant-server"
+
+      - path: "./morpheus-graphql-examples-code-gen"
+        component: "morpheus-graphql-examples-code-gen:exe:generated-server"

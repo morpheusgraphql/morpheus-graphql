@@ -8,10 +8,8 @@ module Data.Morpheus.Server.TH.Declare
   )
 where
 
--- MORPHEUS
-import Data.Morpheus.Server.CodeGen.Types
-  ( ServerDec,
-    ServerDecContext,
+import Data.Morpheus.CodeGen.Internal.AST
+  ( CodeGenConfig (..),
     ServerTypeDefinition,
   )
 import Data.Morpheus.Server.TH.Declare.GQLType
@@ -20,10 +18,11 @@ import Data.Morpheus.Server.TH.Declare.GQLType
 import Data.Morpheus.Server.TH.Declare.Type
   ( declareType,
   )
+import Data.Morpheus.Server.TH.Utils (ServerDec)
 import Language.Haskell.TH
 import Relude
 
-runDeclare :: Declare a => ServerDecContext -> a -> Q [Dec]
+runDeclare :: Declare a => CodeGenConfig -> a -> Q [Dec]
 runDeclare ctx a = runReaderT (declare a) ctx
 
 class Declare a where
@@ -32,5 +31,5 @@ class Declare a where
 instance Declare a => Declare [a] where
   declare = fmap concat . traverse declare
 
-instance Declare (ServerTypeDefinition s) where
+instance Declare ServerTypeDefinition where
   declare typeDef = (declareType typeDef <>) <$> deriveGQLType typeDef
