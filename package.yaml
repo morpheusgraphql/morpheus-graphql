@@ -40,6 +40,7 @@ library:
     - Data.Morpheus
     - Data.Morpheus.Kind
     - Data.Morpheus.Types
+    - Data.Morpheus.Server.CodeGen
     - Data.Morpheus.Server
     - Data.Morpheus.Document
 

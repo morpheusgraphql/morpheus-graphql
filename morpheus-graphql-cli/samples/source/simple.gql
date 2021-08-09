@@ -1,0 +1,28 @@
+"""
+my interface description
+"""
+type Query {
+  deity(name: [[[[[String!]]!]]]): Deity!
+  character(characterID: String!, age: Int): Character!
+}
+
+union Character = Creature | Deity
+
+type Deity {
+  fullName: String!
+  power: Power
+}
+
+type Creature {
+  creatureName: String!
+  realm: City!
+  immortality: Boolean!
+}
+
+enum City {
+  Athens
+  Ithaca
+  Sparta
+  Troy
+}
+scalar Power

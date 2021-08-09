@@ -11,6 +11,7 @@ packages:
   - morpheus-graphql-subscriptions
   - morpheus-graphql-app
   - morpheus-graphql-tests
+  - morpheus-graphql-cli
   - .
 
 allow-newer: true

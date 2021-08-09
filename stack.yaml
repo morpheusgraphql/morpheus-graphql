@@ -11,6 +11,7 @@ packages:
   - morpheus-graphql-core
   - morpheus-graphql-app
   - morpheus-graphql-tests
+  - morpheus-graphql-cli
   - .
 
 extra-deps:
