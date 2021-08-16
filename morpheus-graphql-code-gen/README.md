@@ -10,7 +10,7 @@ Just open an issue here on GitHub, or join [our Slack channel](https://morpheus-
 Generating dummy Morpheus Api from `schema.gql`
 
 ```ssh
-morpheus build api/*.gql --root api
+morpheus build src/*.gql --root src
 ```
 
 _src/schema.gql_
