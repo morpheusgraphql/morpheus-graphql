@@ -9,8 +9,13 @@ module Data.Morpheus.Server.TH.Declare.Type
   )
 where
 
-import Data.Morpheus.App.Internal.Resolving
-  ( SubscriptionField,
+import Data.Morpheus.CodeGen.Internal.AST
+  ( DerivingClass (..),
+    FIELD_TYPE_WRAPPER (..),
+    ServerConstructorDefinition (..),
+    ServerFieldDefinition (..),
+    ServerTypeDefinition (..),
+    unpackName,
   )
 import Data.Morpheus.Internal.TH
   ( apply,
@@ -18,25 +23,25 @@ import Data.Morpheus.Internal.TH
     toCon,
     toName,
   )
-import Data.Morpheus.Server.CodeGen.Types
-  ( FIELD_TYPE_WRAPPER (..),
-    ServerConstructorDefinition (..),
-    ServerFieldDefinition (..),
-    ServerTypeDefinition (..),
-  )
 import Data.Morpheus.Server.TH.Utils
   ( m',
     m_,
+    renderTypeVars,
   )
-import Data.Morpheus.Types (TypeGuard)
+import Data.Morpheus.Types
+  ( Arg,
+    SubscriptionField,
+    TypeGuard,
+  )
 import Data.Morpheus.Types.Internal.AST
   ( TypeKind (..),
     TypeName,
   )
+import qualified Data.Text as T
 import Language.Haskell.TH
 import Relude hiding (Type)
 
-declareType :: ServerTypeDefinition s -> [Dec]
+declareType :: ServerTypeDefinition -> [Dec]
 declareType (ServerInterfaceDefinition name interfaceName unionName) =
   [ TySynD
       (toName name)
@@ -50,13 +55,15 @@ declareType
       tCons,
       derives,
       typeParameters
-    } = [DataD [] (toName tName) vars Nothing cons [deriveClasses derives]]
+    } = [DataD [] (toName tName) vars Nothing cons [derivings]]
     where
+      derivings = DerivClause Nothing (map (ConT . genName) derives)
       cons = map declareCons tCons
-      vars = map (PlainTV . toName) typeParameters
+      vars = map PlainTV (renderTypeVars typeParameters)
 
-deriveClasses :: [Name] -> DerivClause
-deriveClasses classNames = DerivClause Nothing (map ConT classNames)
+genName :: DerivingClass -> Name
+genName GENERIC = ''Generic
+genName SHOW = ''Show
 
 declareCons :: ServerConstructorDefinition -> Con
 declareCons ServerConstructorDefinition {constructorName, constructorFields} =
@@ -86,5 +93,14 @@ applyWrapper :: FIELD_TYPE_WRAPPER -> Type -> Type
 applyWrapper MONAD = AppT m'
 applyWrapper SUBSCRIPTION = AppT (ConT ''SubscriptionField)
 applyWrapper (ARG typeName) = InfixT (ConT (toName typeName)) ''Function
+applyWrapper (TAGGED_ARG fieldName typeRef) = InfixT arg ''Function
+  where
+    arg =
+      AppT
+        ( AppT
+            (ConT ''Arg)
+            (LitT $ StrTyLit $ T.unpack $ unpackName fieldName)
+        )
+        (declareTypeRef toCon typeRef)
 
 type Function = (->)

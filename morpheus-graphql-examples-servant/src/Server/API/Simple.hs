@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
@@ -29,7 +30,8 @@ import Data.Morpheus.Subscriptions
     Hashable,
   )
 import Data.Morpheus.Types
-  ( ResolverM,
+  ( Arg (Arg),
+    ResolverM,
     RootResolver (..),
     publish,
     subscribe,
@@ -78,7 +80,7 @@ rootResolver =
               { name = pure deityName,
                 power = pure deityPower
               }
-    deity DeityArgs {name} =
+    deity (Arg name) =
       pure
         Deity
           { name = pure name,

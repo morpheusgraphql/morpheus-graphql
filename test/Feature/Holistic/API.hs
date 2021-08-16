@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
@@ -25,7 +26,8 @@ import Data.Morpheus.Document
 import Data.Morpheus.Kind (SCALAR)
 import Data.Morpheus.Subscriptions (Event)
 import Data.Morpheus.Types
-  ( DecodeScalar (..),
+  ( Arg (..),
+    DecodeScalar (..),
     EncodeScalar (..),
     GQLRequest,
     GQLResponse,
@@ -104,14 +106,11 @@ root =
                         userFriend = pure Nothing
                       }
                 ),
-            queryTestEnum =
-              \QueryTestEnumArgs
-                 { queryTestEnumArgsEnum
-                 } ->
-                  pure
-                    [ queryTestEnumArgsEnum,
-                      CollidingEnumEnumA
-                    ]
+            queryTestEnum = \(Arg enum) ->
+              pure
+                [ enum,
+                  CollidingEnumEnumA
+                ]
           },
       mutationResolver =
         Mutation
@@ -151,7 +150,7 @@ rootExt =
         ExtQuery
           { fail1 = liftEither alwaysFail,
             fail2 = fail "fail with MonadFail",
-            type' = \TypeArgs {in' = TypeInput {data'}} -> pure data'
+            type' = \(Arg TypeInput {data'}) -> pure data'
           },
       mutationResolver = Undefined,
       subscriptionResolver = Undefined

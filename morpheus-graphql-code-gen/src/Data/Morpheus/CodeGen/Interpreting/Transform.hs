@@ -6,39 +6,34 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Server.CodeGen.Transform
+module Data.Morpheus.CodeGen.Interpreting.Transform
   ( parseServerTypeDefinitions,
   )
 where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
+import Data.Morpheus.CodeGen.Internal.AST
+  ( CodeGenConfig (..),
+    DerivingClass (..),
+    FIELD_TYPE_WRAPPER (..),
+    GQLTypeDefinition (..),
+    Kind (..),
+    ServerConstructorDefinition (..),
+    ServerFieldDefinition (..),
+    ServerTypeDefinition (..),
+  )
 import Data.Morpheus.Core
   ( parseTypeDefinitions,
   )
 import Data.Morpheus.Error (gqlWarnings, renderGQLErrors)
-import Data.Morpheus.Internal.Ext (Result (..))
-import Data.Morpheus.Internal.TH (camelCaseFieldName, toName)
+import Data.Morpheus.Internal.Ext (GQLResult, Result (..))
+import Data.Morpheus.Internal.TH (ToName (toName), camelCaseFieldName)
 import Data.Morpheus.Internal.Utils
   ( camelCaseTypeName,
-  )
-import Data.Morpheus.Server.CodeGen.Types
-  ( FIELD_TYPE_WRAPPER (..),
-    GQLTypeDefinition (..),
-    ServerConstructorDefinition (..),
-    ServerDecContext (..),
-    ServerFieldDefinition (..),
-    ServerTypeDefinition (..),
-  )
-import Data.Morpheus.Server.TH.Utils
-  ( isParametrizedHaskellType,
-    isSubscription,
-    kindName,
-    m_,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
@@ -54,6 +49,7 @@ import Data.Morpheus.Types.Internal.AST
     GQLError,
     IN,
     OUT,
+    OperationType (Subscription),
     TRUE,
     Token,
     TypeContent (..),
@@ -71,19 +67,35 @@ import Data.Morpheus.Types.Internal.AST
     unpackName,
   )
 import Language.Haskell.TH
-import Relude hiding (ByteString, empty, get)
+  ( Dec (..),
+    Info (..),
+    Q,
+    TyVarBndr,
+    reify,
+  )
+import Relude hiding (ByteString, get)
 
-type ServerQ m s = ReaderT (TypeContext s) m
+type ServerQ m = ReaderT (TypeContext CONST) m
 
 class (Monad m, MonadFail m) => CodeGenMonad m where
   isParametrizedType :: TypeName -> m Bool
   printWarnings :: [GQLError] -> m ()
 
+isParametrizedHaskellType :: Info -> Bool
+isParametrizedHaskellType (TyConI x) = not $ null $ getTypeVariables x
+isParametrizedHaskellType _ = False
+
+getTypeVariables :: Dec -> [TyVarBndr]
+getTypeVariables (DataD _ _ args _ _ _) = args
+getTypeVariables (NewtypeD _ _ args _ _ _) = args
+getTypeVariables (TySynD _ args _) = args
+getTypeVariables _ = []
+
 instance CodeGenMonad Q where
   isParametrizedType name = isParametrizedHaskellType <$> reify (toName name)
   printWarnings = gqlWarnings
 
-instance CodeGenMonad (Either String) where
+instance CodeGenMonad GQLResult where
   isParametrizedType _ = pure False
   printWarnings _ = pure ()
 
@@ -95,22 +107,20 @@ data TypeContext s = TypeContext
     currentKind :: Maybe TypeKind
   }
 
-parseServerTypeDefinitions :: CodeGenMonad m => ServerDecContext -> ByteString -> m [ServerTypeDefinition CONST]
+parseServerTypeDefinitions :: CodeGenMonad m => CodeGenConfig -> ByteString -> m [ServerTypeDefinition]
 parseServerTypeDefinitions ctx txt =
   case parseTypeDefinitions txt of
     Failure errors -> fail (renderGQLErrors errors)
     Success {result = schema, warnings} -> printWarnings warnings >> toTHDefinitions (namespace ctx) schema
 
 toTHDefinitions ::
-  forall s m.
   CodeGenMonad m =>
   Bool ->
-  [TypeDefinition ANY s] ->
-  m [ServerTypeDefinition s]
+  [TypeDefinition ANY CONST] ->
+  m [ServerTypeDefinition]
 toTHDefinitions namespace schema = concat <$> traverse generateTypes schema
   where
-    --------------------------------------------
-    generateTypes :: TypeDefinition ANY s -> m [ServerTypeDefinition s]
+    generateTypes :: CodeGenMonad m => TypeDefinition ANY CONST -> m [ServerTypeDefinition]
     generateTypes typeDef =
       runReaderT
         (genTypeDefinition typeDef)
@@ -133,8 +143,8 @@ mkPossibleTypesName = ("PossibleTypes" <>)
 
 genTypeDefinition ::
   CodeGenMonad m =>
-  TypeDefinition ANY s ->
-  ServerQ m s [ServerTypeDefinition s]
+  TypeDefinition ANY CONST ->
+  ServerQ m [ServerTypeDefinition]
 genTypeDefinition
   typeDef@TypeDefinition
     { typeName = originalTypeName,
@@ -153,26 +163,26 @@ genTypeDefinition
             { gqlTypeDescription = typeDescription,
               gqlTypeDescriptions = getDesc typeDef,
               gqlTypeDirectives = getDirs typeDef,
-              gqlKind = kindName tKind,
+              gqlKind = derivingKind tKind,
               gqlTypeDefaultValues =
                 fromList
                   $ mapMaybe getDefaultValue
                   $ getInputFields typeDef
             }
       typeParameters
-        | isResolverType tKind = [m_]
+        | isResolverType tKind = ["m"]
         | otherwise = []
-      derives = derivesClasses tKind
+      derives = derivesClasses (isResolverType tKind)
       -------------------------
       withType (ConsIN tCons) = [ServerTypeDefinition {..}]
       withType (ConsOUT others tCons) = ServerTypeDefinition {..} : others
 
-derivesClasses :: TypeKind -> [Name]
-derivesClasses tKind = ''Generic : derivingList
-  where
-    derivingList
-      | isResolverType tKind = []
-      | otherwise = [''Show]
+derivingKind :: TypeKind -> Kind
+derivingKind KindScalar = Scalar
+derivingKind _ = Type
+
+derivesClasses :: Bool -> [DerivingClass]
+derivesClasses isResolver = GENERIC : [SHOW | not isResolver]
 
 mkObjectCons :: TypeName -> [ServerFieldDefinition] -> [ServerConstructorDefinition]
 mkObjectCons name = pure . ServerConstructorDefinition name
@@ -194,10 +204,14 @@ isParametrizedResolverType name lib = case lookupWith typeName name lib of
   Just x -> pure (isResolverType x)
   Nothing -> isParametrizedType name
 
+isSubscription :: TypeKind -> Bool
+isSubscription (KindObject (Just Subscription)) = True
+isSubscription _ = False
+
 mkObjectField ::
   CodeGenMonad m =>
-  FieldDefinition OUT s ->
-  ServerQ m s ServerFieldDefinition
+  FieldDefinition OUT CONST ->
+  ServerQ m ServerFieldDefinition
 mkObjectField
   FieldDefinition
     { fieldName = fName,
@@ -207,24 +221,34 @@ mkObjectField
     isParametrized <- lift . isParametrizedResolverType (typeConName fieldType) =<< asks schema
     genName <- asks toArgsTypeName
     kind <- asks currentKind
-    let subsWrapper = [SUBSCRIPTION | fmap isSubscription kind == Just True]
-    let wrappers = getArgs genName fieldContent <> subsWrapper <> [MONAD]
     fieldName <- genFieldName fName
-    pure ServerFieldDefinition {..}
-    where
-      getArgs ::
-        (FieldName -> TypeName) ->
-        Maybe (FieldContent TRUE OUT s) ->
-        [FIELD_TYPE_WRAPPER]
-      getArgs genName (Just (FieldArgs args))
-        | not (null args) = [ARG (genName fName)]
-      getArgs _ _ = []
+    pure
+      ServerFieldDefinition
+        { wrappers =
+            mkFieldArguments fName genName (toArgList fieldContent)
+              <> [SUBSCRIPTION | fmap isSubscription kind == Just True]
+              <> [MONAD],
+          ..
+        }
 
-data BuildPlan s
+mkFieldArguments :: FieldName -> (FieldName -> TypeName) -> [ArgumentDefinition s] -> [FIELD_TYPE_WRAPPER]
+mkFieldArguments _ _ [] = []
+mkFieldArguments
+  _
+  _
+  [ ArgumentDefinition FieldDefinition {fieldName, fieldType}
+    ] = [TAGGED_ARG fieldName fieldType]
+mkFieldArguments fName genName _ = [ARG (genName fName)]
+
+toArgList :: Maybe (FieldContent bool cat s) -> [ArgumentDefinition s]
+toArgList (Just (FieldArgs args)) = toList args
+toArgList _ = []
+
+data BuildPlan
   = ConsIN [ServerConstructorDefinition]
-  | ConsOUT [ServerTypeDefinition s] [ServerConstructorDefinition]
+  | ConsOUT [ServerTypeDefinition] [ServerConstructorDefinition]
 
-genInterfaceUnion :: Monad m => TypeName -> ServerQ m s [ServerTypeDefinition s]
+genInterfaceUnion :: Monad m => TypeName -> ServerQ m [ServerTypeDefinition]
 genInterfaceUnion interfaceName =
   mkInterface . map typeName . mapMaybe (isPossibleInterfaceType interfaceName)
     <$> asks schema
@@ -238,15 +262,15 @@ genInterfaceUnion interfaceName =
           { tName,
             tCons = map (mkUnionFieldDefinition tName) members,
             tKind,
-            typeParameters = [m_],
-            derives = derivesClasses tKind,
+            typeParameters = ["m"],
+            derives = derivesClasses True,
             gql = Nothing
           }
       ]
     mkGuardWithPossibleType = ServerInterfaceDefinition interfaceName (mkInterfaceName interfaceName)
     tName = mkPossibleTypesName interfaceName
 
-genFieldName :: Monad m => FieldName -> ServerQ m s FieldName
+genFieldName :: Monad m => FieldName -> ServerQ m FieldName
 genFieldName fieldName = do
   TypeContext {hasNamespace, currentTypeName} <- ask
   pure $
@@ -254,7 +278,7 @@ genFieldName fieldName = do
       then camelCaseFieldName currentTypeName fieldName
       else fieldName
 
-mkConsEnum :: Monad m => TypeName -> DataEnumValue s -> ServerQ m s ServerConstructorDefinition
+mkConsEnum :: Monad m => TypeName -> DataEnumValue CONST -> ServerQ m ServerConstructorDefinition
 mkConsEnum name DataEnumValue {enumName} = do
   namespace <- asks hasNamespace
   pure
@@ -266,7 +290,7 @@ mkConsEnum name DataEnumValue {enumName} = do
         constructorFields = []
       }
 
-toNonResolverServerField :: Monad m => FieldDefinition c s -> ServerQ m s ServerFieldDefinition
+toNonResolverServerField :: Monad m => FieldDefinition c CONST -> ServerQ m ServerFieldDefinition
 toNonResolverServerField FieldDefinition {fieldType, fieldName = fName} = do
   fieldName <- genFieldName fName
   pure $
@@ -280,8 +304,8 @@ toNonResolverServerField FieldDefinition {fieldType, fieldName = fName} = do
 genTypeContent ::
   CodeGenMonad m =>
   TypeName ->
-  TypeContent TRUE ANY s ->
-  ServerQ m s (BuildPlan s)
+  TypeContent TRUE ANY CONST ->
+  ServerQ m BuildPlan
 genTypeContent _ DataScalar {} = pure (ConsIN [])
 genTypeContent typeName (DataEnum tags) = ConsIN <$> traverse (mkConsEnum typeName) tags
 genTypeContent typeName (DataInputObject fields) =
@@ -324,16 +348,16 @@ mkUnionFieldDefinition typeName memberName =
   where
     constructorName = camelCaseTypeName [typeName] memberName
 
-genArgumentTypes :: Monad m => FieldsDefinition OUT s -> ServerQ m s [ServerTypeDefinition s]
+genArgumentTypes :: Monad m => FieldsDefinition OUT CONST -> ServerQ m [ServerTypeDefinition]
 genArgumentTypes = fmap concat . traverse genArgumentType . toList
 
-genArgumentType :: Monad m => FieldDefinition OUT s -> ServerQ m s [ServerTypeDefinition s]
+genArgumentType :: Monad m => FieldDefinition OUT CONST -> ServerQ m [ServerTypeDefinition]
 genArgumentType
   FieldDefinition
     { fieldName,
       fieldContent = Just (FieldArgs arguments)
     }
-    | not (null arguments) = do
+    | length arguments > 1 = do
       tName <- (fieldName &) <$> asks toArgsTypeName
       inType tName $ do
         let argumentFields = argument <$> toList arguments
@@ -344,12 +368,12 @@ genArgumentType
               { tName,
                 tKind,
                 tCons = mkObjectCons tName fields,
-                derives = derivesClasses tKind,
+                derives = derivesClasses False,
                 typeParameters = [],
                 gql =
                   Just
                     ( GQLTypeDefinition
-                        { gqlKind = kindName KindInputObject,
+                        { gqlKind = Type,
                           gqlTypeDescription = Nothing,
                           gqlTypeDescriptions = fromList (mapMaybe mkFieldDescription argumentFields),
                           gqlTypeDirectives = fromList (mkFieldDirective <$> argumentFields),

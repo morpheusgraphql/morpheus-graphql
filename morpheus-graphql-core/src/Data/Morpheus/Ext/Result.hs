@@ -27,6 +27,7 @@ import Data.Morpheus.Types.Internal.AST.Error
   ( GQLError (..),
     GQLError,
   )
+import Data.Text.Lazy.Builder ()
 import Relude
 
 type GQLResult = Result GQLError
@@ -66,6 +67,9 @@ instance MonadError er (Result er) where
   throwError = Failure . pure
   catchError (Failure (x :| _)) f = f x
   catchError x _ = x
+
+instance IsString err => MonadFail (Result err) where
+  fail = Failure . pure . fromString
 
 resultOr :: (NonEmpty err -> a') -> (a -> a') -> Result err a -> a'
 resultOr _ f Success {result} = f result

@@ -995,6 +995,7 @@ resolver _args = lift setDBAddress
   [morpheus-graphql-cli](https://github.com/morpheusgraphql/morpheus-graphql-cli/)
 
 - example `API` executable is removed from Production build
+- deprecated `Data.Morpheus.Document.toGraphQLDocument`
 
 ### Added
 
