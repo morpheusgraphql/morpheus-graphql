@@ -1,0 +1,12 @@
+type Realm {
+  name: String!
+  owner: Deity!
+}
+
+type Deity {
+  realm: Realm!
+}
+
+type Query {
+  realm(id: ID): Realm
+}

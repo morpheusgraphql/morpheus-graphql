@@ -1,0 +1,15 @@
+query {
+  realm(id: "olympus") {
+    name
+    owner {
+      name
+      power
+      realm {
+        name
+        owner {
+          name
+        }
+      }
+    }
+  }
+}

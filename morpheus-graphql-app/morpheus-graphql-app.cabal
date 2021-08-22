@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 9420fa3c832fe489ea93777ec90ccecfb66c669df4c4bf57e9cd7a921bea6ff1
+-- hash: f6e2d20904aaa7e50f95dfea3ef630bf0c6585d69f994fdb7b6d77971f1e1dcd
 
 name:           morpheus-graphql-app
 version:        0.17.0
@@ -44,6 +44,14 @@ data-files:
     test/merge/schema/simple-query/app-main.gql
     test/merge/schema/simple-query/query/query.gql
     test/merge/schema/simple-query/rendering.gql
+    test/relational/deities.gql
+    test/relational/deity-by-id/query.gql
+    test/relational/deity-ext-by-id/query.gql
+    test/relational/deity-simple/query.gql
+    test/relational/realm--ext-by-id/query.gql
+    test/relational/realm-by-id/query.gql
+    test/relational/realm-simple/query.gql
+    test/relational/realms.gql
     test/api/deity/interface/response.json
     test/api/deity/resolvers.json
     test/api/deity/simple/response.json
@@ -63,6 +71,12 @@ data-files:
     test/merge/schema/simple-query/app-ext.json
     test/merge/schema/simple-query/app-main.json
     test/merge/schema/simple-query/query/response.json
+    test/relational/deity-by-id/response.json
+    test/relational/deity-ext-by-id/response.json
+    test/relational/deity-simple/response.json
+    test/relational/realm--ext-by-id/response.json
+    test/relational/realm-by-id/response.json
+    test/relational/realm-simple/response.json
 
 source-repository head
   type: git
@@ -80,6 +94,8 @@ library
       Data.Morpheus.App.Internal.Resolving.ResolverState
       Data.Morpheus.App.Internal.Resolving.ResolverValue
       Data.Morpheus.App.Internal.Resolving.RootResolverValue
+      Data.Morpheus.App.Internal.Resolving.TypeResolvers
+      Data.Morpheus.App.Internal.Resolving.Utils
       Data.Morpheus.App.Internal.Stitching
       Data.Morpheus.App.MapAPI
       Data.Morpheus.App.RenderIntrospection
@@ -111,6 +127,7 @@ test-suite morpheus-graphql-app-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      RelationalResolving
       Paths_morpheus_graphql_app
   hs-source-dirs:
       test

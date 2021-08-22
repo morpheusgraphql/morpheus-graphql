@@ -12,12 +12,14 @@ where
 
 import Data.Morpheus.App.Internal.Resolving
   ( Resolver,
+    ResolverObject,
     ResolverValue,
     ResultT,
     RootResolverValue (..),
     mkList,
     mkNull,
     mkObject,
+    mkObject',
     withArguments,
   )
 import Data.Morpheus.App.RenderIntrospection
@@ -78,9 +80,9 @@ schemaResolver schema@Schema {query, mutation, subscription, directiveDefinition
         ("directives", render $ toList directiveDefinitions)
       ]
 
-schemaAPI :: Monad m => Schema VALID -> ResolverValue (Resolver QUERY e m)
+schemaAPI :: Monad m => Schema VALID -> ResolverObject (Resolver QUERY e m)
 schemaAPI schema =
-  mkObject
+  mkObject'
     "Root"
     [ ("__type", withArguments typeResolver),
       ("__schema", schemaResolver schema)
@@ -104,4 +106,10 @@ withSystemFields schema RootResolverValue {query, ..} =
     RootResolverValue
       { query = query >>= (<:> schemaAPI schema),
         ..
+      }
+-- TODO: support introspection
+withSystemFields schema TypeResolversValue {..} =
+  pure $
+    TypeResolversValue
+      { ..
       }

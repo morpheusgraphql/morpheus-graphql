@@ -1,0 +1,6 @@
+query {
+  deity {
+    name
+    power
+  }
+}

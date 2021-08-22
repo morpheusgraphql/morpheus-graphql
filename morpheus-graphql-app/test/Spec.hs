@@ -23,6 +23,7 @@ import Data.Morpheus.Types.IO
   ( GQLRequest (..),
     GQLResponse,
   )
+import RelationalResolving (test)
 import Relude hiding (ByteString)
 import Test.Morpheus
   ( FileUrl,
@@ -60,5 +61,6 @@ main =
   mainTest
     "App Tests"
     [ deepScan runMergeTest (mkUrl "merge"),
-      deepScan runApiTest (mkUrl "api")
+      deepScan runApiTest (mkUrl "api"),
+      test
     ]

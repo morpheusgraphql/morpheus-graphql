@@ -5,7 +5,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -19,19 +18,23 @@ module Data.Morpheus.Server.Deriving.Encode
   )
 where
 
-import Control.Monad.Except (throwError)
+import Control.Monad.Except (MonadError)
 import qualified Data.Map as M
 import Data.Morpheus.App.Internal.Resolving
   ( LiftOperation,
     Resolver,
     ResolverEntry,
+    ResolverObject,
     ResolverState,
-    ResolverValue (..),
+    ResolverValue,
+    ResolverValueDefinition (ResScalar, ResUnion),
     RootResolverValue (..),
     getArguments,
     liftResolverState,
+    mkEnum,
     mkObject,
     mkUnion,
+    requireObject,
   )
 import Data.Morpheus.Kind
   ( CUSTOM,
@@ -70,13 +73,13 @@ import Data.Morpheus.Types.GQLScalar
   )
 import Data.Morpheus.Types.GQLWrapper (EncodeWrapper (..))
 import Data.Morpheus.Types.Internal.AST
-  ( IN,
+  ( GQLError,
+    IN,
     MUTATION,
     OperationType,
     QUERY,
     SUBSCRIPTION,
     TypeRef (..),
-    internal,
   )
 import GHC.Generics
   ( Generic (..),
@@ -161,7 +164,8 @@ instance
   encodeKind (ContextValue value) = value >>= encode
 
 convertNode ::
-  Monad m =>
+  forall m.
+  MonadError GQLError m =>
   DataType (m (ResolverValue m)) ->
   ResolverValue m
 convertNode
@@ -171,21 +175,23 @@ convertNode
       tyCons = cons@ConsRep {consFields, consName}
     }
     | tyIsUnion = encodeUnion consFields
-    | otherwise = mkObject tyName (fmap toFieldRes consFields)
+    | otherwise = mkObject tyName (toFieldRes <$> consFields)
     where
       -- ENUM
-      encodeUnion [] = ResEnum consName
+      encodeUnion ::
+        [FieldRep (m (ResolverValue m))] ->
+        ResolverValue m
+      encodeUnion [] = mkEnum consName
       -- Type References --------------------------------------------------------------
       encodeUnion [FieldRep {fieldTypeRef = TypeRef {typeConName}, fieldValue}]
-        | isUnionRef tyName cons = ResUnion typeConName fieldValue
+        | isUnionRef tyName cons = ResUnion typeConName (fieldValue >>= requireObject)
       -- Inline Union Types ----------------------------------------------------------------------------
-      encodeUnion fields = mkUnion consName (fmap toFieldRes fields)
+      encodeUnion fields = mkUnion consName (toFieldRes <$> fields)
 
 -- Types & Constrains -------------------------------------------------------
 exploreResolvers ::
   forall m a.
-  ( EncodeConstraint m a,
-    Monad m
+  ( EncodeConstraint m a
   ) =>
   a ->
   ResolverValue m
@@ -203,18 +209,14 @@ objectResolvers ::
     Monad m
   ) =>
   a ->
-  ResolverState (ResolverValue m)
-objectResolvers value = constraintObject (exploreResolvers value)
-  where
-    constraintObject obj@ResObject {} =
-      pure obj
-    constraintObject _ =
-      throwError (internal "resolver must be an object")
+  ResolverState (ResolverObject m)
+objectResolvers value = requireObject (exploreResolvers value)
 
 type EncodeConstraint (m :: * -> *) a =
   ( GQLType a,
     Generic a,
-    TypeRep (Encode m) (m (ResolverValue m)) (Rep a)
+    TypeRep (Encode m) (m (ResolverValue m)) (Rep a),
+    MonadError GQLError m
   )
 
 type EncodeObjectConstraint (o :: OperationType) e (m :: * -> *) a =
