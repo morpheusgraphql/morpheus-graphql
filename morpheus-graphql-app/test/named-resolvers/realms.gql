@@ -8,5 +8,6 @@ type Deity {
 }
 
 type Query {
+  realms: [Realm!]!
   realm(id: ID): Realm
 }

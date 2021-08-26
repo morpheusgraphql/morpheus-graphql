@@ -101,15 +101,15 @@ withSystemFields ::
   Schema VALID ->
   RootResolverValue e m ->
   ResultT e' m (RootResolverValue e m)
-withSystemFields schema RootResolverValue {query, ..} =
+withSystemFields schema RootResolverValue {queryResolver , ..} =
   pure $
     RootResolverValue
-      { query = query >>= (<:> schemaAPI schema),
+      { queryResolver = queryResolver >>= (<:> schemaAPI schema),
         ..
       }
 -- TODO: support introspection
-withSystemFields schema TypeResolversValue {..} =
+withSystemFields schema NamedResolvers {..} =
   pure $
-    TypeResolversValue
+    NamedResolvers
       { ..
       }

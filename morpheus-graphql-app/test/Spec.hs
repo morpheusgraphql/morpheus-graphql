@@ -23,7 +23,7 @@ import Data.Morpheus.Types.IO
   ( GQLRequest (..),
     GQLResponse,
   )
-import RelationalResolving (test)
+import NamedResolvers (runNamedResolversTest)
 import Relude hiding (ByteString)
 import Test.Morpheus
   ( FileUrl,
@@ -62,5 +62,5 @@ main =
     "App Tests"
     [ deepScan runMergeTest (mkUrl "merge"),
       deepScan runApiTest (mkUrl "api"),
-      test
+      deepScan (map . runNamedResolversTest) (mkUrl "named-resolvers")
     ]

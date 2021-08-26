@@ -41,6 +41,7 @@ library:
   source-dirs: src
   exposed-modules:
     - Data.Morpheus.App
+    - Data.Morpheus.App.NamedResolvers
     - Data.Morpheus.App.Internal.Resolving
     - Data.Morpheus.Types.GQLWrapper
   ghc-options: -Wall

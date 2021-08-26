@@ -13,8 +13,7 @@ module Data.Morpheus.App.Internal.Stitching
 where
 
 import Control.Monad.Except (MonadError (throwError))
-import qualified Data.Morpheus.App.Internal.Resolving as R (RootResolverValue (..))
-import Data.Morpheus.App.Internal.Resolving (TypeResolver (..))
+import Data.Morpheus.App.Internal.Resolving (RootResolverValue (..))
 import qualified Data.Morpheus.App.Internal.Resolving.Utils as R
 import Data.Morpheus.Error (NameCollision (..))
 import Data.Morpheus.Internal.Ext
@@ -40,6 +39,11 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinitions,
   )
 import Relude hiding (optional)
+import Data.Morpheus.App.Internal.Resolving.NamedResolver
+    ( NamedResolver(..), 
+      NamedResolverResult(..) 
+    )
+
 
 equal :: (Eq a, Applicative m, MonadError GQLError m) => GQLError -> a -> a -> m a
 equal err p1 p2
@@ -135,49 +139,49 @@ instance Stitching (R.ObjectTypeResolver (m a)) where
           (R.__typename t1)
           ( R.objectFields t1 <> R.objectFields t2
           )
-    | otherwise = throwError "typeResolvers must have same resolverName"
+    | otherwise = throwError "ResolverMap must have same resolverName"
 
-instance (MonadError GQLError m) => Stitching (TypeResolver m) where
+instance (MonadError GQLError m) => Stitching (NamedResolverResult m) where
+  stitch NamedUnionResolver {} (NamedUnionResolver x) = pure (NamedUnionResolver x) 
+  stitch (NamedObjectResolver t1) (NamedObjectResolver t2) = NamedObjectResolver <$> stitch t1 t2
+  stitch _ _  = throwError "ResolverMap must have same resolverName"
+
+instance (MonadError GQLError m) => Stitching (NamedResolver m) where
   stitch t1 t2
     | resolverName t1 == resolverName t2 =
       pure
-        TypeResolver
+        NamedResolver
           { resolverName = resolverName t1,
             resolver = \arg -> do
               t1' <- resolver t1 arg
               t2' <- resolver t2 arg
               stitch t1' t2'
           }
-    | otherwise = throwError "typeResolvers must have same resolverName"
+    | otherwise = throwError "ResolverMap must have same resolverName"
 
-instance Monad m => Stitching (R.RootResolverValue e m) where
-  stitch x@R.RootResolverValue {} y@R.RootResolverValue {} = do
-    channelMap <- stitchSubscriptions (R.channelMap x) (R.channelMap y)
+instance Monad m => Stitching (RootResolverValue e m) where
+  stitch x@RootResolverValue {} y@RootResolverValue {} = do
+    channelMap <- stitchSubscriptions (channelMap x) (channelMap y)
     pure $
-      R.RootResolverValue
-        { R.query = rootProp R.query x y,
-          R.mutation = rootProp R.mutation x y,
-          R.subscription = rootProp R.subscription x y,
-          R.channelMap
+      RootResolverValue
+        { queryResolver = rootProp queryResolver x y,
+          mutationResolver = rootProp mutationResolver x y,
+          subscriptionResolver = rootProp subscriptionResolver x y,
+          channelMap
         }
   stitch
-    R.TypeResolversValue
-      { R.queryTypeResolvers = q1,
-        R.mutationTypeResolvers,
-        R.subscriptionTypeResolvers,
-        R.typeResolverChannels
+    NamedResolvers 
+      { queryResolverMap = q1
       }
-    R.TypeResolversValue
-      { R.queryTypeResolvers = q2
+    NamedResolvers
+      {queryResolverMap = q2
       } =
       do
         result <- runResolutionT (mergeT q1 q2) unsafeFromList (resolveWith stitch)
         pure
-          ( R.TypeResolversValue
-              { R.queryTypeResolvers = result,
-                R.mutationTypeResolvers,
-                R.subscriptionTypeResolvers,
-                R.typeResolverChannels
+          (NamedResolvers
+              { queryResolverMap = result
+
               }
           )
   stitch _ _ = throwError "only apps with same resolver model can be merged"

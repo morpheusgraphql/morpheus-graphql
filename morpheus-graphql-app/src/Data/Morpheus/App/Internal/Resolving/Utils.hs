@@ -121,6 +121,9 @@ data ResolverValueDefinition u o
   | ResObject o
   deriving (Show)
 
+instance IsString (ResolverValueDefinition u o) where
+  fromString = ResScalar . fromString
+
 requireObject :: MonadError GQLError m => ResolverValueDefinition u a -> m a
 requireObject (ResObject x) = pure x
 requireObject _ = throwError (internal "resolver must be an object")

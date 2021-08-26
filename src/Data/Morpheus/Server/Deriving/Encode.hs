@@ -11,6 +11,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Data.Morpheus.Server.Deriving.Encode
   ( deriveModel,
@@ -237,16 +238,11 @@ deriveModel ::
   (Monad m, EncodeConstraints e m query mut sub) =>
   RootResolver m e query mut sub ->
   RootResolverValue e m
-deriveModel
-  RootResolver
-    { queryResolver,
-      mutationResolver,
-      subscriptionResolver
-    } =
+deriveModel RootResolver { ..} =
     RootResolverValue
-      { query = objectResolvers queryResolver,
-        mutation = objectResolvers mutationResolver,
-        subscription = objectResolvers subscriptionResolver,
+      { queryResolver  = objectResolvers queryResolver,
+        mutationResolver  = objectResolvers mutationResolver,
+        subscriptionResolver  = objectResolvers subscriptionResolver,
         channelMap
       }
     where

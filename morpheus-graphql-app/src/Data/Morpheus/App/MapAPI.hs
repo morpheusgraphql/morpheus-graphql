@@ -24,7 +24,6 @@ import qualified Data.ByteString.Lazy.Char8 as LB
     fromStrict,
     toStrict,
   )
-import Data.Morpheus.App.Error (badRequestError)
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
     GQLResponse (..),
@@ -42,10 +41,11 @@ import Relude hiding
   ( decodeUtf8,
     encodeUtf8,
   )
+import Data.ByteString.Lazy.Char8 (pack)
 
-decodeNoDup :: MonadError String m => LB.ByteString -> m GQLRequest
+decodeNoDup :: MonadError LB.ByteString  m => LB.ByteString -> m GQLRequest
 decodeNoDup str = case eitherDecodeWith jsonNoDup ifromJSON str of
-  Left (path, x) -> throwError $ formatError path x
+  Left (path, x) -> throwError $ pack $ "Bad Request. Could not decode Request body: " <> formatError path x
   Right value -> pure value
 
 class MapAPI a b where
@@ -55,9 +55,7 @@ instance MapAPI GQLRequest GQLResponse where
   mapAPI f = f
 
 instance MapAPI LB.ByteString LB.ByteString where
-  mapAPI api request = case decodeNoDup request of
-    Left aesonError -> pure $ badRequestError aesonError
-    Right req -> encode <$> api req
+  mapAPI api  = either pure (fmap encode . api) . decodeNoDup 
 
 instance MapAPI LT.Text LT.Text where
   mapAPI api = fmap decodeUtf8 . mapAPI api . encodeUtf8

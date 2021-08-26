@@ -1,8 +1,14 @@
+enum Power {
+  Shapeshifting
+  Thunderbolt
+}
+
 type Deity {
   name: String!
   power: [String!]
 }
 
 type Query {
+  deities: [Deity!]!
   deity(id: ID): Deity
 }

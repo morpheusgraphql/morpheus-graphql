@@ -167,6 +167,9 @@ data Value (stage :: Stage) where
   Scalar :: ScalarValue -> Value stage
   Null :: Value stage
 
+instance IsString (Value stage) where
+  fromString = Scalar . fromString
+
 deriving instance Show (Value a)
 
 deriving instance Eq (Value s)

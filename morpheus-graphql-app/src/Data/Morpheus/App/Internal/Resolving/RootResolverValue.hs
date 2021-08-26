@@ -16,7 +16,7 @@ import Data.Morpheus.App.Internal.Resolving.Resolver
   ( LiftOperation,
     Resolver,
     ResponseStream,
-    runResolver,
+      runResolver,
   )
 import Data.Morpheus.App.Internal.Resolving.ResolverState
   ( ResolverContext (..),
@@ -29,9 +29,9 @@ import Data.Morpheus.App.Internal.Resolving.ResolverValue
     lookupResJSON,
     resolveObject,
   )
-import Data.Morpheus.App.Internal.Resolving.TypeResolvers
-  ( TypeResolvers,
-    runRootTypeResolver,
+import Data.Morpheus.App.Internal.Resolving.NamedResolver
+  ( ResolverMap,
+    runResolverMap
   )
 import Data.Morpheus.Types.Internal.AST
   ( MUTATION,
@@ -48,28 +48,30 @@ import Relude hiding
     empty,
     show,
   )
+import Control.Monad.Except (throwError)
 
 data RootResolverValue e m
   = RootResolverValue
-      { query :: ResolverState (ResolverObject (Resolver QUERY e m)),
-        mutation :: ResolverState (ResolverObject (Resolver MUTATION e m)),
-        subscription :: ResolverState (ResolverObject (Resolver SUBSCRIPTION e m)),
+      { queryResolver :: ResolverState (ResolverObject (Resolver QUERY e m)),
+        mutationResolver :: ResolverState (ResolverObject (Resolver MUTATION e m)),
+        subscriptionResolver :: ResolverState (ResolverObject (Resolver SUBSCRIPTION e m)),
         channelMap :: Maybe (Selection VALID -> ResolverState (Channel e))
       }
-  | TypeResolversValue
-      { queryTypeResolvers :: TypeResolvers (Resolver QUERY e m),
-        mutationTypeResolvers :: Maybe (TypeResolvers (Resolver MUTATION e m)),
-        subscriptionTypeResolvers :: Maybe (TypeResolvers (Resolver SUBSCRIPTION e m)),
-        typeResolverChannels :: Maybe (Selection VALID -> ResolverState (Channel e))
+  | NamedResolvers
+      { queryResolverMap :: ResolverMap (Resolver QUERY e m)
+        -- TODO: implement later
+        --    mutationResolverMap :: Maybe (ResolverMap (Resolver MUTATION e m)),
+        --    subscriptionResolverMap :: Maybe (ResolverMap (Resolver SUBSCRIPTION e m)),
+        -- typeResolverChannels :: Maybe (Selection VALID -> ResolverState (Channel e))
       }
 
 instance Monad m => A.FromJSON (RootResolverValue e m) where
   parseJSON res =
     pure
       RootResolverValue
-        { query = lookupResJSON "query" res,
-          mutation = lookupResJSON "mutation" res,
-          subscription = lookupResJSON "subscription" res,
+        { queryResolver = lookupResJSON "query" res,
+          mutationResolver = lookupResJSON "mutation" res,
+          subscriptionResolver = lookupResJSON "subscription" res,
           channelMap = Nothing
         }
 
@@ -90,34 +92,35 @@ runRootDataResolver
 runRootResolverValue :: Monad m => RootResolverValue e m -> ResolverContext -> ResponseStream e m (Value VALID)
 runRootResolverValue
   RootResolverValue
-    { query,
-      mutation,
-      subscription,
+    { queryResolver,
+      mutationResolver,
+      subscriptionResolver,
       channelMap
     }
   ctx@ResolverContext {operation = Operation {operationType}} =
     selectByOperation operationType
     where
       selectByOperation Query =
-        runRootDataResolver channelMap query ctx
+        runRootDataResolver channelMap queryResolver ctx
       selectByOperation Mutation =
-        runRootDataResolver channelMap mutation ctx
+        runRootDataResolver channelMap mutationResolver ctx
       selectByOperation Subscription =
-        runRootDataResolver channelMap subscription ctx
+        runRootDataResolver channelMap subscriptionResolver ctx
 runRootResolverValue
-  TypeResolversValue
-    { queryTypeResolvers,
-      mutationTypeResolvers,
-      subscriptionTypeResolvers,
-      typeResolverChannels
+  NamedResolvers
+    { queryResolverMap
+      -- mutationResolverMap,
+      --  subscriptionResolverMap,
+      --typeResolverChannels
     }
   ctx@ResolverContext {operation = Operation {operationType}} =
     selectByOperation operationType
     where
       selectByOperation Query =
-        runRootTypeResolver typeResolverChannels "Query" ctx queryTypeResolvers
-
--- selectByOperation Mutation =
---   runRootTypeResolver typeResolverChannels "Mutation" ctx mutationTypeResolvers
--- selectByOperation Subscription =
---   runRootTypeResolver typeResolverChannels "Subscription" ctx subscriptionTypeResolvers
+        runResolverMap Nothing  "Query" ctx queryResolverMap
+      -- TODO: support mutation and subscription
+      selectByOperation _ = throwError "mutation and subscription is not yet supported"
+      -- selectByOperation Mutation =
+      --   runResolverMap typeResolverChannels "Mutation" ctx mutationResolverMap
+      -- selectByOperation Subscription =
+      --   runResolverMap typeResolverChannels "Subscription" ctx subscriptionResolverMap

@@ -1,0 +1,15 @@
+query {
+  realms {
+    name
+    owner {
+      name
+      power
+      realm {
+        name
+        owner {
+          name
+        }
+      }
+    }
+  }
+}

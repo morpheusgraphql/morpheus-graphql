@@ -8,36 +8,31 @@ provides utilities for creating executable GraphQL applications for servers. You
 schema :: Schema VALID
 schema =
   [dsl|
-  type Query {
-    deity(name: String): Deity!
-  }
-
   type Deity {
     name: String!
-    power: [String!]!
+    power: [String!]
+  }
+
+  type Query {
+    deity(id: ID): Deity
   }
 |]
 
-resolver :: Monad m => RootResolverValue e m
-resolver =
-  RootResModel
-    { query =
-        pure $
-          mkObject
-            "Query"
-            [("deity", resolveDeity)],
-      mutation = pure mkNull,
-      subscription = pure mkNull
-    }
+deityResolver :: Monad m => NamedResolverFunction QUERY e m
+deityResolver (Scalar  "zeus") =
+  [ ("name", pure "Zeus"),
+    ("power", pure $ mkList [])
+  ]
+deityResolver _ =
+  [ ("name", pure "Morpheus"),
+    ("power", pure $ mkList [ "Shapeshifting"])
+  ]
 
-resolveDeity :: Monad m => m (ResolverValue  m)
-resolveDeity =
-  pure $
-    mkObject
-      "Deity"
-      [ ("name", pure $ mkString "Morpheus"),
-        ("power", pure $ mkList [mkString "Shapeshifting"])
-      ]
+resolver :: Monad m => RootResolverValue e m
+resolver = mkNamedResolvers
+    [ ("Query", const [( "deity", mkRef "Deity" <$> getArgument "id")]),
+      ("Deity", deityResolver)
+    ]
 
 api :: ByteString -> IO  ByteString
 api = runApp (mkApp schema resolver)
