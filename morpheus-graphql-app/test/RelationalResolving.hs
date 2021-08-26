@@ -102,7 +102,7 @@ resolverRealms =
     }
 
 deityResolverExt :: Monad m => RelTypeResolver QUERY e m
-deityResolverExt (Scalar (String "zeus")) =
+deityResolverExt (Scalar  "zeus") =
   [ ("realm", pure $ mkTypeResolverRef "Realm" $ Scalar $ String "olympus")
   ]
 deityResolverExt _ =
