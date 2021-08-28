@@ -17,11 +17,13 @@
 module Data.Mergeable.MergeMap
   ( MergeMap,
     toNonEmpty,
+    partition,
   )
 where
 
 import Control.Monad.Except (MonadError (..))
 import qualified Data.List as L
+import qualified Data.List.NonEmpty as NE (partition)
 import qualified Data.List.NonEmpty as NM
 import Data.Mergeable.Internal.Merge
   ( Merge (..),
@@ -30,6 +32,13 @@ import Data.Mergeable.Internal.Merge
 import Data.Mergeable.IsMap (FromList (..), IsMap (..))
 import Language.Haskell.TH.Syntax (Lift (..))
 import Relude hiding (fromList)
+
+partition :: (a -> Bool) -> MergeMap dups k a -> (Maybe (MergeMap dups k a), Maybe (MergeMap dups k a))
+partition f (MergeMap xs) =
+  case NE.partition (f . snd) xs of
+    ([], _) -> (Nothing, Just (MergeMap xs))
+    (_, []) -> (Just (MergeMap xs), Nothing)
+    (a : as, b : bs) -> (Just (MergeMap (a :| as)), Just (MergeMap (b :| bs)))
 
 newtype MergeMap (dups :: Bool) k a = MergeMap
   { unpack :: NonEmpty (k, a)

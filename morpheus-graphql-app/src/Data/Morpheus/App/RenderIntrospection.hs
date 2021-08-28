@@ -16,16 +16,20 @@ module Data.Morpheus.App.RenderIntrospection
 where
 
 import Control.Monad.Except (MonadError (throwError))
-import Data.Morpheus.App.Internal.Resolving
+import Data.Morpheus.App.Internal.Resolving.Resolver
   ( Resolver,
     ResolverContext (..),
-    ResolverValue,
-    mkBoolean,
+    unsafeInternalContext,
+  )
+import Data.Morpheus.App.Internal.Resolving.ResolverValue
+  ( ResolverValue,
+    mkObject,
+  )
+import Data.Morpheus.App.Internal.Resolving.Utils
+  ( mkBoolean,
     mkList,
     mkNull,
-    mkObject,
     mkString,
-    unsafeInternalContext,
   )
 import qualified Data.Morpheus.Core as GQL
 import Data.Morpheus.Internal.Utils
@@ -216,14 +220,14 @@ instance
     (FieldDefinition OUT VALID)
   where
   render FieldDefinition {..} =
-    pure
-      $ mkObject "__Field"
-      $ [ renderName fieldName,
+    pure $
+      mkObject "__Field" $
+        [ renderName fieldName,
           description fieldDescription,
           type' fieldType,
           ("args", maybe (pure $ mkList []) render fieldContent)
         ]
-        <> renderDeprecated fieldDirectives
+          <> renderDeprecated fieldDirectives
 
 instance RenderIntrospection (FieldContent TRUE OUT VALID) where
   render (FieldArgs args) = render args
@@ -244,23 +248,25 @@ instance RenderIntrospection (FieldDefinition IN VALID) where
 
 instance RenderIntrospection (DataEnumValue VALID) where
   render DataEnumValue {enumName, enumDescription, enumDirectives} =
-    pure $ mkObject "__Field" $
-      [ renderName enumName,
-        description enumDescription
-      ]
-        <> renderDeprecated enumDirectives
+    pure $
+      mkObject "__Field" $
+        [ renderName enumName,
+          description enumDescription
+        ]
+          <> renderDeprecated enumDirectives
 
 instance RenderIntrospection TypeRef where
   render TypeRef {typeConName, typeWrappers} = renderWrapper typeWrappers
     where
       renderWrapper :: (Monad m, WithSchema m) => TypeWrapper -> m (ResolverValue m)
       renderWrapper (TypeList nextWrapper isNonNull) =
-        pure $ withNonNull isNonNull $
-          mkObject
-            "__Type"
-            [ renderKind KindList,
-              ("ofType", renderWrapper nextWrapper)
-            ]
+        pure $
+          withNonNull isNonNull $
+            mkObject
+              "__Type"
+              [ renderKind KindList,
+                ("ofType", renderWrapper nextWrapper)
+              ]
       renderWrapper (BaseType isNonNull) =
         withNonNull isNonNull <$> do
           kind <- kindOf <$> selectType typeConName

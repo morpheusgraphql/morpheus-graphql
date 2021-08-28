@@ -33,7 +33,7 @@ import Data.Morpheus.App.Internal.Resolving.ResolverState
   ( ResolverContext (..),
   )
 import Data.Morpheus.Error (subfieldsNotSelected)
-import Data.Morpheus.Internal.Ext ((<:>), Merge (..))
+import Data.Morpheus.Internal.Ext (Merge (..), (<:>))
 import Data.Morpheus.Internal.Utils (KeyOf (keyOf), selectOr, traverseCollection)
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,

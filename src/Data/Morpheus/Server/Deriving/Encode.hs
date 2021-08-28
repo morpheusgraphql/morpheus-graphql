@@ -7,11 +7,11 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE RecordWildCards #-}
 
 module Data.Morpheus.Server.Deriving.Encode
   ( deriveModel,
@@ -120,7 +120,7 @@ instance
 
 instance
   ( EncodeConstraint m a,
-    Monad m
+    MonadError GQLError m
   ) =>
   EncodeKind TYPE m a
   where
@@ -138,7 +138,7 @@ instance (Monad m, Encode m [Pair k v]) => EncodeKind CUSTOM m (Map k v) where
   encodeKind = encode . fmap (uncurry Pair) . M.toList . unContextValue
 
 --  INTERFACE Types
-instance (Monad m, EncodeConstraint m guard, EncodeConstraint m union) => EncodeKind CUSTOM m (TypeGuard guard union) where
+instance (MonadError GQLError m, EncodeConstraint m guard, EncodeConstraint m union) => EncodeKind CUSTOM m (TypeGuard guard union) where
   encodeKind (ContextValue (ResolveType value)) = pure (exploreResolvers value)
   encodeKind (ContextValue (ResolveInterface value)) = pure (exploreResolvers value)
 
@@ -192,7 +192,8 @@ convertNode
 -- Types & Constrains -------------------------------------------------------
 exploreResolvers ::
   forall m a.
-  ( EncodeConstraint m a
+  ( EncodeConstraint m a,
+    MonadError GQLError m
   ) =>
   a ->
   ResolverValue m
@@ -207,7 +208,7 @@ exploreResolvers =
 ----- HELPERS ----------------------------
 objectResolvers ::
   ( EncodeConstraint m a,
-    Monad m
+    MonadError GQLError m
   ) =>
   a ->
   ResolverState (ResolverObject m)
@@ -216,8 +217,7 @@ objectResolvers value = requireObject (exploreResolvers value)
 type EncodeConstraint (m :: * -> *) a =
   ( GQLType a,
     Generic a,
-    TypeRep (Encode m) (m (ResolverValue m)) (Rep a),
-    MonadError GQLError m
+    TypeRep (Encode m) (m (ResolverValue m)) (Rep a)
   )
 
 type EncodeObjectConstraint (o :: OperationType) e (m :: * -> *) a =
@@ -238,14 +238,14 @@ deriveModel ::
   (Monad m, EncodeConstraints e m query mut sub) =>
   RootResolver m e query mut sub ->
   RootResolverValue e m
-deriveModel RootResolver { ..} =
-    RootResolverValue
-      { queryResolver  = objectResolvers queryResolver,
-        mutationResolver  = objectResolvers mutationResolver,
-        subscriptionResolver  = objectResolvers subscriptionResolver,
-        channelMap
-      }
-    where
+deriveModel RootResolver {..} =
+  RootResolverValue
+    { queryResolver = objectResolvers queryResolver,
+      mutationResolver = objectResolvers mutationResolver,
+      subscriptionResolver = objectResolvers subscriptionResolver,
       channelMap
-        | __isEmptyType (Proxy :: Proxy (sub (Resolver SUBSCRIPTION e m))) = Nothing
-        | otherwise = Just (channelResolver subscriptionResolver)
+    }
+  where
+    channelMap
+      | __isEmptyType (Proxy :: Proxy (sub (Resolver SUBSCRIPTION e m))) = Nothing
+      | otherwise = Just (channelResolver subscriptionResolver)

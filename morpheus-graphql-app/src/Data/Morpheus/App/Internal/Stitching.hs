@@ -14,6 +14,10 @@ where
 
 import Control.Monad.Except (MonadError (throwError))
 import Data.Morpheus.App.Internal.Resolving (RootResolverValue (..))
+import Data.Morpheus.App.Internal.Resolving.NamedResolver
+  ( NamedResolver (..),
+    NamedResolverResult (..),
+  )
 import qualified Data.Morpheus.App.Internal.Resolving.Utils as R
 import Data.Morpheus.Error (NameCollision (..))
 import Data.Morpheus.Internal.Ext
@@ -39,11 +43,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinitions,
   )
 import Relude hiding (optional)
-import Data.Morpheus.App.Internal.Resolving.NamedResolver
-    ( NamedResolver(..), 
-      NamedResolverResult(..) 
-    )
-
 
 equal :: (Eq a, Applicative m, MonadError GQLError m) => GQLError -> a -> a -> m a
 equal err p1 p2
@@ -142,9 +141,9 @@ instance Stitching (R.ObjectTypeResolver (m a)) where
     | otherwise = throwError "ResolverMap must have same resolverName"
 
 instance (MonadError GQLError m) => Stitching (NamedResolverResult m) where
-  stitch NamedUnionResolver {} (NamedUnionResolver x) = pure (NamedUnionResolver x) 
+  stitch NamedUnionResolver {} (NamedUnionResolver x) = pure (NamedUnionResolver x)
   stitch (NamedObjectResolver t1) (NamedObjectResolver t2) = NamedObjectResolver <$> stitch t1 t2
-  stitch _ _  = throwError "ResolverMap must have same resolverName"
+  stitch _ _ = throwError "ResolverMap must have same resolverName"
 
 instance (MonadError GQLError m) => Stitching (NamedResolver m) where
   stitch t1 t2
@@ -170,18 +169,13 @@ instance Monad m => Stitching (RootResolverValue e m) where
           channelMap
         }
   stitch
-    NamedResolvers 
+    NamedResolvers
       { queryResolverMap = q1
       }
     NamedResolvers
-      {queryResolverMap = q2
+      { queryResolverMap = q2
       } =
       do
         result <- runResolutionT (mergeT q1 q2) unsafeFromList (resolveWith stitch)
-        pure
-          (NamedResolvers
-              { queryResolverMap = result
-
-              }
-          )
+        pure (NamedResolvers {queryResolverMap = result})
   stitch _ _ = throwError "only apps with same resolver model can be merged"

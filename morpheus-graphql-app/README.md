@@ -9,7 +9,7 @@ schema :: Schema VALID
 schema =
   [dsl|
   type Deity {
-    name: String!
+    name: String
     power: [String!]
   }
 
@@ -19,18 +19,17 @@ schema =
 |]
 
 deityResolver :: Monad m => NamedResolverFunction QUERY e m
-deityResolver (Scalar  "zeus") =
-  [ ("name", pure "Zeus"),
-    ("power", pure $ mkList [])
-  ]
-deityResolver _ =
-  [ ("name", pure "Morpheus"),
-    ("power", pure $ mkList [ "Shapeshifting"])
-  ]
+deityResolver "morpheus" =
+  object
+    [ ("name", pure "Morpheus"),
+      ("power", pure $ list [enum "Shapeshifting"])
+    ]
+deityResolver _ = object []
 
 resolver :: Monad m => RootResolverValue e m
-resolver = mkNamedResolvers
-    [ ("Query", const [( "deity", mkRef "Deity" <$> getArgument "id")]),
+resolver =
+  queryResolvers
+    [ ( "Query", const $ object [("deity", ref "Deity" <$> getArgument "id")]),
       ("Deity", deityResolver)
     ]
 

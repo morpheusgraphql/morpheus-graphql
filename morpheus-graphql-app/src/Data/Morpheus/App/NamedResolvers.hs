@@ -1,5 +1,5 @@
-module Data.Morpheus.App.NamedResolvers (
-    ref,
+module Data.Morpheus.App.NamedResolvers
+  ( ref,
     object,
     variant,
     list,
@@ -8,51 +8,42 @@ module Data.Morpheus.App.NamedResolvers (
     queryResolvers,
     getArgument,
     NamedResolverFunction,
-    RootResolverValue
-) where
+    RootResolverValue,
+    ResultBuilder,
+  )
+where
 
 import qualified Data.HashMap.Internal as HM
-
 import Data.Morpheus.App.Internal.Resolving.NamedResolver
-    ( NamedResolverRef (..),
-      NamedResolverField,
-      NamedResolverResult(..),
-      NamedResolver(..),
-      ResolverMap 
-    )
-import Data.Morpheus.Types.Internal.AST
-    ( TypeName,
-      QUERY,
-      FieldName,
-      TypeName,
-      TypeName,
-      ValidValue 
-    )
-import Data.Morpheus.App.Internal.Resolving.RootResolverValue ( RootResolverValue(..) )
-import Data.Morpheus.App.Internal.Resolving.Resolver (getArgument,Resolver, LiftOperation)
+  ( NamedResolver (..),
+    NamedResolverField,
+    NamedResolverRef (..),
+    NamedResolverResult (..),
+    ResolverMap,
+  )
+import Data.Morpheus.App.Internal.Resolving.Resolver (LiftOperation, Resolver, getArgument)
+import Data.Morpheus.App.Internal.Resolving.RootResolverValue (RootResolverValue (..))
 import Data.Morpheus.App.Internal.Resolving.Utils
   ( ObjectTypeResolver (..),
     ResolverValueDefinition (..),
-    mkList, mkEnum
+    mkEnum,
+    mkList,
+  )
+import Data.Morpheus.Types.Internal.AST
+  ( FieldName,
+    QUERY,
+    TypeName,
+    ValidValue,
   )
 
 -- PUBLIC
-queryResolvers :: Monad m =>[(TypeName, NamedResolverFunction QUERY  e m)] -> RootResolverValue e m
-queryResolvers = NamedResolvers . mkResolverMap
 
-type NamedResolverFunction o e m = ValidValue -> ResultBuilder o e m
-
+-- fields
 enum :: TypeName -> NamedResolverField
-enum = mkEnum 
+enum = mkEnum
 
-list :: [NamedResolverField ] -> NamedResolverField
+list :: [NamedResolverField] -> NamedResolverField
 list = mkList
-
-object :: [(FieldName, Resolver o e m NamedResolverField)] -> ResultBuilder  o e m
-object = Object
-
-variant ::  TypeName -> ValidValue -> ResultBuilder o e m
-variant  = Union
 
 ref :: TypeName -> ValidValue -> NamedResolverField
 ref typeName = ResObject . NamedResolverRef typeName
@@ -60,24 +51,35 @@ ref typeName = ResObject . NamedResolverRef typeName
 refs :: TypeName -> [ValidValue] -> NamedResolverField
 refs typeName = mkList . map (ref typeName)
 
+type NamedResolverFunction o e m = ValidValue -> Resolver o e m (ResultBuilder o e m)
+
+-- types
+object :: (LiftOperation o, Monad m) => [(FieldName, Resolver o e m NamedResolverField)] -> Resolver o e m (ResultBuilder o e m)
+object = pure . Object
+
+variant :: (LiftOperation o, Monad m) => TypeName -> ValidValue -> Resolver o e m (ResultBuilder o e m)
+variant tName = pure . Union tName
+
+queryResolvers :: Monad m => [(TypeName, NamedResolverFunction QUERY e m)] -> RootResolverValue e m
+queryResolvers = NamedResolvers . mkResolverMap
+
 -- INTERNAL
-data ResultBuilder o e m =
-   Object [(FieldName, Resolver o e m NamedResolverField)]
-  | Union  TypeName  ValidValue
+data ResultBuilder o e m
+  = Object [(FieldName, Resolver o e m NamedResolverField)]
+  | Union TypeName ValidValue
 
 mkResolverMap :: (LiftOperation o, Monad m) => [(TypeName, NamedResolverFunction o e m)] -> ResolverMap (Resolver o e m)
 mkResolverMap = HM.fromList . map packRes
   where
-    packRes :: (LiftOperation o, Monad m) => (TypeName,ValidValue -> ResultBuilder o e m) -> (TypeName, NamedResolver (Resolver o e m))
+    packRes :: (LiftOperation o, Monad m) => (TypeName, ValidValue -> Resolver o e m (ResultBuilder o e m)) -> (TypeName, NamedResolver (Resolver o e m))
     packRes (typeName, value) =
       ( typeName,
         NamedResolver
           typeName
-          ( pure
-              . mapValue
+          ( fmap mapValue
               . value
           )
       )
       where
-        mapValue (Object x)= NamedObjectResolver (ObjectTypeResolver typeName $ HM.fromList x)
-        mapValue (Union name x)= NamedUnionResolver (NamedResolverRef name x)
+        mapValue (Object x) = NamedObjectResolver (ObjectTypeResolver typeName $ HM.fromList x)
+        mapValue (Union name x) = NamedUnionResolver (NamedResolverRef name x)

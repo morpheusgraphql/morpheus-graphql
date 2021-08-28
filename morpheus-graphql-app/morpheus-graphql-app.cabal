@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3821b2d31e6d1dda205f60580869ad08c124b708207e277cb391cc3cb95f1aff
+-- hash: 39d09aae27db41812ed772c619255a78fd125759ef3377fe9a3d6cbfa155637d
 
 name:           morpheus-graphql-app
 version:        0.17.0
@@ -108,11 +108,11 @@ library
       Data.Morpheus.App.Internal.Resolving.ResolverState
       Data.Morpheus.App.Internal.Resolving.ResolverValue
       Data.Morpheus.App.Internal.Resolving.RootResolverValue
+      Data.Morpheus.App.Internal.Resolving.SchemaAPI
       Data.Morpheus.App.Internal.Resolving.Utils
       Data.Morpheus.App.Internal.Stitching
       Data.Morpheus.App.MapAPI
       Data.Morpheus.App.RenderIntrospection
-      Data.Morpheus.App.SchemaAPI
       Paths_morpheus_graphql_app
   hs-source-dirs:
       src

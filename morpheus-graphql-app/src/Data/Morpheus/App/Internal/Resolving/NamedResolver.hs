@@ -3,7 +3,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -14,9 +13,9 @@ module Data.Morpheus.App.Internal.Resolving.NamedResolver
   ( ResolverMap,
     runResolverMap,
     NamedResolver (..),
-    NamedResolverResult(..),
+    NamedResolverResult (..),
     NamedResolverField,
-    NamedResolverRef(..)
+    NamedResolverRef (..),
   )
 where
 
@@ -35,35 +34,30 @@ import Data.Morpheus.App.Internal.Resolving.Utils
     ObjectTypeResolver (..),
     ResolverValueDefinition (..),
     resolveObjectTypeResolver,
-    resolveResolverDefinition
+    resolveResolverDefinition,
   )
 import Data.Morpheus.Internal.Utils (KeyOf (keyOf), selectOr)
 import Data.Morpheus.Types.Internal.AST
   ( GQLError,
-    Operation (..),
     Selection (..),
     SelectionSet,
     TypeName,
-    TypeName,
     VALID,
     ValidValue,
-    Value(Null)
+    Value (Null),
   )
 import Relude
 
-
-
-
 type ResolverMap (m :: * -> *) = HashMap TypeName (NamedResolver m)
 
-data NamedResolver  (m :: * -> *) = NamedResolver
+data NamedResolver (m :: * -> *) = NamedResolver
   { resolverName :: TypeName,
     resolver :: ValidValue -> m (NamedResolverResult m)
   }
 
-data NamedResolverResult (m :: * -> *) = 
-    NamedObjectResolver (ObjectTypeResolver (m NamedResolverField))
-  | NamedUnionResolver  NamedResolverRef
+data NamedResolverResult (m :: * -> *)
+  = NamedObjectResolver (ObjectTypeResolver (m NamedResolverField))
+  | NamedUnionResolver NamedResolverRef
 
 instance KeyOf TypeName (NamedResolver m) where
   keyOf = resolverName
@@ -80,16 +74,18 @@ runResolverMap ::
   (Monad m, LiftOperation o) =>
   Maybe (Selection VALID -> ResolverState (Channel e)) ->
   TypeName ->
-  ResolverContext ->
   ResolverMap (Resolver o e m) ->
+  ResolverContext ->
+  SelectionSet VALID ->
   ResponseStream e m ValidValue
 runResolverMap
   channels
-  resolverName
-  ctx@ResolverContext {operation = Operation {operationSelection}}
-  res = runResolver channels resolvedValue ctx
+  name
+  res
+  ctx
+  selection = runResolver channels resolvedValue ctx
     where
-      resolvedValue = resolveRef res (NamedResolverRef resolverName Null) operationSelection
+      resolvedValue = resolveRef res (NamedResolverRef name Null) selection
 
 resolveRef ::
   ( MonadError GQLError m,
@@ -111,6 +107,6 @@ resolveRef resolvers ref selection = do
             }
   case objectResolver of
     NamedObjectResolver res -> resolveObjectTypeResolver (>>= resolveValue) res selection
-    NamedUnionResolver unionRef -> resolveValue (ResUnion (resolverTypeName unionRef) unionRef) 
+    NamedUnionResolver unionRef -> resolveValue (ResUnion (resolverTypeName unionRef) unionRef)
   where
     cantFoundError = throwError "Resolver Type can't found"

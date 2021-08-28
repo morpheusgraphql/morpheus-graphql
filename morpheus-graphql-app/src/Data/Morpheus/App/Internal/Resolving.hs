@@ -41,10 +41,9 @@ module Data.Morpheus.App.Internal.Resolving
     EventHandler (..),
     requireObject,
     ResolverValueDefinition (..),
-    mkObject'
+    mkObject',
   )
 where
-import Relude 
 
 import Data.Morpheus.App.Internal.Resolving.Event
 import Data.Morpheus.App.Internal.Resolving.Resolver
@@ -53,4 +52,3 @@ import Data.Morpheus.App.Internal.Resolving.ResolverValue
 import Data.Morpheus.App.Internal.Resolving.RootResolverValue
 import Data.Morpheus.App.Internal.Resolving.Utils
 import Data.Morpheus.Internal.Ext
-

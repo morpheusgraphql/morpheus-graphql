@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -8,15 +9,20 @@ module Data.Morpheus.App.Internal.Resolving.RootResolverValue
   )
 where
 
+import Control.Monad.Except (MonadError, throwError)
 import qualified Data.Aeson as A
 import Data.Morpheus.App.Internal.Resolving.Event
   ( EventHandler (..),
+  )
+import Data.Morpheus.App.Internal.Resolving.NamedResolver
+  ( ResolverMap,
+    runResolverMap,
   )
 import Data.Morpheus.App.Internal.Resolving.Resolver
   ( LiftOperation,
     Resolver,
     ResponseStream,
-      runResolver,
+    runResolver,
   )
 import Data.Morpheus.App.Internal.Resolving.ResolverState
   ( ResolverContext (..),
@@ -29,26 +35,28 @@ import Data.Morpheus.App.Internal.Resolving.ResolverValue
     lookupResJSON,
     resolveObject,
   )
-import Data.Morpheus.App.Internal.Resolving.NamedResolver
-  ( ResolverMap,
-    runResolverMap
-  )
+import Data.Morpheus.App.Internal.Resolving.SchemaAPI (schemaAPI)
+import Data.Morpheus.Internal.Ext (merge)
 import Data.Morpheus.Types.Internal.AST
-  ( MUTATION,
+  ( GQLError,
+    MUTATION,
     Operation (..),
     OperationType (..),
     QUERY,
     SUBSCRIPTION,
     Selection,
+    SelectionSet,
     VALID,
+    ValidValue,
     Value (..),
+    internal,
+    splitSystemSelection,
   )
 import Relude hiding
   ( Show,
     empty,
     show,
   )
-import Control.Monad.Except (throwError)
 
 data RootResolverValue e m
   = RootResolverValue
@@ -59,10 +67,10 @@ data RootResolverValue e m
       }
   | NamedResolvers
       { queryResolverMap :: ResolverMap (Resolver QUERY e m)
-        -- TODO: implement later
-        --    mutationResolverMap :: Maybe (ResolverMap (Resolver MUTATION e m)),
-        --    subscriptionResolverMap :: Maybe (ResolverMap (Resolver SUBSCRIPTION e m)),
-        -- typeResolverChannels :: Maybe (Selection VALID -> ResolverState (Channel e))
+      -- TODO: implement later
+      --    mutationResolverMap :: Maybe (ResolverMap (Resolver MUTATION e m)),
+      --    subscriptionResolverMap :: Maybe (ResolverMap (Resolver SUBSCRIPTION e m)),
+      -- typeResolverChannels :: Maybe (Selection VALID -> ResolverState (Channel e))
       }
 
 instance Monad m => A.FromJSON (RootResolverValue e m) where
@@ -80,14 +88,16 @@ runRootDataResolver ::
   Maybe (Selection VALID -> ResolverState (Channel e)) ->
   ResolverState (ResolverObject (Resolver o e m)) ->
   ResolverContext ->
+  SelectionSet VALID ->
   ResponseStream e m (Value VALID)
 runRootDataResolver
   channels
   res
-  ctx@ResolverContext {operation = Operation {operationSelection}} =
+  ctx
+  selection =
     do
       root <- runResolverStateT (toResolverStateT res) ctx
-      runResolver channels (resolveObject root operationSelection) ctx
+      runResolver channels (resolveObject root selection) ctx
 
 runRootResolverValue :: Monad m => RootResolverValue e m -> ResolverContext -> ResponseStream e m (Value VALID)
 runRootResolverValue
@@ -97,30 +107,45 @@ runRootResolverValue
       subscriptionResolver,
       channelMap
     }
-  ctx@ResolverContext {operation = Operation {operationType}} =
+  ctx@ResolverContext {operation = Operation {operationType, operationSelection}} =
     selectByOperation operationType
     where
       selectByOperation Query =
-        runRootDataResolver channelMap queryResolver ctx
+        withIntrospection (runRootDataResolver channelMap queryResolver) ctx
       selectByOperation Mutation =
-        runRootDataResolver channelMap mutationResolver ctx
+        runRootDataResolver channelMap mutationResolver ctx operationSelection
       selectByOperation Subscription =
-        runRootDataResolver channelMap subscriptionResolver ctx
+        runRootDataResolver channelMap subscriptionResolver ctx operationSelection
 runRootResolverValue
   NamedResolvers
     { queryResolverMap
-      -- mutationResolverMap,
-      --  subscriptionResolverMap,
-      --typeResolverChannels
+    -- mutationResolverMap,
+    -- subscriptionResolverMap,
+    --typeResolverChannels
     }
   ctx@ResolverContext {operation = Operation {operationType}} =
     selectByOperation operationType
     where
-      selectByOperation Query =
-        runResolverMap Nothing  "Query" ctx queryResolverMap
+      selectByOperation Query = withIntrospection (runResolverMap Nothing "Query" queryResolverMap) ctx
       -- TODO: support mutation and subscription
-      selectByOperation _ = throwError "mutation and subscription is not yet supported"
       -- selectByOperation Mutation =
       --   runResolverMap typeResolverChannels "Mutation" ctx mutationResolverMap
       -- selectByOperation Subscription =
       --   runResolverMap typeResolverChannels "Subscription" ctx subscriptionResolverMap
+      selectByOperation _ = throwError "mutation and subscription is not yet supported"
+
+withIntrospection :: Monad m => (ResolverContext -> SelectionSet VALID -> ResponseStream event m ValidValue) -> ResolverContext -> ResponseStream event m ValidValue
+withIntrospection f ctx@ResolverContext {operation} = case splitSystemSelection (operationSelection operation) of
+  (Nothing, _) -> f ctx (operationSelection operation)
+  (Just intro, Nothing) -> introspection intro ctx
+  (Just intro, Just selection) -> do
+    x <- f ctx selection
+    y <- introspection intro ctx
+    mergeRoot y x
+
+introspection :: Monad m => SelectionSet VALID -> ResolverContext -> ResponseStream event m ValidValue
+introspection selection ctx@ResolverContext {schema} = runResolver Nothing (resolveObject (schemaAPI schema) selection) ctx
+
+mergeRoot :: MonadError GQLError m => ValidValue -> ValidValue -> m ValidValue
+mergeRoot (Object x) (Object y) = Object <$> merge x y
+mergeRoot _ _ = throwError (internal "can't merge non object types")

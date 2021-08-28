@@ -199,9 +199,9 @@ subscribe ::
   Resolver QUERY e m (e -> Resolver SUBSCRIPTION e m a) ->
   SubscriptionField (Resolver SUBSCRIPTION e m a)
 subscribe ch res =
-  SubscriptionField ch
-    $ ResolverS
-    $ fromSub <$> runResolverQ res
+  SubscriptionField ch $
+    ResolverS $
+      fromSub <$> runResolverQ res
   where
     fromSub :: Monad m => (e -> Resolver SUBSCRIPTION e m a) -> ReaderT e (ResolverStateT () m) a
     fromSub f = join (ReaderT (runResolverS . f))

@@ -19,6 +19,7 @@ import Data.Aeson.Parser
   ( eitherDecodeWith,
     jsonNoDup,
   )
+import Data.ByteString.Lazy.Char8 (pack)
 import qualified Data.ByteString.Lazy.Char8 as LB
   ( ByteString,
     fromStrict,
@@ -41,9 +42,8 @@ import Relude hiding
   ( decodeUtf8,
     encodeUtf8,
   )
-import Data.ByteString.Lazy.Char8 (pack)
 
-decodeNoDup :: MonadError LB.ByteString  m => LB.ByteString -> m GQLRequest
+decodeNoDup :: MonadError LB.ByteString m => LB.ByteString -> m GQLRequest
 decodeNoDup str = case eitherDecodeWith jsonNoDup ifromJSON str of
   Left (path, x) -> throwError $ pack $ "Bad Request. Could not decode Request body: " <> formatError path x
   Right value -> pure value
@@ -55,7 +55,7 @@ instance MapAPI GQLRequest GQLResponse where
   mapAPI f = f
 
 instance MapAPI LB.ByteString LB.ByteString where
-  mapAPI api  = either pure (fmap encode . api) . decodeNoDup 
+  mapAPI api = either pure (fmap encode . api) . decodeNoDup
 
 instance MapAPI LT.Text LT.Text where
   mapAPI api = fmap decodeUtf8 . mapAPI api . encodeUtf8
