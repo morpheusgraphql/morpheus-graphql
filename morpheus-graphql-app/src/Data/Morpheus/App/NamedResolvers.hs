@@ -13,7 +13,7 @@ module Data.Morpheus.App.NamedResolvers
   )
 where
 
-import qualified Data.HashMap.Internal as HM
+import qualified Data.HashMap.Lazy as HM
 import Data.Morpheus.App.Internal.Resolving.NamedResolver
   ( NamedResolver (..),
     NamedResolverField,
