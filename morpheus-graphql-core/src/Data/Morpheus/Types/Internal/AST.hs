@@ -147,6 +147,7 @@ module Data.Morpheus.Types.Internal.AST
     FragmentName,
     isInternal,
     internal,
+    splitSystemSelection,
   )
 where
 

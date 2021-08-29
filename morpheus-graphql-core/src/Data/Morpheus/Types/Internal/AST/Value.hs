@@ -89,6 +89,7 @@ import qualified Data.Vector as V
 import Instances.TH.Lift ()
 import Language.Haskell.TH.Syntax (Lift (..))
 import Relude
+import qualified Data.Text as T
 
 -- | Primitive Values for GQLScalar: 'Int', 'Float', 'String', 'Boolean'.
 -- for performance reason type 'Text' represents GraphQl 'String' value
@@ -99,6 +100,9 @@ data ScalarValue
   | Boolean Bool
   | Value A.Value
   deriving (Show, Eq, Generic, Lift)
+
+instance IsString ScalarValue where
+  fromString = String . T.pack
 
 instance RenderGQL ScalarValue where
   renderGQL (Int x) = renderGQL x
@@ -162,6 +166,9 @@ data Value (stage :: Stage) where
   Enum :: TypeName -> Value stage
   Scalar :: ScalarValue -> Value stage
   Null :: Value stage
+
+instance IsString (Value stage) where
+  fromString = Scalar . fromString
 
 deriving instance Show (Value a)
 

@@ -34,7 +34,6 @@ import Data.Morpheus.App.Internal.Resolving
   )
 import Data.Morpheus.App.Internal.Stitching (Stitching (..))
 import Data.Morpheus.App.MapAPI (MapAPI (..))
-import Data.Morpheus.App.SchemaAPI (withSystemFields)
 import Data.Morpheus.Core
   ( Config (..),
     RenderGQL (..),
@@ -61,7 +60,6 @@ import Data.Morpheus.Types.Internal.AST
   ( GQLError,
     GQLErrors,
     Operation (..),
-    Schema (..),
     Schema (..),
     Selection (..),
     SelectionContent (..),
@@ -113,8 +111,7 @@ runAppData ::
   ResponseStream event m (Value VALID)
 runAppData AppData {appConfig, appSchema, appResolvers} request = do
   validRequest <- validateReq appSchema appConfig request
-  resolvers <- withSystemFields (schema validRequest) appResolvers
-  runRootResolverValue resolvers validRequest
+  runRootResolverValue appResolvers validRequest
 
 validateReq ::
   ( Monad m,
@@ -124,28 +121,29 @@ validateReq ::
   Config ->
   GQLRequest ->
   ResponseStream event m ResolverContext
-validateReq inputSchema config request = ResultT $ pure $ do
-  validSchema <- validateSchema True config inputSchema
-  schema <- internalSchema <:> validSchema
-  operation <- parseRequestWith config validSchema request
-  pure
-    ( [],
-      ResolverContext
-        { schema,
-          config,
-          operation,
-          currentTypeName = "Root",
-          currentSelection =
-            Selection
-              { selectionName = "Root",
-                selectionArguments = empty,
-                selectionPosition = operationPosition operation,
-                selectionAlias = Nothing,
-                selectionContent = SelectionSet (operationSelection operation),
-                selectionDirectives = empty
-              }
-        }
-    )
+validateReq inputSchema config request = ResultT $
+  pure $ do
+    validSchema <- validateSchema True config inputSchema
+    schema <- internalSchema <:> validSchema
+    operation <- parseRequestWith config validSchema request
+    pure
+      ( [],
+        ResolverContext
+          { schema,
+            config,
+            operation,
+            currentTypeName = "Root",
+            currentSelection =
+              Selection
+                { selectionName = "Root",
+                  selectionArguments = empty,
+                  selectionPosition = operationPosition operation,
+                  selectionAlias = Nothing,
+                  selectionContent = SelectionSet (operationSelection operation),
+                  selectionDirectives = empty
+                }
+          }
+      )
 
 stateless ::
   Functor m =>

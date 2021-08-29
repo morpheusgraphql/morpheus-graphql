@@ -5,9 +5,9 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -19,19 +19,23 @@ module Data.Morpheus.Server.Deriving.Encode
   )
 where
 
-import Control.Monad.Except (throwError)
+import Control.Monad.Except (MonadError)
 import qualified Data.Map as M
 import Data.Morpheus.App.Internal.Resolving
   ( LiftOperation,
     Resolver,
     ResolverEntry,
+    ResolverObject,
     ResolverState,
-    ResolverValue (..),
+    ResolverValue,
+    ResolverValueDefinition (ResScalar, ResUnion),
     RootResolverValue (..),
     getArguments,
     liftResolverState,
+    mkEnum,
     mkObject,
     mkUnion,
+    requireObject,
   )
 import Data.Morpheus.Kind
   ( CUSTOM,
@@ -70,13 +74,13 @@ import Data.Morpheus.Types.GQLScalar
   )
 import Data.Morpheus.Types.GQLWrapper (EncodeWrapper (..))
 import Data.Morpheus.Types.Internal.AST
-  ( IN,
+  ( GQLError,
+    IN,
     MUTATION,
     OperationType,
     QUERY,
     SUBSCRIPTION,
     TypeRef (..),
-    internal,
   )
 import GHC.Generics
   ( Generic (..),
@@ -116,7 +120,7 @@ instance
 
 instance
   ( EncodeConstraint m a,
-    Monad m
+    MonadError GQLError m
   ) =>
   EncodeKind TYPE m a
   where
@@ -134,7 +138,7 @@ instance (Monad m, Encode m [Pair k v]) => EncodeKind CUSTOM m (Map k v) where
   encodeKind = encode . fmap (uncurry Pair) . M.toList . unContextValue
 
 --  INTERFACE Types
-instance (Monad m, EncodeConstraint m guard, EncodeConstraint m union) => EncodeKind CUSTOM m (TypeGuard guard union) where
+instance (MonadError GQLError m, EncodeConstraint m guard, EncodeConstraint m union) => EncodeKind CUSTOM m (TypeGuard guard union) where
   encodeKind (ContextValue (ResolveType value)) = pure (exploreResolvers value)
   encodeKind (ContextValue (ResolveInterface value)) = pure (exploreResolvers value)
 
@@ -161,7 +165,8 @@ instance
   encodeKind (ContextValue value) = value >>= encode
 
 convertNode ::
-  Monad m =>
+  forall m.
+  MonadError GQLError m =>
   DataType (m (ResolverValue m)) ->
   ResolverValue m
 convertNode
@@ -171,21 +176,24 @@ convertNode
       tyCons = cons@ConsRep {consFields, consName}
     }
     | tyIsUnion = encodeUnion consFields
-    | otherwise = mkObject tyName (fmap toFieldRes consFields)
+    | otherwise = mkObject tyName (toFieldRes <$> consFields)
     where
       -- ENUM
-      encodeUnion [] = ResEnum consName
+      encodeUnion ::
+        [FieldRep (m (ResolverValue m))] ->
+        ResolverValue m
+      encodeUnion [] = mkEnum consName
       -- Type References --------------------------------------------------------------
       encodeUnion [FieldRep {fieldTypeRef = TypeRef {typeConName}, fieldValue}]
-        | isUnionRef tyName cons = ResUnion typeConName fieldValue
+        | isUnionRef tyName cons = ResUnion typeConName (fieldValue >>= requireObject)
       -- Inline Union Types ----------------------------------------------------------------------------
-      encodeUnion fields = mkUnion consName (fmap toFieldRes fields)
+      encodeUnion fields = mkUnion consName (toFieldRes <$> fields)
 
 -- Types & Constrains -------------------------------------------------------
 exploreResolvers ::
   forall m a.
   ( EncodeConstraint m a,
-    Monad m
+    MonadError GQLError m
   ) =>
   a ->
   ResolverValue m
@@ -200,16 +208,11 @@ exploreResolvers =
 ----- HELPERS ----------------------------
 objectResolvers ::
   ( EncodeConstraint m a,
-    Monad m
+    MonadError GQLError m
   ) =>
   a ->
-  ResolverState (ResolverValue m)
-objectResolvers value = constraintObject (exploreResolvers value)
-  where
-    constraintObject obj@ResObject {} =
-      pure obj
-    constraintObject _ =
-      throwError (internal "resolver must be an object")
+  ResolverState (ResolverObject m)
+objectResolvers value = requireObject (exploreResolvers value)
 
 type EncodeConstraint (m :: * -> *) a =
   ( GQLType a,
@@ -235,19 +238,14 @@ deriveModel ::
   (Monad m, EncodeConstraints e m query mut sub) =>
   RootResolver m e query mut sub ->
   RootResolverValue e m
-deriveModel
-  RootResolver
-    { queryResolver,
-      mutationResolver,
-      subscriptionResolver
-    } =
-    RootResolverValue
-      { query = objectResolvers queryResolver,
-        mutation = objectResolvers mutationResolver,
-        subscription = objectResolvers subscriptionResolver,
-        channelMap
-      }
-    where
+deriveModel RootResolver {..} =
+  RootResolverValue
+    { queryResolver = objectResolvers queryResolver,
+      mutationResolver = objectResolvers mutationResolver,
+      subscriptionResolver = objectResolvers subscriptionResolver,
       channelMap
-        | __isEmptyType (Proxy :: Proxy (sub (Resolver SUBSCRIPTION e m))) = Nothing
-        | otherwise = Just (channelResolver subscriptionResolver)
+    }
+  where
+    channelMap
+      | __isEmptyType (Proxy :: Proxy (sub (Resolver SUBSCRIPTION e m))) = Nothing
+      | otherwise = Just (channelResolver subscriptionResolver)

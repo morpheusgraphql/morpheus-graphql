@@ -2,30 +2,21 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.App.SchemaAPI
-  ( withSystemFields,
+module Data.Morpheus.App.Internal.Resolving.SchemaAPI
+  ( schemaAPI,
   )
 where
 
-import Data.Morpheus.App.Internal.Resolving
-  ( Resolver,
-    ResolverValue,
-    ResultT,
-    RootResolverValue (..),
-    mkList,
-    mkNull,
-    mkObject,
-    withArguments,
-  )
+import Data.Morpheus.App.Internal.Resolving.Resolver (Resolver, withArguments)
+import Data.Morpheus.App.Internal.Resolving.ResolverValue (ResolverObject, ResolverValue, mkObject, mkObject')
+import Data.Morpheus.App.Internal.Resolving.Utils (mkList, mkNull)
 import Data.Morpheus.App.RenderIntrospection
   ( WithSchema,
     createObjectType,
     render,
   )
-import Data.Morpheus.Internal.Ext ((<:>))
 import Data.Morpheus.Internal.Utils
   ( empty,
     selectOr,
@@ -78,9 +69,9 @@ schemaResolver schema@Schema {query, mutation, subscription, directiveDefinition
         ("directives", render $ toList directiveDefinitions)
       ]
 
-schemaAPI :: Monad m => Schema VALID -> ResolverValue (Resolver QUERY e m)
+schemaAPI :: Monad m => Schema VALID -> ResolverObject (Resolver QUERY e m)
 schemaAPI schema =
-  mkObject
+  mkObject'
     "Root"
     [ ("__type", withArguments typeResolver),
       ("__schema", schemaResolver schema)
@@ -93,15 +84,3 @@ schemaAPI schema =
             { argumentValue = (Scalar (String typename))
             } = findType (packName typename) schema
         handleArg _ = pure mkNull
-
-withSystemFields ::
-  Monad m =>
-  Schema VALID ->
-  RootResolverValue e m ->
-  ResultT e' m (RootResolverValue e m)
-withSystemFields schema RootResolverValue {query, ..} =
-  pure $
-    RootResolverValue
-      { query = query >>= (<:> schemaAPI schema),
-        ..
-      }

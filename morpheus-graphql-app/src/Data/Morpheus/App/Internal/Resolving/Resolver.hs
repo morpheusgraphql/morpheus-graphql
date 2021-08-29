@@ -31,6 +31,7 @@ module Data.Morpheus.App.Internal.Resolving.Resolver
     SubscriptionField (..),
     liftResolverState,
     runResolver,
+    getArgument,
   )
 where
 
@@ -59,12 +60,15 @@ import Data.Morpheus.Internal.Ext
     cleanEvents,
     mapEvent,
   )
+import Data.Morpheus.Internal.Utils (selectOr)
 import Data.Morpheus.Types.IO
   ( GQLResponse,
     renderResponse,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( Arguments,
+  ( Argument (argumentValue),
+    Arguments,
+    FieldName,
     GQLError,
     MUTATION,
     OperationType (..),
@@ -195,9 +199,9 @@ subscribe ::
   Resolver QUERY e m (e -> Resolver SUBSCRIPTION e m a) ->
   SubscriptionField (Resolver SUBSCRIPTION e m a)
 subscribe ch res =
-  SubscriptionField ch
-    $ ResolverS
-    $ fromSub <$> runResolverQ res
+  SubscriptionField ch $
+    ResolverS $
+      fromSub <$> runResolverQ res
   where
     fromSub :: Monad m => (e -> Resolver SUBSCRIPTION e m a) -> ReaderT e (ResolverStateT () m) a
     fromSub f = join (ReaderT (runResolverS . f))
@@ -212,6 +216,12 @@ getArguments ::
   (LiftOperation o, Monad m) =>
   Resolver o e m (Arguments VALID)
 getArguments = selectionArguments . currentSelection <$> unsafeInternalContext
+
+getArgument ::
+  (LiftOperation o, Monad m) =>
+  FieldName ->
+  Resolver o e m (Value VALID)
+getArgument name = selectOr Null argumentValue name <$> getArguments
 
 runResolver ::
   Monad m =>

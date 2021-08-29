@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 9420fa3c832fe489ea93777ec90ccecfb66c669df4c4bf57e9cd7a921bea6ff1
+-- hash: 39d09aae27db41812ed772c619255a78fd125759ef3377fe9a3d6cbfa155637d
 
 name:           morpheus-graphql-app
 version:        0.17.0
@@ -44,6 +44,21 @@ data-files:
     test/merge/schema/simple-query/app-main.gql
     test/merge/schema/simple-query/query/query.gql
     test/merge/schema/simple-query/rendering.gql
+    test/named-resolvers/deities-ext/query.gql
+    test/named-resolvers/deities.gql
+    test/named-resolvers/deities/query.gql
+    test/named-resolvers/deity-by-id/query.gql
+    test/named-resolvers/deity-ext-by-id/query.gql
+    test/named-resolvers/deity-simple/query.gql
+    test/named-resolvers/entities.gql
+    test/named-resolvers/entities/query.gql
+    test/named-resolvers/entity-by-id/query.gql
+    test/named-resolvers/entity-ext-by-id/query.gql
+    test/named-resolvers/realm-by-id/query.gql
+    test/named-resolvers/realm-ext-by-id/query.gql
+    test/named-resolvers/realm-simple/query.gql
+    test/named-resolvers/realms.gql
+    test/named-resolvers/realms/query.gql
     test/api/deity/interface/response.json
     test/api/deity/resolvers.json
     test/api/deity/simple/response.json
@@ -63,6 +78,18 @@ data-files:
     test/merge/schema/simple-query/app-ext.json
     test/merge/schema/simple-query/app-main.json
     test/merge/schema/simple-query/query/response.json
+    test/named-resolvers/deities-ext/response.json
+    test/named-resolvers/deities/response.json
+    test/named-resolvers/deity-by-id/response.json
+    test/named-resolvers/deity-ext-by-id/response.json
+    test/named-resolvers/deity-simple/response.json
+    test/named-resolvers/entities/response.json
+    test/named-resolvers/entity-by-id/response.json
+    test/named-resolvers/entity-ext-by-id/response.json
+    test/named-resolvers/realm-by-id/response.json
+    test/named-resolvers/realm-ext-by-id/response.json
+    test/named-resolvers/realm-simple/response.json
+    test/named-resolvers/realms/response.json
 
 source-repository head
   type: git
@@ -71,19 +98,21 @@ source-repository head
 library
   exposed-modules:
       Data.Morpheus.App
+      Data.Morpheus.App.NamedResolvers
       Data.Morpheus.App.Internal.Resolving
       Data.Morpheus.Types.GQLWrapper
   other-modules:
-      Data.Morpheus.App.Error
       Data.Morpheus.App.Internal.Resolving.Event
+      Data.Morpheus.App.Internal.Resolving.NamedResolver
       Data.Morpheus.App.Internal.Resolving.Resolver
       Data.Morpheus.App.Internal.Resolving.ResolverState
       Data.Morpheus.App.Internal.Resolving.ResolverValue
       Data.Morpheus.App.Internal.Resolving.RootResolverValue
+      Data.Morpheus.App.Internal.Resolving.SchemaAPI
+      Data.Morpheus.App.Internal.Resolving.Utils
       Data.Morpheus.App.Internal.Stitching
       Data.Morpheus.App.MapAPI
       Data.Morpheus.App.RenderIntrospection
-      Data.Morpheus.App.SchemaAPI
       Paths_morpheus_graphql_app
   hs-source-dirs:
       src
@@ -111,6 +140,7 @@ test-suite morpheus-graphql-app-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      NamedResolvers
       Paths_morpheus_graphql_app
   hs-source-dirs:
       test

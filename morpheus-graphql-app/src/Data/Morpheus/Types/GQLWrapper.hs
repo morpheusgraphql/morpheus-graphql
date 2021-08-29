@@ -11,8 +11,10 @@ where
 
 import qualified Data.List.NonEmpty as NonEmpty
 import Data.Morpheus.App.Internal.Resolving
-  ( ResolverValue (..),
+  ( ResolverValue,
     SubscriptionField (..),
+    mkList,
+    mkNull,
   )
 import Data.Morpheus.Types.Internal.AST
   ( GQLError,
@@ -45,10 +47,10 @@ withList ::
 withList f encodeValue = encodeWrapper encodeValue . f
 
 instance EncodeWrapper Maybe where
-  encodeWrapper = maybe (pure ResNull)
+  encodeWrapper = maybe (pure mkNull)
 
 instance EncodeWrapper [] where
-  encodeWrapper encodeValue = fmap ResList . traverse encodeValue
+  encodeWrapper encodeValue = fmap mkList . traverse encodeValue
 
 instance EncodeWrapper NonEmpty where
   encodeWrapper = withList toList

@@ -4,6 +4,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.App.Internal.Stitching
@@ -12,8 +13,12 @@ module Data.Morpheus.App.Internal.Stitching
 where
 
 import Control.Monad.Except (MonadError (throwError))
-import Data.Morpheus.App.Internal.Resolving (RootResolverValue)
-import qualified Data.Morpheus.App.Internal.Resolving as R (RootResolverValue (..))
+import Data.Morpheus.App.Internal.Resolving (RootResolverValue (..))
+import Data.Morpheus.App.Internal.Resolving.NamedResolver
+  ( NamedResolver (..),
+    NamedResolverResult (..),
+  )
+import qualified Data.Morpheus.App.Internal.Resolving.Utils as R
 import Data.Morpheus.Error (NameCollision (..))
 import Data.Morpheus.Internal.Ext
   ( Merge (merge),
@@ -125,13 +130,52 @@ stitchSubscriptions Just {} Just {} = throwError ("can't merge  subscription app
 stitchSubscriptions x Nothing = pure x
 stitchSubscriptions Nothing x = pure x
 
+instance Stitching (R.ObjectTypeResolver (m a)) where
+  stitch t1 t2
+    | R.__typename t1 == R.__typename t2 =
+      pure $
+        R.ObjectTypeResolver
+          (R.__typename t1)
+          ( R.objectFields t1 <> R.objectFields t2
+          )
+    | otherwise = throwError "ResolverMap must have same resolverName"
+
+instance (MonadError GQLError m) => Stitching (NamedResolverResult m) where
+  stitch NamedUnionResolver {} (NamedUnionResolver x) = pure (NamedUnionResolver x)
+  stitch (NamedObjectResolver t1) (NamedObjectResolver t2) = NamedObjectResolver <$> stitch t1 t2
+  stitch _ _ = throwError "ResolverMap must have same resolverName"
+
+instance (MonadError GQLError m) => Stitching (NamedResolver m) where
+  stitch t1 t2
+    | resolverName t1 == resolverName t2 =
+      pure
+        NamedResolver
+          { resolverName = resolverName t1,
+            resolver = \arg -> do
+              t1' <- resolver t1 arg
+              t2' <- resolver t2 arg
+              stitch t1' t2'
+          }
+    | otherwise = throwError "ResolverMap must have same resolverName"
+
 instance Monad m => Stitching (RootResolverValue e m) where
-  stitch x y = do
-    channelMap <- stitchSubscriptions (R.channelMap x) (R.channelMap y)
+  stitch x@RootResolverValue {} y@RootResolverValue {} = do
+    channelMap <- stitchSubscriptions (channelMap x) (channelMap y)
     pure $
-      R.RootResolverValue
-        { R.query = rootProp R.query x y,
-          R.mutation = rootProp R.mutation x y,
-          R.subscription = rootProp R.subscription x y,
-          R.channelMap
+      RootResolverValue
+        { queryResolver = rootProp queryResolver x y,
+          mutationResolver = rootProp mutationResolver x y,
+          subscriptionResolver = rootProp subscriptionResolver x y,
+          channelMap
         }
+  stitch
+    NamedResolvers
+      { queryResolverMap = q1
+      }
+    NamedResolvers
+      { queryResolverMap = q2
+      } =
+      do
+        result <- runResolutionT (mergeT q1 q2) unsafeFromList (resolveWith stitch)
+        pure (NamedResolvers {queryResolverMap = result})
+  stitch _ _ = throwError "only apps with same resolver model can be merged"

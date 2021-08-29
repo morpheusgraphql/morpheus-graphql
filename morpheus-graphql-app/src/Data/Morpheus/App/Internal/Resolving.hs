@@ -11,8 +11,8 @@ module Data.Morpheus.App.Internal.Resolving
     cleanEvents,
     Result (..),
     ResultT (..),
-    ResolverObject (..),
-    ResolverValue (..),
+    ResolverObject,
+    ResolverValue,
     WithOperation,
     PushEvents (..),
     subscribe,
@@ -39,6 +39,9 @@ module Data.Morpheus.App.Internal.Resolving
     ResolverEntry,
     sortErrors,
     EventHandler (..),
+    requireObject,
+    ResolverValueDefinition (..),
+    mkObject',
   )
 where
 
@@ -47,4 +50,5 @@ import Data.Morpheus.App.Internal.Resolving.Resolver
 import Data.Morpheus.App.Internal.Resolving.ResolverState
 import Data.Morpheus.App.Internal.Resolving.ResolverValue
 import Data.Morpheus.App.Internal.Resolving.RootResolverValue
+import Data.Morpheus.App.Internal.Resolving.Utils
 import Data.Morpheus.Internal.Ext

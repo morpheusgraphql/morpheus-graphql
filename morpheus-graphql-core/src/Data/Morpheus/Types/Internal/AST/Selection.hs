@@ -26,6 +26,7 @@ module Data.Morpheus.Types.Internal.AST.Selection
     DefaultValue,
     getOperationName,
     getOperationDataType,
+    splitSystemSelection,
   )
 where
 
@@ -37,15 +38,16 @@ import Data.Mergeable
     NameCollision (..),
     OrdMap,
   )
+import Data.Mergeable.MergeMap (partition)
 import Data.Morpheus.Error.Operation
   ( mutationIsNotDefined,
     subscriptionIsNotDefined,
   )
 import Data.Morpheus.Internal.Utils
-  ( (<:>),
-    HistoryT,
+  ( HistoryT,
     KeyOf (..),
     addPath,
+    (<:>),
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
@@ -75,6 +77,7 @@ import Data.Morpheus.Types.Internal.AST.Name
     FragmentName,
     TypeName,
     intercalate,
+    isNotSystemFieldName,
   )
 import Data.Morpheus.Types.Internal.AST.OperationType (OperationType (..))
 import Data.Morpheus.Types.Internal.AST.Stage
@@ -213,6 +216,9 @@ instance
 type UnionSelection (s :: Stage) = MergeMap (ALLOW_DUPLICATES s) TypeName UnionTag
 
 type SelectionSet (s :: Stage) = MergeMap (ALLOW_DUPLICATES s) FieldName (Selection s)
+
+splitSystemSelection :: SelectionSet s -> (Maybe (SelectionSet s), Maybe (SelectionSet s))
+splitSystemSelection = partition (not . isNotSystemFieldName . selectionName)
 
 data Selection (s :: Stage) where
   Selection ::

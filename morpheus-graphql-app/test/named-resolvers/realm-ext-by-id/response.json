@@ -1,0 +1,15 @@
+{
+  "data": {
+    "realm": {
+      "owner": {
+        "name": "Zeus",
+        "realm": {
+          "owner": { "name": "Zeus" },
+          "name": "Mount Olympus"
+        },
+        "power": []
+      },
+      "name": "Mount Olympus"
+    }
+  }
+}
