@@ -2,6 +2,11 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+-- Resolvers
+-- Resolvers Deprecated
+-- Recursive Resolvers
+-- resolves constant value on any argument
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
@@ -35,13 +40,11 @@ module Data.Morpheus.Types
     subscribe,
     unsafeInternalContext,
     ResolverContext (..),
-    -- Resolvers
     ResolverO,
     ComposedResolver,
     ResolverQ,
     ResolverM,
     ResolverS,
-    -- Resolvers Deprecated
     ResolveQ,
     ResolveM,
     ResolveS,
@@ -58,6 +61,7 @@ module Data.Morpheus.Types
     GQLTypeOptions (..),
     TypeGuard (..),
     Arg (..),
+    NamedResolvers (..),
   )
 where
 
@@ -79,6 +83,7 @@ import Data.Morpheus.Core
   ( RenderGQL,
     render,
   )
+import Data.Morpheus.NamedResolvers (ResolveNamed)
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     GQLTypeOptions (..),
@@ -122,7 +127,6 @@ instance FlexibleResolver f (a :: (* -> *) -> *) where
   type Flexible m a = m (a m)
   type Composed m f a = m (f (a m))
 
--- Recursive Resolvers
 type ResolverO o e m a =
   (WithOperation o) =>
   Flexible (Resolver o e m) a
@@ -176,7 +180,6 @@ type ResolveS e m a = ResolverS e m a
 publish :: Monad m => [e] -> Resolver MUTATION e m ()
 publish = pushEvents
 
--- resolves constant value on any argument
 constRes :: (WithOperation o, Monad m) => b -> a -> Resolver o e m b
 constRes = const . pure
 
@@ -200,8 +203,28 @@ liftEither x = lift x >>= either (throwError . fromString) pure
 -- | GraphQL Root resolver, also the interpreter generates a GQL schema from it.
 --  'queryResolver' is required, 'mutationResolver' and 'subscriptionResolver' are optional,
 --  if your schema does not supports __mutation__ or __subscription__ , you can use __()__ for it.
-data RootResolver (m :: * -> *) event (query :: (* -> *) -> *) (mut :: (* -> *) -> *) (sub :: (* -> *) -> *) = RootResolver
+data
+  RootResolver
+    (m :: * -> *)
+    event
+    (query :: (* -> *) -> *)
+    (mutation :: (* -> *) -> *)
+    (subscription :: (* -> *) -> *) = RootResolver
   { queryResolver :: query (Resolver QUERY event m),
-    mutationResolver :: mut (Resolver MUTATION event m),
-    subscriptionResolver :: sub (Resolver SUBSCRIPTION event m)
+    mutationResolver :: mutation (Resolver MUTATION event m),
+    subscriptionResolver :: subscription (Resolver SUBSCRIPTION event m)
   }
+
+data
+  NamedResolvers
+    (m :: * -> *)
+    event
+    (qu :: (* -> *) -> *)
+    (mu :: (* -> *) -> *)
+    (su :: (* -> *) -> *)
+  = ( ResolveNamed m qu
+  -- TODO: implement another options
+  --  ResolveNamed m mutation,
+  --  ResolveNamed m subscription
+    ) =>
+    NamedResolvers

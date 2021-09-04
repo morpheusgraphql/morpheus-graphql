@@ -57,6 +57,7 @@ import Data.Morpheus.Server.Deriving.Utils
     symbolName,
     toRep,
     unpackMonad,
+    withKind,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CategoryValue (..),
@@ -230,9 +231,6 @@ instance
       getUnionNames DataUnion {unionMembers} = pure $ toList $ memberName <$> unionMembers
       getUnionNames DataObject {} = pure [gqlTypeName (__typeData unionProxy)]
       getUnionNames _ = throwError "guarded type must be an union or object"
-
-withKind :: Proxy a -> KindedProxy (KIND a) a
-withKind _ = KindedProxy
 
 instance
   ( GQLType b,
