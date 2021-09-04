@@ -39,6 +39,7 @@ import Data.Morpheus.App.Internal.Resolving.Utils
 import Data.Morpheus.Internal.Utils (KeyOf (keyOf), selectOr)
 import Data.Morpheus.Types.Internal.AST
   ( GQLError,
+    Msg (msg),
     Selection (..),
     SelectionSet,
     TypeName,
@@ -109,4 +110,4 @@ resolveRef resolvers ref selection = do
     NamedObjectResolver res -> resolveObjectTypeResolver (>>= resolveValue) res selection
     NamedUnionResolver unionRef -> resolveValue (ResUnion (resolverTypeName unionRef) unionRef)
   where
-    cantFoundError = throwError "Resolver Type can't found"
+    cantFoundError = throwError ("Resolver Type " <> msg (resolverTypeName ref) <> "can't found")

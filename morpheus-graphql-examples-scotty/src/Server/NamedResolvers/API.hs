@@ -23,7 +23,7 @@ import Data.Morpheus.Types
     Arg (..),
     GQLType (..),
     ID,
-    RootResolver (..),
+    NamedResolvers (..),
     Undefined,
   )
 import Data.Text (Text)
@@ -56,25 +56,23 @@ data Query m = Query
 instance ResolveNamed m Post where
   type Dep Post = ID
   resolveNamed args =
-    pure $
-      Just
-        Post
-          { uid = value (pure args),
-            title = value (fetchTitle args),
-            postType = value (pure PostType {pid = ""})
-          }
+    pure
+      Post
+        { uid = value (pure args),
+          title = value (fetchTitle args),
+          postType = value (pure PostType {pid = ""})
+        }
 
 instance ResolveNamed m Query where
   type Dep Query = ()
   resolveNamed () =
-    pure $
-      Just
-        Query
-          { posts = refs postIDs,
-            post = \(Arg arg) -> maybeRef (pure arg)
-          }
+    pure
+      Query
+        { posts = refs postIDs,
+          post = \(Arg arg) -> maybeRef (pure arg)
+        }
 
 app :: App () IO
 app =
   deriveApp
-    (NamedResolvers :: RootResolver IO () Query Undefined Undefined)
+    (NamedResolvers :: NamedResolvers IO () Query Undefined Undefined)

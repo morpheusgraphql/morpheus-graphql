@@ -1,5 +1,9 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.App
@@ -20,14 +24,17 @@ import Data.Morpheus.App.Internal.Resolving
   )
 import Data.Morpheus.Server.Deriving.Encode
   ( EncodeConstraints,
+    EncodeNamedConstraints,
     deriveModel,
+    deriveNamedModel,
   )
 import Data.Morpheus.Server.Deriving.Schema
   ( SchemaConstraints,
     deriveSchema,
   )
 import Data.Morpheus.Types
-  ( RootResolver (..),
+  ( NamedResolvers,
+    RootResolver (..),
   )
 import Relude
 
@@ -37,10 +44,21 @@ type RootResolverConstraint m e query mutation subscription =
     Monad m
   )
 
-deriveApp ::
-  RootResolverConstraint m event query mut sub =>
-  RootResolver m event query mut sub ->
-  App event m
-deriveApp root =
-  resultOr FailApp (uncurry mkApp) $
-    (,) <$> deriveSchema (Identity root) <*> deriveModel root
+type NamedResolversConstraint m e query mutation subscription =
+  ( EncodeNamedConstraints e m query mutation subscription,
+    SchemaConstraints e m query mutation subscription,
+    Monad m
+  )
+
+class DeriveApp f m (event :: *) (query :: (* -> *) -> *) (mut :: (* -> *) -> *) (sub :: (* -> *) -> *) where
+  deriveApp :: f m event query mut sub -> App event m
+
+instance RootResolverConstraint m e query mut sub => DeriveApp RootResolver m e query mut sub where
+  deriveApp root =
+    resultOr FailApp (uncurry mkApp) $
+      (,) <$> deriveSchema (Identity root) <*> deriveModel root
+
+instance NamedResolversConstraint m e query mut sub => DeriveApp NamedResolvers m e query mut sub where
+  deriveApp root =
+    resultOr FailApp (uncurry mkApp) $
+      (,) <$> deriveSchema (Identity root) <*> deriveNamedModel root

@@ -33,11 +33,13 @@ module Data.Morpheus.Server.Deriving.Utils
     unpackMonad,
     deriveTypeRef,
     symbolName,
+    withKind,
   )
 where
 
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CategoryValue (..),
+    KindedProxy (KindedProxy),
     kinded,
   )
 import Data.Morpheus.Server.Types.GQLType
@@ -261,3 +263,6 @@ isUnionRef _ _ = False
 
 symbolName :: KnownSymbol a => f a -> FieldName
 symbolName = fromString . symbolVal
+
+withKind :: Proxy a -> KindedProxy (KIND a) a
+withKind _ = KindedProxy
