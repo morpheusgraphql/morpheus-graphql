@@ -11,8 +11,6 @@ where
 
 -- MORPHEUS
 
-import Control.Monad (Monad)
-import Data.Functor.Identity (Identity (..))
 import Data.Morpheus.App
   ( App (..),
     mkApp,
@@ -31,6 +29,7 @@ import Data.Morpheus.Server.Deriving.Schema
 import Data.Morpheus.Types
   ( RootResolver (..),
   )
+import Relude
 
 type RootResolverConstraint m e query mutation subscription =
   ( EncodeConstraints e m query mutation subscription,
@@ -43,7 +42,5 @@ deriveApp ::
   RootResolver m event query mut sub ->
   App event m
 deriveApp root =
-  resultOr
-    FailApp
-    (`mkApp` deriveModel root)
-    (deriveSchema (Identity root))
+  resultOr FailApp (uncurry mkApp) $
+    (,) <$> deriveSchema (Identity root) <*> deriveModel root

@@ -169,13 +169,13 @@ instance Monad m => Stitching (RootResolverValue e m) where
           channelMap
         }
   stitch
-    NamedResolvers
+    NamedResolversValue
       { queryResolverMap = q1
       }
-    NamedResolvers
+    NamedResolversValue
       { queryResolverMap = q2
       } =
       do
         result <- runResolutionT (mergeT q1 q2) unsafeFromList (resolveWith stitch)
-        pure (NamedResolvers {queryResolverMap = result})
+        pure (NamedResolversValue {queryResolverMap = result})
   stitch _ _ = throwError "only apps with same resolver model can be merged"

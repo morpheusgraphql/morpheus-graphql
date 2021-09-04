@@ -65,12 +65,12 @@ data RootResolverValue e m
         subscriptionResolver :: ResolverState (ResolverObject (Resolver SUBSCRIPTION e m)),
         channelMap :: Maybe (Selection VALID -> ResolverState (Channel e))
       }
-  | NamedResolvers
+  | NamedResolversValue
       { queryResolverMap :: ResolverMap (Resolver QUERY e m)
-      -- TODO: implement later
-      --    mutationResolverMap :: Maybe (ResolverMap (Resolver MUTATION e m)),
-      --    subscriptionResolverMap :: Maybe (ResolverMap (Resolver SUBSCRIPTION e m)),
-      -- typeResolverChannels :: Maybe (Selection VALID -> ResolverState (Channel e))
+        -- TODO: implement later
+        --    mutationResolverMap :: Maybe (ResolverMap (Resolver MUTATION e m)),
+        --    subscriptionResolverMap :: Maybe (ResolverMap (Resolver SUBSCRIPTION e m)),
+        -- typeResolverChannels :: Maybe (Selection VALID -> ResolverState (Channel e))
       }
 
 instance Monad m => A.FromJSON (RootResolverValue e m) where
@@ -117,11 +117,11 @@ runRootResolverValue
       selectByOperation Subscription =
         runRootDataResolver channelMap subscriptionResolver ctx operationSelection
 runRootResolverValue
-  NamedResolvers
+  NamedResolversValue
     { queryResolverMap
-    -- mutationResolverMap,
-    -- subscriptionResolverMap,
-    --typeResolverChannels
+      -- mutationResolverMap,
+      -- subscriptionResolverMap,
+      --typeResolverChannels
     }
   ctx@ResolverContext {operation = Operation {operationType}} =
     selectByOperation operationType

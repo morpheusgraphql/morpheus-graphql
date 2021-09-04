@@ -61,7 +61,7 @@ variant :: (LiftOperation o, Monad m) => TypeName -> ValidValue -> Resolver o e 
 variant tName = pure . Union tName
 
 queryResolvers :: Monad m => [(TypeName, NamedResolverFunction QUERY e m)] -> RootResolverValue e m
-queryResolvers = NamedResolvers . mkResolverMap
+queryResolvers = NamedResolversValue . mkResolverMap
 
 -- INTERNAL
 data ResultBuilder o e m
