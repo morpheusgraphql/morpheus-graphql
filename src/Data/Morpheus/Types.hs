@@ -2,10 +2,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
--- Resolvers
--- Resolvers Deprecated
--- Recursive Resolvers
--- resolves constant value on any argument
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
@@ -83,7 +79,10 @@ import Data.Morpheus.Core
   ( RenderGQL,
     render,
   )
-import Data.Morpheus.NamedResolvers (ResolveNamed)
+import Data.Morpheus.NamedResolvers
+  ( NamedResolverT (..),
+    ResolveNamed (..),
+  )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     GQLTypeOptions (..),
@@ -222,9 +221,8 @@ data
     (qu :: (* -> *) -> *)
     (mu :: (* -> *) -> *)
     (su :: (* -> *) -> *)
-  = ( ResolveNamed m qu
-  -- TODO: implement another options
-  --  ResolveNamed m mutation,
-  --  ResolveNamed m subscription
+  = ( ResolveNamed
+        (Resolver QUERY event m)
+        (qu (NamedResolverT (Resolver QUERY event m)))
     ) =>
     NamedResolvers

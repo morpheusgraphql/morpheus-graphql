@@ -5,7 +5,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -16,9 +15,8 @@
 
 module Data.Morpheus.Server.Deriving.Encode
   ( deriveModel,
-    deriveNamedModel,
     EncodeConstraints,
-    EncodeNamedConstraints,
+    ContextValue (..),
   )
 where
 
@@ -33,14 +31,12 @@ import Data.Morpheus.Kind
     TYPE,
     WRAPPER,
   )
-import Data.Morpheus.NamedResolvers (RefResolver, ResolveNamed (Dep, resolveNamed))
 import Data.Morpheus.Server.Deriving.Channels
   ( ChannelsConstraint,
     channelResolver,
   )
 import Data.Morpheus.Server.Deriving.Decode
-  ( Decode (decode),
-    DecodeConstraint,
+  ( DecodeConstraint,
     decodeArguments,
   )
 import Data.Morpheus.Server.Deriving.Utils
@@ -50,14 +46,12 @@ import Data.Morpheus.Server.Deriving.Utils
     TypeConstraint (..),
     TypeRep (..),
     isUnionRef,
+    toFieldRes,
     toValue,
   )
-import Data.Morpheus.Server.Deriving.Utils.GTraversble
-import Data.Morpheus.Server.Deriving.Utils.Kinded (KindedProxy (KindedProxy))
 import Data.Morpheus.Server.Types.GQLType
-  ( GQLType (__type),
+  ( GQLType,
     KIND,
-    TypeData (gqlTypeName),
     __isEmptyType,
   )
 import Data.Morpheus.Server.Types.Types
@@ -65,8 +59,7 @@ import Data.Morpheus.Server.Types.Types
     TypeGuard (..),
   )
 import Data.Morpheus.Types
-  ( NamedResolvers (..),
-    RootResolver (..),
+  ( RootResolver (..),
   )
 import Data.Morpheus.Types.GQLScalar
   ( EncodeScalar (..),
@@ -76,17 +69,11 @@ import Data.Morpheus.Types.Internal.AST
   ( GQLError,
     IN,
     MUTATION,
-    OUT,
     OperationType,
     QUERY,
     SUBSCRIPTION,
-    TypeCategory (OUT),
-    TypeName,
     TypeRef (..),
-    ValidValue,
-    Value (Null),
   )
-import qualified GHC.Exts as HM
 import GHC.Generics
   ( Generic (..),
   )
@@ -235,9 +222,6 @@ type EncodeConstraints e m query mut sub =
     EncodeObjectConstraint SUBSCRIPTION e m sub
   )
 
-toFieldRes :: FieldRep (m (ResolverValue m)) -> ResolverEntry m
-toFieldRes FieldRep {fieldSelector, fieldValue} = (fieldSelector, fieldValue)
-
 deriveModel ::
   forall e m query mut sub.
   (Monad m, EncodeConstraints e m query mut sub) =>
@@ -255,167 +239,3 @@ deriveModel RootResolver {..} =
     channelMap
       | __isEmptyType (Proxy :: Proxy (sub (Resolver SUBSCRIPTION e m))) = Nothing
       | otherwise = Just (channelResolver subscriptionResolver)
-
---- Named
-
-type EncodeNamedConstraints e m query mut sub =
-  ( EncodeNamedObjectConstraint QUERY e m query
-  )
-
-deriveNamedModel ::
-  forall e m query mut sub.
-  (Monad m, EncodeNamedConstraints e m query mut sub) =>
-  NamedResolvers m e query mut sub ->
-  GQLResult (RootResolverValue e m)
-deriveNamedModel NamedResolvers = do
-  let res = join $ toList $ traverseTypes deriveResolver (Proxy @(query (Resolver QUERY e m)))
-  pure
-    NamedResolversValue
-      { queryResolverMap = HM.fromList $ map (\x -> (resolverName x, x)) res
-      }
-
-deriveResolver :: Mappable (DeriveNamedResolver m) [NamedResolver m] KindedProxy
-deriveResolver = Mappable deriveNamedResolver
-
-type EncodeNamedObjectConstraint (o :: OperationType) e (m :: * -> *) a =
-  ( ScanConstraint
-      (DeriveNamedResolver (Resolver o e m))
-      (KIND (a (Resolver o e m)))
-      (a (Resolver o e m)),
-    GQLType (a (Resolver o e m))
-  )
-
-class DeriveNamedResolver (m :: * -> *) (k :: DerivingKind) a where
-  deriveNamedResolver :: f k a -> [NamedResolver m]
-
-instance (GQLType a, Monad m) => DeriveNamedResolver m SCALAR a where
-  deriveNamedResolver _ = []
-
-instance
-  ( GQLType (a (Resolver o e m)),
-    ResolveNamed (Resolver o e m) a,
-    Monad m,
-    LiftOperation o,
-    EcondeNamed (Resolver o e m) a,
-    (Generic (a (RefResolver (Resolver o e m)))),
-    ( TypeRep
-        NamedField
-        (Resolver o e m NamedResolverField)
-        (Rep (a (RefResolver (Resolver o e m))))
-    )
-  ) =>
-  DeriveNamedResolver (Resolver o e m) TYPE (a (Resolver o e m))
-  where
-  deriveNamedResolver _ =
-    [ NamedResolver
-        { resolverName = name,
-          resolver = fmap exploreNamedResolvers . resolve
-        }
-    ]
-    where
-      resolve :: ValidValue -> Resolver o e m (a (RefResolver (Resolver o e m)))
-      resolve x = liftResolverState (decode x :: ResolverState (Dep a)) >>= resolveNamed
-      name = getTypeName (Proxy @(a (Resolver o e m)))
-
-class NamedField a where
-  namedField :: Monad m => a -> m NamedResolverField
-
-instance NamedField a where
-  -- TODO: real field resolvers
-  namedField _ = pure (ResObject (NamedResolverRef "Post" "Some Value"))
-
-type EcondeNamed m a =
-  ( MonadError GQLError m,
-    GQLType (a (RefResolver m)),
-    NamedField (a (RefResolver m))
-  )
-
-exploreNamedResolvers ::
-  forall m a.
-  ( MonadError GQLError m,
-    GQLType (a (RefResolver m)),
-    NamedField (a (RefResolver m)),
-    (Generic (a (RefResolver m))),
-    ( TypeRep
-        NamedField
-        (m NamedResolverField)
-        (Rep (a (RefResolver m)))
-    )
-  ) =>
-  a (RefResolver m) ->
-  NamedResolverResult m
-exploreNamedResolvers =
-  convertNamedNode
-    . toValue
-      ( TypeConstraint (namedField . runIdentity) ::
-          TypeConstraint NamedField (m NamedResolverField) Identity
-      )
-      (Proxy @OUT)
-
-convertNamedNode ::
-  MonadError GQLError m =>
-  DataType (m NamedResolverField) ->
-  NamedResolverResult m
-convertNamedNode
-  DataType
-    { tyName,
-      tyIsUnion,
-      tyCons = ConsRep {consFields, consName}
-    }
-    | tyIsUnion = NamedUnionResolver (NamedResolverRef consName Null)
-    | otherwise =
-      NamedObjectResolver
-        ObjectTypeResolver
-          { __typename = tyName,
-            objectFields = HM.fromList (xy <$> consFields)
-          }
-    where
-      xy FieldRep {fieldSelector, fieldValue} = (fieldSelector, fieldValue)
-
-instance
-  ( GQLType a,
-    DeriveNamedResolver m' (KIND a) a,
-    Monad m
-  ) =>
-  DeriveNamedResolver m' CUSTOM (Resolver o e m a)
-  where
-  deriveNamedResolver _ = deriveNamedResolver (KindedProxy :: KindedProxy (KIND a) a)
-
-instance
-  ( GQLType a,
-    DeriveNamedResolver m (KIND a) a,
-    Monad m
-  ) =>
-  DeriveNamedResolver m CUSTOM (input -> a)
-  where
-  deriveNamedResolver _ = deriveNamedResolver (KindedProxy :: KindedProxy (KIND a) a)
-
-instance
-  ( GQLType t,
-    DeriveNamedResolver m (KIND t) t,
-    Monad m
-  ) =>
-  DeriveNamedResolver m CUSTOM (TypeGuard i t)
-  where
-  deriveNamedResolver _ = deriveNamedResolver (KindedProxy :: KindedProxy (KIND t) t)
-
-instance
-  ( GQLType t,
-    DeriveNamedResolver m (KIND t) t,
-    Monad m
-  ) =>
-  DeriveNamedResolver m WRAPPER (f t)
-  where
-  deriveNamedResolver _ = deriveNamedResolver (KindedProxy :: KindedProxy (KIND t) t)
-
-instance
-  ( GQLType t,
-    DeriveNamedResolver m (KIND t) t,
-    Monad m
-  ) =>
-  DeriveNamedResolver m CUSTOM (Map k t)
-  where
-  deriveNamedResolver _ = deriveNamedResolver (KindedProxy :: KindedProxy (KIND t) t)
-
-getTypeName :: GQLType a => f a -> TypeName
-getTypeName proxy = gqlTypeName $ __type proxy OUT

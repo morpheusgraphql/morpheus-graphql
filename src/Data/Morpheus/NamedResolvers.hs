@@ -1,52 +1,68 @@
-{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.NamedResolvers
   ( ResolveNamed (..),
-    ref,
-    maybeRef,
-    refs,
-    value,
-    RefResolver (..),
+    NamedResolverT (..),
+    resolve,
   )
 where
 
-import Control.Monad.Except
-import Data.Morpheus.Kind
-import Data.Morpheus.Server.Deriving.Decode
-import Data.Morpheus.Server.Types.GQLType
+import Data.Aeson (ToJSON)
+import Data.Morpheus.Types.ID (ID)
 import Relude
 
-class (Decode (Dep res)) => ResolveNamed (m :: * -> *) (res :: (* -> *) -> *) where
-  type Dep res :: *
-  resolveNamed :: Monad m => Dep res -> m (res (RefResolver m))
+instance Monad m => ResolveNamed m ID where
+  type Dep ID = ID
+  resolveNamed = pure
 
-data RefResolver (m :: * -> *) a where
-  Ref :: (ResolveNamed m res => m (Dep res)) -> RefResolver m (res (RefResolver m))
-  MaybeRef :: (ResolveNamed m res => m (Dep res)) -> RefResolver m (Maybe (res (RefResolver m)))
-  Refs :: (ResolveNamed m res => m [Dep res]) -> RefResolver m [res (RefResolver m)]
-  Val :: m res -> RefResolver m res
+instance Monad m => ResolveNamed m Text where
+  type Dep Text = Text
+  resolveNamed = pure
 
-instance (GQLType a) => GQLType (RefResolver m a) where
-  type KIND (RefResolver m a) = CUSTOM
-  __type _ = __type (Proxy :: Proxy a)
+class (ToJSON (Dep a)) => ResolveNamed (m :: * -> *) a where
+  type Dep a :: *
+  resolveNamed :: Monad m => Dep a -> m a
 
-value :: m res -> RefResolver m res
-value = Val
+instance (ResolveNamed m a) => ResolveNamed (m :: * -> *) (Maybe a) where
+  type Dep (Maybe a) = Maybe (Dep a)
+  resolveNamed (Just x) = Just <$> resolveNamed x
+  resolveNamed Nothing = pure Nothing
 
-ref :: m (Dep res) -> RefResolver m (res (RefResolver m))
-ref = Ref
+instance (ResolveNamed m a) => ResolveNamed (m :: * -> *) [a] where
+  type Dep [a] = [Dep a]
+  resolveNamed = traverse resolveNamed
 
-maybeRef :: m (Dep res) -> RefResolver m (Maybe (res (RefResolver m)))
-maybeRef = MaybeRef
+data NamedResolverT (m :: * -> *) a where
+  Ref :: ResolveNamed m a => m (Dep a) -> NamedResolverT m a
+  Refs :: ResolveNamed m a => m [Dep a] -> NamedResolverT m [a]
+  Value :: m a -> NamedResolverT m a
 
-refs :: Monad m => ResolveNamed m res => m [Dep res] -> RefResolver m [res (RefResolver m)]
-refs = Refs
+-- RESOLVER TYPES
+data RES = VALUE | LIST | REF
+
+type family RES_TYPE a b :: RES where
+  RES_TYPE a a = 'VALUE
+  RES_TYPE [a] [b] = 'LIST
+  RES_TYPE a b = 'REF
+
+resolve :: forall m a b. (ResolveByType (RES_TYPE a b) m a b) => Monad m => m a -> NamedResolverT m b
+resolve = resolveByType (Proxy :: Proxy (RES_TYPE a b))
+
+class Dep b ~ a => ResolveByType (k :: RES) m a b where
+  resolveByType :: Monad m => f k -> m a -> NamedResolverT m b
+
+instance (ResolveNamed m a, Dep a ~ a) => ResolveByType 'VALUE m a a where
+  resolveByType _ = Value
+
+instance (ResolveNamed m b, Dep b ~ a) => ResolveByType 'LIST m [a] [b] where
+  resolveByType _ = Refs
+
+instance (ResolveNamed m b, Dep b ~ a) => ResolveByType 'REF m a b where
+  resolveByType _ = Ref

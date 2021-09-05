@@ -8,7 +8,6 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -16,37 +15,17 @@
 {-# LANGUAGE UndecidableSuperClasses #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Server.Deriving.Utils.GTraversble where
+module Data.Morpheus.Server.Deriving.Utils.GTraversable where
 
 import qualified Data.Map as M
 import Data.Morpheus.Kind
+import Data.Morpheus.NamedResolvers (NamedResolverT)
 import Data.Morpheus.Server.Deriving.Utils.Kinded
 import Data.Morpheus.Server.Types.GQLType (GQLType (KIND, __type), TypeData (gqlFingerprint))
 import Data.Morpheus.Server.Types.SchemaT (TypeFingerprint)
 import Data.Morpheus.Types.Internal.AST
 import GHC.Generics
 import Relude hiding (Undefined)
-
--- Traverse
-traverseTypesM ::
-  ( GFmap (ScanConstraint c) (KIND a) a,
-    c (KIND a) a,
-    GQLType a,
-    Monad m
-  ) =>
-  Mappable c (m v) KindedProxy ->
-  Proxy a ->
-  m (Map TypeFingerprint v)
-traverseTypesM f = unpackM . runMappable (scanner f mempty) . withDerivable
-
-unpackM :: Monad m => Map TypeFingerprint (m v) -> m (Map TypeFingerprint v)
-unpackM = fxx . M.toList
-
-fxx :: Monad m => [(TypeFingerprint, m a)] -> m (Map TypeFingerprint a)
-fxx xs = M.fromList <$> traverse fx xs
-
-fx :: Functor f => (t1, f t2) -> f (t1, t2)
-fx (fp, x) = (fp,) <$> x
 
 traverseTypes ::
   (GFmap (ScanConstraint c) (KIND a) a, c (KIND a) a, GQLType a) =>
@@ -74,7 +53,9 @@ scanner c@(Mappable f) lib =
         let fingerprint = gqlFingerprint (__type proxy OUT)
         if M.member fingerprint lib
           then lib
-          else gfmap (scanner c (M.insert fingerprint (f proxy) lib)) proxy
+          else do
+            let newLib = M.insert fingerprint (f proxy) lib
+            gfmap (scanner c newLib) proxy
     )
 
 withDerivable :: proxy a -> KindedProxy (KIND a) a
@@ -86,7 +67,10 @@ newtype Mappable (c :: DerivingKind -> * -> Constraint) (v :: *) (f :: DerivingK
 
 -- Map
 class GFmap (c :: DerivingKind -> * -> Constraint) (t :: DerivingKind) a where
-  gfmap :: Monoid v => Mappable c v KindedProxy -> kinded t a -> v
+  gfmap :: (Monoid v, Semigroup v) => Mappable c v KindedProxy -> kinded t a -> v
+
+instance (GQLType a, c (KIND a) a) => GFmap c SCALAR a where
+  gfmap (Mappable f) _ = f (KindedProxy :: KindedProxy (KIND a) a)
 
 instance GFunctor c (Rep a) => GFmap c TYPE a where
   gfmap f _ = genericMap f (Proxy @(Rep a))
@@ -94,11 +78,11 @@ instance GFunctor c (Rep a) => GFmap c TYPE a where
 instance GFmap c (KIND a) a => GFmap c WRAPPER (f a) where
   gfmap f _ = gfmap f (KindedProxy :: KindedProxy (KIND a) a)
 
-instance (GQLType a, c (KIND a) a) => GFmap c SCALAR a where
-  gfmap (Mappable f) _ = f (KindedProxy :: KindedProxy (KIND a) a)
+instance GFmap c (KIND a) a => GFmap c CUSTOM (input -> a) where
+  gfmap f _ = gfmap f (KindedProxy :: KindedProxy (KIND a) a)
 
-instance (GQLType a, c (KIND a) a) => GFmap c CUSTOM a where
-  gfmap (Mappable f) _ = f (KindedProxy :: KindedProxy (KIND a) a)
+instance GFmap c (KIND a) a => GFmap c CUSTOM (NamedResolverT m a) where
+  gfmap f _ = gfmap f (KindedProxy :: KindedProxy (KIND a) a)
 
 --
 --
@@ -106,7 +90,7 @@ instance (GQLType a, c (KIND a) a) => GFmap c CUSTOM a where
 --
 --
 class GFunctor (c :: DerivingKind -> * -> Constraint) a where
-  genericMap :: Monoid v => Mappable c v p -> proxy a -> v
+  genericMap :: (Monoid v, Semigroup v) => Mappable c v p -> proxy a -> v
 
 instance (Datatype d, GFunctor c a) => GFunctor c (M1 D d a) where
   genericMap fun _ = genericMap fun (Proxy @a)

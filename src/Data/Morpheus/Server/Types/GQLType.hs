@@ -50,6 +50,7 @@ import Data.Morpheus.Kind
     isObject,
     toValue,
   )
+import Data.Morpheus.NamedResolvers (NamedResolverT (..))
 import Data.Morpheus.Server.Deriving.Utils.Kinded (CategoryValue (..))
 import Data.Morpheus.Server.Types.SchemaT
   ( TypeFingerprint (..),
@@ -65,7 +66,6 @@ import Data.Morpheus.Types.Internal.AST
   ( CONST,
     Description,
     Directives,
-    QUERY,
     TypeCategory (..),
     TypeName,
     TypeWrapper (..),
@@ -158,9 +158,6 @@ list = flip TypeList True
 wrapper :: (TypeWrapper -> TypeWrapper) -> TypeData -> TypeData
 wrapper f TypeData {..} = TypeData {gqlWrappers = f gqlWrappers, ..}
 
-resolverCon :: TyCon
-resolverCon = typeRepTyCon $ typeRep $ Proxy @(Resolver QUERY () Maybe)
-
 -- | replaces typeName (A,B) with Pair_A_B
 replacePairCon :: TyCon -> TyCon
 replacePairCon x | hsPair == x = gqlPair
@@ -171,7 +168,8 @@ replacePairCon x = x
 
 -- Ignores Resolver name  from typeName
 ignoreResolver :: (TyCon, [TypeRep]) -> [TyCon]
-ignoreResolver (con, _) | con == resolverCon = []
+ignoreResolver (con, _) | con == typeRepTyCon (typeRep $ Proxy @Resolver) = []
+ignoreResolver (con, _) | con == typeRepTyCon (typeRep $ Proxy @NamedResolverT) = []
 ignoreResolver (con, args) =
   con : concatMap (ignoreResolver . splitTyConApp) args
 
@@ -298,3 +296,7 @@ instance (GQLType interface) => GQLType (TypeGuard interface possibleTypes) wher
 instance (GQLType a) => GQLType (Proxy a) where
   type KIND (Proxy a) = KIND a
   __type _ = __type (Proxy @a)
+
+instance (GQLType a) => GQLType (NamedResolverT m a) where
+  type KIND (NamedResolverT m a) = CUSTOM
+  __type _ = __type (Proxy :: Proxy a)
