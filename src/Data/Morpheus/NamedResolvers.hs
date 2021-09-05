@@ -1,5 +1,6 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
@@ -14,10 +15,12 @@ module Data.Morpheus.NamedResolvers
     maybeRef,
     refs,
     value,
-    RefResolver,
+    RefResolver (..),
   )
 where
 
+import Control.Monad.Except
+import Data.Morpheus.Kind
 import Data.Morpheus.Server.Deriving.Decode
 import Data.Morpheus.Server.Types.GQLType
 import Relude
@@ -33,7 +36,7 @@ data RefResolver (m :: * -> *) a where
   Val :: m res -> RefResolver m res
 
 instance (GQLType a) => GQLType (RefResolver m a) where
-  type KIND (RefResolver m a) = KIND a
+  type KIND (RefResolver m a) = CUSTOM
   __type _ = __type (Proxy :: Proxy a)
 
 value :: m res -> RefResolver m res

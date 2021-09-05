@@ -58,7 +58,7 @@ instance ResolveNamed m Post where
   resolveNamed args =
     pure
       Post
-        { uid = value (pure args),
+        { uid = value (pure "args"),
           title = value (fetchTitle args),
           postType = value (pure PostType {pid = ""})
         }

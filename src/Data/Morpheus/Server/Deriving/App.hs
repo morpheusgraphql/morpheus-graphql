@@ -24,8 +24,10 @@ import Data.Morpheus.App.Internal.Resolving
   )
 import Data.Morpheus.Server.Deriving.Encode
   ( EncodeConstraints,
-    EncodeNamedConstraints,
     deriveModel,
+  )
+import Data.Morpheus.Server.Deriving.EncodeNamed
+  ( EncodeNamedConstraints,
     deriveNamedModel,
   )
 import Data.Morpheus.Server.Deriving.Schema

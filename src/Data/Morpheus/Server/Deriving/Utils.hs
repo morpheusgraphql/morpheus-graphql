@@ -34,6 +34,7 @@ module Data.Morpheus.Server.Deriving.Utils
     deriveTypeRef,
     symbolName,
     withKind,
+    toFieldRes,
   )
 where
 
@@ -46,9 +47,9 @@ import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     GQLTypeOptions (..),
     TypeData (..),
+    defaultTypeOptions,
     __isObjectKind,
     __typeData,
-    defaultTypeOptions,
   )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
@@ -62,9 +63,7 @@ import Data.Text
   ( pack,
   )
 import GHC.Generics
-  ( (:*:) (..),
-    (:+:) (..),
-    C,
+  ( C,
     Constructor,
     D,
     Datatype,
@@ -80,6 +79,8 @@ import GHC.Generics
     conName,
     datatypeName,
     selName,
+    (:*:) (..),
+    (:+:) (..),
   )
 import GHC.TypeLits
 import Relude hiding (undefined)
@@ -94,9 +95,9 @@ conNameProxy options _ =
 
 selNameProxy :: forall f (s :: Meta). Selector s => GQLTypeOptions -> f s -> FieldName
 selNameProxy options _ =
-  fromHaskellName
-    $ fieldLabelModifier options
-    $ selName (undefined :: M1 S s f a)
+  fromHaskellName $
+    fieldLabelModifier options $
+      selName (undefined :: M1 S s f a)
 
 isRecordProxy :: forall f (c :: Meta). Constructor c => f c -> Bool
 isRecordProxy _ = conIsRecord (undefined :: (M1 C c f a))
@@ -231,6 +232,9 @@ data FieldRep (a :: *) = FieldRep
     fieldValue :: a
   }
   deriving (Functor)
+
+toFieldRes :: FieldRep (m a) -> (FieldName, m a)
+toFieldRes FieldRep {fieldSelector, fieldValue} = (fieldSelector, fieldValue)
 
 unpackMonadFromField :: Monad m => FieldRep (m a) -> m (FieldRep a)
 unpackMonadFromField FieldRep {..} = do
