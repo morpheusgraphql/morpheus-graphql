@@ -34,7 +34,8 @@ newtype ID = ID
       Generic,
       Eq,
       Hashable,
-      IsString
+      IsString,
+      Semigroup
     )
 
 instance DecodeScalar ID where

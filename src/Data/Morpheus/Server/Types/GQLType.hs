@@ -18,7 +18,8 @@ module Data.Morpheus.Server.Types.GQLType
         getDescriptions,
         typeOptions,
         getDirectives,
-        defaultValues
+        defaultValues,
+        __type
       ),
     GQLTypeOptions
       ( fieldLabelModifier,
@@ -49,6 +50,7 @@ import Data.Morpheus.Kind
     isObject,
     toValue,
   )
+import Data.Morpheus.NamedResolvers (NamedResolverT (..))
 import Data.Morpheus.Server.Deriving.Utils.Kinded (CategoryValue (..))
 import Data.Morpheus.Server.Types.SchemaT
   ( TypeFingerprint (..),
@@ -64,7 +66,6 @@ import Data.Morpheus.Types.Internal.AST
   ( CONST,
     Description,
     Directives,
-    QUERY,
     TypeCategory (..),
     TypeName,
     TypeWrapper (..),
@@ -157,9 +158,6 @@ list = flip TypeList True
 wrapper :: (TypeWrapper -> TypeWrapper) -> TypeData -> TypeData
 wrapper f TypeData {..} = TypeData {gqlWrappers = f gqlWrappers, ..}
 
-resolverCon :: TyCon
-resolverCon = typeRepTyCon $ typeRep $ Proxy @(Resolver QUERY () Maybe)
-
 -- | replaces typeName (A,B) with Pair_A_B
 replacePairCon :: TyCon -> TyCon
 replacePairCon x | hsPair == x = gqlPair
@@ -170,7 +168,8 @@ replacePairCon x = x
 
 -- Ignores Resolver name  from typeName
 ignoreResolver :: (TyCon, [TypeRep]) -> [TyCon]
-ignoreResolver (con, _) | con == resolverCon = []
+ignoreResolver (con, _) | con == typeRepTyCon (typeRep $ Proxy @Resolver) = []
+ignoreResolver (con, _) | con == typeRepTyCon (typeRep $ Proxy @NamedResolverT) = []
 ignoreResolver (con, args) =
   con : concatMap (ignoreResolver . splitTyConApp) args
 
@@ -246,10 +245,6 @@ instance GQLType ID where
 -- WRAPPERS
 instance GQLType ()
 
-instance Typeable m => GQLType (Undefined m) where
-  type KIND (Undefined m) = WRAPPER
-  __isEmptyType _ = True
-
 instance GQLType a => GQLType (Maybe a) where
   type KIND (Maybe a) = WRAPPER
   __type _ = wrapper toNullable . __type (Proxy @a)
@@ -269,6 +264,11 @@ instance GQLType a => GQLType (SubscriptionField a) where
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (Pair a b)
 
 -- Manual
+
+instance Typeable m => GQLType (Undefined m) where
+  type KIND (Undefined m) = CUSTOM
+  __isEmptyType _ = True
+
 instance GQLType b => GQLType (a -> b) where
   type KIND (a -> b) = CUSTOM
   __type _ = __type $ Proxy @b
@@ -292,3 +292,11 @@ instance (GQLType value) => GQLType (Arg name value) where
 instance (GQLType interface) => GQLType (TypeGuard interface possibleTypes) where
   type KIND (TypeGuard interface possibleTypes) = CUSTOM
   __type _ = __type (Proxy @interface)
+
+instance (GQLType a) => GQLType (Proxy a) where
+  type KIND (Proxy a) = KIND a
+  __type _ = __type (Proxy @a)
+
+instance (GQLType a) => GQLType (NamedResolverT m a) where
+  type KIND (NamedResolverT m a) = CUSTOM
+  __type _ = __type (Proxy :: Proxy a)

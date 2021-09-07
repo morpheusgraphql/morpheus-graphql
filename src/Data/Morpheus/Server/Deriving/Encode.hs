@@ -16,27 +16,14 @@
 module Data.Morpheus.Server.Deriving.Encode
   ( deriveModel,
     EncodeConstraints,
+    ContextValue (..),
   )
 where
 
 import Control.Monad.Except (MonadError)
 import qualified Data.Map as M
 import Data.Morpheus.App.Internal.Resolving
-  ( LiftOperation,
-    Resolver,
-    ResolverEntry,
-    ResolverObject,
-    ResolverState,
-    ResolverValue,
-    ResolverValueDefinition (ResScalar, ResUnion),
-    RootResolverValue (..),
-    getArguments,
-    liftResolverState,
-    mkEnum,
-    mkObject,
-    mkUnion,
-    requireObject,
-  )
+import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Kind
   ( CUSTOM,
     DerivingKind,
@@ -59,9 +46,14 @@ import Data.Morpheus.Server.Deriving.Utils
     TypeConstraint (..),
     TypeRep (..),
     isUnionRef,
+    toFieldRes,
     toValue,
   )
-import Data.Morpheus.Server.Types.GQLType (GQLType (..))
+import Data.Morpheus.Server.Types.GQLType
+  ( GQLType,
+    KIND,
+    __isEmptyType,
+  )
 import Data.Morpheus.Server.Types.Types
   ( Pair (..),
     TypeGuard (..),
@@ -230,21 +222,19 @@ type EncodeConstraints e m query mut sub =
     EncodeObjectConstraint SUBSCRIPTION e m sub
   )
 
-toFieldRes :: FieldRep (m (ResolverValue m)) -> ResolverEntry m
-toFieldRes FieldRep {fieldSelector, fieldValue} = (fieldSelector, fieldValue)
-
 deriveModel ::
   forall e m query mut sub.
   (Monad m, EncodeConstraints e m query mut sub) =>
   RootResolver m e query mut sub ->
-  RootResolverValue e m
+  GQLResult (RootResolverValue e m)
 deriveModel RootResolver {..} =
-  RootResolverValue
-    { queryResolver = objectResolvers queryResolver,
-      mutationResolver = objectResolvers mutationResolver,
-      subscriptionResolver = objectResolvers subscriptionResolver,
-      channelMap
-    }
+  pure
+    RootResolverValue
+      { queryResolver = objectResolvers queryResolver,
+        mutationResolver = objectResolvers mutationResolver,
+        subscriptionResolver = objectResolvers subscriptionResolver,
+        channelMap
+      }
   where
     channelMap
       | __isEmptyType (Proxy :: Proxy (sub (Resolver SUBSCRIPTION e m))) = Nothing

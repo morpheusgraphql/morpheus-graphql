@@ -41,6 +41,7 @@ library:
     - Data.Morpheus
     - Data.Morpheus.Kind
     - Data.Morpheus.Types
+    - Data.Morpheus.NamedResolvers
     - Data.Morpheus.Server
     - Data.Morpheus.Document
   ghc-options: -Wall

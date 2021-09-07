@@ -4,7 +4,25 @@
 
 ### new Features
 
-- `TypeGuards` as an alternative for interfaces
+- `NamedResoplvers` (experimental featuure): typed Haskell approach of providing appollo
+  like named resolvers, apps with NamedResolvers theoretically can be safelly merged.
+  (warning: feature is still under the development)
+
+- `TypeGuards`: as an alternative for interfaces
+
+- `TaggedArguments`: support of type level tagged argument definition. for example:
+
+  Haskell field definition
+
+  ```hs
+  myField :: Arg "a" Int -> Arg "b" (Maybe Text) -> m Text
+  ```
+
+  will generate GraphQL field
+
+  ```gql
+  myField(a:Int!, b:String): String!
+  ```
 
 - deriving will merge function arguments. for example:
 
@@ -25,20 +43,6 @@
 
   ```gql
   myField(a1:String!, a2:Int!, b:String!): String!
-  ```
-
-- support of Tagged Arguments. for example:
-
-  Haskell field definition
-
-  ```hs
-  myField :: Arg "a" Int -> Arg "b" (Maybe Text) -> m Text
-  ```
-
-  will generate GraphQL field
-
-  ```gql
-  myField(a:Int!, b:String): String!
   ```
 
 ### Breaking Changes

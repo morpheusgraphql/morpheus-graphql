@@ -42,10 +42,16 @@ module Data.Morpheus.App.Internal.Resolving
     requireObject,
     ResolverValueDefinition (..),
     mkObject',
+    NamedResolver (..),
+    NamedResolverResult (..),
+    ObjectTypeResolver (..),
+    NamedResolverRef (..),
+    NamedResolverField,
   )
 where
 
 import Data.Morpheus.App.Internal.Resolving.Event
+import Data.Morpheus.App.Internal.Resolving.NamedResolver
 import Data.Morpheus.App.Internal.Resolving.Resolver
 import Data.Morpheus.App.Internal.Resolving.ResolverState
 import Data.Morpheus.App.Internal.Resolving.ResolverValue
