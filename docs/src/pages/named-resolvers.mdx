@@ -1,9 +1,12 @@
----
-layout: page
-title: Named Resolvers
-navOrder: 2
-permalink: /named-resolvers/
----
+import { Link } from "gatsby";
+
+import Layout from "../components/layout";
+import SEO from "../components/seo";
+
+<SEO
+  title="Named Resolvers"
+  keywords={["Morpheus GraphQL", "GraphQL", "Haskell"]}
+/>
 
 ## Named Resolvers
 
@@ -11,7 +14,7 @@ this feature requres minimum Morpheus GraphQL version **0.18.0**
 
 _Posts.hs_
 
-```hs
+```haskell
 newtype Post m = Post
   { title :: m Text
   }
@@ -49,7 +52,7 @@ postsApp =
 
 _Authors.hs_
 
-```hs
+```haskell
 data Author m = Author
   { name :: m Text,
     posts :: m [Post m]
@@ -101,7 +104,7 @@ authorsApp =
 
 _App.hs_
 
-```hs
+```haskell
 app :: App () IO
 app = authorsApp <> postsApp
 ```

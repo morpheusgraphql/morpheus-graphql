@@ -7,3 +7,4 @@ morpheus-graphql.iml
 docs/vendor
 out/
 dist-newstyle/
+node_modules/

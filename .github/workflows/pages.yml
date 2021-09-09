@@ -1,0 +1,25 @@
+name: Deploy
+
+on: [push]
+
+jobs:
+  pages:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare OS
+        uses: actions/checkout@v1
+      - name: install
+        run: |
+          cd docs/
+          git config --global user.email ${{ secrets.USER_EMAIL }}
+          git config --global user.name ${{ secrets.USER_NAME }}
+          npm install gatsby-cli -g
+          npm install
+      - name: build
+        run: |
+          cd docs/
+          yarn build:prod
+      - name: deploy
+        run: |
+          cd docs/
+          yarn gh-pages -d public -r https://${{ secrets.GH_TOKEN }}@github.com/morpheusgraphql/morpheus-graphql.git
