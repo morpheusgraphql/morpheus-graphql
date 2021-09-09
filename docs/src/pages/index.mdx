@@ -182,9 +182,9 @@ main = scotty 3000 $ post "/api" $ raw =<< (liftIO . gqlApi =<< body)
 
 If we now send a POST request to `http://localhost:3000/api` with a GraphQL Query as body for example in a tool like `Insomnia`:
 
-```GraphQL
+```graphql
 query GetDeity {
-  deity (name: "Morpheus") {
+  deity(name: "Morpheus") {
     fullName
     power
   }
@@ -193,7 +193,7 @@ query GetDeity {
 
 our query will be resolved!
 
-```JSON
+```json
 {
   "data": {
     "deity": {

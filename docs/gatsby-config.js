@@ -4,9 +4,9 @@ module.exports = {
   pathPrefix: "/",
   siteMetadata: {
     title: "Morpheus GraphQL",
-    description:
-      "Kick off your next, great Gatsby project with this default starter. This barebones starter ships with the main Gatsby configuration files you might need.",
-    author: "@chrisbiscardi",
+    description: `Haskell GraphQL library, 
+    Build GraphQL APIs with your favourite functional language!`,
+    author: "@d.nalchevanidze@gmail.com",
   },
   plugins: [
     {
