@@ -16,7 +16,7 @@ const Header = ({ siteTitle }) => (
       overflow: "clip",
       position: "relative",
       marginBottom: "4rem",
-      background: "url(assets/img/graph.png)",
+      background: "url(/assets/img/graph.png)",
     }}
   >
     <Logo />
