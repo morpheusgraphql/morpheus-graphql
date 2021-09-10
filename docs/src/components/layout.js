@@ -8,13 +8,15 @@ import { NavContext, NavContextProvider } from "../components/nav-context";
 
 deckDeckGoHighlightElement();
 
-const NavLink = ({ to, children }) => (
+const NavLink = ({ to, children, level }) => (
   <Link
     to={`${window.location.pathname}#${to}`}
     style={{
       color: "rgb(39, 51, 63)",
       textDecoration: "none",
       padding: "0.1rem 0rem",
+      paddingLeft: (level - 1) * 16,
+      fontSize: 8 + 20 / (level + 1),
     }}
   >
     {children}
@@ -35,8 +37,8 @@ const Navigation = () => {
         height: "80vh",
       }}
     >
-      {items.map(({ id, children }) => (
-        <NavLink to={id} key={id}>
+      {items.map(({ id, children, level }) => (
+        <NavLink to={id} key={id} level={level}>
           {children}
         </NavLink>
       ))}
