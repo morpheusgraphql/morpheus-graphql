@@ -1,17 +1,24 @@
 import React, { useContext } from "react";
 import { NavContext } from "./nav-context";
 
-export const Section = ({ id, children }) => {
+const style = {
+  color: "black",
+  textDecoration: "none",
+  padding: "0.1rem 0rem",
+};
+
+export const Section = ({ id, children, level = 1 }) => {
   const [, setItem] = useContext(NavContext);
 
-  setItem({ id, children });
+  setItem({ id, level, children });
 
-  return (
-    <h2
-      id={`${id}`}
-      style={{ color: "black", textDecoration: "none", padding: "0.1rem 0rem" }}
-    >
+  return level === 1 ? (
+    <h2 id={`${id}`} style={style}>
       {children}
     </h2>
+  ) : (
+    <h3 id={`${id}`} style={style}>
+      {children}
+    </h3>
   );
 };

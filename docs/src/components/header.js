@@ -31,17 +31,17 @@ const Header = ({ siteTitle }) => (
       <Link to="/about" style={headerLink}>
         About
       </Link>
+      <Link to="/server" style={headerLink}>
+        Server
+      </Link>
       <Link to="/client" style={headerLink}>
-        Morpheus Client
+        Client
       </Link>
       <Link to="/examples" style={headerLink}>
         Examples
       </Link>
       <Link to="/named-resolvers" style={headerLink}>
         Named Resolvers
-      </Link>
-      <Link to="/type-system" style={headerLink}>
-        Type System
       </Link>
     </div>
   </div>
