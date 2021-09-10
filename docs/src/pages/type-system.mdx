@@ -10,7 +10,7 @@ import { Section } from "../components/section";
 
 <Section id="enums"> Enums </Section>
 
-You can use Union Types as Enums, but they're not allowed to have any parameters.
+Data types where all constructors are empty are derived as GraphQL enums.
 
 ```haskell
 data City
@@ -19,10 +19,10 @@ data City
   | Corinth
   | Delphi
   | Argos
-  deriving (Generic)
-
-instance GQLType City where
-  type KIND City = ENUM
+  deriving
+    ( Generic
+    , GQLType
+    )
 ```
 
 <Section id="Unions">Unions</Section>

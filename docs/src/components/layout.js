@@ -11,7 +11,11 @@ deckDeckGoHighlightElement();
 const NavLink = ({ to, children }) => (
   <Link
     to={`${window.location.pathname}#${to}`}
-    style={{ color: "black", textDecoration: "none", padding: "0.1rem 0rem" }}
+    style={{
+      color: "rgb(39, 51, 63)",
+      textDecoration: "none",
+      padding: "0.1rem 0rem",
+    }}
   >
     {children}
   </Link>
@@ -24,7 +28,11 @@ const Navigation = () => {
       style={{
         gridColumn: "1 / 3",
         display: "flex",
+        paddingBottom: 5,
         flexDirection: "column",
+        position: "sticky",
+        top: "5vh",
+        height: "80vh",
       }}
     >
       {items.map(({ id, children }) => (
@@ -50,25 +58,34 @@ const Layout = ({ children, ...props }) => (
     render={(data) => (
       <>
         <NavContextProvider value={[]}>
-          {console.log(props)}
           <Header siteTitle={data.site.siteMetadata.title} />
           <div
             style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(12, 1fr)",
-              gap: "2em",
-              maxWidth: 1024,
-              margin: "0 auto",
-              padding: "0.5rem 1rem",
+              width: "100%",
+              background: "rgb(215 239 253 / 65%)",
             }}
           >
-            {<Navigation />}
             <div
               style={{
-                gridColumn: "3 / 13",
+                display: "grid",
+                gridTemplateColumns: "repeat(12, 1fr)",
+                gap: "2em",
+                maxWidth: 1260,
+                margin: "0 auto",
+                padding: "8rem 2rem",
+                background: "rgb(243 251 255 / 81%)",
+                border: "2px solid white",
+                borderRadius: 5,
               }}
             >
-              {children}
+              {<Navigation />}
+              <div
+                style={{
+                  gridColumn: "3 / 13",
+                }}
+              >
+                {children}
+              </div>
             </div>
           </div>
         </NavContextProvider>

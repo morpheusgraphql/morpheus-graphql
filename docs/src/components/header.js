@@ -4,21 +4,14 @@ import React from "react";
 import { Logo } from "./logo";
 
 const headerLink = {
-  color: "white",
+  color: "hsl(211deg 23% 20%)",
   textDecoration: "none",
   padding: "1rem 1rem",
+  fontWeight: 600,
 };
 
 const Header = ({ siteTitle }) => (
-  <div
-    style={{
-      width: "100%",
-      overflow: "clip",
-      position: "relative",
-      marginBottom: "4rem",
-      background: "url(/assets/img/graph.png)",
-    }}
-  >
+  <div>
     <Logo />
     <div
       style={{
@@ -26,7 +19,7 @@ const Header = ({ siteTitle }) => (
         padding: "20px 30px",
         display: "flex",
         flexDirection: "row",
-        background: "#ffffff17",
+        background: "rgb(215 239 253 / 55%)",
         textAlign: "center",
         alignItems: "center",
         position: "relative",
