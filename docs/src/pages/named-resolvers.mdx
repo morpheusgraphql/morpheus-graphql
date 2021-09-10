@@ -8,24 +8,45 @@ import SEO from "../components/seo";
   keywords={["Morpheus GraphQL", "GraphQL", "Haskell"]}
 />
 
+# Resolving
+
+Morpheus GraphQL provides two way of the type resolving.
+
+1. **Values as resolvers**: In this approach, you just specify values
+   for the type definitions, where the resolvers are regular functions.
+2. **Named resolvers**: In this approach, we use the type class `ResolveNamed` to define the
+   resolver for each type. More information on this approach can be
+   found in the next section.
+
 ## Named Resolvers
 
-this feature requres minimum Morpheus GraphQL version **0.18.0**
+###### Note: this feature will be introduced in version **0.18.0**
 
-_Posts.hs_
+As mentioned earlier, in this approach we use `ResolveNamed`
+to define the resolver function for each type. In this resolver definition,
+each type also defines its dependency (identifier), which is used by the
+compiler to provide a corresponding output resolution for certain input values.
+That is, if we want to resolve a type as a field of another type, we must
+specify a type dependency value for that particular type
+instead of the type value. For a better illustration,
+let's look at the following example:
+
+Let's say we want to create a GraphQL app for
+a blogging website where we can either retrieve
+all posts or retrieve them by ID. Scheme definition for this
+application would be as follows.
+
+### App/Posts.hs
 
 ```haskell
 newtype Post m = Post
   { title :: m Text
   }
-  deriving (Generic, GQLType)
+  deriving
+    ( Generic,
+      GQLType
+    )
 
-instance Monad m => ResolveNamed m (Post (NamedResolverT m)) where
-  type Dep (Post (NamedResolverT m)) = ID
-  resolveNamed uid =
-    pure Post { title = resolve (getPostTitle uid)}
-
--- QUERY
 data Query m = Query
   { posts :: m [Post m],
     post :: Arg "id" ID -> m (Maybe (Post m))
@@ -34,7 +55,31 @@ data Query m = Query
     ( Generic,
       GQLType
     )
+```
 
+Now that we have type definitions, we can define their resolvers,
+starting with type `Post`. The following instance specifies that for each unique `ID`
+we can resolve the corresponding `Post`, where the post `title` is retrieved by the post `ID`.
+
+```haskell
+instance Monad m => ResolveNamed m (Post (NamedResolverT m)) where
+  type Dep (Post (NamedResolverT m)) = ID
+  resolveNamed uid =
+    pure
+      Post
+        { title = resolve (getPostTitleById uid)
+        }
+```
+
+Let's go to the next stage and define query resolver. Since the query does not
+require an ID, we define its dependency with the unit type.
+
+To resolve the `post` and `posts` fields, we only get post-ids and
+pass them to the resolve function, which automatically resolves the
+corresponding `Post` values by calling the `ResolveNamed`
+instance of the type `Post` with those ids.
+
+```haskell
 instance Monad m => ResolveNamed m (Query (NamedResolverT m)) where
   type Dep (Query (NamedResolverT m)) = ()
   resolveNamed () =
@@ -43,14 +88,31 @@ instance Monad m => ResolveNamed m (Query (NamedResolverT m)) where
         { posts = resolve getPostIds,
           post = \(Arg arg) -> resolve (pure (Just arg))
         }
+```
 
+In the last step, we can derive the GraphQL application using
+the data type `NamedResolvers` by using a single constructor
+`NamedResolvers` without any fields.
+
+```haskell
 postsApp :: App () IO
 postsApp =
   deriveApp
     (NamedResolvers :: NamedResolvers IO () Query Undefined Undefined)
 ```
 
-_Authors.hs_
+in the background, the function `deriveApp` traverses the data types and calls their
+own instances of `NamedResolver` for each object and union type. In this way,
+a `ResolverMaps` (with type `Map TypeName (DependencyValue -> ResolveValue)`) is derived that can
+be used in GraphQL query execution.
+
+As you can notice, the `ResolverMaps` derived in this way can be
+merged if the types with the same name have the same GraphQL
+kind and the same dependency.
+Therefore, types in applications derived with `NamedResolvers` can be safely extended,
+which we will see in the next section.
+
+### App/Authors.hs
 
 ```haskell
 data Author m = Author

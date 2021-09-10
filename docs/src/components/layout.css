@@ -5,6 +5,7 @@ html {
 }
 body {
   margin: 0;
+  background: url(/assets/img/graph.png);
 }
 article,
 aside,

@@ -1,37 +1,17 @@
 import { Link } from "gatsby";
 import PropTypes from "prop-types";
 import React from "react";
-import Image from "./image";
 import { Logo } from "./logo";
 
 const headerLink = {
-  color: "white",
+  color: "hsl(211deg 23% 20%)",
   textDecoration: "none",
   padding: "1rem 1rem",
+  fontWeight: 600,
 };
 
 const Header = ({ siteTitle }) => (
-  <div
-    style={{
-      width: "100%",
-      overflow: "clip",
-      position: "relative",
-      marginBottom: "4rem",
-    }}
-  >
-    <div
-      style={{
-        position: "absolute",
-        top: "0",
-        left: "0",
-        height: "100%",
-        width: "100%",
-        zIndex: -2,
-        overflow: "clip",
-      }}
-    >
-      <Image />
-    </div>
+  <div>
     <Logo />
     <div
       style={{
@@ -39,7 +19,7 @@ const Header = ({ siteTitle }) => (
         padding: "20px 30px",
         display: "flex",
         flexDirection: "row",
-        background: "#ffffff17",
+        background: "rgb(215 239 253 / 55%)",
         textAlign: "center",
         alignItems: "center",
         position: "relative",

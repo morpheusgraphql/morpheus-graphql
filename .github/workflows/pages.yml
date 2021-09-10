@@ -1,4 +1,4 @@
-name: Deploy
+name: Deploy Docs
 
 on: [push]
 
@@ -20,4 +20,6 @@ jobs:
       - name: deploy
         run: |
           cd docs/
+          git config --global user.name "${{ secrets.USER_NAME }}"
+          git config --global user.email "${{ secrets.USER_EMAIL }}"
           yarn gh-pages -d public -r https://${{ secrets.GH_TOKEN }}@github.com/morpheusgraphql/morpheus-graphql.git
