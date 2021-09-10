@@ -3,7 +3,7 @@ import React from "react";
 export const Logo = () => (
   <svg
     width="100%"
-    height="400px"
+    height="30vw"
     style={{ position: "relative" }}
     viewBox="0 0 250 250"
   >

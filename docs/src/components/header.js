@@ -1,7 +1,6 @@
 import { Link } from "gatsby";
 import PropTypes from "prop-types";
 import React from "react";
-import Image from "./image";
 import { Logo } from "./logo";
 
 const headerLink = {
@@ -17,21 +16,9 @@ const Header = ({ siteTitle }) => (
       overflow: "clip",
       position: "relative",
       marginBottom: "4rem",
+      background: "url(assets/img/graph.png)",
     }}
   >
-    <div
-      style={{
-        position: "absolute",
-        top: "0",
-        left: "0",
-        height: "100%",
-        width: "100%",
-        zIndex: -2,
-        overflow: "clip",
-      }}
-    >
-      <Image />
-    </div>
     <Logo />
     <div
       style={{

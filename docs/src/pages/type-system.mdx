@@ -1,4 +1,5 @@
 import SEO from "../components/seo";
+import { Section } from "../components/section";
 
 <SEO
   title="Type System"
@@ -7,7 +8,7 @@ import SEO from "../components/seo";
 
 # Type System
 
-### Enums
+<Section id="enums"> Enums </Section>
 
 You can use Union Types as Enums, but they're not allowed to have any parameters.
 
@@ -24,7 +25,7 @@ instance GQLType City where
   type KIND City = ENUM
 ```
 
-## Union types
+<Section id="Unions">Unions</Section>
 
 To use union type, all you have to do is derive the `GQLType` class. Using GraphQL [_fragments_](https://graphql.org/learn/queries/#fragments), the arguments of each data constructor can be accessed from the GraphQL client.
 
@@ -119,7 +120,7 @@ type Skit {
 
 - all empty constructors in union will be summed in type `<tyConName>Enum` (e.g `CharacterEnum`), this enum will be wrapped in `CharacterEnumObject` and added to union members.
 
-## Scalar types
+<Section id="scalars"> Scalars </Section>
 
 To use custom scalar types, you need to provide implementations for `parseValue` and `serialize` respectively.
 
@@ -137,7 +138,7 @@ instance GQLType Odd where
   type KIND Odd = SCALAR
 ```
 
-### Interface
+<Section id="interfaces">Interfaces</Section>
 
 1. defining interface with Haskell Types (runtime validation):
 
