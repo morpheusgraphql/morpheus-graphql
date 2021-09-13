@@ -22,3 +22,5 @@ export const Section = ({ id, children, level = 1 }) => {
     </h3>
   );
 };
+
+export default Section;
