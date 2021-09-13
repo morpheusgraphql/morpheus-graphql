@@ -11,9 +11,9 @@ import Section from "../components/section";
 
 # Resolving
 
-Morpheus GraphQL provides two way of the type resolving.
+Morpheus GraphQL provides two way of type resolving.
 
-1. **Values as resolvers**: In this approach, you just specify values
+1. **Values as resolvers**: In this approach, you specify values
    for the type definitions, where the resolvers are regular functions.
 2. **Named resolvers**: In this approach, we use the type class `ResolveNamed` to define the
    resolver for each type. More information on this approach can be
@@ -76,11 +76,11 @@ instance Monad m => ResolveNamed m (Post (NamedResolverT m)) where
         }
 ```
 
-Let's go to the next stage and define query resolver. Since the query does not
+Let's go to the next step and define a query resolver. Since the query does not
 require an ID, we define its dependency with the unit type.
 
-To resolve the `post` and `posts` fields, we only get post-ids and
-pass them to the resolve function, which automatically resolves the
+To resolve the `post` and `posts` fields, we only get post ids and
+pass them to the resolve function, which then resolves the
 corresponding `Post` values by calling the `ResolveNamed`
 instance of the type `Post` with those ids.
 
@@ -106,12 +106,12 @@ postsApp =
     (NamedResolvers :: NamedResolvers IO () Query Undefined Undefined)
 ```
 
-in the background, the function `deriveApp` traverses the data types and calls their
+In the background, the function `deriveApp` traverses the data types and calls their
 own instances of `NamedResolver` for each object and union type. In this way,
 a `ResolverMaps` (with type `Map TypeName (DependencyValue -> ResolveValue)`) is derived that can
 be used in GraphQL query execution.
 
-As you can notice, the `ResolverMaps` derived in this way can be
+As you can see, the `ResolverMaps` derived in this way can be
 merged if the types with the same name have the same GraphQL
 kind and the same dependency.
 Therefore, types in applications derived with `NamedResolvers` can be safely extended,
@@ -121,14 +121,14 @@ which we will see in the next section.
   App/Authors.hs
 </Section>
 
-Let's say there is also another team that wants to use the `Posts` application as well,
-but also needs to provide `Authors` information with it. the new application should
-allow query of all existing `authors` and extend the post type with the field `author`.
+Let's say there is another team that wants to use the `Posts` application as well,
+but also needs to provide `Authors` information. The new application should
+allow querying of all existing `Authors` and extend the post type with the field `author`.
 
 One way to address these new requirements would be to rewrite our old application,
 but that will impact (or even break) the existing application. Here, named resolvers can
 be of additional help to us, as `Apps` derived with named resolvers can be merged.
-We can define our `authors` app separately and then merge it with the existing one.
+We can define our `Authors` app separately and then merge it with the existing one.
 
 In the following code snippets we define the Author and Query types.
 
@@ -162,10 +162,10 @@ instance Monad m => ResolveNamed m (Query (NamedResolverT m)) where
   resolveNamed () = pure Query { authors = resolve getAuthorIds }
 ```
 
-At this stage we have already implemented Authors and Query and now we can also
+At this stage, we have already implemented Authors and Query and now we can also
 start thinking about the Post Type.
 
-The first thing to note is that the post type used in this app does not need to
+First note, that the post type used in this app does not need to
 be imported from the `App/Posts.hs`. We can simply define our type `Post` with the new
 field `author` and all other fields associated with the post type will be automatically
 completed by the app `App/Posts.hs`, after the merging.
@@ -181,11 +181,10 @@ newtype Post m = Post
 ```
 
 Now we can start implementing the resolver for it.
-The crucial aspect in this part is that the dependency of this type should
-be the same as the dependency of `Post` in `App/Posts.hs`. The reason for this
-is that if the argument of the function does not match, one of the
-implementations during resolution will not be able to decode the
-argument and will fail.
+It is of critical importance here, that the dependency of this type 
+is the same as the dependency of `Post` in `App/Posts.hs`. If the 
+argument of the function does not match, one of the implementations
+will be unable to decode the argument during resolution and it will fail.
 
 ```haskell
 instance Monad m => ResolveNamed m (Post (NamedResolverT m)) where
@@ -225,6 +224,6 @@ app :: App () IO
 app = authorsApp <> postsApp
 ```
 
-since the both `Post` type definitions have same dependency `ID`,
-the interpreter safelly merge this two apps where type
+Since both the `Post` type definitions have the same dependency `ID`,
+the interpreter safely merge these two apps where type
 `Post` will be extended with new field `author`.
