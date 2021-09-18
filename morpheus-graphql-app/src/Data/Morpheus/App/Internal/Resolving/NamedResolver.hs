@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
@@ -57,13 +58,13 @@ data NamedResolver (m :: * -> *) = NamedResolver
   }
 
 data NamedResolverResult (m :: * -> *)
-  = NamedObjectResolver (ObjectTypeResolver (m NamedResolverField))
+  = NamedObjectResolver (ObjectTypeResolver (m (NamedResolverField m)))
   | NamedUnionResolver NamedResolverRef
 
 instance KeyOf TypeName (NamedResolver m) where
   keyOf = resolverName
 
-type NamedResolverField = ResolverValueDefinition NamedResolverRef NamedResolverRef
+type NamedResolverField = ResolverValueDefinition NamedResolverRef
 
 data NamedResolverRef = NamedResolverRef
   { resolverTypeName :: TypeName,
@@ -101,13 +102,11 @@ resolveRef resolvers ref selection = do
   let resolveValue =
         resolveResolverDefinition
           EncoderContext
-            { getTypeName = resolverTypeName,
-              mkEnumUnion = (`ResUnion` ref),
-              encodeObject = resolveRef resolvers,
-              encodeUnion = resolveRef resolvers
+            { mkEnumUnion = (`ResUnion` pure ref),
+              encodeNode = resolveRef resolvers
             }
   case objectResolver of
     NamedObjectResolver res -> resolveObjectTypeResolver (>>= resolveValue) res selection
-    NamedUnionResolver unionRef -> resolveValue (ResUnion (resolverTypeName unionRef) unionRef)
+    NamedUnionResolver unionRef -> resolveValue (ResUnion (resolverTypeName unionRef) (pure unionRef))
   where
     cantFoundError = throwError ("Resolver Type " <> msg (resolverTypeName ref) <> "can't found")

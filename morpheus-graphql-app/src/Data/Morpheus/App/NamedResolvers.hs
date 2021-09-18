@@ -39,22 +39,22 @@ import Data.Morpheus.Types.Internal.AST
 -- PUBLIC
 
 -- fields
-enum :: TypeName -> NamedResolverField
+enum :: TypeName -> NamedResolverField m
 enum = mkEnum
 
-list :: [NamedResolverField] -> NamedResolverField
+list :: [NamedResolverField m] -> NamedResolverField m
 list = mkList
 
-ref :: TypeName -> ValidValue -> NamedResolverField
-ref typeName = ResObject . NamedResolverRef typeName
+ref :: TypeName -> ValidValue -> NamedResolverField m
+ref typeName = ResObject typeName . NamedResolverRef typeName
 
-refs :: TypeName -> [ValidValue] -> NamedResolverField
+refs :: TypeName -> [ValidValue] -> NamedResolverField m
 refs typeName = mkList . map (ref typeName)
 
 type NamedResolverFunction o e m = ValidValue -> Resolver o e m (ResultBuilder o e m)
 
 -- types
-object :: (LiftOperation o, Monad m) => [(FieldName, Resolver o e m NamedResolverField)] -> Resolver o e m (ResultBuilder o e m)
+object :: (LiftOperation o, Monad m) => [(FieldName, Resolver o e m (NamedResolverField (Resolver o e m)))] -> Resolver o e m (ResultBuilder o e m)
 object = pure . Object
 
 variant :: (LiftOperation o, Monad m) => TypeName -> ValidValue -> Resolver o e m (ResultBuilder o e m)
@@ -65,7 +65,7 @@ queryResolvers = NamedResolversValue . mkResolverMap
 
 -- INTERNAL
 data ResultBuilder o e m
-  = Object [(FieldName, Resolver o e m NamedResolverField)]
+  = Object [(FieldName, Resolver o e m (NamedResolverField (Resolver o e m)))]
   | Union TypeName ValidValue
 
 mkResolverMap :: (LiftOperation o, Monad m) => [(TypeName, NamedResolverFunction o e m)] -> ResolverMap (Resolver o e m)

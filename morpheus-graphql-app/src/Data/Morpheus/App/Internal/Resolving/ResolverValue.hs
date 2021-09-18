@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
@@ -63,14 +64,11 @@ import Data.Morpheus.Types.Internal.AST
 import qualified Data.Vector as V
 import Relude hiding (Show, empty)
 
-type ResolverValue (m :: * -> *) =
-  ResolverValueDefinition
-    (m (ResolverObject m))
-    (ResolverObject m)
+type ResolverValue (m :: * -> *) = ResolverValueDefinition (ResolverObject m) m
 
 newtype FieldValue m = FieldValue {unFieldValue :: m (ResolverValue m)}
 
-instance MonadError GQLError m => Semigroup (FieldValue m) where
+instance (MonadError GQLError m) => Semigroup (FieldValue m) where
   FieldValue a <> FieldValue b = FieldValue $ (,) <$> a <*> b >>= uncurry merge
 
 type ResolverEntry m = (FieldName, m (ResolverValue m))
@@ -106,9 +104,7 @@ encodeResolver ::
 encodeResolver =
   resolveResolverDefinition
     EncoderContext
-      { encodeObject = resolveObject,
-        encodeUnion = \unionRes selection -> unionRes >>= flip resolveObject selection,
-        getTypeName = __typename,
+      { encodeNode = resolveObject,
         mkEnumUnion = (`mkUnion` mkEnumNull)
       }
 
@@ -116,7 +112,7 @@ mkObject ::
   TypeName ->
   [ResolverEntry m] ->
   ResolverValue m
-mkObject __typename = ResObject . mkObject' __typename
+mkObject __typename = ResObject __typename . mkObject' __typename
 
 mkUnion ::
   (Monad m) =>
@@ -126,12 +122,11 @@ mkUnion ::
 mkUnion name fields =
   ResUnion
     name
-    ( pure
-        ObjectTypeResolver
-          { __typename = name,
-            objectFields = HM.fromList (map (second FieldValue) fields)
-          }
-    )
+    $ pure
+    $ ObjectTypeResolver
+      { __typename = name,
+        objectFields = HM.fromList (map (second FieldValue) fields)
+      }
 
 mkEnumNull :: (Monad m) => [ResolverEntry m]
 mkEnumNull = [(unitFieldName, pure $ mkEnum unitTypeName)]

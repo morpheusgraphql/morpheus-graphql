@@ -1,6 +1,8 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -33,7 +35,7 @@ import Data.Morpheus.App.Internal.Resolving.ResolverState
   ( ResolverContext (..),
   )
 import Data.Morpheus.Error (subfieldsNotSelected)
-import Data.Morpheus.Internal.Ext (Merge (..), (<:>))
+import Data.Morpheus.Internal.Ext ((<:>), Merge (..))
 import Data.Morpheus.Internal.Utils (KeyOf (keyOf), selectOr, traverseCollection)
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
@@ -53,6 +55,7 @@ import Data.Morpheus.Types.Internal.AST
     packName,
     unpackName,
   )
+import GHC.Show (Show (show))
 import Relude
 
 data ObjectTypeResolver a = ObjectTypeResolver
@@ -112,20 +115,22 @@ withObject __typename f Selection {selectionName, selectionContent, selectionPos
       f (selectOr interfaceSel unionTagSelection __typename unionSel)
     checkContent _ = throwError $ subfieldsNotSelected selectionName "" selectionPosition
 
-data ResolverValueDefinition u o
+data ResolverValueDefinition o (m :: Type -> Type)
   = ResNull
   | ResScalar ScalarValue
   | ResEnum TypeName
-  | ResList [ResolverValueDefinition u o]
-  | ResUnion TypeName u
-  | ResObject o
-  deriving (Show)
+  | ResList [ResolverValueDefinition o m]
+  | ResObject TypeName o
+  | ResUnion TypeName (m o)
 
-instance IsString (ResolverValueDefinition u o) where
+instance Show (ResolverValueDefinition o m) where
+  show = undefined
+
+instance IsString (ResolverValueDefinition o m) where
   fromString = ResScalar . fromString
 
-requireObject :: MonadError GQLError m => ResolverValueDefinition u a -> m a
-requireObject (ResObject x) = pure x
+requireObject :: MonadError GQLError f => ResolverValueDefinition o m -> f o
+requireObject (ResObject _ x) = pure x
 requireObject _ = throwError (internal "resolver must be an object")
 
 instance
@@ -133,44 +138,42 @@ instance
     MonadError GQLError f,
     Merge f o
   ) =>
-  Merge f (ResolverValueDefinition u o)
+  Merge f (ResolverValueDefinition o m)
   where
   merge ResNull ResNull = pure ResNull
   merge ResScalar {} x@ResScalar {} = pure x
   merge ResEnum {} x@ResEnum {} = pure x
-  merge (ResObject x) (ResObject y) = ResObject <$> merge x y
+  merge (ResObject n x) (ResObject _ y) = ResObject n <$> merge x y
   merge _ _ = throwError (internal "can't merge: incompatible resolvers")
 
-mkString :: Text -> ResolverValueDefinition u o
+mkString :: Text -> ResolverValueDefinition o m
 mkString = ResScalar . String
 
-mkFloat :: Double -> ResolverValueDefinition u o
+mkFloat :: Double -> ResolverValueDefinition o m
 mkFloat = ResScalar . Float
 
-mkInt :: Int -> ResolverValueDefinition u o
+mkInt :: Int -> ResolverValueDefinition o m
 mkInt = ResScalar . Int
 
-mkBoolean :: Bool -> ResolverValueDefinition u o
+mkBoolean :: Bool -> ResolverValueDefinition o m
 mkBoolean = ResScalar . Boolean
 
-mkList :: [ResolverValueDefinition u o] -> ResolverValueDefinition u o
+mkList :: [ResolverValueDefinition o m] -> ResolverValueDefinition o m
 mkList = ResList
 
-mkNull :: ResolverValueDefinition u o
+mkNull :: ResolverValueDefinition o m
 mkNull = ResNull
 
 unpackJSONName :: A.Value -> TypeName
 unpackJSONName (A.String x) = packName x
 unpackJSONName _ = "__JSON__"
 
-mkEnum :: TypeName -> ResolverValueDefinition u o
+mkEnum :: TypeName -> ResolverValueDefinition o m
 mkEnum = ResEnum
 
-data EncoderContext u o m = EncoderContext
-  { encodeObject :: o -> SelectionSet VALID -> m ValidValue,
-    encodeUnion :: u -> SelectionSet VALID -> m ValidValue,
-    getTypeName :: o -> TypeName,
-    mkEnumUnion :: TypeName -> ResolverValueDefinition u o
+data EncoderContext o m = EncoderContext
+  { encodeNode :: o -> SelectionSet VALID -> m ValidValue,
+    mkEnumUnion :: TypeName -> ResolverValueDefinition o m
   }
 
 resolveResolverDefinition ::
@@ -178,8 +181,8 @@ resolveResolverDefinition ::
     MonadReader ResolverContext m,
     MonadError GQLError m
   ) =>
-  EncoderContext u o m ->
-  ResolverValueDefinition u o ->
+  EncoderContext o m ->
+  ResolverValueDefinition o m ->
   m ValidValue
 resolveResolverDefinition ctx res =
   asks currentSelection
@@ -194,26 +197,26 @@ encodeResolverDefinition ::
     MonadReader ResolverContext m,
     MonadError GQLError m
   ) =>
-  EncoderContext u o m ->
-  ResolverValueDefinition u o ->
+  EncoderContext o m ->
+  ResolverValueDefinition o m ->
   SelectionContent VALID ->
   m ValidValue
 encodeResolverDefinition ctx (ResList xs) selection =
   List <$> traverse (\res -> encodeResolverDefinition ctx res selection) xs
 -- Object -----------------
-encodeResolverDefinition EncoderContext {getTypeName, encodeObject} (ResObject obj) _ =
-  asks currentSelection >>= withObject (getTypeName obj) (encodeObject obj)
+encodeResolverDefinition EncoderContext {encodeNode} (ResObject typeName obj) _ =
+  asks currentSelection >>= withObject typeName (encodeNode obj)
 -- ENUM
 encodeResolverDefinition _ (ResEnum enum) SelectionField = pure $ Scalar $ String $ unpackName enum
 encodeResolverDefinition ctx@EncoderContext {mkEnumUnion} (ResEnum name) unionSel@UnionSelection {} =
   encodeResolverDefinition ctx (mkEnumUnion name) unionSel
 encodeResolverDefinition _ ResEnum {} _ = throwError (internal "wrong selection on enum value")
 -- UNION
-encodeResolverDefinition EncoderContext {encodeUnion} (ResUnion typename unionRes) (UnionSelection interface selections) = do
+encodeResolverDefinition EncoderContext {encodeNode} (ResUnion typename unionRes) (UnionSelection interface selections) = do
   selection <- selectOr (pure interface) ((interface <:>) . unionTagSelection) typename selections
-  encodeUnion unionRes selection
-encodeResolverDefinition EncoderContext {encodeUnion} (ResUnion _ unionRes) (SelectionSet selection) =
-  encodeUnion unionRes selection
+  unionRes >>= (`encodeNode` selection)
+encodeResolverDefinition EncoderContext {encodeNode} (ResUnion _ unionRes) (SelectionSet selection) =
+  unionRes >>= (`encodeNode` selection)
 encodeResolverDefinition _ (ResUnion name _) SelectionField =
   throwError (internal $ "union Resolver " <> msg name <> " cant resolve  SelectionField")
 -- SCALARS

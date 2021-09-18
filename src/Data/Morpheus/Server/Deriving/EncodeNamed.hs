@@ -76,13 +76,13 @@ import GHC.Generics
 import Relude
 
 class Encode (m :: * -> *) res where
-  encodeField :: res -> m NamedResolverField
+  encodeField :: res -> m (NamedResolverField m)
 
 instance (EncodeFieldKind (KIND a) m a) => Encode m a where
   encodeField resolver = encodeFieldKind (ContextValue resolver :: ContextValue (KIND a) a)
 
 class EncodeFieldKind (k :: DerivingKind) (m :: * -> *) (a :: *) where
-  encodeFieldKind :: ContextValue k a -> m NamedResolverField
+  encodeFieldKind :: ContextValue k a -> m (NamedResolverField m)
 
 instance
   (EncodeScalar a, Monad m) =>
@@ -95,8 +95,8 @@ instance (FieldConstraint m a, MonadError GQLError m) => EncodeFieldKind TYPE m 
 
 convertField ::
   MonadError GQLError m =>
-  DataType (m NamedResolverField) ->
-  m NamedResolverField
+  DataType (m (NamedResolverField m)) ->
+  m (NamedResolverField m)
 convertField DataType {tyCons = ConsRep {consFields, consName}}
   | null consFields = pure (mkEnum consName)
   | otherwise = throwError (internal "object resolvers must be defined by typeclass NamedResolver")
@@ -120,10 +120,10 @@ instance
     where
       name :: TypeName
       name = getTypeName (Proxy @a)
-      encodeRef :: Monad m => ContextValue kind (NamedResolverT m a) -> m NamedResolverField
-      encodeRef (ContextValue (Ref x)) = ResObject . NamedResolverRef name . replaceValue . toJSON <$> x
+      encodeRef :: Monad m => ContextValue kind (NamedResolverT m a) -> m (NamedResolverField m)
+      encodeRef (ContextValue (Ref x)) = ResObject name . NamedResolverRef name . replaceValue . toJSON <$> x
       encodeRef (ContextValue (Value value)) = value >>= encodeField
-      encodeRef (ContextValue (Refs refs)) = mkList . map (ResObject . NamedResolverRef name . replaceValue . toJSON) <$> refs
+      encodeRef (ContextValue (Refs refs)) = mkList . map (ResObject name . NamedResolverRef name . replaceValue . toJSON) <$> refs
 
 instance
   ( DecodeConstraint a,
@@ -142,19 +142,19 @@ instance
 type FieldConstraint m a =
   ( GQLType a,
     Generic a,
-    TypeRep (Encode m) (m NamedResolverField) (Rep a)
+    TypeRep (Encode m) (m (NamedResolverField m)) (Rep a)
   )
 
-getFieldValues :: FieldConstraint m a => a -> DataType (m NamedResolverField)
+getFieldValues :: FieldConstraint m a => a -> DataType (m (NamedResolverField m))
 getFieldValues =
   toValue
     ( TypeConstraint (encodeField . runIdentity) ::
-        TypeConstraint (Encode m) (m NamedResolverField) Identity
+        TypeConstraint (Encode m) (m (NamedResolverField m)) Identity
     )
     (Proxy @OUT)
 
 convertNamedNode ::
-  DataType (m NamedResolverField) ->
+  DataType (m (NamedResolverField m)) ->
   NamedResolverResult m
 convertNamedNode
   DataType
@@ -209,7 +209,7 @@ instance
     EncodeFieldKind (KIND a) (Resolver o e m) a,
     Decode (Dep a),
     ResolveNamed (Resolver o e m) a,
-    TypeRep (Encode (Resolver o e m)) (Resolver o e m NamedResolverField) (Rep a)
+    TypeRep (Encode (Resolver o e m)) (Resolver o e m (NamedResolverField (Resolver o e m))) (Rep a)
   ) =>
   DeriveNamedResolver (Resolver o e m) TYPE (a :: *)
   where
