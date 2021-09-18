@@ -25,6 +25,7 @@ module Data.Morpheus.App.Internal.Resolving.Utils
     EncoderContext (..),
     ObjectTypeResolver (..),
     requireObject,
+    NamedResolverRef (..),
   )
 where
 
@@ -61,6 +62,12 @@ import Relude
 data ObjectTypeResolver a = ObjectTypeResolver
   { __typename :: TypeName,
     objectFields :: HashMap FieldName a
+  }
+  deriving (Show)
+
+data NamedResolverRef = NamedResolverRef
+  { resolverTypeName :: TypeName,
+    resolverArgument :: ValidValue
   }
   deriving (Show)
 
@@ -118,8 +125,8 @@ withObject __typename f Selection {selectionName, selectionContent, selectionPos
 data ResolverValueDefinition o (m :: Type -> Type)
   = ResNull
   | ResScalar ScalarValue
-  | ResEnum TypeName
   | ResList [ResolverValueDefinition o m]
+  | ResEnum (Either TypeName o)
   | ResObject TypeName o
   | ResUnion TypeName (m o)
 
@@ -169,10 +176,11 @@ unpackJSONName (A.String x) = packName x
 unpackJSONName _ = "__JSON__"
 
 mkEnum :: TypeName -> ResolverValueDefinition o m
-mkEnum = ResEnum
+mkEnum = ResEnum . Left
 
 data EncoderContext o m = EncoderContext
   { encodeNode :: o -> SelectionSet VALID -> m ValidValue,
+    encodeEnum :: o -> m ValidValue,
     mkEnumUnion :: TypeName -> ResolverValueDefinition o m
   }
 
@@ -207,8 +215,11 @@ encodeResolverDefinition ctx (ResList xs) selection =
 encodeResolverDefinition EncoderContext {encodeNode} (ResObject typeName obj) _ =
   asks currentSelection >>= withObject typeName (encodeNode obj)
 -- ENUM
-encodeResolverDefinition _ (ResEnum enum) SelectionField = pure $ Scalar $ String $ unpackName enum
-encodeResolverDefinition ctx@EncoderContext {mkEnumUnion} (ResEnum name) unionSel@UnionSelection {} =
+encodeResolverDefinition EncoderContext {encodeEnum} (ResEnum enum) SelectionField = handle enum
+  where
+    handle (Left x) = pure $ Scalar $ String $ unpackName x
+    handle (Right x) = encodeEnum x
+encodeResolverDefinition ctx@EncoderContext {mkEnumUnion} (ResEnum (Left name)) unionSel@UnionSelection {} =
   encodeResolverDefinition ctx (mkEnumUnion name) unionSel
 encodeResolverDefinition _ ResEnum {} _ = throwError (internal "wrong selection on enum value")
 -- UNION

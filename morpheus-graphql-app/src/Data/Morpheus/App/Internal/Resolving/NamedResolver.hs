@@ -32,6 +32,7 @@ import Data.Morpheus.App.Internal.Resolving.Resolver
 import Data.Morpheus.App.Internal.Resolving.ResolverState (ResolverState)
 import Data.Morpheus.App.Internal.Resolving.Utils
   ( EncoderContext (..),
+    NamedResolverRef (..),
     ObjectTypeResolver (..),
     ResolverValueDefinition (..),
     resolveObjectTypeResolver,
@@ -60,17 +61,12 @@ data NamedResolver (m :: * -> *) = NamedResolver
 data NamedResolverResult (m :: * -> *)
   = NamedObjectResolver (ObjectTypeResolver (m (NamedResolverField m)))
   | NamedUnionResolver NamedResolverRef
+  | NamedEnumResolver TypeName
 
 instance KeyOf TypeName (NamedResolver m) where
   keyOf = resolverName
 
 type NamedResolverField = ResolverValueDefinition NamedResolverRef
-
-data NamedResolverRef = NamedResolverRef
-  { resolverTypeName :: TypeName,
-    resolverArgument :: ValidValue
-  }
-  deriving (Show)
 
 runResolverMap ::
   (Monad m, LiftOperation o) =>
@@ -98,15 +94,24 @@ resolveRef ::
   SelectionSet VALID ->
   m ValidValue
 resolveRef resolvers ref selection = do
-  objectResolver <- selectOr cantFoundError ((resolverArgument ref &) . resolver) (resolverTypeName ref) resolvers
+  namedResolver <- getNamedResolverBy ref resolvers
   let resolveValue =
         resolveResolverDefinition
           EncoderContext
             { mkEnumUnion = (`ResUnion` pure ref),
+              encodeEnum = flip (resolveRef resolvers) selection,
               encodeNode = resolveRef resolvers
             }
-  case objectResolver of
+  case namedResolver of
     NamedObjectResolver res -> resolveObjectTypeResolver (>>= resolveValue) res selection
     NamedUnionResolver unionRef -> resolveValue (ResUnion (resolverTypeName unionRef) (pure unionRef))
+    NamedEnumResolver enumValue -> resolveValue (ResEnum (Left enumValue))
+
+getNamedResolverBy ::
+  (MonadError GQLError m) =>
+  NamedResolverRef ->
+  ResolverMap m ->
+  m (NamedResolverResult m)
+getNamedResolverBy ref = selectOr cantFoundError ((resolverArgument ref &) . resolver) (resolverTypeName ref)
   where
     cantFoundError = throwError ("Resolver Type " <> msg (resolverTypeName ref) <> "can't found")
