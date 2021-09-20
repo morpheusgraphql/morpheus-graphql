@@ -25,7 +25,7 @@ dependencies:
   - prettyprinter         >= 1.2       && <  2.0
   - unordered-containers  >= 0.2.8.0   && <  0.3
   - containers            >=0.4.2.1    && <  0.7
-  - relude                >= 0.3.0     && <  1.0
+  - relude                >= 0.3.0     && <  1.1
   - template-haskell      >= 2.0       && <  3.0
 
 library:
