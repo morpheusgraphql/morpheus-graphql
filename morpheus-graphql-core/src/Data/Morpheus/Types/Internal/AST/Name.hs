@@ -50,6 +50,13 @@ import qualified Data.Text as T
 import Language.Haskell.TH
   ( stringE,
   )
+#if MIN_VERSION_template_haskell(2,17,0)
+import Language.Haskell.TH
+  ( Quote,
+    Code,
+    unsafeCodeCoerce
+  )
+#endif
 import Language.Haskell.TH.Syntax
   ( Lift (..),
     Q,
@@ -91,7 +98,14 @@ packName = Name
 instance Lift (Name t) where
   lift = stringE . T.unpack . unpackName
 
-#if MIN_VERSION_template_haskell(2,16,0)
+#if MIN_VERSION_template_haskell(2,17,0)
+  -- liftTyped :: Quote m => Name t -> Code m (Name t)
+  liftTyped = liftTypedString . unpackName
+    where
+      liftTypedString :: (Quote m) => Text -> Code m (Name t)
+      liftTypedString = unsafeCodeCoerce . stringE . T.unpack
+      {-# INLINE liftTypedString #-}
+#elif MIN_VERSION_template_haskell(2,16,0)
   liftTyped = liftTypedString . unpackName
     where
       liftTypedString :: IsString a => Text -> Q (TExp a)
