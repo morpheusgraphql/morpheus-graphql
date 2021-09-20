@@ -1,10 +1,12 @@
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE DeriveGeneric #-}
 
 module Data.Morpheus.Client.Internal.Types
   ( ClientTypeDefinition (..),
     TypeNameTH (..),
     ClientDefinition (..),
     ClientConstructorDefinition (..),
+    FetchError (..)
   )
 where
 
@@ -12,6 +14,7 @@ import Data.Morpheus.Types.Internal.AST
   ( ANY,
     FieldDefinition,
     FieldName,
+    GQLErrors,
     TypeKind,
     TypeName,
     VALID,
@@ -42,3 +45,9 @@ data ClientDefinition = ClientDefinition
     clientTypes :: [ClientTypeDefinition]
   }
   deriving (Show)
+
+data FetchError a
+  = FetchErrorParseFailure String
+  | FetchErrorProducedErrors GQLErrors (Maybe a)
+  | FetchErrorNoResult
+  deriving (Show, Eq, Generic)
