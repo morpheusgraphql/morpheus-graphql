@@ -1,0 +1,16 @@
+# 9.0.1
+resolver: nightly-2021-09-12
+save-hackage-creds: false
+packages:
+  - morpheus-graphql-benchmarks
+  # - morpheus-graphql-examples-scotty
+  - morpheus-graphql-examples-servant
+  - morpheus-graphql-examples-client
+  - morpheus-graphql-examples-code-gen
+  - morpheus-graphql-subscriptions
+  - morpheus-graphql-client
+  - morpheus-graphql-core
+  - morpheus-graphql-app
+  - morpheus-graphql-tests
+  - morpheus-graphql-code-gen
+  - .
