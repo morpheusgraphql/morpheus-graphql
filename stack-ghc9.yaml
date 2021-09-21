@@ -2,23 +2,15 @@
 resolver: nightly-2021-09-12
 save-hackage-creds: false
 packages:
-  # - morpheus-graphql-benchmarks
+  - morpheus-graphql-benchmarks
   # - morpheus-graphql-examples-scotty
-  # - morpheus-graphql-examples-servant
-  # - morpheus-graphql-examples-client
-  # - morpheus-graphql-examples-code-gen
+  - morpheus-graphql-examples-servant
+  - morpheus-graphql-examples-client
+  - morpheus-graphql-examples-code-gen
   - morpheus-graphql-subscriptions
   - morpheus-graphql-client
   - morpheus-graphql-core
   - morpheus-graphql-app
   - morpheus-graphql-tests
   - morpheus-graphql-code-gen
-  # - .
-
-# extra-deps:
-# - git: https://github.com/codedownio/dependent-sum.git
-#   commit: 836a72104e25c94fc85d389b90edb76d4109a59b
-#   subdirs:
-#   - dependent-sum
-#   - dependent-sum-template
-# - dependent-map-0.4.0.0@sha256:ca2b131046f4340a1c35d138c5a003fe4a5be96b14efc26291ed35fd08c62221,1657
+  - .

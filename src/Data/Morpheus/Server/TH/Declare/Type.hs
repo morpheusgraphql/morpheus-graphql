@@ -3,6 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE CPP #-}
 
 module Data.Morpheus.Server.TH.Declare.Type
   ( declareType,
@@ -45,7 +46,11 @@ declareType :: ServerTypeDefinition -> [Dec]
 declareType (ServerInterfaceDefinition name interfaceName unionName) =
   [ TySynD
       (toName name)
+#if MIN_VERSION_template_haskell(2,17,0)
+      [PlainTV m_ ()]
+#else
       [PlainTV m_]
+#endif
       (apply ''TypeGuard [apply interfaceName [m'], apply unionName [m']])
   ]
 declareType ServerTypeDefinition {tKind = KindScalar} = []
@@ -59,7 +64,11 @@ declareType
     where
       derivings = DerivClause Nothing (map (ConT . genName) derives)
       cons = map declareCons tCons
+#if MIN_VERSION_template_haskell(2,17,0)
+      vars = map (flip PlainTV ()) (renderTypeVars typeParameters)
+#else
       vars = map PlainTV (renderTypeVars typeParameters)
+#endif
 
 genName :: DerivingClass -> Name
 genName GENERIC = ''Generic
