@@ -14,6 +14,7 @@ jobs:
           - { lts: "-16.2" } # ghc-8.8.3
           - { lts: "-ghc9" } # ghc-9.0.1
           - { lts: "" } # nightly 8.10.7
+      fail-fast: false
     runs-on: ubuntu-latest
     steps:
       - name: Prepare OS
