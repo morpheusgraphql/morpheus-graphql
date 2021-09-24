@@ -21,11 +21,7 @@ module Data.Morpheus.Server.Types.GQLType
         defaultValues,
         __type
       ),
-    GQLTypeOptions
-      ( fieldLabelModifier,
-        constructorTagModifier,
-        typeNameModifier
-      ),
+    GQLTypeOptions (..),
     defaultTypeOptions,
     TypeData (..),
     __isObjectKind,
@@ -98,14 +94,31 @@ data TypeData = TypeData
   }
   deriving (Show)
 
+-- | Options that specify how to map GraphQL field, type, and constructor names
+-- to and from their Haskell equivalent.
+--
+-- Options can be set using record syntax on 'defaultOptions' with the fields
+-- below.
 data GQLTypeOptions = GQLTypeOptions
-  { fieldLabelModifier :: String -> String,
+  { -- | Function applied to field labels.
+    -- Handy for removing common record prefixes for example.
+    fieldLabelModifier :: String -> String,
+    -- | Function applied to constructor tags.
     constructorTagModifier :: String -> String,
-    -- Construct a new type name depending on whether it is an input,
-    -- and being given the original type name
+    -- | Construct a new type name depending on whether it is an input,
+    -- and being given the original type name.
     typeNameModifier :: Bool -> String -> String
   }
 
+-- | Default encoding 'GQLTypeOptions':
+--
+-- @
+-- 'GQLTypeOptions'
+--   { 'fieldLabelModifier'      = id
+--   , 'constructorTagModifier'  = id
+--   , 'typeNameModifier'        = const id
+--   }
+-- @
 defaultTypeOptions :: GQLTypeOptions
 defaultTypeOptions =
   GQLTypeOptions
@@ -194,9 +207,15 @@ class ToValue (KIND a) => GQLType a where
   type KIND a :: DerivingKind
   type KIND a = TYPE
 
+  -- | A description of the type.
+  --
+  -- Used for documentation in the GraphQL schema.
   description :: f a -> Maybe Text
   description _ = Nothing
 
+  -- | A dictionary of descriptions for fields, keyed on field name.
+  --
+  -- Used for documentation in the GraphQL schema.
   getDescriptions :: f a -> Map Text Description
   getDescriptions _ = mempty
 
