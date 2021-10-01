@@ -31,8 +31,7 @@ import Data.Morpheus.App.Internal.Resolving.Resolver
   )
 import Data.Morpheus.App.Internal.Resolving.ResolverState (ResolverState)
 import Data.Morpheus.App.Internal.Resolving.Utils
-  ( EncoderContext (..),
-    NamedResolverRef (..),
+  ( NamedResolverRef (..),
     ObjectTypeResolver (..),
     ResolverValueDefinition (..),
     resolveObjectTypeResolver,
@@ -66,7 +65,7 @@ data NamedResolverResult (m :: * -> *)
 instance KeyOf TypeName (NamedResolver m) where
   keyOf = resolverName
 
-type NamedResolverField = ResolverValueDefinition NamedResolverRef
+type NamedResolverField = ResolverValueDefinition
 
 runResolverMap ::
   (Monad m, LiftOperation o) =>
@@ -95,17 +94,11 @@ resolveRef ::
   m ValidValue
 resolveRef resolvers ref selection = do
   namedResolver <- getNamedResolverBy ref resolvers
-  let resolveValue =
-        resolveResolverDefinition
-          EncoderContext
-            { mkEnumUnion = (`ResUnion` pure ref),
-              encodeEnum = flip (resolveRef resolvers) selection,
-              encodeNode = resolveRef resolvers
-            }
   case namedResolver of
-    NamedObjectResolver res -> resolveObjectTypeResolver (>>= resolveValue) res selection
-    NamedUnionResolver unionRef -> resolveValue (ResUnion (resolverTypeName unionRef) (pure unionRef))
-    NamedEnumResolver enumValue -> resolveValue (ResEnum (Left enumValue))
+    NamedObjectResolver res -> resolveObjectTypeResolver (>>= resolveResolverDefinition) res selection
+
+--  NamedUnionResolver unionRef -> resolveValue (ResUnion (resolverTypeName unionRef) (pure unionRef))
+--   NamedEnumResolver enumValue -> resolveValue (ResEnum (Left enumValue))
 
 getNamedResolverBy ::
   (MonadError GQLError m) =>

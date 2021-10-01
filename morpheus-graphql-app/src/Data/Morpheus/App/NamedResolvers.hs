@@ -45,10 +45,10 @@ enum = mkEnum
 list :: [NamedResolverField m] -> NamedResolverField m
 list = mkList
 
-ref :: TypeName -> ValidValue -> NamedResolverField m
-ref typeName = ResObject typeName . NamedResolverRef typeName
+ref :: Applicative m => TypeName -> ValidValue -> NamedResolverField m
+ref typeName = ResRef . pure . NamedResolverRef typeName
 
-refs :: TypeName -> [ValidValue] -> NamedResolverField m
+refs :: Applicative m => TypeName -> [ValidValue] -> NamedResolverField m
 refs typeName = mkList . map (ref typeName)
 
 type NamedResolverFunction o e m = ValidValue -> Resolver o e m (ResultBuilder o e m)

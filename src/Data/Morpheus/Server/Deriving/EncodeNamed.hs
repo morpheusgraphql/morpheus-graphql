@@ -84,25 +84,14 @@ instance (EncodeFieldKind (KIND a) m a) => Encode m a where
 class EncodeFieldKind (k :: DerivingKind) (m :: * -> *) (a :: *) where
   encodeFieldKind :: ContextValue k a -> m (NamedResolverField m)
 
-instance
-  (EncodeScalar a, Monad m) =>
-  EncodeFieldKind SCALAR m a
-  where
+instance (EncodeScalar a, Monad m) => EncodeFieldKind SCALAR m a where
   encodeFieldKind = pure . ResScalar . encodeScalar . unContextValue
 
 instance (FieldConstraint m a, MonadError GQLError m) => EncodeFieldKind TYPE m a where
-  encodeFieldKind (ContextValue x) = convertField (getFieldValues x)
-
-convertField ::
-  MonadError GQLError m =>
-  DataType (m (NamedResolverField m)) ->
-  m (NamedResolverField m)
-convertField DataType {tyCons = ConsRep {consFields, consName}}
-  | null consFields = pure (mkEnum consName)
-  | otherwise = throwError (internal "object resolvers must be defined by typeclass NamedResolver")
+  encodeFieldKind (ContextValue _) = throwError (internal "types are resolved by Refs")
 
 instance (GQLType a, Applicative m, EncodeFieldKind (KIND a) m a) => EncodeFieldKind WRAPPER m [a] where
-  encodeFieldKind (ContextValue xs) = ResList <$> traverse encodeField xs
+  encodeFieldKind = fmap ResList . traverse encodeField . unContextValue
 
 instance (GQLType a, EncodeFieldKind (KIND a) m a, Applicative m) => EncodeFieldKind WRAPPER m (Maybe a) where
   encodeFieldKind (ContextValue (Just x)) = encodeField x
@@ -116,14 +105,14 @@ instance
   ) =>
   EncodeFieldKind CUSTOM m (NamedResolverT m a)
   where
-  encodeFieldKind = encodeRef
+  encodeFieldKind = encodeRef . unContextValue
     where
       name :: TypeName
       name = getTypeName (Proxy @a)
-      encodeRef :: Monad m => ContextValue kind (NamedResolverT m a) -> m (NamedResolverField m)
-      encodeRef (ContextValue (Ref x)) = ResObject name . NamedResolverRef name . replaceValue . toJSON <$> x
-      encodeRef (ContextValue (Value value)) = value >>= encodeField
-      encodeRef (ContextValue (Refs refs)) = mkList . map (ResObject name . NamedResolverRef name . replaceValue . toJSON) <$> refs
+      encodeRef :: Monad m => NamedResolverT m a -> m (NamedResolverField m)
+      encodeRef (Ref x) = ResObject name . NamedResolverRef name . replaceValue . toJSON <$> x
+      encodeRef (Value value) = value >>= encodeField
+      encodeRef (Refs refs) = mkList . map (ResObject name . NamedResolverRef name . replaceValue . toJSON) <$> refs
 
 instance
   ( DecodeConstraint a,
