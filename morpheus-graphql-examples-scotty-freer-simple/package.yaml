@@ -1,0 +1,42 @@
+name:                morpheus-graphql-examples-scotty-freer-simple
+version:             0.1.0.0
+github:              "githubuser/morpheus-graphql-examples-scotty-freer-simple"
+license:             BSD3
+author:              "Author name here"
+maintainer:          "example@example.com"
+copyright:           "2021 Author name here"
+description:         example of graphql apis with scotty and freer-simple
+
+dependencies:
+- base >= 4.7 && < 5
+- freer-simple
+- morpheus-graphql
+- scotty
+
+
+library:
+  source-dirs: src
+
+executables:
+  morpheus-graphql-examples-scotty-freer-simple-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    - -Wall
+    dependencies:
+    - morpheus-graphql-examples-scotty-freer-simple
+
+tests:
+  morpheus-graphql-examples-scotty-freer-simple-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    - -Wall
+    dependencies:
+    - morpheus-graphql-examples-scotty-freer-simple
