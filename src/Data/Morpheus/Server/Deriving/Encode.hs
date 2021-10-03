@@ -24,11 +24,11 @@ import Control.Monad.Except (MonadError)
 import qualified Data.Map as M
 import Data.Morpheus.App.Internal.Resolving
   ( LiftOperation,
+    ObjectTypeResolver,
     Resolver,
-    ResolverObject,
     ResolverState,
     ResolverValue,
-    ResolverValueDefinition (ResScalar, ResUnion),
+    ResolverValue (..),
     RootResolverValue (..),
     getArguments,
     liftResolverState,
@@ -191,7 +191,7 @@ convertNode
       encodeUnion [] = mkEnum consName
       -- Type References --------------------------------------------------------------
       encodeUnion [FieldRep {fieldTypeRef = TypeRef {typeConName}, fieldValue}]
-        | isUnionRef tyName cons = ResUnion typeConName (fieldValue >>= requireObject)
+        | isUnionRef tyName cons = ResLazy (ResObject (Just typeConName) <$> (fieldValue >>= requireObject))
       -- Inline Union Types ----------------------------------------------------------------------------
       encodeUnion fields = mkUnion consName (toFieldRes <$> fields)
 
@@ -217,7 +217,7 @@ objectResolvers ::
     MonadError GQLError m
   ) =>
   a ->
-  ResolverState (ResolverObject m)
+  ResolverState (ObjectTypeResolver m)
 objectResolvers value = requireObject (exploreResolvers value)
 
 type EncodeConstraint (m :: * -> *) a =

@@ -11,8 +11,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.App.Internal.Resolving.Utils
-  ( withObject,
-    ResolverValueDefinition (..),
+  ( ResolverValue (..),
     mkEnum,
     mkBoolean,
     mkFloat,
@@ -23,12 +22,9 @@ module Data.Morpheus.App.Internal.Resolving.Utils
     unpackJSONName,
     resolveResolverDefinition,
     resolveObjectTypeResolver,
-    ObjectTypeResolver (..),
     requireObject,
     NamedResolverRef (..),
-    ResolverObject,
-    ResolverValue,
-    FieldValue (..),
+    ObjectTypeResolver,
     mkObject,
     mkObject',
     lookupResJSON,
@@ -36,29 +32,44 @@ module Data.Morpheus.App.Internal.Resolving.Utils
     mkValue,
     mkUnion,
     ResolverEntry,
+    ResolverMap,
+    runResolverMap,
+    NamedResolver (..),
+    NamedResolverResult (..),
   )
 where
 
 import Control.Monad.Except (MonadError (throwError))
 import qualified Data.Aeson as A
 import qualified Data.HashMap.Lazy as HM
+import Data.Morpheus.App.Internal.Resolving.Event (EventHandler (Channel))
+import Data.Morpheus.App.Internal.Resolving.Resolver (LiftOperation, Resolver, ResponseStream, runResolver)
 import Data.Morpheus.App.Internal.Resolving.ResolverState
   ( ResolverContext (..),
+    ResolverState,
+  )
+import Data.Morpheus.App.Internal.Resolving.Types
+  ( NamedResolver (..),
+    NamedResolverRef (..),
+    NamedResolverResult (..),
+    ObjectTypeResolver (..),
+    ResolverMap,
+    ResolverValue (..),
   )
 import Data.Morpheus.Error (subfieldsNotSelected)
-import Data.Morpheus.Internal.Ext ((<:>), Merge (..))
+import Data.Morpheus.Internal.Ext ((<:>))
 import Data.Morpheus.Internal.Utils (KeyOf (keyOf), selectOr, traverseCollection)
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     FieldName,
     GQLError,
     GQLError,
+    Msg (msg),
     ObjectEntry (..),
     ScalarValue (..),
     ScalarValue (..),
     Selection (..),
     SelectionContent (..),
-    SelectionSet,
     SelectionSet,
     TypeName,
     TypeName,
@@ -77,7 +88,6 @@ import Data.Morpheus.Types.Internal.AST
     unpackName,
   )
 import qualified Data.Vector as V
-import GHC.Show (Show (show))
 import Relude
 
 mkObject ::
@@ -86,7 +96,16 @@ mkObject ::
   ResolverValue m
 mkObject __typename = ResObject Nothing . mkObject' __typename
 
-lookupResJSON :: (MonadError GQLError f, Monad m) => Text -> A.Value -> f (ResolverObject m)
+mkObjectMaybe ::
+  Maybe TypeName ->
+  [ResolverEntry m] ->
+  ResolverValue m
+mkObjectMaybe __typename =
+  ResObject __typename
+    . mkObject'
+      (fromMaybe "UNKNOWN" __typename)
+
+lookupResJSON :: (MonadError GQLError f, Monad m) => Text -> A.Value -> f (ObjectTypeResolver m)
 lookupResJSON name (A.Object fields) =
   selectOr
     (mkEmptyObject name)
@@ -95,17 +114,17 @@ lookupResJSON name (A.Object fields) =
     fields
 lookupResJSON name _ = mkEmptyObject name
 
-mkEmptyObject :: Monad m => Text -> m (ResolverObject a)
+mkEmptyObject :: Monad m => Text -> m (ObjectTypeResolver a)
 mkEmptyObject name = pure $ ObjectTypeResolver (packName name) mempty
 
 mkObject' ::
   TypeName ->
   [(FieldName, m (ResolverValue m))] ->
-  ObjectTypeResolver (FieldValue m)
+  ObjectTypeResolver m
 mkObject' __typename fields =
   ( ObjectTypeResolver
       { __typename,
-        objectFields = HM.fromList (map (second FieldValue) fields)
+        objectFields = HM.fromList fields
       }
   )
 
@@ -114,8 +133,8 @@ mkValue ::
   A.Value ->
   ResolverValue m
 mkValue (A.Object v) =
-  mkObject
-    (maybe "__JSON__" unpackJSONName $ HM.lookup "__typename" v)
+  mkObjectMaybe
+    (unpackJSONName <$> HM.lookup "__typename" v)
     $ fmap
       (bimap packName (pure . mkValue))
       (HM.toList v)
@@ -135,27 +154,15 @@ mkUnion name fields =
     (Just name)
     $ ObjectTypeResolver
       { __typename = name,
-        objectFields = HM.fromList (map (second FieldValue) fields)
+        objectFields = HM.fromList fields
       }
-
-data ObjectTypeResolver a = ObjectTypeResolver
-  { __typename :: TypeName,
-    objectFields :: HashMap FieldName a
-  }
-  deriving (Show)
-
-data NamedResolverRef = NamedResolverRef
-  { resolverTypeName :: TypeName,
-    resolverArgument :: ValidValue
-  }
-  deriving (Show)
 
 resolveObjectTypeResolver ::
   ( MonadReader ResolverContext m,
     MonadError GQLError m
   ) =>
-  (a -> m ValidValue) ->
-  ObjectTypeResolver a ->
+  (m (ResolverValue m) -> m ValidValue) ->
+  ObjectTypeResolver m ->
   SelectionSet VALID ->
   m ValidValue
 resolveObjectTypeResolver f drv@ObjectTypeResolver {__typename} =
@@ -174,9 +181,9 @@ runFieldResolver ::
     MonadReader ResolverContext m,
     MonadError GQLError m
   ) =>
-  (a -> m ValidValue) ->
+  (m (ResolverValue m) -> m ValidValue) ->
   Selection VALID ->
-  ObjectTypeResolver a ->
+  ObjectTypeResolver m ->
   m ValidValue
 runFieldResolver f Selection {selectionName}
   | selectionName == "__typename" =
@@ -202,79 +209,33 @@ withObject __typename f Selection {selectionName, selectionContent, selectionPos
       f selection
     checkContent _ = throwError $ subfieldsNotSelected selectionName "" selectionPosition
 
-instance (MonadError GQLError m) => Semigroup (FieldValue m) where
-  FieldValue a <> FieldValue b = FieldValue $ (,) <$> a <*> b >>= uncurry merge
-
-instance
-  ( Monad m,
-    Applicative f,
-    MonadError GQLError m
-  ) =>
-  Merge f (ResolverObject m)
-  where
-  merge (ObjectTypeResolver typeName x) (ObjectTypeResolver _ y) =
-    pure $ ObjectTypeResolver typeName (HM.unionWith (<>) x y)
-
-newtype FieldValue m = FieldValue {unFieldValue :: m (ResolverValue m)}
-
-type ResolverValue = ResolverValueDefinition
-
-type ResolverObject m = ObjectTypeResolver (FieldValue m)
-
-data ResolverValueDefinition (m :: Type -> Type)
-  = ResNull
-  | ResScalar ScalarValue
-  | ResList [ResolverValueDefinition m]
-  | ResEnum TypeName
-  | ResObject (Maybe TypeName) (ResolverObject m)
-  | ResRef (m NamedResolverRef)
-
-instance Show (ResolverValueDefinition m) where
-  show = undefined
-
-instance IsString (ResolverValueDefinition m) where
-  fromString = ResScalar . fromString
-
-requireObject :: MonadError GQLError f => ResolverValueDefinition m -> f (ResolverObject m)
+requireObject :: MonadError GQLError f => ResolverValue m -> f (ObjectTypeResolver m)
 requireObject (ResObject _ x) = pure x
 requireObject _ = throwError (internal "resolver must be an object")
 
-instance
-  ( Monad f,
-    MonadError GQLError f,
-    Merge f (ResolverObject m)
-  ) =>
-  Merge f (ResolverValueDefinition m)
-  where
-  merge ResNull ResNull = pure ResNull
-  merge ResScalar {} x@ResScalar {} = pure x
-  merge ResEnum {} x@ResEnum {} = pure x
-  merge (ResObject n x) (ResObject _ y) = ResObject n <$> merge x y
-  merge _ _ = throwError (internal "can't merge: incompatible resolvers")
-
-mkString :: Text -> ResolverValueDefinition m
+mkString :: Text -> ResolverValue m
 mkString = ResScalar . String
 
-mkFloat :: Double -> ResolverValueDefinition m
+mkFloat :: Double -> ResolverValue m
 mkFloat = ResScalar . Float
 
-mkInt :: Int -> ResolverValueDefinition m
+mkInt :: Int -> ResolverValue m
 mkInt = ResScalar . Int
 
-mkBoolean :: Bool -> ResolverValueDefinition m
+mkBoolean :: Bool -> ResolverValue m
 mkBoolean = ResScalar . Boolean
 
-mkList :: [ResolverValueDefinition m] -> ResolverValueDefinition m
+mkList :: [ResolverValue m] -> ResolverValue m
 mkList = ResList
 
-mkNull :: ResolverValueDefinition m
+mkNull :: ResolverValue m
 mkNull = ResNull
 
 unpackJSONName :: A.Value -> TypeName
 unpackJSONName (A.String x) = packName x
 unpackJSONName _ = "__JSON__"
 
-mkEnum :: TypeName -> ResolverValueDefinition m
+mkEnum :: TypeName -> ResolverValue m
 mkEnum = ResEnum
 
 resolveResolverDefinition ::
@@ -282,11 +243,13 @@ resolveResolverDefinition ::
     MonadReader ResolverContext m,
     MonadError GQLError m
   ) =>
-  ResolverValueDefinition m ->
+  ResolverMap m ->
+  ResolverValue m ->
   m ValidValue
-resolveResolverDefinition res =
+resolveResolverDefinition rmap res =
   asks currentSelection
     >>= encodeResolverDefinition
+      rmap
       res
       . selectionContent
 
@@ -294,10 +257,11 @@ resolveObject ::
   ( MonadReader ResolverContext m,
     MonadError GQLError m
   ) =>
-  ObjectTypeResolver (FieldValue m) ->
+  ResolverMap m ->
+  ObjectTypeResolver m ->
   SelectionSet VALID ->
   m ValidValue
-resolveObject = resolveObjectTypeResolver (unFieldValue >=> resolveResolverDefinition)
+resolveObject rmap = resolveObjectTypeResolver (>>= resolveResolverDefinition rmap)
 
 type ResolverEntry m = (FieldName, m (ResolverValue m))
 
@@ -310,26 +274,75 @@ encodeResolverDefinition ::
     MonadReader ResolverContext m,
     MonadError GQLError m
   ) =>
-  -- EncoderContext m ->
-  ResolverValueDefinition m ->
+  ResolverMap m ->
+  ResolverValue m ->
   SelectionContent VALID ->
   m ValidValue
-encodeResolverDefinition (ResList xs) selection =
-  List <$> traverse (`encodeResolverDefinition` selection) xs
--- Object -----------------
-encodeResolverDefinition (ResObject tyName obj) _ = do
-  currentTypeName <- asks currentTypeName
-  asks currentSelection >>= withObject (fromMaybe currentTypeName tyName) (resolveObject obj)
--- ENUM
-encodeResolverDefinition (ResEnum enum) SelectionField = handle enum
+encodeResolverDefinition rmap = encodeResolverDefinition'
   where
-    handle x = pure $ Scalar $ String $ unpackName x
-encodeResolverDefinition (ResEnum name) unionSel@UnionSelection {} =
-  encodeResolverDefinition (mkUnion name mkEnumNull) unionSel
-encodeResolverDefinition ResEnum {} _ = throwError (internal "wrong selection on enum value")
--- SCALARS
-encodeResolverDefinition ResNull _ = pure Null
-encodeResolverDefinition (ResScalar x) SelectionField = pure $ Scalar x
-encodeResolverDefinition ResScalar {} _ =
-  throwError (internal "scalar Resolver should only receive SelectionField")
-encodeResolverDefinition (ResRef x) _ = undefined
+    encodeResolverDefinition' (ResLazy x) sel =
+      x >>= (`encodeResolverDefinition'` sel)
+    encodeResolverDefinition' (ResList xs) selection =
+      List <$> traverse (`encodeResolverDefinition'` selection) xs
+    -- Object -----------------
+    encodeResolverDefinition' (ResObject tyName obj) _ = do
+      currentTypeName <- asks currentTypeName
+      asks currentSelection >>= withObject (fromMaybe currentTypeName tyName) (resolveObject rmap obj)
+    -- ENUM
+    encodeResolverDefinition' (ResEnum enum) SelectionField = handle enum
+      where
+        handle x = pure $ Scalar $ String $ unpackName x
+    encodeResolverDefinition' (ResEnum name) unionSel@UnionSelection {} =
+      encodeResolverDefinition' (mkUnion name mkEnumNull) unionSel
+    encodeResolverDefinition' ResEnum {} _ = throwError (internal "wrong selection on enum value")
+    -- SCALARS
+    encodeResolverDefinition' ResNull _ = pure Null
+    encodeResolverDefinition' (ResScalar x) SelectionField = pure $ Scalar x
+    encodeResolverDefinition' ResScalar {} _ =
+      throwError (internal "scalar Resolver should only receive SelectionField")
+    encodeResolverDefinition' (ResRef mRef) sel = do
+      ref <- mRef
+      resolveRef rmap ref sel
+
+runResolverMap ::
+  (Monad m, LiftOperation o) =>
+  Maybe (Selection VALID -> ResolverState (Channel e)) ->
+  TypeName ->
+  ResolverMap (Resolver o e m) ->
+  ResolverContext ->
+  SelectionSet VALID ->
+  ResponseStream e m ValidValue
+runResolverMap
+  channels
+  name
+  res
+  ctx
+  selection = runResolver channels resolvedValue ctx
+    where
+      resolvedValue = resolveRef res (NamedResolverRef name Null) (SelectionSet selection)
+
+resolveRef ::
+  ( MonadError GQLError m,
+    MonadReader ResolverContext m
+  ) =>
+  ResolverMap m ->
+  NamedResolverRef ->
+  SelectionContent VALID ->
+  m ValidValue
+resolveRef rmap ref selection = do
+  namedResolver <- getNamedResolverBy ref rmap
+  case namedResolver of
+    NamedObjectResolver res -> do
+      sel <- asks currentSelection
+      withObject (resolverTypeName ref) (resolveObjectTypeResolver (>>= resolveResolverDefinition rmap) res) sel
+    NamedUnionResolver unionRef -> encodeResolverDefinition rmap (ResRef $ pure unionRef) selection
+    NamedEnumResolver value -> encodeResolverDefinition rmap (ResEnum value) selection
+
+getNamedResolverBy ::
+  (MonadError GQLError m) =>
+  NamedResolverRef ->
+  ResolverMap m ->
+  m (NamedResolverResult m)
+getNamedResolverBy ref = selectOr cantFoundError ((resolverArgument ref &) . resolver) (resolverTypeName ref)
+  where
+    cantFoundError = throwError ("Resolver Type " <> msg (resolverTypeName ref) <> "can't found")

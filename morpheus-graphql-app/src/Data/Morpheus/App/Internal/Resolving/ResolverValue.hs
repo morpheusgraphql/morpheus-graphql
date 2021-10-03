@@ -2,7 +2,7 @@
 
 module Data.Morpheus.App.Internal.Resolving.ResolverValue
   ( ResolverValue,
-    ResolverObject,
+    ObjectTypeResolver,
     mkObject,
     mkObject',
     lookupResJSON,

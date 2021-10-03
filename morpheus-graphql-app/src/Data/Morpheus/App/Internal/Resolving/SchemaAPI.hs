@@ -10,7 +10,7 @@ module Data.Morpheus.App.Internal.Resolving.SchemaAPI
 where
 
 import Data.Morpheus.App.Internal.Resolving.Resolver (Resolver, withArguments)
-import Data.Morpheus.App.Internal.Resolving.ResolverValue (ResolverObject, ResolverValue, mkObject, mkObject')
+import Data.Morpheus.App.Internal.Resolving.ResolverValue (ObjectTypeResolver, ResolverValue, mkObject, mkObject')
 import Data.Morpheus.App.Internal.Resolving.Utils (mkList, mkNull)
 import Data.Morpheus.App.RenderIntrospection
   ( WithSchema,
@@ -69,7 +69,7 @@ schemaResolver schema@Schema {query, mutation, subscription, directiveDefinition
         ("directives", render $ toList directiveDefinitions)
       ]
 
-schemaAPI :: Monad m => Schema VALID -> ResolverObject (Resolver QUERY e m)
+schemaAPI :: Monad m => Schema VALID -> ObjectTypeResolver (Resolver QUERY e m)
 schemaAPI schema =
   mkObject'
     "Root"

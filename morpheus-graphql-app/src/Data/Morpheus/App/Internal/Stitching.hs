@@ -14,11 +14,11 @@ where
 
 import Control.Monad.Except (MonadError (throwError))
 import Data.Morpheus.App.Internal.Resolving (RootResolverValue (..))
-import Data.Morpheus.App.Internal.Resolving.NamedResolver
+import Data.Morpheus.App.Internal.Resolving.Types
   ( NamedResolver (..),
     NamedResolverResult (..),
   )
-import qualified Data.Morpheus.App.Internal.Resolving.Utils as R
+import qualified Data.Morpheus.App.Internal.Resolving.Types as R
 import Data.Morpheus.Error (NameCollision (..))
 import Data.Morpheus.Internal.Ext
   ( Merge (merge),
@@ -130,7 +130,7 @@ stitchSubscriptions Just {} Just {} = throwError ("can't merge  subscription app
 stitchSubscriptions x Nothing = pure x
 stitchSubscriptions Nothing x = pure x
 
-instance Stitching (R.ObjectTypeResolver (m a)) where
+instance Stitching (R.ObjectTypeResolver m) where
   stitch t1 t2
     | R.__typename t1 == R.__typename t2 =
       pure $
