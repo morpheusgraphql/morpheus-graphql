@@ -29,7 +29,7 @@ exampleDeityRepoHandler dbRef =
     handle (CreateDeity diety) = do
       (deities :: [Deity]) <- readIORef dbRef
       writeIORef dbRef $ addOrReplace diety deities
-      pure (Right ())
+      pure (Right diety)
 
 addOrReplace :: Eq a => a -> [a] -> [a]
 addOrReplace a as = a : filter (/= a) as

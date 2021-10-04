@@ -2,6 +2,10 @@ type Query {
   deity(name: String!): Deity!
 }
 
+type Mutation {
+  createDeity(name: String!, power: String): Deity!
+}
+
 """
 Description for Deity
 """

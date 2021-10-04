@@ -21,29 +21,33 @@ import           Data.Morpheus.Types        (Arg (Arg), RootResolver (..),
                                              Undefined (..), liftEither)
 import           Data.Text                  (Text)
 import           Data.Typeable              (Typeable)
-import           DeityRepo                  (DeityRepo, getDeityByName)
+import qualified DeityRepo                  as DR (DeityRepo, Error,
+                                                   createDeity, getDeityByName)
 import           Prelude                    hiding (error)
 import qualified Types                      as T
 
 importGQLDocument =<< makeRelativeToProject "src/api.gql"
 
-api :: (Member DeityRepo effs, Typeable effs) => ByteString -> Eff effs ByteString
+api :: (Member DR.DeityRepo effs, Typeable effs) => ByteString -> Eff effs ByteString
 api = interpreter rootResolver
 
-rootResolver :: Member DeityRepo effs => RootResolver (Eff effs) () Query Undefined Undefined
+rootResolver :: Member DR.DeityRepo effs => RootResolver (Eff effs) () Query Mutation Undefined
 rootResolver =
   RootResolver
     { queryResolver = Query {deity = deityResolver},
-      mutationResolver = Undefined,
+      mutationResolver = Mutation {createDeity = createDeityResolver},
       subscriptionResolver = Undefined
     }
   where
     deityResolver (Arg name) =
-      liftEither $ toResponse <$> getDeityByName name
+      liftEither $ toResponse <$> DR.getDeityByName name
+
+    createDeityResolver CreateDeityArgs {name, power}=
+      liftEither $ toResponse <$> DR.createDeity (T.Deity name power)
 
 toResponse
-  :: (Applicative m, Show a)
-  => Either a T.Deity -> Either String (Deity m)
+  :: (Applicative m)
+  => Either DR.Error T.Deity -> Either String (Deity m)
 toResponse (Right deity) = Right $ toResponse' deity
 toResponse (Left error)  = Left $ show error
 
