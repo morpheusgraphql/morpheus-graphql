@@ -131,14 +131,7 @@ stitchSubscriptions x Nothing = pure x
 stitchSubscriptions Nothing x = pure x
 
 instance Stitching (R.ObjectTypeResolver m) where
-  stitch t1 t2
-    | R.__typename t1 == R.__typename t2 =
-      pure $
-        R.ObjectTypeResolver
-          (R.__typename t1)
-          ( R.objectFields t1 <> R.objectFields t2
-          )
-    | otherwise = throwError "ResolverMap must have same resolverName"
+  stitch t1 t2 = pure $ R.ObjectTypeResolver (R.objectFields t1 <> R.objectFields t2)
 
 instance (MonadError GQLError m) => Stitching (NamedResolverResult m) where
   stitch NamedUnionResolver {} (NamedUnionResolver x) = pure (NamedUnionResolver x)

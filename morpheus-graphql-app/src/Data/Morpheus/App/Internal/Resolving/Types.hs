@@ -19,6 +19,17 @@ module Data.Morpheus.App.Internal.Resolving.Types
     NamedResolverRef (..),
     ResolverValue (..),
     ObjectTypeResolver (..),
+    ResolverEntry,
+    mkEnum,
+    mkBoolean,
+    mkFloat,
+    mkInt,
+    mkList,
+    mkNull,
+    mkString,
+    mkObject,
+    mkObjectMaybe,
+    mkUnion,
   )
 where
 
@@ -29,7 +40,7 @@ import Data.Morpheus.Internal.Utils (KeyOf (keyOf))
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     GQLError,
-    ScalarValue,
+    ScalarValue (..),
     TypeName,
     ValidValue,
     internal,
@@ -48,13 +59,12 @@ instance Show (NamedResolver m) where
   show NamedResolver {..} =
     "NamedResolver { name = " <> show resolverName <> " }"
 
-data ObjectTypeResolver m = ObjectTypeResolver
-  { __typename :: TypeName,
-    objectFields :: HashMap FieldName (m (ResolverValue m))
+newtype ObjectTypeResolver m = ObjectTypeResolver
+  { objectFields :: HashMap FieldName (m (ResolverValue m))
   }
 
 instance Show (ObjectTypeResolver m) where
-  show = undefined
+  show _ = "ObjectTypeResolver {}"
 
 data NamedResolverRef = NamedResolverRef
   { resolverTypeName :: TypeName,
@@ -86,13 +96,13 @@ instance
   ) =>
   Merge f (ObjectTypeResolver m)
   where
-  merge (ObjectTypeResolver typeName x) (ObjectTypeResolver _ y) =
-    pure $ ObjectTypeResolver typeName (HM.unionWith mergeFields x y)
+  merge (ObjectTypeResolver x) (ObjectTypeResolver y) =
+    pure $ ObjectTypeResolver (HM.unionWith mergeFields x y)
     where
       mergeFields a b = (,) <$> a <*> b >>= uncurry merge
 
 instance Show (ResolverValue m) where
-  show = undefined
+  show _ = "ResolverValue {}"
 
 instance IsString (ResolverValue m) where
   fromString = ResScalar . fromString
@@ -109,3 +119,49 @@ instance
   merge ResEnum {} x@ResEnum {} = pure x
   merge (ResObject n x) (ResObject _ y) = ResObject n <$> merge x y
   merge _ _ = throwError (internal "can't merge: incompatible resolvers")
+
+type ResolverEntry m = (FieldName, m (ResolverValue m))
+
+--
+mkString :: Text -> ResolverValue m
+mkString = ResScalar . String
+
+mkFloat :: Double -> ResolverValue m
+mkFloat = ResScalar . Float
+
+mkInt :: Int -> ResolverValue m
+mkInt = ResScalar . Int
+
+mkBoolean :: Bool -> ResolverValue m
+mkBoolean = ResScalar . Boolean
+
+mkList :: [ResolverValue m] -> ResolverValue m
+mkList = ResList
+
+mkNull :: ResolverValue m
+mkNull = ResNull
+
+mkEnum :: TypeName -> ResolverValue m
+mkEnum = ResEnum
+
+mkObject ::
+  TypeName ->
+  [ResolverEntry m] ->
+  ResolverValue m
+mkObject name = mkObjectMaybe (Just name)
+
+mkObjectMaybe ::
+  Maybe TypeName ->
+  [ResolverEntry m] ->
+  ResolverValue m
+mkObjectMaybe name = ResObject name . ObjectTypeResolver . HM.fromList
+
+mkUnion ::
+  (Monad m) =>
+  TypeName ->
+  [ResolverEntry m] ->
+  ResolverValue m
+mkUnion name fields =
+  ResObject
+    (Just name)
+    ObjectTypeResolver {objectFields = HM.fromList fields}

@@ -26,6 +26,8 @@ module Data.Morpheus.App.Internal.Resolving.ResolverState
     runResolverStateM,
     runResolverState,
     runResolverStateValueM,
+    updateCurrentType,
+    askFieldTypeName,
   )
 where
 
@@ -43,16 +45,24 @@ import Data.Morpheus.Internal.Ext
     ResultT (..),
     cleanEvents,
   )
+import Data.Morpheus.Internal.Utils (selectOr)
 import Data.Morpheus.Types.Internal.AST
-  ( GQLError,
+  ( ANY,
+    FieldDefinition (fieldType),
+    FieldName,
+    GQLError,
     Operation,
     Schema,
     Selection (..),
+    TypeContent (..),
+    TypeDefinition (..),
     TypeName,
+    TypeRef (typeConName),
     VALID,
     at,
     internal,
     isInternal,
+    lookupDataType,
     msg,
   )
 import Relude
@@ -61,10 +71,43 @@ data ResolverContext = ResolverContext
   { currentSelection :: Selection VALID,
     schema :: Schema VALID,
     operation :: Operation VALID,
-    currentTypeName :: TypeName,
-    config :: Config
+    config :: Config,
+    currentType :: TypeDefinition ANY VALID
   }
   deriving (Show)
+
+updateCurrentType ::
+  ( MonadReader ResolverContext m,
+    MonadError GQLError m
+  ) =>
+  Maybe TypeName ->
+  m a ->
+  m a
+updateCurrentType = maybe id setCurrentType
+
+setCurrentType ::
+  ( MonadReader ResolverContext m,
+    MonadError GQLError m
+  ) =>
+  TypeName ->
+  m a ->
+  m a
+setCurrentType name ma = do
+  t <- asks (lookupDataType name . schema)
+  maybe
+    (const $ throwError $ internal "Unknown type \"" <> msg name <> "\".")
+    (\currentType -> local (\ctx -> ctx {currentType}))
+    t
+    ma
+
+fieldTypeName :: FieldName -> TypeDefinition ANY VALID -> Maybe TypeName
+fieldTypeName name t = case typeContent t of
+  (DataObject _ fs) -> selectOr Nothing (Just . typeConName . fieldType) name fs
+  (DataInterface fs) -> selectOr Nothing (Just . typeConName . fieldType) name fs
+  _ -> Nothing
+
+askFieldTypeName :: MonadReader ResolverContext m => FieldName -> m (Maybe TypeName)
+askFieldTypeName name = asks (fieldTypeName name . currentType)
 
 type ResolverState = ResolverStateT () Identity
 
@@ -162,9 +205,9 @@ renderContext
     { currentSelection,
       schema,
       operation,
-      currentTypeName
+      currentType
     } =
-    renderSection "Current Type" currentTypeName
+    renderSection "Current Type" (typeName currentType)
       <> renderSection "Current Selection" currentSelection
       <> renderSection "OperationDefinition" operation
       <> renderSection "SchemaDefinition" schema

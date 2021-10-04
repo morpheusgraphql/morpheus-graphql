@@ -22,9 +22,7 @@ import Data.Morpheus.App.Internal.Resolving.Types
     NamedResolverResult (..),
     ObjectTypeResolver (..),
     ResolverMap,
-  )
-import Data.Morpheus.App.Internal.Resolving.Utils
-  ( ResolverValue (..),
+    ResolverValue (..),
     mkEnum,
     mkList,
   )
@@ -80,5 +78,5 @@ mkResolverMap = HM.fromList . map packRes
           )
       )
       where
-        mapValue (Object x) = NamedObjectResolver (ObjectTypeResolver typeName $ HM.fromList x)
+        mapValue (Object x) = NamedObjectResolver (ObjectTypeResolver $ HM.fromList x)
         mapValue (Union name x) = NamedUnionResolver (NamedResolverRef name x)

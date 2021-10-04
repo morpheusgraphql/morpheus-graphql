@@ -14,6 +14,7 @@
 module Data.Morpheus.Server.Deriving.Named.EncodeType
   ( deriveResolver,
     EncodeTypeConstraint,
+    DeriveNamedResolver (..),
   )
 where
 
@@ -63,7 +64,14 @@ deriveResolver :: Mappable (DeriveNamedResolver m) [NamedResolver m] KindedProxy
 deriveResolver = Mappable deriveNamedResolver
 
 type EncodeTypeConstraint m a =
-  ( ScanConstraint (DeriveNamedResolver m) (KIND (a (NamedResolverT m))) (a (NamedResolverT m)),
+  ( GFmap
+      (ScanConstraint (DeriveNamedResolver m))
+      (KIND (a (NamedResolverT m)))
+      (a (NamedResolverT m)),
+    DeriveNamedResolver
+      m
+      (KIND (a (NamedResolverT m)))
+      (a (NamedResolverT m)),
     GQLType (a (NamedResolverT m))
   )
 

@@ -14,6 +14,8 @@ import qualified Data.Aeson as A
 import Data.Morpheus.App.Internal.Resolving.Event
   ( EventHandler (..),
   )
+import Data.Morpheus.App.Internal.Resolving.NamedResolver (runResolverMap)
+import Data.Morpheus.App.Internal.Resolving.ResolveValue
 import Data.Morpheus.App.Internal.Resolving.Resolver
   ( LiftOperation,
     Resolver,
@@ -26,13 +28,11 @@ import Data.Morpheus.App.Internal.Resolving.ResolverState
     runResolverStateT,
     toResolverStateT,
   )
-import Data.Morpheus.App.Internal.Resolving.ResolverValue
-  ( lookupResJSON,
-    resolveObject,
-  )
 import Data.Morpheus.App.Internal.Resolving.SchemaAPI (schemaAPI)
 import Data.Morpheus.App.Internal.Resolving.Types
-import Data.Morpheus.App.Internal.Resolving.Utils (runResolverMap)
+import Data.Morpheus.App.Internal.Resolving.Utils
+  ( lookupResJSON,
+  )
 import Data.Morpheus.Internal.Ext (merge)
 import Data.Morpheus.Types.Internal.AST
   ( GQLError,

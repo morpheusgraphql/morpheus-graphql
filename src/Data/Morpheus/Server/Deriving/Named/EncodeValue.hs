@@ -159,8 +159,7 @@ convertNamedNode ::
   NamedResolverResult m
 convertNamedNode
   DataType
-    { tyName,
-      tyIsUnion,
+    { tyIsUnion,
       tyCons = ConsRep {consFields, consName}
     }
     | null consFields = NamedEnumResolver consName
@@ -168,8 +167,7 @@ convertNamedNode
     | otherwise =
       NamedObjectResolver
         ObjectTypeResolver
-          { __typename = tyName,
-            objectFields = HM.fromList (toFieldRes <$> consFields)
+          { objectFields = HM.fromList (toFieldRes <$> consFields)
           }
 
 getTypeName :: GQLType a => f a -> TypeName

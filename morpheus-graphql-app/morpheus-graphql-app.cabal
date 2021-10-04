@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 738fb901c52d280866f1770873e5693534c25c94860eb4c631342e88f55ebd25
+-- hash: be1940b9b2ed10a736cb80548385ffe64e235530fb20ceed116da289d9668bb0
 
 name:           morpheus-graphql-app
 version:        0.17.0
@@ -103,9 +103,10 @@ library
       Data.Morpheus.Types.GQLWrapper
   other-modules:
       Data.Morpheus.App.Internal.Resolving.Event
+      Data.Morpheus.App.Internal.Resolving.NamedResolver
       Data.Morpheus.App.Internal.Resolving.Resolver
       Data.Morpheus.App.Internal.Resolving.ResolverState
-      Data.Morpheus.App.Internal.Resolving.ResolverValue
+      Data.Morpheus.App.Internal.Resolving.ResolveValue
       Data.Morpheus.App.Internal.Resolving.RootResolverValue
       Data.Morpheus.App.Internal.Resolving.SchemaAPI
       Data.Morpheus.App.Internal.Resolving.Types
