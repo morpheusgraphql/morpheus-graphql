@@ -5,9 +5,8 @@
 
 module DeityRepo where
 
-import           Control.Monad.Freer
-import           Control.Monad.Freer.State
-import Types
+import           Control.Monad.Freer (Eff, Member, send)
+import           Types               (Deity, Name)
 
 data Error = DeityDoesNotExist Name | Unknown deriving Show
 

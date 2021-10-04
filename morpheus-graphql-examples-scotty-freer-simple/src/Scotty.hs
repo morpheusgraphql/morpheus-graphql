@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE MonoLocalBinds        #-}
@@ -6,20 +5,13 @@
 
 module Scotty (routes) where
 
-import           API               (api)
-import           Control.Monad.Freer                              (Eff,
-                                                                   LastMember,
-                                                                   Member)
-import           Control.Monad.Trans.Class                        (lift)
-import           Data.Typeable                                    (Typeable)
-import           Web.Scotty.Trans                                 (ScottyError,
-                                                                   ScottyT,
-                                                                   body, get,
-                                                                   json,
-                                                                   jsonData,
-                                                                   param, post,
-                                                                   raw)
-import DeityRepo 
+import           API                       (api)
+import           Control.Monad.Freer       (Eff, LastMember, Member)
+import           Control.Monad.Trans.Class (lift)
+import           Data.Typeable             (Typeable)
+import           DeityRepo                 (DeityRepo)
+import           Web.Scotty.Trans          (ScottyError, ScottyT, body, post,
+                                            raw)
 
 routes
   :: ( ScottyError e

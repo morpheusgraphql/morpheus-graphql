@@ -12,17 +12,20 @@
 
 module API (api) where
 
+import           Control.Monad.Freer        (Eff, Member)
 import           Data.ByteString.Lazy.Char8 (ByteString)
+import           Data.FileEmbed             (makeRelativeToProject)
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Document     (importGQLDocument)
-import           Data.Morpheus.Types        (RootResolver (..), Undefined (..), liftEither)
+import           Data.Morpheus.Types        (Arg (Arg), RootResolver (..),
+                                             Undefined (..), liftEither)
 import           Data.Text                  (Text)
-import           Data.Typeable                                (Typeable)
-import DeityRepo 
-import qualified Types as T
-import Control.Monad.Freer
+import           Data.Typeable              (Typeable)
+import           DeityRepo                  (DeityRepo, getDeityByName)
+import           Prelude                    hiding (error)
+import qualified Types                      as T
 
-importGQLDocument "src/api.gql"
+importGQLDocument =<< makeRelativeToProject "src/api.gql"
 
 api :: (Member DeityRepo effs, Typeable effs) => ByteString -> Eff effs ByteString
 api = interpreter rootResolver
@@ -30,19 +33,19 @@ api = interpreter rootResolver
 rootResolver :: Member DeityRepo effs => RootResolver (Eff effs) () Query Undefined Undefined
 rootResolver =
   RootResolver
-    { queryResolver = Query {deity},
+    { queryResolver = Query {deity = deityResolver},
       mutationResolver = Undefined,
       subscriptionResolver = Undefined
     }
   where
-    deity DeityArgs {name} =
+    deityResolver (Arg name) =
       liftEither $ toResponse <$> getDeityByName name
 
 toResponse
   :: (Applicative m, Show a)
   => Either a T.Deity -> Either String (Deity m)
-toResponse (Right deity)  = Right $ toResponse' deity
-toResponse (Left error) = Left $ show error
+toResponse (Right deity) = Right $ toResponse' deity
+toResponse (Left error)  = Left $ show error
 
 toResponse' :: Applicative m => T.Deity -> Deity m
 toResponse' (T.Deity name power) = Deity { name = pure name, power = pure power }

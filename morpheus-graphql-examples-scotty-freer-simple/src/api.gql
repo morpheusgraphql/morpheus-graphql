@@ -1,5 +1,5 @@
 type Query {
-  deity(name: String! = "Morpheus"): Deity!
+  deity(name: String!): Deity!
 }
 
 """

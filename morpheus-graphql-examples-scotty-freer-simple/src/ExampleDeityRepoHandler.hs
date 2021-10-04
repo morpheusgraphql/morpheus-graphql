@@ -3,29 +3,36 @@
 {-# LANGUAGE GADTs               #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module ExampleDeityRepoHandler (exampleDeityRepoHandler) where
+module ExampleDeityRepoHandler where
 
-import           DeityRepo (DeityRepo (..), Error (..))
-import           Control.Monad.Freer                          (Eff, reinterpret, runM, interpretM,
-                                                               run)
-import Control.Monad.Freer.State
-import           Data.List                                    (find)
-import Types
+import           Control.Monad.Freer (Eff, interpretM, runM)
+import           Data.IORef          (IORef, newIORef, readIORef, writeIORef)
+import           Data.List           (find)
+import           DeityRepo           (DeityRepo (..), Error (..))
+import           Types               (Deity (Deity))
 
-exampleDeityRepoHandler :: Eff '[DeityRepo, IO] a -> IO a
-exampleDeityRepoHandler request = 
+deityIORef :: IO (IORef [Deity])
+deityIORef = newIORef []
+
+type DeityIORef = IORef [Deity]
+
+exampleDeityRepoHandler :: DeityIORef -> Eff '[DeityRepo, IO] a -> IO a
+exampleDeityRepoHandler dbRef =
   runM . interpretM handle
   where
     handle :: DeityRepo v -> IO v
     handle (GetDeityByName name) = do
-      (deities :: [Deity]) <- get
+      (deities :: [Deity]) <- readIORef dbRef
       let result = find (\(Deity name' _) -> name == name') deities
       pure $ toEither (DeityDoesNotExist name) result
 
     handle (CreateDeity diety) = do
-      (deities :: [Deity]) <- get
-      put (diety : deities)
+      (deities :: [Deity]) <- readIORef dbRef
+      writeIORef dbRef $ addOrReplace diety deities
       pure (Right ())
+
+addOrReplace :: Eq a => a -> [a] -> [a]
+addOrReplace a as = a : filter (/= a) as
 
 toEither :: b -> Maybe a -> Either b a
 toEither b Nothing  = Left b

@@ -13,74 +13,31 @@ author:         Author name here
 maintainer:     example@example.com
 copyright:      2021 Author name here
 license:        BSD3
-license-file:   LICENSE
 build-type:     Simple
 
 source-repository head
   type: git
   location: https://github.com/githubuser/morpheus-graphql-examples-scotty-freer-simple
 
-library
-  exposed-modules:
+executable scotty-freer-simple-server
+  main-is: Main.hs
+  other-modules:
       API
       DeityRepo
       ExampleDeityRepoHandler
       Lib
       Scotty
       Types
-  other-modules:
       Paths_morpheus_graphql_examples_scotty_freer_simple
   hs-source-dirs:
       src
+  ghc-options: -Wall
   build-depends:
       base >=4.7 && <5
     , bytestring
     , file-embed
     , freer-simple
     , morpheus-graphql
-    , scotty
-    , text
-    , transformers
-    , wai
-    , warp
-  default-language: Haskell2010
-
-executable morpheus-graphql-examples-scotty-freer-simple-exe
-  main-is: Main.hs
-  other-modules:
-      Paths_morpheus_graphql_examples_scotty_freer_simple
-  hs-source-dirs:
-      app
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall
-  build-depends:
-      base >=4.7 && <5
-    , bytestring
-    , file-embed
-    , freer-simple
-    , morpheus-graphql
-    , morpheus-graphql-examples-scotty-freer-simple
-    , scotty
-    , text
-    , transformers
-    , wai
-    , warp
-  default-language: Haskell2010
-
-test-suite morpheus-graphql-examples-scotty-freer-simple-test
-  type: exitcode-stdio-1.0
-  main-is: Spec.hs
-  other-modules:
-      Paths_morpheus_graphql_examples_scotty_freer_simple
-  hs-source-dirs:
-      test
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N -Wall
-  build-depends:
-      base >=4.7 && <5
-    , bytestring
-    , file-embed
-    , freer-simple
-    , morpheus-graphql
-    , morpheus-graphql-examples-scotty-freer-simple
     , scotty
     , text
     , transformers
