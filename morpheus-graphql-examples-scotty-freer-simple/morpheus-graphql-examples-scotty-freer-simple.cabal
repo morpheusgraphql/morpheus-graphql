@@ -24,7 +24,9 @@ library
   exposed-modules:
       API
       DeityRepo
+      ExampleDeityRepoHandler
       Lib
+      Scotty
       Types
   other-modules:
       Paths_morpheus_graphql_examples_scotty_freer_simple
@@ -38,6 +40,7 @@ library
     , morpheus-graphql
     , scotty
     , text
+    , transformers
   default-language: Haskell2010
 
 executable morpheus-graphql-examples-scotty-freer-simple-exe
@@ -56,6 +59,7 @@ executable morpheus-graphql-examples-scotty-freer-simple-exe
     , morpheus-graphql-examples-scotty-freer-simple
     , scotty
     , text
+    , transformers
   default-language: Haskell2010
 
 test-suite morpheus-graphql-examples-scotty-freer-simple-test
@@ -75,4 +79,5 @@ test-suite morpheus-graphql-examples-scotty-freer-simple-test
     , morpheus-graphql-examples-scotty-freer-simple
     , scotty
     , text
+    , transformers
   default-language: Haskell2010

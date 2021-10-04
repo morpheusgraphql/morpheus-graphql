@@ -9,12 +9,13 @@ description:         example of graphql apis with scotty and freer-simple
 
 dependencies:
 - base >= 4.7 && < 5
-- freer-simple
 - bytestring
 - file-embed
+- freer-simple
 - morpheus-graphql
 - scotty
 - text
+- transformers
 
 
 library:

@@ -1,19 +1,31 @@
-module Lib where
+{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE MonoLocalBinds    #-}
+{-# LANGUAGE OverloadedStrings #-}
 
--- import           Data.Typeable (Typeable)
--- routes
---   :: ( Typeable effs
---      , Member OrganizationRepo effs
---      , LastMember IO effs )
---   => ScottyT Text (Eff effs) ()
--- routes = do
---     Organization.routes
---     otherRoutes
+module Lib (
+    -- server,
+) where
 
--- server :: Bool -> IO () -> IO ()
--- server showStart readyAction = do
+-- import           Control.Monad.Freer                              (Eff,
+--                                                                    LastMember,
+--                                                                    Member)
+-- import           Data.Text.Lazy                                   (Text)
+-- import           Data.Typeable                                    (Typeable)
+-- import           Network.Wai.Handler.Warp                         (defaultSettings,
+--                                                                    setBeforeMainLoop,
+--                                                                    setPort)
+-- import           Web.Scotty                                       (Options (Options))
+-- import           Web.Scotty.Trans                                 (ScottyT, get,
+--                                                                    html, param,
+--                                                                    scottyOptsT)
+
+-- server :: IO ()
+-- server = server' True (pure ())
+
+-- server' :: Bool -> IO () -> IO ()
+-- server' showStart readyAction = do
 --     db <- organizationDBRef
---     scottyOptsT  (Options showStartMessage settings) (persistentOrgRepoHandler db) routes
+--     scottyOptsT  (Options showStartMessage settings) handlers routes
 --   where
 --     settings =
 --         setBeforeMainLoop readyAction $
@@ -21,6 +33,7 @@ module Lib where
 --             defaultSettings
 --     showStartMessage = if showStart then 1 else 0
 
--- webServer :: IO ()
--- webServer = server True (pure ())
+-- handlers = undefined
+
+
 
