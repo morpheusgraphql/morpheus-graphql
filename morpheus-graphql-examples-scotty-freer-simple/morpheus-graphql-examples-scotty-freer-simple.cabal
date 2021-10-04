@@ -25,6 +25,7 @@ library
       API
       DeityRepo
       Lib
+      Types
   other-modules:
       Paths_morpheus_graphql_examples_scotty_freer_simple
   hs-source-dirs:

@@ -5,19 +5,11 @@
 
 module DeityRepo (DeityRepo, getDeityByName) where
 
-import           Control.Monad.Freer       (Eff, Member, send)
-import           Control.Monad.Freer.State ()
+import           Control.Monad.Freer
+import           Control.Monad.Freer.State
+import Types
 
-
-
-data Deity = Deity {
-  name  :: Name,
-  power :: Power
-} deriving (Show)
-
-type Name = String
-type Power = String
-data Error = DeityDoesNotExist Name | Unknown
+data Error = DeityDoesNotExist Name | Unknown deriving Show
 
 data DeityRepo r where
   GetDeityByName :: Name -> DeityRepo (Either Error Deity)

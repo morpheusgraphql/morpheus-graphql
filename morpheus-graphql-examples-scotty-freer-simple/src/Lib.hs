@@ -1,6 +1,6 @@
 module Lib where
 
-import           Data.Typeable (Typeable)
+-- import           Data.Typeable (Typeable)
 -- routes
 --   :: ( Typeable effs
 --      , Member OrganizationRepo effs

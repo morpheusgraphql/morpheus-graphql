@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts      #-}
@@ -12,15 +13,21 @@
 module API (api) where
 
 import           Data.ByteString.Lazy.Char8 (ByteString)
-import           Data.FileEmbed             (makeRelativeToProject)
 import           Data.Morpheus              (interpreter)
 import           Data.Morpheus.Document     (importGQLDocument)
-import           Data.Morpheus.Types        (RootResolver (..), Undefined (..))
+import           Data.Morpheus.Types        (RootResolver (..), Undefined (..), liftEither)
 import           Data.Text                  (Text)
+import           Data.Typeable                                (Typeable)
+import DeityRepo 
+import qualified Types as T
+import Control.Monad.Freer
 
-importGQLDocument =<< makeRelativeToProject "src/api.gql"
+importGQLDocument "src/api.gql"
 
-rootResolver :: RootResolver IO () Query Undefined Undefined
+api :: (Member DeityRepo effs, Typeable effs) => ByteString -> Eff effs ByteString
+api = interpreter rootResolver
+
+rootResolver :: Member DeityRepo effs => RootResolver (Eff effs) () Query Undefined Undefined
 rootResolver =
   RootResolver
     { queryResolver = Query {deity},
@@ -29,11 +36,13 @@ rootResolver =
     }
   where
     deity DeityArgs {name} =
-      pure
-        Deity
-          { name = pure name,
-            power = pure (Just "Shapeshifting")
-          }
+      liftEither $ toResponse <$> getDeityByName name
 
-api :: ByteString -> IO ByteString
-api = interpreter rootResolver
+toResponse
+  :: (Applicative m, Show a)
+  => Either a T.Deity -> Either String (Deity m)
+toResponse (Right deity)  = Right $ toResponse' deity
+toResponse (Left error) = Left $ show error
+
+toResponse' :: Applicative m => T.Deity -> Deity m
+toResponse' (T.Deity name power) = Deity { name = pure name, power = pure power }
