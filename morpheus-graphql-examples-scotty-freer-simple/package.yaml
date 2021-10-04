@@ -12,6 +12,9 @@ dependencies:
 - freer-simple
 - morpheus-graphql
 - scotty
+- text
+- bytestring
+- file-embed
 
 
 library:

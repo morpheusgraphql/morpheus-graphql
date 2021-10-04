@@ -1,0 +1,14 @@
+type Query {
+  deity(name: String! = "Morpheus"): Deity!
+}
+
+"""
+Description for Deity
+"""
+type Deity {
+  """
+  Description for name
+  """
+  name: String!
+  power: String @deprecated(reason: "some reason for")
+}
