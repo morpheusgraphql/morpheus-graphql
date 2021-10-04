@@ -3,7 +3,7 @@
 {-# LANGUAGE GADTs               #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module ExampleDeityRepoHandler where
+module ExampleDeityRepoHandler (exampleDeityRepoHandler) where
 
 import           DeityRepo (DeityRepo (..), Error (..))
 import           Control.Monad.Freer                          (Eff, reinterpret, runM, interpretM,
@@ -12,10 +12,11 @@ import Control.Monad.Freer.State
 import           Data.List                                    (find)
 import Types
 
-exampleDeityRepoHandler :: Eff '[DeityRepo] a -> (a, [Deity])
-exampleDeityRepoHandler request = run (runState [] (reinterpret handle request))
+exampleDeityRepoHandler :: Eff '[DeityRepo, IO] a -> IO a
+exampleDeityRepoHandler request = 
+  runM . interpretM handle
   where
-    handle :: DeityRepo v -> Eff '[State [Deity]] v
+    handle :: DeityRepo v -> IO v
     handle (GetDeityByName name) = do
       (deities :: [Deity]) <- get
       let result = find (\(Deity name' _) -> name == name') deities
