@@ -26,7 +26,7 @@ import Data.Morpheus.Server.Deriving.Encode
   ( EncodeConstraints,
     deriveModel,
   )
-import Data.Morpheus.Server.Deriving.EncodeNamed
+import Data.Morpheus.Server.Deriving.Named.Encode
   ( EncodeNamedConstraints,
     deriveNamedModel,
   )
