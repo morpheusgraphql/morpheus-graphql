@@ -9,6 +9,8 @@
 - fixed: Generation of data constructors for non-capitalized enums
 - fixed invalid scalar type generation and added tests to ensure their validity for each upcoming version [#583](https://github.com/morpheusgraphql/morpheus-graphql/issues/583)
 
+- return all response errors gracefully as a Left when fetching [#577](https://github.com/morpheusgraphql/morpheus-graphql/issues/577) - Thanks @AlistairB
+
 ## 0.17.0 - 25.02.2021
 
 ### Breaking changes

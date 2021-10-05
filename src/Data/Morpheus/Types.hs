@@ -54,10 +54,16 @@ module Data.Morpheus.Types
     App,
     RenderGQL,
     render,
-    GQLTypeOptions (..),
     TypeGuard (..),
     Arg (..),
     NamedResolvers (..),
+
+    -- * GQLType naming configuration
+    GQLTypeOptions,
+    defaultTypeOptions,
+    fieldLabelModifier,
+    constructorTagModifier,
+    typeNameModifier,
   )
 where
 
@@ -86,6 +92,7 @@ import Data.Morpheus.NamedResolvers
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     GQLTypeOptions (..),
+    defaultTypeOptions,
   )
 import Data.Morpheus.Server.Types.Types
   ( Arg (..),

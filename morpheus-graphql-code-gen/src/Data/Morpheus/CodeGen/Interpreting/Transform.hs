@@ -9,6 +9,7 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE CPP #-}
 
 module Data.Morpheus.CodeGen.Interpreting.Transform
   ( parseServerTypeDefinitions,
@@ -85,7 +86,11 @@ isParametrizedHaskellType :: Info -> Bool
 isParametrizedHaskellType (TyConI x) = not $ null $ getTypeVariables x
 isParametrizedHaskellType _ = False
 
+#if MIN_VERSION_template_haskell(2,17,0)
+getTypeVariables :: Dec -> [TyVarBndr ()]
+#else
 getTypeVariables :: Dec -> [TyVarBndr]
+#endif
 getTypeVariables (DataD _ _ args _ _ _) = args
 getTypeVariables (NewtypeD _ _ args _ _ _) = args
 getTypeVariables (TySynD _ args _) = args

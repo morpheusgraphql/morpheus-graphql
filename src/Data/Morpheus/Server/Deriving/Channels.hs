@@ -102,7 +102,7 @@ class GetChannel e a | a -> e where
   getChannel :: a -> ChannelRes e
 
 instance GetChannel e (SubscriptionField (Resolver SUBSCRIPTION e m a)) where
-  getChannel = const . pure . DerivedChannel . channel
+  getChannel x = const $ pure $ DerivedChannel $ channel x
 
 instance
   DecodeConstraint arg =>
