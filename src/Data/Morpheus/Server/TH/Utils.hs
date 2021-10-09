@@ -20,7 +20,7 @@ where
 import Data.Morpheus.CodeGen.Internal.AST
   ( CodeGenConfig,
   )
-import Data.Morpheus.Internal.TH
+import Data.Morpheus.CodeGen.Internal.TH
   ( _',
     apply,
     funDSimple,

@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
@@ -9,7 +10,6 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE CPP #-}
 
 module Data.Morpheus.CodeGen.Interpreting.Transform
   ( parseServerTypeDefinitions,
@@ -27,15 +27,16 @@ import Data.Morpheus.CodeGen.Internal.AST
     ServerFieldDefinition (..),
     ServerTypeDefinition (..),
   )
+import Data.Morpheus.CodeGen.Internal.TH
+  ( ToName (toName),
+    camelCaseFieldName,
+    camelCaseTypeName,
+  )
 import Data.Morpheus.Core
   ( parseTypeDefinitions,
   )
 import Data.Morpheus.Error (gqlWarnings, renderGQLErrors)
 import Data.Morpheus.Internal.Ext (GQLResult, Result (..))
-import Data.Morpheus.Internal.TH (ToName (toName), camelCaseFieldName)
-import Data.Morpheus.Internal.Utils
-  ( camelCaseTypeName,
-  )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentDefinition (..),

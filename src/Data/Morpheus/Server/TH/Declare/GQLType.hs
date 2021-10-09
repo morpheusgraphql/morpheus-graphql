@@ -21,7 +21,7 @@ import Data.Morpheus.CodeGen.Internal.AST
     Kind (..),
     ServerTypeDefinition (..),
   )
-import Data.Morpheus.Internal.TH
+import Data.Morpheus.CodeGen.Internal.TH
   ( apply,
     applyVars,
     typeInstanceDec,

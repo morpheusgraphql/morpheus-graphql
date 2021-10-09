@@ -18,7 +18,7 @@ import Data.Morpheus.Client.Internal.Types
 import Data.Morpheus.Client.Internal.Utils
   ( isEnum,
   )
-import Data.Morpheus.Internal.TH
+import Data.Morpheus.CodeGen.Internal.TH
   ( camelCaseTypeName,
     declareTypeRef,
     toCon,

@@ -11,7 +11,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Internal.TH
+module Data.Morpheus.CodeGen.Internal.TH
   ( _',
     apply,
     applyCons,
@@ -30,16 +30,17 @@ module Data.Morpheus.Internal.TH
   )
 where
 
-import Data.Morpheus.Internal.Utils
-  ( camelCaseFieldName,
-    camelCaseTypeName,
+import Data.Char
+  ( toLower,
+    toUpper,
   )
+import qualified Data.Morpheus.Types.Internal.AST as N
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     TypeName,
     TypeRef (..),
     TypeWrapper (..),
-    toHaskellName,
+    packName,
     unpackName,
   )
 import qualified Data.Text as T
@@ -181,14 +182,67 @@ typeInstanceDec :: Name -> Type -> Type -> Dec
 typeInstanceDec typeFamily arg res = TySynInstD typeFamily (TySynEqn [arg] res)
 #endif
 
----
+---Name
+
+mapFstChar :: (Char -> Char) -> Text -> Text
+mapFstChar f x
+  | T.null x = x
+  | otherwise = T.singleton (f $ T.head x) <> T.tail x
+
+capitalize :: Text -> Text
+capitalize = mapFstChar toUpper
+
+camelCaseTypeName :: [N.Name t] -> TypeName -> TypeName
+camelCaseTypeName list name =
+  packName $ T.concat $
+    map (capitalize . unpackName) (list <> [coerce name])
 
 toHaskellTypeName :: TypeName -> String
 toHaskellTypeName "String" = "Text"
 toHaskellTypeName "Boolean" = "Bool"
 toHaskellTypeName "Float" = "Double"
-toHaskellTypeName name = T.unpack $ capitalize name $ unpackName name
+toHaskellTypeName name = T.unpack $ capitalize $ unpackName name
 {-# INLINE toHaskellTypeName #-}
 
--- TODO:
-capitalize = undefined
+uncapitalize :: Text -> Text
+uncapitalize = mapFstChar toLower
+
+camelCaseFieldName :: TypeName -> FieldName -> FieldName
+camelCaseFieldName nSpace name =
+  packName $
+    uncapitalize (unpackName nSpace)
+      <> capitalize (unpackName name)
+
+toHaskellName :: FieldName -> String
+toHaskellName name
+  | isReserved name = T.unpack (unpackName name <> "'")
+  | otherwise = T.unpack (uncapitalize (unpackName name))
+{-# INLINE toHaskellName #-}
+
+-- handle reserved Names
+isReserved :: FieldName -> Bool
+isReserved "case" = True
+isReserved "class" = True
+isReserved "data" = True
+isReserved "default" = True
+isReserved "deriving" = True
+isReserved "do" = True
+isReserved "else" = True
+isReserved "foreign" = True
+isReserved "if" = True
+isReserved "import" = True
+isReserved "in" = True
+isReserved "infix" = True
+isReserved "infixl" = True
+isReserved "infixr" = True
+isReserved "instance" = True
+isReserved "let" = True
+isReserved "module" = True
+isReserved "newtype" = True
+isReserved "of" = True
+isReserved "then" = True
+isReserved "type" = True
+isReserved "where" = True
+isReserved "_" = True
+isReserved _ = False
+{-# INLINE isReserved #-}

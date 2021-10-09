@@ -4,6 +4,7 @@
 
 ### Minor Changes
 
+- added `morpheus-graphql-code-gen` to dependency
 - Add defineBy\*File' variants that take a `Q FilePath` [#584](https://github.com/morpheusgraphql/morpheus-graphql/pull/584)
 
 - fixed: Generation of data constructors for non-capitalized enums

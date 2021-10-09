@@ -1,9 +1,9 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE CPP #-}
 
 module Data.Morpheus.Server.TH.Declare.Type
   ( declareType,
@@ -18,7 +18,7 @@ import Data.Morpheus.CodeGen.Internal.AST
     ServerTypeDefinition (..),
     unpackName,
   )
-import Data.Morpheus.Internal.TH
+import Data.Morpheus.CodeGen.Internal.TH
   ( apply,
     declareTypeRef,
     toCon,
@@ -64,6 +64,7 @@ declareType
     where
       derivings = DerivClause Nothing (map (ConT . genName) derives)
       cons = map declareCons tCons
+
 #if MIN_VERSION_template_haskell(2,17,0)
       vars = map (flip PlainTV ()) (renderTypeVars typeParameters)
 #else

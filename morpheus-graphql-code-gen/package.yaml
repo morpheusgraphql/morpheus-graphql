@@ -33,7 +33,7 @@ library:
   exposed-modules:
     - Data.Morpheus.CodeGen.Internal.AST
     - Data.Morpheus.CodeGen
-    - Data.Morpheus.Internal.TH
+    - Data.Morpheus.CodeGen.Internal.TH
   ghc-options: -Wall
 
 executables:

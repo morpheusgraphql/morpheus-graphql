@@ -7,9 +7,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Internal.Utils
-  ( camelCaseTypeName,
-    camelCaseFieldName,
-    singleton,
+  ( singleton,
     IsMap,
     Failure,
     failure,
@@ -66,8 +64,6 @@ import Data.Morpheus.Types.Internal.AST.Name
   ( FieldName,
     Name (..),
     TypeName,
-    camelCaseFieldName,
-    camelCaseTypeName,
   )
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
