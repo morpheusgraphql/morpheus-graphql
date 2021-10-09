@@ -17,7 +17,6 @@ module Data.Morpheus.Types.Internal.AST.Name
     TypeName,
     fromHaskellName,
     toHaskellName,
-    toHaskellTypeName,
     unitTypeName,
     unitFieldName,
     isNotSystemTypeName,
@@ -167,13 +166,6 @@ toHaskellName name
   | isReserved name = T.unpack (unpackName name <> "'")
   | otherwise = T.unpack (uncapitalize (unpackName name))
 {-# INLINE toHaskellName #-}
-
-toHaskellTypeName :: TypeName -> String
-toHaskellTypeName "String" = "Text"
-toHaskellTypeName "Boolean" = "Bool"
-toHaskellTypeName "Float" = "Double"
-toHaskellTypeName (Name name) = T.unpack $ capitalize name
-{-# INLINE toHaskellTypeName #-}
 
 mapFstChar :: (Char -> Char) -> Text -> Text
 mapFstChar f x

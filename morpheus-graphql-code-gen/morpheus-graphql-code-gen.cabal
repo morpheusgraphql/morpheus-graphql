@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.33.0.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 32983807cf2e7ed977d5c8fe4f5fa9dc9d1f9c4620fcaa6f6f52a85e72048036
+-- hash: 11df74f30b8b31e04e49d27160da591da97f1c9821cc3778170ee6bf69af0bb8
 
 name:           morpheus-graphql-code-gen
 version:        0.17.0
@@ -31,6 +31,7 @@ library
   exposed-modules:
       Data.Morpheus.CodeGen.Internal.AST
       Data.Morpheus.CodeGen
+      Data.Morpheus.Internal.TH
   other-modules:
       Data.Morpheus.CodeGen.Interpreting.Transform
       Data.Morpheus.CodeGen.Printing.GQLType

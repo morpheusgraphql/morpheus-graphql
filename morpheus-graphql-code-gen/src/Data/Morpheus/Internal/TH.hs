@@ -30,17 +30,16 @@ module Data.Morpheus.Internal.TH
   )
 where
 
-import Data.Morpheus.Types.Internal.AST
-  ( TypeRef (..),
-    TypeWrapper (..),
+import Data.Morpheus.Internal.Utils
+  ( camelCaseFieldName,
+    camelCaseTypeName,
   )
-import Data.Morpheus.Types.Internal.AST.Name
+import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     TypeName,
-    camelCaseFieldName,
-    camelCaseTypeName,
+    TypeRef (..),
+    TypeWrapper (..),
     toHaskellName,
-    toHaskellTypeName,
     unpackName,
   )
 import qualified Data.Text as T
@@ -181,3 +180,15 @@ typeInstanceDec typeFamily arg res = TySynInstD (TySynEqn Nothing (AppT (ConT ty
 typeInstanceDec :: Name -> Type -> Type -> Dec
 typeInstanceDec typeFamily arg res = TySynInstD typeFamily (TySynEqn [arg] res)
 #endif
+
+---
+
+toHaskellTypeName :: TypeName -> String
+toHaskellTypeName "String" = "Text"
+toHaskellTypeName "Boolean" = "Bool"
+toHaskellTypeName "Float" = "Double"
+toHaskellTypeName name = T.unpack $ capitalize name $ unpackName name
+{-# INLINE toHaskellTypeName #-}
+
+-- TODO:
+capitalize = undefined
