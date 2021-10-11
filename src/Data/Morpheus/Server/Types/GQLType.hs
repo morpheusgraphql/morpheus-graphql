@@ -24,7 +24,6 @@ module Data.Morpheus.Server.Types.GQLType
     GQLTypeOptions (..),
     defaultTypeOptions,
     TypeData (..),
-    __isObjectKind,
     __isEmptyType,
     __typeData,
   )
@@ -41,10 +40,7 @@ import Data.Morpheus.Kind
     DerivingKind,
     SCALAR,
     TYPE,
-    ToValue,
     WRAPPER,
-    isObject,
-    toValue,
   )
 import Data.Morpheus.NamedResolvers (NamedResolverT (..))
 import Data.Morpheus.Server.Deriving.Utils.Kinded (CategoryValue (..))
@@ -186,9 +182,6 @@ ignoreResolver (con, _) | con == typeRepTyCon (typeRep $ Proxy @NamedResolverT) 
 ignoreResolver (con, args) =
   con : concatMap (ignoreResolver . splitTyConApp) args
 
-__isObjectKind :: forall f a. GQLType a => f a -> Bool
-__isObjectKind _ = isObject $ toValue (Proxy @(KIND a))
-
 -- | GraphQL type, every graphQL type should have an instance of 'GHC.Generics.Generic' and 'GQLType'.
 --
 --  @
@@ -203,7 +196,7 @@ __isObjectKind _ = isObject $ toValue (Proxy @(KIND a))
 --     instance GQLType ... where
 --       description = const "your description ..."
 --  @
-class ToValue (KIND a) => GQLType a where
+class GQLType a where
   type KIND a :: DerivingKind
   type KIND a = TYPE
 

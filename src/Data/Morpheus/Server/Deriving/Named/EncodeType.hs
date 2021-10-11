@@ -96,7 +96,7 @@ instance
   deriveNamedResolver _ =
     [ NamedResolver
         { resolverName = getTypeName (Proxy @a),
-          resolver = fmap encodeResolverValue . resolve
+          resolver = resolve >=> encodeResolverValue
         }
     ]
     where

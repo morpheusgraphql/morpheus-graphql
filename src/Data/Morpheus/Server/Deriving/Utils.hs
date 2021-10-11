@@ -47,7 +47,6 @@ import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     GQLTypeOptions (..),
     TypeData (..),
-    __isObjectKind,
     __typeData,
     defaultTypeOptions,
   )
@@ -205,7 +204,6 @@ deriveFieldRep opt pSel kindedProxy v =
   FieldRep
     { fieldSelector = selNameProxy opt pSel,
       fieldTypeRef = deriveTypeRef kindedProxy,
-      fieldIsObject = __isObjectKind kindedProxy,
       fieldValue = v
     }
 
@@ -236,7 +234,6 @@ data ConsRep (v :: *) = ConsRep
 data FieldRep (a :: *) = FieldRep
   { fieldSelector :: FieldName,
     fieldTypeRef :: TypeRef,
-    fieldIsObject :: Bool,
     fieldValue :: a
   }
   deriving (Functor)
@@ -269,7 +266,7 @@ fieldTypeName :: FieldRep k -> TypeName
 fieldTypeName = typeConName . fieldTypeRef
 
 isUnionRef :: TypeName -> ConsRep k -> Bool
-isUnionRef baseName ConsRep {consName, consFields = [fieldRep@FieldRep {fieldIsObject = True}]} =
+isUnionRef baseName ConsRep {consName, consFields = [fieldRep]} =
   consName == baseName <> fieldTypeName fieldRep
 isUnionRef _ _ = False
 

@@ -134,9 +134,10 @@ instance Stitching (R.ObjectTypeResolver m) where
   stitch t1 t2 = pure $ R.ObjectTypeResolver (R.objectFields t1 <> R.objectFields t2)
 
 instance (MonadError GQLError m) => Stitching (NamedResolverResult m) where
+  stitch NamedEnumResolver {} (NamedEnumResolver x) = pure (NamedEnumResolver x)
   stitch NamedUnionResolver {} (NamedUnionResolver x) = pure (NamedUnionResolver x)
   stitch (NamedObjectResolver t1) (NamedObjectResolver t2) = NamedObjectResolver <$> stitch t1 t2
-  stitch _ _ = throwError "ResolverMap must have same resolverName"
+  stitch _ _ = throwError "ResolverMap must have same Kind"
 
 instance (MonadError GQLError m) => Stitching (NamedResolver m) where
   stitch t1 t2

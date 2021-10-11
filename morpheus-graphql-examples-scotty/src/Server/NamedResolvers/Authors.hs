@@ -8,6 +8,8 @@
 
 module Server.NamedResolvers.Authors
   ( authorsApp,
+    Author,
+    Post,
   )
 where
 
@@ -102,4 +104,6 @@ instance Monad m => ResolveNamed m (Query (NamedResolverT m)) where
 authorsApp :: App () IO
 authorsApp =
   deriveApp
-    (NamedResolvers :: NamedResolvers IO () Query Undefined Undefined)
+    ( NamedResolvers ::
+        NamedResolvers IO () Query Undefined Undefined
+    )
