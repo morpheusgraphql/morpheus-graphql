@@ -27,13 +27,13 @@ module Data.Morpheus.CodeGen.Internal.TH
     typeInstanceDec,
     v',
     vars,
+    wrappedType,
   )
 where
 
 import Data.Morpheus.CodeGen.Internal.Name
   ( camelCaseFieldName,
     camelCaseTypeName,
-    capitalize,
     toHaskellName,
     toHaskellTypeName,
   )
@@ -57,14 +57,18 @@ _' = toVar (mkName "_")
 v' :: ToVar Name a => a
 v' = toVar (mkName "v")
 
+wrappedType :: TypeWrapper -> Type -> Type
+wrappedType (TypeList xs nonNull) = withNonNull nonNull . withList . wrappedType xs
+wrappedType (BaseType nonNull) = withNonNull nonNull
+{-# INLINE wrappedType #-}
+
 declareTypeRef :: (TypeName -> Type) -> TypeRef -> Type
-declareTypeRef f TypeRef {typeConName, typeWrappers} = wrappedT typeWrappers
-  where
-    wrappedT :: TypeWrapper -> Type
-    wrappedT (TypeList xs nonNull) = withNonNull nonNull (AppT (ConT ''[]) $ wrappedT xs)
-    wrappedT (BaseType nonNull) = withNonNull nonNull (f typeConName)
-    {-# INLINE wrappedT #-}
+declareTypeRef f TypeRef {typeConName, typeWrappers} =
+  wrappedType typeWrappers (f typeConName)
 {-# INLINE declareTypeRef #-}
+
+withList :: Type -> Type
+withList = AppT (ConT ''[])
 
 withNonNull :: Bool -> Type -> Type
 withNonNull True = id
@@ -86,8 +90,11 @@ instance ToName String where
 instance ToName Name where
   toName = id
 
+instance ToName Text where
+  toName = toName . T.unpack
+
 instance ToName TypeName where
-  toName = mkName . T.unpack . capitalize . toHaskellTypeName
+  toName = toName . toHaskellTypeName
 
 instance ToName FieldName where
   toName = mkName . toHaskellName

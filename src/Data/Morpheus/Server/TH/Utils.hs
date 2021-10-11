@@ -54,8 +54,8 @@ m_ = mkName "m"
 m' :: Type
 m' = VarT m_
 
-renderTypeVars :: [TypeName] -> [Name]
-renderTypeVars = map (mkName . T.unpack . unpackName)
+renderTypeVars :: [Text] -> [Name]
+renderTypeVars = map (mkName . T.unpack)
 
 funDProxy :: [(Name, ExpQ)] -> [DecQ]
 funDProxy = map fun

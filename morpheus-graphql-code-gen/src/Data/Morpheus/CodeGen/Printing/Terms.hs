@@ -6,13 +6,13 @@ module Data.Morpheus.CodeGen.Printing.Terms
   ( renderExtension,
     renderWrapped,
     label,
-    renderName,
     parametrizedType,
     TypeDoc (..),
     appendType,
     optional,
     renderImport,
     renderType,
+    renderName,
   )
 where
 
@@ -21,7 +21,7 @@ import Data.Morpheus.CodeGen.Internal.AST
     TypeWrapper (..),
     unpackName,
   )
-import Data.Morpheus.CodeGen.Internal.Name (toHaskellTypeName)
+import qualified Data.Text as T
 import Data.Text.Prettyprint.Doc
   ( (<+>),
     Doc,
@@ -32,12 +32,12 @@ import Data.Text.Prettyprint.Doc
   )
 import Relude hiding (optional)
 
-parametrizedType :: TypeName -> [TypeName] -> Doc ann
-parametrizedType tName typeParameters = hsep $ map renderName (tName : typeParameters)
+parametrizedType :: Text -> [Text] -> Doc ann
+parametrizedType tName typeParameters = hsep $ map pretty $ tName : typeParameters
 
 -- TODO: this should be done in transformer
 renderName :: TypeName -> Doc ann
-renderName = pretty . toHaskellTypeName
+renderName = pretty . T.unpack . unpackName
 
 renderExtension :: Text -> Doc ann
 renderExtension name = "{-#" <+> "LANGUAGE" <+> pretty name <+> "#-}"
@@ -64,8 +64,8 @@ renderWrapped :: TypeWrapper -> TypeDoc n -> TypeDoc n
 renderWrapped (TypeList wrapper notNull) = renderMaybe notNull . renderList . renderWrapped wrapper
 renderWrapped (BaseType notNull) = renderMaybe notNull
 
-label :: TypeName -> Doc ann
-label typeName = "---- GQL " <> pretty (unpackName typeName) <> " -------------------------------\n"
+label :: Text -> Doc ann
+label typeName = "---- GQL " <> pretty typeName <> " -------------------------------\n"
 
 optional :: ([a] -> Doc n) -> [a] -> Doc n
 optional _ [] = ""

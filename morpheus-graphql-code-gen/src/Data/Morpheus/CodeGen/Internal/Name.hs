@@ -5,7 +5,6 @@ module Data.Morpheus.CodeGen.Internal.Name
     camelCaseTypeName,
     toHaskellName,
     camelCaseFieldName,
-    capitalize,
   )
 where
 
@@ -43,7 +42,7 @@ toHaskellTypeName :: TypeName -> Text
 toHaskellTypeName "String" = "Text"
 toHaskellTypeName "Boolean" = "Bool"
 toHaskellTypeName "Float" = "Double"
-toHaskellTypeName name = unpackName name
+toHaskellTypeName name = capitalize $ unpackName name
 {-# INLINE toHaskellTypeName #-}
 
 uncapitalize :: Text -> Text

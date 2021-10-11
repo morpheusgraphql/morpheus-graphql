@@ -23,6 +23,7 @@ import Data.Morpheus.CodeGen.Internal.TH
     declareTypeRef,
     toCon,
     toName,
+    wrappedType,
   )
 import Data.Morpheus.Server.TH.Utils
   ( m',
@@ -36,7 +37,6 @@ import Data.Morpheus.Types
   )
 import Data.Morpheus.Types.Internal.AST
   ( TypeKind (..),
-    TypeName,
   )
 import qualified Data.Text as T
 import Language.Haskell.TH
@@ -85,24 +85,20 @@ declareField :: ServerFieldDefinition -> (Name, Bang, Type)
 declareField
   ServerFieldDefinition
     { fieldName,
-      isParametrized,
       fieldType,
       wrappers
     } =
     ( toName fieldName,
       Bang NoSourceUnpackedness NoSourceStrictness,
-      foldr applyWrapper (declareTypeRef renderTypeName fieldType) wrappers
+      foldr applyWrapper (toCon fieldType) wrappers
     )
-    where
-      renderTypeName :: TypeName -> Type
-      renderTypeName
-        | isParametrized = (`apply` [m'])
-        | otherwise = toCon
 
 applyWrapper :: FIELD_TYPE_WRAPPER -> Type -> Type
+applyWrapper PARAMETRIZED = (`AppT` m')
 applyWrapper MONAD = AppT m'
 applyWrapper SUBSCRIPTION = AppT (ConT ''SubscriptionField)
 applyWrapper (ARG typeName) = InfixT (ConT (toName typeName)) ''Function
+applyWrapper (GQL_WRAPPER wrappers) = wrappedType wrappers
 applyWrapper (TAGGED_ARG fieldName typeRef) = InfixT arg ''Function
   where
     arg =

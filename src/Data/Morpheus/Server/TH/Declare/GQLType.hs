@@ -15,6 +15,7 @@ module Data.Morpheus.Server.TH.Declare.GQLType
   )
 where
 
+import Data.Char (toLower)
 import Data.Morpheus.CodeGen.Internal.AST
   ( CodeGenConfig (..),
     GQLTypeDefinition (..),
@@ -25,10 +26,6 @@ import Data.Morpheus.CodeGen.Internal.TH
   ( apply,
     applyVars,
     typeInstanceDec,
-  )
-import Data.Morpheus.Internal.Utils
-  ( stripConstructorNamespace,
-    stripFieldNamespace,
   )
 import Data.Morpheus.Kind
   ( SCALAR,
@@ -46,8 +43,8 @@ import Data.Morpheus.Types
   )
 import Data.Morpheus.Types.Internal.AST
   ( TypeKind (..),
-    TypeName,
   )
+import qualified Data.Text as T
 import Language.Haskell.TH
   ( Dec,
     DecQ,
@@ -58,7 +55,19 @@ import Language.Haskell.TH
   )
 import Relude
 
-dropNamespaceOptions :: TypeKind -> TypeName -> GQLTypeOptions -> GQLTypeOptions
+dropPrefix :: Text -> String -> String
+dropPrefix name = drop (T.length name)
+
+stripConstructorNamespace :: Text -> String -> String
+stripConstructorNamespace = dropPrefix
+
+stripFieldNamespace :: Text -> String -> String
+stripFieldNamespace prefix = __uncapitalize . dropPrefix prefix
+  where
+    __uncapitalize [] = []
+    __uncapitalize (x : xs) = toLower x : xs
+
+dropNamespaceOptions :: TypeKind -> Text -> GQLTypeOptions -> GQLTypeOptions
 dropNamespaceOptions KindInterface tName opt =
   opt
     { typeNameModifier = const (stripConstructorNamespace "Interface"),
@@ -83,13 +92,13 @@ deriveGQLType
     gqlTypeDeclaration <- lift (instanceD constrains typeSignature methods)
     pure [gqlTypeDeclaration]
 
-defineTypeOptions :: TypeName -> TypeKind -> ServerDec [DecQ]
+defineTypeOptions :: Text -> TypeKind -> ServerDec [DecQ]
 defineTypeOptions tName kind = do
   CodeGenConfig {namespace} <- ask
   pure $ funDProxy [('typeOptions, [|dropNamespaceOptions kind tName|]) | namespace]
 
 defineMethods ::
-  TypeName ->
+  Text ->
   TypeKind ->
   [Name] ->
   Maybe GQLTypeDefinition ->
