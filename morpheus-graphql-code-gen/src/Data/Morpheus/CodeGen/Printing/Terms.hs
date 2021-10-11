@@ -21,6 +21,7 @@ import Data.Morpheus.CodeGen.Internal.AST
     TypeWrapper (..),
     unpackName,
   )
+import Data.Morpheus.CodeGen.Internal.Name (toHaskellTypeName)
 import Data.Text.Prettyprint.Doc
   ( (<+>),
     Doc,
@@ -36,9 +37,7 @@ parametrizedType tName typeParameters = hsep $ map renderName (tName : typeParam
 
 -- TODO: this should be done in transformer
 renderName :: TypeName -> Doc ann
-renderName "Boolean" = "Bool"
-renderName "String" = "Text"
-renderName name = pretty (unpackName name)
+renderName = pretty . toHaskellTypeName
 
 renderExtension :: Text -> Doc ann
 renderExtension name = "{-#" <+> "LANGUAGE" <+> pretty name <+> "#-}"

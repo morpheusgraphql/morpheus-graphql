@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 622e7fa3220599775171d92b7fc95566a0ad13a4118b563fd236ae55136838e2
+-- hash: 369c0b695bcf4501aed85b77c07d76169900f65ef90370c3ed4d7af2880450fc
 
 name:           morpheus-graphql-code-gen
 version:        0.17.0
@@ -33,6 +33,7 @@ library
       Data.Morpheus.CodeGen
       Data.Morpheus.CodeGen.Internal.TH
   other-modules:
+      Data.Morpheus.CodeGen.Internal.Name
       Data.Morpheus.CodeGen.Interpreting.Transform
       Data.Morpheus.CodeGen.Printing.GQLType
       Data.Morpheus.CodeGen.Printing.Render

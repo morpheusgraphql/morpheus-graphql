@@ -27,9 +27,11 @@ import Data.Morpheus.CodeGen.Internal.AST
     ServerFieldDefinition (..),
     ServerTypeDefinition (..),
   )
+import Data.Morpheus.CodeGen.Internal.Name
+  ( camelCaseFieldName,
+  )
 import Data.Morpheus.CodeGen.Internal.TH
   ( ToName (toName),
-    camelCaseFieldName,
     camelCaseTypeName,
   )
 import Data.Morpheus.Core
