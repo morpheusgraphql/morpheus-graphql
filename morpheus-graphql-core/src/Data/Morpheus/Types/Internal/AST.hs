@@ -20,8 +20,6 @@ module Data.Morpheus.Types.Internal.AST
     Object,
     replaceValue,
     decodeScientific,
-    fromHaskellName,
-    toHaskellName,
     RawValue,
     ValidValue,
     RawObject,
@@ -149,6 +147,7 @@ module Data.Morpheus.Types.Internal.AST
     internal,
     splitSystemSelection,
     lookupDataType,
+    Name,
   )
 where
 

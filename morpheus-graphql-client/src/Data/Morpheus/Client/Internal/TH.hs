@@ -21,16 +21,14 @@ module Data.Morpheus.Client.Internal.TH
 where
 
 import Data.Foldable (foldr1)
-import Data.Morpheus.Internal.TH
-  ( toCon,
+import Data.Morpheus.CodeGen.Internal.TH
+  ( camelCaseFieldName,
+    toCon,
     toName,
     toString,
     toVar,
     v',
     vars,
-  )
-import Data.Morpheus.Internal.Utils
-  ( camelCaseFieldName,
   )
 import Data.Morpheus.Types.Internal.AST
   ( FieldDefinition (..),
@@ -108,12 +106,12 @@ mkEntryWith conName f FieldDefinition {fieldName} =
 -- |
 -- input:
 -- >>>
--- destructRecord "User" ["name","id"]
+-- WAS WAS destructRecord "User" ["name","id"]
 -- >>>
 --
 -- expression:
 -- >>>
--- (User name id)
+-- WAS WAS (User name id)
 -- >>>
 destructRecord :: TypeName -> [FieldDefinition cat s] -> PatQ
 destructRecord conName fields = conP (toName conName) (vars names)

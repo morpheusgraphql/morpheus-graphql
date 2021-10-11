@@ -46,8 +46,10 @@ data ModuleDefinition = ModuleDefinition
 data FIELD_TYPE_WRAPPER
   = MONAD
   | SUBSCRIPTION
+  | PARAMETRIZED
   | ARG TypeName
   | TAGGED_ARG FieldName TypeRef
+  | GQL_WRAPPER TypeWrapper
   deriving (Show)
 
 data DerivingClass
@@ -56,8 +58,7 @@ data DerivingClass
   deriving (Show)
 
 data ServerFieldDefinition = ServerFieldDefinition
-  { isParametrized :: Bool,
-    fieldType :: TypeRef,
+  { fieldType :: Text,
     fieldName :: FieldName,
     wrappers :: [FIELD_TYPE_WRAPPER]
   }
@@ -82,8 +83,8 @@ data ServerConstructorDefinition = ServerConstructorDefinition
 
 data ServerTypeDefinition
   = ServerTypeDefinition
-      { tName :: TypeName,
-        typeParameters :: [TypeName],
+      { tName :: Text,
+        typeParameters :: [Text],
         tCons :: [ServerConstructorDefinition],
         tKind :: TypeKind,
         derives :: [DerivingClass],
