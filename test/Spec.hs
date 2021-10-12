@@ -6,6 +6,7 @@ module Main
   )
 where
 
+import Data.Morpheus (runApp)
 import Data.Morpheus.Types (GQLRequest (..), GQLResponse (..))
 import qualified Feature.Collision.CategoryCollisionFail as TypeCategoryCollisionFail
 import qualified Feature.Collision.CategoryCollisionSuccess as TypeCategoryCollisionSuccess
@@ -22,6 +23,7 @@ import qualified Feature.Input.Enums as Enums
 import qualified Feature.Input.Objects as Objects
 import qualified Feature.Input.Scalars as Scalars
 import qualified Feature.Input.Variables as Variables
+import qualified Feature.NamedResolvers.API as NamedResolvers
 import Relude
 import Rendering.TestSchemaRendering (testSchemaRendering)
 import Subscription.Test (testSubscriptions)
@@ -82,6 +84,9 @@ main =
         "Holistic"
         [ (Holistic.api, "holistic")
         ],
+      testFeatures
+        "NamedResolvers"
+        [(runApp NamedResolvers.app, "tests")],
       testSubscriptions,
       pure testSchemaRendering
     ]

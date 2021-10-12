@@ -8,6 +8,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -56,6 +57,7 @@ import Data.Morpheus.Server.Deriving.Encode
 import Data.Morpheus.Server.Deriving.Utils
   ( ConsRep (..),
     DataType (..),
+    FieldRep (..),
     TypeConstraint (..),
     TypeRep (..),
     toFieldRes,
@@ -74,7 +76,6 @@ import Data.Morpheus.Types.Internal.AST
     OUT,
     TypeCategory (OUT),
     TypeName,
-    Value (Null),
     internal,
     replaceValue,
   )
@@ -84,7 +85,7 @@ import GHC.Generics
   )
 import Relude
 
-encodeResolverValue :: FieldConstraint m a => a -> NamedResolverResult m
+encodeResolverValue :: (MonadError GQLError m, FieldConstraint m a) => a -> m (NamedResolverResult m)
 encodeResolverValue = convertNamedNode . getFieldValues
 
 type FieldConstraint m a =
@@ -155,20 +156,31 @@ getFieldValues =
     (Proxy @OUT)
 
 convertNamedNode ::
+  MonadError GQLError m =>
   DataType (m (ResolverValue m)) ->
-  NamedResolverResult m
+  m (NamedResolverResult m)
 convertNamedNode
   DataType
     { tyIsUnion,
       tyCons = ConsRep {consFields, consName}
     }
-    | null consFields = NamedEnumResolver consName
-    | tyIsUnion = NamedUnionResolver (NamedResolverRef consName Null)
+    | null consFields = pure $ NamedEnumResolver consName
+    | tyIsUnion = deriveUnion consFields
     | otherwise =
-      NamedObjectResolver
-        ObjectTypeResolver
-          { objectFields = HM.fromList (toFieldRes <$> consFields)
-          }
+      pure $
+        NamedObjectResolver
+          ObjectTypeResolver
+            { objectFields = HM.fromList (toFieldRes <$> consFields)
+            }
+
+deriveUnion :: (MonadError GQLError m) => [FieldRep (m (ResolverValue m))] -> m (NamedResolverResult m)
+deriveUnion [FieldRep {..}] =
+  NamedUnionResolver <$> (fieldValue >>= getRef)
+deriveUnion _ = throwError "only union references are supported!"
+
+getRef :: MonadError GQLError m => ResolverValue m -> m NamedResolverRef
+getRef (ResRef x) = x
+getRef _ = throwError "only resolver references are supported!"
 
 getTypeName :: GQLType a => f a -> TypeName
 getTypeName proxy = gqlTypeName $ __type proxy OUT

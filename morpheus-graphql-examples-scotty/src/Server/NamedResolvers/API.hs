@@ -10,8 +10,9 @@ where
 
 import Data.Morpheus (App)
 import Data.Semigroup (Semigroup ((<>)))
-import Server.NamedResolvers.Authors
-import Server.NamedResolvers.Posts
+import Server.NamedResolvers.Authors (authorsApp)
+import Server.NamedResolvers.Pages (pagesApp)
+import Server.NamedResolvers.Posts (postsApp)
 
 app :: App () IO
-app = authorsApp <> postsApp
+app = authorsApp <> postsApp <> pagesApp

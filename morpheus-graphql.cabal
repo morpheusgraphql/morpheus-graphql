@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b7a204f1083e90b7d3bc0492543fe3afe985521e2e3022410f7b0aa8c6ec1677
+-- hash: 33a657f3ffa3db208ef22fec8be53b7942bf66580e515af8f890d6ba2ecdc96d
 
 name:           morpheus-graphql
 version:        0.17.0
@@ -203,6 +203,20 @@ data-files:
     test/Feature/Input/variables/valueNotProvided/nonNullVariable/query.gql
     test/Feature/Input/variables/valueNotProvided/nonNullVariableWithDefaultValue/query.gql
     test/Feature/Input/variables/valueNotProvided/nullableVariable/query.gql
+    test/Feature/NamedResolvers/deities.gql
+    test/Feature/NamedResolvers/realms.gql
+    test/Feature/NamedResolvers/tests/deities-ext/query.gql
+    test/Feature/NamedResolvers/tests/deities/query.gql
+    test/Feature/NamedResolvers/tests/deity-by-id/query.gql
+    test/Feature/NamedResolvers/tests/deity-ext-by-id/query.gql
+    test/Feature/NamedResolvers/tests/deity-simple/query.gql
+    test/Feature/NamedResolvers/tests/entities/query.gql
+    test/Feature/NamedResolvers/tests/entity-by-id/query.gql
+    test/Feature/NamedResolvers/tests/entity-ext-by-id/query.gql
+    test/Feature/NamedResolvers/tests/realm-by-id/query.gql
+    test/Feature/NamedResolvers/tests/realm-ext-by-id/query.gql
+    test/Feature/NamedResolvers/tests/realm-simple/query.gql
+    test/Feature/NamedResolvers/tests/realms/query.gql
     test/Rendering/schema.gql
     test/Subscription/schema.gql
     test/Feature/Collision/category-collision-fail/response.json
@@ -401,6 +415,18 @@ data-files:
     test/Feature/Input/variables/valueNotProvided/nonNullVariable/response.json
     test/Feature/Input/variables/valueNotProvided/nonNullVariableWithDefaultValue/response.json
     test/Feature/Input/variables/valueNotProvided/nullableVariable/response.json
+    test/Feature/NamedResolvers/tests/deities-ext/response.json
+    test/Feature/NamedResolvers/tests/deities/response.json
+    test/Feature/NamedResolvers/tests/deity-by-id/response.json
+    test/Feature/NamedResolvers/tests/deity-ext-by-id/response.json
+    test/Feature/NamedResolvers/tests/deity-simple/response.json
+    test/Feature/NamedResolvers/tests/entities/response.json
+    test/Feature/NamedResolvers/tests/entity-by-id/response.json
+    test/Feature/NamedResolvers/tests/entity-ext-by-id/response.json
+    test/Feature/NamedResolvers/tests/realm-by-id/response.json
+    test/Feature/NamedResolvers/tests/realm-ext-by-id/response.json
+    test/Feature/NamedResolvers/tests/realm-simple/response.json
+    test/Feature/NamedResolvers/tests/realms/response.json
 
 source-repository head
   type: git
@@ -482,6 +508,10 @@ test-suite morpheus-graphql-test
       Feature.Input.Objects
       Feature.Input.Scalars
       Feature.Input.Variables
+      Feature.NamedResolvers.API
+      Feature.NamedResolvers.Deities
+      Feature.NamedResolvers.Entities
+      Feature.NamedResolvers.Realms
       Rendering.Schema
       Rendering.TestSchemaRendering
       Subscription.API

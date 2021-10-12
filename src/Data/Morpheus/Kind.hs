@@ -16,8 +16,6 @@ module Data.Morpheus.Kind
     OUTPUT,
     INPUT,
     INTERFACE,
-    ToValue (..),
-    isObject,
     TYPE,
     CUSTOM,
   )
@@ -35,25 +33,6 @@ data DerivingKind
   | WRAPPER
   | CUSTOM
   deriving (Show)
-
-class ToValue (a :: DerivingKind) where
-  toValue :: f a -> DerivingKind
-
-instance ToValue 'SCALAR where
-  toValue _ = SCALAR
-
-instance ToValue 'WRAPPER where
-  toValue _ = WRAPPER
-
-instance ToValue 'TYPE where
-  toValue _ = TYPE
-
-instance ToValue 'CUSTOM where
-  toValue _ = CUSTOM
-
-isObject :: DerivingKind -> Bool
-isObject TYPE = True
-isObject _ = False
 
 -- | GraphQL input, type, union , enum
 type TYPE = 'TYPE
