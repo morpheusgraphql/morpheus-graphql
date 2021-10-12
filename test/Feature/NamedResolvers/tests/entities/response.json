@@ -2,42 +2,35 @@
   "data": {
     "entities": [
       {
-        "__typename": "Deity",
         "name": "Zeus",
-        "power": []
+        "__typename": "Deity",
+        "power": ["Thunderbolt"]
       },
       {
-        "__typename": "Deity",
         "name": "Morpheus",
+        "__typename": "Deity",
         "power": ["Shapeshifting"]
       },
       {
-        "__typename": "Realm",
-        "name": "Mount Olympus",
         "owner": {
           "name": "Zeus",
-          "realm": {
-            "owner": {
-              "name": "Zeus"
-            },
-            "name": "Mount Olympus"
-          },
-          "power": []
-        }
+          "realm": { "owner": { "name": "Zeus" }, "name": "Mount Olympus" },
+          "power": ["Thunderbolt"]
+        },
+        "name": "Mount Olympus",
+        "__typename": "Realm"
       },
       {
-        "__typename": "Realm",
-        "name": "Fictional world of dreams",
         "owner": {
           "name": "Morpheus",
           "realm": {
-            "owner": {
-              "name": "Morpheus"
-            },
+            "owner": { "name": "Morpheus" },
             "name": "Fictional world of dreams"
           },
           "power": ["Shapeshifting"]
-        }
+        },
+        "name": "Fictional world of dreams",
+        "__typename": "Realm"
       }
     ]
   }

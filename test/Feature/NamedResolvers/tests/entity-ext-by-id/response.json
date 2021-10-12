@@ -3,7 +3,7 @@
     "zeus": {
       "__typename": "Deity",
       "name": "Zeus",
-      "power": []
+      "power": ["Thunderbolt"]
     },
     "olympus": {
       "__typename": "Realm",
@@ -14,7 +14,7 @@
           "name": "Mount Olympus",
           "owner": { "name": "Zeus" }
         },
-        "power": []
+        "power": ["Thunderbolt"]
       }
     }
   }

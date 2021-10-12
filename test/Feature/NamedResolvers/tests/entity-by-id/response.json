@@ -3,7 +3,7 @@
     "zeus": {
       "__typename": "Deity",
       "name": "Zeus",
-      "power": []
+      "power": ["Thunderbolt"]
     },
     "olympus": {
       "__typename": "Realm",

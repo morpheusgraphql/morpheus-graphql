@@ -39,7 +39,8 @@ data Entity m
 
 instance Monad m => ResolveNamed m (Entity (NamedResolverT m)) where
   type Dep (Entity (NamedResolverT m)) = ID
-  resolveNamed "1325" = pure $ EntityDeity (resolve $ pure "1325")
+  resolveNamed "zeus" = pure $ EntityDeity (resolve $ pure "zeus")
+  resolveNamed "morpheus" = pure $ EntityDeity (resolve $ pure "morpheus")
   resolveNamed x = pure $ EntityRealm (resolve $ pure x)
 
 -- QUERY
@@ -57,7 +58,15 @@ instance Monad m => ResolveNamed m (Query (NamedResolverT m)) where
   resolveNamed () =
     pure
       Query
-        { entities = resolve (pure ["1325", "2415"]),
+        { entities =
+            resolve
+              ( pure
+                  [ "zeus",
+                    "morpheus",
+                    "olympus",
+                    "dreams"
+                  ]
+              ),
           entity = \(Arg uid) -> resolve (pure (Just uid))
         }
 
