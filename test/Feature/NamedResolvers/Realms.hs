@@ -8,7 +8,7 @@
 {-# LANGUAGE TypeFamilies #-}
 
 module Feature.NamedResolvers.Realms
-  ( postsApp,
+  ( realmsApp,
     Deity,
     Realm,
   )
@@ -28,7 +28,7 @@ import Data.Morpheus.NamedResolvers
 import Data.Morpheus.Types
   ( App,
     Arg (..),
-    ID (unpackID),
+    ID,
     NamedResolvers (..),
     Undefined,
   )
@@ -84,7 +84,7 @@ instance Monad m => ResolveNamed m (Query (NamedResolverT m)) where
           realms = resolve (pure ["olympus", "dreams"])
         }
 
-postsApp :: App () IO
-postsApp =
+realmsApp :: App () IO
+realmsApp =
   deriveApp
     (NamedResolvers :: NamedResolvers IO () Query Undefined Undefined)

@@ -76,8 +76,6 @@ import Data.Morpheus.Types.Internal.AST
     OUT,
     TypeCategory (OUT),
     TypeName,
-    TypeRef (typeConName),
-    Value (Null),
     internal,
     replaceValue,
   )
@@ -86,9 +84,8 @@ import GHC.Generics
   ( Generic (..),
   )
 import Relude
-import Prelude (Monad)
 
-encodeResolverValue :: (Monad m, FieldConstraint m a) => a -> m (NamedResolverResult m)
+encodeResolverValue :: (MonadError GQLError m, FieldConstraint m a) => a -> m (NamedResolverResult m)
 encodeResolverValue = convertNamedNode . getFieldValues
 
 type FieldConstraint m a =
@@ -159,7 +156,7 @@ getFieldValues =
     (Proxy @OUT)
 
 convertNamedNode ::
-  Monad m =>
+  MonadError GQLError m =>
   DataType (m (ResolverValue m)) ->
   m (NamedResolverResult m)
 convertNamedNode
@@ -176,14 +173,14 @@ convertNamedNode
             { objectFields = HM.fromList (toFieldRes <$> consFields)
             }
 
-deriveUnion :: (Monad m) => [FieldRep (m (ResolverValue m))] -> m (NamedResolverResult m)
+deriveUnion :: (MonadError GQLError m) => [FieldRep (m (ResolverValue m))] -> m (NamedResolverResult m)
 deriveUnion [FieldRep {..}] =
   NamedUnionResolver <$> (fieldValue >>= getRef)
-deriveUnion _ = undefined -- throwError "only union references are supported!"
+deriveUnion _ = throwError "only union references are supported!"
 
-getRef :: ResolverValue m -> m NamedResolverRef
+getRef :: MonadError GQLError m => ResolverValue m -> m NamedResolverRef
 getRef (ResRef x) = x
-getRef _ = undefined
+getRef _ = throwError "only resolver references are supported!"
 
 getTypeName :: GQLType a => f a -> TypeName
 getTypeName proxy = gqlTypeName $ __type proxy OUT

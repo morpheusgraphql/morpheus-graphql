@@ -7,7 +7,7 @@
 {-# LANGUAGE TypeFamilies #-}
 
 module Feature.NamedResolvers.Entities
-  ( pagesApp,
+  ( entitiesApp,
   )
 where
 
@@ -70,8 +70,8 @@ instance Monad m => ResolveNamed m (Query (NamedResolverT m)) where
           entity = \(Arg uid) -> resolve (pure (Just uid))
         }
 
-pagesApp :: App () IO
-pagesApp =
+entitiesApp :: App () IO
+entitiesApp =
   deriveApp
     ( NamedResolvers ::
         NamedResolvers IO () Query Undefined Undefined

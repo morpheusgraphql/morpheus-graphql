@@ -56,7 +56,7 @@ data Character (m :: * -> *)
   | Creature {creatureName :: Text, creatureAge :: Int}
   | BoxedDeity {boxedDeity :: Deity m}
   | ScalarRecord {scalarText :: Text}
-  | CharacterInt Int
+  | CharacterAge Int
   | SomeDeity (Deity m)
   | SomeMutli Int Text
   | Zeus
@@ -70,7 +70,7 @@ resolveCharacter =
     BoxedDeity {boxedDeity = deityRes},
     ScalarRecord {scalarText = "Some Text"},
     SomeDeity deityRes,
-    CharacterInt 12,
+    CharacterAge 12,
     SomeMutli 21 "some text",
     Zeus,
     Cronus

@@ -2,7 +2,7 @@
   "data": {
     "__type": {
       "kind": "OBJECT",
-      "name": "CharacterInt",
+      "name": "CharacterAge",
       "fields": [
         {
           "name": "_0",

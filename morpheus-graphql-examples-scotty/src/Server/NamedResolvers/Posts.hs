@@ -8,7 +8,6 @@
 
 module Server.NamedResolvers.Posts
   ( postsApp,
-    Post (..),
   )
 where
 
@@ -26,6 +25,7 @@ import Data.Morpheus.Types
     NamedResolvers (..),
     Undefined,
   )
+import Data.Semigroup (Semigroup ((<>)))
 import Data.Text (Text)
 import GHC.Generics (Generic)
 

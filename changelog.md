@@ -47,6 +47,7 @@
 
 ### Breaking Changes
 
+- non object variants constructors will be also unpacked
 - removed `implements`field from `GQLType`
 - removed `interface` from `Morpheus.Types`
 - deprecated kind `INTERFACE`

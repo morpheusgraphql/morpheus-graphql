@@ -6,10 +6,10 @@ module Feature.NamedResolvers.API
 where
 
 import Data.Morpheus (App)
-import Feature.NamedResolvers.Deities (authorsApp)
-import Feature.NamedResolvers.Entities (pagesApp)
-import Feature.NamedResolvers.Realms (postsApp)
+import Feature.NamedResolvers.Deities (deitiesApp)
+import Feature.NamedResolvers.Entities (entitiesApp)
+import Feature.NamedResolvers.Realms (realmsApp)
 import Relude
 
 app :: App () IO
-app = authorsApp <> postsApp <> pagesApp
+app = deitiesApp <> realmsApp <> entitiesApp

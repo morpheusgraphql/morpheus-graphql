@@ -9,7 +9,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Feature.NamedResolvers.Deities
-  ( authorsApp,
+  ( deitiesApp,
   )
 where
 
@@ -68,8 +68,8 @@ instance Monad m => ResolveNamed m (Query (NamedResolverT m)) where
           deities = resolve (pure ["zeus", "morpheus"])
         }
 
-authorsApp :: App () IO
-authorsApp =
+deitiesApp :: App () IO
+deitiesApp =
   deriveApp
     ( NamedResolvers ::
         NamedResolvers IO () Query Undefined Undefined
