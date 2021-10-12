@@ -1,0 +1,20 @@
+{
+  "data": {
+    "deities": [
+      {
+        "name": "Zeus",
+        "realm": {
+          "name": "Mount Olympus"
+        },
+        "power": ["Thunderbolt"]
+      },
+      {
+        "name": "Morpheus",
+        "realm": {
+          "name": "Fictional world of dreams"
+        },
+        "power": ["Shapeshifting"]
+      }
+    ]
+  }
+}
