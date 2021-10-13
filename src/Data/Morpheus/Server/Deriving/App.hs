@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -12,8 +13,6 @@ module Data.Morpheus.Server.Deriving.App
     deriveApp,
   )
 where
-
--- MORPHEUS
 
 import Data.Morpheus.App
   ( App (..),
@@ -63,4 +62,4 @@ instance RootResolverConstraint m e query mut sub => DeriveApp RootResolver m e 
 instance NamedResolversConstraint m e query mut sub => DeriveApp NamedResolvers m e query mut sub where
   deriveApp root =
     resultOr FailApp (uncurry mkApp) $
-      (,) <$> deriveSchema (Identity root) <*> deriveNamedModel root
+      (,deriveNamedModel root) <$> deriveSchema (Identity root)

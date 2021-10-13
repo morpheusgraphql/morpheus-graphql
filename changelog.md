@@ -6,7 +6,6 @@
 
 - `NamedResoplvers` (experimental featuure): typed Haskell approach of providing appollo
   like named resolvers, apps with NamedResolvers theoretically can be safelly merged.
-  (warning: feature is still under the development)
 
 - `TypeGuards`: as an alternative for interfaces
 
