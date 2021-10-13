@@ -22,7 +22,6 @@ import Data.Morpheus.App.Internal.Resolving
     Resolver,
     RootResolverValue (..),
   )
-import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.NamedResolvers (NamedResolverT (..))
 import Data.Morpheus.Server.Deriving.Named.EncodeType
   ( EncodeTypeConstraint,
@@ -47,10 +46,11 @@ deriveNamedModel ::
   forall e m query mut sub.
   (Monad m, EncodeNamedConstraints e m query mut sub) =>
   NamedResolvers m e query mut sub ->
-  GQLResult (RootResolverValue e m)
-deriveNamedModel NamedResolvers = do
-  let res = map (\x -> (resolverName x, x)) $ join $ toList $ traverseTypes deriveResolver (Proxy @(query (NamedResolverT (Resolver QUERY e m))))
-  pure $
-    NamedResolversValue
-      { queryResolverMap = HM.fromList res
-      }
+  RootResolverValue e m
+deriveNamedModel NamedResolvers =
+  NamedResolversValue
+    $ HM.fromList
+    $ map (\x -> (resolverName x, x))
+    $ join
+    $ toList
+    $ traverseTypes deriveResolver (Proxy @(query (NamedResolverT (Resolver QUERY e m))))
