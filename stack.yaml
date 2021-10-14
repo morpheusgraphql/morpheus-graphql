@@ -1,5 +1,5 @@
-# 8.10.7
-resolver: lts-18.10
+# 9.0.1
+resolver: nightly-2021-09-12
 save-hackage-creds: false
 packages:
   - morpheus-graphql-benchmarks
@@ -16,10 +16,5 @@ packages:
   - .
 
 extra-deps:
-  - fraxl-0.3.0.0
-  - haxl-2.3.0.0
-  - dependent-map-0.2.4.0
-  - dependent-sum-0.4
-  - fastsum-0.1.1.1
-  - type-aligned-0.9.6
-  - graphql-0.11.0.0
+  - graphql-1.0.0.0@sha256:1f63fbc380984d4d501bbc8c945658b042b98ccba6f66bdf07d4417a560f3ee4,3392
+  - megaparsec-9.0.1@sha256:2244ab77521a52a0083966c5405b3151f149e1db50b1a5b104cd9b1e56617203,3248
