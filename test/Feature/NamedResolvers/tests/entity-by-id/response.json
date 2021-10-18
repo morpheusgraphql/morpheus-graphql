@@ -1,0 +1,16 @@
+{
+  "data": {
+    "zeus": {
+      "__typename": "Deity",
+      "name": "Zeus",
+      "power": ["Thunderbolt"]
+    },
+    "olympus": {
+      "__typename": "Realm",
+      "name": "Mount Olympus",
+      "owner": {
+        "name": "Zeus"
+      }
+    }
+  }
+}

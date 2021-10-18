@@ -24,6 +24,9 @@ import Control.Monad.Except (MonadError (throwError))
 import Data.Morpheus.Client.Internal.Types
   ( ClientTypeDefinition (..),
   )
+import Data.Morpheus.CodeGen.Internal.TH
+  ( camelCaseTypeName,
+  )
 import Data.Morpheus.Error
   ( deprecatedField,
   )
@@ -32,8 +35,7 @@ import Data.Morpheus.Internal.Ext
     Result (..),
   )
 import Data.Morpheus.Internal.Utils
-  ( camelCaseTypeName,
-    selectBy,
+  ( selectBy,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,

@@ -47,23 +47,24 @@ import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     GQLTypeOptions (..),
     TypeData (..),
-    defaultTypeOptions,
-    __isObjectKind,
     __typeData,
+    defaultTypeOptions,
   )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     TypeCategory,
     TypeName,
     TypeRef (..),
-    fromHaskellName,
     packName,
   )
 import Data.Text
   ( pack,
   )
+import qualified Data.Text as T
 import GHC.Generics
-  ( C,
+  ( (:*:) (..),
+    (:+:) (..),
+    C,
     Constructor,
     D,
     Datatype,
@@ -79,8 +80,6 @@ import GHC.Generics
     conName,
     datatypeName,
     selName,
-    (:*:) (..),
-    (:+:) (..),
   )
 import GHC.TypeLits
 import Relude hiding (undefined)
@@ -95,9 +94,17 @@ conNameProxy options _ =
 
 selNameProxy :: forall f (s :: Meta). Selector s => GQLTypeOptions -> f s -> FieldName
 selNameProxy options _ =
-  fromHaskellName $
-    fieldLabelModifier options $
-      selName (undefined :: M1 S s f a)
+  fromHaskellName
+    $ fieldLabelModifier options
+    $ selName (undefined :: M1 S s f a)
+
+fromHaskellName :: String -> FieldName
+fromHaskellName hsName
+  | not (null hsName) && (T.last name == '\'') = packName (T.init name)
+  | otherwise = packName name
+  where
+    name = T.pack hsName
+{-# INLINE fromHaskellName #-}
 
 isRecordProxy :: forall f (c :: Meta). Constructor c => f c -> Bool
 isRecordProxy _ = conIsRecord (undefined :: (M1 C c f a))
@@ -197,7 +204,6 @@ deriveFieldRep opt pSel kindedProxy v =
   FieldRep
     { fieldSelector = selNameProxy opt pSel,
       fieldTypeRef = deriveTypeRef kindedProxy,
-      fieldIsObject = __isObjectKind kindedProxy,
       fieldValue = v
     }
 
@@ -228,7 +234,6 @@ data ConsRep (v :: *) = ConsRep
 data FieldRep (a :: *) = FieldRep
   { fieldSelector :: FieldName,
     fieldTypeRef :: TypeRef,
-    fieldIsObject :: Bool,
     fieldValue :: a
   }
   deriving (Functor)
@@ -261,7 +266,7 @@ fieldTypeName :: FieldRep k -> TypeName
 fieldTypeName = typeConName . fieldTypeRef
 
 isUnionRef :: TypeName -> ConsRep k -> Bool
-isUnionRef baseName ConsRep {consName, consFields = [fieldRep@FieldRep {fieldIsObject = True}]} =
+isUnionRef baseName ConsRep {consName, consFields = [fieldRep]} =
   consName == baseName <> fieldTypeName fieldRep
 isUnionRef _ _ = False
 

@@ -1,0 +1,14 @@
+{
+  "data": {
+    "deities": [
+      {
+        "name": "Zeus",
+        "power": ["Thunderbolt"]
+      },
+      {
+        "name": "Morpheus",
+        "power": ["Shapeshifting"]
+      }
+    ]
+  }
+}

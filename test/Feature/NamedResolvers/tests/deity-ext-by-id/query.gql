@@ -1,0 +1,9 @@
+query {
+  deity(id: "zeus") {
+    name
+    power
+    realm {
+      name
+    }
+  }
+}

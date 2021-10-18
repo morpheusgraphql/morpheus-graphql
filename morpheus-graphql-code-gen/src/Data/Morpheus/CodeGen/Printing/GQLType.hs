@@ -12,12 +12,10 @@ import Data.Morpheus.CodeGen.Internal.AST
     Kind (..),
     ServerTypeDefinition (..),
     TypeKind,
-    TypeName,
   )
 import Data.Morpheus.CodeGen.Printing.Terms
   ( optional,
     parametrizedType,
-    renderName,
   )
 import Data.Text.Prettyprint.Doc
   ( (<+>),
@@ -31,11 +29,11 @@ import Data.Text.Prettyprint.Doc
 import Relude hiding (optional, show)
 import Prelude (show)
 
-renderTypeableConstraints :: [TypeName] -> Doc n
-renderTypeableConstraints xs = tupled (map (("Typeable" <+>) . renderName) xs) <+> "=>"
+renderTypeableConstraints :: [Text] -> Doc n
+renderTypeableConstraints xs = tupled (map (("Typeable" <+>) . pretty) xs) <+> "=>"
 
 -- TODO: fill namespace options
-defineTypeOptions :: TypeName -> TypeKind -> Doc n
+defineTypeOptions :: Text -> TypeKind -> Doc n
 defineTypeOptions tName kind = ""
 
 renderGQLType :: ServerTypeDefinition -> Doc n
