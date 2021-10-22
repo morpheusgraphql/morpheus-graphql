@@ -13,6 +13,7 @@ input Coordinates {
 
 type Address {
   street: [[[[String!]!]!]]
+  score: Float!
 }
 
 type User {

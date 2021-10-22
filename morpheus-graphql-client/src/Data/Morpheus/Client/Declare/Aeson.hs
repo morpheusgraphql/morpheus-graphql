@@ -35,17 +35,15 @@ import Data.Morpheus.Client.Internal.Types
 import Data.Morpheus.Client.Internal.Utils
   ( isEnum,
   )
-import Data.Morpheus.Internal.TH
+import Data.Morpheus.CodeGen.Internal.TH
   ( _',
     applyCons,
+    camelCaseTypeName,
     funDSimple,
     toCon,
     toName,
     toString,
     v',
-  )
-import Data.Morpheus.Internal.Utils
-  ( camelCaseTypeName,
   )
 import Data.Morpheus.Types.GQLScalar
   ( scalarFromJSON,

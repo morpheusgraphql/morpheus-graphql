@@ -1,9 +1,9 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE CPP #-}
 
 module Data.Morpheus.Server.TH.Declare.Type
   ( declareType,
@@ -18,11 +18,12 @@ import Data.Morpheus.CodeGen.Internal.AST
     ServerTypeDefinition (..),
     unpackName,
   )
-import Data.Morpheus.Internal.TH
+import Data.Morpheus.CodeGen.Internal.TH
   ( apply,
     declareTypeRef,
     toCon,
     toName,
+    wrappedType,
   )
 import Data.Morpheus.Server.TH.Utils
   ( m',
@@ -36,7 +37,6 @@ import Data.Morpheus.Types
   )
 import Data.Morpheus.Types.Internal.AST
   ( TypeKind (..),
-    TypeName,
   )
 import qualified Data.Text as T
 import Language.Haskell.TH
@@ -64,6 +64,7 @@ declareType
     where
       derivings = DerivClause Nothing (map (ConT . genName) derives)
       cons = map declareCons tCons
+
 #if MIN_VERSION_template_haskell(2,17,0)
       vars = map (flip PlainTV ()) (renderTypeVars typeParameters)
 #else
@@ -84,24 +85,20 @@ declareField :: ServerFieldDefinition -> (Name, Bang, Type)
 declareField
   ServerFieldDefinition
     { fieldName,
-      isParametrized,
       fieldType,
       wrappers
     } =
     ( toName fieldName,
       Bang NoSourceUnpackedness NoSourceStrictness,
-      foldr applyWrapper (declareTypeRef renderTypeName fieldType) wrappers
+      foldr applyWrapper (toCon fieldType) wrappers
     )
-    where
-      renderTypeName :: TypeName -> Type
-      renderTypeName
-        | isParametrized = (`apply` [m'])
-        | otherwise = toCon
 
 applyWrapper :: FIELD_TYPE_WRAPPER -> Type -> Type
+applyWrapper PARAMETRIZED = (`AppT` m')
 applyWrapper MONAD = AppT m'
 applyWrapper SUBSCRIPTION = AppT (ConT ''SubscriptionField)
 applyWrapper (ARG typeName) = InfixT (ConT (toName typeName)) ''Function
+applyWrapper (GQL_WRAPPER wrappers) = wrappedType wrappers
 applyWrapper (TAGGED_ARG fieldName typeRef) = InfixT arg ''Function
   where
     arg =

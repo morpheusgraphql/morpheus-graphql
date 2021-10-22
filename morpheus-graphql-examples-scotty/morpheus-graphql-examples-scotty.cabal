@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3563ee78748da74c4c884b5ba9079d95b7e53aa7a444f42e305350395b0173d3
+-- hash: 7b205f43bb758d32b5dc044449f7061b9e37cbd4f496805323682092d9d6875a
 
 name:           morpheus-graphql-examples-scotty
 version:        0.1.0
@@ -43,6 +43,7 @@ executable scotty-server
       Server.Mythology.Place
       Server.NamedResolvers.API
       Server.NamedResolvers.Authors
+      Server.NamedResolvers.Pages
       Server.NamedResolvers.Posts
       Server.Scotty
       Server.Sophisticated.API

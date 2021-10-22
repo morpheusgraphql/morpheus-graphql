@@ -14,11 +14,11 @@ where
 
 import Control.Monad.Except (MonadError (throwError))
 import Data.Morpheus.App.Internal.Resolving (RootResolverValue (..))
-import Data.Morpheus.App.Internal.Resolving.NamedResolver
+import Data.Morpheus.App.Internal.Resolving.Types
   ( NamedResolver (..),
     NamedResolverResult (..),
   )
-import qualified Data.Morpheus.App.Internal.Resolving.Utils as R
+import qualified Data.Morpheus.App.Internal.Resolving.Types as R
 import Data.Morpheus.Error (NameCollision (..))
 import Data.Morpheus.Internal.Ext
   ( Merge (merge),
@@ -130,20 +130,14 @@ stitchSubscriptions Just {} Just {} = throwError ("can't merge  subscription app
 stitchSubscriptions x Nothing = pure x
 stitchSubscriptions Nothing x = pure x
 
-instance Stitching (R.ObjectTypeResolver (m a)) where
-  stitch t1 t2
-    | R.__typename t1 == R.__typename t2 =
-      pure $
-        R.ObjectTypeResolver
-          (R.__typename t1)
-          ( R.objectFields t1 <> R.objectFields t2
-          )
-    | otherwise = throwError "ResolverMap must have same resolverName"
+instance Stitching (R.ObjectTypeResolver m) where
+  stitch t1 t2 = pure $ R.ObjectTypeResolver (R.objectFields t1 <> R.objectFields t2)
 
 instance (MonadError GQLError m) => Stitching (NamedResolverResult m) where
+  stitch NamedEnumResolver {} (NamedEnumResolver x) = pure (NamedEnumResolver x)
   stitch NamedUnionResolver {} (NamedUnionResolver x) = pure (NamedUnionResolver x)
   stitch (NamedObjectResolver t1) (NamedObjectResolver t2) = NamedObjectResolver <$> stitch t1 t2
-  stitch _ _ = throwError "ResolverMap must have same resolverName"
+  stitch _ _ = throwError "ResolverMap must have same Kind"
 
 instance (MonadError GQLError m) => Stitching (NamedResolver m) where
   stitch t1 t2

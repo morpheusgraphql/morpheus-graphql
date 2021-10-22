@@ -21,16 +21,16 @@ import Data.Aeson
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as A
 import Data.ByteString.Lazy (ByteString)
+import Data.Morpheus.Client.Internal.Types
+  ( FetchError (..),
+  )
 import Data.Morpheus.Client.JSONSchema.Types
   ( JSONResponse (..),
   )
-import Data.Morpheus.Internal.TH
+import Data.Morpheus.CodeGen.Internal.TH
   ( applyCons,
     toCon,
     typeInstanceDec,
-  )
-import Data.Morpheus.Client.Internal.Types
-  ( FetchError(..)
   )
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
@@ -65,7 +65,7 @@ class Fetch a where
       -------------------------------------------------------------
       processResponse JSONResponse {responseData = Just x, responseErrors = []} = Right x
       processResponse JSONResponse {responseData = Nothing, responseErrors = []} = Left FetchErrorNoResult
-      processResponse JSONResponse {responseData = result, responseErrors = (x:xs)} = Left $ FetchErrorProducedErrors (x :| xs) result
+      processResponse JSONResponse {responseData = result, responseErrors = (x : xs)} = Left $ FetchErrorProducedErrors (x :| xs) result
   fetch :: (Monad m, FromJSON a) => (ByteString -> m ByteString) -> Args a -> m (Either (FetchError a) a)
 
 deriveFetch :: Type -> TypeName -> String -> Q [Dec]

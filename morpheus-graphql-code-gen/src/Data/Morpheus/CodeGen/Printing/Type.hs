@@ -63,7 +63,7 @@ instance RenderType ServerTypeDefinition where
   render ServerInterfaceDefinition {} = fail "not supported"
   -- TODO: on scalar we should render user provided type
   render ServerTypeDefinition {tKind = KindScalar, tName} =
-    pure $ label tName <> "type" <+> renderName tName <+> "= Int"
+    pure $ label tName <> "type" <+> pretty tName <+> "= Int"
   render typeDef@ServerTypeDefinition {tName, tCons, typeParameters, derives} = do
     typeRendering <- renderTypeDef
     pure $ label tName <> vsep [typeRendering, renderGQLType typeDef]
@@ -100,21 +100,18 @@ instance RenderType ServerFieldDefinition where
     ServerFieldDefinition
       { fieldName,
         wrappers,
-        isParametrized,
-        fieldType =
-          TypeRef
-            { typeConName,
-              typeWrappers
-            }
+        fieldType
       } =
-      do
-        let typeRef = renderWrapped typeWrappers (if isParametrized then TypeDoc True (renderName typeConName <> " m") else TypeDoc False (renderName typeConName))
-        let resultType = foldr renderWrapper typeRef wrappers
-        pure $ pretty (unpackName fieldName) <+> "::" <+> unDoc resultType
+      pure $
+        pretty (unpackName fieldName)
+          <+> "::"
+          <+> unDoc (foldr renderWrapper (TypeDoc False $ pretty fieldType) wrappers)
 
 renderWrapper :: FIELD_TYPE_WRAPPER -> TypeDoc n -> TypeDoc n
+renderWrapper PARAMETRIZED = \x -> TypeDoc True (unDoc x <+> "m")
 renderWrapper MONAD = appendType "m"
 renderWrapper SUBSCRIPTION = id
+renderWrapper (GQL_WRAPPER typeWrappers) = renderWrapped typeWrappers
 renderWrapper (ARG name) = TypeDoc True . ((renderName name <+> "->") <+>) . unDoc
 renderWrapper (TAGGED_ARG name typeRef) =
   TypeDoc True

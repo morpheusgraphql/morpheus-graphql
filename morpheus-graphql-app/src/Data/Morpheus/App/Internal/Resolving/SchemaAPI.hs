@@ -10,8 +10,13 @@ module Data.Morpheus.App.Internal.Resolving.SchemaAPI
 where
 
 import Data.Morpheus.App.Internal.Resolving.Resolver (Resolver, withArguments)
-import Data.Morpheus.App.Internal.Resolving.ResolverValue (ResolverObject, ResolverValue, mkObject, mkObject')
-import Data.Morpheus.App.Internal.Resolving.Utils (mkList, mkNull)
+import Data.Morpheus.App.Internal.Resolving.Types
+  ( ObjectTypeResolver (..),
+    ResolverValue,
+    mkList,
+    mkNull,
+    mkObject,
+  )
 import Data.Morpheus.App.RenderIntrospection
   ( WithSchema,
     createObjectType,
@@ -36,6 +41,7 @@ import Data.Morpheus.Types.Internal.AST
     typeDefinitions,
   )
 import Relude hiding (empty)
+import qualified Relude as HM
 
 resolveTypes :: (Monad m, WithSchema m) => Schema VALID -> m (ResolverValue m)
 resolveTypes schema = mkList <$> traverse render (toList $ typeDefinitions schema)
@@ -69,13 +75,14 @@ schemaResolver schema@Schema {query, mutation, subscription, directiveDefinition
         ("directives", render $ toList directiveDefinitions)
       ]
 
-schemaAPI :: Monad m => Schema VALID -> ResolverObject (Resolver QUERY e m)
+schemaAPI :: Monad m => Schema VALID -> ObjectTypeResolver (Resolver QUERY e m)
 schemaAPI schema =
-  mkObject'
-    "Root"
-    [ ("__type", withArguments typeResolver),
-      ("__schema", schemaResolver schema)
-    ]
+  ObjectTypeResolver
+    ( HM.fromList
+        [ ("__type", withArguments typeResolver),
+          ("__schema", schemaResolver schema)
+        ]
+    )
   where
     typeResolver = selectOr (pure mkNull) handleArg ("name" :: FieldName)
       where

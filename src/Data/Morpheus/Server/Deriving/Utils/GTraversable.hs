@@ -50,7 +50,8 @@ scanner ::
 scanner c@(Mappable f) lib =
   Mappable
     ( \proxy -> do
-        let fingerprint = gqlFingerprint (__type proxy OUT)
+        let typeInfo = __type proxy OUT
+        let fingerprint = gqlFingerprint typeInfo
         if M.member fingerprint lib
           then lib
           else do
@@ -72,8 +73,8 @@ class GFmap (c :: DerivingKind -> * -> Constraint) (t :: DerivingKind) a where
 instance (GQLType a, c (KIND a) a) => GFmap c SCALAR a where
   gfmap (Mappable f) _ = f (KindedProxy :: KindedProxy (KIND a) a)
 
-instance GFunctor c (Rep a) => GFmap c TYPE a where
-  gfmap f _ = genericMap f (Proxy @(Rep a))
+instance (GQLType a, c (KIND a) a, GFunctor c (Rep a)) => GFmap c TYPE a where
+  gfmap f@(Mappable fx) _ = fx (KindedProxy :: KindedProxy (KIND a) a) <> genericMap f (Proxy @(Rep a))
 
 instance GFmap c (KIND a) a => GFmap c WRAPPER (f a) where
   gfmap f _ = gfmap f (KindedProxy :: KindedProxy (KIND a) a)

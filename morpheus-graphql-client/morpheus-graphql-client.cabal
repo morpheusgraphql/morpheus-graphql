@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0ce9109bc2a76b761fefb97068cf20b4de3290224268cf749e9bae0dcd5177a7
+-- hash: 4dceab6e7bf2e2fd97124cfa03a3888b942b890e9e3fc59a896114afec53328e
 
 name:           morpheus-graphql-client
 version:        0.17.0
@@ -72,6 +72,7 @@ library
       aeson >=1.4.4.0 && <=1.6
     , base >=4.7 && <5
     , bytestring >=0.10.4 && <0.11
+    , morpheus-graphql-code-gen >=0.17.0 && <0.18.0
     , morpheus-graphql-core >=0.17.0 && <0.18.0
     , mtl >=2.0 && <=3.0
     , relude >=0.3.0
@@ -107,6 +108,7 @@ test-suite morpheus-graphql-client-test
     , bytestring >=0.10.4 && <0.11
     , directory >=1.0
     , morpheus-graphql-client
+    , morpheus-graphql-code-gen >=0.17.0 && <0.18.0
     , morpheus-graphql-core >=0.17.0 && <0.18.0
     , mtl >=2.0 && <=3.0
     , relude >=0.3.0

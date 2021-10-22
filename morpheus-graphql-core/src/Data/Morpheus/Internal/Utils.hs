@@ -7,9 +7,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Internal.Utils
-  ( camelCaseTypeName,
-    camelCaseFieldName,
-    singleton,
+  ( singleton,
     IsMap,
     Failure,
     failure,
@@ -18,8 +16,6 @@ module Data.Morpheus.Internal.Utils
     selectBy,
     traverseCollection,
     prop,
-    stripFieldNamespace,
-    stripConstructorNamespace,
     fromLBS,
     toLBS,
     mergeT,
@@ -41,9 +37,6 @@ where
 
 import Control.Monad.Except (MonadError (throwError))
 import Data.ByteString.Lazy (ByteString)
-import Data.Char
-  ( toLower,
-  )
 import Data.Mergeable
   ( IsMap,
     Merge (merge),
@@ -64,12 +57,7 @@ import Data.Morpheus.Types.Internal.AST.Error
   )
 import Data.Morpheus.Types.Internal.AST.Name
   ( FieldName,
-    Name (..),
-    TypeName,
-    camelCaseFieldName,
-    camelCaseTypeName,
   )
-import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import Data.Text.Lazy.Encoding (decodeUtf8, encodeUtf8)
 import Instances.TH.Lift ()
@@ -107,18 +95,6 @@ fromLBS = LT.toStrict . decodeUtf8
 
 prop :: (b -> b -> m b) -> (a -> b) -> a -> a -> m b
 prop f fSel a1 a2 = f (fSel a1) (fSel a2)
-
-dropPrefix :: TypeName -> String -> String
-dropPrefix name = drop (T.length $ unpackName name)
-
-stripConstructorNamespace :: TypeName -> String -> String
-stripConstructorNamespace = dropPrefix
-
-stripFieldNamespace :: TypeName -> String -> String
-stripFieldNamespace prefix = __uncapitalize . dropPrefix prefix
-  where
-    __uncapitalize [] = []
-    __uncapitalize (x : xs) = toLower x : xs
 
 {-# DEPRECATED elems "use Foldable.toList" #-}
 elems :: Foldable t => t a -> [a]
