@@ -23,7 +23,7 @@ import Data.Morpheus.Client.Internal.Types
     ClientTypeDefinition (..),
     TypeNameTH (..),
   )
-import Data.Morpheus.Internal.TH (toCon)
+import Data.Morpheus.CodeGen.Internal.TH (toCon)
 import Language.Haskell.TH
 import Relude hiding (Type)
 

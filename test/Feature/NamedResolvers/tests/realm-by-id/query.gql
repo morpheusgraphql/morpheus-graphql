@@ -1,0 +1,5 @@
+query {
+  realm(id: "olympus") {
+    name
+  }
+}

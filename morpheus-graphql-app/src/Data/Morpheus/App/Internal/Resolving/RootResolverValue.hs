@@ -14,10 +14,8 @@ import qualified Data.Aeson as A
 import Data.Morpheus.App.Internal.Resolving.Event
   ( EventHandler (..),
   )
-import Data.Morpheus.App.Internal.Resolving.NamedResolver
-  ( ResolverMap,
-    runResolverMap,
-  )
+import Data.Morpheus.App.Internal.Resolving.NamedResolver (runResolverMap)
+import Data.Morpheus.App.Internal.Resolving.ResolveValue
 import Data.Morpheus.App.Internal.Resolving.Resolver
   ( LiftOperation,
     Resolver,
@@ -30,12 +28,11 @@ import Data.Morpheus.App.Internal.Resolving.ResolverState
     runResolverStateT,
     toResolverStateT,
   )
-import Data.Morpheus.App.Internal.Resolving.ResolverValue
-  ( ResolverObject,
-    lookupResJSON,
-    resolveObject,
-  )
 import Data.Morpheus.App.Internal.Resolving.SchemaAPI (schemaAPI)
+import Data.Morpheus.App.Internal.Resolving.Types
+import Data.Morpheus.App.Internal.Resolving.Utils
+  ( lookupResJSON,
+  )
 import Data.Morpheus.Internal.Ext (merge)
 import Data.Morpheus.Types.Internal.AST
   ( GQLError,
@@ -60,9 +57,9 @@ import Relude hiding
 
 data RootResolverValue e m
   = RootResolverValue
-      { queryResolver :: ResolverState (ResolverObject (Resolver QUERY e m)),
-        mutationResolver :: ResolverState (ResolverObject (Resolver MUTATION e m)),
-        subscriptionResolver :: ResolverState (ResolverObject (Resolver SUBSCRIPTION e m)),
+      { queryResolver :: ResolverState (ObjectTypeResolver (Resolver QUERY e m)),
+        mutationResolver :: ResolverState (ObjectTypeResolver (Resolver MUTATION e m)),
+        subscriptionResolver :: ResolverState (ObjectTypeResolver (Resolver SUBSCRIPTION e m)),
         channelMap :: Maybe (Selection VALID -> ResolverState (Channel e))
       }
   | NamedResolversValue
@@ -81,7 +78,7 @@ instance Monad m => A.FromJSON (RootResolverValue e m) where
 runRootDataResolver ::
   (Monad m, LiftOperation o) =>
   Maybe (Selection VALID -> ResolverState (Channel e)) ->
-  ResolverState (ResolverObject (Resolver o e m)) ->
+  ResolverState (ObjectTypeResolver (Resolver o e m)) ->
   ResolverContext ->
   SelectionSet VALID ->
   ResponseStream e m (Value VALID)
@@ -92,7 +89,7 @@ runRootDataResolver
   selection =
     do
       root <- runResolverStateT (toResolverStateT res) ctx
-      runResolver channels (resolveObject root selection) ctx
+      runResolver channels (resolveObject mempty root selection) ctx
 
 runRootResolverValue :: Monad m => RootResolverValue e m -> ResolverContext -> ResponseStream e m (Value VALID)
 runRootResolverValue
@@ -114,9 +111,9 @@ runRootResolverValue
 runRootResolverValue
   NamedResolversValue
     { queryResolverMap
-    -- mutationResolverMap,
-    -- subscriptionResolverMap,
-    --typeResolverChannels
+      -- mutationResolverMap,
+      -- subscriptionResolverMap,
+      --typeResolverChannels
     }
   ctx@ResolverContext {operation = Operation {operationType}} =
     selectByOperation operationType
@@ -139,7 +136,7 @@ withIntrospection f ctx@ResolverContext {operation} = case splitSystemSelection 
     mergeRoot y x
 
 introspection :: Monad m => SelectionSet VALID -> ResolverContext -> ResponseStream event m ValidValue
-introspection selection ctx@ResolverContext {schema} = runResolver Nothing (resolveObject (schemaAPI schema) selection) ctx
+introspection selection ctx@ResolverContext {schema} = runResolver Nothing (resolveObject mempty (schemaAPI schema) selection) ctx
 
 mergeRoot :: MonadError GQLError m => ValidValue -> ValidValue -> m ValidValue
 mergeRoot (Object x) (Object y) = Object <$> merge x y

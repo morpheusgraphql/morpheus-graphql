@@ -8,6 +8,8 @@
 
 module Server.NamedResolvers.Authors
   ( authorsApp,
+    Author,
+    Post,
   )
 where
 
@@ -28,10 +30,6 @@ import Data.Morpheus.Types
   )
 import GHC.Generics (Generic)
 
-getRole :: Monad m => ID -> m Role
-getRole "1325" = pure Admin
-getRole _ = pure Guest
-
 data Role
   = Guest
   | Admin
@@ -42,8 +40,9 @@ data Role
     )
 
 instance Monad m => ResolveNamed m Role where
-  type Dep Role = Role
-  resolveNamed = pure
+  type Dep Role = ID
+  resolveNamed "1325" = pure Admin
+  resolveNamed _ = pure Guest
 
 -- AUTHOR
 data Author m = Author
@@ -62,7 +61,7 @@ instance Monad m => ResolveNamed m (Author (NamedResolverT m)) where
     pure
       Author
         { authorId = resolve (pure uid),
-          role = resolve (getRole uid),
+          role = resolve (pure uid),
           posts = resolve (pure ["2321", "2112"])
         }
 
@@ -105,4 +104,6 @@ instance Monad m => ResolveNamed m (Query (NamedResolverT m)) where
 authorsApp :: App () IO
 authorsApp =
   deriveApp
-    (NamedResolvers :: NamedResolvers IO () Query Undefined Undefined)
+    ( NamedResolvers ::
+        NamedResolvers IO () Query Undefined Undefined
+    )

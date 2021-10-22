@@ -21,7 +21,7 @@
       scalarText
     }
 
-    ... on CharacterInt {
+    ... on CharacterAge {
       _0
     }
 

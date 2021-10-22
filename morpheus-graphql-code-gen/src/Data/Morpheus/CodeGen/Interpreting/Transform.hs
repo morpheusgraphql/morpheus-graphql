@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
@@ -9,7 +10,6 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE CPP #-}
 
 module Data.Morpheus.CodeGen.Interpreting.Transform
   ( parseServerTypeDefinitions,
@@ -27,15 +27,19 @@ import Data.Morpheus.CodeGen.Internal.AST
     ServerFieldDefinition (..),
     ServerTypeDefinition (..),
   )
+import Data.Morpheus.CodeGen.Internal.Name
+  ( camelCaseFieldName,
+    toHaskellTypeName,
+  )
+import Data.Morpheus.CodeGen.Internal.TH
+  ( ToName (toName),
+    camelCaseTypeName,
+  )
 import Data.Morpheus.Core
   ( parseTypeDefinitions,
   )
 import Data.Morpheus.Error (gqlWarnings, renderGQLErrors)
 import Data.Morpheus.Internal.Ext (GQLResult, Result (..))
-import Data.Morpheus.Internal.TH (ToName (toName), camelCaseFieldName)
-import Data.Morpheus.Internal.Utils
-  ( camelCaseTypeName,
-  )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentDefinition (..),
@@ -64,7 +68,6 @@ import Data.Morpheus.Types.Internal.AST
     isResolverType,
     kindOf,
     lookupWith,
-    mkTypeRef,
     unpackName,
   )
 import Language.Haskell.TH
@@ -161,7 +164,7 @@ genTypeDefinition
         DataInterface {} -> mkInterfaceName originalTypeName
         _ -> originalTypeName
       tKind = kindOf typeDef
-      tName = typeName
+      tName = toHaskellTypeName typeName
       gql =
         Just
           GQLTypeDefinition
@@ -221,18 +224,21 @@ mkObjectField
   FieldDefinition
     { fieldName = fName,
       fieldContent,
-      fieldType
+      fieldType = TypeRef {typeConName, typeWrappers}
     } = do
-    isParametrized <- lift . isParametrizedResolverType (typeConName fieldType) =<< asks schema
+    isParametrized <- lift . isParametrizedResolverType typeConName =<< asks schema
     genName <- asks toArgsTypeName
     kind <- asks currentKind
     fieldName <- genFieldName fName
     pure
       ServerFieldDefinition
-        { wrappers =
+        { fieldType = toHaskellTypeName typeConName,
+          wrappers =
             mkFieldArguments fName genName (toArgList fieldContent)
               <> [SUBSCRIPTION | fmap isSubscription kind == Just True]
-              <> [MONAD],
+              <> [MONAD]
+              <> [GQL_WRAPPER typeWrappers]
+              <> [PARAMETRIZED | isParametrized],
           ..
         }
 
@@ -264,7 +270,7 @@ genInterfaceUnion interfaceName =
     mkInterface members =
       [ mkGuardWithPossibleType tName,
         ServerTypeDefinition
-          { tName,
+          { tName = toHaskellTypeName tName,
             tCons = map (mkUnionFieldDefinition tName) members,
             tKind,
             typeParameters = ["m"],
@@ -296,15 +302,18 @@ mkConsEnum name DataEnumValue {enumName} = do
       }
 
 toNonResolverServerField :: Monad m => FieldDefinition c CONST -> ServerQ m ServerFieldDefinition
-toNonResolverServerField FieldDefinition {fieldType, fieldName = fName} = do
-  fieldName <- genFieldName fName
-  pure $
-    ServerFieldDefinition
-      { isParametrized = False,
-        fieldType,
-        fieldName,
-        wrappers = []
-      }
+toNonResolverServerField
+  FieldDefinition
+    { fieldType = TypeRef {typeConName, typeWrappers},
+      fieldName = fName
+    } = do
+    fieldName <- genFieldName fName
+    pure $
+      ServerFieldDefinition
+        { fieldType = toHaskellTypeName typeConName,
+          fieldName,
+          wrappers = [GQL_WRAPPER typeWrappers]
+        }
 
 genTypeContent ::
   CodeGenMonad m =>
@@ -343,10 +352,9 @@ mkUnionFieldDefinition typeName memberName =
     { constructorName,
       constructorFields =
         [ ServerFieldDefinition
-            { isParametrized = True,
-              fieldName = coerce ("un" <> constructorName),
-              fieldType = mkTypeRef memberName,
-              wrappers = []
+            { fieldName = coerce ("un" <> constructorName),
+              fieldType = toHaskellTypeName memberName,
+              wrappers = [PARAMETRIZED]
             }
         ]
     }
@@ -370,7 +378,7 @@ genArgumentType
         let tKind = KindInputObject
         pure
           [ ServerTypeDefinition
-              { tName,
+              { tName = toHaskellTypeName tName,
                 tKind,
                 tCons = mkObjectCons tName fields,
                 derives = derivesClasses False,

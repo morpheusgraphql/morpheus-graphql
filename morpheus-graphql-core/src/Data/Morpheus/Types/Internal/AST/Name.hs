@@ -15,16 +15,11 @@ module Data.Morpheus.Types.Internal.AST.Name
     unpackName,
     FieldName,
     TypeName,
-    fromHaskellName,
-    toHaskellName,
-    toHaskellTypeName,
     unitTypeName,
     unitFieldName,
     isNotSystemTypeName,
     isNotSystemFieldName,
     intercalate,
-    camelCaseTypeName,
-    camelCaseFieldName,
     NAME (..),
     FragmentName,
   )
@@ -33,10 +28,6 @@ where
 import Data.Aeson
   ( FromJSON,
     ToJSON (..),
-  )
-import Data.Char
-  ( toLower,
-    toUpper,
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
@@ -99,7 +90,6 @@ instance Lift (Name t) where
   lift = stringE . T.unpack . unpackName
 
 #if MIN_VERSION_template_haskell(2,17,0)
-  -- liftTyped :: Quote m => Name t -> Code m (Name t)
   liftTyped = liftTypedString . unpackName
     where
       liftTypedString :: (Quote m) => Text -> Code m (Name t)
@@ -125,74 +115,6 @@ type FragmentName = Name 'FRAGMENT
 intercalate :: Name t1 -> [Name t2] -> Name t3
 intercalate (Name x) = Name . T.intercalate x . fmap unpackName
 {-# INLINE intercalate #-}
-
--- handle reserved Names
-isReserved :: Name t -> Bool
-isReserved "case" = True
-isReserved "class" = True
-isReserved "data" = True
-isReserved "default" = True
-isReserved "deriving" = True
-isReserved "do" = True
-isReserved "else" = True
-isReserved "foreign" = True
-isReserved "if" = True
-isReserved "import" = True
-isReserved "in" = True
-isReserved "infix" = True
-isReserved "infixl" = True
-isReserved "infixr" = True
-isReserved "instance" = True
-isReserved "let" = True
-isReserved "module" = True
-isReserved "newtype" = True
-isReserved "of" = True
-isReserved "then" = True
-isReserved "type" = True
-isReserved "where" = True
-isReserved "_" = True
-isReserved _ = False
-{-# INLINE isReserved #-}
-
-fromHaskellName :: String -> FieldName
-fromHaskellName hsName
-  | not (null hsName) && (T.last name == '\'') = Name (T.init name)
-  | otherwise = Name name
-  where
-    name = T.pack hsName
-{-# INLINE fromHaskellName #-}
-
-toHaskellName :: FieldName -> String
-toHaskellName name
-  | isReserved name = T.unpack (unpackName name <> "'")
-  | otherwise = T.unpack (uncapitalize (unpackName name))
-{-# INLINE toHaskellName #-}
-
-toHaskellTypeName :: TypeName -> String
-toHaskellTypeName "String" = "Text"
-toHaskellTypeName "Boolean" = "Bool"
-toHaskellTypeName "Float" = "Double"
-toHaskellTypeName (Name name) = T.unpack $ capitalize name
-{-# INLINE toHaskellTypeName #-}
-
-mapFstChar :: (Char -> Char) -> Text -> Text
-mapFstChar f x
-  | T.null x = x
-  | otherwise = T.singleton (f $ T.head x) <> T.tail x
-
-capitalize :: Text -> Text
-capitalize = mapFstChar toUpper
-
-uncapitalize :: Text -> Text
-uncapitalize = mapFstChar toLower
-
-camelCaseTypeName :: [Name t] -> TypeName -> TypeName
-camelCaseTypeName list (Name name) =
-  Name $ T.concat $
-    map capitalize (map unpackName list <> [name])
-
-camelCaseFieldName :: TypeName -> FieldName -> FieldName
-camelCaseFieldName (Name nSpace) (Name name) = Name $ uncapitalize nSpace <> capitalize name
 
 unitTypeName :: TypeName
 unitTypeName = "Unit"

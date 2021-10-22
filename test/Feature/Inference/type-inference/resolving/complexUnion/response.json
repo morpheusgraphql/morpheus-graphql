@@ -23,7 +23,7 @@
         "_0": { "name": "Morpheus", "power": "Shapeshift" }
       },
       {
-        "__typename": "CharacterInt",
+        "__typename": "CharacterAge",
         "_0": 12
       },
       {

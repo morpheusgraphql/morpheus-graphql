@@ -1,5 +1,5 @@
 query Get__Type {
-  __type(name: "CharacterInt") {
+  __type(name: "CharacterAge") {
     ...FullType
   }
 }
