@@ -1,6 +1,7 @@
 .DS_Store
 .stack-work/
 .idea/
+.vscode/
 examples.cabal
 examples.iml
 docs/vendor
