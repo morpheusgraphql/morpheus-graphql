@@ -57,3 +57,6 @@ cradle:
 
       - path: "./morpheus-graphql-examples-code-gen"
         component: "morpheus-graphql-examples-code-gen:exe:generated-server"
+
+      - path: "./morpheus-graphql-examples-scotty-freer-simple"
+        component: "morpheus-graphql-examples-scotty-freer-simple:exe:scotty-freer-simple-server"

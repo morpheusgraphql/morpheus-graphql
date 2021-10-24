@@ -1,14 +1,11 @@
 [
   {
-    "message": "Query root type must be Object type if provided, it cannot be \"MyType\"",
-    "locations": []
+    "message": "Query root type must be Object type if provided, it cannot be \"MyType\""
   },
   {
-    "message": "Mutation root type must be Object type if provided, it cannot be \"MyUnion\"",
-    "locations": []
+    "message": "Mutation root type must be Object type if provided, it cannot be \"MyUnion\""
   },
   {
-    "message": "Subscription root type must be Object type if provided, it cannot be \"MyEnum\"",
-    "locations": []
+    "message": "Subscription root type must be Object type if provided, it cannot be \"MyEnum\""
   }
 ]

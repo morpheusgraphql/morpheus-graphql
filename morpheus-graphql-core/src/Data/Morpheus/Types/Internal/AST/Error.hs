@@ -56,7 +56,9 @@ at err pos = atPositions err [pos]
 {-# INLINE at #-}
 
 atPositions :: Foldable t => GQLError -> t Position -> GQLError
-atPositions GQLError {..} pos = GQLError {locations = locations <> toList pos, ..}
+atPositions GQLError {..} pos = case toList pos of
+  [] -> GQLError {..}
+  posList -> GQLError {locations = locations <> Just posList, ..}
 {-# INLINE atPositions #-}
 
 manyMsg :: (Foldable t, Msg a) => t a -> GQLError
@@ -79,7 +81,7 @@ instance Semigroup ErrorType where
 
 data GQLError = GQLError
   { message :: Message,
-    locations :: [Position],
+    locations :: Maybe [Position],
     errorType :: Maybe ErrorType,
     extensions :: Maybe (Map Text Value)
   }
@@ -114,7 +116,7 @@ instance Msg Text where
   msg message =
     GQLError
       { message,
-        locations = [],
+        locations = Nothing,
         errorType = Nothing,
         extensions = Nothing
       }
