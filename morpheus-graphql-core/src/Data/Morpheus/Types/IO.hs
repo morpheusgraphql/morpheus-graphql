@@ -39,7 +39,7 @@ import Relude hiding
   )
 
 renderResponse :: Result GQLError ValidValue -> GQLResponse
-renderResponse (Failure errors) = Errors (sortOn locations $ toList errors)
+renderResponse (Failure errors) = Errors $ sort $ toList errors
 renderResponse Success {result} = Data result
 
 -- | GraphQL HTTP Request Body

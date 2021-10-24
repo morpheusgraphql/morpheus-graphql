@@ -1,15 +1,11 @@
 [
   {
-    "message": "Directive \"@DirectiveA\" argument \"a1\" is required but not provided.",
-    "locations": [{ "line": 9, "column": 17 }]
-  },
-  {
     "message": "Directive \"@DirectiveA\" argument \"a2\" is required but not provided.",
     "locations": [{ "line": 9, "column": 17 }]
   },
   {
     "message": "Directive \"@DirectiveA\" argument \"a1\" is required but not provided.",
-    "locations": [{ "line": 11, "column": 13 }]
+    "locations": [{ "line": 9, "column": 17 }]
   },
   {
     "message": "Directive \"@DirectiveA\" argument \"a2\" is required but not provided.",
@@ -17,10 +13,14 @@
   },
   {
     "message": "Directive \"@DirectiveA\" argument \"a1\" is required but not provided.",
+    "locations": [{ "line": 11, "column": 13 }]
+  },
+  {
+    "message": "Directive \"@DirectiveA\" argument \"a2\" is required but not provided.",
     "locations": [{ "line": 12, "column": 9 }]
   },
   {
-    "message": "Directive \"@DirectiveA\" argument \"a2\" is required but not provided.",
+    "message": "Directive \"@DirectiveA\" argument \"a1\" is required but not provided.",
     "locations": [{ "line": 12, "column": 9 }]
   },
   {
