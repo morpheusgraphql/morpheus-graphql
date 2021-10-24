@@ -1,14 +1,11 @@
 [
   {
-    "message": "Query root type must be Object type if provided, it cannot be \"Query\"",
-    "locations": []
+    "message": "Query root type must be Object type if provided, it cannot be \"Query\""
   },
   {
-    "message": "Mutation root type must be Object type if provided, it cannot be \"Mutation\"",
-    "locations": []
+    "message": "Mutation root type must be Object type if provided, it cannot be \"Mutation\""
   },
   {
-    "message": "Subscription root type must be Object type if provided, it cannot be \"Subscription\"",
-    "locations": []
+    "message": "Subscription root type must be Object type if provided, it cannot be \"Subscription\""
   }
 ]
