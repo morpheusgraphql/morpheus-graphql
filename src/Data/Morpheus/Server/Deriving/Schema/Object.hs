@@ -99,8 +99,7 @@ repToFieldDefinition
       fieldValue
     } =
     FieldDefinition
-      { fieldPosition = Nothing,
-        fieldDescription = mempty,
+      { fieldDescription = mempty,
         fieldDirectives = empty,
         fieldContent = fieldValue,
         ..
