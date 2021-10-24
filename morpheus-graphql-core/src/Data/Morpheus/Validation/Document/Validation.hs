@@ -157,6 +157,7 @@ instance FieldDirectiveLocation cat => TypeCheck (FieldDefinition cat) where
     inField
       fieldName
       ( FieldDefinition
+          fieldPosition
           fieldDescription
           fieldName
           fieldType
@@ -188,6 +189,7 @@ instance TypeCheck ArgumentDefinition where
   typeCheck (ArgumentDefinition FieldDefinition {..}) =
     ArgumentDefinition
       <$> ( FieldDefinition
+              fieldPosition
               fieldDescription
               fieldName
               fieldType

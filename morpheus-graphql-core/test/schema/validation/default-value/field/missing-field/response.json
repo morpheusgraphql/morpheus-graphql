@@ -1,8 +1,8 @@
 [
   {
-    "message": "Field Input3.field1 got invalid default value. in field \"field\": Undefined Field \"field\"."
+    "message": "Field Input3.field1 got invalid default value. Undefined Field \"field2\"."
   },
   {
-    "message": "Field Input3.field1 got invalid default value. Undefined Field \"field2\"."
+    "message": "Field Input3.field1 got invalid default value. in field \"field\": Undefined Field \"field\"."
   }
 ]

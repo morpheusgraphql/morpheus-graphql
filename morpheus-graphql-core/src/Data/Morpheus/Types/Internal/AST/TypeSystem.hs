@@ -438,13 +438,9 @@ data TypeDefinition (a :: TypeCategory) (s :: Stage) = TypeDefinition
   deriving (Show, Lift, Eq)
 
 instance Ord (TypeDefinition k s) where
-  compare a b
-    | x1 == x2 =
-      compare (typeName a) (typeName b)
-    | otherwise = compare x1 x2
-    where
-      x1 = indexOf $ typeContent a
-      x2 = indexOf $ typeContent b
+  compare a b =
+    compare (indexOf $ typeContent a) (indexOf $ typeContent b)
+      <> compare (typeName a) (typeName b)
 
 instance KeyOf TypeName (TypeDefinition a s) where
   keyOf = typeName
