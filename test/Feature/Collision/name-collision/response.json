@@ -1,12 +1,10 @@
 {
   "errors": [
     {
-      "message": "There can Be only One TypeDefinition Named \"A\".",
-      "locations": []
+      "message": "There can Be only One TypeDefinition Named \"A\"."
     },
     {
-      "message": "There can Be only One TypeDefinition Named \"A\".",
-      "locations": []
+      "message": "There can Be only One TypeDefinition Named \"A\"."
     }
   ]
 }
