@@ -93,9 +93,7 @@ data GQLError = GQLError
     )
 
 instance Ord GQLError where
-  compare x y
-    | locations x == locations y = compare (locations x) (locations y)
-    | otherwise = compare (message x) (message y)
+  compare x y = compare (locations x) (locations y) <> compare (message x) (message y)
 
 instance IsString GQLError where
   fromString = msg

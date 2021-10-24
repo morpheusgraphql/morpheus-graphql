@@ -31,21 +31,7 @@ import Data.Mergeable.IsMap
   )
 import Data.Morpheus.Ext.Empty (Empty (..))
 import Language.Haskell.TH.Syntax (Lift (..))
-import Relude
-  ( ($),
-    (.),
-    (<$>),
-    Eq,
-    Foldable (foldMap, toList),
-    Functor (fmap),
-    HashMap,
-    Hashable,
-    Monad,
-    Show,
-    Traversable,
-    map,
-    sortOn,
-  )
+import Relude hiding (fromList)
 
 -- OrdMap
 newtype OrdMap k a = OrdMap
@@ -84,7 +70,10 @@ instance (Eq k, Hashable k) => IsMap k (OrdMap k) where
   lookup key OrdMap {mapEntries} = indexedValue <$> lookup key mapEntries
 
 instance (NameCollision e a, Eq k, Hashable k, Monad m, MonadError e m) => Merge m (OrdMap k a) where
-  merge (OrdMap x) (OrdMap y) = OrdMap <$> merge x y
+  merge (OrdMap x) (OrdMap y) = OrdMap <$> merge x (fmap (shiftIndexes (HM.size x)) y)
+
+shiftIndexes :: Int -> Indexed k a -> Indexed k a
+shiftIndexes n Indexed {..} = Indexed {index = index + n, ..}
 
 instance
   ( Hashable k,

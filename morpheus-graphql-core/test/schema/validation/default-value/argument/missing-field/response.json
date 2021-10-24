@@ -6,12 +6,12 @@
     "message": "Field Query.field(i1:) got invalid default value. in field \"field\": Undefined Field \"field2\"."
   },
   {
-    "message": "Field Query.field(i3:) got invalid default value. in field \"field.field\": Undefined Field \"field\"."
+    "message": "Field Query.field(i2:) got invalid default value. Undefined Field \"field\"."
   },
   {
     "message": "Field Query.field(i3:) got invalid default value. in field \"field\": Undefined Field \"field2\"."
   },
   {
-    "message": "Field Query.field(i2:) got invalid default value. Undefined Field \"field\"."
+    "message": "Field Query.field(i3:) got invalid default value. in field \"field.field\": Undefined Field \"field\"."
   }
 ]

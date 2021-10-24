@@ -44,10 +44,10 @@ import Data.Morpheus.Error.Operation
     subscriptionIsNotDefined,
   )
 import Data.Morpheus.Internal.Utils
-  ( HistoryT,
+  ( (<:>),
+    HistoryT,
     KeyOf (..),
     addPath,
-    (<:>),
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
@@ -143,7 +143,7 @@ instance RenderGQL (SelectionContent VALID) where
       unionSelectionElements :: [Either (Selection VALID) UnionTag]
       unionSelectionElements =
         map Left (toList interfaceFields)
-          <> map Right (toList unionSets)
+          <> map Right (sortOn unionTagName $ toList unionSets)
 
 instance
   ( Monad m,
