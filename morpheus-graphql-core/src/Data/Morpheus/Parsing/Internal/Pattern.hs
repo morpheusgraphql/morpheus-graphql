@@ -57,6 +57,7 @@ import Data.Morpheus.Types.Internal.AST
     InputFieldsDefinition,
     OUT,
     OperationType (..),
+    Position,
     TRUE,
     TypeName,
     TypeRef,
@@ -97,7 +98,8 @@ inputValueDefinition ::
 inputValueDefinition =
   label "InputValueDefinition" $
     FieldDefinition
-      <$> optDescription
+      <$> fmap Just getLocation
+      <*> optDescription
       <*> parseName
       <*> (colon *> parseType)
       <*> optional (DefaultInputValue <$> parseDefaultValue)
@@ -135,7 +137,8 @@ fieldDefinition :: Parse (Value s) => Parser (FieldDefinition OUT s)
 fieldDefinition =
   label "FieldDefinition" $
     mkField
-      <$> optDescription
+      <$> fmap Just getLocation
+      <*> optDescription
       <*> parseName
       <*> optional (FieldArgs <$> argumentsDefinition)
       <*> (colon *> parseType)
@@ -143,13 +146,14 @@ fieldDefinition =
 {-# INLINEABLE fieldDefinition #-}
 
 mkField ::
+  Maybe Position ->
   Maybe Description ->
   FieldName ->
   Maybe (FieldContent TRUE cat s) ->
   TypeRef ->
   Directives s ->
   FieldDefinition cat s
-mkField fieldDescription fieldName fieldContent fieldType fieldDirectives =
+mkField fieldPosition fieldDescription fieldName fieldContent fieldType fieldDirectives =
   FieldDefinition {..}
 {-# INLINEABLE mkField #-}
 

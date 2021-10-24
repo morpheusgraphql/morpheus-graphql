@@ -238,7 +238,8 @@ type FieldsDefinition cat s = OrdMap FieldName (FieldDefinition cat s)
 --   Description(opt) Name: Type DefaultValue(opt) Directives[Const](opt)
 
 data FieldDefinition (cat :: TypeCategory) (s :: Stage) = FieldDefinition
-  { fieldDescription :: Maybe Description,
+  { fieldPosition :: Maybe Position,
+    fieldDescription :: Maybe Description,
     fieldName :: FieldName,
     fieldType :: TypeRef,
     fieldContent :: Maybe (FieldContent TRUE cat s),
@@ -296,7 +297,8 @@ mkField ::
   FieldDefinition cat s
 mkField fieldContent fieldName fieldType =
   FieldDefinition
-    { fieldName,
+    { fieldPosition = Nothing,
+      fieldName,
       fieldContent,
       fieldDescription = Nothing,
       fieldType,
