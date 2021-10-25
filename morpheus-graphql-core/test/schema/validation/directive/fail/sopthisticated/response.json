@@ -1,6 +1,7 @@
 [
   {
     "message": "Directive \"@DirectiveA\" argument \"a1\" is required but not provided.",
+    "path": ["MyEnum"],
     "locations": [{ "line": 6, "column": 9 }]
   },
   {
@@ -9,6 +10,7 @@
   },
   {
     "message": "Unknown Directive \"SomeDirective\".",
+    "path": ["MyType"],
     "locations": [{ "line": 9, "column": 13 }]
   },
   {
@@ -17,10 +19,12 @@
   },
   {
     "message": "Unknown Argument \"someargs\" on Directive \"DirectiveC\".",
+    "path": ["MyType", "field"],
     "locations": [{ "line": 10, "column": 40 }]
   },
   {
     "message": "Directive \"@DirectiveC\" argument \"arg\" is required but not provided.",
+    "path": ["MyType", "field"],
     "locations": [{ "line": 10, "column": 62 }]
   },
   {
@@ -29,6 +33,7 @@
   },
   {
     "message": "Directive \"@include\" argument \"if\" is required but not provided.",
+    "path": ["Input"],
     "locations": [{ "line": 13, "column": 13 }]
   },
   {
@@ -37,6 +42,7 @@
   },
   {
     "message": "Directive \"@skip\" argument \"if\" is required but not provided.",
+    "path": ["Input", "field"],
     "locations": [{ "line": 14, "column": 13 }]
   },
   {
@@ -53,6 +59,7 @@
   },
   {
     "message": "Directive \"@skip\" argument \"if\" is required but not provided.",
+    "path": ["Query", "field"],
     "locations": [{ "line": 18, "column": 23 }]
   },
   {

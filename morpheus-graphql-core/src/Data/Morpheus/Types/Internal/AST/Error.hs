@@ -21,6 +21,7 @@ module Data.Morpheus.Types.Internal.AST.Error
     manyMsg,
     Msg (..),
     Message,
+    withPath,
   )
 where
 
@@ -60,6 +61,10 @@ atPositions GQLError {..} pos = case toList pos of
   [] -> GQLError {..}
   posList -> GQLError {locations = locations <> Just posList, ..}
 {-# INLINE atPositions #-}
+
+withPath :: GQLError -> [Text] -> GQLError
+withPath err [] = err
+withPath err path = err {path = Just path}
 
 manyMsg :: (Foldable t, Msg a) => t a -> GQLError
 manyMsg =

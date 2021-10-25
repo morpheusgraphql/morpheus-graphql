@@ -53,6 +53,7 @@ module Data.Morpheus.Types.Internal.Validation.Validator
     FragmentValidator,
     withPosition,
     askTypeDefinitions,
+    setScope,
   )
 where
 
@@ -90,6 +91,7 @@ import Data.Morpheus.Types.Internal.AST
     kindOf,
     typeDefinitions,
     unpackName,
+    withPath,
   )
 import Data.Morpheus.Types.Internal.AST.Error
 import Data.Morpheus.Types.Internal.Config (Config (..))
@@ -157,8 +159,9 @@ data Scope = Scope
     currentTypeName :: TypeName,
     currentTypeKind :: TypeKind,
     currentTypeWrappers :: TypeWrapper,
-    fieldname :: FieldName,
-    kind :: ScopeKind
+    fieldName :: FieldName,
+    kind :: ScopeKind,
+    path :: [Text]
   }
   deriving (Show)
 
@@ -231,9 +234,9 @@ setSelectionName ::
   FieldName ->
   m c a ->
   m c a
-setSelectionName fieldname = setScope update
+setSelectionName name = setScope update
   where
-    update ctx = ctx {fieldname}
+    update Scope {..} = Scope {fieldName = name, ..}
 
 askSchema ::
   ( MonadContext m s c
@@ -449,12 +452,15 @@ instance MonadError GQLError (Validator s ctx) where
 fromValidationError :: ValidatorContext s ctx -> GQLError -> GQLError
 fromValidationError
   context@ValidatorContext
-    { config
+    { config,
+      scope = Scope {position, path}
     }
   err
     | isInternal err || debug config =
-      err <> renderContext context
-        `atPositions` position (scope context)
+      ( err <> renderContext context
+          `atPositions` position
+      )
+        `withPath` path
     | otherwise = err
 
 renderContext :: ValidatorContext s ctx -> GQLError
@@ -471,7 +477,7 @@ renderScope
   Scope
     { currentTypeName,
       currentTypeKind,
-      fieldname
+      fieldName
     } =
     renderSection
       "Scope"
@@ -480,7 +486,7 @@ renderScope
           <> " of kind "
           <> render currentTypeKind
           <> " in field "
-          <> render fieldname
+          <> render fieldName
       )
 
 renderSection :: RenderGQL a => GQLError -> a -> GQLError

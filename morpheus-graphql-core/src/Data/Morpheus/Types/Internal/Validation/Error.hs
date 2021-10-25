@@ -38,6 +38,7 @@ import Data.Morpheus.Types.Internal.AST
     atPositions,
     getOperationName,
     msg,
+    withPath,
   )
 import Data.Morpheus.Types.Internal.Validation.Validator
   ( CurrentSelection (..),
@@ -78,95 +79,106 @@ class MissingRequired c ctx where
 
 instance MissingRequired (Arguments s) ctx where
   missingRequired
-    Scope {position, kind, fieldname}
+    Scope {position, kind, fieldName, path}
     _
     Ref {refName}
     _ =
-      ( inScope kind
-          <> " argument "
-          <> msg refName
-          <> " is required but not provided."
+      ( ( inScope kind
+            <> " argument "
+            <> msg refName
+            <> " is required but not provided."
+        )
+          `atPositions` position
       )
-        `atPositions` position
+        `withPath` path
       where
-        inScope DIRECTIVE = "Directive " <> msg ("@" <> fieldname)
-        inScope _ = "Field " <> msg fieldname
+        inScope DIRECTIVE = "Directive " <> msg ("@" <> fieldName)
+        inScope _ = "Field " <> msg fieldName
 
 instance MissingRequired (Object s) (InputContext ctx) where
   missingRequired
-    Scope {position}
+    Scope {position, path}
     ctx
     Ref {refName}
     _ =
-      ( renderInputPrefix
-          ctx
-          <> "Undefined Field "
-          <> msg refName
-          <> "."
+      ( ( renderInputPrefix
+            ctx
+            <> "Undefined Field "
+            <> msg refName
+            <> "."
+        )
+          `atPositions` position
       )
-        `atPositions` position
+        `withPath` path
 
 instance MissingRequired (VariableDefinitions s) (OperationContext s1 s2) where
   missingRequired
-    _
+    Scope {path}
     OperationContext
       { selection = CurrentSelection {operationName}
       }
     Ref {refName, refPosition}
     _ =
-      ( "Variable "
-          <> msg refName
-          <> " is not defined by operation "
-          <> msg (getOperationName operationName)
-          <> "."
+      ( ( "Variable "
+            <> msg refName
+            <> " is not defined by operation "
+            <> msg (getOperationName operationName)
+            <> "."
+        )
+          `at` refPosition
       )
-        `at` refPosition
+        `withPath` path
 
 class Unknown ref ctx where
   unknown :: Scope -> ctx -> ref -> GQLError
 
 -- {...H} -> "Unknown fragment \"H\"."
 instance Unknown (Ref FragmentName) ctx where
-  unknown _ _ Ref {refName, refPosition} =
-    ("Unknown Fragment " <> msg refName <> ".") `at` refPosition
+  unknown Scope {path} _ Ref {refName, refPosition} =
+    (("Unknown Fragment " <> msg refName <> ".") `at` refPosition) `withPath` path
 
 instance Unknown (Ref TypeName) ctx where
-  unknown _ _ Ref {refName, refPosition} =
-    ("Unknown type " <> msg refName <> ".") `at` refPosition
+  unknown Scope {path} _ Ref {refName, refPosition} =
+    (("Unknown type " <> msg refName <> ".") `at` refPosition) `withPath` path
 
 instance Unknown (Argument s') ctx where
-  unknown Scope {kind, fieldname} _ Argument {argumentName, argumentPosition} =
-    ( "Unknown Argument "
-        <> msg argumentName
-        <> " on "
-        <> scope kind
-        <> " "
-        <> msg fieldname
-        <> "."
+  unknown Scope {kind, path, fieldName} _ Argument {argumentName, argumentPosition} =
+    ( ( "Unknown Argument "
+          <> msg argumentName
+          <> " on "
+          <> scope kind
+          <> " "
+          <> msg fieldName
+          <> "."
+      )
+        `at` argumentPosition
     )
-      `at` argumentPosition
+      `withPath` path
     where
       scope DIRECTIVE = "Directive"
       scope _ = "Field"
 
 instance Unknown (Ref FieldName) ctx where
-  unknown Scope {currentTypeName} _ = unknownSelectionField currentTypeName
+  unknown Scope {currentTypeName, path} _ ref =
+    unknownSelectionField currentTypeName ref `withPath` path
 
 instance Unknown (ObjectEntry valueS) (InputContext ctx) where
   unknown
-    Scope {position}
+    Scope {position, path}
     ctx
     ObjectEntry {entryName} =
-      ( renderInputPrefix ctx
-          <> "Unknown Field "
-          <> msg entryName
-          <> "."
+      ( ( renderInputPrefix ctx
+            <> "Unknown Field "
+            <> msg entryName
+            <> "."
+        )
+          `atPositions` position
       )
-        `atPositions` position
+        `withPath` path
 
 instance Unknown (Directive s') ctx where
-  unknown _ _ Directive {directiveName, directivePosition} =
-    ("Unknown Directive " <> msg directiveName <> ".") `at` directivePosition
+  unknown Scope {path} _ Directive {directiveName, directivePosition} =
+    (("Unknown Directive " <> msg directiveName <> ".") `at` directivePosition) `withPath` path
 
 class KindViolation (t :: TypeCategory) ctx where
   kindViolation :: c t -> ctx -> GQLError
