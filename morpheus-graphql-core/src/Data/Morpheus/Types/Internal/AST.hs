@@ -148,6 +148,7 @@ module Data.Morpheus.Types.Internal.AST
     splitSystemSelection,
     lookupDataType,
     Name,
+    withPath,
   )
 where
 

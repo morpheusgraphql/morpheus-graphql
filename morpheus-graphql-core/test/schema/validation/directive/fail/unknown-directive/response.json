@@ -1,55 +1,67 @@
 [
   {
     "message": "Unknown Directive \"DirectveA\".",
+    "path": ["MyScalar"],
     "locations": [{ "line": 1, "column": 17 }]
   },
   {
     "message": "Unknown Directive \"DirectveB\".",
+    "path": ["TestEnum"],
     "locations": [{ "line": 3, "column": 15 }]
   },
   {
     "message": "Unknown Directive \"DirectveB\".",
+    "path": ["TestEnum"],
     "locations": [{ "line": 4, "column": 9 }]
   },
   {
     "message": "Unknown Directive \"DirectveC\".",
+    "path": ["A"],
     "locations": [{ "line": 7, "column": 8 }]
   },
   {
     "message": "Unknown Directive \"DirectveC\".",
+    "path": ["A", "name"],
     "locations": [{ "line": 8, "column": 17 }]
   },
   {
     "message": "Unknown Directive \"DirectveC\".",
+    "path": ["B"],
     "locations": [{ "line": 11, "column": 8 }]
   },
   {
     "message": "Unknown Directive \"DirectveC\".",
+    "path": ["B", "name"],
     "locations": [{ "line": 12, "column": 17 }]
   },
   {
     "message": "Unknown Directive \"DirectveD\".",
+    "path": ["MyUnion"],
     "locations": [{ "line": 15, "column": 15 }]
   },
   {
     "message": "Unknown Directive \"DirectveE\".",
+    "path": ["Input1"],
     "locations": [{ "line": 17, "column": 14 }]
   },
   {
     "message": "Unknown Directive \"DirectveE\".",
+    "path": ["Input1", "field1"],
     "locations": [{ "line": 18, "column": 14 }]
   },
-
   {
     "message": "Unknown Directive \"DirectveF\".",
+    "path": ["Query"],
     "locations": [{ "line": 22, "column": 12 }]
   },
   {
     "message": "Unknown Directive \"DirectveF\".",
+    "path": ["Query", "field"],
     "locations": [{ "line": 23, "column": 17 }]
   },
   {
     "message": "Unknown Directive \"DirectveF\".",
+    "path": ["Query", "field"],
     "locations": [{ "line": 23, "column": 34 }]
   }
 ]

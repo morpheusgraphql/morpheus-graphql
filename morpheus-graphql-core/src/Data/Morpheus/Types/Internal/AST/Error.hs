@@ -21,6 +21,7 @@ module Data.Morpheus.Types.Internal.AST.Error
     manyMsg,
     Msg (..),
     Message,
+    withPath,
   )
 where
 
@@ -61,6 +62,10 @@ atPositions GQLError {..} pos = case toList pos of
   posList -> GQLError {locations = locations <> Just posList, ..}
 {-# INLINE atPositions #-}
 
+withPath :: GQLError -> [Text] -> GQLError
+withPath err [] = err
+withPath err path = err {path = Just path}
+
 manyMsg :: (Foldable t, Msg a) => t a -> GQLError
 manyMsg =
   msg . T.intercalate ", "
@@ -82,6 +87,7 @@ instance Semigroup ErrorType where
 data GQLError = GQLError
   { message :: Message,
     locations :: Maybe [Position],
+    path :: Maybe [Text],
     errorType :: Maybe ErrorType,
     extensions :: Maybe (Map Text Value)
   }
@@ -102,7 +108,7 @@ instance ToJSON GQLError where
   toJSON = genericToJSON (defaultOptions {omitNothingFields = True})
 
 instance Semigroup GQLError where
-  GQLError m1 l1 t1 e1 <> GQLError m2 l2 t2 e2 = GQLError (m1 <> m2) (l1 <> l2) (t1 <> t2) (e1 <> e2)
+  GQLError m1 l1 p1 t1 e1 <> GQLError m2 l2 p2 t2 e2 = GQLError (m1 <> m2) (l1 <> l2) (p1 <> p2) (t1 <> t2) (e1 <> e2)
 
 type GQLErrors = NonEmpty GQLError
 
@@ -121,7 +127,8 @@ instance Msg Text where
       { message,
         locations = Nothing,
         errorType = Nothing,
-        extensions = Nothing
+        extensions = Nothing,
+        path = Nothing
       }
 
 instance Msg ByteString where

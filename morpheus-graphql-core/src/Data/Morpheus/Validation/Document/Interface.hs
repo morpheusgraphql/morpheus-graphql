@@ -61,7 +61,7 @@ validateImplements interfaceNames objectFields =
     hasCompatibleFields (typeName, fields) = inInterface typeName $ isCompatibleTo objectFields fields
 
 class StructuralCompatibility a where
-  type Context a :: PLACE -> *
+  type Context a :: PLACE -> Type
   type Context a = Field
 
   -- Object (which implements interface) -> Interface -> Validation

@@ -109,8 +109,9 @@ validateRequest
             currentTypeName = "Root",
             currentTypeKind = KindObject Nothing,
             currentTypeWrappers = mkBaseType,
-            fieldname = "Root",
-            position = Just operationPosition
+            fieldName = "Root",
+            position = Just operationPosition,
+            path = []
           }
       selection = CurrentSelection {operationName}
       validateHelpers =

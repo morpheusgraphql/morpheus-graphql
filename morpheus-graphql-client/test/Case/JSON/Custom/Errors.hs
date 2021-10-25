@@ -16,9 +16,8 @@ where
 import Data.ByteString.Lazy.Char8
   ( ByteString,
   )
-import Data.Morpheus.Types.Internal.AST
-  ( Position (..),
-    at
+import Data.List.NonEmpty
+  ( NonEmpty (..),
   )
 import Data.Morpheus.Client
   ( EncodeScalar (..),
@@ -27,8 +26,10 @@ import Data.Morpheus.Client
     ScalarValue (..),
     gql,
   )
-import Data.List.NonEmpty
-  ( NonEmpty(..),
+import Data.Morpheus.Types.Internal.AST
+  ( Position (..),
+    at,
+    withPath,
   )
 import Data.Text (Text)
 import Spec.Utils
@@ -43,12 +44,12 @@ import Test.Tasty.HUnit
     testCase,
   )
 import Prelude
-  ( Either (..),
+  ( ($),
+    Either (..),
     Eq (..),
     IO,
     Maybe (..),
     Show,
-    ($),
   )
 
 newtype GitTimestamp = GitTimestamp
@@ -81,7 +82,7 @@ test = testCase "test Errors" $ do
     "test custom Errors"
     ( Left
         ( FetchErrorProducedErrors
-            ("Failure" `at` Position {line = 3, column = 7} :| [ ] )
+            (("Failure" `at` Position {line = 3, column = 7}) `withPath` ["queryTypeName"] :| [])
             (Just TestQuery {queryTypeName = Just "TestQuery"})
         )
     )

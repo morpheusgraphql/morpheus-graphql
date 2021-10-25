@@ -53,6 +53,7 @@ module Data.Morpheus.Types.Internal.Validation.Validator
     FragmentValidator,
     withPosition,
     askTypeDefinitions,
+    setScope,
   )
 where
 
@@ -90,6 +91,7 @@ import Data.Morpheus.Types.Internal.AST
     kindOf,
     typeDefinitions,
     unpackName,
+    withPath,
   )
 import Data.Morpheus.Types.Internal.AST.Error
 import Data.Morpheus.Types.Internal.Config (Config (..))
@@ -157,8 +159,9 @@ data Scope = Scope
     currentTypeName :: TypeName,
     currentTypeKind :: TypeKind,
     currentTypeWrappers :: TypeWrapper,
-    fieldname :: FieldName,
-    kind :: ScopeKind
+    fieldName :: FieldName,
+    kind :: ScopeKind,
+    path :: [Text]
   }
   deriving (Show)
 
@@ -231,9 +234,9 @@ setSelectionName ::
   FieldName ->
   m c a ->
   m c a
-setSelectionName fieldname = setScope update
+setSelectionName name = setScope update
   where
-    update ctx = ctx {fieldname}
+    update Scope {..} = Scope {fieldName = name, ..}
 
 askSchema ::
   ( MonadContext m s c
@@ -352,7 +355,7 @@ startInput inputSource = withContext update
           sourceContext
         }
 
-data ValidatorContext (s :: Stage) (ctx :: *) = ValidatorContext
+data ValidatorContext (s :: Stage) (ctx :: Type) = ValidatorContext
   { scope :: Scope,
     schema :: Schema s,
     validatorCTX :: ctx,
@@ -417,7 +420,7 @@ instance MonadContext (Validator s) s c where
   setGlobalContext f = Validator . withReaderT f . _runValidator
   setContext = withContext
 
-class GetWith (c :: *) (v :: *) where
+class GetWith (c :: Type) (v :: Type) where
   getWith :: c -> v
 
 instance GetWith (OperationContext VALID fragStage) (VariableDefinitions VALID) where
@@ -430,7 +433,7 @@ instance GetWith (OperationContext varStage fragStage) (Fragments fragStage) whe
   getWith = fragments
 
 -- Setters
-class SetWith (c :: *) (v :: *) where
+class SetWith (c :: Type) (v :: Type) where
   setWith :: (v -> v) -> c -> c
 
 instance SetWith (OperationContext s1 s2) CurrentSelection where
@@ -449,12 +452,15 @@ instance MonadError GQLError (Validator s ctx) where
 fromValidationError :: ValidatorContext s ctx -> GQLError -> GQLError
 fromValidationError
   context@ValidatorContext
-    { config
+    { config,
+      scope = Scope {position, path}
     }
   err
     | isInternal err || debug config =
-      err <> renderContext context
-        `atPositions` position (scope context)
+      ( err <> renderContext context
+          `atPositions` position
+      )
+        `withPath` path
     | otherwise = err
 
 renderContext :: ValidatorContext s ctx -> GQLError
@@ -471,7 +477,7 @@ renderScope
   Scope
     { currentTypeName,
       currentTypeKind,
-      fieldname
+      fieldName
     } =
     renderSection
       "Scope"
@@ -480,7 +486,7 @@ renderScope
           <> " of kind "
           <> render currentTypeKind
           <> " in field "
-          <> render fieldname
+          <> render fieldName
       )
 
 renderSection :: RenderGQL a => GQLError -> a -> GQLError

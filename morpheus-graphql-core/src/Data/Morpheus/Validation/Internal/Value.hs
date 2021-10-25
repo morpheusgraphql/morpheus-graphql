@@ -1,3 +1,4 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
@@ -218,7 +219,7 @@ mkInputUnionValue
         | nullary = Object . singleton . ObjectEntry unitFieldName
         | otherwise = id
 
--- INUT Object
+-- INPUT Object
 validateInputObject ::
   ValidateWithDefault ctx schemaS valueS =>
   FieldsDefinition IN schemaS ->

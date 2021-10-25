@@ -40,11 +40,11 @@ scalarValidator _ = ScalarDefinition {validateValue = validator}
       pure value
 
 -- | GraphQL Scalar Serializer
-class EncodeScalar (a :: *) where
+class EncodeScalar (a :: Type) where
   encodeScalar :: a -> ScalarValue
 
 -- | GraphQL Scalar parser
-class DecodeScalar (a :: *) where
+class DecodeScalar (a :: Type) where
   -- value parsing and validating
   --
   -- for exhaustive pattern matching  should be handled all scalar types : 'Int', 'Float', 'String', 'Boolean'
