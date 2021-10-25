@@ -47,7 +47,6 @@ data Position = Position
   }
   deriving
     ( Show,
-      Ord,
       Generic,
       FromJSON,
       ToJSON,
@@ -58,6 +57,9 @@ data Position = Position
 -- but different Positions should be Equal
 instance Eq Position where
   _ == _ = True
+
+instance Ord Position where
+  compare (Position l1 c1) (Position l2 c2) = compare l1 l2 <> compare c1 c2
 
 -- | Document Reference with its Position
 --

@@ -439,9 +439,8 @@ data TypeDefinition (a :: TypeCategory) (s :: Stage) = TypeDefinition
 
 instance Ord (TypeDefinition k s) where
   compare a b =
-    compare
-      (indexOf $ typeContent a)
-      (indexOf $ typeContent b)
+    compare (indexOf $ typeContent a) (indexOf $ typeContent b)
+      <> compare (typeName a) (typeName b)
 
 instance KeyOf TypeName (TypeDefinition a s) where
   keyOf = typeName

@@ -76,7 +76,7 @@ resultOr _ f Success {result} = f result
 resultOr f _ Failure {errors} = f errors
 
 sortErrors :: Result GQLError a -> Result GQLError a
-sortErrors (Failure errors) = Failure (NE.sortWith locations errors)
+sortErrors (Failure errors) = Failure (NE.sort errors)
 sortErrors x = x
 
 -- ResultT

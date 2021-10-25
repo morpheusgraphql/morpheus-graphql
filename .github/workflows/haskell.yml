@@ -12,7 +12,9 @@ jobs:
           - { lts: "-14.14" } # ghc-8.6.5
           - { lts: "-15.3" } # ghc-8.8.2
           - { lts: "-16.2" } # ghc-8.8.3
-          - { lts: "" } # nightly 8.10.1
+          - { lts: "-18.2" } # 8.10.7
+          - { lts: "" } # nightly
+      fail-fast: false
     runs-on: ubuntu-latest
     steps:
       - name: Prepare OS
