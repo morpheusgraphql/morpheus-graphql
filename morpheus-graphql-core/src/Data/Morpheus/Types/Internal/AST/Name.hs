@@ -38,22 +38,27 @@ import Data.Morpheus.Types.Internal.AST.Error
   ( Msg (..),
   )
 import qualified Data.Text as T
-import Language.Haskell.TH
-  ( stringE,
-  )
 #if MIN_VERSION_template_haskell(2,17,0)
 import Language.Haskell.TH
   ( Quote,
     Code,
-    unsafeCodeCoerce
+    unsafeCodeCoerce,
+    stringE
   )
-#endif
+import Language.Haskell.TH.Syntax(
+    Lift(..)
+  )
+# else
+import Language.Haskell.TH
+  ( stringE,
+  )
 import Language.Haskell.TH.Syntax
   ( Lift (..),
     Q,
     TExp,
     unsafeTExpCoerce,
   )
+#endif
 import Relude hiding
   ( ByteString,
     decodeUtf8,

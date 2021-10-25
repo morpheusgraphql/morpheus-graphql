@@ -80,7 +80,7 @@ sortErrors (Failure errors) = Failure (NE.sort errors)
 sortErrors x = x
 
 -- ResultT
-newtype ResultT event (m :: * -> *) a = ResultT
+newtype ResultT event (m :: Type -> Type) a = ResultT
   { runResultT :: m (Result GQLError ([event], a))
   }
   deriving (Functor)

@@ -92,7 +92,7 @@ instance ValidateSchema VALID where
 ---
 ---
 class TypeCheck a where
-  type TypeContext a :: *
+  type TypeContext a :: Type
   type TypeContext a = ()
   typeCheck :: a CONST -> SchemaValidator (TypeContext a) (a VALID)
 

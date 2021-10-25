@@ -352,7 +352,7 @@ startInput inputSource = withContext update
           sourceContext
         }
 
-data ValidatorContext (s :: Stage) (ctx :: *) = ValidatorContext
+data ValidatorContext (s :: Stage) (ctx :: Type) = ValidatorContext
   { scope :: Scope,
     schema :: Schema s,
     validatorCTX :: ctx,
@@ -417,7 +417,7 @@ instance MonadContext (Validator s) s c where
   setGlobalContext f = Validator . withReaderT f . _runValidator
   setContext = withContext
 
-class GetWith (c :: *) (v :: *) where
+class GetWith (c :: Type) (v :: Type) where
   getWith :: c -> v
 
 instance GetWith (OperationContext VALID fragStage) (VariableDefinitions VALID) where
@@ -430,7 +430,7 @@ instance GetWith (OperationContext varStage fragStage) (Fragments fragStage) whe
   getWith = fragments
 
 -- Setters
-class SetWith (c :: *) (v :: *) where
+class SetWith (c :: Type) (v :: Type) where
   setWith :: (v -> v) -> c -> c
 
 instance SetWith (OperationContext s1 s2) CurrentSelection where
