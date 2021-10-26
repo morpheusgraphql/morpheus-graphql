@@ -91,7 +91,6 @@ import Data.Morpheus.Types.Internal.AST
     kindOf,
     typeDefinitions,
     unpackName,
-    withPath,
   )
 import Data.Morpheus.Types.Internal.AST.Error
 import Data.Morpheus.Types.Internal.Config (Config (..))
@@ -340,7 +339,8 @@ withPosition pos = setScope update
 inputMessagePrefix :: InputValidator s ctx GQLError
 inputMessagePrefix =
   renderInputPrefix
-    . validatorCTX <$> Validator ask
+    . validatorCTX
+    <$> Validator ask
 
 startInput ::
   InputSource ->

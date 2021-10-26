@@ -85,6 +85,7 @@ import Data.Morpheus.Types.Internal.AST
     fromAny,
     isNullable,
     msg,
+    withPath,
   )
 import Data.Morpheus.Types.Internal.AST.TypeSystem
 import Data.Morpheus.Types.Internal.Validation.Error
@@ -111,21 +112,21 @@ validateOptional = traverse
 getUnused :: (KeyOf k b, IsMap k c, Foldable t) => c a -> t b -> [b]
 getUnused uses = filter (not . (`member` uses) . keyOf) . toList
 
-failOnUnused :: Unused ctx b => [b] -> Validator s ctx ()
+failOnUnused :: Unused a => [a] -> Validator s (OperationContext s1 s2) ()
 failOnUnused [] = pure ()
 failOnUnused (x : xs) = do
-  ctx <- validatorCTX <$> Validator ask
-  throwErrors $ unused ctx <$> (x :| xs)
+  ctx <- Validator ask
+  throwErrors $ (`withPath` path (scope ctx)) . unused (validatorCTX ctx) <$> (x :| xs)
 
 checkUnused ::
   ( KeyOf k b,
     IsMap k c,
-    Unused ctx b,
+    Unused b,
     Foldable t
   ) =>
   c a ->
   t b ->
-  Validator s ctx ()
+  Validator s (OperationContext s1 s2) ()
 checkUnused uses = failOnUnused . getUnused uses
 
 constraint ::

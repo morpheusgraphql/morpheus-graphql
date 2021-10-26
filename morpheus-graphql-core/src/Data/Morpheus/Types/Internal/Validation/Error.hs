@@ -50,11 +50,11 @@ import Data.Morpheus.Types.Internal.Validation.Validator
   )
 import Relude
 
-class Unused ctx c where
-  unused :: ctx -> c -> GQLError
+class Unused c where
+  unused :: OperationContext s1 s2 -> c -> GQLError
 
 -- query M ( $v : String ) { a } -> "Variable \"$bla\" is never used in operation \"MyMutation\".",
-instance Unused (OperationContext s1 s2) (Variable s) where
+instance Unused (Variable s) where
   unused
     OperationContext {selection = CurrentSelection {operationName}}
     Variable {variableName, variablePosition} =
@@ -65,7 +65,7 @@ instance Unused (OperationContext s1 s2) (Variable s) where
       )
         `at` variablePosition
 
-instance Unused (OperationContext s1 s2) (Fragment s) where
+instance Unused (Fragment s) where
   unused
     _
     Fragment {fragmentName, fragmentPosition} =
