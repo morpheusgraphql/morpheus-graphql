@@ -24,10 +24,6 @@ module Data.Morpheus.Types.Internal.Validation
     selectKnown,
     Constraint (..),
     constraint,
-    withScope,
-    withScopeType,
-    withPosition,
-    asks,
     asksScope,
     selectWithDefaultValue,
     startInput,
@@ -37,25 +33,25 @@ module Data.Morpheus.Types.Internal.Validation
     Prop (..),
     constraintInputUnion,
     ScopeKind (..),
-    withDirective,
+    setDirective,
     inputValueSource,
     askVariables,
     Scope (..),
     MissingRequired (..),
     InputContext,
-    GetWith,
-    SetWith,
     Unknown,
     askSchema,
     askFragments,
-    MonadContext,
     CurrentSelection (..),
     getOperationType,
     selectType,
     FragmentValidator,
     askInterfaceTypes,
-    validateOptional,
     askTypeDefinitions,
+    withScope,
+    setPosition,
+    setSelection,
+    ValidatorContext (..),
   )
 where
 
@@ -106,9 +102,6 @@ import Relude hiding
     asks,
   )
 
-validateOptional :: Applicative f => (a -> f b) -> Maybe a -> f (Maybe b)
-validateOptional = traverse
-
 getUnused :: (KeyOf k b, IsMap k c, Foldable t) => c a -> t b -> [b]
 getUnused uses = filter (not . (`member` uses) . keyOf) . toList
 
@@ -116,7 +109,7 @@ failOnUnused :: Unused a => [a] -> Validator s (OperationContext s1 s2) ()
 failOnUnused [] = pure ()
 failOnUnused (x : xs) = do
   ctx <- Validator ask
-  throwErrors $ (`withPath` path (scope ctx)) . unused (validatorCTX ctx) <$> (x :| xs)
+  throwErrors $ (`withPath` path (scope ctx)) . unused (localContext ctx) <$> (x :| xs)
 
 checkUnused ::
   ( KeyOf k b,
@@ -151,17 +144,16 @@ selectRequired ::
   Validator s ctx a
 selectRequired selector container =
   do
-    ValidatorContext {scope, validatorCTX} <- Validator ask
+    ValidatorContext {scope, localContext} <- Validator ask
     selectBy
-      (missingRequired scope validatorCTX selector container)
+      (missingRequired scope localContext selector container)
       (keyOf selector)
       container
 
 selectWithDefaultValue ::
   forall ctx c s validValue a.
   ( IsMap FieldName c,
-    MissingRequired (c a) ctx,
-    MonadContext (Validator s) s ctx
+    MissingRequired (c a) ctx
   ) =>
   (Value s -> Validator s ctx validValue) ->
   (a -> Validator s ctx validValue) ->
@@ -192,9 +184,9 @@ selectWithDefaultValue
         | otherwise = failSelection
       -----------------
       failSelection = do
-        ValidatorContext {scope, validatorCTX} <- Validator ask
+        ValidatorContext {scope, localContext} <- Validator ask
         position <- asksScope position
-        throwError $ missingRequired scope validatorCTX (Ref fieldName (fromMaybe (Position 0 0) position)) values
+        throwError $ missingRequired scope localContext (Ref fieldName (fromMaybe (Position 0 0) position)) values
 
 selectType ::
   TypeName ->
@@ -214,8 +206,8 @@ selectKnown ::
   Validator s ctx a
 selectKnown selector lib =
   do
-    ValidatorContext {scope, validatorCTX} <- Validator ask
+    ValidatorContext {scope, localContext} <- Validator ask
     selectBy
-      (unknown scope validatorCTX selector)
+      (unknown scope localContext selector)
       (keyOf selector)
       lib

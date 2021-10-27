@@ -47,7 +47,6 @@ import Data.Morpheus.Types.Internal.AST
     ValidValue,
     Value (..),
     Variable (..),
-    Variable (..),
     VariableContent (..),
     atPositions,
     isNullable,
@@ -63,22 +62,14 @@ import Data.Morpheus.Types.Internal.AST
     untyped,
   )
 import Data.Morpheus.Types.Internal.Validation
-  ( InputContext,
-    InputSource (..),
-    InputValidator,
-    Scope (..),
-    Validator,
-    askType,
+  ( askType,
     askTypeMember,
-    asksScope,
     constraintInputUnion,
-    inField,
-    inputMessagePrefix,
-    inputValueSource,
     selectKnown,
     selectWithDefaultValue,
-    withScopeType,
   )
+import Data.Morpheus.Types.Internal.Validation.Scope (setType)
+import Data.Morpheus.Types.Internal.Validation.Validator
 import Relude
 
 violation ::
@@ -143,7 +134,7 @@ validateInputByType ::
   Value valueS ->
   InputValidator schemaS ctx ValidValue
 validateInputByType tyWrappers typeDef =
-  withScopeType (typeDef, tyWrappers) . validateWrapped tyWrappers typeDef
+  withScope (setType (typeDef, tyWrappers)) . validateWrapped tyWrappers typeDef
 
 -- VALIDATION
 validateWrapped ::

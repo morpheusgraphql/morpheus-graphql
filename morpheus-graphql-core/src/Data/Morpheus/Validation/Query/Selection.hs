@@ -67,6 +67,7 @@ import Data.Morpheus.Types.Internal.Validation
     askType,
     getOperationType,
     selectKnown,
+    setSelection,
     withScope,
   )
 import Data.Morpheus.Validation.Internal.Arguments
@@ -185,10 +186,8 @@ validateSelectionSet typeDef selectionSet =
           selectionPosition,
           selectionDirectives
         } =
-        withScope
-          typeDef
-          currentSelectionRef
-          $ processSelectionDirectives
+        withScope (setSelection typeDef currentSelectionRef) $
+          processSelectionDirectives
             FIELD
             selectionDirectives
             (`validateSelectionContent` selectionContent)
@@ -204,12 +203,13 @@ validateSelectionSet typeDef selectionSet =
           validateSelectionContent :: Directives VALID -> SelectionContent RAW -> FragmentValidator s (SelectionSet VALID)
           validateSelectionContent directives SelectionField
             | null selectionArguments && selectionName == "__typename" =
-              pure $ singleton $
-                sel
-                  { selectionArguments = empty,
-                    selectionDirectives = directives,
-                    selectionContent = SelectionField
-                  }
+              pure $
+                singleton $
+                  sel
+                    { selectionArguments = empty,
+                      selectionDirectives = directives,
+                      selectionContent = SelectionField
+                    }
             | otherwise = do
               (datatype, validArgs) <- commonValidation
               selContent <-
@@ -227,12 +227,13 @@ validateSelectionSet typeDef selectionSet =
             do
               (tyDef, validArgs) <- commonValidation
               selContent <- validateByTypeContent tyDef currentSelectionRef rawSelectionSet
-              pure $ singleton $
-                sel
-                  { selectionArguments = validArgs,
-                    selectionDirectives = directives,
-                    selectionContent = selContent
-                  }
+              pure $
+                singleton $
+                  sel
+                    { selectionArguments = validArgs,
+                      selectionDirectives = directives,
+                      selectionContent = selContent
+                    }
     validateSelection (Spread dirs ref) = do
       types <- possibleTypes typeDef <$> askSchema
       processSelectionDirectives
@@ -271,7 +272,7 @@ validateByTypeContent ::
 validateByTypeContent
   typeDef@TypeDefinition {typeContent, ..}
   currentSelectionRef =
-    withScope typeDef currentSelectionRef
+    withScope (setSelection typeDef currentSelectionRef)
       . __validate typeContent
     where
       __validate ::
@@ -294,8 +295,8 @@ validateByTypeContent
           validateSelectionSet
           (TypeDefinition {typeContent = DataInterface {..}, ..})
       __validate _ =
-        const
-          $ throwError
-          $ hasNoSubfields
-            currentSelectionRef
-            typeDef
+        const $
+          throwError $
+            hasNoSubfields
+              currentSelectionRef
+              typeDef

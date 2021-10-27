@@ -53,8 +53,8 @@ import Data.Morpheus.Types.Internal.Validation (Scope (..), ScopeKind (TYPE), ru
 import Data.Morpheus.Types.Internal.Validation.Validator
   ( Validator (..),
     renderField,
-    setScope,
     withContext,
+    withScope,
   )
 import Relude hiding (local)
 
@@ -120,7 +120,7 @@ newtype TypeSystemContext c = TypeSystemContext
   deriving (Show)
 
 pushPath :: Text -> SchemaValidator a v -> SchemaValidator a v
-pushPath name = setScope (\x -> x {path = path x <> [name]})
+pushPath name = withScope (\x -> x {path = path x <> [name]})
 
 withLocalContext :: (a -> b) -> SchemaValidator b v -> SchemaValidator a v
 withLocalContext = withContext . updateLocal

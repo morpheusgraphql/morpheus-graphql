@@ -32,7 +32,6 @@ import Data.Morpheus.Types.Internal.AST
     IN,
     OBJECT,
     OUT,
-    Operation,
     Operation (..),
     OrdMap,
     TRUE,
@@ -51,45 +50,43 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.AST.TypeSystem
 import Data.Morpheus.Types.Internal.Validation.Validator
-  ( MonadContext,
-    SelectionValidator,
+  ( ValidatorContext,
     askSchema,
   )
 import Relude
 
 askType ::
-  Constraints m c cat s =>
+  Constraints m c cat s ctx =>
   Typed cat s TypeRef ->
-  m c (TypeDefinition cat s)
+  m (TypeDefinition cat s)
 askType = untyped (__askType . typeConName)
 
 askType2 ::
-  Constraints m c cat s =>
+  Constraints m c cat s ctx =>
   Typed cat s TypeName ->
-  m c (TypeDefinition cat s)
+  m (TypeDefinition cat s)
 askType2 = untyped __askType
 
 __askType ::
-  Constraints m c cat s => TypeName -> m c (TypeDefinition cat s)
+  Constraints m c cat s ctx => TypeName -> m (TypeDefinition cat s)
 __askType name =
   askSchema
     >>= maybe (throwError (unknownType name)) pure . lookupDataType name
     >>= kindConstraint
 
 askTypeMember ::
-  Constraints m c cat s =>
+  Constraints m c cat s ctx =>
   UnionMember cat s ->
-  m c (TypeDefinition (ToOBJECT cat) s)
+  m (TypeDefinition (ToOBJECT cat) s)
 askTypeMember = askType2 . typed memberName >=> constraintObject
 
 askInterfaceTypes ::
-  ( MonadError GQLError (m c),
-    Monad (m c),
-    MonadContext m s c,
+  ( MonadError GQLError m,
+    MonadReader (ValidatorContext s ctx) m,
     FromCategory (TypeContent TRUE) ANY IMPLEMENTABLE
   ) =>
   TypeDefinition IMPLEMENTABLE s ->
-  m c (OrdMap TypeName (TypeDefinition IMPLEMENTABLE s))
+  m (OrdMap TypeName (TypeDefinition IMPLEMENTABLE s))
 askInterfaceTypes typeDef@TypeDefinition {typeName} =
   askSchema
     >>= traverse (validate . fromCategory) . possibleInterfaceTypes typeName
@@ -98,15 +95,15 @@ askInterfaceTypes typeDef@TypeDefinition {typeName} =
     validate (Just x) = pure x
     validate Nothing = throwError (internal "Invalid interface Types")
 
-type Constraints m c cat s =
-  ( MonadError GQLError (m c),
-    Monad (m c),
-    MonadContext m s c,
+type Constraints m c cat s ctx =
+  ( MonadError GQLError m,
+    Monad m,
+    MonadReader (ValidatorContext s ctx) m,
     KindErrors cat,
     FromCategory (TypeContent TRUE) ANY cat
   )
 
-getOperationType :: Operation a -> SelectionValidator (TypeDefinition OBJECT VALID)
+getOperationType :: (MonadReader (ValidatorContext VALID c) m, MonadError GQLError m) => Operation a -> m (TypeDefinition OBJECT VALID)
 getOperationType operation = askSchema >>= getOperationDataType operation
 
 unknownType :: TypeName -> GQLError

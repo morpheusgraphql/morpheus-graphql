@@ -22,8 +22,7 @@ module Data.Morpheus.Types.Internal.Validation.Validator
     BaseValidator,
     runValidator,
     Constraint (..),
-    withScope,
-    withScopeType,
+    setSelection,
     inField,
     inputMessagePrefix,
     InputSource (..),
@@ -36,14 +35,11 @@ module Data.Morpheus.Types.Internal.Validation.Validator
     ScopeKind (..),
     inputValueSource,
     Scope (..),
-    withDirective,
+    setDirective,
     startInput,
-    GetWith (..),
-    SetWith (..),
-    MonadContext (..),
     withContext,
     renderField,
-    asks,
+    -- asks,
     asksScope,
     askSchema,
     askVariables,
@@ -51,49 +47,49 @@ module Data.Morpheus.Types.Internal.Validation.Validator
     DirectiveValidator,
     ValidatorContext (..),
     FragmentValidator,
-    withPosition,
     askTypeDefinitions,
-    setScope,
+    withScope,
+    setPosition,
   )
 where
 
 import Control.Monad.Except (MonadError (catchError, throwError))
+import Control.Monad.Reader (asks)
 import Data.Morpheus.Ext.Result
   ( GQLResult,
   )
-import Data.Morpheus.Rendering.RenderGQL
-  ( RenderGQL,
-    render,
-  )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
-    Directive (..),
     FieldDefinition (..),
     FieldName,
     Fragments,
     IMPLEMENTABLE,
     IN,
-    Position,
     RAW,
-    Ref (..),
     Schema,
     Stage,
     TypeCategory,
     TypeDefinition (..),
-    TypeKind (..),
     TypeName,
     TypeRef (..),
-    TypeWrapper,
     VALID,
     Variable (..),
     VariableDefinitions,
     intercalate,
-    kindOf,
     typeDefinitions,
     unpackName,
   )
 import Data.Morpheus.Types.Internal.AST.Error
 import Data.Morpheus.Types.Internal.Config (Config (..))
+import Data.Morpheus.Types.Internal.Validation.Scope
+  ( Scope (..),
+    ScopeKind (..),
+    renderScope,
+    renderSection,
+    setDirective,
+    setPosition,
+    setSelection,
+  )
 import Relude hiding
   ( Constraint,
     asks,
@@ -132,12 +128,6 @@ renderField tname fname arg =
     renderArg (Just argName) = "(" <> unpackName argName <> ":)"
     renderArg Nothing = ""
 
-data ScopeKind
-  = DIRECTIVE
-  | SELECTION
-  | TYPE
-  deriving (Show)
-
 data
   OperationContext
     (s1 :: Stage)
@@ -150,17 +140,6 @@ data
 
 newtype CurrentSelection = CurrentSelection
   { operationName :: Maybe FieldName
-  }
-  deriving (Show)
-
-data Scope = Scope
-  { position :: Maybe Position,
-    currentTypeName :: TypeName,
-    currentTypeKind :: TypeKind,
-    currentTypeWrappers :: TypeWrapper,
-    fieldName :: FieldName,
-    kind :: ScopeKind,
-    path :: [Text]
   }
   deriving (Show)
 
@@ -205,66 +184,28 @@ inField
               ..
             }
 
-inputValueSource ::
-  forall m c s.
-  ( GetWith c InputSource,
-    MonadContext m s c
-  ) =>
-  m c InputSource
-inputValueSource = get
+inputValueSource :: MonadReader (ValidatorContext s (InputContext c)) m => m InputSource
+inputValueSource = asksLocal inputSource
 
-asks ::
-  ( MonadContext m s c,
-    GetWith c t
-  ) =>
-  (t -> a) ->
-  m c a
-asks f = f <$> get
+asksScope :: MonadReader (ValidatorContext s ctx) m => (Scope -> a) -> m a
+asksScope f = asks (f . scope)
 
-asksScope ::
-  ( MonadContext m s c
-  ) =>
-  (Scope -> a) ->
-  m c a
-asksScope f = f <$> getGlobalContext scope
-
-setSelectionName ::
-  (MonadContext m s c) =>
-  FieldName ->
-  m c a ->
-  m c a
-setSelectionName name = setScope update
-  where
-    update Scope {..} = Scope {fieldName = name, ..}
-
-askSchema ::
-  ( MonadContext m s c
-  ) =>
-  m c (Schema s)
-askSchema = getGlobalContext schema
+askSchema :: MonadReader (ValidatorContext s ctx) m => m (Schema s)
+askSchema = asks schema
 
 askTypeDefinitions ::
-  ( MonadContext m s c
-  ) =>
-  m c (HashMap TypeName (TypeDefinition ANY s))
-askTypeDefinitions = typeDefinitions <$> getGlobalContext schema
+  MonadReader (ValidatorContext s ctx) m =>
+  m (HashMap TypeName (TypeDefinition ANY s))
+askTypeDefinitions = asks (typeDefinitions . schema)
 
-askVariables ::
-  ( MonadContext m s c,
-    GetWith c (VariableDefinitions VALID)
-  ) =>
-  m c (VariableDefinitions VALID)
-askVariables = get
+askVariables :: MonadReader (ValidatorContext s1 (OperationContext s2 s3)) m => m (VariableDefinitions s2)
+askVariables = asksLocal variables
 
-askFragments ::
-  ( MonadContext m s c,
-    GetWith c (Fragments s')
-  ) =>
-  m c (Fragments s')
-askFragments = get
+askFragments :: MonadReader (ValidatorContext s1 (OperationContext s2 s3)) m => m (Fragments s3)
+askFragments = asksLocal fragments
 
 runValidator :: Validator s ctx a -> Config -> Schema s -> Scope -> ctx -> GQLResult a
-runValidator (Validator x) config schema scope validatorCTX =
+runValidator (Validator x) config schema scope localContext =
   runReaderT x ValidatorContext {..}
 
 withContext ::
@@ -273,73 +214,10 @@ withContext ::
   Validator s c' a
 withContext f = Validator . withReaderT (fmap f) . _runValidator
 
-withDirective ::
-  ( MonadContext m schemaS c
-  ) =>
-  Directive s ->
-  m c a ->
-  m c a
-withDirective
-  Directive
-    { directiveName,
-      directivePosition
-    } = setSelectionName directiveName . setScope update
-    where
-      update Scope {..} =
-        Scope
-          { position = Just directivePosition,
-            kind = DIRECTIVE,
-            ..
-          }
-
-withScope ::
-  ( MonadContext m s c
-  ) =>
-  TypeDefinition cat s ->
-  Ref FieldName ->
-  m c a ->
-  m c a
-withScope t@TypeDefinition {typeName} (Ref selName pos) =
-  setSelectionName selName . setScope update
-  where
-    update Scope {..} =
-      Scope
-        { currentTypeName = typeName,
-          currentTypeKind = kindOf t,
-          position = Just pos,
-          ..
-        }
-
-withScopeType ::
-  ( MonadContext m s c
-  ) =>
-  (TypeDefinition cat s, TypeWrapper) ->
-  m c a ->
-  m c a
-withScopeType (t@TypeDefinition {typeName}, wrappers) = setScope update
-  where
-    update Scope {..} =
-      Scope
-        { currentTypeName = typeName,
-          currentTypeKind = kindOf t,
-          currentTypeWrappers = wrappers,
-          ..
-        }
-
-withPosition ::
-  ( MonadContext m s c
-  ) =>
-  Position ->
-  m c a ->
-  m c a
-withPosition pos = setScope update
-  where
-    update Scope {..} = Scope {position = Just pos, ..}
-
 inputMessagePrefix :: InputValidator s ctx GQLError
 inputMessagePrefix =
   renderInputPrefix
-    . validatorCTX
+    . localContext
     <$> Validator ask
 
 startInput ::
@@ -358,7 +236,7 @@ startInput inputSource = withContext update
 data ValidatorContext (s :: Stage) (ctx :: Type) = ValidatorContext
   { scope :: Scope,
     schema :: Schema s,
-    validatorCTX :: ctx,
+    localContext :: ctx,
     config :: Config
   }
   deriving (Show, Functor)
@@ -373,12 +251,9 @@ newtype Validator s ctx a = Validator
   deriving newtype
     ( Functor,
       Applicative,
-      Monad
+      Monad,
+      MonadReader (ValidatorContext s ctx)
     )
-
-instance MonadReader ctx (Validator s ctx) where
-  ask = validatorCTX <$> Validator ask
-  local = withContext
 
 type BaseValidator = Validator VALID (OperationContext RAW RAW)
 
@@ -390,58 +265,18 @@ type InputValidator s ctx = Validator s (InputContext ctx)
 
 type DirectiveValidator ctx = Validator ctx
 
-setScope ::
-  (MonadContext m s c) =>
+withScope ::
+  (MonadReader (ValidatorContext s c) m) =>
   (Scope -> Scope) ->
-  m c b ->
-  m c b
-setScope f = setGlobalContext (mapScope f)
+  m b ->
+  m b
+withScope f = local (mapScope f)
 
 mapScope :: (Scope -> Scope) -> ValidatorContext s ctx -> ValidatorContext s ctx
 mapScope f ValidatorContext {scope, ..} = ValidatorContext {scope = f scope, ..}
 
--- Helpers
-get :: (MonadContext m s ctx, GetWith ctx a) => m ctx a
-get = getContext getWith
-
-class
-  Monad (m c) =>
-  MonadContext m s c
-    | m -> s
-  where
-  getGlobalContext :: (ValidatorContext s c -> a) -> m c a
-  setGlobalContext :: (ValidatorContext s c -> ValidatorContext s c) -> m c b -> m c b
-  getContext :: (c -> a) -> m c a
-  setContext :: (c -> c) -> m c b -> m c b
-
-instance MonadContext (Validator s) s c where
-  getGlobalContext f = f <$> Validator ask
-  getContext f = f . validatorCTX <$> Validator ask
-  setGlobalContext f = Validator . withReaderT f . _runValidator
-  setContext = withContext
-
-class GetWith (c :: Type) (v :: Type) where
-  getWith :: c -> v
-
-instance GetWith (OperationContext VALID fragStage) (VariableDefinitions VALID) where
-  getWith = variables
-
-instance GetWith (InputContext ctx) InputSource where
-  getWith = inputSource
-
-instance GetWith (OperationContext varStage fragStage) (Fragments fragStage) where
-  getWith = fragments
-
--- Setters
-class SetWith (c :: Type) (v :: Type) where
-  setWith :: (v -> v) -> c -> c
-
-instance SetWith (OperationContext s1 s2) CurrentSelection where
-  setWith f OperationContext {selection = selection, ..} =
-    OperationContext
-      { selection = f selection,
-        ..
-      }
+asksLocal :: MonadReader (ValidatorContext s c) m => (c -> a) -> m a
+asksLocal f = asks (f . localContext)
 
 instance MonadError GQLError (Validator s ctx) where
   throwError err = do
@@ -471,29 +306,3 @@ renderContext
     } =
     renderScope scope
       <> renderSection "SchemaDefinition" schema
-
-renderScope :: Scope -> GQLError
-renderScope
-  Scope
-    { currentTypeName,
-      currentTypeKind,
-      fieldName
-    } =
-    renderSection
-      "Scope"
-      ( "referenced by type "
-          <> render currentTypeName
-          <> " of kind "
-          <> render currentTypeKind
-          <> " in field "
-          <> render fieldName
-      )
-
-renderSection :: RenderGQL a => GQLError -> a -> GQLError
-renderSection label content =
-  "\n\n" <> label <> ":\n" <> line
-    <> "\n\n"
-    <> msg (render content)
-    <> "\n\n"
-  where
-    line = stimes (50 :: Int) "-"
