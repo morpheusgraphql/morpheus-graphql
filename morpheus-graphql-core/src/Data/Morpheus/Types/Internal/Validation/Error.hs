@@ -41,8 +41,7 @@ import Data.Morpheus.Types.Internal.AST
     withPath,
   )
 import Data.Morpheus.Types.Internal.Validation.Validator
-  ( CurrentSelection (..),
-    InputContext (..),
+  ( InputContext (..),
     OperationContext (..),
     Scope (..),
     ScopeKind (..),
@@ -56,7 +55,7 @@ class Unused c where
 -- query M ( $v : String ) { a } -> "Variable \"$bla\" is never used in operation \"MyMutation\".",
 instance Unused (Variable s) where
   unused
-    OperationContext {selection = CurrentSelection {operationName}}
+    OperationContext {operationName}
     Variable {variableName, variablePosition} =
       ( "Variable " <> msg ("$" <> variableName)
           <> " is never used in operation "
@@ -92,7 +91,7 @@ instance MissingRequired (Arguments s) ctx where
       )
         `withPath` path
       where
-        inScope DIRECTIVE = "Directive " <> msg ("@" <> fieldName)
+        inScope DIRECTIVE = "Directive " <> msg fieldName
         inScope _ = "Field " <> msg fieldName
 
 instance MissingRequired (Object s) (InputContext ctx) where
@@ -115,7 +114,7 @@ instance MissingRequired (VariableDefinitions s) (OperationContext s1 s2) where
   missingRequired
     Scope {path}
     OperationContext
-      { selection = CurrentSelection {operationName}
+      { operationName
       }
     Ref {refName, refPosition}
     _ =

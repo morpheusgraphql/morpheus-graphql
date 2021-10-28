@@ -38,7 +38,7 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Validation
   ( Validator,
-    askSchema,
+    ValidatorContext (schema),
     selectKnown,
     selectRequired,
     setDirective,
@@ -64,7 +64,7 @@ validate ::
   Validator schemaS c (Directive VALID)
 validate location directive@Directive {..} =
   withScope (setDirective directive) $ do
-    Schema {directiveDefinitions} <- askSchema
+    directiveDefinitions <- asks (directiveDefinitions . schema)
     directiveDef <- selectKnown directive directiveDefinitions
     Directive directivePosition directiveName
       <$> ( validateDirectiveLocation location directive directiveDef

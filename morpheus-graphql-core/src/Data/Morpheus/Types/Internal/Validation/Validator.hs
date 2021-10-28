@@ -3,9 +3,9 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
@@ -28,7 +28,6 @@ module Data.Morpheus.Types.Internal.Validation.Validator
     InputSource (..),
     InputContext (..),
     OperationContext (..),
-    CurrentSelection (..),
     renderInputPrefix,
     Prop (..),
     --  Resolution,
@@ -41,10 +40,8 @@ module Data.Morpheus.Types.Internal.Validation.Validator
     renderField,
     -- asks,
     asksScope,
-    askSchema,
     askVariables,
     askFragments,
-    DirectiveValidator,
     ValidatorContext (..),
     FragmentValidator,
     askTypeDefinitions,
@@ -128,18 +125,10 @@ renderField tname fname arg =
     renderArg (Just argName) = "(" <> unpackName argName <> ":)"
     renderArg Nothing = ""
 
-data
-  OperationContext
-    (s1 :: Stage)
-    (s2 :: Stage) = OperationContext
+data OperationContext (s1 :: Stage) (s2 :: Stage) = OperationContext
   { fragments :: Fragments s2,
     variables :: VariableDefinitions s1,
-    selection :: CurrentSelection
-  }
-  deriving (Show)
-
-newtype CurrentSelection = CurrentSelection
-  { operationName :: Maybe FieldName
+    operationName :: Maybe FieldName
   }
   deriving (Show)
 
@@ -190,9 +179,6 @@ inputValueSource = asksLocal inputSource
 asksScope :: MonadReader (ValidatorContext s ctx) m => (Scope -> a) -> m a
 asksScope f = asks (f . scope)
 
-askSchema :: MonadReader (ValidatorContext s ctx) m => m (Schema s)
-askSchema = asks schema
-
 askTypeDefinitions ::
   MonadReader (ValidatorContext s ctx) m =>
   m (HashMap TypeName (TypeDefinition ANY s))
@@ -208,10 +194,7 @@ runValidator :: Validator s ctx a -> Config -> Schema s -> Scope -> ctx -> GQLRe
 runValidator (Validator x) config schema scope localContext =
   runReaderT x ValidatorContext {..}
 
-withContext ::
-  (c' -> c) ->
-  Validator s c a ->
-  Validator s c' a
+withContext :: (c' -> c) -> Validator s c a -> Validator s c' a
 withContext f = Validator . withReaderT (fmap f) . _runValidator
 
 inputMessagePrefix :: InputValidator s ctx GQLError
@@ -220,10 +203,7 @@ inputMessagePrefix =
     . localContext
     <$> Validator ask
 
-startInput ::
-  InputSource ->
-  InputValidator s ctx a ->
-  Validator s ctx a
+startInput :: InputSource -> InputValidator s ctx a -> Validator s ctx a
 startInput inputSource = withContext update
   where
     update sourceContext =
@@ -239,7 +219,10 @@ data ValidatorContext (s :: Stage) (ctx :: Type) = ValidatorContext
     localContext :: ctx,
     config :: Config
   }
-  deriving (Show, Functor)
+  deriving
+    ( Show,
+      Functor
+    )
 
 newtype Validator s ctx a = Validator
   { _runValidator ::
@@ -255,25 +238,32 @@ newtype Validator s ctx a = Validator
       MonadReader (ValidatorContext s ctx)
     )
 
-type BaseValidator = Validator VALID (OperationContext RAW RAW)
+data ValidationTarget
+  = Base
+  | Fragments
+  | Selections
+
+type family ValidationStage (s :: ValidationTarget) where
+  ValidationStage 'Base = OperationContext RAW RAW
+  ValidationStage 'Fragments = OperationContext VALID RAW
+  ValidationStage 'Selections = OperationContext VALID VALID
+
+type ValidatorM (s :: ValidationTarget) = Validator VALID (ValidationStage s)
+
+type BaseValidator = ValidatorM 'Base
 
 type FragmentValidator (s :: Stage) = Validator VALID (OperationContext VALID s)
 
-type SelectionValidator = Validator VALID (OperationContext VALID VALID)
+type SelectionValidator = ValidatorM 'Selections
 
 type InputValidator s ctx = Validator s (InputContext ctx)
-
-type DirectiveValidator ctx = Validator ctx
 
 withScope ::
   (MonadReader (ValidatorContext s c) m) =>
   (Scope -> Scope) ->
   m b ->
   m b
-withScope f = local (mapScope f)
-
-mapScope :: (Scope -> Scope) -> ValidatorContext s ctx -> ValidatorContext s ctx
-mapScope f ValidatorContext {scope, ..} = ValidatorContext {scope = f scope, ..}
+withScope f = local (\ValidatorContext {..} -> ValidatorContext {scope = f scope, ..})
 
 asksLocal :: MonadReader (ValidatorContext s c) m => (c -> a) -> m a
 asksLocal f = asks (f . localContext)

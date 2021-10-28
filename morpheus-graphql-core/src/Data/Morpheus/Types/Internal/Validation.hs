@@ -17,7 +17,6 @@ module Data.Morpheus.Types.Internal.Validation
     InputSource (..),
     OperationContext (..),
     runValidator,
-    DirectiveValidator,
     askType,
     askTypeMember,
     selectRequired,
@@ -40,9 +39,7 @@ module Data.Morpheus.Types.Internal.Validation
     MissingRequired (..),
     InputContext,
     Unknown,
-    askSchema,
     askFragments,
-    CurrentSelection (..),
     getOperationType,
     selectType,
     FragmentValidator,
@@ -97,10 +94,7 @@ import Data.Morpheus.Types.Internal.Validation.Internal
     getOperationType,
   )
 import Data.Morpheus.Types.Internal.Validation.Validator
-import Relude hiding
-  ( Constraint,
-    asks,
-  )
+import Relude hiding (Constraint)
 
 getUnused :: (KeyOf k b, IsMap k c, Foldable t) => c a -> t b -> [b]
 getUnused uses = filter (not . (`member` uses) . keyOf) . toList
@@ -192,7 +186,7 @@ selectType ::
   TypeName ->
   Validator s ctx (TypeDefinition ANY s)
 selectType name =
-  askSchema >>= maybe (throwError err) pure . lookupDataType name
+  asks schema >>= maybe (throwError err) pure . lookupDataType name
   where
     err = "Unknown Type " <> msg name <> "."
 

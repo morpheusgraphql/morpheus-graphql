@@ -30,7 +30,6 @@ import Data.Morpheus.Types.Internal.AST.Selection
     Selection (..),
     SelectionContent (..),
     SelectionSet,
-    SelectionSet,
     UnionTag (..),
   )
 import Data.Morpheus.Types.Internal.AST.Stage (RAW, VALID)
@@ -53,14 +52,15 @@ import Data.Morpheus.Types.Internal.Validation
     asksScope,
   )
 import Data.Morpheus.Validation.Query.Fragment
-  ( ResolveFragment (resolveValidFragment),
+  ( ValidateFragmentSelection,
     castFragmentType,
+    validateSpread,
   )
 import Relude hiding (empty, join)
 
 -- returns all Fragments used for Possible Types
 splitFragment ::
-  (ResolveFragment s) =>
+  (ValidateFragmentSelection s) =>
   ( Fragment RAW ->
     FragmentValidator s (SelectionSet VALID)
   ) ->
@@ -68,7 +68,7 @@ splitFragment ::
   Selection RAW ->
   FragmentValidator s (Either UnionTag (Selection RAW))
 splitFragment _ _ x@Selection {} = pure (Right x)
-splitFragment f types (Spread _ ref) = Left <$> resolveValidFragment f (typeName <$> types) ref
+splitFragment f types (Spread _ ref) = Left <$> validateSpread f (typeName <$> types) ref
 splitFragment f types (InlineFragment fragment@Fragment {fragmentType}) =
   Left . UnionTag fragmentType
     <$> ( castFragmentType Nothing (fragmentPosition fragment) (typeName <$> types) fragment
@@ -76,7 +76,7 @@ splitFragment f types (InlineFragment fragment@Fragment {fragmentType}) =
         )
 
 exploreFragments ::
-  (ResolveFragment s) =>
+  (ValidateFragmentSelection s) =>
   ( Fragment RAW ->
     FragmentValidator s (SelectionSet VALID)
   ) ->
@@ -96,8 +96,8 @@ exploreFragments validateFragment types selectionSet = do
               selectionContent = SelectionField,
               selectionDirectives = empty
             }
-        )
-          : selections
+        ) :
+        selections
       )
 
 -- sorts Fragment by conditional Types
@@ -148,7 +148,7 @@ joinClusters selSet typedSelections
     mkUnionTag (typeName, fragments) = UnionTag typeName <$> startHistory (mergeConcat (selSet :| fragments))
 
 validateInterfaceSelection ::
-  ResolveFragment s =>
+  ValidateFragmentSelection s =>
   (Fragment RAW -> FragmentValidator s (SelectionSet VALID)) ->
   (TypeDefinition IMPLEMENTABLE VALID -> SelectionSet RAW -> FragmentValidator s (SelectionSet VALID)) ->
   TypeDefinition IMPLEMENTABLE VALID ->
@@ -171,7 +171,7 @@ mkUnionRootType :: FragmentValidator s (TypeDefinition IMPLEMENTABLE VALID)
 mkUnionRootType = (`mkType` DataObject [] empty) <$> asksScope currentTypeName
 
 validateUnionSelection ::
-  ResolveFragment s =>
+  ValidateFragmentSelection s =>
   (Fragment RAW -> FragmentValidator s (SelectionSet VALID)) ->
   (TypeDefinition IMPLEMENTABLE VALID -> SelectionSet RAW -> FragmentValidator s (SelectionSet VALID)) ->
   UnionTypeDefinition OUT VALID ->

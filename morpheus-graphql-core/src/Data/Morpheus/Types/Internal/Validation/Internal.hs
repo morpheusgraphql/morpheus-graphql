@@ -50,8 +50,7 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.AST.TypeSystem
 import Data.Morpheus.Types.Internal.Validation.Validator
-  ( ValidatorContext,
-    askSchema,
+  ( ValidatorContext (schema),
   )
 import Relude
 
@@ -70,7 +69,7 @@ askType2 = untyped __askType
 __askType ::
   Constraints m c cat s ctx => TypeName -> m (TypeDefinition cat s)
 __askType name =
-  askSchema
+  asks schema
     >>= maybe (throwError (unknownType name)) pure . lookupDataType name
     >>= kindConstraint
 
@@ -88,7 +87,7 @@ askInterfaceTypes ::
   TypeDefinition IMPLEMENTABLE s ->
   m (OrdMap TypeName (TypeDefinition IMPLEMENTABLE s))
 askInterfaceTypes typeDef@TypeDefinition {typeName} =
-  askSchema
+  asks schema
     >>= traverse (validate . fromCategory) . possibleInterfaceTypes typeName
     >>= fromElems . (typeDef :)
   where
@@ -104,7 +103,7 @@ type Constraints m c cat s ctx =
   )
 
 getOperationType :: (MonadReader (ValidatorContext VALID c) m, MonadError GQLError m) => Operation a -> m (TypeDefinition OBJECT VALID)
-getOperationType operation = askSchema >>= getOperationDataType operation
+getOperationType operation = asks schema >>= getOperationDataType operation
 
 unknownType :: TypeName -> GQLError
 unknownType name = internal $ "Type \"" <> msg name <> "\" can't found in Schema."

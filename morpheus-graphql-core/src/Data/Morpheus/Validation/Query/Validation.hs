@@ -24,8 +24,7 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Config (Config (..))
 import Data.Morpheus.Types.Internal.Validation
-  ( CurrentSelection (..),
-    OperationContext (..),
+  ( OperationContext (..),
     Scope (..),
     ScopeKind (..),
     runValidator,
@@ -74,7 +73,7 @@ validateRequest
           schema
           scope
           ( OperationContext
-              { selection,
+              { operationName,
                 fragments,
                 variables = empty
               }
@@ -86,7 +85,7 @@ validateRequest
           schema
           scope
           ( OperationContext
-              { selection,
+              { operationName,
                 fragments,
                 variables
               }
@@ -97,7 +96,7 @@ validateRequest
         schema
         scope
         ( OperationContext
-            { selection,
+            { operationName,
               fragments = validFragments,
               variables
             }
@@ -113,7 +112,6 @@ validateRequest
             position = Just operationPosition,
             path = []
           }
-      selection = CurrentSelection {operationName}
       validateHelpers =
         checkFragmentPreconditions operationSelection
           *> resolveOperationVariables

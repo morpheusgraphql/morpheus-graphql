@@ -63,7 +63,7 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Morpheus.Types.Internal.Validation
   ( FragmentValidator,
     SelectionValidator,
-    askSchema,
+    ValidatorContext (schema),
     askType,
     getOperationType,
     selectKnown,
@@ -78,10 +78,10 @@ import Data.Morpheus.Validation.Internal.Directive
     validateDirectives,
   )
 import Data.Morpheus.Validation.Query.Fragment
-  ( ResolveFragment (..),
-    resolveValidFragment,
+  ( ValidateFragmentSelection,
     selectFragmentType,
     validateFragment,
+    validateSpread,
   )
 import Data.Morpheus.Validation.Query.UnionSelection
   ( validateInterfaceSelection,
@@ -155,7 +155,7 @@ processSelectionDirectives location rawDirectives sel = do
       then Just selection
       else Nothing
 
-validateFragmentSelection :: (ResolveFragment s) => Fragment RAW -> FragmentValidator s (SelectionSet VALID)
+validateFragmentSelection :: (ValidateFragmentSelection s) => Fragment RAW -> FragmentValidator s (SelectionSet VALID)
 validateFragmentSelection f@Fragment {fragmentSelection} = do
   typeDef <- selectFragmentType f
   validateSelectionSet typeDef fragmentSelection
@@ -166,7 +166,7 @@ getFields TypeDefinition {typeContent = DataInterface fields} = fields
 
 validateSelectionSet ::
   forall s.
-  ( ResolveFragment s
+  ( ValidateFragmentSelection s
   ) =>
   TypeDefinition IMPLEMENTABLE VALID ->
   SelectionSet RAW ->
@@ -178,78 +178,62 @@ validateSelectionSet typeDef selectionSet =
   where
     -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
     validateSelection :: Selection RAW -> FragmentValidator s (Maybe (SelectionSet VALID))
-    validateSelection
-      sel@Selection
-        { selectionName,
-          selectionArguments,
-          selectionContent,
-          selectionPosition,
+    validateSelection Selection {..} =
+      withScope (setSelection typeDef currentSelectionRef) $
+        processSelectionDirectives
+          FIELD
           selectionDirectives
-        } =
-        withScope (setSelection typeDef currentSelectionRef) $
-          processSelectionDirectives
-            FIELD
-            selectionDirectives
-            (`validateSelectionContent` selectionContent)
-        where
-          currentSelectionRef = Ref selectionName selectionPosition
-          commonValidation :: FragmentValidator s (TypeDefinition OUT VALID, Arguments VALID)
-          commonValidation = do
-            fieldDef <- selectKnown (Ref selectionName selectionPosition) (getFields typeDef)
-            (,)
-              <$> askType (typed fieldType fieldDef)
-              <*> validateFieldArguments fieldDef selectionArguments
-          -----------------------------------------------------------------------------------
-          validateSelectionContent :: Directives VALID -> SelectionContent RAW -> FragmentValidator s (SelectionSet VALID)
-          validateSelectionContent directives SelectionField
-            | null selectionArguments && selectionName == "__typename" =
-              pure $
-                singleton $
-                  sel
-                    { selectionArguments = empty,
-                      selectionDirectives = directives,
-                      selectionContent = SelectionField
-                    }
-            | otherwise = do
-              (datatype, validArgs) <- commonValidation
-              selContent <-
-                validateContentLeaf currentSelectionRef datatype
-              pure $
-                singleton
-                  ( sel
-                      { selectionArguments = validArgs,
-                        selectionDirectives = directives,
-                        selectionContent = selContent
-                      }
-                  )
-          ----- SelectionSet
-          validateSelectionContent directives (SelectionSet rawSelectionSet) =
-            do
-              (tyDef, validArgs) <- commonValidation
-              selContent <- validateByTypeContent tyDef currentSelectionRef rawSelectionSet
-              pure $
-                singleton $
-                  sel
-                    { selectionArguments = validArgs,
-                      selectionDirectives = directives,
-                      selectionContent = selContent
-                    }
+          (`xyz` selectionContent)
+      where
+        currentSelectionRef = Ref selectionName selectionPosition
+        xyz a b = do
+          xy <- commonValidation
+          (arguments, directives, content) <- validateSelectionContent currentSelectionRef xy a b
+          pure
+            ( singleton $
+                Selection
+                  { selectionArguments = arguments,
+                    selectionDirectives = directives,
+                    selectionContent = content,
+                    ..
+                  }
+            )
+        commonValidation :: FragmentValidator s (TypeDefinition OUT VALID, Arguments VALID)
+        commonValidation = do
+          fieldDef <- selectKnown (Ref selectionName selectionPosition) (getFields typeDef)
+          (,)
+            <$> askType (typed fieldType fieldDef)
+            <*> validateFieldArguments fieldDef selectionArguments
     validateSelection (Spread dirs ref) = do
-      types <- possibleTypes typeDef <$> askSchema
+      types <- possibleTypes typeDef <$> asks schema
       processSelectionDirectives
         FRAGMENT_SPREAD
         dirs
-        (const $ unionTagSelection <$> resolveValidFragment validateFragmentSelection types ref)
+        (const $ unionTagSelection <$> validateSpread validateFragmentSelection types ref)
     validateSelection
-      ( InlineFragment
-          fragment@Fragment
-            { fragmentDirectives
-            }
-        ) = do
-        types <- possibleTypes typeDef <$> askSchema
+      (InlineFragment fragment@Fragment {fragmentDirectives}) = do
+        types <- possibleTypes typeDef <$> asks schema
         processSelectionDirectives INLINE_FRAGMENT fragmentDirectives $
           const (validate types fragment)
     validate types = fmap fragmentSelection . validateFragment validateFragmentSelection types
+
+validateSelectionContent ::
+  ValidateFragmentSelection s =>
+  Ref FieldName ->
+  (TypeDefinition OUT VALID, Arguments VALID) ->
+  Directives VALID ->
+  SelectionContent RAW ->
+  FragmentValidator s (Arguments VALID, Directives VALID, SelectionContent VALID)
+validateSelectionContent ref (tyDef, selectionArguments) selectionDirectives SelectionField
+  | null selectionArguments && refName ref == "__typename" =
+    pure (empty, selectionDirectives, SelectionField)
+  | otherwise = do
+    selectionContent <- validateContentLeaf ref tyDef
+    pure (selectionArguments, selectionDirectives, selectionContent)
+validateSelectionContent ref (tyDef, selectionArguments) selectionDirectives (SelectionSet rawSelectionSet) =
+  do
+    selectionContent <- validateByTypeContent tyDef ref rawSelectionSet
+    pure (selectionArguments, selectionDirectives, selectionContent)
 
 validateContentLeaf ::
   Ref FieldName ->
@@ -264,7 +248,7 @@ validateContentLeaf
 
 validateByTypeContent ::
   forall s.
-  (ResolveFragment s) =>
+  (ValidateFragmentSelection s) =>
   TypeDefinition OUT VALID ->
   Ref FieldName ->
   SelectionSet RAW ->
