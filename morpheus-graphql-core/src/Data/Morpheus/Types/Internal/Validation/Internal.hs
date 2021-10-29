@@ -50,7 +50,8 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.AST.TypeSystem
 import Data.Morpheus.Types.Internal.Validation.Validator
-  ( ValidatorContext (schema),
+  ( SelectionValidator,
+    ValidatorContext (schema),
   )
 import Relude
 
@@ -102,7 +103,7 @@ type Constraints m c cat s ctx =
     FromCategory (TypeContent TRUE) ANY cat
   )
 
-getOperationType :: (MonadReader (ValidatorContext VALID c) m, MonadError GQLError m) => Operation a -> m (TypeDefinition OBJECT VALID)
+getOperationType :: Operation a -> SelectionValidator (TypeDefinition OBJECT VALID)
 getOperationType operation = asks schema >>= getOperationDataType operation
 
 unknownType :: TypeName -> GQLError

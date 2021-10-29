@@ -134,7 +134,7 @@ validateInputByType ::
   Value valueS ->
   InputValidator schemaS ctx ValidValue
 validateInputByType tyWrappers typeDef =
-  withScope (setType (typeDef, tyWrappers)) . validateWrapped tyWrappers typeDef
+  withScope (setType typeDef tyWrappers) . validateWrapped tyWrappers typeDef
 
 -- VALIDATION
 validateWrapped ::

@@ -269,9 +269,9 @@ asksLocal :: MonadReader (ValidatorContext s c) m => (c -> a) -> m a
 asksLocal f = asks (f . localContext)
 
 instance MonadError GQLError (Validator s ctx) where
-  throwError err = do
-    ctx <- Validator ask
-    Validator $ lift $ throwError $ fromValidationError ctx err
+  throwError err = Validator $ do
+    ctx <- ask
+    throwError (fromValidationError ctx err)
   catchError (Validator x) f = Validator (catchError x (_runValidator . f))
 
 fromValidationError :: ValidatorContext s ctx -> GQLError -> GQLError

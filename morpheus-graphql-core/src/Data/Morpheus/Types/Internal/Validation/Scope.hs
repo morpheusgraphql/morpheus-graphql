@@ -21,7 +21,6 @@ import Data.Morpheus.Types.Internal.AST
     FieldName,
     GQLError,
     Msg (msg),
-    Name (unpackName),
     Position,
     Ref (..),
     TypeDefinition (..),
@@ -49,25 +48,16 @@ data Scope = Scope
   }
   deriving (Show)
 
-updateSelectionName :: FieldName -> Scope -> Scope
-updateSelectionName name Scope {..} =
+setSelection :: TypeDefinition a s -> Ref FieldName -> Scope -> Scope
+setSelection currentType Ref {refName, refPosition} Scope {..} =
   Scope
-    { fieldName = name,
-      path = path <> [unpackName name],
+    { fieldName = refName,
+      -- path = path <> [unpackName refName],
+      currentTypeName = typeName currentType,
+      currentTypeKind = kindOf currentType,
+      position = Just refPosition,
       ..
     }
-
-setSelection :: TypeDefinition a s -> Ref FieldName -> Scope -> Scope
-setSelection currentType Ref {refName, refPosition} =
-  updateSelectionName refName . update
-  where
-    update Scope {..} =
-      Scope
-        { currentTypeName = typeName currentType,
-          currentTypeKind = kindOf currentType,
-          position = Just refPosition,
-          ..
-        }
 
 setPosition ::
   Position ->
@@ -76,26 +66,18 @@ setPosition ::
 setPosition pos Scope {..} = Scope {position = Just pos, ..}
 
 setDirective :: Directive s -> Scope -> Scope
-setDirective
-  Directive
-    { directiveName,
-      directivePosition
-    } = updateSelectionName directiveName . update
-    where
-      update Scope {..} =
-        Scope
-          { position = Just directivePosition,
-            kind = DIRECTIVE,
-            ..
-          }
+setDirective Directive {..} Scope {..} =
+  Scope
+    { fieldName = directiveName,
+      position = Just directivePosition,
+      kind = DIRECTIVE,
+      ..
+    }
 
-setType ::
-  (TypeDefinition cat s, TypeWrapper) ->
-  Scope ->
+setType :: TypeDefinition c s -> TypeWrapper -> Scope -> Scope
+setType t wrappers Scope {..} =
   Scope
-setType (t@TypeDefinition {typeName}, wrappers) Scope {..} =
-  Scope
-    { currentTypeName = typeName,
+    { currentTypeName = typeName t,
       currentTypeKind = kindOf t,
       currentTypeWrappers = wrappers,
       ..
