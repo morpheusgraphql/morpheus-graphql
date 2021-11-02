@@ -1,0 +1,5 @@
+query {
+  __typename {
+    someSelection
+  }
+}
