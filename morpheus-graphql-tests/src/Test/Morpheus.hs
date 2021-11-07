@@ -17,7 +17,7 @@ module Test.Morpheus
     testQueryRendering,
     renderingAssertion,
     testQuery,
-    queryValidation,
+    testQueryValidation,
     -- main
     mainTest,
   )
@@ -104,7 +104,7 @@ getAppBy (parseSchema, mkApp) url =
     <$> getSchema parseSchema url
     <*> getResolver url
 
-queryValidation ::
+testQueryValidation ::
   ( ToJSON errors,
     Show errors,
     FromJSON request,
@@ -117,7 +117,7 @@ queryValidation ::
   FileUrl ->
   FileUrl ->
   TestTree
-queryValidation (parseRequest, parseSchema) schemaUrl =
+testQueryValidation (parseRequest, parseSchema) schemaUrl =
   assertResponse
     ( \url -> do
         schema <- getSchema parseSchema schemaUrl

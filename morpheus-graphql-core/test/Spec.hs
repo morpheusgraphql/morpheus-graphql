@@ -26,10 +26,10 @@ import Test.Morpheus
     deepScan,
     mainTest,
     mkUrl,
-    queryValidation,
     scan,
     testQuery,
     testQueryRendering,
+    testQueryValidation,
     testSchema,
   )
 import Test.Tasty
@@ -46,7 +46,7 @@ runRenderingTest :: FileUrl -> [FileUrl] -> [TestTree]
 runRenderingTest url = map (testQueryRendering (parseQuery, toEither . parseSchema) url)
 
 runQueryValidationTest :: FileUrl -> [FileUrl] -> [TestTree]
-runQueryValidationTest url = map (queryValidation (parseQuery, toEither . parseSchema) url)
+runQueryValidationTest url = map (testQueryValidation (parseQuery, toEither . parseSchema) url)
 
 parseQuery :: Schema VALID -> GQLRequest -> Either (NonEmpty GQLError) ByteString
 parseQuery schema =
