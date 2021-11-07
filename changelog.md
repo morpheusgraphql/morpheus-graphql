@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased Changes
+## 0.18.0 - 07.11.2021
 
 ### new Features
 
