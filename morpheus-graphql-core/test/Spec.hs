@@ -19,9 +19,11 @@ import Data.Morpheus.Internal.Ext
 import Relude hiding (ByteString)
 import Test.Morpheus
   ( FileUrl,
+    cd,
     deepScan,
     mainTest,
     mkUrl,
+    queryValidation,
     scan,
     testQuery,
     testQueryRendering,
@@ -49,11 +51,19 @@ runRenderingTest url =
       toEither . fmap render
         . parseRequestWith defaultConfig schema
 
+runQueryValidationTest :: FileUrl -> [FileUrl] -> [TestTree]
+runQueryValidationTest url = map (queryValidation (parseQuery, toEither . parseSchema) url)
+
+parseQuery schema =
+  toEither . fmap render
+    . parseRequestWith defaultConfig schema
+
 main :: IO ()
 main =
   mainTest
     "Core tests"
-    [ scan runQueryTest (mkUrl "query"),
+    [ scan runQueryTest (cd (mkUrl "query") "parsing"),
       scan runSchemaTest (mkUrl "schema"),
+      deepScan runQueryValidationTest (cd (mkUrl "query") "validation"),
       deepScan runRenderingTest (mkUrl "rendering")
     ]

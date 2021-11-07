@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2c2bcee9f444ea4a63e37061b6629f37d2440f3748c82536425462bc4ef3bdd7
+-- hash: be1940b9b2ed10a736cb80548385ffe64e235530fb20ceed116da289d9668bb0
 
 name:           morpheus-graphql-app
 version:        0.17.0
@@ -23,9 +23,6 @@ extra-source-files:
     changelog.md
     README.md
 data-files:
-    test/api/__typename/arguments/query.gql
-    test/api/__typename/schema.gql
-    test/api/__typename/selection-set/query.gql
     test/api/deity/interface/query.gql
     test/api/deity/schema.gql
     test/api/deity/simple/query.gql
@@ -62,9 +59,6 @@ data-files:
     test/named-resolvers/realm-simple/query.gql
     test/named-resolvers/realms.gql
     test/named-resolvers/realms/query.gql
-    test/api/__typename/arguments/response.json
-    test/api/__typename/resolvers.json
-    test/api/__typename/selection-set/response.json
     test/api/deity/interface/response.json
     test/api/deity/resolvers.json
     test/api/deity/simple/response.json

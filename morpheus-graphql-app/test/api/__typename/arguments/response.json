@@ -1,8 +1,0 @@
-{
-  "errors": [
-    {
-      "message": "Unknown Argument \"myArg\" on Field \"__typename\".",
-      "locations": [{ "line": 2, "column": 14 }]
-    }
-  ]
-}

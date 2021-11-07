@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3fd9cb85d9c2974032ce3e6f77cc92693894c2af0cf1f7190b32f8a77185902b
+-- hash: b1792112bc2e3c2b4f3a8cd0d1c1ca16bf27b9cc7dc269d7c32af147e4d43747
 
 name:           morpheus-graphql-core
 version:        0.17.0
@@ -25,6 +25,10 @@ extra-source-files:
 data-files:
     test/query/parsing/selection-set/empty-selection/query.gql
     test/query/parsing/selection-set/non-empty-selection/query.gql
+    test/query/validation/__typename/arguments/query.gql
+    test/query/validation/__typename/schema.gql
+    test/query/validation/__typename/selection-set/query.gql
+    test/query/validation/__typename/success/query.gql
     test/rendering/simple/directive/query.gql
     test/rendering/simple/directive/rendering.gql
     test/rendering/simple/fragment/query.gql
@@ -98,6 +102,9 @@ data-files:
     test/schema/validation/schema-definition/ok/full/schema.gql
     test/query/parsing/selection-set/empty-selection/response.json
     test/query/parsing/selection-set/non-empty-selection/response.json
+    test/query/validation/__typename/arguments/response.json
+    test/query/validation/__typename/selection-set/response.json
+    test/query/validation/__typename/success/response.json
     test/rendering/variable/enum/variables.json
     test/rendering/variable/include-exclude/variables.json
     test/rendering/variable/input/variables.json

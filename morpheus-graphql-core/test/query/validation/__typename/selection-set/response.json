@@ -1,0 +1,6 @@
+[
+  {
+    "message": "Field \"__typename\" must not have a selection since type \"String\" has no subfields.",
+    "locations": [{ "line": 2, "column": 3 }]
+  }
+]
