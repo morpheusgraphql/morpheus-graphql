@@ -6,6 +6,7 @@ module Main
   )
 where
 
+import Data.ByteString.Lazy.Internal (ByteString)
 import Data.Morpheus.Core
   ( defaultConfig,
     parseRequest,
@@ -16,7 +17,9 @@ import Data.Morpheus.Core
 import Data.Morpheus.Internal.Ext
   ( toEither,
   )
-import Relude hiding (ByteString)
+import Data.Morpheus.Types.IO (GQLRequest)
+import Data.Morpheus.Types.Internal.AST (GQLError, Schema, VALID)
+import Relude ((.), Either, Functor (fmap), IO, NonEmpty, map)
 import Test.Morpheus
   ( FileUrl,
     cd,
@@ -40,20 +43,12 @@ runSchemaTest :: FileUrl -> TestTree
 runSchemaTest = testSchema (toEither . parseSchema)
 
 runRenderingTest :: FileUrl -> [FileUrl] -> [TestTree]
-runRenderingTest url =
-  map
-    ( testQueryRendering
-        (parseQuery, toEither . parseSchema)
-        url
-    )
-  where
-    parseQuery schema =
-      toEither . fmap render
-        . parseRequestWith defaultConfig schema
+runRenderingTest url = map (testQueryRendering (parseQuery, toEither . parseSchema) url)
 
 runQueryValidationTest :: FileUrl -> [FileUrl] -> [TestTree]
 runQueryValidationTest url = map (queryValidation (parseQuery, toEither . parseSchema) url)
 
+parseQuery :: Schema VALID -> GQLRequest -> Either (NonEmpty GQLError) ByteString
 parseQuery schema =
   toEither . fmap render
     . parseRequestWith defaultConfig schema
