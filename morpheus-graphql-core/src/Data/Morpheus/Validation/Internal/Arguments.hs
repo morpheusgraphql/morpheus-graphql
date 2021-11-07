@@ -24,7 +24,6 @@ import Data.Morpheus.Types.Internal.AST
     Arguments,
     ArgumentsDefinition,
     CONST,
-    DirectiveDefinition,
     DirectiveDefinition (..),
     FieldDefinition (..),
     IN,
@@ -40,9 +39,9 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Validation
   ( FragmentValidator,
-    GetWith,
     InputSource (..),
     MissingRequired,
+    OperationContext,
     Scope (..),
     Validator,
     askVariables,
@@ -50,8 +49,9 @@ import Data.Morpheus.Types.Internal.Validation
     selectKnown,
     selectRequired,
     selectWithDefaultValue,
+    setPosition,
     startInput,
-    withPosition,
+    withScope,
   )
 import Data.Morpheus.Validation.Internal.Value
   ( ValidateWithDefault,
@@ -60,8 +60,7 @@ import Data.Morpheus.Validation.Internal.Value
 import Relude hiding (empty)
 
 type VariableConstraints ctx =
-  ( GetWith ctx (VariableDefinitions VALID),
-    MissingRequired (VariableDefinitions VALID) ctx
+  ( MissingRequired (VariableDefinitions VALID) ctx
   )
 
 type ArgumentsConstraints c schemaS valueS =
@@ -101,12 +100,12 @@ validateArgumentValue ::
 validateArgumentValue
   field
   Argument {argumentValue, ..} =
-    withPosition argumentPosition
-      $ startInput (SourceArgument argumentName)
-      $ Argument
-        argumentPosition
-        argumentName
-        <$> validateInputByTypeRef (typed fieldType field) argumentValue
+    withScope (setPosition argumentPosition) $
+      startInput (SourceArgument argumentName) $
+        Argument
+          argumentPosition
+          argumentName
+          <$> validateInputByTypeRef (typed fieldType field) argumentValue
 
 validateFieldArguments ::
   FieldDefinition OUT VALID ->
@@ -146,13 +145,13 @@ validateArguments checkUnknown argsDef rawArgs = do
 class Resolve f s ctx where
   resolve :: f s -> Validator schemaS ctx (f CONST)
 
-instance VariableConstraints ctx => Resolve Argument RAW ctx where
+instance VariableConstraints (OperationContext VALID s) => Resolve Argument RAW (OperationContext VALID s) where
   resolve (Argument key position val) = Argument key position <$> resolve val
 
 instance Resolve f CONST ctx where
   resolve = pure
 
-instance VariableConstraints ctx => Resolve Value RAW ctx where
+instance VariableConstraints (OperationContext VALID s) => Resolve Value RAW (OperationContext VALID s) where
   resolve Null = pure Null
   resolve (Scalar x) = pure $ Scalar x
   resolve (Enum x) = pure $ Enum x
@@ -163,5 +162,5 @@ instance VariableConstraints ctx => Resolve Value RAW ctx where
       >>= fmap (ResolvedVariable ref)
         . selectRequired ref
 
-instance VariableConstraints ctx => Resolve ObjectEntry RAW ctx where
+instance VariableConstraints (OperationContext VALID s) => Resolve ObjectEntry RAW (OperationContext VALID s) where
   resolve (ObjectEntry name value) = ObjectEntry name <$> resolve value

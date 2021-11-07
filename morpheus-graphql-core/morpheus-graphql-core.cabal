@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2f19194f6ba1c2018610637d4b92fdd99afd5437fd125460b280a797a1bfa57f
+-- hash: b1792112bc2e3c2b4f3a8cd0d1c1ca16bf27b9cc7dc269d7c32af147e4d43747
 
 name:           morpheus-graphql-core
 version:        0.17.0
@@ -25,6 +25,10 @@ extra-source-files:
 data-files:
     test/query/parsing/selection-set/empty-selection/query.gql
     test/query/parsing/selection-set/non-empty-selection/query.gql
+    test/query/validation/__typename/arguments/query.gql
+    test/query/validation/__typename/schema.gql
+    test/query/validation/__typename/selection-set/query.gql
+    test/query/validation/__typename/success/query.gql
     test/rendering/simple/directive/query.gql
     test/rendering/simple/directive/rendering.gql
     test/rendering/simple/fragment/query.gql
@@ -98,6 +102,9 @@ data-files:
     test/schema/validation/schema-definition/ok/full/schema.gql
     test/query/parsing/selection-set/empty-selection/response.json
     test/query/parsing/selection-set/non-empty-selection/response.json
+    test/query/validation/__typename/arguments/response.json
+    test/query/validation/__typename/selection-set/response.json
+    test/query/validation/__typename/success/response.json
     test/rendering/variable/enum/variables.json
     test/rendering/variable/include-exclude/variables.json
     test/rendering/variable/input/variables.json
@@ -213,6 +220,7 @@ library
       Data.Morpheus.Types.Internal.Validation.Error
       Data.Morpheus.Types.Internal.Validation.Internal
       Data.Morpheus.Types.Internal.Validation.SchemaValidator
+      Data.Morpheus.Types.Internal.Validation.Scope
       Data.Morpheus.Types.Internal.Validation.Validator
       Data.Morpheus.Validation.Document.Interface
       Data.Morpheus.Validation.Document.Validation

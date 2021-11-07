@@ -89,9 +89,9 @@ import Prelude (Show (..))
 
 type WithOperation (o :: OperationType) = LiftOperation o
 
-type ResponseStream event (m :: * -> *) = ResultT (ResponseEvent event m) m
+type ResponseStream event (m :: Type -> Type) = ResultT (ResponseEvent event m) m
 
-data SubscriptionField (a :: *) where
+data SubscriptionField (a :: Type) where
   SubscriptionField ::
     { channel :: forall e m v. a ~ Resolver SUBSCRIPTION e m v => Channel e,
       unSubscribe :: a
@@ -102,7 +102,7 @@ data SubscriptionField (a :: *) where
 -- GraphQL Field Resolver
 --
 ---------------------------------------------------------------
-data Resolver (o :: OperationType) event (m :: * -> *) value where
+data Resolver (o :: OperationType) event (m :: Type -> Type) value where
   ResolverQ :: {runResolverQ :: ResolverStateT () m value} -> Resolver QUERY event m value
   ResolverM :: {runResolverM :: ResolverStateT event m value} -> Resolver MUTATION event m value
   ResolverS :: {runResolverS :: ResolverStateT () m (SubEventRes event m value)} -> Resolver SUBSCRIPTION event m value

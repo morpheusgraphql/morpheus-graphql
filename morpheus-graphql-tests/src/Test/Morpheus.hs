@@ -17,6 +17,7 @@ module Test.Morpheus
     testQueryRendering,
     renderingAssertion,
     testQuery,
+    testQueryValidation,
     -- main
     mainTest,
   )
@@ -103,6 +104,27 @@ getAppBy (parseSchema, mkApp) url =
     <$> getSchema parseSchema url
     <*> getResolver url
 
+testQueryValidation ::
+  ( ToJSON errors,
+    Show errors,
+    FromJSON request,
+    FromJSON errors,
+    Eq errors
+  ) =>
+  ( schema -> request -> Either errors a,
+    ByteString -> Either errors schema
+  ) ->
+  FileUrl ->
+  FileUrl ->
+  TestTree
+testQueryValidation (parseRequest, parseSchema) schemaUrl =
+  assertResponse
+    ( \url -> do
+        schema <- getSchema parseSchema schemaUrl
+        query <- getQuery url
+        pure $ fromEither (parseRequest schema query)
+    )
+
 testQueryRendering ::
   ( ToJSON errors,
     Show errors,
@@ -135,7 +157,9 @@ getAppsWIth f url (x : xs) = sconcat <$> traverse (getAppBy f) (file url <$> (x 
 
 getAppsBy ::
   (Semigroup b, Show err, FromJSON resolvers) =>
-  (ByteString -> Either err schema, schema -> resolvers -> b) ->
+  ( ByteString -> Either err schema,
+    schema -> resolvers -> b
+  ) ->
   FileUrl ->
   IO b
 getAppsBy f url = do

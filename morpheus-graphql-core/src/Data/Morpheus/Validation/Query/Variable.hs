@@ -56,8 +56,9 @@ import Data.Morpheus.Types.Internal.Validation
     checkUnused,
     constraint,
     selectKnown,
+    setPosition,
     startInput,
-    withPosition,
+    withScope,
   )
 import Data.Morpheus.Validation.Internal.Value
   ( validateInputByType,
@@ -104,7 +105,7 @@ allVariableRefs = collect <=< fmap (map toEntry . concat) . traverse (mapSelecti
         <$> ( askFragments
                 >>= selectKnown reference
                 >>= mapSelection searchRefs
-                . fragmentSelection
+                  . fragmentSelection
             )
 
 resolveOperationVariables ::
@@ -141,7 +142,7 @@ lookupAndValidateValueOnBody
       variablePosition,
       variableValue = DefaultValue defaultValue
     } =
-    withPosition variablePosition $
+    withScope (setPosition variablePosition) $
       toVariable
         <$> ( askTypeDefinitions
                 >>= selectKnown (Ref typeConName variablePosition)

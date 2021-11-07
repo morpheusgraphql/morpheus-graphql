@@ -11,10 +11,10 @@
 module Data.Morpheus.Validation.Query.Fragment
   ( validateFragments,
     castFragmentType,
-    resolveSpread,
     validateFragment,
     selectFragmentType,
-    ResolveFragment (..),
+    ValidateFragmentSelection,
+    validateSpread,
   )
 where
 
@@ -36,7 +36,6 @@ import Data.Morpheus.Types.Internal.AST
     Ref (..),
     SelectionSet,
     Stage,
-    Stage,
     TypeDefinition,
     TypeName,
     UnionTag (..),
@@ -52,22 +51,28 @@ import Data.Morpheus.Types.Internal.Validation
   )
 import Relude hiding (empty)
 
-class ResolveFragment (s :: Stage) where
-  resolveValidFragment ::
-    (Fragment RAW -> FragmentValidator s (SelectionSet VALID)) ->
-    [TypeName] ->
-    Ref FragmentName ->
-    FragmentValidator s UnionTag
+class ValidateFragmentSelection (s :: Stage) where
+  validateFragmentSelection ::
+    Applicative m =>
+    (Fragment RAW -> m (SelectionSet VALID)) ->
+    Fragment s ->
+    m (SelectionSet VALID)
 
-instance ResolveFragment VALID where
-  resolveValidFragment _ allowedTargets ref = do
-    Fragment {fragmentType, fragmentSelection} <- resolveSpread allowedTargets ref
-    pure $ UnionTag fragmentType fragmentSelection
+instance ValidateFragmentSelection VALID where
+  validateFragmentSelection _ = pure . fragmentSelection
 
-instance ResolveFragment RAW where
-  resolveValidFragment f allowedTargets ref = do
-    fragment@Fragment {fragmentType} <- resolveSpread allowedTargets ref
-    UnionTag fragmentType <$> f fragment
+instance ValidateFragmentSelection RAW where
+  validateFragmentSelection f = f
+
+validateSpread ::
+  ValidateFragmentSelection s =>
+  (Fragment RAW -> FragmentValidator s (SelectionSet VALID)) ->
+  [TypeName] ->
+  Ref FragmentName ->
+  FragmentValidator s UnionTag
+validateSpread f allowedTargets ref = do
+  fragment@Fragment {fragmentType} <- resolveSpread allowedTargets ref
+  UnionTag fragmentType <$> validateFragmentSelection f fragment
 
 validateFragment ::
   (Fragment RAW -> FragmentValidator s (SelectionSet VALID)) ->

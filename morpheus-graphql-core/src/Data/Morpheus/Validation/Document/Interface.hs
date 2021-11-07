@@ -33,7 +33,10 @@ import Data.Morpheus.Types.Internal.AST
     TypeName,
     TypeRef (..),
   )
-import Data.Morpheus.Types.Internal.Validation (selectType)
+import Data.Morpheus.Types.Internal.Validation
+  ( ValidatorContext (localContext),
+    selectType,
+  )
 import Data.Morpheus.Types.Internal.Validation.SchemaValidator
   ( Field (..),
     ON_INTERFACE,
@@ -107,5 +110,5 @@ failImplements ::
   ImplementsError ->
   SchemaValidator (Field ON_INTERFACE) a
 failImplements err = do
-  x <- asks local
+  x <- asks (local . localContext)
   throwError $ partialImplements x err

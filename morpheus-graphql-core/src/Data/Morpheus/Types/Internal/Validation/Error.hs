@@ -41,8 +41,7 @@ import Data.Morpheus.Types.Internal.AST
     withPath,
   )
 import Data.Morpheus.Types.Internal.Validation.Validator
-  ( CurrentSelection (..),
-    InputContext (..),
+  ( InputContext (..),
     OperationContext (..),
     Scope (..),
     ScopeKind (..),
@@ -50,13 +49,13 @@ import Data.Morpheus.Types.Internal.Validation.Validator
   )
 import Relude
 
-class Unused ctx c where
-  unused :: ctx -> c -> GQLError
+class Unused c where
+  unused :: OperationContext s1 s2 -> c -> GQLError
 
 -- query M ( $v : String ) { a } -> "Variable \"$bla\" is never used in operation \"MyMutation\".",
-instance Unused (OperationContext s1 s2) (Variable s) where
+instance Unused (Variable s) where
   unused
-    OperationContext {selection = CurrentSelection {operationName}}
+    OperationContext {operationName}
     Variable {variableName, variablePosition} =
       ( "Variable " <> msg ("$" <> variableName)
           <> " is never used in operation "
@@ -65,7 +64,7 @@ instance Unused (OperationContext s1 s2) (Variable s) where
       )
         `at` variablePosition
 
-instance Unused (OperationContext s1 s2) (Fragment s) where
+instance Unused (Fragment s) where
   unused
     _
     Fragment {fragmentName, fragmentPosition} =
@@ -92,7 +91,7 @@ instance MissingRequired (Arguments s) ctx where
       )
         `withPath` path
       where
-        inScope DIRECTIVE = "Directive " <> msg ("@" <> fieldName)
+        inScope DIRECTIVE = "Directive " <> msg fieldName
         inScope _ = "Field " <> msg fieldName
 
 instance MissingRequired (Object s) (InputContext ctx) where
@@ -115,7 +114,7 @@ instance MissingRequired (VariableDefinitions s) (OperationContext s1 s2) where
   missingRequired
     Scope {path}
     OperationContext
-      { selection = CurrentSelection {operationName}
+      { operationName
       }
     Ref {refName, refPosition}
     _ =

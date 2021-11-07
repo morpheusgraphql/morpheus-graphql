@@ -9,6 +9,7 @@ module Data.Morpheus.App.Internal.Resolving.Event
   )
 where
 
+import Data.Kind (Type)
 import Data.Morpheus.Types.IO
   ( GQLResponse,
   )
@@ -17,7 +18,7 @@ class EventHandler e where
   type Channel e
   getChannels :: e -> [Channel e]
 
-data ResponseEvent event (m :: * -> *)
+data ResponseEvent event (m :: Type -> Type)
   = Publish event
   | Subscribe
       { subChannel :: Channel event,
