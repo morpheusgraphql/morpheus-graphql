@@ -1,13 +1,13 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 229b45ec41500d73450e02413d77dfe0338e9ef5e729bf398d9bbdf4ff71adcf
+-- hash: abefa3a7c152fe401ea2fdbb8e9a4607248515d8be7b1633173ba783c10c4b3b
 
 name:           morpheus-graphql-code-gen
-version:        0.17.0
+version:        0.18.0
 synopsis:       Morpheus GraphQL CLI
 description:    code generator for Morpheus GraphQL
 category:       web, graphql, cli
@@ -48,7 +48,7 @@ library
       base >=4.7 && <5
     , bytestring >=0.10.4 && <0.11
     , containers >=0.4.2.1 && <0.7
-    , morpheus-graphql-core >=0.17.0 && <0.18.0
+    , morpheus-graphql-core >=0.18.0 && <0.19.0
     , prettyprinter >=1.2 && <2.0
     , relude >=0.3.0 && <1.1
     , template-haskell >=2.0 && <3.0
@@ -69,7 +69,7 @@ executable morpheus
     , containers >=0.4.2.1 && <0.7
     , filepath >=1.1 && <1.5
     , morpheus-graphql-code-gen
-    , morpheus-graphql-core >=0.17.0 && <0.18.0
+    , morpheus-graphql-core >=0.18.0 && <0.19.0
     , optparse-applicative >=0.12 && <0.17
     , prettyprinter >=1.2 && <2.0
     , relude >=0.3.0 && <1.1
