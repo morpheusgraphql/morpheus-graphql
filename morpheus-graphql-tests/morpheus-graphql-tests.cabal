@@ -1,13 +1,13 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3c0bebd463e3c1d353b295514da9888733ed49e4df66c70fcd0b10f82c3140d1
+-- hash: 0ac9343524efdc7c2418af23f1cb455e747ee3ef33da99c7650debf131f39e92
 
 name:           morpheus-graphql-tests
-version:        0.17.0
+version:        0.18.0
 synopsis:       Morpheus GraphQL Test
 category:       web, graphql, test
 homepage:       https://morpheusgraphql.com
