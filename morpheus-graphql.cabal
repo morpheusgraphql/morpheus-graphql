@@ -1,13 +1,13 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 33a657f3ffa3db208ef22fec8be53b7942bf66580e515af8f890d6ba2ecdc96d
+-- hash: c5da063b621d5cdea986d819206c1ddcec87b9aca39ce0f3265064fed88d7e2f
 
 name:           morpheus-graphql
-version:        0.17.0
+version:        0.18.0
 synopsis:       Morpheus GraphQL
 description:    Build GraphQL APIs with your favourite functional language!
 category:       web, graphql
@@ -476,9 +476,9 @@ library
     , base >=4.7 && <5
     , bytestring >=0.10.4 && <0.11
     , containers >=0.4.2.1 && <0.7
-    , morpheus-graphql-app >=0.17.0 && <0.18.0
-    , morpheus-graphql-code-gen >=0.17.0 && <0.18.0
-    , morpheus-graphql-core >=0.17.0 && <0.18.0
+    , morpheus-graphql-app >=0.18.0 && <0.19.0
+    , morpheus-graphql-code-gen >=0.18.0 && <0.19.0
+    , morpheus-graphql-core >=0.18.0 && <0.19.0
     , mtl >=2.0 && <=3.0
     , relude >=0.3.0
     , template-haskell >=2.0 && <=3.0
@@ -528,12 +528,12 @@ test-suite morpheus-graphql-test
     , base >=4.7 && <5
     , bytestring >=0.10.4 && <0.11
     , containers >=0.4.2.1 && <0.7
-    , morpheus-graphql >=0.17.0 && <0.18.0
-    , morpheus-graphql-app >=0.17.0 && <0.18.0
-    , morpheus-graphql-code-gen >=0.17.0 && <0.18.0
-    , morpheus-graphql-core >=0.17.0 && <0.18.0
-    , morpheus-graphql-subscriptions >=0.17.0 && <0.18.0
-    , morpheus-graphql-tests >=0.17.0 && <0.18.0
+    , morpheus-graphql >=0.18.0 && <0.19.0
+    , morpheus-graphql-app >=0.18.0 && <0.19.0
+    , morpheus-graphql-code-gen >=0.18.0 && <0.19.0
+    , morpheus-graphql-core >=0.18.0 && <0.19.0
+    , morpheus-graphql-subscriptions >=0.18.0 && <0.19.0
+    , morpheus-graphql-tests >=0.18.0 && <0.19.0
     , mtl >=2.0 && <=3.0
     , relude >=0.3.0
     , tasty

@@ -16,11 +16,11 @@ dependencies:
   - containers                      >= 0.4.2.1   && <  0.7
   - mtl                             >= 2.0       && <= 2.3
   - websockets                      >= 0.11.0    &&  <= 0.13
-  - morpheus-graphql                >= 0.17.0
-  - morpheus-graphql-client         >= 0.17.0
-  - morpheus-graphql-core           >= 0.17.0
-  - morpheus-graphql-app            >= 0.17.0
-  - morpheus-graphql-subscriptions  >= 0.17.0
+  - morpheus-graphql                >= 0.18.0
+  - morpheus-graphql-client         >= 0.18.0
+  - morpheus-graphql-core           >= 0.18.0
+  - morpheus-graphql-app            >= 0.18.0
+  - morpheus-graphql-subscriptions  >= 0.18.0
   - wai-websockets                  >= 1.0       &&  <= 3.5
   - scotty
   - wai

@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 30124b1f791dea075c324293eccd2708efc3fadab0147ff9b9e8e054ebfdc6e8
+-- hash: 3eb729ba30c8f27bc5d9889827d6ae21e3d9cd8b0c4ed551655390942c51961e
 
 name:           morpheus-graphql-examples-code-gen
 version:        0.1.0
@@ -38,8 +38,8 @@ executable generated-server
       base >=4.7 && <5
     , bytestring >=0.10.4 && <0.11
     , containers >=0.4.2.1 && <0.7
-    , morpheus-graphql >=0.17.0
-    , morpheus-graphql-app >=0.17.0
+    , morpheus-graphql >=0.18.0
+    , morpheus-graphql-app >=0.18.0
     , scotty
     , text >=1.2.3.0 && <1.3
   default-language: Haskell2010
