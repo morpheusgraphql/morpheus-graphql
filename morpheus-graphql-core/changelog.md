@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.18.0 - 07.11.2021
+## 0.18.0 - 08.11.2021
 
 - GraphQL errors support additional field `extensions :: Maybe Value`
 - the parser reports invalid empty selection sets

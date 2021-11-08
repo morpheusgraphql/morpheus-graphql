@@ -24,7 +24,9 @@ jobs:
           stack sdist
       - name: upload
         run: |
+          stack upload morpheus-graphql-tests
           stack upload morpheus-graphql-core
+          stack upload morpheus-graphql-code-gen
           stack upload morpheus-graphql-client
           stack upload morpheus-graphql-app
           stack upload morpheus-graphql-subscriptions
