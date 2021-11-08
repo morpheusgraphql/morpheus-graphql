@@ -52,8 +52,8 @@ tests:
     source-dirs: test
     ghc-options: -Wall
     dependencies:
+      - morpheus-graphql
       - morpheus-graphql-tests          >= 0.18.0        && <  0.19.0
-      - morpheus-graphql                >= 0.18.0        && <  0.19.0
       - morpheus-graphql-subscriptions  >= 0.18.0        && <  0.19.0
       - tasty
       - tasty-hunit
