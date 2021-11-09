@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.33.0.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 7b205f43bb758d32b5dc044449f7061b9e37cbd4f496805323682092d9d6875a
+-- hash: 7107c21ad17ef884d55368af64bcb6dcd75477a414cac42c80f7163d90d7a5b7
 
 name:           morpheus-graphql-examples-scotty
 version:        0.1.0
@@ -65,11 +65,11 @@ executable scotty-server
     , hashable
     , haxl
     , http-types
-    , morpheus-graphql >=0.17.0
-    , morpheus-graphql-app >=0.17.0
-    , morpheus-graphql-client >=0.17.0
-    , morpheus-graphql-core >=0.17.0
-    , morpheus-graphql-subscriptions >=0.17.0
+    , morpheus-graphql >=0.18.0
+    , morpheus-graphql-app >=0.18.0
+    , morpheus-graphql-client >=0.18.0
+    , morpheus-graphql-core >=0.18.0
+    , morpheus-graphql-subscriptions >=0.18.0
     , mtl >=2.0 && <=2.3
     , req
     , scotty
