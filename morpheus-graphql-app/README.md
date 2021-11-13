@@ -4,27 +4,28 @@ provides utilities for creating executable GraphQL applications for servers. You
 
 ## Build schema-first GraphQL App with dynamic typings
 
+###### schema.gql
+
+```gql
+type Deity {
+  name: String
+  power: [String!]
+}
+
+type Query {
+  deity(id: ID): Deity
+}
+```
+
+###### App.hs
+
 ```hs
-schema :: Schema VALID
-schema =
-  [dsl|
-  type Deity {
-    name: String
-    power: [String!]
-  }
-
-  type Query {
-    deity(id: ID): Deity
-  }
-|]
-
 deityResolver :: Monad m => NamedResolverFunction QUERY e m
-deityResolver "morpheus" =
+deityResolver arg =
   object
     [ ("name", pure "Morpheus"),
       ("power", pure $ list [enum "Shapeshifting"])
     ]
-deityResolver _ = object []
 
 resolver :: Monad m => RootResolverValue e m
 resolver =
@@ -34,5 +35,7 @@ resolver =
     ]
 
 api :: ByteString -> IO  ByteString
-api = runApp (mkApp schema resolver)
+api query = do
+  schema <- LBS.readFile "./schema.gql" >>= resultOr (fail . show) pure . parseSchema
+  runApp (mkApp schema resolver) query
 ```
