@@ -29,12 +29,12 @@ jobs:
         run: |
           stack build --fast --skip-ghc-check --no-terminal --test --only-dependencies
         env:
-          STACK_YAML: config/stack/${{ matrix.plan.lts }}.yaml
+          STACK_YAML: ./config/stack/${{ matrix.plan.lts }}.yaml
       - name: Build
         run: |
           stack test --fast --bench --no-run-benchmarks --haddock --no-haddock-deps
         env:
-          STACK_YAML: config/stack/${{ matrix.plan.lts }}.yaml
+          STACK_YAML: ./config/stack/${{ matrix.plan.lts }}.yaml
   hlint:
     runs-on: ubuntu-latest
     steps:
