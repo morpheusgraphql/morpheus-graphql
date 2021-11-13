@@ -1,19 +1,22 @@
 resolver: nightly-2021-10-13
 save-hackage-creds: false
 packages:
+  # examples
+  # TODO: - examples/scotty
+  # TODO: - examples/scotty-freer-simple
+  - examples/servant
+  - examples/client
+  - examples/code-gen
+  # benchmarks
   - morpheus-graphql-benchmarks
-  # TODO: restore - morpheus-graphql-examples-scotty
-  # TODO: restore - morpheus-graphql-examples-scotty-freer-simple
-  - morpheus-graphql-examples-servant
-  - morpheus-graphql-examples-client
-  - morpheus-graphql-examples-code-gen
-  - morpheus-graphql-subscriptions
-  - morpheus-graphql-client
+  # libs
+  - morpheus-graphql-tests
   - morpheus-graphql-core
   - morpheus-graphql-app
-  - morpheus-graphql-tests
+  - morpheus-graphql-subscriptions
   - morpheus-graphql-code-gen
-  - .
+  - morpheus-graphql-client
+  - morpheus-graphql
 
 allow-newer: true
 extra-deps:

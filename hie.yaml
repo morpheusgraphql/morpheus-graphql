@@ -8,7 +8,7 @@ cradle:
       - path: "./morpheus-graphql-app/src"
         component: "morpheus-graphql-app:lib"
 
-      - path: "./src"
+      - path: "./morpheus-graphql/src"
         component: "morpheus-graphql:lib"
 
       - path: "./morpheus-graphql-client/src"
@@ -30,7 +30,7 @@ cradle:
       - path: "./morpheus-graphql-core/test"
         component: "morpheus-graphql-core:test:morpheus-graphql-core-test"
 
-      - path: "./test"
+      - path: "./morpheus-graphql/test"
         component: "morpheus-graphql:test:morpheus-graphql-test"
 
       - path: "./morpheus-graphql-app/test"
@@ -46,17 +46,17 @@ cradle:
 
       ## exe
 
-      - path: "./morpheus-graphql-examples-client"
+      - path: "./examples/client"
         component: "morpheus-graphql-examples-client:exe:morpheus-client-example"
 
-      - path: "./morpheus-graphql-examples-scotty"
+      - path: "./examples/scotty"
         component: "morpheus-graphql-examples-scotty:exe:scotty-server"
 
-      - path: "./morpheus-graphql-examples-servant"
+      - path: "./examples/servant"
         component: "morpheus-graphql-examples-servant:exe:servant-server"
 
-      - path: "./morpheus-graphql-examples-code-gen"
+      - path: "./examples/code-gen"
         component: "morpheus-graphql-examples-code-gen:exe:generated-server"
 
-      - path: "./morpheus-graphql-examples-scotty-freer-simple"
+      - path: "./examples/scotty-freer-simple"
         component: "morpheus-graphql-examples-scotty-freer-simple:exe:scotty-freer-simple-server"
