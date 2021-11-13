@@ -1,10 +1,9 @@
-# 8.10.7
-resolver: lts-18.10
+resolver: nightly-2021-10-13
 save-hackage-creds: false
 packages:
   # examples
-  - examples/scotty
-  - examples/scotty-freer-simple
+  # TODO: - examples/scotty
+  # TODO: - examples/scotty-freer-simple
   - examples/servant
   - examples/client
   - examples/code-gen
@@ -19,6 +18,7 @@ packages:
   - morpheus-graphql-client
   - morpheus-graphql
 
+allow-newer: true
 extra-deps:
   - fraxl-0.3.0.0
   - haxl-2.3.0.0
@@ -27,3 +27,4 @@ extra-deps:
   - fastsum-0.1.1.1
   - type-aligned-0.9.6
   - graphql-0.11.0.0
+  - freer-simple-1.2.1.1
