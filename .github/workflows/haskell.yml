@@ -7,12 +7,12 @@ jobs:
     strategy:
       matrix:
         plan:
-          - { lts: "11" } # ghc-8.2.2
-          - { lts: "12" } # ghc-8.4.4
-          - { lts: "14" } # ghc-8.6.5
-          - { lts: "16" } # ghc-8.8.3
-          - { lts: "18" } # 8.10.7
-          - { lts: "latest" }
+          - { ghc: "8.2.2" }
+          - { ghc: "8.4.4" }
+          - { ghc: "8.6.5" }
+          - { ghc: "8.8.3" }
+          - { ghc: "8.10.7" }
+          - { ghc: "latest" }
       fail-fast: false
     runs-on: ubuntu-latest
     steps:
@@ -24,7 +24,7 @@ jobs:
 
       - name: Setup stack
         uses: nalchevanidze/setup-stack@v2.3
-        run: cp config/stack/${{ matrix.plan.lts }}.yaml  stack.yaml
+        run: cp config/stack/${{ matrix.plan.ghc }}.yaml  stack.yaml
       - name: Install dependencies
         run: |
           stack build --fast --skip-ghc-check --no-terminal --test --only-dependencies
