@@ -17,7 +17,7 @@ packages:
   - morpheus-graphql-subscriptions
   - morpheus-graphql-code-gen
   - morpheus-graphql-client
-  - .
+  - morpheus-graphql
 
 extra-deps:
   - megaparsec-7.0.5

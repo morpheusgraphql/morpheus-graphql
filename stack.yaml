@@ -16,7 +16,7 @@ packages:
   - morpheus-graphql-subscriptions
   - morpheus-graphql-code-gen
   - morpheus-graphql-client
-  - .
+  - morpheus-graphql
 
 allow-newer: true
 extra-deps:
