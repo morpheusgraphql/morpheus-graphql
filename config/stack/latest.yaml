@@ -1,13 +1,14 @@
-# ghc-8.8.2
-resolver: lts-15.3
+resolver: nightly-2021-10-13
 save-hackage-creds: false
 packages:
   # examples
-  - examples/scotty
-  - examples/scotty-freer-simple
+  # TODO: - examples/scotty
+  # TODO: - examples/scotty-freer-simple
   - examples/servant
   - examples/client
   - examples/code-gen
+  # benchmarks
+  - morpheus-graphql-benchmarks
   # libs
   - morpheus-graphql-tests
   - morpheus-graphql-core
@@ -17,10 +18,13 @@ packages:
   - morpheus-graphql-client
   - morpheus-graphql
 
+allow-newer: true
 extra-deps:
   - fraxl-0.3.0.0
+  - haxl-2.3.0.0
   - dependent-map-0.2.4.0
   - dependent-sum-0.4
   - fastsum-0.1.1.1
   - type-aligned-0.9.6
-  - haxl-2.3.0.0
+  - graphql-0.11.0.0
+  - freer-simple-1.2.1.1

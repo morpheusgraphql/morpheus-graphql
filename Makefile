@@ -2,6 +2,10 @@
 
 .DEFAULT_GOAL = build
 
+
+env: 
+	cp config/stack/$(v).yaml  stack.yaml
+
 build:
 	stack install --fast --test
 

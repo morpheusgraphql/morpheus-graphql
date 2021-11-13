@@ -8,8 +8,6 @@ packages:
   - examples/servant
   - examples/client
   - examples/code-gen
-  # benchmarks
-  - morpheus-graphql-benchmarks
   # libs
   - morpheus-graphql-tests
   - morpheus-graphql-core
