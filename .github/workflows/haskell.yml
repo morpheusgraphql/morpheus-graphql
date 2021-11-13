@@ -16,14 +16,16 @@ jobs:
       fail-fast: false
     runs-on: ubuntu-latest
     steps:
-      - name: Prepare OS
+      - name: prepare OS
         uses: mstksg/get-package@v1
         with:
           apt-get: ${{ matrix.apt-get }}
       - uses: actions/checkout@v1
 
-      - name: Setup stack
+      - name: setup stack
         uses: nalchevanidze/setup-stack@v2.3
+
+      - name: setup GHC version
         run: cp config/stack/${{ matrix.plan.ghc }}.yaml  stack.yaml
       - name: Install dependencies
         run: |
