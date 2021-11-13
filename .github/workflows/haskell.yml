@@ -27,9 +27,14 @@ jobs:
 
       - name: setup GHC version
         run: cp config/stack/${{ matrix.plan.ghc }}.yaml  stack.yaml
+
       - name: Install dependencies
         run: |
           stack build --fast --skip-ghc-check --no-terminal --test --only-dependencies
+
+      - name: cache stack
+        uses: freckle/stack-cache-action@main
+
       - name: Build
         run: |
           stack test --fast --bench --no-run-benchmarks --haddock --no-haddock-deps
