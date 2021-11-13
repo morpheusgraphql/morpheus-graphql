@@ -1,44 +1,6 @@
-# Morpheus GraphQL [![Hackage](https://img.shields.io/hackage/v/morpheus-graphql.svg)](https://hackage.haskell.org/package/morpheus-graphql) ![CI](https://github.com/morpheusgraphql/morpheus-graphql/workflows/CI/badge.svg)
-
-Build GraphQL APIs with your favorite functional language!
-
-Morpheus GraphQL (Server & Client) helps you to build GraphQL APIs in Haskell with native Haskell types.
-Morpheus will convert your Haskell types to a GraphQL schema and all your resolvers are just native Haskell functions. Morpheus GraphQL can also convert your GraphQL Schema or Query to Haskell types and validate them in compile time.
-
-Morpheus is still in an early stage of development, so any feedback is more than welcome, and we appreciate any contribution!
-Just open an issue here on GitHub, or join [our Slack channel](https://morpheus-graphql-slack-invite.herokuapp.com/) to get in touch.
-
-Please note that this readme file provides only a brief introduction to the library. If you are interested in more advanced topics, visit [Docs](https://morpheusgraphql.com/).
+# Morpheus GraphQL Server
 
 ## Getting Started
-
-### Setup
-
-To get started with Morpheus, you first need to add it to your project's dependencies, as follows (assuming you're using hpack):
-
-_package.yml_
-
-```yaml
-dependencies:
-  - morpheus-graphql
-```
-
-Additionally, you should tell stack which version to pick:
-
-_stack.yml_
-
-```yaml
-resolver: lts-16.2
-
-extra-deps:
-  - morpheus-graphql-0.17.0
-  - morpheus-graphql-app-0.17.0
-  - morpheus-graphql-core-0.17.0
-```
-
-As Morpheus is quite new, make sure stack can find morpheus-graphql by running `stack upgrade` and `stack update`
-
-### Building your first GraphQL API
 
 ### with GraphQL syntax
 
@@ -200,46 +162,3 @@ our query will be resolved!
   }
 }
 ```
-
-## Serverless Example
-
-If you are interested in creating a `Morpheus GraphQL` API with `Serverless`, you should take a look at our example in this repository:
-[_Mythology API_](https://github.com/morpheusgraphql/mythology-api) it is our example project build with `Morpheus GraphQL` and `Serverless-Haskell`,
-where you can query different mythology characters with `GraphiQL`.
-
-Mythology API is deployed on : [_api.morpheusgraphql.com_](https://api.morpheusgraphql.com) where you can test it with `GraphiQL`
-
-![Mythology Api](https://morpheusgraphql.com/assets/img/mythology-api.png "mythology-api")
-
-## Showcase
-
-Below are the list of projects using Morpheus GraphQL. If you want to start using Morpheus GraphQL, they are
-good templates to begin with.
-
-- https://github.com/morpheusgraphql/mythology-api
-  - Serverless Mythology API
-- https://github.com/dandoh/web-haskell
-  - Modern webserver boilerplate in Haskell: Morpheus Graphql + Postgresql + Authentication + DB migration + Dotenv and more
-
-_Edit this section and send PR if you want to share your project_.
-
-# About
-
-## The name
-
-_Morpheus_ is the greek god of sleep and dreams whose name comes from the greek word _μορφή_ meaning form or shape.
-He is said to be able to mimic different forms and GraphQL is good at doing exactly that: Transforming data in the shape
-of many different APIs.
-
-## Team
-
-Morpheus is written and maintained by [_nalchevanidze_](https://github.com/nalchevanidze)
-
-## Roadmap
-
-- Medium future:
-  - Stabilize API
-  - Specification-isomorphic error handling
-- Long term:
-  - Support all possible GQL features
-  - Performance optimization
