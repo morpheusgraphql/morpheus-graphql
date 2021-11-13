@@ -9,8 +9,6 @@ packages:
   - examples/servant
   - examples/client
   - examples/code-gen
-  # benchmarks
-  - morpheus-graphql-benchmarks
   # libs
   - morpheus-graphql-tests
   - morpheus-graphql-core
@@ -36,4 +34,3 @@ extra-deps:
   - fastsum-0.1.0.0
   - type-aligned-0.9.6
   - haxl-2.3.0.0
-  - graphql-0.11.0.0
