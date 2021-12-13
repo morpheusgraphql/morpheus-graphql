@@ -65,7 +65,7 @@ atPositions GQLError {..} pos = case toList pos of
 
 
 withExtensions :: GQLError -> Map Text Value -> GQLError
-withExtensions gqlerr new_map = gqlerr { extensions = new_map }
+withExtensions gqlerr new_map = gqlerr { extensions = Just new_map }
 
 withPath :: GQLError -> [Text] -> GQLError
 withPath err [] = err
