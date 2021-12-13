@@ -149,6 +149,7 @@ module Data.Morpheus.Types.Internal.AST
     lookupDataType,
     Name,
     withPath,
+    withExtensions,
   )
 where
 

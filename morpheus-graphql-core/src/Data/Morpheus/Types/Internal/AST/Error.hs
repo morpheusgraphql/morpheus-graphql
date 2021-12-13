@@ -22,6 +22,7 @@ module Data.Morpheus.Types.Internal.AST.Error
     Msg (..),
     Message,
     withPath,
+    withExtensions,
   )
 where
 
@@ -97,6 +98,9 @@ data GQLError = GQLError
       Generic,
       FromJSON
     )
+
+withExtensions :: GQLError -> (Maybe (Map Text Value) -> Maybe (Map Text Value)) -> GQLError
+withExtensions gqlerr f = gqlerr { extensions = f (extensions gqlerr) }
 
 instance Ord GQLError where
   compare x y = compare (locations x) (locations y) <> compare (message x) (message y)
