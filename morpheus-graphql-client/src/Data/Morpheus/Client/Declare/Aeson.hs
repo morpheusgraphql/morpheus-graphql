@@ -64,26 +64,54 @@ import Language.Haskell.TH
     Name,
     PatQ,
     Q,
+    Type (ConT),
     appE,
     conP,
     cxt,
     instanceD,
+    isInstance,
+    lookupTypeName,
     tupP,
-  )
+ )
+import Language.Haskell.TH.Syntax (Dec)
 import Relude hiding (toString)
 
-aesonDeclarations :: TypeKind -> [ClientTypeDefinition -> DecQ]
-aesonDeclarations KindEnum = [deriveFromJSON, deriveToJSON]
-aesonDeclarations KindScalar = deriveScalarJSON
-aesonDeclarations kind
-  | isResolverType kind = [deriveFromJSON]
-  | otherwise = [deriveToJSON]
+aesonDeclarations :: TypeKind -> ClientTypeDefinition -> Q [Dec]
+aesonDeclarations KindEnum clientDef = do
+    a <- deriveIfNotDefined deriveFromJSON ''FromJSON clientDef
+    b <- deriveIfNotDefined deriveToJSON ''ToJSON clientDef
+    pure (a <> b)
+aesonDeclarations KindScalar clientDef = deriveScalarJSON clientDef
+aesonDeclarations kind clientDef
+    | isResolverType kind = deriveIfNotDefined deriveFromJSON ''FromJSON clientDef
+    | otherwise = deriveIfNotDefined deriveToJSON ''ToJSON clientDef
+
+deriveIfNotDefined :: (ClientTypeDefinition -> Q Dec) -> Name -> ClientTypeDefinition -> Q [Dec]
+deriveIfNotDefined derivation typeClass clientDef = do
+    let name = mkTypeName clientDef
+    exists <- lookupTypeName (show name)
+    case exists of
+        Nothing -> mkDerivation
+        Just _ -> do
+            hasInstance <- isInstance typeClass [ConT name]
+            if hasInstance
+                then pure []
+                else mkDerivation
+  where
+    mkDerivation :: Q [Dec]
+    mkDerivation = do
+        derived <- derivation clientDef
+        pure [derived]
+
 
 failure :: GQLError -> Q a
 failure = fail . show
 
-deriveScalarJSON :: [ClientTypeDefinition -> DecQ]
-deriveScalarJSON = [deriveScalarFromJSON, deriveScalarToJSON]
+deriveScalarJSON :: ClientTypeDefinition -> Q [Dec]
+deriveScalarJSON clientDef = do
+    a <- deriveIfNotDefined deriveScalarFromJSON ''FromJSON clientDef
+    b <- deriveIfNotDefined deriveScalarToJSON ''ToJSON clientDef
+    pure (a <> b)
 
 deriveScalarFromJSON :: ClientTypeDefinition -> DecQ
 deriveScalarFromJSON ClientTypeDefinition {clientTypeName} =
@@ -223,7 +251,7 @@ deriveToJSON
           body =
             pure $
               AppE
-                (VarE 'object)
+                (VarE 'omitNulls)
                 (mkFieldsE typename '(.=) cFields)
 deriveToJSON
   ClientTypeDefinition
@@ -235,3 +263,15 @@ deriveToJSON
     where
       typeDef = applyCons ''ToJSON [typename]
       body = [funDSimple 'toJSON [] (aesonToJSONEnumBody clientTypeName clientCons)]
+
+omitNulls :: [(Text, Value)] -> Value
+omitNulls = object . filter notNull
+  where
+    notNull (_, Null) = False
+    notNull _ = True
+
+mkTypeName :: ClientTypeDefinition -> Name
+mkTypeName ClientTypeDefinition{clientTypeName = TypeNameTH namespace typeName} =
+    toType typeName
+  where
+    toType = toName . camelCaseTypeName namespace

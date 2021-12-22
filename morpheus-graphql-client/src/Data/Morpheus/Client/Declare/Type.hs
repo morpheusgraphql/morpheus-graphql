@@ -35,9 +35,14 @@ import Data.Morpheus.Types.Internal.AST
 import Language.Haskell.TH
 import Relude hiding (Type)
 
-typeDeclarations :: TypeKind -> [ClientTypeDefinition -> Q Dec]
-typeDeclarations KindScalar = []
-typeDeclarations _ = [pure . declareType]
+typeDeclarations :: TypeKind -> ClientTypeDefinition -> Q [Dec]
+typeDeclarations KindScalar _ = pure []
+typeDeclarations _ c@ClientTypeDefinition{clientTypeName = TypeNameTH{namespace, typename}} = do
+    let name = mkConName namespace typename
+    m <- lookupTypeName (show name)
+    case m of
+        Nothing -> pure [declareType c]
+        _ -> pure []
 
 declareType :: ClientTypeDefinition -> Dec
 declareType
