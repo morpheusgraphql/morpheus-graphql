@@ -11,8 +11,11 @@
 module Data.Morpheus.Types.Internal.AST.Error
   ( at,
     atPositions,
+    custom,
+    isCustom,
     internal,
     isInternal,
+    getCustomErrorType,
     GQLErrors,
     GQLError
       ( message,
@@ -26,12 +29,13 @@ module Data.Morpheus.Types.Internal.AST.Error
 where
 
 import Data.Aeson
-  ( FromJSON,
+  ( FromJSON (..),
     Options (..),
     ToJSON (..),
-    Value,
+    Value (Null, String),
     defaultOptions,
     encode,
+    genericParseJSON,
     genericToJSON,
   )
 import Data.ByteString.Lazy (ByteString)
@@ -51,6 +55,17 @@ internal x = x {errorType = Just Internal}
 isInternal :: GQLError -> Bool
 isInternal GQLError {errorType = Just Internal} = True
 isInternal _ = False
+
+custom :: GQLError -> Text -> GQLError
+custom x customError = x {errorType = Just (Custom customError)}
+
+isCustom :: GQLError -> Bool
+isCustom GQLError {errorType = Just (Custom _)} = True
+isCustom _ = False
+
+getCustomErrorType :: GQLError -> Maybe Text
+getCustomErrorType GQLError {errorType = Just (Custom customError)} = Just customError
+getCustomErrorType _ = Nothing
 
 at :: GQLError -> Position -> GQLError
 at err pos = atPositions err [pos]
@@ -72,17 +87,27 @@ manyMsg =
     . fmap (message . msg)
     . toList
 
-data ErrorType = Internal
+data ErrorType
+  = Internal
+  | Custom Text
   deriving
     ( Show,
       Eq,
-      Generic,
-      FromJSON,
-      ToJSON
+      Generic
     )
 
+instance ToJSON ErrorType where
+  toJSON (Custom customError) = String customError
+  toJSON Internal = Null
+
+instance FromJSON ErrorType where
+  parseJSON (String customError) = pure $ Custom customError
+  parseJSON _ = fail "Unexpected custom error type"
+
 instance Semigroup ErrorType where
-  Internal <> Internal = Internal
+  Internal <> _ = Internal
+  _ <> Internal = Internal
+  Custom customError <> Custom customError' = Custom $ customError <> ", " <> customError'
 
 data GQLError = GQLError
   { message :: Message,
@@ -94,8 +119,7 @@ data GQLError = GQLError
   deriving
     ( Show,
       Eq,
-      Generic,
-      FromJSON
+      Generic
     )
 
 instance Ord GQLError where
@@ -104,8 +128,20 @@ instance Ord GQLError where
 instance IsString GQLError where
   fromString = msg
 
+-- cannot have 'type' as the record name, this is less painful than
+-- manually writing to/from JSON instances
+stripErrorPrefix :: String -> String
+stripErrorPrefix "errorType" = "type"
+stripErrorPrefix other = other
+
+aesonOptions :: Options
+aesonOptions = defaultOptions {omitNothingFields = True, fieldLabelModifier = stripErrorPrefix}
+
 instance ToJSON GQLError where
-  toJSON = genericToJSON (defaultOptions {omitNothingFields = True})
+  toJSON = genericToJSON aesonOptions
+
+instance FromJSON GQLError where
+  parseJSON = genericParseJSON aesonOptions
 
 instance Semigroup GQLError where
   GQLError m1 l1 p1 t1 e1 <> GQLError m2 l2 p2 t2 e2 = GQLError (m1 <> m2) (l1 <> l2) (p1 <> p2) (t1 <> t2) (e1 <> e2)
