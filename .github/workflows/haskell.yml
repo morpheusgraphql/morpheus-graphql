@@ -1,39 +1,23 @@
 name: CI
-
 on: [pull_request]
-
-
-
-    steps:
-      - uses: actions/checkout@v2
-      - name: Setup Haskell
-        uses: actions/setup-haskell@v1.1
-        with:
-          ghc-version: ${{ matrix.ghc }}
-          cabal-version: ${{ matrix.cabal }}
-      - run: runhaskell Hello.hs
-
-name: build
 jobs:
   build:
     strategy:
       matrix:
-        ghc: ['8.2.2', '8.4.4', '8.6.5', '8.8.3', '8.10.7','latest']
-        cabal: ['3.0.0.0']
+        ghc: ["8.2.2", "8.4.4", "8.6.5", "8.8.3", "8.10.7", "latest"]
+        cabal: ["3.0.0.0"]
       fail-fast: false
-    runs-on: ubuntu-latest
-    name: Haskell GHC ${{ matrix.ghc }} sample
+    runs-on: macOS-latest
+    name: GHC ${{ matrix.ghc }}
     steps:
       - uses: actions/checkout@v2
-      - name: setup stack
-        uses: nalchevanidze/setup-stack@v2.3
       - name: Setup Haskell
-        uses: actions/setup-haskell@v1.1
+        uses: haskell/actions/setup@v1
         with:
           ghc-version: ${{ matrix.ghc }}
           cabal-version: ${{ matrix.cabal }}
       - name: setup stack config
-        run: cp config/stack/${{ matrix.plan.ghc }}.yaml  stack.yaml
+        run: cp config/stack/${{ matrix.ghc }}.yaml  stack.yaml
       - name: Install dependencies
         run: |
           stack build --fast --skip-ghc-check --no-terminal --test --only-dependencies
