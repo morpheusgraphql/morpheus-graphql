@@ -23,6 +23,9 @@ jobs:
       #   uses: nalchevanidze/setup-stack@v2.3
       - name: Setup Haskell
         uses: haskell/actions/setup@v1
+        with:
+          ghc-version: ${{ matrix.plan.ghc }}
+          enable-stack: true
       - name: setup stack config
         run: cp config/stack/${{ matrix.plan.ghc }}.yaml  stack.yaml
       - name: Install dependencies
