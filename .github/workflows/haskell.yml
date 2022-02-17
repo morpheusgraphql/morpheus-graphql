@@ -2,30 +2,37 @@ name: CI
 
 on: [pull_request]
 
+
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Haskell
+        uses: actions/setup-haskell@v1.1
+        with:
+          ghc-version: ${{ matrix.ghc }}
+          cabal-version: ${{ matrix.cabal }}
+      - run: runhaskell Hello.hs
+
+name: build
 jobs:
   build:
     strategy:
       matrix:
-        plan:
-          - { ghc: "8.2.2" }
-          - { ghc: "8.4.4" }
-          - { ghc: "8.6.5" }
-          - { ghc: "8.8.3" }
-          - { ghc: "8.10.7" }
-          - { ghc: "latest" }
+        ghc: ['8.2.2', '8.4.4', '8.6.5', '8.8.3', '8.10.7','latest']
+        cabal: ['3.0.0.0']
       fail-fast: false
     runs-on: ubuntu-latest
+    name: Haskell GHC ${{ matrix.ghc }} sample
     steps:
-      - name: prepare OS
-        uses: mstksg/get-package@v1
-        with:
-          apt-get: ${{ matrix.apt-get }}
-      - uses: actions/checkout@v1
-
+      - uses: actions/checkout@v2
       - name: setup stack
         uses: nalchevanidze/setup-stack@v2.3
-
-      - name: setup GHC version
+      - name: Setup Haskell
+        uses: actions/setup-haskell@v1.1
+        with:
+          ghc-version: ${{ matrix.ghc }}
+          cabal-version: ${{ matrix.cabal }}
+      - name: setup stack config
         run: cp config/stack/${{ matrix.plan.ghc }}.yaml  stack.yaml
       - name: Install dependencies
         run: |
@@ -40,18 +47,3 @@ jobs:
       - name: lint
         run: |
           curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s .
-  # prettier:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v1
-  #     - uses: actions/setup-haskell@v1
-  #       with:
-  #         ghc-version: "8.6.5"
-  #         cabal-version: "3.0"
-  #     - name: Install
-  #       run: |
-  #         curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s .
-  #         # cabal update
-  #         # cabal install ormolu
-  #     - name: prettier
-  #       run:  ormolu --mode check $(find . -name '*.hs')
