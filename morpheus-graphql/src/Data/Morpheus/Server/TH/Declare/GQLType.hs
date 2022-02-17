@@ -78,6 +78,7 @@ dropNamespaceOptions _ tName opt = opt {fieldLabelModifier = stripFieldNamespace
 
 deriveGQLType :: ServerTypeDefinition -> ServerDec [Dec]
 deriveGQLType ServerInterfaceDefinition {} = pure []
+deriveGQLType ServerTypeDefinition {tKind = KindScalar} = pure []
 deriveGQLType
   ServerTypeDefinition
     { tName,
