@@ -11,7 +11,7 @@ jobs:
           - { ghc: "8.8.3" }
           - { ghc: "8.10.7" }
           - { ghc: "latest" }
-        os: [ubuntu-latest, macOS-latest]
+        os: [macOS-latest] # TODO: fix problem with ordering on: ubuntu-latest
       fail-fast: false
     runs-on: ${{ matrix.os }}
     name: GHC ${{ matrix.plan.ghc }} (${{ matrix.os }})
@@ -26,6 +26,13 @@ jobs:
         with:
           ghc-version: ${{ matrix.plan.ghc }}
           enable-stack: true
+
+      - name: Cache Stack
+        uses: actions/cache@v2
+        with:
+          path: ~/.stack
+          key: ${{ runner.os }}-${{ matrix.plan.ghc }}-stack-${{ hashFiles('stack.yaml') }}-${{ hashFiles('**/package.yaml') }}
+
       - name: setup stack config
         run: cp config/stack/${{ matrix.plan.ghc }}.yaml  stack.yaml
       - name: Install dependencies
