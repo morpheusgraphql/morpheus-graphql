@@ -81,7 +81,7 @@ module Data.Morpheus.Types.Internal.AST
     ExecutableDocument (..),
     Variables,
     unsafeFromFields,
-    OrdMap (..),
+    OrdMap,
     GQLError (..),
     GQLErrors,
     ObjectEntry (..),
@@ -152,7 +152,7 @@ module Data.Morpheus.Types.Internal.AST
   )
 where
 
-import Data.Mergeable.OrdMap (OrdMap (..))
+import Data.Mergeable.OrdMap (OrdMap)
 import Data.Mergeable.SafeHashMap (SafeHashMap)
 import Data.Morpheus.Types.Internal.AST.Base
 import Data.Morpheus.Types.Internal.AST.DirectiveLocation (DirectiveLocation (..))
