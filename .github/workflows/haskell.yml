@@ -11,17 +11,18 @@ jobs:
           - { ghc: "8.8.3" }
           - { ghc: "8.10.7" }
           - { ghc: "latest" }
+        os: [ubuntu-latest, macOS-latest]
       fail-fast: false
-    runs-on: macOS-latest
-    name: GHC ${{ matrix.plan.ghc }}
+    runs-on: ${{ matrix.os }}
+    name: GHC ${{ matrix.plan.ghc }} (${{ matrix.os }})
     steps:
       - uses: actions/checkout@v2
-      - name: prepare OS
-        uses: mstksg/get-package@v1
-      - name: setup stack
-        uses: nalchevanidze/setup-stack@v2.3
-      # - name: Setup Haskell
-      #   uses: haskell/actions/setup@v1
+      # - name: prepare OS
+      #   uses: mstksg/get-package@v1
+      # - name: setup stack
+      #   uses: nalchevanidze/setup-stack@v2.3
+      - name: Setup Haskell
+        uses: haskell/actions/setup@v1
       - name: setup stack config
         run: cp config/stack/${{ matrix.plan.ghc }}.yaml  stack.yaml
       - name: Install dependencies
