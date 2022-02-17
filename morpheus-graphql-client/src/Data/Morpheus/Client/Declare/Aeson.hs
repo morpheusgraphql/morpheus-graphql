@@ -4,7 +4,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -36,14 +36,14 @@ import Data.Morpheus.Client.Internal.Utils
   ( isEnum,
   )
 import Data.Morpheus.CodeGen.Internal.TH
-  ( _',
-    applyCons,
+  ( applyCons,
     camelCaseTypeName,
     funDSimple,
     toCon,
     toName,
     toString,
     v',
+    _',
   )
 import Data.Morpheus.Types.GQLScalar
   ( scalarFromJSON,
@@ -103,10 +103,11 @@ deriveScalarToJSON
 -- FromJSON
 deriveFromJSON :: ClientTypeDefinition -> DecQ
 deriveFromJSON ClientTypeDefinition {clientCons = [], clientTypeName} =
-  failure $ internal $
-    "Type "
-      <> msg (typename clientTypeName)
-      <> " Should Have at least one Constructor"
+  failure $
+    internal $
+      "Type "
+        <> msg (typename clientTypeName)
+        <> " Should Have at least one Constructor"
 deriveFromJSON
   ClientTypeDefinition
     { clientTypeName = clientTypeName@TypeNameTH {namespace},
