@@ -22,7 +22,7 @@ jobs:
       # - name: setup stack
       #   uses: nalchevanidze/setup-stack@v2.3
       - name: Setup Haskell
-        uses: haskell/actions/setup@v1
+        uses: haskell/actions/setup@v1.2
         with:
           ghc-version: ${{ matrix.plan.ghc }}
           enable-stack: true
