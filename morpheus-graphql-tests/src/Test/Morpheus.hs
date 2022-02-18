@@ -164,4 +164,4 @@ getAppsBy ::
   IO b
 getAppsBy f url = do
   files <- searchAppFiles url
-  getAppsWIth f url files
+  getAppsWIth f url (sort files)

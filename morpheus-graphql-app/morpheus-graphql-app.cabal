@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e84d4f16b2769bb325709eb8d8bb59c050c021ce4f9111621b7ec6e79d22b810
+-- hash: 78de2f6640c46632d39fe6ed716f7f6e7a5b708fcc646e80d08b577a6fe1073f
 
 name:           morpheus-graphql-app
 version:        0.18.0
@@ -35,13 +35,13 @@ data-files:
     test/api/validation/fragment/on-type/query.gql
     test/api/validation/fragment/on-union-type/query.gql
     test/api/validation/fragment/schema.gql
-    test/merge/schema/query-subscription-mutation/app-ext.gql
-    test/merge/schema/query-subscription-mutation/app-main.gql
+    test/merge/schema/query-subscription-mutation/app-1.gql
+    test/merge/schema/query-subscription-mutation/app-2.gql
     test/merge/schema/query-subscription-mutation/mutation/query.gql
     test/merge/schema/query-subscription-mutation/query/query.gql
     test/merge/schema/query-subscription-mutation/rendering.gql
-    test/merge/schema/simple-query/app-ext.gql
-    test/merge/schema/simple-query/app-main.gql
+    test/merge/schema/simple-query/app-1.gql
+    test/merge/schema/simple-query/app-2.gql
     test/merge/schema/simple-query/query/query.gql
     test/merge/schema/simple-query/rendering.gql
     test/named-resolvers/deities-ext/query.gql
@@ -71,12 +71,12 @@ data-files:
     test/api/validation/fragment/on-type/response.json
     test/api/validation/fragment/on-union-type/response.json
     test/api/validation/fragment/resolvers.json
-    test/merge/schema/query-subscription-mutation/app-ext.json
-    test/merge/schema/query-subscription-mutation/app-main.json
+    test/merge/schema/query-subscription-mutation/app-1.json
+    test/merge/schema/query-subscription-mutation/app-2.json
     test/merge/schema/query-subscription-mutation/mutation/response.json
     test/merge/schema/query-subscription-mutation/query/response.json
-    test/merge/schema/simple-query/app-ext.json
-    test/merge/schema/simple-query/app-main.json
+    test/merge/schema/simple-query/app-1.json
+    test/merge/schema/simple-query/app-2.json
     test/merge/schema/simple-query/query/response.json
     test/named-resolvers/deities-ext/response.json
     test/named-resolvers/deities/response.json
