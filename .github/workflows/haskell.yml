@@ -42,7 +42,7 @@ jobs:
 
       - name: Build
         run: |
-          stack build --fast --bench --no-run-benchmarks --haddock --no-haddock-deps
+          stack build --fast --test --bench --no-run-tests --no-run-benchmarks --haddock --no-haddock-deps
 
       - name: Test
         run: |
