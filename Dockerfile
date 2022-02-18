@@ -6,14 +6,7 @@ RUN stack --version
 
 # Install GHC.
 WORKDIR /project
-COPY . /project
-
-RUN stack setup 
 RUN stack exec -- ghc --version
-RUN stack build --only-dependencies
 
-# # Run project.
-# ENV HOST 0.0.0.0
-# ENV PORT 80
-# EXPOSE 80
-# CMD /usr/local/bin/counter
+RUN stack setup
+VOLUME [ ".:/project" ]

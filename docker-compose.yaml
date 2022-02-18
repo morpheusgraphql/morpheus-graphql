@@ -5,6 +5,5 @@ services:
     volumes:
       - .:/project
     ports:
-      - '8080:80'
-    command: stack build
-
+      - '8081:8081'
+    command: stack build 
