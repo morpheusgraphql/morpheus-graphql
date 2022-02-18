@@ -23,22 +23,27 @@ jobs:
         with:
           ghc-version: ${{ matrix.plan.ghc }}
           enable-stack: true
-      - name: setup stack config
-        run: cp config/stack/${{ matrix.plan.ghc }}.yaml  stack.yaml
       - name: Cache Stack
         uses: actions/cache@v2
         with:
           path: ~/.stack
-          key: ${{ runner.os }}-${{ matrix.plan.ghc }}-stack-${{ hashFiles('stack.yaml') }}-${{ hashFiles('**/package.yaml') }}
+          key: ${{ runner.os }}-${{ matrix.plan.ghc }}-stack-${{ hashFiles('config/stack/${{ matrix.plan.ghc }}.yaml') }}-${{ hashFiles('**/package.yaml') }}
           restore-keys: |
             ${{ runner.os }}-${{ matrix.plan.ghc }}-stack
+
+      - name: setup stack config
+        run: cp config/stack/${{ matrix.plan.ghc }}.yaml  stack.yaml
 
       - name: Install dependencies
         run: |
           stack build --fast --skip-ghc-check --no-terminal --test --only-dependencies
+
       - name: Build
         run: |
+          stack build --fast --bench --no-run-benchmarks
+      - name: Test
           stack test --fast --bench --no-run-benchmarks --haddock --no-haddock-deps
+
   hlint:
     runs-on: ubuntu-latest
     steps:
