@@ -9,7 +9,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -34,12 +34,12 @@ where
 
 -- MORPHEUS
 import qualified Data.Aeson as A
-  ( (.=),
-    FromJSON (..),
+  ( FromJSON (..),
     ToJSON (..),
     Value (..),
     object,
     pairs,
+    (.=),
   )
 import Data.Foldable (foldr')
 import qualified Data.HashMap.Lazy as M
@@ -85,11 +85,11 @@ import Data.Scientific
   ( Scientific,
     floatingOrInteger,
   )
+import qualified Data.Text as T
 import qualified Data.Vector as V
 import Instances.TH.Lift ()
 import Language.Haskell.TH.Syntax (Lift (..))
 import Relude
-import qualified Data.Text as T
 
 -- | Primitive Values for GQLScalar: 'Int', 'Float', 'String', 'Boolean'.
 -- for performance reason type 'Text' represents GraphQl 'String' value
