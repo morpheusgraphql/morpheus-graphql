@@ -4,7 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Schema.DSL (dsl) where

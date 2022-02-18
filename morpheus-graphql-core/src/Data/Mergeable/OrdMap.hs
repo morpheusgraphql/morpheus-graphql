@@ -8,23 +8,20 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Mergeable.OrdMap
-  ( OrdMap (..),
+  ( OrdMap,
   )
 where
 
 import Control.Monad.Except (MonadError)
 import qualified Data.HashMap.Lazy as HM
+import Data.List ((\\))
 import Data.Mergeable.Internal.Merge (Merge (..))
 import Data.Mergeable.Internal.NameCollision (NameCollision (..))
-import Data.Mergeable.Internal.Resolution
-  ( Indexed (..),
-    indexed,
-  )
 import Data.Mergeable.IsMap
   ( FromList (..),
     IsMap (..),
@@ -34,46 +31,44 @@ import Language.Haskell.TH.Syntax (Lift (..))
 import Relude hiding (fromList)
 
 -- OrdMap
-newtype OrdMap k a = OrdMap
-  { mapEntries :: HashMap k (Indexed k a)
+data OrdMap k a = OrdMap
+  { order :: [k],
+    entries :: HashMap k a
   }
   deriving
     ( Show,
       Eq,
       Functor,
-      Traversable,
-      Empty
+      Traversable
     )
 
+instance Empty (OrdMap k a) where
+  empty = OrdMap [] HM.empty
+
 instance (Lift a, Lift k, Eq k, Hashable k) => Lift (OrdMap k a) where
-  lift (OrdMap x) = [|OrdMap (HM.fromList ls)|]
+  lift (OrdMap ks xs) = [|OrdMap ks (HM.fromList ls)|]
     where
-      ls = HM.toList x
+      ls = HM.toList xs
 
 #if MIN_VERSION_template_haskell(2,16,0)
-  liftTyped (OrdMap x) = [||OrdMap (HM.fromList ls)||]
+  liftTyped (OrdMap ks x) = [||OrdMap ks (HM.fromList ls)||]
     where
       ls = HM.toList x
 #endif
 
 instance (Eq k, Hashable k) => Foldable (OrdMap k) where
-  foldMap f = foldMap f . getElements
-
-getElements :: (Eq k, Hashable k) => OrdMap k b -> [b]
-getElements = fmap indexedValue . sortOn index . toList . mapEntries
+  foldMap f OrdMap {order, entries} = foldMap f (mapMaybe (`HM.lookup` entries) order)
 
 instance (Eq k, Hashable k) => IsMap k (OrdMap k) where
-  unsafeFromList = OrdMap . HM.fromList . fmap withKey . indexed
-    where
-      withKey idx = (indexedKey idx, idx)
-  singleton k x = OrdMap $ HM.singleton k (Indexed 0 k x)
-  lookup key OrdMap {mapEntries} = indexedValue <$> lookup key mapEntries
+  unsafeFromList xs = OrdMap (map fst xs) (unsafeFromList xs)
+  singleton k x = OrdMap [k] (singleton k x)
+  lookup key OrdMap {entries} = lookup key entries
 
 instance (NameCollision e a, Eq k, Hashable k, Monad m, MonadError e m) => Merge m (OrdMap k a) where
-  merge (OrdMap x) (OrdMap y) = OrdMap <$> merge x (fmap (shiftIndexes (HM.size x)) y)
+  merge (OrdMap ks1 x) (OrdMap ks2 y) = OrdMap (mergeOrder ks1 ks2) <$> merge x y
 
-shiftIndexes :: Int -> Indexed k a -> Indexed k a
-shiftIndexes n Indexed {..} = Indexed {index = index + n, ..}
+mergeOrder :: Eq a => [a] -> [a] -> [a]
+mergeOrder ks1 ks2 = ks1 <> (ks2 \\ ks1)
 
 instance
   ( Hashable k,
@@ -83,6 +78,4 @@ instance
   ) =>
   FromList m OrdMap k a
   where
-  fromList = fmap OrdMap . fromList . map xyz . indexed
-    where
-      xyz x = (indexedKey x, x)
+  fromList xs = OrdMap (map fst xs) <$> fromList xs

@@ -2,7 +2,7 @@
 
 .DEFAULT_GOAL = build
 
-
+# make env v="8.2.2"
 env: 
 	cp config/stack/$(v).yaml  stack.yaml
 
