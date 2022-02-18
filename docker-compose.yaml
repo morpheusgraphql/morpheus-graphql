@@ -1,0 +1,10 @@
+version: '3'
+services:
+  stack:
+    build: .
+    volumes:
+      - .:/project
+    ports:
+      - '8080:80'
+    command: stack build
+

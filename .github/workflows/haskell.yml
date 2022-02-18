@@ -11,7 +11,7 @@ jobs:
           - { ghc: "8.8.3" }
           - { ghc: "8.10.7" }
           - { ghc: "latest" }
-        os: [macOS-latest] # TODO: fix problem with ordering on: ubuntu-latest
+        os: [ubuntu-latest, macOS-latest]
       fail-fast: false
     runs-on: ${{ matrix.os }}
     name: GHC ${{ matrix.plan.ghc }} (${{ matrix.os }})
@@ -31,7 +31,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ matrix.plan.ghc }}-stack
 
-      # Intsall & Build & Test
+      # Install & Build & Test
 
       - name: setup stack config
         run: cp config/stack/${{ matrix.plan.ghc }}.yaml  stack.yaml
