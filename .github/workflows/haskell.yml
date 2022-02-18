@@ -31,6 +31,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-${{ matrix.plan.ghc }}-stack
 
+      # Intsall & Build & Test
+
       - name: setup stack config
         run: cp config/stack/${{ matrix.plan.ghc }}.yaml  stack.yaml
 
@@ -40,9 +42,10 @@ jobs:
 
       - name: Build
         run: |
-          stack build --fast --bench --no-run-benchmarks
+          stack build --fast --bench --no-run-benchmarks --haddock --no-haddock-deps
+
       - name: Test
-          stack test --fast --bench --no-run-benchmarks --haddock --no-haddock-deps
+          stack test --fast
 
   hlint:
     runs-on: ubuntu-latest
