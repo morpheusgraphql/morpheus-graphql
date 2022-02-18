@@ -4,37 +4,33 @@ jobs:
   build:
     strategy:
       matrix:
-        plan:
-          # - { ghc: "8.2.2" } TODO: fix: ByteCodeLink.lookupCE
-          - { ghc: "8.4.4" }
-          - { ghc: "8.6.5" }
-          - { ghc: "8.8.3" }
-          - { ghc: "8.10.7" }
-          - { ghc: "latest" }
+        # "8.2.2"  TODO: fix: ByteCodeLink.lookupCE
+        ghc: ["8.4.4", "8.6.5", "8.8.3", "8.10.7", "latest"]
         os: [ubuntu-latest, macOS-latest]
       fail-fast: false
     runs-on: ${{ matrix.os }}
-    name: GHC ${{ matrix.plan.ghc }} (${{ matrix.os }})
+    name: GHC ${{ matrix.ghc}} (${{ matrix.os }})
     steps:
       - uses: actions/checkout@v2
 
       - name: Setup Haskell
         uses: haskell/actions/setup@v1.2
         with:
-          ghc-version: ${{ matrix.plan.ghc }}
+          ghc-version: ${{ matrix.ghc }}
           enable-stack: true
       - name: Cache Stack
         uses: actions/cache@v2
         with:
           path: ~/.stack
-          key: ${{ runner.os }}-${{ matrix.plan.ghc }}-stack-${{ hashFiles('config/stack/${{ matrix.plan.ghc }}.yaml') }}-${{ hashFiles('**/package.yaml') }}
+          key: ${{ runner.os }}-${{ matrix.ghc }}-stack-${{ hashFiles('./config/stack/${{ matrix.ghc }}.yaml') }}-packages-${{ hashFiles('**/package.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.plan.ghc }}-stack
+            ${{ runner.os }}-${{ matrix.ghc }}-stack-${{ hashFiles('./config/stack/${{ matrix.ghc }}.yaml') }}
+            ${{ runner.os }}-${{ matrix.ghc }}-stack-
 
       # Install & Build & Test
 
       - name: setup stack config
-        run: cp config/stack/${{ matrix.plan.ghc }}.yaml  stack.yaml
+        run: cp config/stack/${{ matrix.ghc }}.yaml  stack.yaml
 
       - name: Install dependencies
         run: |
