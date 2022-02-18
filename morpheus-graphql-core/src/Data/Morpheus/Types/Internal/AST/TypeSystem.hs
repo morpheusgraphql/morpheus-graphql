@@ -74,14 +74,14 @@ import Data.Mergeable.SafeHashMap
     toHashMap,
   )
 import Data.Morpheus.Internal.Utils
-  ( (<:>),
-    Empty (..),
+  ( Empty (..),
     IsMap (..),
     KeyOf (..),
     insert,
     selectOr,
     toPair,
     unsafeFromList,
+    (<:>),
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),

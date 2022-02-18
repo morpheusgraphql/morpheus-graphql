@@ -21,10 +21,10 @@ import Data.Morpheus.CodeGen.Internal.AST
   ( CodeGenConfig,
   )
 import Data.Morpheus.CodeGen.Internal.TH
-  ( _',
-    apply,
+  ( apply,
     funDSimple,
     vars,
+    _',
   )
 import Data.Morpheus.Types.Internal.AST
   ( TypeName,
