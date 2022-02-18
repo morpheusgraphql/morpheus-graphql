@@ -45,6 +45,7 @@ jobs:
           stack build --fast --bench --no-run-benchmarks --haddock --no-haddock-deps
 
       - name: Test
+        run: |
           stack test --fast
 
   hlint:
