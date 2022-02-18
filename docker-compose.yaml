@@ -1,0 +1,10 @@
+# is helpful for debugging lunux-specific problems for non-Lunux developers
+version: '3'
+services:
+  stack:
+    build: ./config
+    volumes:
+      - .:/project
+    ports:
+      - '8081:8081'
+    command: stack build --fast --test

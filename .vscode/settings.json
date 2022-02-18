@@ -1,6 +1,6 @@
 {
   "editor.formatOnSave": true,
   "ghcSimple.feature.rangeType": false,
-  "cSpell.words": ["INLINEABLE", "Nullary", "dups", "haxl", "parens"],
+  "cSpell.words": ["dups", "haxl", "hlint", "INLINEABLE", "Nullary", "parens"],
   "editor.renderWhitespace": "all"
 }
