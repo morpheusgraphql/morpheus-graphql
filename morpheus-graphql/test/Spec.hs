@@ -24,6 +24,7 @@ import qualified Feature.Input.Objects as Objects
 import qualified Feature.Input.Scalars as Scalars
 import qualified Feature.Input.Variables as Variables
 import qualified Feature.NamedResolvers.API as NamedResolvers
+import qualified Feature.Wrappers.API as Wrappers
 import Relude
 import Rendering.TestSchemaRendering (testSchemaRendering)
 import Subscription.Test (testSubscriptions)
@@ -87,6 +88,10 @@ main =
       testFeatures
         "NamedResolvers"
         [(runApp NamedResolvers.app, "tests")],
+      testFeatures
+        "Wrappers"
+        [ (Wrappers.api, "tests")
+        ],
       testSubscriptions,
       pure testSchemaRendering
     ]

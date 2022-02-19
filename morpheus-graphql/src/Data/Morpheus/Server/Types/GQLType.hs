@@ -125,7 +125,7 @@ defaultTypeOptions =
     }
 
 __typeData ::
-  forall kinded (kind :: TypeCategory) (a :: *).
+  forall kinded (kind :: TypeCategory) (a :: Type).
   (GQLType a, CategoryValue kind) =>
   kinded kind a ->
   TypeData
@@ -267,6 +267,10 @@ instance GQLType a => GQLType [a] where
 
 instance GQLType a => GQLType (Set a) where
   type KIND (Set a) = WRAPPER
+  __type _ = __type $ Proxy @[a]
+
+instance GQLType a => GQLType (NonEmpty a) where
+  type KIND (NonEmpty a) = WRAPPER
   __type _ = __type $ Proxy @[a]
 
 instance GQLType a => GQLType (SubscriptionField a) where
