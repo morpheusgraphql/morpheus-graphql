@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunkmorpheus_graphql_docs=self.webpackChunkmorpheus_graphql_docs||[]).push([[883],{429:function(e,t,n){n.r(t);var u=n(7294),l=n(9882),s=n(9357);t.default=function(){return u.createElement(l.Z,null,u.createElement(s.Z,{title:"404: Not found"}),u.createElement("h1",null,"NOT FOUND"),u.createElement("p",null,"You just hit a route that doesn't exist... the sadness."))}}}]);
+//# sourceMappingURL=component---src-pages-404-js-8171f07b3a6b1b49b614.js.map

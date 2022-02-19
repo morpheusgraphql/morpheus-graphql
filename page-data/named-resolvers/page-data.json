@@ -1,1 +1,5 @@
-{"componentChunkName":"component---src-pages-named-resolvers-mdx","path":"/named-resolvers/","result":{"pageContext":{"frontmatter":{}}},"staticQueryHashes":["3128451518","3649515864"]}
+{
+    "componentChunkName": "component---src-pages-named-resolvers-mdx",
+    "path": "/named-resolvers/",
+    "result": {"pageContext":{"frontmatter":{}}},
+    "staticQueryHashes": ["3128451518","3649515864"]}
