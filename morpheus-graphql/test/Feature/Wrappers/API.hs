@@ -18,7 +18,9 @@ import Data.Morpheus.Types
     RootResolver (..),
     Undefined (..),
   )
+import Data.Sequence (Seq)
 import Data.Set (Set)
+import Data.Vector (Vector)
 import GHC.Generics (Generic)
 
 -- query
@@ -30,7 +32,9 @@ type Coll m a = Arg "value" a -> m a
 -- resolver
 data Query m = Query
   { testSet :: Coll m (Set Int),
-    testNonEmpty :: Coll m (NonEmpty Int)
+    testNonEmpty :: Coll m (NonEmpty Int),
+    tesSeq :: Coll m (Seq Int),
+    testVector :: Coll m (Vector Int)
   }
   deriving (Generic, GQLType)
 
@@ -40,7 +44,9 @@ rootResolver =
     { queryResolver =
         Query
           { testSet = testRes,
-            testNonEmpty = testRes
+            testNonEmpty = testRes,
+            tesSeq = testRes,
+            testVector = testRes
           },
       mutationResolver = Undefined,
       subscriptionResolver = Undefined

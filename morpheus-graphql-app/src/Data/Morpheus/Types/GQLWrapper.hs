@@ -72,7 +72,7 @@ type family DecodeWrapperConstraint (f :: * -> *) a :: Constraint where
   DecodeWrapperConstraint f a = ()
 
 -- | GraphQL Wrapper Deserializer
-class DecodeWrapper (f :: * -> *) where
+class DecodeWrapper (f :: Type -> Type) where
   decodeWrapper ::
     (Monad m, DecodeWrapperConstraint f a) =>
     (ValidValue -> m a) ->

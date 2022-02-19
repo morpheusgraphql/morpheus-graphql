@@ -67,6 +67,7 @@ import Data.Morpheus.Types.Internal.AST
     toNullable,
     unpackName,
   )
+import Data.Sequence (Seq)
 import Data.Text
   ( intercalate,
     pack,
@@ -81,7 +82,8 @@ import Data.Typeable
     typeRep,
     typeRepTyCon,
   )
-import Relude hiding (Undefined, intercalate)
+import Data.Vector (Vector)
+import Relude hiding (Seq, Undefined, intercalate)
 
 data TypeData = TypeData
   { gqlTypeName :: TypeName,
@@ -271,6 +273,14 @@ instance GQLType a => GQLType (Set a) where
 
 instance GQLType a => GQLType (NonEmpty a) where
   type KIND (NonEmpty a) = WRAPPER
+  __type _ = __type $ Proxy @[a]
+
+instance GQLType a => GQLType (Seq a) where
+  type KIND (Seq a) = WRAPPER
+  __type _ = __type $ Proxy @[a]
+
+instance GQLType a => GQLType (Vector a) where
+  type KIND (Vector a) = WRAPPER
   __type _ = __type $ Proxy @[a]
 
 instance GQLType a => GQLType (SubscriptionField a) where

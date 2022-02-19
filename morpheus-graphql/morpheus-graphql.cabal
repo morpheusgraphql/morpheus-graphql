@@ -215,8 +215,8 @@ data-files:
     test/Feature/NamedResolvers/tests/realm-ext-by-id/query.gql
     test/Feature/NamedResolvers/tests/realm-simple/query.gql
     test/Feature/NamedResolvers/tests/realms/query.gql
-    test/Feature/Wrappers/tests/nonempty/decodeFloat/query.gql
-    test/Feature/Wrappers/tests/nonempty/decodeInt/query.gql
+    test/Feature/Wrappers/tests/nonempty/invalid/query.gql
+    test/Feature/Wrappers/tests/nonempty/ok/query.gql
     test/Feature/Wrappers/tests/set/decodeFloat/query.gql
     test/Feature/Wrappers/tests/set/decodeInt/query.gql
     test/Rendering/schema.gql
@@ -429,8 +429,8 @@ data-files:
     test/Feature/NamedResolvers/tests/realm-ext-by-id/response.json
     test/Feature/NamedResolvers/tests/realm-simple/response.json
     test/Feature/NamedResolvers/tests/realms/response.json
-    test/Feature/Wrappers/tests/nonempty/decodeFloat/response.json
-    test/Feature/Wrappers/tests/nonempty/decodeInt/response.json
+    test/Feature/Wrappers/tests/nonempty/invalid/response.json
+    test/Feature/Wrappers/tests/nonempty/ok/response.json
     test/Feature/Wrappers/tests/set/decodeFloat/response.json
     test/Feature/Wrappers/tests/set/decodeInt/response.json
 
