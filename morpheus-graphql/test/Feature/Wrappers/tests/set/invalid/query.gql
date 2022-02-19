@@ -1,0 +1,3 @@
+query FailOnEmpty {
+  testSet(value: [])
+}
