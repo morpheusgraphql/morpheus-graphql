@@ -1,4 +1,5 @@
-query ValidNonEmpty {
-  f1: testSet(value: [32])
-  f2: testSet(value: [32, 235, 235, 6463, 352123])
+query ValidSet {
+  f1: testSet(value: [])
+  f2: testSet(value: [32])
+  f3: testSet(value: [32, 235, 6463, 352123])
 }

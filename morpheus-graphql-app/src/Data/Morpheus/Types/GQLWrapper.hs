@@ -67,7 +67,7 @@ instance EncodeWrapper Set where
 instance EncodeWrapper SubscriptionField where
   encodeWrapper encode (SubscriptionField _ res) = encode res
 
-type family DecodeWrapperConstraint (f :: * -> *) a :: Constraint where
+type family DecodeWrapperConstraint (f :: Type -> Type) a :: Constraint where
   DecodeWrapperConstraint Set a = (Ord a)
   DecodeWrapperConstraint f a = ()
 
@@ -110,7 +110,7 @@ haveSameSize ::
   ExceptT GQLError m (Set a)
 haveSameSize setVal listVal
   | length setVal == length listVal = pure setVal
-  | otherwise = ExceptT $ pure $ Left (fromString ("Expected a List without duplicates, found " <> show (length listVal - length listVal) <> " duplicates"))
+  | otherwise = ExceptT $ pure $ Left (fromString ("Expected a List without duplicates, found " <> show (length listVal - length setVal) <> " duplicates"))
 
 withRefinedList ::
   Monad m =>
