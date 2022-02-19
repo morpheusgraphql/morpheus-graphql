@@ -13,8 +13,7 @@ jobs:
       - name: install
         run: |
           cd docs/
-          npm install gatsby-cli -g
-          npm install
+          yarn
       - name: build
         run: |
           cd docs/
