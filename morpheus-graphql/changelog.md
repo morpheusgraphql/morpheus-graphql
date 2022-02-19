@@ -1,5 +1,9 @@
 # Changelog
 
+## unreleased changes
+
+- support: `NonEmpty`, `Vector`, `Seq`
+
 ## 0.18.0 - 08.11.2021
 
 ### new Features
