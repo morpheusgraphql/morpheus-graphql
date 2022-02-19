@@ -5,7 +5,7 @@ module.exports = {
   siteMetadata: {
     title: "Morpheus GraphQL",
     description: `Haskell GraphQL library, 
-    Build GraphQL APIs with your favourite functional language!`,
+    Build GraphQL APIs with your favorite functional language!`,
     author: "@d.nalchevanidze@gmail.com",
   },
   plugins: [
