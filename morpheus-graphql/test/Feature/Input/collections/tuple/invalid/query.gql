@@ -1,0 +1,5 @@
+query InvalidTuple {
+  f1: testTuple(value: [])
+  f2: testTuple(value: ["325", "235"])
+  f2: testTuple(value: [1])
+}

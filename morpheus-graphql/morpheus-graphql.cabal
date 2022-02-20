@@ -150,6 +150,8 @@ data-files:
     test/Feature/Input/collections/seq/query.gql
     test/Feature/Input/collections/set/invalid/query.gql
     test/Feature/Input/collections/set/ok/query.gql
+    test/Feature/Input/collections/tuple/invalid/query.gql
+    test/Feature/Input/collections/tuple/ok/query.gql
     test/Feature/Input/collections/vector/query.gql
     test/Feature/Input/default-values-schema.gql
     test/Feature/Input/default-values/intorspection/arguments/query.gql
@@ -352,6 +354,8 @@ data-files:
     test/Feature/Input/collections/seq/response.json
     test/Feature/Input/collections/set/invalid/response.json
     test/Feature/Input/collections/set/ok/response.json
+    test/Feature/Input/collections/tuple/invalid/response.json
+    test/Feature/Input/collections/tuple/ok/response.json
     test/Feature/Input/collections/vector/response.json
     test/Feature/Input/default-values/intorspection/arguments/response.json
     test/Feature/Input/default-values/intorspection/input-compound/response.json

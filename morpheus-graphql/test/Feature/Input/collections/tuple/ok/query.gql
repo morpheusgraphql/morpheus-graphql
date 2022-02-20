@@ -1,0 +1,4 @@
+query ValidTuple {
+  f1: testTuple(value: [32, 45])
+  f2: testTuple(value: [32, 235])
+}
