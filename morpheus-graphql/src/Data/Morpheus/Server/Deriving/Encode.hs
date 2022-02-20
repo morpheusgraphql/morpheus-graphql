@@ -97,14 +97,14 @@ newtype ContextValue (kind :: DerivingKind) a = ContextValue
   { unContextValue :: a
   }
 
-class Encode (m :: * -> *) resolver where
+class Encode (m :: Type -> Type) resolver where
   encode :: resolver -> m (ResolverValue m)
 
 instance (EncodeKind (KIND a) m a) => Encode m a where
   encode resolver = encodeKind (ContextValue resolver :: ContextValue (KIND a) a)
 
 -- ENCODE GQL KIND
-class EncodeKind (kind :: DerivingKind) (m :: * -> *) (a :: *) where
+class EncodeKind (kind :: DerivingKind) (m :: Type -> Type) (a :: Type) where
   encodeKind :: ContextValue kind a -> m (ResolverValue m)
 
 instance

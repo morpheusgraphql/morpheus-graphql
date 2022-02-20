@@ -1,0 +1,9 @@
+query InvalidTuple {
+  f1: testProduct(value: [])
+  f2: testProduct(value: {})
+  f3: testProduct(value: { _0: 2 })
+  f4: testProduct(value: { _0: "235" })
+  f4: testProduct(value: { _0: "235", _1: "235235" })
+  f4: testProduct(value: { _0: "235", _1: false })
+  f5: testProduct(value: { _0: "34", _1: 2353 })
+}

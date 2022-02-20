@@ -1,0 +1,15 @@
+query ValidTuple {
+  f1: testProduct(value: { _0: "abc", _1: 4235 }) {
+    ...Product
+  }
+  f2: testProduct(value: { _0: "324523", _1: 3468 }) {
+    ...Product
+  }
+}
+
+fragment Product on Product = {
+    _0
+    _1
+    _3
+    _4
+}

@@ -30,12 +30,16 @@ testRes = pure . argValue
 
 type Coll m a = Arg "value" a -> m a
 
+data Product = Product Text Int Bool Float
+  deriving (Generic, GQLType)
+
 -- resolver
 data Query m = Query
   { testSet :: Coll m (Set Int),
     testNonEmpty :: Coll m (NonEmpty Int),
     tesSeq :: Coll m (Seq Int),
     testVector :: Coll m (Vector Int),
+    testProduct :: Coll m Product,
     testTuple :: Coll m (Text, Int)
   }
   deriving (Generic, GQLType)
