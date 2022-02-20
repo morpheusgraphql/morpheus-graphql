@@ -11,69 +11,68 @@ ignorePaths:
   - ./examples
 overrides:
   - filename: "**/docs/APIReference-*.md"
-    ignoreRegExpList: ['/href="[^"]*"/']
-
+    ignoreRegExpList:
+      - /href="[^"]*"/
 ignoreRegExpList:
   - u\{[0-9a-f]{1,8}\}
-
 words:
-  - Daviti
-  - Nalchevanidze
-  # LIBS
-  - Relude
-  - Hackage
-  - hpack
-  - scotty
-  - Hashable
-  - Kinded
-  - Aeson
-  - mempty
-  - haxl
-  - fraxl
-  - hlint
-  - Mergeable
-  # Terms
-  - elems
-  - fmap
-  - dups
-  - inlineable
-  - nullary
-  - parens
-  - foldl
-  - foldr
-  - uncurry
-  - monoid
-  - semigroup
-  - unlift
-  - mconcat
-  - concat
   - accum
-  - gfmap
-  - rmap
-  - metavar
-  - prefs
-  - subparser
-  - Posix
-  - normalise
-  - uncapitalize
-  - vsep
-  - TyVarBndr
-  - stimes
-  - ifromJSON
-  - whnf
+  - Aeson
   - bgroup
-  - fbexp
-  - Unpackedness
-  - tupled
-  - sconcat
   - Bifunctor
   - bimap
-  - hsep
-  - Subtyping
-  - jsdelivr
-  - elif
+  - concat
   - cond
-  - subprotocols
-  # Mythology
   - cronos
+  - Daviti
+  - dups
+  - Eithers
+  - elems
+  - elif
+  - fbexp
+  - fmap
+  - foldl
+  - foldr
+  - fraxl
+  - gfmap
+  - Hackage
+  - Hashable
+  - haxl
+  - hlint
+  - hpack
+  - hsep
+  - ifromJSON
+  - inlineable
+  - jsdelivr
+  - Kinded
+  - mconcat
+  - mempty
+  - Mergeable
+  - metavar
+  - monoid
+  - Nalchevanidze
+  - normalise
+  - nullary
+  - parens
+  - Posix
+  - prefs
+  - Relude
+  - rmap
+  - sconcat
+  - scotty
+  - semigroup
   - shapeshifting
+  - stimes
+  - subparser
+  - subprotocols
+  - Subtyping
+  - tupled
+  - TyVarBndr
+  - uncapitalize
+  - uncurry
+  - unlift
+  - Unpackedness
+  - vsep
+  - whnf
+  - stylesheet
+  - websockets

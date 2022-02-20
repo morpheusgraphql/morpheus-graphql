@@ -119,8 +119,8 @@ renderSource SourceInputField {sourceTypeName, sourceFieldName, sourceArgumentNa
   "Field " <> renderField sourceTypeName sourceFieldName sourceArgumentName <> " got invalid default value. "
 
 renderField :: TypeName -> FieldName -> Maybe FieldName -> GQLError
-renderField tname fname arg =
-  msg (unpackName tname <> "." <> unpackName fname <> renderArg arg)
+renderField tName fName arg =
+  msg (unpackName tName <> "." <> unpackName fName <> renderArg arg)
   where
     renderArg (Just argName) = "(" <> unpackName argName <> ":)"
     renderArg Nothing = ""

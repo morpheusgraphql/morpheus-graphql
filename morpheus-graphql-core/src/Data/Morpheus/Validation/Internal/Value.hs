@@ -168,7 +168,7 @@ validateUnwrapped ::
 validateUnwrapped (DataInputObject parentFields) (Object fields) =
   Object <$> validateInputObject parentFields fields
 validateUnwrapped (DataInputUnion inputUnion) (Object rawFields) =
-  validatInputUnion inputUnion rawFields
+  validateInputUnion inputUnion rawFields
 validateUnwrapped (DataEnum tags) value =
   validateEnum tags value
 validateUnwrapped (DataScalar dataScalar) value =
@@ -176,22 +176,22 @@ validateUnwrapped (DataScalar dataScalar) value =
 validateUnwrapped _ value = violation Nothing value
 
 -- INPUT UNION
-validatInputUnion ::
+validateInputUnion ::
   ValidateWithDefault ctx schemaS s =>
   UnionTypeDefinition IN schemaS ->
   Object s ->
   InputValidator schemaS ctx (Value VALID)
-validatInputUnion inputUnion rawFields =
+validateInputUnion inputUnion rawFields =
   case constraintInputUnion inputUnion rawFields of
     Left message -> violation (Just $ msg message) (Object rawFields)
-    Right (name, value) -> validatInputUnionMember name value
+    Right (name, value) -> validateInputUnionMember name value
 
-validatInputUnionMember ::
+validateInputUnionMember ::
   ValidateWithDefault ctx schemaS valueS =>
   UnionMember IN schemaS ->
   Value valueS ->
   InputValidator schemaS ctx (Value VALID)
-validatInputUnionMember member value = do
+validateInputUnionMember member value = do
   inputDef <- askDef
   mkInputUnionValue member <$> validateInputByType mkMaybeType inputDef value
   where
