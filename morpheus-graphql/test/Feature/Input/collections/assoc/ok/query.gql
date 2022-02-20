@@ -1,0 +1,19 @@
+query ValidAssoc {
+  f1: testAssoc(value: []) {
+    ...Entry
+  }
+  f2: testAssoc(
+    value: [
+      { _0: "zeus", _1: 3468 }
+      { _0: "morpheus", _1: 4236 }
+      { _0: "cronos", _1: 547 }
+    ]
+  ) {
+    ...Entry
+  }
+}
+
+fragment Entry on PairTextInt {
+  _0
+  _1
+}

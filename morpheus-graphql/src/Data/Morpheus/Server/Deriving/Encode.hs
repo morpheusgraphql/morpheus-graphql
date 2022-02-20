@@ -69,8 +69,7 @@ import Data.Morpheus.Server.Types.GQLType
     __isEmptyType,
   )
 import Data.Morpheus.Server.Types.Types
-  ( Pair (..),
-    TypeGuard (..),
+  ( TypeGuard (..),
   )
 import Data.Morpheus.Types
   ( RootResolver (..),
@@ -97,14 +96,14 @@ newtype ContextValue (kind :: DerivingKind) a = ContextValue
   { unContextValue :: a
   }
 
-class Encode (m :: * -> *) resolver where
+class Encode (m :: Type -> Type) resolver where
   encode :: resolver -> m (ResolverValue m)
 
 instance (EncodeKind (KIND a) m a) => Encode m a where
   encode resolver = encodeKind (ContextValue resolver :: ContextValue (KIND a) a)
 
 -- ENCODE GQL KIND
-class EncodeKind (kind :: DerivingKind) (m :: * -> *) (a :: *) where
+class EncodeKind (kind :: DerivingKind) (m :: Type -> Type) (a :: Type) where
   encodeKind :: ContextValue kind a -> m (ResolverValue m)
 
 instance
@@ -132,16 +131,9 @@ instance
   where
   encodeKind = pure . exploreResolvers . unContextValue
 
---  Tuple  (a,b)
-instance
-  Encode m (Pair k v) =>
-  EncodeKind CUSTOM m (k, v)
-  where
-  encodeKind = encode . uncurry Pair . unContextValue
-
 --  Map
-instance (Monad m, Encode m [Pair k v]) => EncodeKind CUSTOM m (Map k v) where
-  encodeKind = encode . fmap (uncurry Pair) . M.toList . unContextValue
+instance (Monad m, Encode m [(k, v)]) => EncodeKind CUSTOM m (Map k v) where
+  encodeKind = encode . M.toList . unContextValue
 
 --  INTERFACE Types
 instance (MonadError GQLError m, EncodeConstraint m guard, EncodeConstraint m union) => EncodeKind CUSTOM m (TypeGuard guard union) where
@@ -177,12 +169,12 @@ convertNode ::
   ResolverValue m
 convertNode
   DataType
-    { tyName,
+    { dataTypeName,
       tyIsUnion,
       tyCons = cons@ConsRep {consFields, consName}
     }
     | tyIsUnion = encodeUnion consFields
-    | otherwise = mkObject tyName (toFieldRes <$> consFields)
+    | otherwise = mkObject dataTypeName (toFieldRes <$> consFields)
     where
       -- ENUM
       encodeUnion ::
@@ -191,7 +183,7 @@ convertNode
       encodeUnion [] = mkEnum consName
       -- Type References --------------------------------------------------------------
       encodeUnion [FieldRep {fieldTypeRef = TypeRef {typeConName}, fieldValue}]
-        | isUnionRef tyName cons = ResLazy (ResObject (Just typeConName) <$> (fieldValue >>= requireObject))
+        | isUnionRef dataTypeName cons = ResLazy (ResObject (Just typeConName) <$> (fieldValue >>= requireObject))
       -- Inline Union Types ----------------------------------------------------------------------------
       encodeUnion fields = mkUnion consName (toFieldRes <$> fields)
 
@@ -220,13 +212,13 @@ objectResolvers ::
   ResolverState (ObjectTypeResolver m)
 objectResolvers value = requireObject (exploreResolvers value)
 
-type EncodeConstraint (m :: * -> *) a =
+type EncodeConstraint (m :: Type -> Type) a =
   ( GQLType a,
     Generic a,
     TypeRep (Encode m) (m (ResolverValue m)) (Rep a)
   )
 
-type EncodeObjectConstraint (o :: OperationType) e (m :: * -> *) a =
+type EncodeObjectConstraint (o :: OperationType) e (m :: Type -> Type) a =
   EncodeConstraint (Resolver o e m) (a (Resolver o e m))
 
 type EncodeConstraints e m query mut sub =

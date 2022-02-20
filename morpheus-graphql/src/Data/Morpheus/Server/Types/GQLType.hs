@@ -142,6 +142,9 @@ getTypeConstructorNames = fmap (pack . tyConName . replacePairCon) . getTypeCons
 getTypeConstructors :: Typeable a => f a -> [TyCon]
 getTypeConstructors = ignoreResolver . splitTyConApp . typeRep
 
+prefixInputs :: GQLTypeOptions -> GQLTypeOptions
+prefixInputs options = options {typeNameModifier = \isInput name -> if isInput then "Input" <> name else name}
+
 deriveTypeData :: Typeable a => f a -> (Bool -> String -> String) -> TypeCategory -> TypeData
 deriveTypeData proxy typeNameModifier cat =
   TypeData
@@ -287,7 +290,8 @@ instance GQLType a => GQLType (SubscriptionField a) where
   type KIND (SubscriptionField a) = WRAPPER
   __type _ = __type $ Proxy @a
 
-instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (Pair a b)
+instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (Pair a b) where
+  typeOptions _ = prefixInputs
 
 -- Manual
 
@@ -308,8 +312,8 @@ instance GQLType a => GQLType (Resolver o e m a) where
   __type _ = __type $ Proxy @a
 
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (a, b) where
-  type KIND (a, b) = CUSTOM
   __type _ = __type $ Proxy @(Pair a b)
+  typeOptions _ = prefixInputs
 
 instance (GQLType value) => GQLType (Arg name value) where
   type KIND (Arg name value) = CUSTOM

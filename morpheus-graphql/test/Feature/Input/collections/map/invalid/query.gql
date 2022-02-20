@@ -1,0 +1,8 @@
+query InvalidMap {
+  f1: testMap(value: {})
+  f2: testMap(value: 635)
+  f3: testMap(value: [{ _0: "235" }])
+  f4: testMap(value: [{ _0: "235", _1: "235235" }])
+  f5: testMap(value: [{ _0: "235", _1: false }])
+  f6: testMap(value: [{ _0: "34", _1: 2353 }])
+}

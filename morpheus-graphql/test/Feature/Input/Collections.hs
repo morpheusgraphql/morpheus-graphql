@@ -3,24 +3,31 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Feature.Wrappers.API
+module Feature.Input.Collections
   ( api,
   )
 where
 
 import Data.List.NonEmpty (NonEmpty)
-import Data.Morpheus (interpreter)
+import Data.Map (Map)
+import Data.Morpheus (deriveApp, runApp)
 import Data.Morpheus.Types
-  ( Arg (..),
+  ( App,
+    Arg (..),
     GQLRequest,
     GQLResponse,
-    GQLType,
+    GQLType (..),
+    GQLTypeOptions (..),
+    GQLTypeOptions (..),
     RootResolver (..),
     Undefined (..),
+    render,
   )
 import Data.Sequence (Seq)
 import Data.Set (Set)
+import Data.Text
 import Data.Vector (Vector)
+import Debug.Trace (traceShow)
 import GHC.Generics (Generic)
 
 -- query
@@ -29,12 +36,25 @@ testRes = pure . argValue
 
 type Coll m a = Arg "value" a -> m a
 
+data Product = Product Text Int Bool (Maybe Double)
+  deriving (Generic)
+
+instance GQLType Product where
+  typeOptions _ options =
+    options
+      { typeNameModifier = \isInput name -> if isInput then "Input" <> name else name
+      }
+
 -- resolver
 data Query m = Query
   { testSet :: Coll m (Set Int),
     testNonEmpty :: Coll m (NonEmpty Int),
     tesSeq :: Coll m (Seq Int),
-    testVector :: Coll m (Vector Int)
+    testVector :: Coll m (Vector Int),
+    testProduct :: Coll m Product,
+    testTuple :: Coll m (Text, Int),
+    testMap :: Coll m (Map Text Int),
+    testAssoc :: Coll m [(Text, Int)]
   }
   deriving (Generic, GQLType)
 
@@ -46,11 +66,18 @@ rootResolver =
           { testSet = testRes,
             testNonEmpty = testRes,
             tesSeq = testRes,
-            testVector = testRes
+            testVector = testRes,
+            testTuple = testRes,
+            testProduct = testRes,
+            testMap = testRes,
+            testAssoc = testRes
           },
       mutationResolver = Undefined,
       subscriptionResolver = Undefined
     }
 
+app :: App () IO
+app = deriveApp rootResolver
+
 api :: GQLRequest -> IO GQLResponse
-api = interpreter rootResolver
+api = runApp app

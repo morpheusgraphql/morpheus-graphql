@@ -18,13 +18,13 @@ import qualified Feature.Inference.TypeGuards as TypeGuards
 import qualified Feature.Inference.TypeInference as TypeInference
 import qualified Feature.Inference.UnionType as UnionType
 import qualified Feature.Inference.WrappedType as WrappedType
+import qualified Feature.Input.Collections as Collections
 import qualified Feature.Input.DefaultValues as DefaultValues
 import qualified Feature.Input.Enums as Enums
 import qualified Feature.Input.Objects as Objects
 import qualified Feature.Input.Scalars as Scalars
 import qualified Feature.Input.Variables as Variables
 import qualified Feature.NamedResolvers.API as NamedResolvers
-import qualified Feature.Wrappers.API as Wrappers
 import Relude
 import Rendering.TestSchemaRendering (testSchemaRendering)
 import Subscription.Test (testSubscriptions)
@@ -64,7 +64,8 @@ main =
           (Enums.api, "enums"),
           (Scalars.api, "scalars"),
           (Objects.api, "objects"),
-          (DefaultValues.api, "default-values")
+          (DefaultValues.api, "default-values"),
+          (Collections.api, "collections")
         ],
       testFeatures
         "Collision"
@@ -88,10 +89,6 @@ main =
       testFeatures
         "NamedResolvers"
         [(runApp NamedResolvers.app, "tests")],
-      testFeatures
-        "Wrappers"
-        [ (Wrappers.api, "tests")
-        ],
       testSubscriptions,
       pure testSchemaRendering
     ]

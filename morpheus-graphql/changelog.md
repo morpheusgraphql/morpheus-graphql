@@ -2,14 +2,21 @@
 
 ## unreleased changes
 
+### Breaking Changes
+
+- Pair fields changed from `key`, `value` to `_0`, `_1`
+
+### Minor Changes
+
 - support: `NonEmpty`, `Vector`, `Seq`
+- fixes decoding of types without record syntax (including tuples) (#667, #659, #665)
 
 ## 0.18.0 - 08.11.2021
 
 ### new Features
 
-- `NamedResoplvers` (experimental featuure): typed Haskell approach of providing appollo
-  like named resolvers, apps with NamedResolvers theoretically can be safelly merged.
+- `NamedResolvers` (experimental feature): typed Haskell approach of providing apollo
+  like named resolvers, apps with NamedResolvers theoretically can be safely merged.
 
 - `TypeGuards`: as an alternative for interfaces
 

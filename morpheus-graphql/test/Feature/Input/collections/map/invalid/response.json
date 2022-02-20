@@ -1,0 +1,28 @@
+{
+  "errors": [
+    {
+      "message": "Argument \"value\" got invalid value. Expected type \"[InputPairTextInt!]!\" found {}.",
+      "locations": [{ "line": 2, "column": 15 }]
+    },
+    {
+      "message": "Argument \"value\" got invalid value. Expected type \"[InputPairTextInt!]!\" found 635.",
+      "locations": [{ "line": 3, "column": 15 }]
+    },
+    {
+      "message": "Argument \"value\" got invalid value. Undefined Field \"_1\".",
+      "locations": [{ "line": 4, "column": 15 }]
+    },
+    {
+      "message": "Argument \"value\" got invalid value. in field \"_1\": Expected type \"Int!\" found \"235235\".",
+      "locations": [{ "line": 5, "column": 15 }]
+    },
+    {
+      "message": "Argument \"value\" got invalid value. in field \"_1\": Expected type \"Int!\" found false.",
+      "locations": [{ "line": 6, "column": 15 }]
+    },
+    {
+      "message": "Field \"testMap\" of type \"PairTextInt\" must have a selection of subfields",
+      "locations": [{ "line": 7, "column": 3 }]
+    }
+  ]
+}

@@ -145,6 +145,20 @@ data-files:
     test/Feature/Inference/wrapped-type/ignoreQueryResolver/query.gql
     test/Feature/Inference/wrapped-type/ignoreSubscriptionResolver/query.gql
     test/Feature/Inference/wrapped-type/validWrappedTypes/query.gql
+    test/Feature/Input/collections/assoc/invalid/query.gql
+    test/Feature/Input/collections/assoc/ok/query.gql
+    test/Feature/Input/collections/map/invalid/query.gql
+    test/Feature/Input/collections/map/ok/query.gql
+    test/Feature/Input/collections/nonempty/invalid/query.gql
+    test/Feature/Input/collections/nonempty/ok/query.gql
+    test/Feature/Input/collections/product/invalid/query.gql
+    test/Feature/Input/collections/product/ok/query.gql
+    test/Feature/Input/collections/seq/query.gql
+    test/Feature/Input/collections/set/invalid/query.gql
+    test/Feature/Input/collections/set/ok/query.gql
+    test/Feature/Input/collections/tuple/invalid/query.gql
+    test/Feature/Input/collections/tuple/ok/query.gql
+    test/Feature/Input/collections/vector/query.gql
     test/Feature/Input/default-values-schema.gql
     test/Feature/Input/default-values/intorspection/arguments/query.gql
     test/Feature/Input/default-values/intorspection/input-compound/query.gql
@@ -215,12 +229,6 @@ data-files:
     test/Feature/NamedResolvers/tests/realm-ext-by-id/query.gql
     test/Feature/NamedResolvers/tests/realm-simple/query.gql
     test/Feature/NamedResolvers/tests/realms/query.gql
-    test/Feature/Wrappers/tests/nonempty/invalid/query.gql
-    test/Feature/Wrappers/tests/nonempty/ok/query.gql
-    test/Feature/Wrappers/tests/seq/query.gql
-    test/Feature/Wrappers/tests/set/invalid/query.gql
-    test/Feature/Wrappers/tests/set/ok/query.gql
-    test/Feature/Wrappers/tests/vector/query.gql
     test/Rendering/schema.gql
     test/Subscription/schema.gql
     test/Feature/Collision/category-collision-fail/response.json
@@ -347,6 +355,20 @@ data-files:
     test/Feature/Inference/wrapped-type/ignoreQueryResolver/response.json
     test/Feature/Inference/wrapped-type/ignoreSubscriptionResolver/response.json
     test/Feature/Inference/wrapped-type/validWrappedTypes/response.json
+    test/Feature/Input/collections/assoc/invalid/response.json
+    test/Feature/Input/collections/assoc/ok/response.json
+    test/Feature/Input/collections/map/invalid/response.json
+    test/Feature/Input/collections/map/ok/response.json
+    test/Feature/Input/collections/nonempty/invalid/response.json
+    test/Feature/Input/collections/nonempty/ok/response.json
+    test/Feature/Input/collections/product/invalid/response.json
+    test/Feature/Input/collections/product/ok/response.json
+    test/Feature/Input/collections/seq/response.json
+    test/Feature/Input/collections/set/invalid/response.json
+    test/Feature/Input/collections/set/ok/response.json
+    test/Feature/Input/collections/tuple/invalid/response.json
+    test/Feature/Input/collections/tuple/ok/response.json
+    test/Feature/Input/collections/vector/response.json
     test/Feature/Input/default-values/intorspection/arguments/response.json
     test/Feature/Input/default-values/intorspection/input-compound/response.json
     test/Feature/Input/default-values/intorspection/input-simple/response.json
@@ -431,12 +453,6 @@ data-files:
     test/Feature/NamedResolvers/tests/realm-ext-by-id/response.json
     test/Feature/NamedResolvers/tests/realm-simple/response.json
     test/Feature/NamedResolvers/tests/realms/response.json
-    test/Feature/Wrappers/tests/nonempty/invalid/response.json
-    test/Feature/Wrappers/tests/nonempty/ok/response.json
-    test/Feature/Wrappers/tests/seq/response.json
-    test/Feature/Wrappers/tests/set/invalid/response.json
-    test/Feature/Wrappers/tests/set/ok/response.json
-    test/Feature/Wrappers/tests/vector/response.json
 
 source-repository head
   type: git
@@ -513,6 +529,7 @@ test-suite morpheus-graphql-test
       Feature.Inference.TypeInference
       Feature.Inference.UnionType
       Feature.Inference.WrappedType
+      Feature.Input.Collections
       Feature.Input.DefaultValues
       Feature.Input.Enums
       Feature.Input.Objects
@@ -522,7 +539,6 @@ test-suite morpheus-graphql-test
       Feature.NamedResolvers.Deities
       Feature.NamedResolvers.Entities
       Feature.NamedResolvers.Realms
-      Feature.Wrappers.API
       Rendering.Schema
       Rendering.TestSchemaRendering
       Subscription.API

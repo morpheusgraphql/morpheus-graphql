@@ -11,6 +11,7 @@ module Data.Morpheus.Server.Types.Types
   )
 where
 
+import Data.Kind (Type)
 import GHC.Generics
   ( Generic,
   )
@@ -19,13 +20,9 @@ import Prelude
   ( Show,
   )
 
-data Undefined (m :: * -> *) = Undefined deriving (Show, Generic)
+data Undefined (m :: Type -> Type) = Undefined deriving (Show, Generic)
 
-data Pair k v = Pair
-  { key :: k,
-    value :: v
-  }
-  deriving (Generic)
+data Pair k v = Pair k v deriving (Generic)
 
 data TypeGuard interface union
   = ResolveInterface interface
