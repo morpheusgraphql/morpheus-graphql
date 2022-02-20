@@ -21,6 +21,7 @@ module Data.Morpheus.Server.Deriving.Decode
 where
 
 import Control.Monad.Except (MonadError (throwError))
+import qualified Data.Map as M
 import Data.Morpheus.App.Internal.Resolving
   ( ResolverState,
   )
@@ -135,6 +136,10 @@ instance (Decode a, KnownSymbol name) => DecodeKind CUSTOM (Arg name a) where
     where
       fieldDecoder = decodeFieldWith decode fieldName
       fieldName = symbolName (Proxy @name)
+
+--  Map
+instance (Ord k, Decode (k, v)) => DecodeKind CUSTOM (Map k v) where
+  decodeKind _ v = M.fromList <$> (decode v :: ResolverState [(k, v)])
 
 -- data Input  =
 --    InputHuman Human  -- direct link: { __typename: Human, Human: {field: ""} }

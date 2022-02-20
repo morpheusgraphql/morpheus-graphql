@@ -3,6 +3,7 @@
 ## unreleased changes
 
 - support: `NonEmpty`, `Vector`, `Seq`
+- Pair fields changed from `key`, `value` to `_0`, `_1`
 
 ## 0.18.0 - 08.11.2021
 

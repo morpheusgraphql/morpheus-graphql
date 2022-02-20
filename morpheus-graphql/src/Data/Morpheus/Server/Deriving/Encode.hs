@@ -69,8 +69,7 @@ import Data.Morpheus.Server.Types.GQLType
     __isEmptyType,
   )
 import Data.Morpheus.Server.Types.Types
-  ( Pair (Pair),
-    TypeGuard (..),
+  ( TypeGuard (..),
   )
 import Data.Morpheus.Types
   ( RootResolver (..),
@@ -133,8 +132,8 @@ instance
   encodeKind = pure . exploreResolvers . unContextValue
 
 --  Map
-instance (Monad m, Encode m [Pair k v]) => EncodeKind CUSTOM m (Map k v) where
-  encodeKind = encode . fmap (uncurry Pair) . M.toList . unContextValue
+instance (Monad m, Encode m [(k, v)]) => EncodeKind CUSTOM m (Map k v) where
+  encodeKind = encode . M.toList . unContextValue
 
 --  INTERFACE Types
 instance (MonadError GQLError m, EncodeConstraint m guard, EncodeConstraint m union) => EncodeKind CUSTOM m (TypeGuard guard union) where

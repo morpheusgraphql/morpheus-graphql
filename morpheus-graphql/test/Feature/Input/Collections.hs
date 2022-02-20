@@ -10,9 +10,10 @@ where
 
 import Data.List.NonEmpty (NonEmpty)
 import Data.Map (Map)
-import Data.Morpheus (interpreter)
+import Data.Morpheus (deriveApp, runApp)
 import Data.Morpheus.Types
-  ( Arg (..),
+  ( App,
+    Arg (..),
     GQLRequest,
     GQLResponse,
     GQLType (..),
@@ -20,11 +21,13 @@ import Data.Morpheus.Types
     GQLTypeOptions (..),
     RootResolver (..),
     Undefined (..),
+    render,
   )
 import Data.Sequence (Seq)
 import Data.Set (Set)
 import Data.Text
 import Data.Vector (Vector)
+import Debug.Trace (traceShow)
 import GHC.Generics (Generic)
 
 -- query
@@ -71,5 +74,8 @@ rootResolver =
       subscriptionResolver = Undefined
     }
 
+app :: App () IO
+app = deriveApp rootResolver
+
 api :: GQLRequest -> IO GQLResponse
-api = interpreter rootResolver
+api = runApp app

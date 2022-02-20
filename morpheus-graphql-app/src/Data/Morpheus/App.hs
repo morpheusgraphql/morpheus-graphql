@@ -78,7 +78,7 @@ mkApp appSchema appResolvers =
     (App . AppData defaultConfig appResolvers)
     (validateSchema True defaultConfig appSchema)
 
-data App event (m :: * -> *)
+data App event (m :: Type -> Type)
   = App {app :: AppData event m VALID}
   | FailApp {appErrors :: GQLErrors}
 
