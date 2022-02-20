@@ -97,9 +97,9 @@ shouldIncludeSelection ::
   Directives VALID ->
   Validator schemaS ctx Bool
 shouldIncludeSelection directives = do
-  dontSkip <- directiveFulfilled False "skip" directives
+  doNotSkip <- directiveFulfilled False "skip" directives
   include <- directiveFulfilled True "include" directives
-  pure (dontSkip && include)
+  pure (doNotSkip && include)
 
 argumentIf ::
   Bool ->

@@ -8,6 +8,7 @@ ignorePaths:
   - ./**/*.json
   - ./node_modules
   - ./docs/node_modules
+  - ./examples
 overrides:
   - filename: "**/docs/APIReference-*.md"
     ignoreRegExpList: ['/href="[^"]*"/']
@@ -48,6 +49,15 @@ words:
   - concat
   - accum
   - gfmap
+  - rmap
+  - metavar
+  - prefs
+  - subparser
+  - Posix
+  - normalise
+  - uncapitalize
+  - vsep
+  - TyVarBndr
   # Mythology
   - cronos
   - shapeshifting
