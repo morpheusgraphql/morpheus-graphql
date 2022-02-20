@@ -213,7 +213,7 @@ objectResolvers ::
   ResolverState (ObjectTypeResolver m)
 objectResolvers value = requireObject (exploreResolvers value)
 
-type EncodeConstraint (m :: * -> *) a =
+type EncodeConstraint (m :: Type -> Type) a =
   ( GQLType a,
     Generic a,
     TypeRep (Encode m) (m (ResolverValue m)) (Rep a)
