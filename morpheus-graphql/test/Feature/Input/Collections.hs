@@ -9,6 +9,7 @@ module Feature.Input.Collections
 where
 
 import Data.List.NonEmpty (NonEmpty)
+import Data.Map (Map)
 import Data.Morpheus (interpreter)
 import Data.Morpheus.Types
   ( Arg (..),
@@ -48,7 +49,8 @@ data Query m = Query
     tesSeq :: Coll m (Seq Int),
     testVector :: Coll m (Vector Int),
     testProduct :: Coll m Product,
-    testTuple :: Coll m (Text, Int)
+    testTuple :: Coll m (Text, Int),
+    testMap :: Coll m (Map Text Int)
   }
   deriving (Generic, GQLType)
 
@@ -62,7 +64,8 @@ rootResolver =
             tesSeq = testRes,
             testVector = testRes,
             testTuple = testRes,
-            testProduct = testRes
+            testProduct = testRes,
+            testMap = testRes
           },
       mutationResolver = Undefined,
       subscriptionResolver = Undefined
