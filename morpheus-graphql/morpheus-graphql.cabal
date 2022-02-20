@@ -215,6 +215,12 @@ data-files:
     test/Feature/NamedResolvers/tests/realm-ext-by-id/query.gql
     test/Feature/NamedResolvers/tests/realm-simple/query.gql
     test/Feature/NamedResolvers/tests/realms/query.gql
+    test/Feature/Wrappers/tests/nonempty/invalid/query.gql
+    test/Feature/Wrappers/tests/nonempty/ok/query.gql
+    test/Feature/Wrappers/tests/seq/query.gql
+    test/Feature/Wrappers/tests/set/invalid/query.gql
+    test/Feature/Wrappers/tests/set/ok/query.gql
+    test/Feature/Wrappers/tests/vector/query.gql
     test/Rendering/schema.gql
     test/Subscription/schema.gql
     test/Feature/Collision/category-collision-fail/response.json
@@ -425,6 +431,12 @@ data-files:
     test/Feature/NamedResolvers/tests/realm-ext-by-id/response.json
     test/Feature/NamedResolvers/tests/realm-simple/response.json
     test/Feature/NamedResolvers/tests/realms/response.json
+    test/Feature/Wrappers/tests/nonempty/invalid/response.json
+    test/Feature/Wrappers/tests/nonempty/ok/response.json
+    test/Feature/Wrappers/tests/seq/response.json
+    test/Feature/Wrappers/tests/set/invalid/response.json
+    test/Feature/Wrappers/tests/set/ok/response.json
+    test/Feature/Wrappers/tests/vector/response.json
 
 source-repository head
   type: git
@@ -510,6 +522,7 @@ test-suite morpheus-graphql-test
       Feature.NamedResolvers.Deities
       Feature.NamedResolvers.Entities
       Feature.NamedResolvers.Realms
+      Feature.Wrappers.API
       Rendering.Schema
       Rendering.TestSchemaRendering
       Subscription.API

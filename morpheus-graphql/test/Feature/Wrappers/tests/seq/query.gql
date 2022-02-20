@@ -1,0 +1,5 @@
+query ValidSeq {
+  f1: tesSeq(value: [])
+  f2: tesSeq(value: [32])
+  f3: tesSeq(value: [32, 235, 6463, 352123])
+}

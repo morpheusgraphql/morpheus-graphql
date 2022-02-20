@@ -1,0 +1,4 @@
+query ValidNonEmpty {
+  f1: testNonEmpty(value: [32])
+  f2: testNonEmpty(value: [32, 235, 235, 6463, 352123])
+}
