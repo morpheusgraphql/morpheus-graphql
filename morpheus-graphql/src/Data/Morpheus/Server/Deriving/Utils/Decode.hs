@@ -57,9 +57,9 @@ withInputUnion ::
   ValidObject ->
   m a
 withInputUnion decoder unions =
-  either onFail onSucc (getInputUnionValue unions)
+  either onFail onSuccess (getInputUnionValue unions)
   where
-    onSucc (name, value) = withInputObject (decoder name unions) value
+    onSuccess (name, value) = withInputObject (decoder name unions) value
     onFail = throwError . internal . msg
 
 withScalar ::

@@ -220,7 +220,7 @@ getUnionInfos _ =
 --
 -- GENERICS
 --
-class DecodeRep (f :: * -> *) where
+class DecodeRep (f :: Type -> Type) where
   tags :: Proxy f -> Context -> Info
   decodeRep :: ValidValue -> DecoderT (f a)
 
@@ -262,7 +262,7 @@ instance (Constructor c, DecodeFields a) => DecodeRep (M1 C c a) where
       ----------
       isUnionRef x = typeName <> x == consName
 
-class DecodeFields (f :: * -> *) where
+class DecodeFields (f :: Type -> Type) where
   refType :: Proxy f -> Maybe TypeName
   decodeFields :: ValidValue -> DecoderT (f a)
 
