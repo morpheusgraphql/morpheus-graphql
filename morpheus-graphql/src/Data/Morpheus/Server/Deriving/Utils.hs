@@ -15,8 +15,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.Utils
-  ( datatypeNameProxy,
-    conNameProxy,
+  ( conNameProxy,
     isRecordProxy,
     selNameProxy,
     TypeRep (..),
@@ -78,15 +77,11 @@ import GHC.Generics
     U1 (..),
     conIsRecord,
     conName,
-    datatypeName,
     selName,
   )
 import GHC.TypeLits
 import Relude hiding (undefined)
 import Prelude (undefined)
-
-datatypeNameProxy :: forall f (d :: Meta). Datatype d => GQLTypeOptions -> f d -> TypeName
-datatypeNameProxy options _ = packName $ pack $ typeNameModifier options False $ datatypeName (undefined :: (M1 D d f a))
 
 conNameProxy :: forall f (c :: Meta). Constructor c => GQLTypeOptions -> f c -> TypeName
 conNameProxy options _ =
@@ -109,12 +104,12 @@ fromHaskellName hsName
 isRecordProxy :: forall f (c :: Meta). Constructor c => f c -> Bool
 isRecordProxy _ = conIsRecord (undefined :: (M1 C c f a))
 
-newtype TypeConstraint (c :: * -> Constraint) (v :: *) (f :: * -> *) = TypeConstraint
+newtype TypeConstraint (c :: Type -> Constraint) (v :: Type) (f :: Type -> Type) = TypeConstraint
   { typeConstraint :: forall a. c a => f a -> v
   }
 
 toRep ::
-  forall kinded constraint value (a :: *) (kind :: TypeCategory).
+  forall kinded constraint value (a :: Type) (kind :: TypeCategory).
   (GQLType a, CategoryValue kind, TypeRep constraint value (Rep a)) =>
   TypeConstraint constraint value Proxy ->
   kinded kind a ->
@@ -140,10 +135,7 @@ class TypeRep (c :: Type -> Constraint) (v :: Type) f where
 
 instance (Datatype d, TypeRep c v f) => TypeRep c v (M1 D d f) where
   typeRep fun _ = typeRep fun (Proxy @f)
-  toTypeRep fun@(dataTypeName, opt, _, _) (M1 src) =
-    (toTypeRep fun src)
-      { dataTypeName
-      }
+  toTypeRep fun@(dataTypeName, _, _, _) (M1 src) = (toTypeRep fun src) {dataTypeName}
 
 -- | recursion for Object types, both of them : 'INPUT_OBJECT' and 'OBJECT'
 instance (TypeRep c v a, TypeRep c v b) => TypeRep c v (a :+: b) where

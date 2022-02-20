@@ -33,7 +33,6 @@ import Data.Morpheus.Kind
   )
 import Data.Morpheus.Server.Deriving.Utils
   ( conNameProxy,
-    datatypeNameProxy,
     selNameProxy,
     symbolName,
   )
@@ -123,7 +122,7 @@ instance
         Context
           { options = typeOptions (Proxy @a) defaultTypeOptions,
             contKind = D_CONS,
-            typeName = ""
+            typeName = gqlTypeName $ __typeData (KindedProxy :: KindedProxy IN a)
           }
 
 instance (Decode a, DecodeWrapperConstraint f a, DecodeWrapper f) => DecodeKind WRAPPER (f a) where
@@ -199,9 +198,6 @@ instance Semigroup Info where
 
 type DecoderT = ReaderT Context ResolverState
 
-withTypeName :: TypeName -> DecoderT a -> DecoderT a
-withTypeName typeName = local (\ctx -> ctx {typeName})
-
 withKind :: Tag -> DecoderT a -> DecoderT a
 withKind contKind = local (\ctx -> ctx {contKind})
 
@@ -227,10 +223,7 @@ class DecodeRep (f :: Type -> Type) where
 
 instance (Datatype d, DecodeRep f) => DecodeRep (M1 D d f) where
   tags _ = tags (Proxy @f)
-  decodeRep value = do
-    gqlOptions <- asks options
-    let typeName = datatypeNameProxy gqlOptions (Proxy @d)
-    withTypeName typeName (M1 <$> decodeRep value)
+  decodeRep value = M1 <$> decodeRep value
 
 instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
   tags _ = tags (Proxy @a) <> tags (Proxy @b)
