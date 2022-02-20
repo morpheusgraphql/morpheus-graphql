@@ -1,4 +1,10 @@
 query ValidTuple {
-  f1: testTuple(value: [32, 45])
-  f2: testTuple(value: [32, 235])
+  f1: testTuple(value: { _0: "abc", _1: 4235 }) {
+    _0
+    _1
+  }
+  f2: testTuple(value: { _0: "324523", _1: 3468 }) {
+    _0
+    _1
+  }
 }

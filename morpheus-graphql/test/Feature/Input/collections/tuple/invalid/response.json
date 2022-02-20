@@ -1,8 +1,40 @@
 {
   "errors": [
     {
-      "message": "Failure on Resolving Field \"testNonEmpty\": Type mismatch! expected:Expected a NonEmpty list, got: []",
-      "locations": [{ "line": 2, "column": 3 }]
+      "message": "Argument \"value\" got invalid value. Expected type \"InputPairTextInt!\" found [].",
+      "locations": [{ "line": 2, "column": 17 }]
+    },
+    {
+      "message": "Argument \"value\" got invalid value. Undefined Field \"_0\".",
+      "locations": [{ "line": 3, "column": 17 }]
+    },
+    {
+      "message": "Argument \"value\" got invalid value. Undefined Field \"_1\".",
+      "locations": [{ "line": 3, "column": 17 }]
+    },
+    {
+      "message": "Argument \"value\" got invalid value. Undefined Field \"_1\".",
+      "locations": [{ "line": 4, "column": 17 }]
+    },
+    {
+      "message": "Argument \"value\" got invalid value. in field \"_0\": Expected type \"String!\" found 2.",
+      "locations": [{ "line": 4, "column": 17 }]
+    },
+    {
+      "message": "Argument \"value\" got invalid value. Undefined Field \"_1\".",
+      "locations": [{ "line": 5, "column": 17 }]
+    },
+    {
+      "message": "Argument \"value\" got invalid value. in field \"_1\": Expected type \"Int!\" found \"235235\".",
+      "locations": [{ "line": 6, "column": 17 }]
+    },
+    {
+      "message": "Argument \"value\" got invalid value. in field \"_1\": Expected type \"Int!\" found false.",
+      "locations": [{ "line": 7, "column": 17 }]
+    },
+    {
+      "message": "Field \"testTuple\" of type \"PairTextInt\" must have a selection of subfields",
+      "locations": [{ "line": 8, "column": 3 }]
     }
   ]
 }
