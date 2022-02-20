@@ -1,0 +1,53 @@
+language: en
+useGitignore: true
+ignorePaths:
+  - cspell.yml
+  - package.json
+  - ./.stack-work
+  - ./**/*.cabal
+  - ./**/*.json
+  - ./node_modules
+  - ./docs/node_modules
+overrides:
+  - filename: "**/docs/APIReference-*.md"
+    ignoreRegExpList: ['/href="[^"]*"/']
+
+ignoreRegExpList:
+  - u\{[0-9a-f]{1,8}\}
+
+words:
+  - Daviti
+  - Nalchevanidze
+  # LIBS
+  - Relude
+  - Hackage
+  - hpack
+  - scotty
+  - Hashable
+  - Kinded
+  - Aeson
+  - mempty
+  - haxl
+  - fraxl
+  - hlint
+  - Mergeable
+  # Terms
+  - elems
+  - fmap
+  - dups
+  - inlineable
+  - nullary
+  - parens
+  - foldl
+  - foldr
+  - uncurry
+  - monoid
+  - semigroup
+  - unlift
+  - mconcat
+  - concat
+  - accum
+  - gfmap
+  # Mythology
+  - cronos
+  - shapeshifting

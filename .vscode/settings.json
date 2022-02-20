@@ -3,15 +3,5 @@
   "[graphql]": {
     "editor.formatOnSave": false
   },
-  "ghcSimple.feature.rangeType": false,
-  "cSpell.words": [
-    "cronos",
-    "dups",
-    "haxl",
-    "hlint",
-    "INLINEABLE",
-    "Nullary",
-    "parens"
-  ],
   "editor.renderWhitespace": "all"
 }
