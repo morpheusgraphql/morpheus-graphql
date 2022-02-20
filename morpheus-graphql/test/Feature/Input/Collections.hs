@@ -3,7 +3,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Feature.Wrappers.API
+module Feature.Input.Collections
   ( api,
   )
 where
@@ -34,7 +34,8 @@ data Query m = Query
   { testSet :: Coll m (Set Int),
     testNonEmpty :: Coll m (NonEmpty Int),
     tesSeq :: Coll m (Seq Int),
-    testVector :: Coll m (Vector Int)
+    testVector :: Coll m (Vector Int),
+    testTuple :: Coll m (Int, Int)
   }
   deriving (Generic, GQLType)
 
@@ -46,7 +47,8 @@ rootResolver =
           { testSet = testRes,
             testNonEmpty = testRes,
             tesSeq = testRes,
-            testVector = testRes
+            testVector = testRes,
+            testTuple = testRes
           },
       mutationResolver = Undefined,
       subscriptionResolver = Undefined
