@@ -68,6 +68,7 @@ words:
   - sconcat
   - Bifunctor
   - bimap
+  - hsep
   # Mythology
   - cronos
   - shapeshifting

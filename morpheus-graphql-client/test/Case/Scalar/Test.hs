@@ -16,7 +16,7 @@ import Data.ByteString.Lazy.Char8
   )
 import Data.Morpheus.Client
   ( Fetch (..),
-    FetchError(..),
+    FetchError (..),
     gql,
   )
 import Data.Text (Text)
@@ -45,12 +45,12 @@ defineClientWith
   "Scalar"
   [gql|
     query MyQuery(
-      $inputBolean: Boolean!
+      $inputBoolean: Boolean!
       $inputInt: Int!
       $inputFloat: Float!
       $inputString: String!
     ) {
-      booleanResolver(booleanValue: $inputBolean)
+      booleanResolver(booleanValue: $inputBoolean)
       intResolver(intValue: $inputInt)
       floatResolver(booleanValue: $inputFloat)
       stringResolver(stringValue: $inputString)
@@ -81,7 +81,7 @@ client =
   fetch
     resolver
     MyQueryArgs
-      { inputBolean = testBoolean,
+      { inputBoolean = testBoolean,
         inputInt = testInt,
         inputFloat = testFloat,
         inputString = testText
