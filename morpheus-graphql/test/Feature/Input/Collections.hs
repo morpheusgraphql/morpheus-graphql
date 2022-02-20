@@ -20,6 +20,7 @@ import Data.Morpheus.Types
   )
 import Data.Sequence (Seq)
 import Data.Set (Set)
+import Data.Text
 import Data.Vector (Vector)
 import GHC.Generics (Generic)
 
@@ -35,7 +36,7 @@ data Query m = Query
     testNonEmpty :: Coll m (NonEmpty Int),
     tesSeq :: Coll m (Seq Int),
     testVector :: Coll m (Vector Int),
-    testTuple :: Coll m (Int, Int)
+    testTuple :: Coll m (Text, Int)
   }
   deriving (Generic, GQLType)
 

@@ -287,7 +287,11 @@ instance GQLType a => GQLType (SubscriptionField a) where
   type KIND (SubscriptionField a) = WRAPPER
   __type _ = __type $ Proxy @a
 
-instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (Pair a b)
+instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (Pair a b) where
+  typeOptions _ options = options {typeNameModifier = prefixInputs}
+    where
+      prefixInputs True = ("Input" <>)
+      prefixInputs False = id
 
 -- Manual
 
@@ -308,7 +312,6 @@ instance GQLType a => GQLType (Resolver o e m a) where
   __type _ = __type $ Proxy @a
 
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (a, b) where
-  type KIND (a, b) = CUSTOM
   __type _ = __type $ Proxy @(Pair a b)
 
 instance (GQLType value) => GQLType (Arg name value) where

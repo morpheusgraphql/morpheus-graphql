@@ -69,7 +69,7 @@ import Data.Morpheus.Server.Types.GQLType
     __isEmptyType,
   )
 import Data.Morpheus.Server.Types.Types
-  ( Pair (..),
+  ( Pair (Pair),
     TypeGuard (..),
   )
 import Data.Morpheus.Types
@@ -131,13 +131,6 @@ instance
   EncodeKind TYPE m a
   where
   encodeKind = pure . exploreResolvers . unContextValue
-
---  Tuple  (a,b)
-instance
-  Encode m (Pair k v) =>
-  EncodeKind CUSTOM m (k, v)
-  where
-  encodeKind = encode . uncurry Pair . unContextValue
 
 --  Map
 instance (Monad m, Encode m [Pair k v]) => EncodeKind CUSTOM m (Map k v) where
