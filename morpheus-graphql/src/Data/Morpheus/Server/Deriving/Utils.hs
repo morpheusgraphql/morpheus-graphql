@@ -128,16 +128,22 @@ toValue ::
   proxy kind ->
   a ->
   DataType value
-toValue f proxy = toTypeRep (typeOptions (Proxy @a) defaultTypeOptions, proxy, f) . from
+toValue f proxy = toTypeRep (typeName, options, proxy, f) . from
+  where
+    typeName = gqlTypeName $ __typeData (KindedProxy :: KindedProxy kind a)
+    options = typeOptions (Proxy @a) defaultTypeOptions
 
 --  GENERIC UNION
-class TypeRep (c :: * -> Constraint) (v :: *) f where
+class TypeRep (c :: Type -> Constraint) (v :: Type) f where
   typeRep :: CategoryValue kind => (GQLTypeOptions, kinProxy (kind :: TypeCategory), TypeConstraint c v Proxy) -> proxy f -> [ConsRep v]
-  toTypeRep :: CategoryValue kind => (GQLTypeOptions, kinProxy (kind :: TypeCategory), TypeConstraint c v Identity) -> f a -> DataType v
+  toTypeRep :: CategoryValue kind => (TypeName, GQLTypeOptions, kinProxy (kind :: TypeCategory), TypeConstraint c v Identity) -> f a -> DataType v
 
 instance (Datatype d, TypeRep c v f) => TypeRep c v (M1 D d f) where
   typeRep fun _ = typeRep fun (Proxy @f)
-  toTypeRep fun@(opt, _, _) (M1 src) = (toTypeRep fun src) {tyName = datatypeNameProxy opt (Proxy @d)}
+  toTypeRep fun@(dataTypeName, opt, _, _) (M1 src) =
+    (toTypeRep fun src)
+      { dataTypeName
+      }
 
 -- | recursion for Object types, both of them : 'INPUT_OBJECT' and 'OBJECT'
 instance (TypeRep c v a, TypeRep c v b) => TypeRep c v (a :+: b) where
@@ -147,11 +153,11 @@ instance (TypeRep c v a, TypeRep c v b) => TypeRep c v (a :+: b) where
 
 instance (ConRep con v f, Constructor c) => TypeRep con v (M1 C c f) where
   typeRep f@(opt, _, _) _ = [deriveConsRep opt (Proxy @c) (conRep f (Proxy @f))]
-  toTypeRep f@(opt, _, _) (M1 src) =
+  toTypeRep (_, opt, x, y) (M1 src) =
     DataType
-      { tyName = "",
+      { dataTypeName = "",
         tyIsUnion = False,
-        tyCons = deriveConsRep opt (Proxy @c) (toFieldRep f src)
+        tyCons = deriveConsRep opt (Proxy @c) (toFieldRep (opt, x, y) src)
       }
 
 deriveConsRep ::
@@ -220,8 +226,8 @@ instance ConRep c v U1 where
   conRep _ _ = []
   toFieldRep _ _ = []
 
-data DataType (v :: *) = DataType
-  { tyName :: TypeName,
+data DataType (v :: Type) = DataType
+  { dataTypeName :: TypeName,
     tyIsUnion :: Bool,
     tyCons :: ConsRep v
   }

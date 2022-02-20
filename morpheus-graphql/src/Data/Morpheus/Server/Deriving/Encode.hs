@@ -170,12 +170,12 @@ convertNode ::
   ResolverValue m
 convertNode
   DataType
-    { tyName,
+    { dataTypeName,
       tyIsUnion,
       tyCons = cons@ConsRep {consFields, consName}
     }
     | tyIsUnion = encodeUnion consFields
-    | otherwise = mkObject tyName (toFieldRes <$> consFields)
+    | otherwise = mkObject dataTypeName (toFieldRes <$> consFields)
     where
       -- ENUM
       encodeUnion ::
@@ -184,7 +184,7 @@ convertNode
       encodeUnion [] = mkEnum consName
       -- Type References --------------------------------------------------------------
       encodeUnion [FieldRep {fieldTypeRef = TypeRef {typeConName}, fieldValue}]
-        | isUnionRef tyName cons = ResLazy (ResObject (Just typeConName) <$> (fieldValue >>= requireObject))
+        | isUnionRef dataTypeName cons = ResLazy (ResObject (Just typeConName) <$> (fieldValue >>= requireObject))
       -- Inline Union Types ----------------------------------------------------------------------------
       encodeUnion fields = mkUnion consName (toFieldRes <$> fields)
 
