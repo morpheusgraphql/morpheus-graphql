@@ -101,19 +101,19 @@ parseDefaultValue :: Parser (Value s)
 parseDefaultValue = equal *> parseV
   where
     parseV :: Parser (Value s)
-    parseV = structValue parseV
+    parseV = compoundValue parseV
 
 class Parse a where
   parse :: Parser a
 
 instance Parse (Value RAW) where
-  parse = (VariableValue <$> variable) <|> structValue parse
+  parse = (VariableValue <$> variable) <|> compoundValue parse
 
 instance Parse (Value CONST) where
-  parse = structValue parse
+  parse = compoundValue parse
 
-structValue :: Parser (Value a) -> Parser (Value a)
-structValue parser =
+compoundValue :: Parser (Value a) -> Parser (Value a)
+compoundValue parser =
   label "Value" $
     ( parsePrimitives
         <|> (Object <$> objectValue parser)

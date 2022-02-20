@@ -69,6 +69,11 @@ words:
   - Bifunctor
   - bimap
   - hsep
+  - Subtyping
+  - jsdelivr
+  - elif
+  - cond
+  - subprotocols
   # Mythology
   - cronos
   - shapeshifting

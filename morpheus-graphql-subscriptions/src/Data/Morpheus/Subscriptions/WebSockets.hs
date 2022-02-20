@@ -34,7 +34,7 @@ import Network.WebSockets
 import qualified Network.WebSockets as WS
 import Relude
 
--- support old version of Websockets
+-- support old version of WebSockets
 pingThread :: Connection -> IO () -> IO ()
 
 #if MIN_VERSION_websockets(0,12,6)
