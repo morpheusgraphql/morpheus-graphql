@@ -29,7 +29,7 @@ import qualified Data.Vector as Vector
 import Relude
 
 -- | GraphQL Wrapper Serializer
-class EncodeWrapper (wrapper :: * -> *) where
+class EncodeWrapper (wrapper :: Type -> Type) where
   encodeWrapper ::
     (Monad m) =>
     (a -> m (ResolverValue m)) ->
