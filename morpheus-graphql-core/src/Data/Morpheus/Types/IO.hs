@@ -23,7 +23,7 @@ import Data.Aeson
 import qualified Data.Aeson as Aeson
   ( Value (..),
   )
-import qualified Data.HashMap.Lazy as LH
+import qualified Data.Aeson.KeyMap as KM
 import Data.Morpheus.Ext.Result
   ( Result (..),
   )
@@ -57,7 +57,7 @@ data GQLResponse
   deriving (Show, Generic)
 
 instance FromJSON GQLResponse where
-  parseJSON (Aeson.Object hm) = case LH.toList hm of
+  parseJSON (Aeson.Object hm) = case KM.toList hm of
     [("data", value)] -> Data <$> parseJSON value
     [("errors", value)] -> Errors <$> parseJSON value
     _ -> fail "Invalid GraphQL Response"

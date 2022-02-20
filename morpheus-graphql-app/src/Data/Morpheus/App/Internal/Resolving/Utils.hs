@@ -21,7 +21,8 @@ where
 
 import Control.Monad.Except (MonadError (throwError))
 import qualified Data.Aeson as A
-import qualified Data.HashMap.Lazy as HM
+import qualified Data.Aeson.Key as AK
+import qualified Data.Aeson.KeyMap as KM
 import Data.Morpheus.App.Internal.Resolving.Types
   ( NamedResolverRef (..),
     ObjectTypeResolver (..),
@@ -47,7 +48,7 @@ lookupResJSON name (A.Object fields) =
   selectOr
     mkEmptyObject
     (requireObject . mkValue)
-    name
+    (AK.fromText name)
     fields
 lookupResJSON _ _ = mkEmptyObject
 
@@ -60,10 +61,10 @@ mkValue ::
   ResolverValue m
 mkValue (A.Object v) =
   mkObjectMaybe
-    (HM.lookup "__typename" v >>= unpackJSONName)
+    (KM.lookup "__typename" v >>= unpackJSONName)
     $ fmap
-      (bimap packName (pure . mkValue))
-      (HM.toList v)
+      (bimap (packName . AK.toText) (pure . mkValue))
+      (KM.toList v)
 mkValue (A.Array ls) = mkList (fmap mkValue (V.toList ls))
 mkValue A.Null = mkNull
 mkValue (A.Number x) = ResScalar (decodeScientific x)

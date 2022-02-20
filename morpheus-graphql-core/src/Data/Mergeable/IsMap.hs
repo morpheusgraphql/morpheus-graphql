@@ -13,6 +13,8 @@ module Data.Mergeable.IsMap
 where
 
 import Control.Monad.Except (MonadError (throwError))
+import Data.Aeson.Key (Key)
+import qualified Data.Aeson.KeyMap as A
 import qualified Data.HashMap.Lazy as HM
 import Data.Mergeable.Internal.Merge (mergeNoDuplicates)
 import Data.Mergeable.Internal.NameCollision (NameCollision)
@@ -33,6 +35,12 @@ instance (Eq k, Hashable k) => IsMap k (HashMap k) where
   singleton = HM.singleton
   lookup = HM.lookup
   member = HM.member
+
+instance IsMap Key A.KeyMap where
+  unsafeFromList = A.fromList
+  singleton = A.singleton
+  lookup = A.lookup
+  member = A.member
 
 selectBy :: (MonadError e m, IsMap k c, Monad m) => e -> k -> c a -> m a
 selectBy err = selectOr (throwError err) pure
