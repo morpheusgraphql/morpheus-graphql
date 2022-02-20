@@ -53,7 +53,8 @@ data Query m = Query
     testVector :: Coll m (Vector Int),
     testProduct :: Coll m Product,
     testTuple :: Coll m (Text, Int),
-    testMap :: Coll m (Map Text Int)
+    testMap :: Coll m (Map Text Int),
+    testAssoc :: Coll m [(Text, Int)]
   }
   deriving (Generic, GQLType)
 
@@ -68,7 +69,8 @@ rootResolver =
             testVector = testRes,
             testTuple = testRes,
             testProduct = testRes,
-            testMap = testRes
+            testMap = testRes,
+            testAssoc = testRes
           },
       mutationResolver = Undefined,
       subscriptionResolver = Undefined
