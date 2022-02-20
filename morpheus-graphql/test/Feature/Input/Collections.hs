@@ -32,7 +32,7 @@ testRes = pure . argValue
 
 type Coll m a = Arg "value" a -> m a
 
-data Product = Product Text Int Bool Float
+data Product = Product Text Int Bool (Maybe Double)
   deriving (Generic)
 
 instance GQLType Product where

@@ -219,7 +219,7 @@ type EncodeConstraint (m :: Type -> Type) a =
     TypeRep (Encode m) (m (ResolverValue m)) (Rep a)
   )
 
-type EncodeObjectConstraint (o :: OperationType) e (m :: * -> *) a =
+type EncodeObjectConstraint (o :: OperationType) e (m :: Type -> Type) a =
   EncodeConstraint (Resolver o e m) (a (Resolver o e m))
 
 type EncodeConstraints e m query mut sub =

@@ -122,7 +122,7 @@ instance
       context =
         Context
           { options = typeOptions (Proxy @a) defaultTypeOptions,
-            contKind = D_CONS 0,
+            contKind = D_CONS,
             typeName = ""
           }
 
@@ -179,7 +179,7 @@ traverseUnion (l1, r1) name unions object
     R1 <$> decodeRep (Object object)
   | otherwise = decideUnion (l1, decodeRep) (r1, decodeRep) name (Object unions)
 
-data Tag = D_CONS {lastFieldIndex :: Int} | D_UNION deriving (Eq, Ord)
+data Tag = D_CONS | D_UNION deriving (Eq, Ord)
 
 data Context = Context
   { contKind :: Tag,
@@ -195,7 +195,7 @@ data Info = Info
 instance Semigroup Info where
   Info D_UNION t1 <> Info _ t2 = Info D_UNION (t1 <> t2)
   Info _ t1 <> Info D_UNION t2 = Info D_UNION (t1 <> t2)
-  Info (D_CONS i1) t1 <> Info (D_CONS i2) t2 = Info (D_CONS (i1 + i2)) (t1 <> t2)
+  Info D_CONS t1 <> Info D_CONS t2 = Info D_CONS (t1 <> t2)
 
 type DecoderT = ReaderT Context ResolverState
 
@@ -204,12 +204,6 @@ withTypeName typeName = local (\ctx -> ctx {typeName})
 
 withKind :: Tag -> DecoderT a -> DecoderT a
 withKind contKind = local (\ctx -> ctx {contKind})
-
-withNextField :: DecoderT a -> DecoderT a
-withNextField = local (\ctx -> ctx {contKind = increase (contKind ctx)})
-  where
-    increase (D_CONS i) = D_CONS (i + 1)
-    increase x = x
 
 getUnionInfos ::
   forall f a b.
@@ -257,13 +251,13 @@ instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
   decodeRep _ = throwError (internal "lists and scalars are not allowed in Union")
 
 instance (Constructor c, DecodeFields a) => DecodeRep (M1 C c a) where
-  decodeRep = fmap M1 . decodeFields
+  decodeRep = fmap M1 . decodeFields 0
   tags _ Context {typeName, options} = getTag (refType (Proxy @a))
     where
       getTag (Just memberRef)
         | isUnionRef memberRef = Info {kind = D_UNION, tagName = [memberRef]}
-        | otherwise = Info {kind = D_CONS 0, tagName = [consName]}
-      getTag Nothing = Info {kind = D_CONS 0, tagName = [consName]}
+        | otherwise = Info {kind = D_CONS, tagName = [consName]}
+      getTag Nothing = Info {kind = D_CONS, tagName = [consName]}
       --------
       consName = conNameProxy options (Proxy @c)
       ----------
@@ -271,20 +265,25 @@ instance (Constructor c, DecodeFields a) => DecodeRep (M1 C c a) where
 
 class DecodeFields (f :: Type -> Type) where
   refType :: Proxy f -> Maybe TypeName
-  decodeFields :: ValidValue -> DecoderT (f a)
+  countFields :: Proxy f -> Int
+  decodeFields :: Int -> ValidValue -> DecoderT (f a)
 
 instance (DecodeFields f, DecodeFields g) => DecodeFields (f :*: g) where
   refType _ = Nothing
-  decodeFields gql = (:*:) <$> decodeFields gql <*> withNextField (decodeFields gql)
+  countFields _ = countFields (Proxy @f) + countFields (Proxy @g)
+  decodeFields index gql =
+    (:*:) <$> decodeFields index gql
+      <*> decodeFields (index + countFields (Proxy @g)) gql
 
 instance (Selector s, GQLType a, Decode a) => DecodeFields (M1 S s (K1 i a)) where
+  countFields _ = 1
   refType _ = Just $ gqlTypeName $ __typeData (KindedProxy :: KindedProxy IN a)
-  decodeFields value = M1 . K1 <$> do
+  decodeFields index value = M1 . K1 <$> do
     Context {options, contKind} <- ask
     case contKind of
       D_UNION -> lift (decode value)
-      D_CONS {lastFieldIndex} ->
-        let fieldName = getFieldName (selNameProxy options (Proxy @s)) lastFieldIndex
+      D_CONS ->
+        let fieldName = getFieldName (selNameProxy options (Proxy @s)) index
             fieldDecoder = decodeFieldWith (lift . decode) fieldName
          in withInputObject fieldDecoder value
 
@@ -293,5 +292,6 @@ getFieldName "" index = "_" <> show index
 getFieldName label _ = label
 
 instance DecodeFields U1 where
+  countFields _ = 0
   refType _ = Nothing
-  decodeFields _ = pure U1
+  decodeFields _ _ = pure U1
