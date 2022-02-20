@@ -58,6 +58,16 @@ words:
   - uncapitalize
   - vsep
   - TyVarBndr
+  - stimes
+  - ifromJSON
+  - whnf
+  - bgroup
+  - fbexp
+  - Unpackedness
+  - tupled
+  - sconcat
+  - Bifunctor
+  - bimap
   # Mythology
   - cronos
   - shapeshifting
