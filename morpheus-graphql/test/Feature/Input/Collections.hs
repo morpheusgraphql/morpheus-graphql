@@ -14,7 +14,9 @@ import Data.Morpheus.Types
   ( Arg (..),
     GQLRequest,
     GQLResponse,
-    GQLType,
+    GQLType (..),
+    GQLTypeOptions (..),
+    GQLTypeOptions (..),
     RootResolver (..),
     Undefined (..),
   )
@@ -31,7 +33,13 @@ testRes = pure . argValue
 type Coll m a = Arg "value" a -> m a
 
 data Product = Product Text Int Bool Float
-  deriving (Generic, GQLType)
+  deriving (Generic)
+
+instance GQLType Product where
+  typeOptions _ options =
+    options
+      { typeNameModifier = \isInput name -> if isInput then "Input" <> name else name
+      }
 
 -- resolver
 data Query m = Query
@@ -53,7 +61,8 @@ rootResolver =
             testNonEmpty = testRes,
             tesSeq = testRes,
             testVector = testRes,
-            testTuple = testRes
+            testTuple = testRes,
+            testProduct = testRes
           },
       mutationResolver = Undefined,
       subscriptionResolver = Undefined

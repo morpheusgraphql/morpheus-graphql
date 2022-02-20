@@ -1,4 +1,4 @@
-query ValidTuple {
+query ValidProduct {
   f1: testProduct(value: { _0: "abc", _1: 4235 }) {
     ...Product
   }
@@ -7,9 +7,9 @@ query ValidTuple {
   }
 }
 
-fragment Product on Product = {
-    _0
-    _1
-    _3
-    _4
+fragment Product on Product {
+  _0
+  _1
+  _3
+  _4
 }

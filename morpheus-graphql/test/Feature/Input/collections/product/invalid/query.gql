@@ -1,4 +1,4 @@
-query InvalidTuple {
+query InvalidProduct {
   f1: testProduct(value: [])
   f2: testProduct(value: {})
   f3: testProduct(value: { _0: 2 })
