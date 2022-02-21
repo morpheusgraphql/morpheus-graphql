@@ -66,6 +66,7 @@ instance
   unsafeFromList [] = error "empty selection sets are not supported."
   singleton k x = MergeMap ((k, x) :| [])
   lookup key (MergeMap (x :| xs)) = L.lookup key (x : xs)
+  toAssoc (MergeMap (x :| xs)) = x : xs
 
 instance
   ( Monad m,
