@@ -18,7 +18,6 @@ packages:
   - morpheus-graphql-client
   - morpheus-graphql
 
-allow-newer: true
 extra-deps:
   - fraxl-0.3.0.0
   - haxl-2.3.0.0
