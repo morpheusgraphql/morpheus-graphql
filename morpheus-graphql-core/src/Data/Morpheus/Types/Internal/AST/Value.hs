@@ -41,9 +41,6 @@ import qualified Data.Aeson as A
     object,
     pairs,
   )
-import Data.Aeson (Key)
-import qualified Data.Aeson.Key as AK
-import qualified Data.Aeson.KeyMap as KM
 import Data.Foldable (foldr')
 import Data.Mergeable
   ( NameCollision (..),
@@ -51,6 +48,7 @@ import Data.Mergeable
   )
 import Data.Morpheus.Internal.Utils
   ( KeyOf (..),
+    toAssoc,
     unsafeFromList,
   )
 import Data.Morpheus.Rendering.RenderGQL
@@ -238,7 +236,7 @@ instance A.ToJSON (Value a) where
   toJSON (List x) = A.toJSON x
   toJSON (Object fields) = A.object $ fmap toEntry (toList fields)
     where
-      toEntry (ObjectEntry name value) = toKey name A..= A.toJSON value
+      toEntry (ObjectEntry name value) = unpackName name A..= A.toJSON value
 
   -------------------------------------------
   toEncoding (ResolvedVariable _ Variable {variableValue = ValidVariableValue x}) =
@@ -251,10 +249,7 @@ instance A.ToJSON (Value a) where
   toEncoding (List x) = A.toEncoding x
   toEncoding (Object ordMap) = A.pairs $ renderSeries encodeField (toList ordMap)
     where
-      encodeField (ObjectEntry key value) = toKey key A..= value
-
-toKey :: FieldName -> Key
-toKey = AK.fromText . unpackName
+      encodeField (ObjectEntry key value) = unpackName key A..= value
 
 -- fixes GHC 8.2.2, which can't deduce (Semigroup p) from context (Monoid p)
 renderSeries :: (Semigroup p, Monoid p) => (e -> p) -> [e] -> p
@@ -266,17 +261,15 @@ decodeScientific v = case floatingOrInteger v of
   Left float -> Float float
   Right int -> Int int
 
-aesonToPairs :: KM.KeyMap A.Value -> [(FieldName, Value a)]
-aesonToPairs v =
-  fmap
-    (bimap (packName . AK.toText) replaceValue)
-    (KM.toList v)
-
 replaceValue :: A.Value -> Value a
 replaceValue (A.Bool v) = mkBoolean v
 replaceValue (A.Number v) = Scalar $ decodeScientific v
 replaceValue (A.String v) = mkString v
-replaceValue (A.Object v) = mkObject (aesonToPairs v)
+replaceValue (A.Object v) =
+  mkObject $
+    fmap
+      (bimap packName replaceValue)
+      (toAssoc v)
 replaceValue (A.Array li) = List (fmap replaceValue (V.toList li))
 replaceValue A.Null = Null
 

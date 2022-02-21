@@ -33,11 +33,14 @@ class IsMap k m | m -> k where
   member :: k -> m a -> Bool
   member = selectOr False (const True)
 
+  toAssoc :: m a -> [(k, a)]
+
 instance (Eq k, Hashable k) => IsMap k (HashMap k) where
   unsafeFromList = HM.fromList
   singleton = HM.singleton
   lookup = HM.lookup
   member = HM.member
+  toAssoc = HM.toList
 
 #if MIN_VERSION_aeson(2,0,0)
 instance IsMap Key A.KeyMap where
@@ -45,6 +48,7 @@ instance IsMap Key A.KeyMap where
   singleton = A.singleton
   lookup = A.lookup
   member = A.member
+  toAssoc = A.toList
 #endif
 
 selectBy :: (MonadError e m, IsMap k c, Monad m) => e -> k -> c a -> m a

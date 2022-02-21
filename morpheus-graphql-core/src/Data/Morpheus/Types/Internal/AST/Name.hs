@@ -70,7 +70,7 @@ data NAME
   | FIELD
   | FRAGMENT
 
-newtype Name (t :: NAME) = Name {unpackName :: Text}
+newtype Name (t :: NAME) = Name {_unpackName :: Text}
   deriving
     (Generic)
   deriving newtype
@@ -86,10 +86,15 @@ newtype Name (t :: NAME) = Name {unpackName :: Text}
     )
 
 instance Msg (Name t) where
-  msg name = msg $ "\"" <> unpackName name <> "\""
+  msg name = msg $ "\"" <> _unpackName name <> "\""
 
-packName :: Text -> Name t
-packName = Name
+class NamePacking a where
+  packName :: a -> Name t
+  unpackName :: Name t -> a
+
+instance NamePacking Text where
+  packName = Name
+  unpackName = _unpackName
 
 instance Lift (Name t) where
   lift = stringE . T.unpack . unpackName
