@@ -21,9 +21,5 @@ packages:
 extra-deps:
   - fraxl-0.3.0.0
   - haxl-2.3.0.0
-  - dependent-map-0.2.4.0
-  - dependent-sum-0.4
-  - fastsum-0.1.1.1
   - type-aligned-0.9.6
   - graphql-0.11.0.0
-  - freer-simple-1.2.1.1
