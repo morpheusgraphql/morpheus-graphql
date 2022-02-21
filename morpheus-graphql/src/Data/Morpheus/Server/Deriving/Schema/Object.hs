@@ -72,7 +72,7 @@ defineObjectType ::
 defineObjectType proxy ConsRep {consName, consFields} = insertType . mkType consName . mkObjectTypeContent proxy =<< fields
   where
     fields
-      | null consFields = defineEnumUnit $> singleton mkFieldUnit
+      | null consFields = defineEnumUnit $> singleton unitFieldName mkFieldUnit
       | otherwise = pure $ unsafeFromFields $ map repToFieldDefinition consFields
 
 mkFieldUnit :: FieldDefinition cat s

@@ -257,7 +257,7 @@ instance DeriveTypeConstraint IN a => DeriveArguments TYPE a where
 instance (KnownSymbol name, DeriveType IN a, GQLType a) => DeriveArguments CUSTOM (Arg name a) where
   deriveArgumentsDefinition _ = do
     withInput (deriveType proxy)
-    pure $ fieldsToArguments $ singleton $ mkField Nothing argName argTypeRef
+    pure $ fieldsToArguments $ singleton argName $ mkField Nothing argName argTypeRef
     where
       proxy :: KindedProxy IN a
       proxy = KindedProxy

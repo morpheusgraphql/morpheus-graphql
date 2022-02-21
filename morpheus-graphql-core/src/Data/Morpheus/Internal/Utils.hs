@@ -7,8 +7,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Internal.Utils
-  ( singleton,
-    IsMap,
+  ( IsMap (..),
     Failure,
     failure,
     KeyOf (..),
@@ -27,8 +26,6 @@ module Data.Morpheus.Internal.Utils
     mergeConcat,
     (<:>),
     selectOr,
-    member,
-    unsafeFromList,
     insert,
     fromElems,
     throwErrors,
@@ -38,7 +35,7 @@ where
 import Control.Monad.Except (MonadError (throwError))
 import Data.ByteString.Lazy (ByteString)
 import Data.Mergeable
-  ( IsMap,
+  ( IsMap (..),
     Merge (merge),
     NameCollision (..),
     ResolutionT,
@@ -46,8 +43,7 @@ import Data.Mergeable
     mergeConcat,
     throwErrors,
   )
-import Data.Mergeable.IsMap (FromList (..), member, selectBy, selectOr, unsafeFromList)
-import qualified Data.Mergeable.IsMap as M
+import Data.Mergeable.IsMap (FromList (..), selectBy, selectOr)
 import Data.Mergeable.SafeHashMap (SafeHashMap)
 import Data.Morpheus.Ext.Empty
 import Data.Morpheus.Ext.KeyOf (KeyOf (..), toPair)
@@ -100,8 +96,8 @@ prop f fSel a1 a2 = f (fSel a1) (fSel a2)
 elems :: Foldable t => t a -> [a]
 elems = toList
 
-singleton :: (IsMap k m, KeyOf k a) => a -> m a
-singleton x = M.singleton (keyOf x) x
+-- singleton :: (IsMap k m, KeyOf k a) => a -> m a
+-- singleton x = M.singleton (keyOf x) x
 
 traverseCollection ::
   ( Monad m,
@@ -132,7 +128,7 @@ insert ::
   a ->
   SafeHashMap k a ->
   m (SafeHashMap k a)
-insert x = merge (singleton x)
+insert x = merge (singleton (keyOf x) x)
 
 mergeT :: (KeyOf k a, Foldable t, Monad m) => t a -> t a -> ResolutionT k a c m c
 mergeT x y = fromListT (toPair <$> (toList x <> toList y))

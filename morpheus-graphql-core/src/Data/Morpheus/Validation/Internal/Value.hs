@@ -204,10 +204,11 @@ mkInputUnionValue
   UnionMember
     { memberName,
       nullary
-    } = Object . singleton . ObjectEntry (coerce memberName) . packNullary
+    } = Object . singleton key . ObjectEntry key . packNullary
     where
+      key = coerce memberName
       packNullary
-        | nullary = Object . singleton . ObjectEntry unitFieldName
+        | nullary = Object . singleton unitFieldName . ObjectEntry unitFieldName
         | otherwise = id
 
 -- INPUT Object
