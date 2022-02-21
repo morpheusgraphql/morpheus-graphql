@@ -10,6 +10,7 @@
 
 - support: `NonEmpty`, `Vector`, `Seq`
 - fixes decoding of types without record syntax (including tuples) (#667, #659, #665)
+- support Aeson 2.0
 
 ## 0.18.0 - 08.11.2021
 
