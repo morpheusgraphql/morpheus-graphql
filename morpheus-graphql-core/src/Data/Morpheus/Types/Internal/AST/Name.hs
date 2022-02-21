@@ -96,15 +96,15 @@ class NamePacking a where
   packName :: a -> Name t
   unpackName :: Name t -> a
 
-#if MIN_VERSION_aeson(2,0,0)
 instance NamePacking Text where
   packName = Name
   unpackName = _unpackName
-#endif
 
+#if MIN_VERSION_aeson(2,0,0)
 instance NamePacking Key where
   packName = Name . A.toText
   unpackName = A.fromText . _unpackName
+#endif
 
 instance Lift (Name t) where
   lift = stringE . T.unpack . unpackName
