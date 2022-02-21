@@ -27,7 +27,7 @@
         "_0": 12
       },
       {
-        "__typename": "SomeMutli",
+        "__typename": "SomeCompound",
         "_0": 21,
         "_1": "some text"
       },
