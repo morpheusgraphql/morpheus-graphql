@@ -7,8 +7,8 @@ packages:
   - examples/servant
   - examples/client
   - examples/code-gen
-  # benchmarks: GraphQL does not support aeson 2
-  - morpheus-graphql-benchmarks
+  # benchmarks: TODO: restore when GraphQL supports Aeson 2
+  # - morpheus-graphql-benchmarks
   # libs
   - morpheus-graphql-tests
   - morpheus-graphql-core
