@@ -120,7 +120,7 @@ renderSource SourceInputField {sourceTypeName, sourceFieldName, sourceArgumentNa
 
 renderField :: TypeName -> FieldName -> Maybe FieldName -> GQLError
 renderField tName fName arg =
-  msg (unpackName tName <> "." <> unpackName fName <> renderArg arg)
+  msg (unpackName tName <> "." <> unpackName fName <> renderArg arg :: Text)
   where
     renderArg (Just argName) = "(" <> unpackName argName <> ":)"
     renderArg Nothing = ""
