@@ -14,7 +14,7 @@ module Data.Mergeable.IsMap
 where
 
 import Control.Monad.Except (MonadError (throwError))
-#if MIN_VERSION_aeson(2,0,0)
+#if MIN_VERSION_aeson(2,0,3)
 import Data.Aeson.Key (Key)
 import qualified Data.Aeson.KeyMap as A
 #endif
@@ -42,7 +42,7 @@ instance (Eq k, Hashable k) => IsMap k (HashMap k) where
   member = HM.member
   toAssoc = HM.toList
 
-#if MIN_VERSION_aeson(2,0,0)
+#if MIN_VERSION_aeson(2,0,3)
 instance IsMap Key A.KeyMap where
   unsafeFromList = A.fromList
   singleton = A.singleton

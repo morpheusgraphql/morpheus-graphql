@@ -37,6 +37,10 @@ import Data.Morpheus.Rendering.RenderGQL
 import Data.Morpheus.Types.Internal.AST.Error
   ( Msg (..),
   )
+#if MIN_VERSION_aeson(2,0,3)
+import Data.Aeson.Key (Key)
+import qualified Data.Aeson.Key as A
+#endif
 import qualified Data.Text as T
 #if MIN_VERSION_template_haskell(2,17,0)
 import Language.Haskell.TH
@@ -92,9 +96,15 @@ class NamePacking a where
   packName :: a -> Name t
   unpackName :: Name t -> a
 
+#if MIN_VERSION_aeson(2,0,3)
 instance NamePacking Text where
   packName = Name
   unpackName = _unpackName
+#endif
+
+instance NamePacking Key where
+  packName = Name . A.toText
+  unpackName = A.fromText . _unpackName
 
 instance Lift (Name t) where
   lift = stringE . T.unpack . unpackName
