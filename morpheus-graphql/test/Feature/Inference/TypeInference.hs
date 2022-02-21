@@ -52,13 +52,13 @@ data Monster
   deriving (Show, Generic, GQLType)
 
 data Character (m :: * -> *)
-  = CharacterDeity (Deity m) -- Only <tycon name><type ref name> should generate direct link
+  = CharacterDeity (Deity m) -- Only <tyCon name><type ref name> should generate direct link
   | Creature {creatureName :: Text, creatureAge :: Int}
   | BoxedDeity {boxedDeity :: Deity m}
   | ScalarRecord {scalarText :: Text}
   | CharacterAge Int
   | SomeDeity (Deity m)
-  | SomeMutli Int Text
+  | SomeCompound Int Text
   | Zeus
   | Cronus
   deriving (Generic, GQLType)
@@ -71,7 +71,7 @@ resolveCharacter =
     ScalarRecord {scalarText = "Some Text"},
     SomeDeity deityRes,
     CharacterAge 12,
-    SomeMutli 21 "some text",
+    SomeCompound 21 "some text",
     Zeus,
     Cronus
   ]

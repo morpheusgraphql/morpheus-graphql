@@ -60,9 +60,9 @@ declareType
       tCons,
       derives,
       typeParameters
-    } = [DataD [] (toName tName) vars Nothing cons [derivings]]
+    } = [DataD [] (toName tName) vars Nothing cons [derivingClause]]
     where
-      derivings = DerivClause Nothing (map (ConT . genName) derives)
+      derivingClause = DerivClause Nothing (map (ConT . genName) derives)
       cons = map declareCons tCons
 
 #if MIN_VERSION_template_haskell(2,17,0)

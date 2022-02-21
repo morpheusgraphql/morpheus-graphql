@@ -21,9 +21,9 @@
       "enumValues": null,
       "possibleTypes": null
     },
-    "someMutli": {
+    "someCompound": {
       "kind": "OBJECT",
-      "name": "SomeMutli",
+      "name": "SomeCompound",
       "fields": [
         {
           "name": "_0",

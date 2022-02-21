@@ -2,7 +2,7 @@ query Get__Type {
   someDeity: __type(name: "SomeDeity") {
     ...FullType
   }
-  someMutli: __type(name: "SomeMutli") {
+  someCompound: __type(name: "SomeCompound") {
     ...FullType
   }
 }

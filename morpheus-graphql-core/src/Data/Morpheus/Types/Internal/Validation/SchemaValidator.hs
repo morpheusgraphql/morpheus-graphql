@@ -38,13 +38,13 @@ import Data.Morpheus.Types.Internal.AST
     CONST,
     FieldName,
     FieldsDefinition,
-    Name (unpackName),
     OUT,
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
     mkBaseType,
     msg,
+    unpackName,
   )
 import Data.Morpheus.Types.Internal.AST.Type (TypeKind (KindObject))
 import Data.Morpheus.Types.Internal.AST.TypeSystem (Schema)

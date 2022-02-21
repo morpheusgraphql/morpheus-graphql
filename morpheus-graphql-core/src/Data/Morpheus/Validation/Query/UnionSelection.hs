@@ -96,8 +96,8 @@ exploreFragments validateFragment types selectionSet = do
               selectionContent = SelectionField,
               selectionDirectives = empty
             }
-        ) :
-        selections
+        )
+          : selections
       )
 
 -- sorts Fragment by conditional Types

@@ -9,6 +9,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -63,6 +64,7 @@ instance (Eq k, Hashable k) => IsMap k (OrdMap k) where
   unsafeFromList xs = OrdMap (map fst xs) (unsafeFromList xs)
   singleton k x = OrdMap [k] (singleton k x)
   lookup key OrdMap {entries} = lookup key entries
+  toAssoc OrdMap {order, entries} = mapMaybe (\k -> (k,) <$> HM.lookup k entries) order
 
 instance (NameCollision e a, Eq k, Hashable k, Monad m, MonadError e m) => Merge m (OrdMap k a) where
   merge (OrdMap ks1 x) (OrdMap ks2 y) = OrdMap (mergeOrder ks1 ks2) <$> merge x y

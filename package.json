@@ -1,0 +1,15 @@
+{
+  "name": "morpheus-graphql",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:morpheusgraphql/morpheus-graphql.git",
+  "author": "Davit Nalchevanidze <d.nalchevanidze@gmail.com>",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "check:spelling": "cspell --cache --no-progress '**/*.hs'"
+  },
+  "devDependencies": {
+    "cspell": "^5.18.5"
+  }
+}

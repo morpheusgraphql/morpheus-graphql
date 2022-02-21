@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 7107c21ad17ef884d55368af64bcb6dcd75477a414cac42c80f7163d90d7a5b7
+-- hash: 28237ce57a9b11e83f2f95eb9dcaa280515e29aad897a65b5109e6e9e09e6f36
 
 name:           morpheus-graphql-examples-scotty
 version:        0.1.0
@@ -55,7 +55,7 @@ executable scotty-server
       src
   ghc-options: -Wall
   build-depends:
-      aeson >=1.4.4.0 && <=1.6
+      aeson >=1.4.4.0 && <3
     , base >=4.7 && <5
     , bytestring >=0.10.4 && <0.11
     , containers >=0.4.2.1 && <0.7

@@ -17,9 +17,6 @@ where
 
 import Data.Aeson
 import Data.Aeson.Types
-import qualified Data.HashMap.Lazy as H
-  ( lookup,
-  )
 import Data.Morpheus.Client.Internal.TH
   ( decodeObjectE,
     destructRecord,
@@ -36,15 +33,16 @@ import Data.Morpheus.Client.Internal.Utils
   ( isEnum,
   )
 import Data.Morpheus.CodeGen.Internal.TH
-  ( applyCons,
+  ( _',
+    applyCons,
     camelCaseTypeName,
     funDSimple,
     toCon,
     toName,
     toString,
     v',
-    _',
   )
+import Data.Morpheus.Internal.Utils (IsMap (lookup))
 import Data.Morpheus.Types.GQLScalar
   ( scalarFromJSON,
     scalarToJSON,
@@ -103,11 +101,11 @@ deriveScalarToJSON
 -- FromJSON
 deriveFromJSON :: ClientTypeDefinition -> DecQ
 deriveFromJSON ClientTypeDefinition {clientCons = [], clientTypeName} =
-  failure $
-    internal $
-      "Type "
-        <> msg (typename clientTypeName)
-        <> " Should Have at least one Constructor"
+  failure
+    $ internal
+    $ "Type "
+      <> msg (typename clientTypeName)
+      <> " Should Have at least one Constructor"
 deriveFromJSON
   ClientTypeDefinition
     { clientTypeName = clientTypeName@TypeNameTH {namespace},
@@ -167,7 +165,7 @@ aesonUnionObject
         )
 
 takeValueType :: ((String, Object) -> Parser a) -> Value -> Parser a
-takeValueType f (Object hMap) = case H.lookup "__typename" hMap of
+takeValueType f (Object hMap) = case lookup "__typename" hMap of
   Nothing -> fail "key \"__typename\" not found on object"
   Just (String x) -> pure (T.unpack x, hMap) >>= f
   Just val ->

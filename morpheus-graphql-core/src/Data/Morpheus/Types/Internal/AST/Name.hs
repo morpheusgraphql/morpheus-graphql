@@ -37,6 +37,10 @@ import Data.Morpheus.Rendering.RenderGQL
 import Data.Morpheus.Types.Internal.AST.Error
   ( Msg (..),
   )
+#if MIN_VERSION_aeson(2,0,0)
+import Data.Aeson.Key (Key)
+import qualified Data.Aeson.Key as A
+#endif
 import qualified Data.Text as T
 #if MIN_VERSION_template_haskell(2,17,0)
 import Language.Haskell.TH
@@ -70,7 +74,7 @@ data NAME
   | FIELD
   | FRAGMENT
 
-newtype Name (t :: NAME) = Name {unpackName :: Text}
+newtype Name (t :: NAME) = Name {_unpackName :: Text}
   deriving
     (Generic)
   deriving newtype
@@ -86,10 +90,21 @@ newtype Name (t :: NAME) = Name {unpackName :: Text}
     )
 
 instance Msg (Name t) where
-  msg name = msg $ "\"" <> unpackName name <> "\""
+  msg name = msg $ "\"" <> _unpackName name <> "\""
 
-packName :: Text -> Name t
-packName = Name
+class NamePacking a where
+  packName :: a -> Name t
+  unpackName :: Name t -> a
+
+instance NamePacking Text where
+  packName = Name
+  unpackName = _unpackName
+
+#if MIN_VERSION_aeson(2,0,0)
+instance NamePacking Key where
+  packName = Name . A.toText
+  unpackName = A.fromText . _unpackName
+#endif
 
 instance Lift (Name t) where
   lift = stringE . T.unpack . unpackName
