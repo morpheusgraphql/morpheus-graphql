@@ -37,7 +37,7 @@ import Data.Morpheus.Rendering.RenderGQL
 import Data.Morpheus.Types.Internal.AST.Error
   ( Msg (..),
   )
-#if MIN_VERSION_aeson(2,0,3)
+#if MIN_VERSION_aeson(2,0,0)
 import Data.Aeson.Key (Key)
 import qualified Data.Aeson.Key as A
 #endif
@@ -96,7 +96,7 @@ class NamePacking a where
   packName :: a -> Name t
   unpackName :: Name t -> a
 
-#if MIN_VERSION_aeson(2,0,3)
+#if MIN_VERSION_aeson(2,0,0)
 instance NamePacking Text where
   packName = Name
   unpackName = _unpackName

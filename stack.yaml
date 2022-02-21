@@ -7,7 +7,7 @@ packages:
   - examples/servant
   - examples/client
   - examples/code-gen
-  # benchmarks
+  # benchmarks: GraphQL does not support aeson 2
   - morpheus-graphql-benchmarks
   # libs
   - morpheus-graphql-tests
