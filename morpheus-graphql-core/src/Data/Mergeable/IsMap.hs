@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -13,8 +14,10 @@ module Data.Mergeable.IsMap
 where
 
 import Control.Monad.Except (MonadError (throwError))
+#if MIN_VERSION_aeson(2,0,0)
 import Data.Aeson.Key (Key)
 import qualified Data.Aeson.KeyMap as A
+#endif
 import qualified Data.HashMap.Lazy as HM
 import Data.Mergeable.Internal.Merge (mergeNoDuplicates)
 import Data.Mergeable.Internal.NameCollision (NameCollision)
@@ -36,11 +39,13 @@ instance (Eq k, Hashable k) => IsMap k (HashMap k) where
   lookup = HM.lookup
   member = HM.member
 
+#if MIN_VERSION_aeson(2,0,0)
 instance IsMap Key A.KeyMap where
   unsafeFromList = A.fromList
   singleton = A.singleton
   lookup = A.lookup
   member = A.member
+#endif
 
 selectBy :: (MonadError e m, IsMap k c, Monad m) => e -> k -> c a -> m a
 selectBy err = selectOr (throwError err) pure
