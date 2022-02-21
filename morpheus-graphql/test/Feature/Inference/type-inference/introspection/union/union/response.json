@@ -14,7 +14,7 @@
         { "kind": "OBJECT", "name": "ScalarRecord", "ofType": null },
         { "kind": "OBJECT", "name": "CharacterAge", "ofType": null },
         { "kind": "OBJECT", "name": "SomeDeity", "ofType": null },
-        { "kind": "OBJECT", "name": "SomeMutli", "ofType": null },
+        { "kind": "OBJECT", "name": "SomeCompound", "ofType": null },
         { "kind": "OBJECT", "name": "Zeus", "ofType": null },
         { "kind": "OBJECT", "name": "Cronus", "ofType": null }
       ]
