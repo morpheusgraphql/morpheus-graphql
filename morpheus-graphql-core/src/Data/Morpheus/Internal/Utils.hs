@@ -19,7 +19,6 @@ module Data.Morpheus.Internal.Utils
     toLBS,
     mergeT,
     Empty (..),
-    elems,
     HistoryT,
     addPath,
     startHistory,
@@ -91,13 +90,6 @@ fromLBS = LT.toStrict . decodeUtf8
 
 prop :: (b -> b -> m b) -> (a -> b) -> a -> a -> m b
 prop f fSel a1 a2 = f (fSel a1) (fSel a2)
-
-{-# DEPRECATED elems "use Foldable.toList" #-}
-elems :: Foldable t => t a -> [a]
-elems = toList
-
--- singleton :: (IsMap k m, KeyOf k a) => a -> m a
--- singleton x = M.singleton (keyOf x) x
 
 traverseCollection ::
   ( Monad m,
