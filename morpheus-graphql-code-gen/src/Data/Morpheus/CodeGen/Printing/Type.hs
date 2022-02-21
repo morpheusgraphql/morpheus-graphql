@@ -103,7 +103,7 @@ instance RenderType ServerFieldDefinition where
         fieldType
       } =
       pure $
-        pretty (unpackName fieldName)
+        pretty (unpackName fieldName :: Text)
           <+> "::"
           <+> unDoc (foldr renderWrapper (TypeDoc False $ pretty fieldType) wrappers)
 
