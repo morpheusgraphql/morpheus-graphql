@@ -24,7 +24,7 @@ module Data.Morpheus.Types.Internal.AST.Error
     Msg (..),
     Message,
     withPath,
-    PropName,
+    PropName (..),
   )
 where
 
@@ -127,6 +127,9 @@ data PropName
   = PropIndex Int
   | PropName Text
   deriving (Show, Eq, Generic)
+
+instance IsString PropName where
+  fromString = PropName . T.pack
 
 instance FromJSON PropName where
   parseJSON (String name) = pure (PropName name)

@@ -152,6 +152,7 @@ module Data.Morpheus.Types.Internal.AST
     lookupDataType,
     Name,
     withPath,
+    PropName (..),
   )
 where
 
