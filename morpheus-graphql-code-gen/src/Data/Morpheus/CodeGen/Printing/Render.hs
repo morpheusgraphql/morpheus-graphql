@@ -28,41 +28,41 @@ import qualified Data.Text.Lazy as LT
   )
 import Data.Text.Lazy.Encoding (encodeUtf8)
 import Data.Text.Prettyprint.Doc
-  ( (<+>),
-    Doc,
+  ( Doc,
     line,
     pretty,
     vsep,
+    (<+>),
   )
 import Relude hiding (ByteString, encodeUtf8)
 
 renderDocument :: String -> [ServerTypeDefinition] -> ByteString
 renderDocument moduleName types =
-  encodeUtf8
-    $ LT.fromStrict
-    $ pack
-    $ show
-    $ renderModuleDefinition
-      ModuleDefinition
-        { moduleName = pack moduleName,
-          imports =
-            [ ("Data.Data", ["Typeable"]),
-              ("Data.Morpheus.Kind", ["TYPE"]),
-              ("Data.Morpheus.Types", []),
-              ("Data.Text", ["Text"]),
-              ("GHC.Generics", ["Generic"]),
-              ("Data.Map", ["fromList", "empty"])
-            ],
-          extensions =
-            [ "DeriveAnyClass",
-              "DeriveGeneric",
-              "TypeFamilies",
-              "OverloadedStrings",
-              "DataKinds",
-              "DuplicateRecordFields"
-            ],
-          types
-        }
+  encodeUtf8 $
+    LT.fromStrict $
+      pack $
+        show $
+          renderModuleDefinition
+            ModuleDefinition
+              { moduleName = pack moduleName,
+                imports =
+                  [ ("Data.Data", ["Typeable"]),
+                    ("Data.Morpheus.Kind", ["TYPE"]),
+                    ("Data.Morpheus.Types", []),
+                    ("Data.Text", ["Text"]),
+                    ("GHC.Generics", ["Generic"]),
+                    ("Data.Map", ["fromList", "empty"])
+                  ],
+                extensions =
+                  [ "DeriveAnyClass",
+                    "DeriveGeneric",
+                    "TypeFamilies",
+                    "OverloadedStrings",
+                    "DataKinds",
+                    "DuplicateRecordFields"
+                  ],
+                types
+              }
 
 renderModuleDefinition :: ModuleDefinition -> Doc n
 renderModuleDefinition

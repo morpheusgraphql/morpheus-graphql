@@ -18,13 +18,13 @@ import Data.Morpheus.CodeGen.Printing.Terms
     parametrizedType,
   )
 import Data.Text.Prettyprint.Doc
-  ( (<+>),
-    Doc,
+  ( Doc,
     Pretty (pretty),
     indent,
     line,
     tupled,
     vsep,
+    (<+>),
   )
 import Relude hiding (optional, show)
 import Prelude (show)

@@ -28,18 +28,17 @@ import Data.Morpheus.Client
 import Data.Semigroup ((<>))
 import Data.Text (Text)
 import Prelude
-  ( ($),
-    (*),
-    (+),
-    Applicative (..),
+  ( Applicative (..),
     Either,
     Eq,
     IO,
     Int,
     Show,
-    String,
     print,
     putStrLn,
+    ($),
+    (*),
+    (+),
   )
 
 data Euro

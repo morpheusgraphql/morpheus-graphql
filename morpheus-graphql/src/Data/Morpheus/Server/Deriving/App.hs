@@ -1,4 +1,5 @@
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
@@ -51,8 +52,16 @@ type NamedResolversConstraint m e query mutation subscription =
     Monad m
   )
 
-class DeriveApp f m (event :: *) (query :: (* -> *) -> *) (mut :: (* -> *) -> *) (sub :: (* -> *) -> *) where
-  deriveApp :: f m event query mut sub -> App event m
+class
+  DeriveApp
+    f
+    m
+    (event :: Type)
+    (qu :: (Type -> Type) -> Type)
+    (mu :: (Type -> Type) -> Type)
+    (su :: (Type -> Type) -> Type)
+  where
+  deriveApp :: f m event qu mu su -> App event m
 
 instance RootResolverConstraint m e query mut sub => DeriveApp RootResolver m e query mut sub where
   deriveApp root =

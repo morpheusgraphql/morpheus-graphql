@@ -75,7 +75,7 @@ type EncodeTypeConstraint m a =
     GQLType (a (NamedResolverT m))
   )
 
-class DeriveNamedResolver (m :: * -> *) (k :: DerivingKind) a where
+class DeriveNamedResolver (m :: Type -> Type) (k :: DerivingKind) a where
   deriveNamedResolver :: f k a -> [NamedResolver m]
 
 instance DeriveNamedResolver m SCALAR a where
@@ -91,7 +91,7 @@ instance
     ResolveNamed (Resolver o e m) a,
     TypeRep (Encode (Resolver o e m)) (Resolver o e m (ResolverValue (Resolver o e m))) (Rep a)
   ) =>
-  DeriveNamedResolver (Resolver o e m) TYPE (a :: *)
+  DeriveNamedResolver (Resolver o e m) TYPE (a :: Type)
   where
   deriveNamedResolver _ =
     [ NamedResolver

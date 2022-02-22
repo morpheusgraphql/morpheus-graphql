@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased Changes
+
+- accept indexes for GraphQL Error Path (#662)
+
 ## 0.18.0 - 08.11.2021
 
 - GraphQL errors support additional field `extensions :: Maybe Value`

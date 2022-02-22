@@ -24,6 +24,7 @@ module Data.Morpheus.Types.Internal.AST.Error
     Msg (..),
     Message,
     withPath,
+    PropName (..),
   )
 where
 
@@ -31,7 +32,7 @@ import Data.Aeson
   ( FromJSON (..),
     Options (..),
     ToJSON (..),
-    Value (Null, String),
+    Value (Null, Number, String),
     defaultOptions,
     encode,
     genericParseJSON,
@@ -41,6 +42,7 @@ import Data.ByteString.Lazy (ByteString)
 import Data.Morpheus.Types.Internal.AST.Base
   ( Position (..),
   )
+import Data.Scientific (floatingOrInteger)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
 import Data.Text.Lazy.Encoding (decodeUtf8)
@@ -76,7 +78,7 @@ atPositions GQLError {..} pos = case toList pos of
   posList -> GQLError {locations = locations <> Just posList, ..}
 {-# INLINE atPositions #-}
 
-withPath :: GQLError -> [Text] -> GQLError
+withPath :: GQLError -> [PropName] -> GQLError
 withPath err [] = err
 withPath err path = err {path = Just path}
 
@@ -111,7 +113,7 @@ instance Semigroup ErrorType where
 data GQLError = GQLError
   { message :: Message,
     locations :: Maybe [Position],
-    path :: Maybe [Text],
+    path :: Maybe [PropName],
     errorType :: Maybe ErrorType,
     extensions :: Maybe (Map Text Value)
   }
@@ -120,6 +122,28 @@ data GQLError = GQLError
       Eq,
       Generic
     )
+
+data PropName
+  = PropIndex Int
+  | PropName Text
+  deriving (Show, Eq, Generic)
+
+instance IsString PropName where
+  fromString = PropName . T.pack
+
+instance FromJSON PropName where
+  parseJSON (String name) = pure (PropName name)
+  parseJSON (Number v) = case floatingOrInteger v of
+    Left fl -> invalidIndex fl
+    Right index -> pure (PropIndex index)
+  parseJSON _ = fail "Property Name must be a either Name or Index"
+
+invalidIndex :: MonadFail m => Double -> m a
+invalidIndex i = fail $ "Property Name must be a either Name or Index. it can't be " <> show i <> "."
+
+instance ToJSON PropName where
+  toJSON (PropName name) = toJSON name
+  toJSON (PropIndex index) = toJSON index
 
 instance Ord GQLError where
   compare x y = compare (locations x) (locations y) <> compare (message x) (message y)
