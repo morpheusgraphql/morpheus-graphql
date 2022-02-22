@@ -48,9 +48,9 @@ import Data.Morpheus.Types.Internal.AST
 import GHC.Show (Show (show))
 import Relude hiding (show)
 
-type ResolverMap (m :: * -> *) = HashMap TypeName (NamedResolver m)
+type ResolverMap (m :: Type -> Type) = HashMap TypeName (NamedResolver m)
 
-data NamedResolver (m :: * -> *) = NamedResolver
+data NamedResolver (m :: Type -> Type) = NamedResolver
   { resolverName :: TypeName,
     resolver :: ValidValue -> m (NamedResolverResult m)
   }
@@ -72,7 +72,7 @@ data NamedResolverRef = NamedResolverRef
   }
   deriving (Show)
 
-data NamedResolverResult (m :: * -> *)
+data NamedResolverResult (m :: Type -> Type)
   = NamedObjectResolver (ObjectTypeResolver m)
   | NamedUnionResolver NamedResolverRef
   | NamedEnumResolver TypeName

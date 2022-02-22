@@ -76,7 +76,7 @@ data
 run :: ApiContext SUB e m -> Updates e m -> m ()
 run SubContext {updateStore} (Updates changes) = updateStore changes
 
-data ApiContext (api :: API) event (m :: * -> *) where
+data ApiContext (api :: API) event (m :: Type -> Type) where
   PubContext ::
     { eventPublisher :: event -> m ()
     } ->
@@ -91,8 +91,8 @@ data ApiContext (api :: API) event (m :: * -> *) where
 data
   Output
     (api :: API)
-    e
-    (m :: * -> *)
+    (e :: Type)
+    (m :: Type -> Type)
   where
   SubOutput ::
     { streamWS :: ApiContext SUB e m -> m (Either ByteString [Updates e m])

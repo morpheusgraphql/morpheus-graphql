@@ -94,13 +94,13 @@ type FieldConstraint m a =
     TypeRep (Encode m) (m (ResolverValue m)) (Rep a)
   )
 
-class Encode (m :: * -> *) res where
+class Encode (m :: Type -> Type) res where
   encodeField :: res -> m (ResolverValue m)
 
 instance (EncodeFieldKind (KIND a) m a) => Encode m a where
   encodeField resolver = encodeFieldKind (ContextValue resolver :: ContextValue (KIND a) a)
 
-class EncodeFieldKind (k :: DerivingKind) (m :: * -> *) (a :: *) where
+class EncodeFieldKind (k :: DerivingKind) (m :: Type -> Type) (a :: Type) where
   encodeFieldKind :: ContextValue k a -> m (ResolverValue m)
 
 instance (EncodeScalar a, Monad m) => EncodeFieldKind SCALAR m a where

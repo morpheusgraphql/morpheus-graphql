@@ -59,7 +59,7 @@ data SessionID = SessionID
   }
   deriving (Show, Generic, Eq, Hashable)
 
-data ClientConnection (m :: * -> *) = ClientConnection
+data ClientConnection (m :: Type -> Type) = ClientConnection
   { connectionId :: UUID,
     connectionCallback :: ByteString -> m (),
     -- one connection can have multiple subscription session
@@ -74,7 +74,7 @@ addConnectionSession
   sid
   ClientConnection {..} = ClientConnection {connectionSessionIds = connectionSessionIds <> [sid], ..}
 
-data ClientSession e (m :: * -> *) = ClientSession
+data ClientSession e (m :: Type -> Type) = ClientSession
   { sessionChannel :: Channel e,
     sessionCallback :: e -> m ByteString
   }
@@ -113,7 +113,7 @@ publish event@Event {channels} ClientConnectionStore {activeChannels, clientConn
         upd = mapAt cantFindConnection connectionCallback (cid sid) clientConnections
         cantFindConnection _ = pure ()
 
-newtype Updates e (m :: * -> *) = Updates
+newtype Updates e (m :: Type -> Type) = Updates
   { _runUpdate :: ClientConnectionStore e m -> ClientConnectionStore e m
   }
 
@@ -192,7 +192,7 @@ removeActiveChannel sessionId = fmap update
 -- stores active client connections
 -- every registered client has ID
 -- when client connection is closed client(including all its subscriptions) can By removed By its ID
-data ClientConnectionStore e (m :: * -> *) where
+data ClientConnectionStore e (m :: Type -> Type) where
   ClientConnectionStore ::
     { clientConnections :: HashMap UUID (ClientConnection m),
       clientSessions :: HashMap SessionID (ClientSession (Event channel content) m),

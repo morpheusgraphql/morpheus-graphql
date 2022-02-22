@@ -54,18 +54,10 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
   )
 where
 
--- MORPHEUS
-
--- MORPHEUS
-
--- MORPHEUS
-
--- MORPHEUS
 import Control.Monad.Except (MonadError (throwError))
 import qualified Data.HashMap.Lazy as HM
 import Data.Mergeable
-  ( IsMap (lookup),
-    Merge (..),
+  ( Merge (..),
     NameCollision (..),
     OrdMap,
   )

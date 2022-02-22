@@ -56,9 +56,9 @@ newtype DerivedChannel e = DerivedChannel
   { _unpackChannel :: Channel e
   }
 
-type ChannelRes (e :: *) = Selection VALID -> ResolverState (DerivedChannel e)
+type ChannelRes (e :: Type) = Selection VALID -> ResolverState (DerivedChannel e)
 
-type ChannelsConstraint e m (subs :: (* -> *) -> *) =
+type ChannelsConstraint e m (subs :: (Type -> Type) -> Type) =
   ExploreConstraint e (subs (Resolver SUBSCRIPTION e m))
 
 channelResolver ::
@@ -109,8 +109,9 @@ instance
   GetChannel e (arg -> SubscriptionField (Resolver SUBSCRIPTION e m a))
   where
   getChannel f sel@Selection {selectionArguments} =
-    decodeArguments selectionArguments >>= (`getChannel` sel)
-      . f
+    decodeArguments selectionArguments
+      >>= (`getChannel` sel)
+        . f
 
 ------------------------------------------------------
 

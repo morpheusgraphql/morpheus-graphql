@@ -31,9 +31,8 @@ import Data.Morpheus.CodeGen.Printing.Terms
     renderType,
     renderWrapped,
   )
-import Data.Text.Prettyprint.Doc
-  ( (<+>),
-    Doc,
+import Prettyprinter
+  ( Doc,
     comma,
     enclose,
     indent,
@@ -43,6 +42,7 @@ import Data.Text.Prettyprint.Doc
     punctuate,
     tupled,
     vsep,
+    (<+>),
   )
 import Relude hiding (show)
 import Prelude (show)

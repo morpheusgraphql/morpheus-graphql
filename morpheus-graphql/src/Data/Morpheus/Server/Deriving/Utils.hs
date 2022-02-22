@@ -46,8 +46,8 @@ import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     GQLTypeOptions (..),
     TypeData (..),
-    __typeData,
     defaultTypeOptions,
+    __typeData,
   )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
@@ -61,9 +61,7 @@ import Data.Text
   )
 import qualified Data.Text as T
 import GHC.Generics
-  ( (:*:) (..),
-    (:+:) (..),
-    C,
+  ( C,
     Constructor,
     D,
     Datatype,
@@ -78,6 +76,8 @@ import GHC.Generics
     conIsRecord,
     conName,
     selName,
+    (:*:) (..),
+    (:+:) (..),
   )
 import GHC.TypeLits
 import Relude hiding (undefined)
@@ -89,9 +89,9 @@ conNameProxy options _ =
 
 selNameProxy :: forall f (s :: Meta). Selector s => GQLTypeOptions -> f s -> FieldName
 selNameProxy options _ =
-  fromHaskellName
-    $ fieldLabelModifier options
-    $ selName (undefined :: M1 S s f a)
+  fromHaskellName $
+    fieldLabelModifier options $
+      selName (undefined :: M1 S s f a)
 
 fromHaskellName :: String -> FieldName
 fromHaskellName hsName
@@ -117,7 +117,7 @@ toRep ::
 toRep f proxy = typeRep (typeOptions proxy defaultTypeOptions, Proxy @kind, f) (Proxy @(Rep a))
 
 toValue ::
-  forall proxy (kind :: TypeCategory) constraint value (a :: *).
+  forall proxy (kind :: TypeCategory) constraint value (a :: Type).
   (GQLType a, CategoryValue kind, Generic a, TypeRep constraint value (Rep a)) =>
   TypeConstraint constraint value Identity ->
   proxy kind ->
@@ -168,7 +168,7 @@ deriveConsRep opt proxy fields =
       | isRecordProxy proxy = fields
       | otherwise = enumerate fields
 
-class ConRep (c :: * -> Constraint) (v :: *) f where
+class ConRep (c :: Type -> Constraint) (v :: Type) f where
   conRep :: CategoryValue kind => (GQLTypeOptions, kinProxy (kind :: TypeCategory), TypeConstraint c v Proxy) -> proxy f -> [FieldRep v]
   toFieldRep :: CategoryValue kind => (GQLTypeOptions, kinProxy (kind :: TypeCategory), TypeConstraint c v Identity) -> f a -> [FieldRep v]
 
@@ -185,7 +185,7 @@ deriveFieldRep ::
   forall
     proxy
     (selector :: Meta)
-    (kindedProxy :: TypeCategory -> * -> *)
+    (kindedProxy :: TypeCategory -> Type -> Type)
     a
     v
     (kind :: TypeCategory).
@@ -224,12 +224,12 @@ data DataType (v :: Type) = DataType
     tyCons :: ConsRep v
   }
 
-data ConsRep (v :: *) = ConsRep
+data ConsRep (v :: Type) = ConsRep
   { consName :: TypeName,
     consFields :: [FieldRep v]
   }
 
-data FieldRep (a :: *) = FieldRep
+data FieldRep (a :: Type) = FieldRep
   { fieldSelector :: FieldName,
     fieldTypeRef :: TypeRef,
     fieldValue :: a
