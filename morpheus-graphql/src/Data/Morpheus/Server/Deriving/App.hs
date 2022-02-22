@@ -52,9 +52,15 @@ type NamedResolversConstraint m e query mutation subscription =
     Monad m
   )
 
-type ResSig = (Type -> Type) -> Type
-
-class DeriveApp f m (event :: Type) (qu :: ResSig) (mu :: ResSig) (su :: ResSig) where
+class
+  DeriveApp
+    f
+    m
+    (event :: Type)
+    (qu :: (Type -> Type) -> Type)
+    (mu :: (Type -> Type) -> Type)
+    (su :: (Type -> Type) -> Type)
+  where
   deriveApp :: f m event qu mu su -> App event m
 
 instance RootResolverConstraint m e query mut sub => DeriveApp RootResolver m e query mut sub where
