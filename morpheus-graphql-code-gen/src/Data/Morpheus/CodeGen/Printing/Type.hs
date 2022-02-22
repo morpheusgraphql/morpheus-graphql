@@ -31,7 +31,7 @@ import Data.Morpheus.CodeGen.Printing.Terms
     renderType,
     renderWrapped,
   )
-import Prettyprinter
+import Data.Text.Prettyprint.Doc
   ( Doc,
     comma,
     enclose,

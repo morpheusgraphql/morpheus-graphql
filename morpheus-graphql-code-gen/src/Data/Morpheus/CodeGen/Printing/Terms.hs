@@ -22,7 +22,7 @@ import Data.Morpheus.CodeGen.Internal.AST
     unpackName,
   )
 import qualified Data.Text as T
-import Prettyprinter
+import Data.Text.Prettyprint.Doc
   ( Doc,
     hsep,
     list,
