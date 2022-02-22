@@ -29,7 +29,7 @@ import Data.Morpheus.Client
 import Data.Morpheus.Types.Internal.AST
   ( Position (..),
     at,
-    withPath,
+    withPath, PropName (PropIndex),
   )
 import Data.Text (Text)
 import Spec.Utils
@@ -44,12 +44,12 @@ import Test.Tasty.HUnit
     testCase,
   )
 import Prelude
-  ( ($),
-    Either (..),
+  ( Either (..),
     Eq (..),
     IO,
     Maybe (..),
     Show,
+    ($),
   )
 
 newtype GitTimestamp = GitTimestamp
@@ -82,7 +82,7 @@ test = testCase "test Errors" $ do
     "test custom Errors"
     ( Left
         ( FetchErrorProducedErrors
-            (("Failure" `at` Position {line = 3, column = 7}) `withPath` ["queryTypeName"] :| [])
+            (("Failure" `at` Position {line = 3, column = 7}) `withPath` ["queryTypeName", PropIndex 0] :| [])
             (Just TestQuery {queryTypeName = Just "TestQuery"})
         )
     )
