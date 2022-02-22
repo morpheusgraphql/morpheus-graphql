@@ -27,8 +27,6 @@ import Data.Morpheus.Types.Internal.AST
 import GHC.Generics
 import Relude hiding (Undefined)
 
-type MAPPABLE_CONS = DerivingKind -> Type -> Constraint
-
 traverseTypes ::
   (GFmap (ScanConstraint c) (KIND a) a, c (KIND a) a, GQLType a) =>
   Mappable c v KindedProxy ->
@@ -39,7 +37,7 @@ traverseTypes f = runMappable (scanner f mempty) . withDerivable
 class
   (GFmap (ScanConstraint c) (KIND a) a, c (KIND a) a) =>
   ScanConstraint
-    (c :: MAPPABLE_CONS)
+    (c :: DerivingKind -> Type -> Constraint)
     (k :: DerivingKind)
     (a :: Type)
 
@@ -64,12 +62,12 @@ scanner c@(Mappable f) lib =
 withDerivable :: proxy a -> KindedProxy (KIND a) a
 withDerivable _ = KindedProxy
 
-newtype Mappable (c :: MAPPABLE_CONS) (v :: Type) (f :: DerivingKind -> Type -> Type) = Mappable
+newtype Mappable (c :: DerivingKind -> Type -> Constraint) (v :: Type) (f :: DerivingKind -> Type -> Type) = Mappable
   { runMappable :: forall a. (GQLType a, c (KIND a) a) => KindedProxy (KIND a) a -> v
   }
 
 -- Map
-class GFmap (c :: MAPPABLE_CONS) (t :: DerivingKind) a where
+class GFmap (c :: DerivingKind -> Type -> Constraint) (t :: DerivingKind) a where
   gfmap :: (Monoid v, Semigroup v) => Mappable c v KindedProxy -> kinded t a -> v
 
 instance (GQLType a, c (KIND a) a) => GFmap c SCALAR a where
@@ -92,7 +90,7 @@ instance GFmap c (KIND a) a => GFmap c CUSTOM (NamedResolverT m a) where
 -- GFunctor
 --
 --
-class GFunctor (c :: MAPPABLE_CONS) a where
+class GFunctor (c :: DerivingKind -> Type -> Constraint) a where
   genericMap :: (Monoid v, Semigroup v) => Mappable c v p -> proxy a -> v
 
 instance (Datatype d, GFunctor c a) => GFunctor c (M1 D d a) where
