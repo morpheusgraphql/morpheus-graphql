@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased Changes
+## 0.19.0 - 21.03.2022
 
 - accept indexes for GraphQL Error Path (#662)
 
