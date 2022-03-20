@@ -2,7 +2,10 @@
 
 ## 0.19.0 - 21.03.2022
 
+### Minor Changes
+
 - accept indexes for GraphQL Error Path (#662)
+- supports aeson 2.0
 
 ## 0.18.0 - 08.11.2021
 

@@ -3,8 +3,6 @@ cabal-version: 1.12
 -- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
---
--- hash: 0fd952b50e676d5237fe4d25935cdc978ababad30109f90046afd1b9ec23244b
 
 name:           morpheus-graphql-examples-servant
 version:        0.1.0
@@ -38,8 +36,8 @@ executable servant-server
     , bytestring >=0.10.4 && <0.11
     , file-embed
     , http-media
-    , morpheus-graphql >=0.18.0
-    , morpheus-graphql-subscriptions >=0.18.0
+    , morpheus-graphql
+    , morpheus-graphql-subscriptions
     , mtl >=2.0 && <=2.3
     , servant-server
     , text >=1.2.3.0 && <1.3

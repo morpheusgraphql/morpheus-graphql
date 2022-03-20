@@ -1,7 +1,7 @@
 {
   "name": "morpheus-graphql-docs",
   "description": "morpheus-graphql-docs",
-  "version": "0.18.0",
+  "version": "0.1.0",
   "author": "Daviti Nalchevanidze <d.nalchevanidze@gmail.com>",
   "dependencies": {
     "@deckdeckgo/highlight-code": "^3.3.1",

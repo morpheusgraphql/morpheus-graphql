@@ -3,11 +3,9 @@ cabal-version: 1.12
 -- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
---
--- hash: 15ab32667e874b873ceb824d2bda5d1a44db2458d5fefd9a07a1ea4bf48d6fd3
 
 name:           morpheus-graphql-app
-version:        0.18.0
+version:        0.19.0
 synopsis:       Morpheus GraphQL App
 description:    Build GraphQL APIs with your favourite functional language!
 category:       web, graphql
@@ -125,7 +123,7 @@ library
     , containers >=0.4.2.1 && <0.7
     , hashable >=1.0.0
     , megaparsec >=7.0.0 && <10.0.0
-    , morpheus-graphql-core >=0.18.0 && <0.19.0
+    , morpheus-graphql-core >=0.19.0 && <0.20.0
     , mtl >=2.0 && <=3.0
     , relude >=0.3.0
     , scientific >=0.3.6.2 && <0.4
@@ -155,8 +153,8 @@ test-suite morpheus-graphql-app-test
     , hashable >=1.0.0
     , megaparsec >=7.0.0 && <10.0.0
     , morpheus-graphql-app
-    , morpheus-graphql-core >=0.18.0 && <0.19.0
-    , morpheus-graphql-tests >=0.18.0 && <0.19.0
+    , morpheus-graphql-core >=0.19.0 && <0.20.0
+    , morpheus-graphql-tests >=0.19.0 && <0.20.0
     , mtl >=2.0 && <=3.0
     , relude >=0.3.0
     , scientific >=0.3.6.2 && <0.4
