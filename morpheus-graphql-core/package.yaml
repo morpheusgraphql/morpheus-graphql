@@ -1,5 +1,5 @@
 name: morpheus-graphql-core
-version: 0.18.0
+version: 0.19.0
 github: "nalchevanidze/morpheus-graphql"
 license: MIT
 author: "Daviti Nalchevanidze"
@@ -58,7 +58,7 @@ tests:
     ghc-options: -Wall
     dependencies:
       - morpheus-graphql-core
-      - morpheus-graphql-tests         >= 0.18.0        && <  0.19.0
+      - morpheus-graphql-tests         >= 0.19.0        && <  0.20.0
       - tasty
       - tasty-hunit
       - aeson
