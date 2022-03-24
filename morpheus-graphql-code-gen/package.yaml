@@ -10,8 +10,8 @@ homepage: https://morpheusgraphql.com
 copyright: (c) 2019 Daviti Nalchevanidze
 description: code generator for Morpheus GraphQL
 extra-source-files:
-  - changelog.md
   - README.md
+  - changelog.md
 dependencies:
   - base                   >=         4.7      &&  <    5
   - bytestring             >=         0.10.4   &&  <    0.11
@@ -25,8 +25,8 @@ dependencies:
 library:
   source-dirs: src
   exposed-modules:
-    - Data.Morpheus.CodeGen.Internal.AST
     - Data.Morpheus.CodeGen
+    - Data.Morpheus.CodeGen.Internal.AST
     - Data.Morpheus.CodeGen.Internal.TH
   ghc-options: '-Wall'
 executables:

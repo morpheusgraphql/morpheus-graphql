@@ -11,8 +11,8 @@ copyright: (c) 2019 Daviti Nalchevanidze
 license-file: LICENSE
 description: Build GraphQL APIs with your favourite functional language!
 extra-source-files:
-  - changelog.md
   - README.md
+  - changelog.md
 data-files:
   - test/**/*.gql
   - test/**/*.json

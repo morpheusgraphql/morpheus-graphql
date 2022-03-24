@@ -11,8 +11,8 @@ copyright: (c) 2019 Daviti Nalchevanidze
 license-file: LICENSE
 description: Build GraphQL APIs with your favourite functional language!
 extra-source-files:
-  - changelog.md
   - README.md
+  - changelog.md
 dependencies:
   - aeson                  >=  1.4.4.0  &&  <   3
   - base                   >=  4.7      &&  <   5

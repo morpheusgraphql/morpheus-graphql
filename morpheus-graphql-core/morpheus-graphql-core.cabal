@@ -18,8 +18,8 @@ license:        MIT
 license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
-    changelog.md
     README.md
+    changelog.md
 data-files:
     test/query/parsing/selection-set/empty-selection/query.gql
     test/query/parsing/selection-set/non-empty-selection/query.gql
@@ -156,15 +156,15 @@ source-repository head
 library
   exposed-modules:
       Data.Morpheus.Core
-      Data.Morpheus.QuasiQuoter
       Data.Morpheus.Error
-      Data.Morpheus.Types.IO
-      Data.Morpheus.Types.Internal.AST
+      Data.Morpheus.Internal.Ext
+      Data.Morpheus.Internal.Utils
+      Data.Morpheus.QuasiQuoter
       Data.Morpheus.Types.GQLScalar
       Data.Morpheus.Types.ID
+      Data.Morpheus.Types.IO
+      Data.Morpheus.Types.Internal.AST
       Data.Morpheus.Types.SelectionTree
-      Data.Morpheus.Internal.Utils
-      Data.Morpheus.Internal.Ext
   other-modules:
       Data.Mergeable
       Data.Mergeable.Internal.Merge

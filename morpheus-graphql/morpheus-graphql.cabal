@@ -18,8 +18,8 @@ license:        MIT
 license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
-    changelog.md
     README.md
+    changelog.md
 data-files:
     test/Feature/Collision/category-collision-fail/query.gql
     test/Feature/Collision/category-collision-success/query.gql
@@ -461,11 +461,11 @@ source-repository head
 library
   exposed-modules:
       Data.Morpheus
+      Data.Morpheus.Document
       Data.Morpheus.Kind
-      Data.Morpheus.Types
       Data.Morpheus.NamedResolvers
       Data.Morpheus.Server
-      Data.Morpheus.Document
+      Data.Morpheus.Types
   other-modules:
       Data.Morpheus.Server.Deriving.App
       Data.Morpheus.Server.Deriving.Channels

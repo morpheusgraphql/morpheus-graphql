@@ -11,8 +11,8 @@ copyright: (c) 2019 Daviti Nalchevanidze
 license-file: LICENSE
 description: Build GraphQL APIs with your favorite functional language!
 extra-source-files:
-  - changelog.md
   - README.md
+  - changelog.md
 data-files:
   - test/**/*.gql
   - test/**/*.json
@@ -36,15 +36,15 @@ library:
   source-dirs: src
   exposed-modules:
     - Data.Morpheus.Core
-    - Data.Morpheus.QuasiQuoter
     - Data.Morpheus.Error
-    - Data.Morpheus.Types.IO
-    - Data.Morpheus.Types.Internal.AST
+    - Data.Morpheus.Internal.Ext
+    - Data.Morpheus.Internal.Utils
+    - Data.Morpheus.QuasiQuoter
     - Data.Morpheus.Types.GQLScalar
     - Data.Morpheus.Types.ID
+    - Data.Morpheus.Types.IO
+    - Data.Morpheus.Types.Internal.AST
     - Data.Morpheus.Types.SelectionTree
-    - Data.Morpheus.Internal.Utils
-    - Data.Morpheus.Internal.Ext
   ghc-options: '-Wall'
 tests:
   morpheus-graphql-core-test:

@@ -18,8 +18,8 @@ license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
-    changelog.md
     README.md
+    changelog.md
 
 source-repository head
   type: git
@@ -27,8 +27,8 @@ source-repository head
 
 library
   exposed-modules:
-      Data.Morpheus.CodeGen.Internal.AST
       Data.Morpheus.CodeGen
+      Data.Morpheus.CodeGen.Internal.AST
       Data.Morpheus.CodeGen.Internal.TH
   other-modules:
       Data.Morpheus.CodeGen.Internal.Name

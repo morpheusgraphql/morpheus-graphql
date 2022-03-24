@@ -18,8 +18,8 @@ license:        MIT
 license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
-    changelog.md
     README.md
+    changelog.md
 data-files:
     test/api/deity/interface/query.gql
     test/api/deity/schema.gql
@@ -96,8 +96,8 @@ source-repository head
 library
   exposed-modules:
       Data.Morpheus.App
-      Data.Morpheus.App.NamedResolvers
       Data.Morpheus.App.Internal.Resolving
+      Data.Morpheus.App.NamedResolvers
       Data.Morpheus.Types.GQLWrapper
   other-modules:
       Data.Morpheus.App.Internal.Resolving.Event

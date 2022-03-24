@@ -18,8 +18,8 @@ license:        MIT
 license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
-    changelog.md
     README.md
+    changelog.md
 data-files:
     test/Case/Enum/schema.gql
     test/Case/Github/schema.gql
