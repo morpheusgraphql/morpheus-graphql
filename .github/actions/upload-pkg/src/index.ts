@@ -6,7 +6,8 @@ import { readFile } from "fs";
 import path from "path";
 
 const checkPackage = async (name: string) => {
-  const file = await promisify(readFile)(path.join(name, "package.yaml"));
+  const fileUrl = path.join(name, "package.yaml");
+  const file = await promisify(readFile)(fileUrl);
 
   console.log(file);
 };
