@@ -1,9 +1,11 @@
 name: Deploy
 
-on:
-  release:
-    types:
-      - created
+# on:
+#   release:
+#     types:
+#       - created
+
+on: [pull_request]
 
 jobs:
   build:
@@ -19,15 +21,20 @@ jobs:
         run: |
           stack sdist
 
-      - name: Upload Packages
-        run: |
-          stack upload morpheus-graphql-tests
-          stack upload morpheus-graphql-core
-          stack upload morpheus-graphql-code-gen
-          stack upload morpheus-graphql-app
-          stack upload morpheus-graphql-client
-          stack upload morpheus-graphql-subscriptions
-          stack upload morpheus-graphql
-        env:
-          HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
-          HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
+      - name: Upload Core Package
+        uses: ./github/actions/setup-env
+        with:
+          name: core
+
+      # - name: Upload Packages
+      #   run: |
+      #     stack upload morpheus-graphql-tests
+      #     stack upload morpheus-graphql-core
+      #     stack upload morpheus-graphql-code-gen
+      #     stack upload morpheus-graphql-app
+      #     stack upload morpheus-graphql-client
+      #     stack upload morpheus-graphql-subscriptions
+      #     stack upload morpheus-graphql
+      #   env:
+      #     HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
+      #     HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}

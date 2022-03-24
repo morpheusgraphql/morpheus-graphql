@@ -1,0 +1,10 @@
+name: "Upload Package"
+description: "Prepare and upload package"
+
+inputs:
+  name:
+    description: "package name"
+    required: true
+runs:
+  using: "node16"
+  main: "index.js"
