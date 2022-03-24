@@ -19,15 +19,40 @@ const version = {
   current: "0.19.0",
 };
 
-const updateDependency = (dep: string) => {
-  const [name, ...args] = dep.split(/\s+/);
+type Matrix = string[][];
 
+const genGap = (item: number, max: number) =>
+  Array.from({ length: max - item }, () => " ").join("");
+
+const getSize = (mx: Matrix, index: number) =>
+  Math.max(...mx.map((xs) => xs[index]?.length ?? 0));
+
+const formatMatrix = (xs: Matrix) =>
+  xs.map((row) =>
+    row
+      .reduce(
+        (txt, item, i) =>
+          txt + item + genGap(item.length, getSize(xs, i)) + "  ",
+        ""
+      )
+      .trim()
+  );
+
+const updateDependency = ([name, ...args]: string[]): string[] => {
   if (name.startsWith(projectPefix) && args.length) {
-    return `${name}     >= ${version.min} && < ${version.max}`;
+    return [name, ">=", version.min, "&&", "<", version.max];
   }
 
-  return dep;
+  return [name, ...args];
 };
+
+const formatDeps = (dependencies: string[]) =>
+  formatMatrix(
+    dependencies
+      .map((d) => d.split(/\s+/))
+      .sort(([a], [b]) => a.charCodeAt(0) - b.charCodeAt(0))
+      .map(updateDependency)
+  );
 
 const recursiveDepUpdate = (value: unknown): unknown => {
   if (!value) return value;
@@ -38,7 +63,7 @@ const recursiveDepUpdate = (value: unknown): unknown => {
     return Object.fromEntries(
       Object.entries(value).map(([key, v]) => {
         if (key === "dependencies") {
-          return [key, v.map(updateDependency)];
+          return [key, formatDeps(v)];
         }
         return [key, recursiveDepUpdate(v)];
       })
@@ -65,7 +90,7 @@ const checkPackage = async (name: string) => {
 };
 
 export const uploadPackage = async (name: string) => {
-  const packageName = `morpheus-graphql-${name}`;
+  const packageName = `morpheus-graphql${name ? `-${name}` : ""}`;
 
   console.info(`start uploading package ${packageName}!`);
 
