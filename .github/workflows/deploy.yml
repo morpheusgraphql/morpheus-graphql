@@ -23,7 +23,7 @@ jobs:
           stack sdist
 
       - name: Upload Core Package
-        uses: ./github/actions/setup-env
+        uses: ./.github/actions/upload-pkg
         with:
           name: core
 

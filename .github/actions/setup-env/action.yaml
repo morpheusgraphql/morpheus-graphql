@@ -8,11 +8,8 @@ runs:
       uses: haskell/actions/setup@v1.2
       with:
         enable-stack: true
+        latest: latest
 
-    - name: Install dependencies
+    - shell: bash
       run: |
         stack build --fast --skip-ghc-check --no-terminal --test --only-dependencies
-
-    - name: Build
-      run: |
-        stack test --fast --bench --no-run-benchmarks --haddock --no-haddock-deps
