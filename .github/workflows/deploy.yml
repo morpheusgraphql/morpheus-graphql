@@ -7,25 +7,34 @@ name: Deploy
 
 on: [pull_request]
 
+env:
+  HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
+  HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/setup-env
+      # - uses: ./.github/actions/setup-env
 
-      - name: Build Packages
-        run: |
-          stack test --fast --bench --no-run-benchmarks --haddock --no-haddock-deps
+      # - name: Build Packages
+      #   run: |
+      #     stack test --fast --bench --no-run-benchmarks --haddock --no-haddock-deps
 
-      - name: Prepare Packages
-        run: |
-          stack sdist
+      # - name: Prepare Packages
+      #   run: |
+      #     stack sdist
 
       - name: Upload Core Package
         uses: ./.github/actions/upload-pkg
         with:
           name: core
+
+      - name: Upload Tests Package
+        uses: ./.github/actions/upload-pkg
+        with:
+          name: tests
 
       # - name: Upload Packages
       #   run: |

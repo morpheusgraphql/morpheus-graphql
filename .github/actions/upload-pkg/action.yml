@@ -5,9 +5,7 @@ inputs:
   name:
     description: "package name"
     required: true
+
 runs:
   using: "node16"
   main: "dist/index.js"
-  env:
-    HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
-    HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
