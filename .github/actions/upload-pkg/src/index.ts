@@ -1,15 +1,20 @@
 import { getInput, setFailed } from "@actions/core";
-// const github = require("@actions/github");
+import { load } from "js-yaml";
 import { promisify } from "util";
 import { exec } from "child_process";
 import { readFile } from "fs";
 import path from "path";
 
+type StackPackage = {
+  name: string;
+};
+
 const checkPackage = async (name: string) => {
   const fileUrl = path.join(name, "package.yaml");
-  const file = await promisify(readFile)(fileUrl);
+  const file = await promisify(readFile)(fileUrl, "utf8");
+  const pkg = load(file) as StackPackage;
 
-  console.log(file);
+  console.log(file, pkg);
 };
 
 const uploadPackage = async (name: string) => {
