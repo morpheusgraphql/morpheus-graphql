@@ -9,7 +9,7 @@
     "lib": [
       "es2020"
     ],
-    "module": "es2020",
+    "module": "CommonJS",
     "moduleResolution": "node",
     "noFallthroughCasesInSwitch": true,
     "noImplicitReturns": true,
@@ -21,6 +21,6 @@
     "target": "ES2020",
     "useUnknownInCatchVariables": false,
     "noEmit": true,
-    "rootDir": "src"
-  },"include": ["src/**/*"]
+    "rootDir": "scripts"
+  },"include": ["scripts/**/*"]
 }

@@ -1,6 +1,5 @@
 import { dump, load } from "js-yaml";
 import { promisify } from "util";
-import { exec } from "child_process";
 import { readFile, writeFile } from "fs";
 import path from "path";
 import { Config } from "./types";
@@ -12,7 +11,11 @@ type StackPackage = {
   dependencies: string[];
 };
 
-const local = path.join(__dirname, "../../../../");
+const local = (p: string) => path.join(__dirname, "../", p);
+
+const read = (url: string) => promisify(readFile)(local(url), "utf8");
+const write = (url: string, file: string) =>
+  promisify(writeFile)(local(url), file);
 
 const recursiveDepUpdate = (config: Config, value: unknown): unknown => {
   if (!value) return value;
@@ -36,34 +39,17 @@ const fixPackage = (config: Config, pkg: StackPackage): unknown =>
   recursiveDepUpdate(config, { ...pkg, version: config.version });
 
 const checkPackage = async (name: string) => {
-  const fileUrl = path.join(local, name, "package.yaml");
-  const file = await promisify(readFile)(fileUrl, "utf8");
-  const pkg = load(file) as StackPackage;
-  console.log(`package ${pkg.name}: ${pkg.version}`);
+  const fileUrl = path.join(name, "package.yaml");
+  const pkg = load(await read(fileUrl)) as StackPackage;
 
-  const pkgYaml = dump(
-    fixPackage(
-      {
-        bounds: ["0.19.0", "0.20.0"],
-        version: "0.19.0",
-      },
-      pkg
-    )
-  );
+  const config = JSON.parse(await read("config.json"));
+  const fixedPackage = fixPackage(config, pkg);
+  await write(fileUrl, dump(fixedPackage));
 
-  await promisify(writeFile)(fileUrl, pkgYaml);
+  console.info(`Checked:\n  ${pkg.name}: ${pkg.version}`);
 };
 
 export const uploadPackage = async (name: string) => {
   const packageName = `morpheus-graphql${name ? `-${name}` : ""}`;
-
-  console.info(`start uploading package ${packageName}!`);
-
-  // check package version number
   await checkPackage(packageName);
-
-  // upload package
-  await promisify(exec)(`stack upload ${packageName}`);
-
-  console.info(`successfully uploaded package${packageName}!`);
 };
