@@ -5,7 +5,7 @@ name: Deploy
 #     types:
 #       - created
 
-on: [pull_request]
+on: push
 
 env:
   HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}

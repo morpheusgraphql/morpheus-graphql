@@ -1739,11 +1739,11 @@ var external_path_default = /*#__PURE__*/__nccwpck_require__.n(external_path_);
 
 
 const checkPackage = async (name) => {
-    const file = await (0,external_util_.promisify)(external_fs_.readFile)(external_path_default().join(name, "package.yaml"));
+    const fileUrl = external_path_default().join(name, "package.yaml");
+    const file = await (0,external_util_.promisify)(external_fs_.readFile)(fileUrl);
     console.log(file);
 };
-const uploadPackage = async () => {
-    const name = (0,core.getInput)("name");
+const uploadPackage = async (name) => {
     const packageName = `morpheus-graphql-${name}`;
     console.info(`start uploading package ${packageName}!`);
     // check package version number
@@ -1752,7 +1752,7 @@ const uploadPackage = async () => {
     await (0,external_util_.promisify)(external_child_process_namespaceObject.exec)(`stack upload ${packageName}`);
     console.info(`successfully uploaded package${packageName}!`);
 };
-uploadPackage().catch(({ message }) => (0,core.setFailed)(message));
+uploadPackage((0,core.getInput)("name")).catch(({ message }) => (0,core.setFailed)(message));
 
 })();
 

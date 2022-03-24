@@ -12,16 +12,18 @@ const checkPackage = async (name: string) => {
   console.log(file);
 };
 
-const uploadPackage = async () => {
-  const name = getInput("name");
+const uploadPackage = async (name: string) => {
   const packageName = `morpheus-graphql-${name}`;
 
   console.info(`start uploading package ${packageName}!`);
+
   // check package version number
   await checkPackage(packageName);
+
   // upload package
   await promisify(exec)(`stack upload ${packageName}`);
+
   console.info(`successfully uploaded package${packageName}!`);
 };
 
-uploadPackage().catch(({ message }) => setFailed(message));
+uploadPackage(getInput("name")).catch(({ message }) => setFailed(message));
