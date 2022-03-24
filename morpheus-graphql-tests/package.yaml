@@ -9,7 +9,7 @@ maintainer: d.nalchevanidze@gmail.com
 homepage: https://morpheusgraphql.com
 copyright: (c) 2019 Daviti Nalchevanidze
 dependencies:
-  - aeson
+  - aeson                 >=  1.4.4.0  &&  <  3
   - base                  >=  4.7      &&  <  5
   - bytestring            >=  0.10.4   &&  <  0.11
   - directory             >=  1.0

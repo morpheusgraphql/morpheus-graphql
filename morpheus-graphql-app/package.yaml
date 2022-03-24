@@ -23,7 +23,7 @@ dependencies:
   - containers             >=  0.4.2.1   &&  <   0.7
   - hashable               >=  1.0.0
   - megaparsec             >=  7.0.0     &&  <   10.0.0
-  - mtl                    >=  2.0       &&  <=  3.0
+  - mtl                    >=  2.0       &&  <   3.0
   - morpheus-graphql-core  >=  0.19.0    &&  <   0.20.0
   - relude                 >=  0.3.0
   - scientific             >=  0.3.6.2   &&  <   0.4
@@ -47,11 +47,11 @@ tests:
     source-dirs: test
     ghc-options: '-Wall'
     dependencies:
-      - aeson
+      - aeson                   >=  1.4.4.0  &&  <  3
       - directory               >=  1.0
       - morpheus-graphql-app
-      - morpheus-graphql-tests  >=  0.19.0  &&  <  0.20.0
-      - morpheus-graphql-core   >=  0.19.0  &&  <  0.20.0
+      - morpheus-graphql-tests  >=  0.19.0   &&  <  0.20.0
+      - morpheus-graphql-core   >=  0.19.0   &&  <  0.20.0
       - relude                  >=  0.3.0
       - tasty
       - tasty-hunit

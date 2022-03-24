@@ -21,11 +21,34 @@ const formatMatrix = (xs: Matrix) =>
       .trim()
   );
 
+const rules: Record<string, [string, string]> = {
+  aeson: ["1.4.4.0", "3"],
+  base: ["4.7", "5"],
+  bytestring: ["0.10.4", "0.11"],
+  containers: ["0.4.2.1", "0.7"],
+  megaparsec: ["7.0.0", "10.0.0"],
+  mtl: ["2.0", "3.0"],
+};
+
+const withRule = (name: string, [min, max]: [string, string]) => [
+  name,
+  ">=",
+  min,
+  "&&",
+  "<",
+  max,
+];
+
 const updateDependency =
-  ({ bounds: [min, max] }: Config) =>
+  ({ bounds }: Config) =>
   ([name, ...args]: string[]): string[] => {
     if (name.startsWith(projectPefix) && args.length) {
-      return [name, ">=", min, "&&", "<", max];
+      return withRule(name, bounds);
+    }
+    const rule = rules[name];
+
+    if (rule) {
+      return withRule(name, rule);
     }
 
     return [name, ...args];
