@@ -1,12 +1,9 @@
 name: Setup Enviroment
-desription: Checkout, Setups Haskell and Stack, install Dependencies
+desription: Setups Haskell and Stack, install Dependencies
 
 runs:
   using: "composite"
   steps:
-    - uses: actions/checkout@v2
-    - name: setup stack config
-
     - name: Setup Haskell
       uses: haskell/actions/setup@v1.2
       with:
