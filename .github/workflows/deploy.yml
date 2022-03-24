@@ -26,15 +26,15 @@ jobs:
       #   run: |
       #     stack sdist
 
-      - name: Upload Core Package
-        uses: ./.github/actions/upload-pkg
-        with:
-          name: core
-
       - name: Upload Tests Package
         uses: ./.github/actions/upload-pkg
         with:
           name: tests
+
+      - name: Upload Core Package
+        uses: ./.github/actions/upload-pkg
+        with:
+          name: core
 
       # - name: Upload Packages
       #   run: |

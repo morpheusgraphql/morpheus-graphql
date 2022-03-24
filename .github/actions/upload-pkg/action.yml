@@ -3,9 +3,9 @@ description: "Prepare and upload package"
 
 inputs:
   name:
-    description: "package name"
+    description: Package name
     required: true
 
 runs:
   using: "node16"
-  main: "dist/index.js"
+  main: bin/index.js
