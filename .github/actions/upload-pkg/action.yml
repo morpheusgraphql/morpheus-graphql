@@ -7,4 +7,7 @@ inputs:
     required: true
 runs:
   using: "node16"
-  main: "index.js"
+  main: "dist/index.js"
+  env:
+    HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
+    HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}

@@ -13,3 +13,5 @@ runs:
     - shell: bash
       run: |
         stack build --fast --skip-ghc-check --no-terminal --test --only-dependencies
+
+
