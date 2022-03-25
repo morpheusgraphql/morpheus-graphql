@@ -264,7 +264,7 @@ deriveToJSON
       typeDef = applyCons ''ToJSON [typename]
       body = [funDSimple 'toJSON [] (aesonToJSONEnumBody clientTypeName clientCons)]
 
-omitNulls :: [(Text, Value)] -> Value
+omitNulls :: [(Key, Value)] -> Value
 omitNulls = object . filter notNull
   where
     notNull (_, Null) = False
