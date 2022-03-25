@@ -1,6 +1,7 @@
 {
   "editor.formatOnSave": true,
-  "ghcSimple.feature.rangeType": false,
-  "cSpell.words": ["INLINEABLE", "Nullary", "dups", "haxl", "parens"],
+  "[graphql]": {
+    "editor.formatOnSave": false
+  },
   "editor.renderWhitespace": "all"
 }

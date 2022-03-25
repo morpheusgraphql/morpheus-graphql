@@ -172,8 +172,8 @@ instance (LiftOperation o, Monad m) => MonadReader ResolverContext (Resolver o e
   local f (ResolverS resM) = ResolverS $ mapReaderT (local f) <$> resM
 
 -- | A function to return the internal 'ResolverContext' within a resolver's monad.
--- Using the 'ResolverContext' itself is unsafe because it expposes internal structures
--- of the AST, but you can use the "Data.Morpheus.Types.SelectionTree" typeclass to manipulate
+-- Using the 'ResolverContext' itself is unsafe because it exposes internal structures
+-- of the AST, but you can use the "Data.Morpheus.Types.SelectionTree" typeClass to manipulate
 -- the internal AST with a safe interface.
 unsafeInternalContext :: (Monad m, LiftOperation o) => Resolver o e m ResolverContext
 unsafeInternalContext = ask
@@ -199,9 +199,9 @@ subscribe ::
   Resolver QUERY e m (e -> Resolver SUBSCRIPTION e m a) ->
   SubscriptionField (Resolver SUBSCRIPTION e m a)
 subscribe ch res =
-  SubscriptionField ch $
-    ResolverS $
-      fromSub <$> runResolverQ res
+  SubscriptionField ch
+    $ ResolverS
+    $ fromSub <$> runResolverQ res
   where
     fromSub :: Monad m => (e -> Resolver SUBSCRIPTION e m a) -> ReaderT e (ResolverStateT () m) a
     fromSub f = join (ReaderT (runResolverS . f))

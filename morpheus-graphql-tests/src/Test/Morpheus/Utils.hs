@@ -105,15 +105,3 @@ assertValidSchema =
 
 getResolver :: FromJSON resolver => FileUrl -> IO resolver
 getResolver url = readJSON "resolvers" url >>= either fail pure . eitherDecode
-
--- data Target
---   = Api
---       ( forall req res.
---         (FromJSON req, ToJSON res) =>
---         (req -> IO res)
---       )
---   | Rendering
---       ( forall req err.
---         (ToJSON err, FromJSON req) =>
---         (req -> IO (Either err ByteString))
---       )

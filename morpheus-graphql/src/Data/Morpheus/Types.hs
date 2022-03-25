@@ -121,15 +121,15 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Relude hiding (Undefined)
 
-class FlexibleResolver (f :: * -> *) (a :: k) where
-  type Flexible (m :: * -> *) a :: *
-  type Composed (m :: * -> *) f a :: *
+class FlexibleResolver (f :: Type -> Type) (a :: k) where
+  type Flexible (m :: Type -> Type) a :: Type
+  type Composed (m :: Type -> Type) f a :: Type
 
-instance FlexibleResolver f (a :: *) where
+instance FlexibleResolver f (a :: Type) where
   type Flexible m a = m a
   type Composed m f a = m (f a)
 
-instance FlexibleResolver f (a :: (* -> *) -> *) where
+instance FlexibleResolver f (a :: (Type -> Type) -> Type) where
   type Flexible m a = m (a m)
   type Composed m f a = m (f (a m))
 
@@ -211,11 +211,11 @@ liftEither x = lift x >>= either (throwError . fromString) pure
 --  if your schema does not supports __mutation__ or __subscription__ , you can use __()__ for it.
 data
   RootResolver
-    (m :: * -> *)
+    (m :: Type -> Type)
     event
-    (query :: (* -> *) -> *)
-    (mutation :: (* -> *) -> *)
-    (subscription :: (* -> *) -> *) = RootResolver
+    (query :: (Type -> Type) -> Type)
+    (mutation :: (Type -> Type) -> Type)
+    (subscription :: (Type -> Type) -> Type) = RootResolver
   { queryResolver :: query (Resolver QUERY event m),
     mutationResolver :: mutation (Resolver MUTATION event m),
     subscriptionResolver :: subscription (Resolver SUBSCRIPTION event m)
@@ -223,11 +223,11 @@ data
 
 data
   NamedResolvers
-    (m :: * -> *)
+    (m :: Type -> Type)
     event
-    (qu :: (* -> *) -> *)
-    (mu :: (* -> *) -> *)
-    (su :: (* -> *) -> *)
+    (qu :: (Type -> Type) -> Type)
+    (mu :: (Type -> Type) -> Type)
+    (su :: (Type -> Type) -> Type)
   = ( ResolveNamed
         (Resolver QUERY event m)
         (qu (NamedResolverT (Resolver QUERY event m)))

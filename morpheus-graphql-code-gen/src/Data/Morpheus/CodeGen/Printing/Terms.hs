@@ -23,12 +23,12 @@ import Data.Morpheus.CodeGen.Internal.AST
   )
 import qualified Data.Text as T
 import Data.Text.Prettyprint.Doc
-  ( (<+>),
-    Doc,
+  ( Doc,
     hsep,
     list,
     pretty,
     tupled,
+    (<+>),
   )
 import Relude hiding (optional)
 

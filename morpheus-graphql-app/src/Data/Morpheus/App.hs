@@ -78,7 +78,7 @@ mkApp appSchema appResolvers =
     (App . AppData defaultConfig appResolvers)
     (validateSchema True defaultConfig appSchema)
 
-data App event (m :: * -> *)
+data App event (m :: Type -> Type)
   = App {app :: AppData event m VALID}
   | FailApp {appErrors :: GQLErrors}
 
@@ -92,7 +92,7 @@ instance Monad m => Semigroup (App e m) where
   App {} <> FailApp {appErrors} = FailApp appErrors
   (App x) <> (App y) = resultOr FailApp App (stitch x y)
 
-data AppData event (m :: * -> *) s = AppData
+data AppData event (m :: Type -> Type) s = AppData
   { appConfig :: Config,
     appResolvers :: RootResolverValue event m,
     appSchema :: Schema s
@@ -124,34 +124,34 @@ validateReq ::
   Config ->
   GQLRequest ->
   ResponseStream event m ResolverContext
-validateReq inputSchema config request = ResultT
-  $ pure
-  $ do
-    validSchema <- validateSchema True config inputSchema
-    schema <- internalSchema <:> validSchema
-    operation <- parseRequestWith config validSchema request
-    pure
-      ( [],
-        ResolverContext
-          { schema,
-            config,
-            operation,
-            currentType =
-              toAny $
-                fromMaybe
-                  (AST.query schema)
-                  (rootType (operationType operation) schema),
-            currentSelection =
-              Selection
-                { selectionName = "Root",
-                  selectionArguments = empty,
-                  selectionPosition = operationPosition operation,
-                  selectionAlias = Nothing,
-                  selectionContent = SelectionSet (operationSelection operation),
-                  selectionDirectives = empty
-                }
-          }
-      )
+validateReq inputSchema config request = ResultT $
+  pure $
+    do
+      validSchema <- validateSchema True config inputSchema
+      schema <- internalSchema <:> validSchema
+      operation <- parseRequestWith config validSchema request
+      pure
+        ( [],
+          ResolverContext
+            { schema,
+              config,
+              operation,
+              currentType =
+                toAny $
+                  fromMaybe
+                    (AST.query schema)
+                    (rootType (operationType operation) schema),
+              currentSelection =
+                Selection
+                  { selectionName = "Root",
+                    selectionArguments = empty,
+                    selectionPosition = operationPosition operation,
+                    selectionAlias = Nothing,
+                    selectionContent = SelectionSet (operationSelection operation),
+                    selectionDirectives = empty
+                  }
+            }
+        )
 
 rootType :: OperationType -> Schema s -> Maybe (AST.TypeDefinition AST.OBJECT s)
 rootType Query = Just . AST.query

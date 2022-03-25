@@ -70,9 +70,9 @@ simulateSubscriptions = do
       )
   pure (input, state)
 
-triggerSubsciption ::
+triggerSubscription ::
   IO TestTree
-triggerSubsciption = do
+triggerSubscription = do
   (input, state) <- simulateSubscriptions
   SimulationState {inputs, outputs, store} <-
     simulatePublish (Event [DEITY] Info {name = "Zeus", age = 1200}) state
@@ -102,5 +102,5 @@ triggerSubsciption = do
 
 testPublishing :: IO TestTree
 testPublishing = do
-  trigger <- triggerSubsciption
+  trigger <- triggerSubscription
   return $ testGroup "Publishing" [trigger]

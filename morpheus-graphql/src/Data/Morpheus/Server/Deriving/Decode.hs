@@ -21,6 +21,7 @@ module Data.Morpheus.Server.Deriving.Decode
 where
 
 import Control.Monad.Except (MonadError (throwError))
+import qualified Data.Map as M
 import Data.Morpheus.App.Internal.Resolving
   ( ResolverState,
   )
@@ -33,7 +34,6 @@ import Data.Morpheus.Kind
   )
 import Data.Morpheus.Server.Deriving.Utils
   ( conNameProxy,
-    datatypeNameProxy,
     selNameProxy,
     symbolName,
   )
@@ -68,6 +68,7 @@ import Data.Morpheus.Types.GQLWrapper
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
     Arguments,
+    FieldName,
     GQLError,
     IN,
     LEAF,
@@ -122,7 +123,7 @@ instance
         Context
           { options = typeOptions (Proxy @a) defaultTypeOptions,
             contKind = D_CONS,
-            typeName = ""
+            typeName = gqlTypeName $ __typeData (KindedProxy :: KindedProxy IN a)
           }
 
 instance (Decode a, DecodeWrapperConstraint f a, DecodeWrapper f) => DecodeKind WRAPPER (f a) where
@@ -135,6 +136,10 @@ instance (Decode a, KnownSymbol name) => DecodeKind CUSTOM (Arg name a) where
     where
       fieldDecoder = decodeFieldWith decode fieldName
       fieldName = symbolName (Proxy @name)
+
+--  Map
+instance (Ord k, Decode (k, v)) => DecodeKind CUSTOM (Map k v) where
+  decodeKind _ v = M.fromList <$> (decode v :: ResolverState [(k, v)])
 
 -- data Input  =
 --    InputHuman Human  -- direct link: { __typename: Human, Human: {field: ""} }
@@ -198,9 +203,6 @@ instance Semigroup Info where
 
 type DecoderT = ReaderT Context ResolverState
 
-withTypeName :: TypeName -> DecoderT a -> DecoderT a
-withTypeName typeName = local (\ctx -> ctx {typeName})
-
 withKind :: Tag -> DecoderT a -> DecoderT a
 withKind contKind = local (\ctx -> ctx {contKind})
 
@@ -220,16 +222,13 @@ getUnionInfos _ =
 --
 -- GENERICS
 --
-class DecodeRep (f :: * -> *) where
+class DecodeRep (f :: Type -> Type) where
   tags :: Proxy f -> Context -> Info
   decodeRep :: ValidValue -> DecoderT (f a)
 
 instance (Datatype d, DecodeRep f) => DecodeRep (M1 D d f) where
   tags _ = tags (Proxy @f)
-  decodeRep value = do
-    gqlOptions <- asks options
-    let typeName = datatypeNameProxy gqlOptions (Proxy @d)
-    withTypeName typeName (M1 <$> decodeRep value)
+  decodeRep value = M1 <$> decodeRep value
 
 instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
   tags _ = tags (Proxy @a) <> tags (Proxy @b)
@@ -250,7 +249,7 @@ instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
   decodeRep _ = throwError (internal "lists and scalars are not allowed in Union")
 
 instance (Constructor c, DecodeFields a) => DecodeRep (M1 C c a) where
-  decodeRep = fmap M1 . decodeFields
+  decodeRep = fmap M1 . decodeFields 0
   tags _ Context {typeName, options} = getTag (refType (Proxy @a))
     where
       getTag (Just memberRef)
@@ -262,25 +261,35 @@ instance (Constructor c, DecodeFields a) => DecodeRep (M1 C c a) where
       ----------
       isUnionRef x = typeName <> x == consName
 
-class DecodeFields (f :: * -> *) where
+class DecodeFields (f :: Type -> Type) where
   refType :: Proxy f -> Maybe TypeName
-  decodeFields :: ValidValue -> DecoderT (f a)
+  countFields :: Proxy f -> Int
+  decodeFields :: Int -> ValidValue -> DecoderT (f a)
 
 instance (DecodeFields f, DecodeFields g) => DecodeFields (f :*: g) where
   refType _ = Nothing
-  decodeFields gql = (:*:) <$> decodeFields gql <*> decodeFields gql
+  countFields _ = countFields (Proxy @f) + countFields (Proxy @g)
+  decodeFields index gql =
+    (:*:) <$> decodeFields index gql
+      <*> decodeFields (index + countFields (Proxy @g)) gql
 
 instance (Selector s, GQLType a, Decode a) => DecodeFields (M1 S s (K1 i a)) where
+  countFields _ = 1
   refType _ = Just $ gqlTypeName $ __typeData (KindedProxy :: KindedProxy IN a)
-  decodeFields value = M1 . K1 <$> do
+  decodeFields index value = M1 . K1 <$> do
     Context {options, contKind} <- ask
-    if contKind == D_UNION
-      then lift (decode value)
-      else
-        let fieldName = selNameProxy options (Proxy @s)
+    case contKind of
+      D_UNION -> lift (decode value)
+      D_CONS ->
+        let fieldName = getFieldName (selNameProxy options (Proxy @s)) index
             fieldDecoder = decodeFieldWith (lift . decode) fieldName
          in withInputObject fieldDecoder value
 
+getFieldName :: FieldName -> Int -> FieldName
+getFieldName "" index = "_" <> show index
+getFieldName label _ = label
+
 instance DecodeFields U1 where
+  countFields _ = 0
   refType _ = Nothing
-  decodeFields _ = pure U1
+  decodeFields _ _ = pure U1

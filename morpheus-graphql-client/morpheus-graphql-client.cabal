@@ -3,11 +3,9 @@ cabal-version: 1.12
 -- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
---
--- hash: d8afe2a76ad3163ac3b8f0ac2cac8965a875cbcf8d86ea660ac0a65d325f71de
 
 name:           morpheus-graphql-client
-version:        0.18.0
+version:        0.19.0
 synopsis:       Morpheus GraphQL Client
 description:    Build GraphQL APIs with your favourite functional language!
 category:       web, graphql, client
@@ -32,6 +30,7 @@ data-files:
     test/Case/Github/response.json
     test/Case/Interface/response.json
     test/Case/JSON/Custom/Errors/response.json
+    test/Case/JSON/Custom/ErrorsWithType/response.json
     test/Case/JSON/Custom/Mutation/response.json
     test/Case/JSON/Custom/NoResponseOrError/response.json
     test/Case/JSON/Custom/PartialResponse/response.json
@@ -69,11 +68,11 @@ library
       src
   ghc-options: -Wall
   build-depends:
-      aeson >=1.4.4.0 && <=1.6
+      aeson >=1.4.4.0 && <3
     , base >=4.7 && <5
     , bytestring >=0.10.4 && <0.11
-    , morpheus-graphql-code-gen >=0.18.0 && <0.19.0
-    , morpheus-graphql-core >=0.18.0 && <0.19.0
+    , morpheus-graphql-code-gen >=0.19.0 && <0.20.0
+    , morpheus-graphql-core >=0.19.0 && <0.20.0
     , mtl >=2.0 && <=3.0
     , relude >=0.3.0
     , template-haskell >=2.0 && <=3.0
@@ -90,6 +89,7 @@ test-suite morpheus-graphql-client-test
       Case.Github.Test
       Case.Interface.Test
       Case.JSON.Custom.Errors
+      Case.JSON.Custom.ErrorsWithType
       Case.JSON.Custom.Mutation
       Case.JSON.Custom.NoResponseOrError
       Case.JSON.Custom.PartialResponse
@@ -108,8 +108,8 @@ test-suite morpheus-graphql-client-test
     , bytestring >=0.10.4 && <0.11
     , directory >=1.0
     , morpheus-graphql-client
-    , morpheus-graphql-code-gen >=0.18.0 && <0.19.0
-    , morpheus-graphql-core >=0.18.0 && <0.19.0
+    , morpheus-graphql-code-gen >=0.19.0 && <0.20.0
+    , morpheus-graphql-core >=0.19.0 && <0.20.0
     , mtl >=2.0 && <=3.0
     , relude >=0.3.0
     , tasty

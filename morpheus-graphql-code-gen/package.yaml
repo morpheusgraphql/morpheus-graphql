@@ -1,5 +1,5 @@
 name: morpheus-graphql-code-gen
-version: 0.18.0
+version: 0.19.0
 github: "morpheusgraphql/morpheus-graphql"
 license: BSD3
 author: "Daviti Nalchevanidze"
@@ -17,7 +17,7 @@ extra-source-files:
 
 dependencies:
   - base                  >= 4.7       && <  5
-  - morpheus-graphql-core >= 0.18.0    && <  0.19.0
+  - morpheus-graphql-core >= 0.19.0    && <  0.20.0
   - text                  >= 1.2.3.0   && <  1.3
   - bytestring            >= 0.10.4    && <  0.11
   - prettyprinter         >= 1.2       && <  2.0
@@ -41,5 +41,5 @@ executables:
     ghc-options: -Wall
     dependencies:
       - morpheus-graphql-code-gen
-      - optparse-applicative  >= 0.12      && <  0.17
+      - optparse-applicative  >= 0.12      && <  0.18
       - filepath              >= 1.1       && <  1.5

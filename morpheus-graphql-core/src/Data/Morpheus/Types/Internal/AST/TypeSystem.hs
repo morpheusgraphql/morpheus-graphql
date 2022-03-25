@@ -14,7 +14,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -54,18 +54,10 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
   )
 where
 
--- MORPHEUS
-
--- MORPHEUS
-
--- MORPHEUS
-
--- MORPHEUS
 import Control.Monad.Except (MonadError (throwError))
 import qualified Data.HashMap.Lazy as HM
 import Data.Mergeable
-  ( IsMap (lookup),
-    Merge (..),
+  ( Merge (..),
     NameCollision (..),
     OrdMap,
   )
@@ -74,14 +66,14 @@ import Data.Mergeable.SafeHashMap
     toHashMap,
   )
 import Data.Morpheus.Internal.Utils
-  ( (<:>),
-    Empty (..),
+  ( Empty (..),
     IsMap (..),
     KeyOf (..),
     insert,
     selectOr,
     toPair,
     unsafeFromList,
+    (<:>),
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),

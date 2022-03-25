@@ -10,9 +10,7 @@
           "column": 7
         }
       ],
-      "path": [
-        "queryTypeName"
-      ],
+      "path": ["queryTypeName", 0],
       "message": "Failure"
     }
   ]

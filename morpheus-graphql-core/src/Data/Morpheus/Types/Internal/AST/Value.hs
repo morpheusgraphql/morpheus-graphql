@@ -9,7 +9,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -42,13 +42,13 @@ import qualified Data.Aeson as A
     pairs,
   )
 import Data.Foldable (foldr')
-import qualified Data.HashMap.Lazy as M
 import Data.Mergeable
   ( NameCollision (..),
     OrdMap,
   )
 import Data.Morpheus.Internal.Utils
   ( KeyOf (..),
+    toAssoc,
     unsafeFromList,
   )
 import Data.Morpheus.Rendering.RenderGQL
@@ -85,11 +85,11 @@ import Data.Scientific
   ( Scientific,
     floatingOrInteger,
   )
+import qualified Data.Text as T
 import qualified Data.Vector as V
 import Instances.TH.Lift ()
 import Language.Haskell.TH.Syntax (Lift (..))
 import Relude
-import qualified Data.Text as T
 
 -- | Primitive Values for GQLScalar: 'Int', 'Float', 'String', 'Boolean'.
 -- for performance reason type 'Text' represents GraphQl 'String' value
@@ -269,7 +269,7 @@ replaceValue (A.Object v) =
   mkObject $
     fmap
       (bimap packName replaceValue)
-      (M.toList v)
+      (toAssoc v)
 replaceValue (A.Array li) = List (fmap replaceValue (V.toList li))
 replaceValue A.Null = Null
 

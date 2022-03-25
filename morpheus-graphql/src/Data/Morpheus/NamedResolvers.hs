@@ -26,20 +26,20 @@ instance Monad m => ResolveNamed m Text where
   type Dep Text = Text
   resolveNamed = pure
 
-class (ToJSON (Dep a)) => ResolveNamed (m :: * -> *) a where
-  type Dep a :: *
+class (ToJSON (Dep a)) => ResolveNamed (m :: Type -> Type) a where
+  type Dep a :: Type
   resolveNamed :: Monad m => Dep a -> m a
 
-instance (ResolveNamed m a) => ResolveNamed (m :: * -> *) (Maybe a) where
+instance (ResolveNamed m a) => ResolveNamed (m :: Type -> Type) (Maybe a) where
   type Dep (Maybe a) = Maybe (Dep a)
   resolveNamed (Just x) = Just <$> resolveNamed x
   resolveNamed Nothing = pure Nothing
 
-instance (ResolveNamed m a) => ResolveNamed (m :: * -> *) [a] where
+instance (ResolveNamed m a) => ResolveNamed (m :: Type -> Type) [a] where
   type Dep [a] = [Dep a]
   resolveNamed = traverse resolveNamed
 
-data NamedResolverT (m :: * -> *) a where
+data NamedResolverT (m :: Type -> Type) a where
   Ref :: ResolveNamed m a => m (Dep a) -> NamedResolverT m a
   Refs :: ResolveNamed m a => m [Dep a] -> NamedResolverT m [a]
   Value :: m a -> NamedResolverT m a

@@ -29,6 +29,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeWrapper,
     kindOf,
   )
+import Data.Morpheus.Types.Internal.AST.Error (PropName)
 import Relude
 
 data ScopeKind
@@ -44,7 +45,7 @@ data Scope = Scope
     currentTypeWrappers :: TypeWrapper,
     fieldName :: FieldName,
     kind :: ScopeKind,
-    path :: [Text]
+    path :: [PropName]
   }
   deriving (Show)
 

@@ -92,8 +92,8 @@ disconnect SubContext {updateStore} (InitConnection clientID) =
 -- shared GraphQL state between __websocket__ and __http__ server,
 -- you can define your own store if you provide write and read methods
 -- to work properly Morpheus needs all entries of ClientConnectionStore (+ client Callbacks)
--- that why it is recomended that you use many local ClientStores on evenry server node
--- rathen then single centralized Store.
+-- that why it is recommended that you use many local ClientStores on every server node
+-- rather then single centralized Store.
 data Store e m = Store
   { readStore :: m (ClientConnectionStore e m),
     writeStore :: (ClientConnectionStore e m -> ClientConnectionStore e m) -> m ()

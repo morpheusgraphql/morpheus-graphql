@@ -38,13 +38,15 @@ import Data.Morpheus.Types.Internal.AST
     CONST,
     FieldName,
     FieldsDefinition,
-    Name (unpackName),
+    Name,
     OUT,
+    PropName (PropName),
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
     mkBaseType,
     msg,
+    unpackName,
   )
 import Data.Morpheus.Types.Internal.AST.Type (TypeKind (KindObject))
 import Data.Morpheus.Types.Internal.AST.TypeSystem (Schema)
@@ -62,25 +64,25 @@ inInterface ::
   TypeName ->
   SchemaValidator (TypeEntity 'ON_INTERFACE) v ->
   SchemaValidator (TypeEntity 'ON_TYPE) v
-inInterface name = pushPath (unpackName name) . withLocalContext (\t -> t {interfaceName = OnInterface name})
+inInterface name = pushPath name . withLocalContext (\t -> t {interfaceName = OnInterface name})
 
 inType ::
   TypeName ->
   SchemaValidator (TypeEntity 'ON_TYPE) v ->
   SchemaValidator () v
-inType name = pushPath (unpackName name) . withLocalContext (const (TypeEntity OnType name))
+inType name = pushPath name . withLocalContext (const (TypeEntity OnType name))
 
 inField ::
   FieldName ->
   SchemaValidator (Field p) v ->
   SchemaValidator (TypeEntity p) v
-inField fieldName = pushPath (unpackName fieldName) . withLocalContext (Field fieldName Nothing)
+inField fieldName = pushPath fieldName . withLocalContext (Field fieldName Nothing)
 
 inArgument ::
   FieldName ->
   SchemaValidator (Field p) v ->
   SchemaValidator (Field p) v
-inArgument name = pushPath (unpackName name) . withLocalContext (\field -> field {fieldArgument = Just name})
+inArgument name = pushPath name . withLocalContext (\field -> field {fieldArgument = Just name})
 
 data PLACE = ON_INTERFACE | ON_TYPE
 
@@ -119,8 +121,8 @@ newtype TypeSystemContext c = TypeSystemContext
   {local :: c}
   deriving (Show)
 
-pushPath :: Text -> SchemaValidator a v -> SchemaValidator a v
-pushPath name = withScope (\x -> x {path = path x <> [name]})
+pushPath :: Name t -> SchemaValidator a v -> SchemaValidator a v
+pushPath name = withScope (\x -> x {path = path x <> [PropName (unpackName name)]})
 
 withLocalContext :: (a -> b) -> SchemaValidator b v -> SchemaValidator a v
 withLocalContext = withContext . updateLocal

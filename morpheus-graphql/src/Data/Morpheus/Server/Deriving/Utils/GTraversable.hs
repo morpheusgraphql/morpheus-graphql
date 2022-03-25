@@ -37,9 +37,9 @@ traverseTypes f = runMappable (scanner f mempty) . withDerivable
 class
   (GFmap (ScanConstraint c) (KIND a) a, c (KIND a) a) =>
   ScanConstraint
-    (c :: DerivingKind -> * -> Constraint)
+    (c :: DerivingKind -> Type -> Constraint)
     (k :: DerivingKind)
-    (a :: *)
+    (a :: Type)
 
 instance (GFmap (ScanConstraint c) (KIND a) a, c (KIND a) a) => ScanConstraint c k a
 
@@ -62,12 +62,12 @@ scanner c@(Mappable f) lib =
 withDerivable :: proxy a -> KindedProxy (KIND a) a
 withDerivable _ = KindedProxy
 
-newtype Mappable (c :: DerivingKind -> * -> Constraint) (v :: *) (f :: DerivingKind -> * -> *) = Mappable
+newtype Mappable (c :: DerivingKind -> Type -> Constraint) (v :: Type) (f :: DerivingKind -> Type -> Type) = Mappable
   { runMappable :: forall a. (GQLType a, c (KIND a) a) => KindedProxy (KIND a) a -> v
   }
 
 -- Map
-class GFmap (c :: DerivingKind -> * -> Constraint) (t :: DerivingKind) a where
+class GFmap (c :: DerivingKind -> Type -> Constraint) (t :: DerivingKind) a where
   gfmap :: (Monoid v, Semigroup v) => Mappable c v KindedProxy -> kinded t a -> v
 
 instance (GQLType a, c (KIND a) a) => GFmap c SCALAR a where
@@ -90,7 +90,7 @@ instance GFmap c (KIND a) a => GFmap c CUSTOM (NamedResolverT m a) where
 -- GFunctor
 --
 --
-class GFunctor (c :: DerivingKind -> * -> Constraint) a where
+class GFunctor (c :: DerivingKind -> Type -> Constraint) a where
   genericMap :: (Monoid v, Semigroup v) => Mappable c v p -> proxy a -> v
 
 instance (Datatype d, GFunctor c a) => GFunctor c (M1 D d a) where

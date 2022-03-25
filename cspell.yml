@@ -1,0 +1,78 @@
+language: en
+useGitignore: true
+ignorePaths:
+  - cspell.yml
+  - package.json
+  - ./.stack-work
+  - ./**/*.cabal
+  - ./**/*.json
+  - ./node_modules
+  - ./docs/node_modules
+  - ./examples
+overrides:
+  - filename: "**/docs/APIReference-*.md"
+    ignoreRegExpList:
+      - /href="[^"]*"/
+ignoreRegExpList:
+  - u\{[0-9a-f]{1,8}\}
+words:
+  - accum
+  - Aeson
+  - bgroup
+  - Bifunctor
+  - bimap
+  - concat
+  - cond
+  - cronos
+  - Daviti
+  - dups
+  - Eithers
+  - elems
+  - elif
+  - fbexp
+  - fmap
+  - foldl
+  - foldr
+  - fraxl
+  - gfmap
+  - Hackage
+  - Hashable
+  - haxl
+  - hlint
+  - hpack
+  - hsep
+  - ifromJSON
+  - inlineable
+  - jsdelivr
+  - Kinded
+  - mconcat
+  - mempty
+  - Mergeable
+  - metavar
+  - monoid
+  - Nalchevanidze
+  - normalise
+  - nullary
+  - parens
+  - Posix
+  - prefs
+  - Relude
+  - rmap
+  - sconcat
+  - scotty
+  - semigroup
+  - shapeshifting
+  - stimes
+  - subparser
+  - subprotocols
+  - Subtyping
+  - tupled
+  - TyVarBndr
+  - uncapitalize
+  - uncurry
+  - unlift
+  - Unpackedness
+  - vsep
+  - whnf
+  - stylesheet
+  - websockets

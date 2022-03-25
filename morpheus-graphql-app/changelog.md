@@ -1,5 +1,7 @@
 # Changelog
 
+## 0.19.0 - 21.03.2022
+
 ## 0.18.0 - 08.11.2021
 
 - Data.Morpheus.App.NamedResolvers (inspired by apollo [named resolvers](https://www.apollographql.com/docs/apollo-server/data/resolvers/#as-this-example-shows)

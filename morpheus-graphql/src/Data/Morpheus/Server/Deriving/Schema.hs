@@ -79,7 +79,6 @@ import Data.Morpheus.Server.Types.SchemaT
   )
 import Data.Morpheus.Server.Types.Types
   ( Arg (..),
-    Pair,
     TypeGuard,
   )
 import Data.Morpheus.Types.GQLScalar
@@ -115,7 +114,7 @@ import GHC.TypeLits
 import Language.Haskell.TH (Exp, Q)
 import Relude
 
-type SchemaConstraints event (m :: * -> *) query mutation subscription =
+type SchemaConstraints event (m :: Type -> Type) query mutation subscription =
   ( DeriveTypeConstraintOpt OUT (query (Resolver QUERY event m)),
     DeriveTypeConstraintOpt OUT (mutation (Resolver MUTATION event m)),
     DeriveTypeConstraintOpt OUT (subscription (Resolver SUBSCRIPTION event m))
@@ -166,7 +165,7 @@ deriveSchema _ = toSchema schemaT
         <*> deriveObjectType (Proxy @(subs (Resolver SUBSCRIPTION e m)))
 
 -- |  Generates internal GraphQL Schema for query validation and introspection rendering
-class DeriveType (kind :: TypeCategory) (a :: *) where
+class DeriveType (kind :: TypeCategory) (a :: Type) where
   deriveType :: f a -> SchemaT kind ()
   deriveContent :: f a -> TyContentM kind
 
@@ -201,13 +200,9 @@ instance DeriveTypeConstraint IN a => DeriveKindedType IN TYPE a where
 instance DeriveType cat a => DeriveKindedType cat CUSTOM (Resolver o e m a) where
   deriveKindedType _ = deriveType (Proxy @a)
 
--- Tuple
-instance DeriveType cat (Pair k v) => DeriveKindedType cat CUSTOM (k, v) where
-  deriveKindedType _ = deriveType (Proxy @(Pair k v))
-
 -- Map
-instance DeriveType cat [Pair k v] => DeriveKindedType cat CUSTOM (Map k v) where
-  deriveKindedType _ = deriveType (Proxy @[Pair k v])
+instance DeriveType cat [(k, v)] => DeriveKindedType cat CUSTOM (Map k v) where
+  deriveKindedType _ = deriveType (Proxy @[(k, v)])
 
 instance
   ( DeriveTypeConstraint OUT interface,
@@ -262,7 +257,7 @@ instance DeriveTypeConstraint IN a => DeriveArguments TYPE a where
 instance (KnownSymbol name, DeriveType IN a, GQLType a) => DeriveArguments CUSTOM (Arg name a) where
   deriveArgumentsDefinition _ = do
     withInput (deriveType proxy)
-    pure $ fieldsToArguments $ singleton $ mkField Nothing argName argTypeRef
+    pure $ fieldsToArguments $ singleton argName $ mkField Nothing argName argTypeRef
     where
       proxy :: KindedProxy IN a
       proxy = KindedProxy

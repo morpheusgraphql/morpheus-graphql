@@ -1,0 +1,15 @@
+query ValidProduct {
+  f1: testProduct(value: { _0: "abc", _1: 4235, _2: true }) {
+    ...Product
+  }
+  f2: testProduct(value: { _0: "324523", _1: 3468, _2: false, _3: 0.635 }) {
+    ...Product
+  }
+}
+
+fragment Product on Product {
+  _0
+  _1
+  _2
+  _3
+}

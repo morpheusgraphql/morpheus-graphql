@@ -32,8 +32,7 @@ import Data.Morpheus.CodeGen.Printing.Terms
     renderWrapped,
   )
 import Data.Text.Prettyprint.Doc
-  ( (<+>),
-    Doc,
+  ( Doc,
     comma,
     enclose,
     indent,
@@ -43,6 +42,7 @@ import Data.Text.Prettyprint.Doc
     punctuate,
     tupled,
     vsep,
+    (<+>),
   )
 import Relude hiding (show)
 import Prelude (show)
@@ -103,7 +103,7 @@ instance RenderType ServerFieldDefinition where
         fieldType
       } =
       pure $
-        pretty (unpackName fieldName)
+        pretty (unpackName fieldName :: Text)
           <+> "::"
           <+> unDoc (foldr renderWrapper (TypeDoc False $ pretty fieldType) wrappers)
 

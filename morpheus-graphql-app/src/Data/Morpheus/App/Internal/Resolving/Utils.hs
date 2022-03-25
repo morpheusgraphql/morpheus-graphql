@@ -21,7 +21,6 @@ where
 
 import Control.Monad.Except (MonadError (throwError))
 import qualified Data.Aeson as A
-import qualified Data.HashMap.Lazy as HM
 import Data.Morpheus.App.Internal.Resolving.Types
   ( NamedResolverRef (..),
     ObjectTypeResolver (..),
@@ -30,24 +29,27 @@ import Data.Morpheus.App.Internal.Resolving.Types
     mkNull,
     mkObjectMaybe,
   )
-import Data.Morpheus.Internal.Utils (selectOr)
+import qualified Data.Morpheus.Internal.Utils as U
+import Data.Morpheus.Internal.Utils (selectOr, toAssoc)
 import Data.Morpheus.Types.Internal.AST
-  ( GQLError,
+  ( FieldName,
+    GQLError,
     ScalarValue (..),
     TypeName,
     decodeScientific,
     internal,
     packName,
+    unpackName,
   )
 import qualified Data.Vector as V
 import Relude
 
-lookupResJSON :: (MonadError GQLError f, Monad m) => Text -> A.Value -> f (ObjectTypeResolver m)
+lookupResJSON :: (MonadError GQLError f, Monad m) => FieldName -> A.Value -> f (ObjectTypeResolver m)
 lookupResJSON name (A.Object fields) =
   selectOr
     mkEmptyObject
     (requireObject . mkValue)
-    name
+    (unpackName name)
     fields
 lookupResJSON _ _ = mkEmptyObject
 
@@ -60,10 +62,10 @@ mkValue ::
   ResolverValue m
 mkValue (A.Object v) =
   mkObjectMaybe
-    (HM.lookup "__typename" v >>= unpackJSONName)
+    (U.lookup "__typename" v >>= unpackJSONName)
     $ fmap
       (bimap packName (pure . mkValue))
-      (HM.toList v)
+      (toAssoc v)
 mkValue (A.Array ls) = mkList (fmap mkValue (V.toList ls))
 mkValue A.Null = mkNull
 mkValue (A.Number x) = ResScalar (decodeScientific x)

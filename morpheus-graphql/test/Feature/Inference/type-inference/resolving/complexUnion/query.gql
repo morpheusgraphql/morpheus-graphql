@@ -32,7 +32,7 @@
       }
     }
 
-    ... on SomeMutli {
+    ... on SomeCompound {
       _0
       _1
     }

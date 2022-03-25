@@ -1,38 +1,48 @@
 name: CI
-
 on: [pull_request]
-
 jobs:
   build:
     strategy:
       matrix:
-        plan:
-          - { ghc: "8.2.2" }
-          - { ghc: "8.4.4" }
-          - { ghc: "8.6.5" }
-          - { ghc: "8.8.3" }
-          - { ghc: "8.10.7" }
-          - { ghc: "latest" }
+        # "8.2.2"  TODO: fix: ByteCodeLink.lookupCE
+        ghc: ["8.4.4", "8.6.5", "8.8.3", "8.10.7", "latest"]
+        os: [ubuntu-latest, macOS-latest]
       fail-fast: false
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    name: GHC ${{ matrix.ghc}} (${{ matrix.os }})
     steps:
-      - name: prepare OS
-        uses: mstksg/get-package@v1
+      - uses: actions/checkout@v2
+      - name: setup stack config
+        run: cp config/stack/${{ matrix.ghc }}.yaml  stack.yaml
+
+      - name: Setup Haskell
+        uses: haskell/actions/setup@v1.2
         with:
-          apt-get: ${{ matrix.apt-get }}
-      - uses: actions/checkout@v1
+          ghc-version: ${{ matrix.ghc }}
+          enable-stack: true
+      - name: Cache Stack
+        uses: actions/cache@v2
+        with:
+          path: ~/.stack
+          key: ${{ runner.os }}-${{ matrix.ghc }}-stack-${{ hashFiles('stack.yaml') }}-packages-${{ hashFiles('**/package.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.ghc }}-stack-${{ hashFiles('stack.yaml') }}
+            ${{ runner.os }}-${{ matrix.ghc }}-stack-
 
-      - name: setup stack
-        uses: nalchevanidze/setup-stack@v2.3
+      # Install & Build & Test
 
-      - name: setup GHC version
-        run: cp config/stack/${{ matrix.plan.ghc }}.yaml  stack.yaml
       - name: Install dependencies
         run: |
           stack build --fast --skip-ghc-check --no-terminal --test --only-dependencies
+
       - name: Build
         run: |
-          stack test --fast --bench --no-run-benchmarks --haddock --no-haddock-deps
+          stack build --fast --test --bench --no-run-tests --no-run-benchmarks --haddock --no-haddock-deps
+
+      - name: Test
+        run: |
+          stack test --fast
+
   hlint:
     runs-on: ubuntu-latest
     steps:
@@ -40,18 +50,3 @@ jobs:
       - name: lint
         run: |
           curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s .
-  # prettier:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v1
-  #     - uses: actions/setup-haskell@v1
-  #       with:
-  #         ghc-version: "8.6.5"
-  #         cabal-version: "3.0"
-  #     - name: Install
-  #       run: |
-  #         curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s .
-  #         # cabal update
-  #         # cabal install ormolu
-  #     - name: prettier
-  #       run:  ormolu --mode check $(find . -name '*.hs')
