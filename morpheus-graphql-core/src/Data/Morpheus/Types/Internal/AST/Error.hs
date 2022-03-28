@@ -24,6 +24,7 @@ module Data.Morpheus.Types.Internal.AST.Error
     Msg (..),
     Message,
     withPath,
+    withExtensions,
     PropName (..),
   )
 where
@@ -77,6 +78,10 @@ atPositions GQLError {..} pos = case toList pos of
   [] -> GQLError {..}
   posList -> GQLError {locations = locations <> Just posList, ..}
 {-# INLINE atPositions #-}
+
+
+withExtensions :: GQLError -> Map Text Value -> GQLError
+withExtensions gqlerr ext = gqlerr { extensions = Just ext }
 
 withPath :: GQLError -> [PropName] -> GQLError
 withPath err [] = err
