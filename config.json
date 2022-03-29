@@ -26,5 +26,14 @@
     "tasty-hunit": ["0.1", "1.0"],
     "optparse-applicative": ["0.12", "0.18"],
     "prettyprinter": ["1.2", "2.0"]
-  }
+  },
+  "packages": [
+    "morpheus-graphql-tests",
+    "morpheus-graphql-core",
+    "morpheus-graphql-code-gen",
+    "morpheus-graphql-app",
+    "morpheus-graphql-client",
+    "morpheus-graphql-subscriptions",
+    "morpheus-graphql"
+  ]
 }

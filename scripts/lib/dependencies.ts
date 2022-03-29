@@ -30,10 +30,28 @@ const updateDependency =
     throw new Error(`Unknown package: ${name}`);
   };
 
-export const formatDeps = (config: Config) => (dependencies: string[]) =>
+const formatDeps = (config: Config) => (dependencies: string[]) =>
   formatTable(
     dependencies
       .map((d) => d.split(/\s+/))
       .sort(([a], [b]) => a.charCodeAt(0) - b.charCodeAt(0))
       .map(updateDependency(config))
   );
+
+export const updateDeps = (config: Config, value: unknown): unknown => {
+  if (!value) return value;
+  if (typeof value === "object") {
+    if (Array.isArray(value)) {
+      return value.sort();
+    }
+    return Object.fromEntries(
+      Object.entries(value).map(([key, v]) => {
+        if (key === "dependencies") {
+          return [key, formatDeps(config)(v)];
+        }
+        return [key, updateDeps(config, v)];
+      })
+    );
+  }
+  return value;
+};

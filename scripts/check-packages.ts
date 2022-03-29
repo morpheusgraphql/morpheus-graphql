@@ -1,19 +1,26 @@
-import { uploadPackage } from "./upload-package";
+import path from "path";
+import { Config, StackPackage } from "./lib/types";
+import { updateDeps } from "./lib/dependencies";
+import { readJSON, readYAML, writeYAML } from "./lib/file";
 
-const packages = [
-  "tests",
-  "core",
-  "code-gen",
-  "app",
-  "client",
-  "subscriptions",
-  "",
-];
+export const checkPackage = (config: Config) => async (name: string) => {
+  const url = path.join(name, "package.yaml");
+  const pkg = await readYAML<StackPackage>(url);
 
-const main = () =>
-  Promise.all(packages.map(uploadPackage)).catch((err) => {
-    console.error(err.message);
-    process.exit(1);
-  });
+  const fixedPackage = updateDeps(config, { ...pkg, version: config.version });
 
-main();
+  await writeYAML(url, fixedPackage);
+
+  console.info(`Checked:\n  ${pkg.name}: ${pkg.version}`);
+};
+
+const main = async () => {
+  const config = await readJSON<Config>("config.json");
+
+  await Promise.all(config.packages.map(checkPackage(config)));
+};
+
+main().catch((err) => {
+  console.error(err.message);
+  process.exit(1);
+});
