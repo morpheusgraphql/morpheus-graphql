@@ -1,0 +1,17 @@
+name: Setup Enviroment
+desription: Setups Haskell and Stack, install Dependencies
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Haskell
+      uses: haskell/actions/setup@v1.2
+      with:
+        enable-stack: true
+        latest: latest
+
+    - shell: bash
+      run: |
+        stack build --fast --skip-ghc-check --no-terminal --test --only-dependencies
+
+
