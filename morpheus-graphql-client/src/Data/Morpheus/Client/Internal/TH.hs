@@ -17,12 +17,16 @@ module Data.Morpheus.Client.Internal.TH
     mkFieldsE,
     destructRecord,
     failExp,
+    isTypeDeclared,
+    hasInstance,
   )
 where
 
 import Data.Foldable (foldr1)
+import Data.Morpheus.Client.Internal.Types (ClientTypeDefinition (..), TypeNameTH (..))
 import Data.Morpheus.CodeGen.Internal.TH
   ( camelCaseFieldName,
+    camelCaseTypeName,
     toCon,
     toName,
     toString,
@@ -117,3 +121,21 @@ destructRecord :: TypeName -> [FieldDefinition cat s] -> PatQ
 destructRecord conName fields = conP (toName conName) (vars names)
   where
     names = map (camelCaseFieldName conName . fieldName) fields
+
+isTypeDeclared :: ClientTypeDefinition -> Q Bool
+isTypeDeclared clientDef = do
+    let name = mkTypeName clientDef
+    m <- lookupTypeName (show name)
+    case m of
+        Nothing -> pure False
+        _ -> pure True
+
+hasInstance :: Name -> ClientTypeDefinition -> Q Bool
+hasInstance typeClass clientDef = do
+    isInstance typeClass [ConT (mkTypeName clientDef)]
+
+mkTypeName :: ClientTypeDefinition -> Name
+mkTypeName ClientTypeDefinition{clientTypeName = TypeNameTH namespace typeName} =
+    toType typeName
+  where
+    toType = toName . camelCaseTypeName namespace

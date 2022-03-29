@@ -23,6 +23,8 @@ import Data.Morpheus.Client.Internal.TH
     failExp,
     matchWith,
     mkFieldsE,
+    isTypeDeclared,
+    hasInstance
   )
 import Data.Morpheus.Client.Internal.Types
   ( ClientConstructorDefinition (..),
@@ -64,13 +66,10 @@ import Language.Haskell.TH
     Name,
     PatQ,
     Q,
-    Type (ConT),
     appE,
     conP,
     cxt,
     instanceD,
-    isInstance,
-    lookupTypeName,
     tupP,
  )
 import Language.Haskell.TH.Syntax (Dec)
@@ -88,15 +87,14 @@ aesonDeclarations kind clientDef
 
 deriveIfNotDefined :: (ClientTypeDefinition -> Q Dec) -> Name -> ClientTypeDefinition -> Q [Dec]
 deriveIfNotDefined derivation typeClass clientDef = do
-    let name = mkTypeName clientDef
-    exists <- lookupTypeName (show name)
-    case exists of
-        Nothing -> mkDerivation
-        Just _ -> do
-            hasInstance <- isInstance typeClass [ConT name]
-            if hasInstance
+    exists <- isTypeDeclared clientDef
+    if exists
+        then do
+            has <- hasInstance typeClass clientDef
+            if has
                 then pure []
                 else mkDerivation
+        else mkDerivation
   where
     mkDerivation :: Q [Dec]
     mkDerivation = do
@@ -264,14 +262,8 @@ deriveToJSON
       typeDef = applyCons ''ToJSON [typename]
       body = [funDSimple 'toJSON [] (aesonToJSONEnumBody clientTypeName clientCons)]
 
-omitNulls :: [(Key, Value)] -> Value
+omitNulls :: [Pair] -> Value
 omitNulls = object . filter notNull
   where
     notNull (_, Null) = False
     notNull _ = True
-
-mkTypeName :: ClientTypeDefinition -> Name
-mkTypeName ClientTypeDefinition{clientTypeName = TypeNameTH namespace typeName} =
-    toType typeName
-  where
-    toType = toName . camelCaseTypeName namespace
