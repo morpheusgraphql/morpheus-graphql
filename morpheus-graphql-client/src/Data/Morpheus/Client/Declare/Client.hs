@@ -38,11 +38,10 @@ declareClient src ClientDefinition {clientArguments, clientTypes = rootType : su
     <*> (concat <$> traverse declareType subTypes)
 
 declareType :: ClientTypeDefinition -> Q [Dec]
-declareType clientType@ClientTypeDefinition {clientKind} =
-  apply clientType (typeDeclarations clientKind <> aesonDeclarations clientKind)
-
-apply :: Applicative f => a -> [a -> f b] -> f [b]
-apply a = traverse (\f -> f a)
+declareType clientType@ClientTypeDefinition{clientKind} = do
+    types <- typeDeclarations clientKind clientType
+    instances <- aesonDeclarations clientKind clientType
+    pure (types <> instances)
 
 queryArgumentType :: Maybe ClientTypeDefinition -> (Type, Q [Dec])
 queryArgumentType Nothing = (toCon ("()" :: String), pure [])

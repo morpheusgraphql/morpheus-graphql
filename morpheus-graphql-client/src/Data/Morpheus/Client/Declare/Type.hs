@@ -34,10 +34,15 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Language.Haskell.TH
 import Relude hiding (Type)
+import Data.Morpheus.Client.Internal.TH (isTypeDeclared)
 
-typeDeclarations :: TypeKind -> [ClientTypeDefinition -> Q Dec]
-typeDeclarations KindScalar = []
-typeDeclarations _ = [pure . declareType]
+typeDeclarations :: TypeKind -> ClientTypeDefinition -> Q [Dec]
+typeDeclarations KindScalar _ = pure []
+typeDeclarations _ c = do
+    exists <- isTypeDeclared c
+    if exists
+        then pure []
+        else pure [declareType c]
 
 declareType :: ClientTypeDefinition -> Dec
 declareType
