@@ -24,6 +24,7 @@ const genChangeLog = async () => {
   const newVersion = genVersionByPRs(tag, pullRequesrs);
   const changelog = renderChangelog(newVersion, date, pullRequesrs);
 
+  process.env.VERSION = newVersion;
   await write("/dist/changelog.md", changelog);
   process.stdout.write(changelog);
 };

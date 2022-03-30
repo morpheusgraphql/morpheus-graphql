@@ -27,8 +27,8 @@ jobs:
 
       - name: Create Changelog
         run: |
-          echo '::set-output name=body::$(echo npm run changelog)'
-          echo '::set-output name=version::0.12.3'
+          echo "::set-output name=body::(echo npm run changelog)"
+          echo "::set-output name=version::123"
         id: changelog
 
       - name: Test body
