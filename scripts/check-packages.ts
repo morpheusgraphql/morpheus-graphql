@@ -1,7 +1,8 @@
 import path from "path";
-import { Config, StackPackage } from "./lib/types";
-import { updateDeps } from "./lib/dependencies";
-import { readJSON, readYAML, writeYAML } from "./lib/file";
+import { Config, StackPackage } from "./lib/check-packages/types";
+import { updateDeps } from "./lib/check-packages/dependencies";
+import { readJSON, readYAML, writeYAML } from "./lib/utils/file";
+import { exit } from "./lib/utils/utils";
 
 export const checkPackage = (config: Config) => async (name: string) => {
   const url = path.join(name, "package.yaml");
@@ -14,13 +15,10 @@ export const checkPackage = (config: Config) => async (name: string) => {
   console.info(`Checked:\n  ${pkg.name}: ${pkg.version}`);
 };
 
-const main = async () => {
+const checkPackages = async () => {
   const config = await readJSON<Config>("config.json");
 
   await Promise.all(config.packages.map(checkPackage(config)));
 };
 
-main().catch((err) => {
-  console.error(err.message);
-  process.exit(1);
-});
+checkPackages().catch(exit);

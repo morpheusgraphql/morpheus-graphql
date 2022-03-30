@@ -1,13 +1,6 @@
-import { execSync } from "child_process";
 import axios from "axios";
 
 const { GH_TOKEN } = process.env;
-
-export const exec = (command: string) =>
-  execSync(command, {
-    maxBuffer: 10 * 1024 * 1024, // 10MB
-    encoding: "utf-8",
-  })?.trimEnd();
 
 export const getPRNumber = (msg: string) => {
   const num = / \(#(?<prNumber>[0-9]+)\)$/m.exec(msg)?.groups?.prNumber;
@@ -39,3 +32,13 @@ export const ghApi = (query: string) =>
     })
     .then(({ data }) => data.data)
     .catch((err) => Promise.reject(err.message));
+
+export const isKey = <T extends string>(
+  obj: Record<T, unknown>,
+  key?: string | null
+): key is T => typeof key === "string" && key in obj;
+
+export const exit = (error: unknown) => {
+  console.error(error);
+  process.exit(1);
+};

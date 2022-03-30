@@ -1,5 +1,6 @@
-import { uniq } from "ramda";
-import { batchMap, getPRNumber, ghApi } from "./utils";
+import { pluck, uniq } from "ramda";
+import { batchMap, getPRNumber, ghApi } from "../utils/utils";
+import { parseLabel, PR_TYPE, SCOPE } from "./pull-request-types";
 
 const githubOrg = "morpheusgraphql";
 const githubRepo = "morpheus-graphql";
@@ -21,12 +22,12 @@ type Author = {
   name: string;
 };
 
-export type GithubPR = {
+type GithubPR = {
   number: number;
   title: string;
   url: string;
   author: Author;
-  labels: { nodes: [] };
+  labels: string[];
   body: string;
 };
 
@@ -64,8 +65,13 @@ const batchCommitInfo = getGithub<Commit>(
     `
 );
 
-const batchPRInfo = getGithub<GithubPR>(
-  (number) => `
+const batchPRInfo = (xs: unknown[]) =>
+  getGithub<
+    Omit<GithubPR, "labels"> & {
+      labels: { nodes: { name: string }[] };
+    }
+  >(
+    (number) => `
     pr_${number}: pullRequest(number: ${number}) {
         number
         title
@@ -80,12 +86,19 @@ const batchPRInfo = getGithub<GithubPR>(
         }
         labels(first: 10) {
             nodes {
-            name
+              name
             }
         }
     }
     `
-);
+  )(xs).then((prs) =>
+    prs.map(
+      ({ labels, ...rest }): GithubPR => ({
+        ...rest,
+        labels: pluck("name", labels.nodes),
+      })
+    )
+  );
 
 const getAsoccPR = ({
   associatedPullRequests,
@@ -106,7 +119,25 @@ const getAsoccPR = ({
   return num;
 };
 
-export const getPRsInfo = (commits: string[]): Promise<GithubPR[]> =>
+const getGithubPRs = (commits: string[]): Promise<GithubPR[]> =>
   batchMap(batchCommitInfo, commits).then((ghCommits) =>
     batchMap(batchPRInfo, uniq(ghCommits.map(getAsoccPR)))
   );
+
+const getPullRequesrs = (commits: string[]) =>
+  getGithubPRs(commits).then((prs) =>
+    prs.map(
+      ({ labels, ...pr }): PullRequest => ({
+        ...pr,
+        type: labels.map(parseLabel("pr")).find(Boolean) ?? "chore",
+        scopes: labels.map(parseLabel("scope")).filter(Boolean) as SCOPE[],
+      })
+    )
+  );
+
+type PullRequest = Omit<GithubPR, "labels"> & {
+  type: PR_TYPE;
+  scopes: SCOPE[];
+};
+
+export { getPullRequesrs, PullRequest };
