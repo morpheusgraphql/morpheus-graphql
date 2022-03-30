@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const { GH_TOKEN } = process.env;
+const { GITHUB_TOKEN } = process.env;
 
 export const getPRNumber = (msg: string) => {
   const num = / \(#(?<prNumber>[0-9]+)\)$/m.exec(msg)?.groups?.prNumber;
@@ -26,7 +26,7 @@ export const ghApi = (query: string) =>
   axios
     .post("https://api.github.com/graphql", JSON.stringify({ query }), {
       headers: {
-        authorization: `Bearer ${GH_TOKEN}`,
+        authorization: `Bearer ${GITHUB_TOKEN}`,
         "content-type": "application/json",
       },
     })

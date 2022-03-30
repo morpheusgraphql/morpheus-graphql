@@ -1,0 +1,46 @@
+name: Create Release
+# on: workflow_dispatch
+
+on: push
+
+env:
+  GITHUB_TOKEN: secrets.GH_TOKEN
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: "master"
+
+      - name: Setup
+        uses: actions/setup-node@v1
+        with:
+          node-version: 14.x
+
+      - name: Install
+        run: |
+          npm i
+
+      - name: Create Changelog
+        run: |
+          echo '::set-output name=body::$(echo npm run changelog)'
+          echo '::set-output name=version::0.12.3'
+        id: changelog
+
+      - name: Test body
+        run: |
+          echo "${{steps.changelog.outputs.body}}"
+          echo "${{steps.changelog.outputs.version}}"
+
+      # - name: Create Release
+      #   uses: actions/create-release@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     tag_name: ${{ steps.changelog.outputs.version }}
+      #     release_name: ${{ steps.changelog.outputs.version }}
+      #     body: ${{ steps.changelog.outputs.body }}
