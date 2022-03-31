@@ -1,10 +1,9 @@
 name: Publish Release
 
 on:
-  pull_request:
+  push:
     # types: [closed]
-    branches:
-      - "publish-release/*.*.*"
+    branches: "release/*"
 
 jobs:
   publish-releases:
