@@ -50,3 +50,7 @@ jobs:
       - name: lint
         run: |
           curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s .
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true

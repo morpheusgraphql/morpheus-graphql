@@ -1,0 +1,46 @@
+name: Create Release
+on: workflow_dispatch
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: "master"
+      - run: git fetch --prune --unshallow
+
+      - name: Setup
+        uses: actions/setup-node@v1
+        with:
+          node-version: 14.x
+
+      - name: Install
+        run: |
+          npm i
+
+      - name: Create Changelog
+        id: changelog
+        run: |
+          npm run prepare:release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Test body
+        run: |
+          echo "${{steps.changelog.outputs.body}}"
+          echo "${{steps.changelog.outputs.version}}"
+
+      # - name: Create Release
+      #   uses: actions/create-release@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     tag_name: ${{ steps.changelog.outputs.version }}
+      #     release_name: ${{ steps.changelog.outputs.version }}
+      #     body: ${{ steps.changelog.outputs.body }}
