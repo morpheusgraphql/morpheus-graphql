@@ -1,0 +1,25 @@
+name: Test Push
+on: workflow_dispatch
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: "master"
+
+      - name: Commit changes
+        run: |
+          touch DELETE_ME.md
+          git config --global user.name "${{ secrets.USER_NAME }}"
+          git config --global user.email "${{ secrets.USER_EMAIL }}"
+          git add .
+          git status
+          git commit -m "Test commit action"
+          git push origin/master
