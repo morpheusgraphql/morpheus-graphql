@@ -24,23 +24,47 @@ jobs:
         run: |
           npm i
 
-      - name: Create Changelog
+      - name: Prepare Release Changelog
         id: changelog
         run: |
           npm run prepare:release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Test body
-        run: |
-          echo "${{steps.changelog.outputs.body}}"
-          echo "${{steps.changelog.outputs.version}}"
+      - uses: ./.github/actions/setup-env
 
-      # - name: Create Release
-      #   uses: actions/create-release@v1
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     tag_name: ${{ steps.changelog.outputs.version }}
-      #     release_name: ${{ steps.changelog.outputs.version }}
-      #     body: ${{ steps.changelog.outputs.body }}
+      - name: Build Packages
+        run: |
+          stack test --fast --bench --no-run-benchmarks --haddock --no-haddock-deps
+
+      - name: Prepare Artifacts
+        run: |
+          stack sdist
+
+      - name: Commit changes
+        run: |
+          git add .
+          git status
+          git commit -m "release-${{ steps.changelog.outputs.version }}"
+
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.changelog.outputs.version }}
+          release_name: ${{ steps.changelog.outputs.version }}
+          body: ${{ steps.changelog.outputs.body }}
+
+      - name: Upload Packages
+        run: |
+          stack upload morpheus-graphql-tests
+          stack upload morpheus-graphql-core
+          stack upload morpheus-graphql-code-gen
+          stack upload morpheus-graphql-app
+          stack upload morpheus-graphql-client
+          stack upload morpheus-graphql-subscriptions
+          stack upload morpheus-graphql
+        env:
+          HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
+          HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}

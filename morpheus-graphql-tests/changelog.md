@@ -1,5 +1,5 @@
 # Changelog
 
-## 0.19.0 - 21.03.2022
+see latest changes on [Github](https://github.com/morpheusgraphql/morpheus-graphql/releases)
 
 ## 0.18.0 - 08.11.2021
