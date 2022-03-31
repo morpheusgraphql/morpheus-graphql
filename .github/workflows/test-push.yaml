@@ -22,4 +22,4 @@ jobs:
           git add .
           git status
           git commit -m "Test commit action"
-          git push origin/master
+          git push https://${{ secrets.GITHUB_TOKEN }}@github.com/morpheusgraphql/morpheus-graphql.git HEAD:master
