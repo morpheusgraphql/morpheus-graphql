@@ -1,4 +1,5 @@
 import { pluck, uniq } from "ramda";
+import { Maybe } from "../utils/types";
 import { batchMap, getPRNumber, ghApi } from "../utils/utils";
 import { parseLabel, PR_TYPE, SCOPE } from "./pull-request-types";
 
@@ -102,26 +103,19 @@ const batchPRInfo = (xs: unknown[]) =>
 
 const getAsoccPR = ({
   associatedPullRequests,
-  oid,
   message,
-}: Commit): number => {
-  const pr = associatedPullRequests.nodes.find(
+}: Commit): Maybe<number> => {
+  const number = associatedPullRequests.nodes.find(
     ({ repository: { nameWithOwner } }) =>
       nameWithOwner === `${githubOrg}/${githubRepo}`
-  );
+  )?.number;
 
-  const num = pr?.number ?? getPRNumber(message);
-
-  if (!num) {
-    throw new Error(`Commit ${oid} has no associated PR: ${message}`);
-  }
-
-  return num;
+  return number ?? getPRNumber(message);
 };
 
 const getGithubPRs = (commits: string[]): Promise<GithubPR[]> =>
   batchMap(batchCommitInfo, commits).then((ghCommits) =>
-    batchMap(batchPRInfo, uniq(ghCommits.map(getAsoccPR)))
+    batchMap(batchPRInfo, uniq(ghCommits.map(getAsoccPR).filter(Boolean)))
   );
 
 const getPullRequesrs = (commits: string[]) =>
