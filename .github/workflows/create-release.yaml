@@ -41,6 +41,12 @@ jobs:
         run: |
           stack sdist
 
+      - name: Commit changes
+        run: |
+          git add .
+          git status
+          git commit -m "release-${{ steps.changelog.outputs.version }}"
+
       - name: Create Release
         uses: actions/create-release@v1
         env:
