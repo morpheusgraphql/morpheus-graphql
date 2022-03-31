@@ -3,7 +3,7 @@ import { ghApiREST, GH_ORG, GH_REPO } from "./lib/utils/gq-api";
 import { exit } from "./lib/utils/utils";
 
 const openRelease = (version: string) => {
-  const branchName = `publish-release-${version}`;
+  const branchName = `publish-release/${version}`;
 
   push(branchName);
   return ghApiREST(`repos/${GH_ORG}/${GH_REPO}/pulls`, {
@@ -11,7 +11,7 @@ const openRelease = (version: string) => {
     base: "master",
     owner: GH_ORG,
     repo: GH_REPO,
-    title: `Publish release ${version}`,
+    title: `Publish Release ${version}`,
   });
 };
 
