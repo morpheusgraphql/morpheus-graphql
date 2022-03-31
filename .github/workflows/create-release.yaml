@@ -24,12 +24,22 @@ jobs:
         run: |
           npm i
 
-      - name: Create Changelog
+      - name: Prepare Release Changelog
         id: changelog
         run: |
           npm run prepare:release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: ./.github/actions/setup-env
+
+      - name: Build Packages
+        run: |
+          stack test --fast --bench --no-run-benchmarks --haddock --no-haddock-deps
+
+      - name: Prepare Artifacts
+        run: |
+          stack sdist
 
       - name: Test body
         run: |
