@@ -1,4 +1,4 @@
-name: Create Release
+name: Create Release Draft
 on: workflow_dispatch
 
 concurrency:
@@ -6,7 +6,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  create-release:
+  create-release-draft:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -48,8 +48,9 @@ jobs:
           git add .
           git status
           git commit -m "release-${{ steps.changelog.outputs.version }}"
+          git push https://${{ secrets.GITHUB_TOKEN }}@github.com/morpheusgraphql/morpheus-graphql.git HEAD:release-${{ steps.changelog.outputs.version }}
 
-      - name: Create Release
+      - name: Create Release Draft
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -57,16 +58,4 @@ jobs:
           tag_name: ${{ steps.changelog.outputs.version }}
           release_name: ${{ steps.changelog.outputs.version }}
           body: ${{ steps.changelog.outputs.body }}
-
-      - name: Upload Packages
-        run: |
-          stack upload morpheus-graphql-tests
-          stack upload morpheus-graphql-core
-          stack upload morpheus-graphql-code-gen
-          stack upload morpheus-graphql-app
-          stack upload morpheus-graphql-client
-          stack upload morpheus-graphql-subscriptions
-          stack upload morpheus-graphql
-        env:
-          HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
-          HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
+          draft: true
