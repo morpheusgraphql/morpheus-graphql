@@ -2,13 +2,13 @@ name: Publish Release
 
 on:
   pull_request:
-    types: [closed]
+    # types: [closed]
     branches:
-      - "publish-release/**"
+      - "publish-release/*.*.*"
 
 jobs:
   publish-releases:
-    if: github.event.pull_request.merged == true
+    # if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
