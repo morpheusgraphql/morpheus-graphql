@@ -1,20 +1,19 @@
 name: Create Release
-# on: workflow_dispatch
+on: workflow_dispatch
 
-on: push
-
-env:
-  GITHUB_TOKEN: secrets.GH_TOKEN
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   create-release:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: "master"
+      - run: git fetch --prune --unshallow
 
       - name: Setup
         uses: actions/setup-node@v1
@@ -26,10 +25,11 @@ jobs:
           npm i
 
       - name: Create Changelog
-        run: |
-          echo "::set-output name=body::(echo npm run changelog)"
-          echo "::set-output name=version::123"
         id: changelog
+        run: |
+          npm run prepare:release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Test body
         run: |

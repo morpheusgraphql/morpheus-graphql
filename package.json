@@ -9,15 +9,17 @@
   "scripts": {
     "check:spelling": "cspell --cache --no-progress '**/*.hs'",
     "check:packages": "ts-node scripts/check-packages.ts",
-    "changelog": "ts-node scripts/changelog.ts"
+    "changelog": "ts-node scripts/changelog.ts",
+    "prepare:release": "ts-node scripts/prepare-release.ts"
   },
   "devDependencies": {
-    "@types/ramda": "^0.28.4",
-    "cspell": "^5.18.5",
     "@types/js-yaml": "^4.0.5",
-    "@types/node": "^17.0.23"
+    "@types/node": "^17.0.23",
+    "@types/ramda": "^0.28.4",
+    "cspell": "^5.18.5"
   },
   "dependencies": {
+    "@actions/core": "^1.6.0",
     "axios": "^0.26.1",
     "js-yaml": "^4.1.0",
     "ramda": "^0.28.0",

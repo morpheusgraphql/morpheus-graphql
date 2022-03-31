@@ -1,3 +1,9 @@
+export type VersionUpdate = {
+  prev: string;
+  next: string;
+  isBreaking: boolean;
+};
+
 type Version = [number, number, number];
 
 const parseVersion = (versionTag: string): Version => {

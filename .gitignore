@@ -9,3 +9,4 @@ out/
 dist-newstyle/
 node_modules/
 .cspellcache
+.env
