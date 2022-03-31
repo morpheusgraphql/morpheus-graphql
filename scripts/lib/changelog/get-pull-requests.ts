@@ -1,10 +1,8 @@
 import { pluck, uniq } from "ramda";
+import { ghApiGQL, GH_ORG, GH_REPO } from "../utils/gq-api";
 import { Maybe } from "../utils/types";
-import { batchMap, getPRNumber, ghApi } from "../utils/utils";
+import { batchMap, getPRNumber } from "../utils/utils";
 import { parseLabel, PR_TYPE, SCOPE } from "./pull-request-types";
-
-const githubOrg = "morpheusgraphql";
-const githubRepo = "morpheus-graphql";
 
 type AsoccRP = {
   number: number;
@@ -35,9 +33,9 @@ type GithubPR = {
 const getGithub =
   <O>(f: (_: unknown) => string) =>
   async (xs: unknown[]): Promise<O[]> => {
-    const { repository } = await ghApi(`
+    const { repository } = await ghApiGQL(`
         {
-            repository(owner: "${githubOrg}", name: "${githubRepo}") {
+            repository(owner: "${GH_ORG}", name: "${GH_REPO}") {
                   ${xs.map(f).join("\n")}
             }
         }
@@ -107,7 +105,7 @@ const getAsoccPR = ({
 }: Commit): Maybe<number> => {
   const number = associatedPullRequests.nodes.find(
     ({ repository: { nameWithOwner } }) =>
-      nameWithOwner === `${githubOrg}/${githubRepo}`
+      nameWithOwner === `${GH_ORG}/${GH_REPO}`
   )?.number;
 
   return number ?? getPRNumber(message);

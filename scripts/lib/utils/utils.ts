@@ -1,7 +1,3 @@
-import axios from "axios";
-
-const { GITHUB_TOKEN } = process.env;
-
 export const getPRNumber = (msg: string) => {
   const num = / \(#(?<prNumber>[0-9]+)\)$/m.exec(msg)?.groups?.prNumber;
   return num ? parseInt(num, 10) : undefined;
@@ -21,17 +17,6 @@ export const batchMap = async <T>(
 
   return (await Promise.all(commitInfoPromises)).flat();
 };
-
-export const ghApi = (query: string) =>
-  axios
-    .post("https://api.github.com/graphql", JSON.stringify({ query }), {
-      headers: {
-        authorization: `Bearer ${GITHUB_TOKEN}`,
-        "content-type": "application/json",
-      },
-    })
-    .then(({ data }) => data.data)
-    .catch((err) => Promise.reject(err.message));
 
 export const isKey = <T extends string>(
   obj: Record<T, unknown>,

@@ -27,7 +27,7 @@ jobs:
       - name: Prepare Release Changelog
         id: changelog
         run: |
-          npm run prepare:release
+          npm run release:prepare
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -41,14 +41,15 @@ jobs:
         run: |
           stack sdist
 
-      - name: Commit changes
+      - name: Create Release PR
         run: |
           git config --global user.name "${{ secrets.USER_NAME }}"
           git config --global user.email "${{ secrets.USER_EMAIL }}"
           git add .
           git status
-          git commit -m "release-${{ steps.changelog.outputs.version }}"
-          git push https://${{ secrets.GITHUB_TOKEN }}@github.com/morpheusgraphql/morpheus-graphql.git HEAD:release-${{ steps.changelog.outputs.version }}
+          npm run release:pr ${{ steps.changelog.outputs.version }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Release Draft
         uses: actions/create-release@v1
