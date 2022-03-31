@@ -1,10 +1,10 @@
 name: Publish Release
 
-on: pull_request
-
-# types: [closed]
-# branches:
-#   - publish-release/**
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - "publish-release/**"
 
 jobs:
   publish-releases:
@@ -13,37 +13,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      # - uses: haskell/actions/setup@v1.2
-      # - name: Upload Packages
-      #   run: |
-      #     stack sdist
-      #     stack upload morpheus-graphql-tests
-      #     stack upload morpheus-graphql-core
-      #     stack upload morpheus-graphql-code-gen
-      #     stack upload morpheus-graphql-app
-      #     stack upload morpheus-graphql-client
-      #     stack upload morpheus-graphql-subscriptions
-      #     stack upload morpheus-graphql
-      #   env:
-      #     HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
-      #     HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
+      - uses: haskell/actions/setup@v1.2
+      - name: Upload Packages
+        run: |
+          stack sdist
+          stack upload morpheus-graphql-tests
+          stack upload morpheus-graphql-core
+          stack upload morpheus-graphql-code-gen
+          stack upload morpheus-graphql-app
+          stack upload morpheus-graphql-client
+          stack upload morpheus-graphql-subscriptions
+          stack upload morpheus-graphql
+        env:
+          HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
+          HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
 
       - name: Publish Release
         uses: actions/github-script@v6
         with:
           script: |
+            const { owner, repo } = context.repo
             github.rest.repos.listReleases({
               owner,
               repo
-            }).then( releases => {
-                  console.log(releases);
-                  const { release_id } = releases.find((r) => r.draft)
-                  console.log(release_id);
-                  return; 
-                  github.updateRelease({
-                      owner: context.repo.owner,
-                      repo: context.repo.repo,
-                      release_id,
-                      draft: false
-                    })
+            }).then( ({ data }) => {
+                  const { id } = data.find((r) => r.draft)
+                  return github.rest.repos.updateRelease({owner, repo, release_id: id, draft: false})
               })
