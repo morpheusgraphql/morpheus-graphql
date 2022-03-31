@@ -2,53 +2,47 @@ name: Publish Release
 
 on:
   pull_request:
-    types: [closed]
+    # types: [closed]
     branches:
-      - "publish-release-**"
+      - "publish-release-*"
 
 jobs:
   publish-release:
+    # TODO: require build_status === true
     # if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/setup-env
-
-      # - name: Build Packages
-      #   run: stack test --fast --bench --no-run-benchmarks --haddock --no-haddock-deps
-
-      # - name: Upload Packages
-      #   run: |
-      #     stack sdist
-      #     stack upload morpheus-graphql-tests
-      #     stack upload morpheus-graphql-core
-      #     stack upload morpheus-graphql-code-gen
-      #     stack upload morpheus-graphql-app
-      #     stack upload morpheus-graphql-client
-      #     stack upload morpheus-graphql-subscriptions
-      #     stack upload morpheus-graphql
-      #   env:
-      #     HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
-      #     HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
+      - uses: haskell/actions/setup@v1.2
+      - name: Upload Packages
+        run: |
+          stack sdist
+        #   stack upload morpheus-graphql-tests
+        #   stack upload morpheus-graphql-core
+        #   stack upload morpheus-graphql-code-gen
+        #   stack upload morpheus-graphql-app
+        #   stack upload morpheus-graphql-client
+        #   stack upload morpheus-graphql-subscriptions
+        #   stack upload morpheus-graphql
+        # env:
+        #   HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
+        #   HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
 
       - name: Publish Release
-      - uses: actions/github-script@v6
+        uses: actions/github-script@v6
         with:
           script: |
-            const releases = await github.repos.listReleases({
+            github.repos.listReleases({
               owner,
               repo
-            });
-
-            console.log(releases);
-
-            const { release_id } = releases.find((r) => r.draft)
-
-            console.log(release_id);
-
-            github.updateRelease({ 
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                release_id, 
-                draft: false 
+            }).then( releases => {
+                  console.log(releases);
+                  const { release_id } = releases.find((r) => r.draft)
+                  console.log(release_id);
+                  github.updateRelease({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      release_id,
+                      draft: false
+                    })
               })
