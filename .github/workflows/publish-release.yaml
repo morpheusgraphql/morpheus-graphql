@@ -8,28 +8,26 @@ on:
 
 jobs:
   publish-release:
+    # TODO: require build_status === true
     # if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/setup-env
+      - uses: haskell/actions/setup@v1.2
 
-      # - name: Build Packages
-      #   run: stack test --fast --bench --no-run-benchmarks --haddock --no-haddock-deps
-
-      # - name: Upload Packages
-      #   run: |
-      #     stack sdist
-      #     stack upload morpheus-graphql-tests
-      #     stack upload morpheus-graphql-core
-      #     stack upload morpheus-graphql-code-gen
-      #     stack upload morpheus-graphql-app
-      #     stack upload morpheus-graphql-client
-      #     stack upload morpheus-graphql-subscriptions
-      #     stack upload morpheus-graphql
-      #   env:
-      #     HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
-      #     HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
+      - name: Upload Packages
+        run: |
+          stack sdist
+          stack upload morpheus-graphql-tests
+          stack upload morpheus-graphql-core
+          stack upload morpheus-graphql-code-gen
+          stack upload morpheus-graphql-app
+          stack upload morpheus-graphql-client
+          stack upload morpheus-graphql-subscriptions
+          stack upload morpheus-graphql
+        env:
+          HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
+          HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
 
       - name: Publish Release
       - uses: actions/github-script@v6
