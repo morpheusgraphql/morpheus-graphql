@@ -10,4 +10,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: echo 'HALLO FROM TAGS'
+      - run: echo 'HALLO FROM TAGS 2'
