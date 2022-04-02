@@ -1,5 +1,5 @@
-name: Setup Enviroment
-desription: Setups Haskell and Stack, install Dependencies
+name: Source Distribution
+desription: Generate Source Distribution
 
 runs:
   using: "composite"
@@ -11,7 +11,4 @@ runs:
         latest: latest
 
     - shell: bash
-      run: |
-        stack build --fast --skip-ghc-check --no-terminal --test --only-dependencies
-
-
+      run: stack sdist

@@ -13,8 +13,9 @@ const commitsAfter = (tag: string): string[] =>
   exec(`git rev-list --reverse ${tag}..`).split("\n");
 
 export const push = (name: string) => {
+  exec("git add .");
+  exec("git status");
   exec(`git commit -m "${name}"`);
-
   exec(
     `git push https://${GITHUB_TOKEN}@github.com/${GH_ORG}/${GH_REPO}.git HEAD:${name}`
   );
