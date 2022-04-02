@@ -1,4 +1,4 @@
-name: Create Release Draft
+name: Draft Release
 on: workflow_dispatch
 
 concurrency:
