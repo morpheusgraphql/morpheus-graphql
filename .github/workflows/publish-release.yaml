@@ -32,7 +32,9 @@ jobs:
 
       - name: Describe
         id: describe
-        run: npm run release -- describe
+        run: |
+          npm i
+          npm run release -- describe
 
       - name: Create Release Draft
         uses: actions/create-release@v1
