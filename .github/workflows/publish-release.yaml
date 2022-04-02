@@ -11,19 +11,25 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: haskell/actions/setup@v1.2
-      - name: Upload Packages
-        run: |
-          stack sdist
-          stack upload morpheus-graphql-tests
-          stack upload morpheus-graphql-core
-          stack upload morpheus-graphql-code-gen
-          stack upload morpheus-graphql-app
-          stack upload morpheus-graphql-client
-          stack upload morpheus-graphql-subscriptions
-          stack upload morpheus-graphql
-        env:
-          HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
-          HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
+      # - name: Upload Packages
+      #   run: |
+      #     stack sdist
+      #     stack upload morpheus-graphql-tests
+      #     stack upload morpheus-graphql-core
+      #     stack upload morpheus-graphql-code-gen
+      #     stack upload morpheus-graphql-app
+      #     stack upload morpheus-graphql-client
+      #     stack upload morpheus-graphql-subscriptions
+      #     stack upload morpheus-graphql
+      #   env:
+      #     HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
+      #     HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
+
+      - name: Node
+        uses: actions/setup-node@v1
+        with:
+          node-version: 14.x
+
       - name: Describe
         id: describe
         run: npm run release -- describe
