@@ -3,7 +3,7 @@ import { ghApiREST, GH_ORG, GH_REPO } from "./lib/utils/gq-api";
 import { exit } from "./lib/utils/utils";
 // import { exit } from "./lib/utils/utils";
 const { Command } = require("commander");
-const program = new Command();
+const cli = new Command();
 
 export const openRelease = (version: string, body: string) => {
   const branchName = `publish-release/${version}`;
@@ -19,18 +19,15 @@ export const openRelease = (version: string, body: string) => {
   });
 };
 
-program
-  .name("release")
-  .description("CLI to some JavaScript string utilities")
-  .version("0.0.0");
+cli.name("release").description("manage release").version("0.0.0");
 
-program
+cli
   .command("pr")
-  .description("open pull request for release")
+  .description("open release pull request")
   .argument("<string>", "version number")
   .option("-b, --body <string>", "pull request body", "")
-  .action((version: string, { body }: { body: string }) => {
-    openRelease(version, body).catch(exit);
-  });
+  .action((version: string, { body }: { body: string }) =>
+    openRelease(version, body).catch(exit)
+  );
 
-program.parse();
+cli.parse();
