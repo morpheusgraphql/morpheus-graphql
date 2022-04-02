@@ -23,4 +23,4 @@ jobs:
           cd docs/
           git config --global user.name "${{ secrets.USER_NAME }}"
           git config --global user.email "${{ secrets.USER_EMAIL }}"
-          yarn gh-pages -d public -r https://${{ secrets.GITHUB_TOKEN }}@github.com/morpheusgraphql/morpheus-graphql.git
+          yarn gh-pages -d public -r https://${{ secrets.GH_PAGES_TOKEN }}@github.com/morpheusgraphql/morpheus-graphql.git
