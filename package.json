@@ -11,7 +11,7 @@
     "check:packages": "ts-node scripts/check-packages.ts",
     "changelog": "ts-node scripts/changelog.ts",
     "release:prepare": "ts-node scripts/prepare-release.ts",
-    "release:pr": "ts-node scripts/release-pr.ts"
+    "release": "ts-node scripts/release.ts"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.5",
@@ -22,6 +22,7 @@
   "dependencies": {
     "@actions/core": "^1.6.0",
     "axios": "^0.26.1",
+    "commander": "^9.1.0",
     "js-yaml": "^4.1.0",
     "ramda": "^0.28.0",
     "ts-node": "^10.7.0",
