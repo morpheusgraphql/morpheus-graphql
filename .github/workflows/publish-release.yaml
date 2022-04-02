@@ -3,12 +3,10 @@ name: Publish Release
 on:
   pull_request:
     types: [closed]
-    branches:
-      - "publish-release/**"
 
 jobs:
   publish-releases:
-    if: github.event.pull_request.merged == true
+    if: ${{ github.base_ref == 'master' && startsWith(github.head_ref, 'publish-release/') && github.event.pull_request.merged == true  }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
