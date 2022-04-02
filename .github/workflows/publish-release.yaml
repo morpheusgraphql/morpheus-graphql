@@ -35,6 +35,8 @@ jobs:
         run: |
           npm i
           npm run release -- describe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Release Draft
         uses: actions/create-release@v1
