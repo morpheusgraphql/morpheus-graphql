@@ -24,16 +24,15 @@ jobs:
         env:
           HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
           HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
+      - name: Describe
+        id: describe
+        run: npm run release -- describe
 
-      - name: Publish Release
-        uses: actions/github-script@v6
+      - name: Create Release Draft
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          script: |
-            const { owner, repo } = context.repo
-            github.rest.repos.listReleases({
-              owner,
-              repo
-            }).then( ({ data }) => {
-                  const { id } = data.find((r) => r.draft)
-                  return github.rest.repos.updateRelease({owner, repo, release_id: id, draft: false})
-              })
+          tag_name: ${{ steps.describe.outputs.version }}
+          release_name: ${{ steps.describe.outputs.version }}
+          body: ${{ github.event.pull_request.body }}
