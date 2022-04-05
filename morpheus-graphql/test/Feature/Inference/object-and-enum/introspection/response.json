@@ -1,0 +1,44 @@
+{
+  "data": {
+    "enum": {
+      "enumValues": [
+        {
+          "deprecationReason": null,
+          "isDeprecated": false,
+          "name": "MyEnum"
+        }
+      ],
+      "fields": null,
+      "inputFields": null,
+      "interfaces": null,
+      "kind": "ENUM",
+      "name": "MyEnum",
+      "possibleTypes": null
+    },
+    "object": {
+      "enumValues": null,
+      "fields": [
+        {
+          "args": [],
+          "deprecationReason": null,
+          "isDeprecated": false,
+          "name": "_0",
+          "type": {
+            "kind": "NON_NULL",
+            "name": null,
+            "ofType": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
+            }
+          }
+        }
+      ],
+      "inputFields": null,
+      "interfaces": [],
+      "kind": "OBJECT",
+      "name": "MyObject",
+      "possibleTypes": null
+    }
+  }
+}

@@ -25,7 +25,7 @@ import Data.Morpheus.Server.Deriving.Utils
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CategoryValue (..),
   )
-import Data.Morpheus.Server.Types.GQLType (GQLType)
+import Data.Morpheus.Server.Types.GQLType (GQLType (__isEmptyType))
 import Data.Morpheus.Server.Types.SchemaT (SchemaT)
 import Data.Morpheus.Types.Internal.AST
 
@@ -34,6 +34,6 @@ buildTypeContent ::
   KindedType kind a ->
   [ConsRep (TyContent kind)] ->
   SchemaT kind (TypeContent TRUE kind CONST)
+buildTypeContent scope cons | all isEmptyConstraint cons && not (__isEmptyType scope) = buildEnumTypeContent scope (consName <$> cons)
 buildTypeContent scope [ConsRep {consFields}] = buildObjectTypeContent scope consFields
-buildTypeContent scope cons | all isEmptyConstraint cons = buildEnumTypeContent scope (consName <$> cons)
 buildTypeContent scope cons = buildUnionTypeContent scope cons

@@ -51,7 +51,7 @@ fixVars x
   | otherwise = Just x
 
 class Fetch a where
-  type Args a :: *
+  type Args a :: Type
   __fetch ::
     (Monad m, Show a, ToJSON (Args a), FromJSON a) =>
     String ->

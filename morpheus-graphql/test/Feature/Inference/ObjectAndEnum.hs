@@ -1,65 +1,43 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Feature.Inference.UnionType
+module Feature.Inference.ObjectAndEnum
   ( api,
   )
 where
 
+import Data.Kind (Type)
 import Data.Morpheus (interpreter)
 import Data.Morpheus.Types
   ( GQLRequest,
     GQLResponse,
     GQLType (..),
-    ResolverQ,
     RootResolver (..),
     Undefined (..),
   )
-import Data.Text (Text)
 import GHC.Generics (Generic)
 
-data A = A
-  { aText :: Text,
-    aInt :: Int
+data MyEnum = MyEnum deriving (Generic, GQLType)
+
+newtype MyObject
+  = MyObject Int
+  deriving (Generic, GQLType)
+
+data Query (m :: Type -> Type) = Query
+  { enum :: MyEnum,
+    object :: MyObject
   }
   deriving (Generic, GQLType)
-
-data B = B
-  { bText :: Text,
-    bInt :: Int
-  }
-  deriving (Generic, GQLType)
-
-data C = C
-  { cText :: Text,
-    cInt :: Int
-  }
-  deriving (Generic, GQLType)
-
-data Sum
-  = SumA A
-  | SumB B
-  deriving (Generic, GQLType)
-
-data Query m = Query
-  { union :: m [Sum],
-    fc :: C
-  }
-  deriving (Generic, GQLType)
-
-resolveUnion :: ResolverQ () IO [Sum]
-resolveUnion =
-  return [SumA A {aText = "at", aInt = 1}, SumB B {bText = "bt", bInt = 2}]
 
 rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =
   RootResolver
     { queryResolver =
         Query
-          { union = resolveUnion,
-            fc = C {cText = "", cInt = 3}
+          { enum = MyEnum,
+            object = MyObject 0
           },
       mutationResolver = Undefined,
       subscriptionResolver = Undefined
