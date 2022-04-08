@@ -33,7 +33,7 @@ executable servant-server
   ghc-options: -Wall
   build-depends:
       base >=4.7 && <5
-    , bytestring >=0.10.4 && <0.11
+    , bytestring >=0.10.4 && <0.12
     , file-embed
     , http-media
     , morpheus-graphql

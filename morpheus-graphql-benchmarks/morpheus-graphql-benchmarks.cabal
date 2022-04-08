@@ -46,7 +46,7 @@ benchmark morpheus-graphql-bench
   ghc-options: -eventlog -threaded -rtsopts -with-rtsopts=-N6 -O2
   build-depends:
       base >=4.7 && <5
-    , bytestring >=0.10.4 && <0.11
+    , bytestring >=0.10.4 && <0.12
     , criterion
     , graphql >=0.11
     , megaparsec >=7.0.0 && <10.0.0
