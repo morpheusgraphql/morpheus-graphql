@@ -119,7 +119,7 @@ library
   build-depends:
       aeson >=1.4.4.0 && <3
     , base >=4.7 && <5
-    , bytestring >=0.10.4 && <0.11
+    , bytestring >=0.10.4 && <0.12
     , containers >=0.4.2.1 && <0.7
     , hashable >=1.0.0 && <2.0
     , megaparsec >=7.0.0 && <10.0.0
@@ -147,7 +147,7 @@ test-suite morpheus-graphql-app-test
   build-depends:
       aeson >=1.4.4.0 && <3
     , base >=4.7 && <5
-    , bytestring >=0.10.4 && <0.11
+    , bytestring >=0.10.4 && <0.12
     , containers >=0.4.2.1 && <0.7
     , directory >=1.0 && <2.0
     , hashable >=1.0.0 && <2.0
