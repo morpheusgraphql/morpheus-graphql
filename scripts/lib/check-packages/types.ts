@@ -1,6 +1,9 @@
 export type VersionNumber = string;
 
+export type DepsMap = Record<string, Bounds>;
+
 export type Bounds = [VersionNumber, VersionNumber];
+
 export type PackageName = string;
 
 export type Config = {
