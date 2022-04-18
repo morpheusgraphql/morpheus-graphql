@@ -1,5 +1,5 @@
-import React, { useContext } from "react";
-import { NavContext } from "./nav-context";
+import { useContext } from "react";
+import { NavContext, NavItem } from "./nav-context";
 
 const style = {
   color: "black",
@@ -7,7 +7,7 @@ const style = {
   padding: "0.1rem 0rem",
 };
 
-export const Section = ({ id, children, level = 1 }) => {
+export const Section: React.FC<NavItem> = ({ id, children, level = 1 }) => {
   const [, setItem] = useContext(NavContext);
 
   setItem({ id, level, children });

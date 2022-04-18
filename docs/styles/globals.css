@@ -1,0 +1,35 @@
+html,
+body {
+  padding: 0;
+  margin: 0;
+  background: url(/assets/img/graph.png);
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
+    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+img {
+  margin: 0 0 1.45rem;
+  max-width: 100%;
+  padding: 0;
+}
+
+code {
+  color: rgb(195, 4, 112);
+  font-size: 0.85rem;
+  padding: 0.2em 0;
+}
+
+@media only screen and (max-width: 480px) {
+  html {
+    font-size: 100%;
+  }
+}

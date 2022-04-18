@@ -1,13 +1,7 @@
-import { Link } from "gatsby";
-
-import Layout from "../components/layout";
 import SEO from "../components/seo";
 import Section from "../components/section";
 
-<SEO
-  title="Named Resolvers"
-  keywords={["Morpheus GraphQL", "GraphQL", "Haskell"]}
-/>
+<SEO title="Named Resolvers" />
 
 # Resolving
 
@@ -179,8 +173,8 @@ newtype Post m = Post
 ```
 
 Now we can start implementing the resolver for it.
-It is of critical importance here, that the dependency of this type 
-is the same as the dependency of `Post` in `App/Posts.hs`. If the 
+It is of critical importance here, that the dependency of this type
+is the same as the dependency of `Post` in `App/Posts.hs`. If the
 argument of the function does not match, one of the implementations
 will be unable to decode the argument during resolution and it will fail.
 

@@ -1,9 +1,7 @@
-import { Link } from "gatsby";
-
-import Layout from "../components/layout";
 import SEO from "../components/seo";
+import Section from "../components/section";
 
-<SEO title="Home" keywords={["Morpheus GraphQL", "GraphQL", "Haskell"]} />
+<SEO title="Home" />
 
 # Morpheus GraphQL [![Hackage](https://img.shields.io/hackage/v/morpheus-graphql.svg)](https://hackage.haskell.org/package/morpheus-graphql) ![CI](https://github.com/morpheusgraphql/morpheus-graphql/workflows/CI/badge.svg)
 
@@ -15,7 +13,7 @@ Morpheus will convert your Haskell types to a GraphQL schema and all your resolv
 Morpheus is still in an early stage of development, so any feedback is more than welcome, and we appreciate any contribution!
 Just open an issue here on GitHub, or join [our Slack channel](https://morpheus-graphql-slack-invite.herokuapp.com/) to get in touch.
 
-## Getting Started
+<Section id="getting-started"> Getting Started </Section>
 
 ### Setup
 
@@ -204,11 +202,8 @@ our query will be resolved!
 }
 ```
 
-## Advanced topics
+<Section id="advanced-topics"> Advanced topics </Section>
 
-### Applicative and Monad instance
-
-The `Resolver` type has `Applicative` and `Monad` instances that can be used to compose resolvers.
 
 ### Introspection
 
@@ -232,33 +227,20 @@ screenshots from `Insomnia`
 ![alt text](https://morpheusgraphql.com/assets/img/introspection/autocomplete.png "autocomplete")
 ![alt text](https://morpheusgraphql.com/assets/img/introspection/type.png "type")
 
-## Handling Errors
 
-for errors you can use use either `liftEither` or `MonadFail`:
-at the and they have same result.
+<Section id="about"> About </Section>
 
-with `liftEither`
+### The name
 
-```haskell
-resolveDeity :: DeityArgs -> ResolverQ e IO Deity
-resolveDeity DeityArgs {} = liftEither $ dbDeity
+_Morpheus_ is the greek god of sleep and dreams whose name comes from the Greek word _μορφή_ meaning form or shape.
+He is said to be able to mimic different forms and GraphQL is good at doing exactly that: Transforming data in the shape
+of many different APIs.
 
-dbDeity ::  IO Either Deity
-dbDeity = pure $ Left "db error"
-```
+### Team
 
-with `MonadFail`
+Morpheus is written and maintained by [_nalchevanidze_](https://github.com/nalchevanidze)
 
-```haskell
-resolveDeity :: DeityArgs -> ResolverQ e IO Deity
-resolveDeity DeityArgs { } = fail "db error"
-```
-
-## Morpheus CLI for Code Generating
-
-you should use [morpheus-graphql-cli](https://github.com/morpheusgraphql/morpheus-graphql-cli)
-
-## Roadmap
+### Roadmap
 
 - Medium future:
   - Stabilize API

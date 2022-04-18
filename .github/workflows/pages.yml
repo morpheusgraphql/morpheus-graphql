@@ -4,23 +4,27 @@ on:
   push:
     branches:
       - master
+
 jobs:
   pages:
     runs-on: ubuntu-latest
     steps:
-      - name: Prepare OS
-        uses: actions/checkout@v1
-      - name: install
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: "16"
+      - name: Generate
         run: |
           cd docs/
-          yarn
-      - name: build
-        run: |
-          cd docs/
-          yarn build:prod
-      - name: deploy
+          npm i
+          npm run build
+      - name: Git Config
         run: |
           cd docs/
           git config --global user.name "${{ secrets.USER_NAME }}"
           git config --global user.email "${{ secrets.USER_EMAIL }}"
-          yarn gh-pages -d public -r https://${{ secrets.GH_PAGES_TOKEN }}@github.com/morpheusgraphql/morpheus-graphql.git
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/out
