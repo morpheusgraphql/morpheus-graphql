@@ -1,0 +1,411 @@
+import SEO from "../components/seo";
+import { Section } from "../components/section";
+
+<SEO title="Type System" />
+
+# Server
+
+<Section id="type-system">Type System</Section>
+
+Morpheus GraphQL covers all GraphQL data types with an equivalent
+Haskell representation. A prerequisite for these representation types is that
+they must be derived by `Generic` and provide corresponding `GQLType` instances.
+
+<Section id="objects" level={2}>
+  Object types
+</Section>
+
+Object types are represented in Morpheus with Haskell records,
+where the parameter `m` passes the resolution monad
+to the field resolution functions. The following code snippet, for example,
+defines the type Deity with a nullable field `power` and a non-nullable field `name`.
+
+```haskell
+data Deity m = Deity
+  { name :: m Text         -- Non-Nullable Field
+  , power :: m Maybe Text   -- Nullable Field
+  } deriving
+    ( Generic
+    , GQLType
+    )
+```
+
+<Section id="arguments" level={3}>
+  Arguments
+</Section>
+
+GraphQL arguments can be represented with two ways:
+
+#### Haskell records
+
+we can use Haskell records to declare GraphQL arguments,
+where each field of a record represents a particular
+argument, and can be accessed by name.
+
+```haskell
+data Query m = Query
+  { deity :: DeityArgs -> m Deity
+  } deriving
+    ( Generic
+    , GQLType
+    )
+
+data DeityArgs = DeityArgs
+  { name      :: Text        -- Required Argument
+  , mythology :: Maybe Text  -- Optional Argument
+  } deriving
+     ( Generic,
+       GQLType
+     )
+```
+
+This approach is quite convenient for representing multiple arguments,
+but cumbersome if we only need one argument for each field.
+That is why we also introduce "Tagged Arguments".
+
+#### Tagged function arguments
+
+Tagged arguments leverage type-level literals and enable GraphQL
+arguments to be represented as a chain of named function arguments.
+e.g. the following type defines GraphQL field `deity` with the
+optional argument `name` of type `String`.
+
+```haskell
+data Query m = Query
+  { deity :: Arg "name" (Maybe Text) -> m Deity
+  } deriving
+    ( Generic
+    , GQLType
+    )
+```
+
+<Section id="query" level={3}>
+  Query
+</Section>
+
+the GraphQL query type is represented in Morpheus GraphQL as a regular object type named `Query`.
+
+```haskell
+data Query m = Query
+  { deity ::  m Deity
+  } deriving
+    ( Generic
+    , GQLType
+    )
+```
+
+<Section id="mutations" level={3}>
+  Mutations
+</Section>
+
+In addition to queries, Morpheus also supports mutations. They behave just like regular queries and are defined similarly:
+
+```haskell
+newtype Mutation m = Mutation
+  { createDeity :: MutArgs -> m Deity
+  } deriving (Generic, GQLType)
+
+rootResolver :: RootResolver IO  () Query Mutation Undefined
+rootResolver =
+  RootResolver
+    { queryResolver = Query {...}
+    , mutationResolver = Mutation { createDeity }
+    , subscriptionResolver = Undefined
+    }
+    where
+      -- Mutation Without Event Triggering
+      createDeity :: MutArgs -> ResolverM () IO Deity
+      createDeity_args = lift setDBAddress
+
+gqlApi :: ByteString -> IO ByteString
+gqlApi = interpreter rootResolver
+```
+
+<Section id="subscription" level={3}>
+  Subscriptions
+</Section>
+
+In morpheus subscription and mutation communicate with Events,
+`Event` consists with user defined `Channel` and `Content`.
+
+Every subscription has its own Channel by which it will be triggered
+
+```haskell
+data Channel
+  = ChannelA
+  | ChannelB
+
+data Content
+  = ContentA Int
+  | ContentB Text
+
+type MyEvent = Event Channel Content
+
+newtype Query m = Query
+  { deity :: m Deity
+  } deriving (Generic)
+
+newtype Mutation m = Mutation
+  { createDeity :: m Deity
+  } deriving (Generic)
+
+newtype Subscription (m ::  * -> * ) = Subscription
+  { newDeity :: m  Deity
+  } deriving (Generic)
+
+newtype Subscription (m :: * -> *) = Subscription
+{ newDeity :: SubscriptionField (m Deity),
+}
+deriving (Generic)
+
+
+type APIEvent = Event Channel Content
+
+rootResolver :: RootResolver IO APIEvent Query Mutation Subscription
+rootResolver = RootResolver
+  { queryResolver        = Query { deity = fetchDeity }
+  , mutationResolver     = Mutation { createDeity }
+  , subscriptionResolver = Subscription { newDeity }
+  }
+ where
+  -- Mutation Without Event Triggering
+  createDeity :: ResolverM EVENT IO Address
+  createDeity = do
+      requireAuthorized
+      publish [Event { channels = [ChannelA], content = ContentA 1 }]
+      lift dbCreateDeity
+  newDeity :: SubscriptionField (ResolverS EVENT IO Deity)
+  newDeity = subscribe ChannelA $ do
+    -- executed only once
+    -- immediate response on failures
+    requireAuthorized
+    pure $ \(Event _ content) -> do
+        -- executes on every event
+        lift (getDBAddress content)
+```
+
+<Section id="scalars" level={2}>
+  Scalar types
+</Section>
+
+any Haskell data type can be represented as a GraphQL scalar type.
+In order to do this, the type must be associated as
+`SCALAR` and implemented with `DecodeScalar` and `EncodeScalar` instances.
+
+```haskell
+data Odd = Odd Int  deriving (Generic)
+
+instance DecodeScalar Euro where
+  decodeScalar (Int x) = pure $ Odd (... )
+  decodeScalar _ = Left "invalid Value!"
+
+instance EncodeScalar Euro where
+  encodeScalar (Odd value) = Int value
+
+instance GQLType Odd where
+  type KIND Odd = SCALAR
+```
+
+<Section id="enums" level={2}>
+  Enumeration types
+</Section>
+
+Data types where all constructors are empty are derived as GraphQL enums.
+
+```haskell
+data City
+  = Athens
+  | Sparta
+  | Corinth
+  | Delphi
+  | Argos
+  deriving
+    ( Generic
+    , GQLType
+    )
+```
+
+<Section id="wrappers" level={2}>
+  Lists and Non-Null
+</Section>
+
+GraphQL Lists are represented with Haskell Lists.
+However, since in Haskell each type is intrinsically not nullable,
+nullable GraphQL fields are represented with `Maybe` Haskell data type and non-nullable
+GraphQL fields with regular Haskell datatypes.
+
+<Section id="interfaces" level={2}>
+  Interfaces
+</Section>
+
+GraphQL interfaces is represented in Morpheus with `TypeGuard`.
+in the following data type definition every use of `PersonInterface`
+will be represented as GraphQL interface `Person` and allow server to
+resolve different types from union `PersonImplements`.
+
+All types of the union `PersonImplements` must be objects
+and contain fields of type `Person`, otherwise the derivation fails.
+
+```haskell
+  -- interface Person
+data Person m = Person { name ::  m Text }
+  deriving
+    (
+      Generic,
+      GQLType
+    )
+
+data PersonImplements m
+  = PersonImplementsUser (User m)
+  | PersonImplementsDeity (Deity m)
+  deriving
+    (
+      Generic,
+      GQLType
+    )
+
+-- typeGuard guards all variabts of union with person fields
+type PersonInterface m = TypeGuard Person (PersonImplements m)
+```
+
+<Section id="unions" level={2}>
+  Unions
+</Section>
+
+To use union type, all you have to do is derive the `GQLType` class. Using GraphQL [_fragments_](https://graphql.org/learn/queries/#fragments), the arguments of each data constructor can be accessed from the GraphQL client.
+
+```haskell
+data Character
+  = CharacterDeity Deity -- will be unwrapped, since Character + Deity = CharacterDeity
+  | SomeDeity Deity -- will be wrapped since Character + Deity != SomeDeity
+  | Creature { creatureName :: Text, creatureAge :: Int }
+  | Demigod Text Text
+  | Zeus
+  deriving (Generic, GQLType)
+```
+
+where `Deity` is an object.
+
+As we see, there are different kinds of unions. `Morpheus` handles them all.
+
+This type will be represented as
+
+```graphql
+union Character = Deity | SomeDeity | Creature | SomeMulti | Zeus
+
+type SomeDeity {
+  _0: Deity!
+}
+
+type Creature {
+  creatureName: String!
+  creatureAge: Int!
+}
+
+type Demigod {
+  _0: Int!
+  _1: String!
+}
+
+type Zeus {
+  _: Unit!
+}
+```
+
+By default, union members will be generated with wrapper objects.
+There is one exception to this: if a constructor of a type is the type name concatenated with the name of the contained type, it will be referenced directly.
+That is, given:
+
+```haskell
+data Song = { songName :: Text, songDuration :: Float } deriving (Generic, GQLType)
+
+data Skit = { skitName :: Text, skitDuration :: Float } deriving (Generic, GQLType)
+
+data WrappedNode
+  = WrappedSong Song
+  | WrappedSkit Skit
+  deriving (Generic, GQLType)
+
+data NonWrapped
+  = NonWrappedSong Song
+  | NonWrappedSkit Skit
+  deriving (Generic, GQLType)
+
+```
+
+You will get the following schema:
+
+```graphql
+# has wrapper types
+union WrappedNode = WrappedSong | WrappedSkit
+
+# is a direct union
+union NonWrapped = Song | Skit
+
+type WrappedSong {
+  _0: Song!
+}
+
+type WrappedSKit {
+  _0: Skit!
+}
+
+type Song {
+  songDuration: Float!
+  songName: String!
+}
+
+type Skit {
+  skitDuration: Float!
+  skitName: String!
+}
+```
+
+- for all other unions will be generated new object type. for types without record syntax, fields will be automatically indexed.
+
+- empty constructors will get field `_`associaced with type `Unit`.
+
+<Section id="inputs" level={2}>
+  Input types
+</Section>
+
+Like object types, input types are represented by Haskell records.
+However, they are not permitted to have monad parameters, as they represent serialisable values.
+
+```haskell
+data Deity = Deity
+  { name :: Text         -- Non-Nullable Field
+  , power :: Maybe Text   -- Nullable Field
+  } deriving
+    ( Generic
+    , GQLType
+    )
+```
+
+<Section id="resolver">Resolver API</Section>
+
+### Applicative and Monad instances
+
+The `Resolver` type has `Applicative` and `Monad` instances that can be used to compose resolvers.
+
+### Handling Errors
+
+for errors you can use use either `liftEither` or `MonadFail`:
+at the and they have same result.
+
+with `liftEither`
+
+```haskell
+resolveDeity :: DeityArgs -> ResolverQ e IO Deity
+resolveDeity DeityArgs {} = liftEither $ dbDeity
+
+dbDeity ::  IO Either Deity
+dbDeity = pure $ Left "db error"
+```
+
+with `MonadFail`
+
+```haskell
+resolveDeity :: DeityArgs -> ResolverQ e IO Deity
+resolveDeity DeityArgs { } = fail "db error"
+```
