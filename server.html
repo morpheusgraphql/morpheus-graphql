@@ -1,0 +1,314 @@
+<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width"/><meta charSet="utf-8"/><title>Type System<!-- --> | Morpheus GraphQL<!-- --></title><meta name="next-head-count" content="3"/><link rel="stylesheet" href="https://unpkg.com/dracula-prism/dist/css/dracula-prism.css"/><meta name="description" content="Haskell GraphQL library, Build GraphQL APIs with your favorite functional language!"/><meta name="keywords" content="Morpheus GraphQL, GraphQL, Haskell"/><link rel="icon" href="/favicon.png"/><link rel="preload" href="/_next/static/css/6702d93ae58cbe0d.css" as="style"/><link rel="stylesheet" href="/_next/static/css/6702d93ae58cbe0d.css" data-n-g=""/><noscript data-n-css=""></noscript><script defer="" nomodule="" src="/_next/static/chunks/polyfills-5cd94c89d3acac5f.js"></script><script src="/_next/static/chunks/webpack-fd82975a6094609f.js" defer=""></script><script src="/_next/static/chunks/framework-fc97f3f1282ce3ed.js" defer=""></script><script src="/_next/static/chunks/main-551bef8982a15171.js" defer=""></script><script src="/_next/static/chunks/pages/_app-46a8c55192614451.js" defer=""></script><script src="/_next/static/chunks/pages/server-1ce75f987f7ddc53.js" defer=""></script><script src="/_next/static/8TVmdB1446ZD_A9CAtCU0/_buildManifest.js" defer=""></script><script src="/_next/static/8TVmdB1446ZD_A9CAtCU0/_ssgManifest.js" defer=""></script><script src="/_next/static/8TVmdB1446ZD_A9CAtCU0/_middlewareManifest.js" defer=""></script></head><body><div><svg width="100%" height="30vw" style="position:relative" viewBox="0 0 250 250"><path fill="#7b57b7" d="M115.8 208.6h-1.2l3.5-17.3h1.2l-.5 2.6c.5-1 1.2-1.7 2-2.2 1-.6 1.9-.9 2.9-.9 1.7 0 2.9.6 3.7 1.9.8 1.2 1 2.8.5 4.9-.3 2-1.1 3.5-2.4 4.7a6 6 0 0 1-4.3 1.8c-.9 0-1.7-.3-2.5-.8a3.9 3.9 0 0 1-1.4-2.1l-1.5 7.4zm34-4.3c-2 0-3.6-.9-4.8-2.8a8.3 8.3 0 0 1-1.1-6.4 12 12 0 0 1 3.5-6.6 8.7 8.7 0 0 1 6.2-2.6c2 0 3.6 1 4.8 2.8 1.3 1.9 1.6 4 1.2 6.4-.3 1.6-.8 3-1.5 4.2a9.7 9.7 0 0 1-2.3 3l2 1.8-1 1-2.2-2c-.4.4-1 .7-1.9 1l-2.8.2zm-57.7-.4h-.9l.7-3.6a7.8 7.8 0 0 1-6.9 4c-2.1 0-3.9-.9-5.2-2.8a8 8 0 0 1-1.3-6.4c.6-2.7 1.8-4.9 3.7-6.6 2-1.8 4.1-2.6 6.6-2.6a6 6 0 0 1 4.2 1.6c1.1 1 1.7 2.3 1.7 3.8h-1.2c0-1.2-.5-2.2-1.4-3-1-.9-2.2-1.3-3.6-1.3a8 8 0 0 0-5.6 2.3 10.4 10.4 0 0 0-3.2 5.8c-.4 2.1 0 4 1.1 5.7a5.2 5.2 0 0 0 4.5 2.4 7 7 0 0 0 4.7-1.8 8.3 8.3 0 0 0 2.7-4.7v-.4h-6l.2-1.2h7l-1.8 8.8zm13.2-9H104l.2-.8c.2-.9.7-1.6 1.7-2.2 1-.6 2.2-.8 3.5-.8 1.3 0 2.3.3 3.1.9.9.6 1.2 1.2 1 2l-1.5 7.6a2 2 0 0 0 .1 1.3c.2.4.4.6.7.6h.3l.2-.2-.1.6-1.2.2c-.4 0-.8-.2-1-.6-.3-.4-.4-.9-.3-1.4a4 4 0 0 1-1.8 1.6c-.8.4-1.8.6-2.8.6a4 4 0 0 1-3-1c-.7-.8-1-1.6-.8-2.5a4 4 0 0 1 1.7-2.6 7 7 0 0 1 3.6-1.2c1.3-.1 2.4-.3 3.2-.5.8-.3 1.3-.7 1.4-1l.2-1.2c.1-.6-.2-1.1-.8-1.6-.6-.5-1.4-.7-2.4-.7s-1.9.2-2.6.6c-.7.4-1.2 1-1.3 1.6l-.1.7zm-8.9 9h-1.2l2.6-12.6h1.1l-.5 2.8c.5-1 1.1-1.7 2-2.2.7-.6 1.4-.8 2.2-.8h.7l-.3 1.3h-.2c-1 0-2 .3-2.8 1-1 .8-1.6 1.8-2 3l-1.6 7.5zm75 0h-10.7l3.6-17.6h1.2l-3.3 16.5h9.5l-.3 1.1zm-40.5 0h-1.2l3.5-17.6h1.2l-1.5 7.3c.6-.8 1.4-1.5 2.2-2 .9-.5 1.8-.8 2.7-.8 1.1 0 2 .5 2.7 1.4.7 1 1 2 .8 3.1l-1.8 8.6h-1.2l1.7-8.3c.2-1 0-1.9-.4-2.6a2.3 2.3 0 0 0-2-1.1c-1 0-2 .3-2.9 1a7 7 0 0 0-2.1 2.8l-1.7 8.2zm-24.5-.4c1 0 2-.4 3-1 .9-.7 1.6-1.6 2-2.7l.6-2.9a5 5 0 0 1-1.6.6l-3 .4c-1 0-1.8.4-2.5 1a3 3 0 0 0-1.3 1.9c-.1.6 0 1.3.7 1.8.5.6 1.2.9 2 .9zm14.9-.3c1.3 0 2.5-.5 3.5-1.5s1.6-2.5 2-4.2c.3-1.8.2-3.2-.4-4.2-.6-1-1.5-1.6-2.8-1.6-1.3 0-2.5.6-3.5 1.6a8 8 0 0 0-2 4.2c-.4 1.5-.2 2.8.5 4 .6 1.2 1.5 1.7 2.7 1.7zm28.8 0a7 7 0 0 0 3.7-.8l-1.5-1.3 1.2-1 1.5 1.4c1.7-1.7 2.9-3.8 3.4-6.4.4-2 0-4-1-5.6-1-1.7-2.3-2.5-4-2.5-2 0-3.7.8-5.3 2.3a10.9 10.9 0 0 0-3 5.8c-.5 2.1-.2 4 .9 5.7 1 1.6 2.4 2.4 4 2.4z"></path><path fill="#370c6b" d="M46.2 52.6L10 162.2h23.9L70 52.6H46.2zm35 23.9l10.1-24h24l-23.7 55-10.5-31z"></path><path fill="hsla(260, 90%, 60%, 1)" d="M91.5 52.6h23.7l35.2 109.6h-23.8L91.5 52.6zm-45.3 0H70l35.2 109.6H81.4L46.2 52.6zm99.5 77h39.1v19.8h-32.2l-6.9-19.8zM198 86l33.6 29.8-32.8 31.1-10.7-11.4 20.6-19.5-21-18.4L197.8 86zm-67.2-.7l6.6 19.7 47.4-.2.3-19.5h-54.3zm28-8.8h-4.3l2.9-20.4h4l-.3 1.8.8-.8a7.2 7.2 0 0 1 2.4-1.2l1.4-.2c1 0 2 .2 2.8.5a5.2 5.2 0 0 1 3 3.8 9.5 9.5 0 0 1-2.4 8c-.6.8-1.3 1.3-2.2 1.7a7 7 0 0 1-5.2.2c-.7-.3-1.3-.7-1.7-1.4l-1.2 8zM126.1 63a8 8 0 0 1 3-5.3 9.5 9.5 0 0 1 8.7-1.5 5.7 5.7 0 0 1 3.6 3.8c.4 1 .4 2 .3 3a7.9 7.9 0 0 1-1 3 8.7 8.7 0 0 1-7.8 4.3c-1.1 0-2.1-.1-3-.5a5.8 5.8 0 0 1-3.6-3.8c-.3-.9-.3-1.9-.2-3zM232 60.1c-.5-.8-1.3-1.2-2.4-1.2-.3 0-.7 0-1 .2a1 1 0 0 0-.7 1c0 .3.1.5.4.7l1.3.4 1.7.4 1.7.7c.5.3.9.7 1.1 1.2.3.6.4 1.3.3 2.1-.1 1-.4 1.7-1 2.3-.4.6-1 1-1.6 1.4-.7.3-1.4.6-2.2.7-.8.2-1.5.2-2.3.2-1 0-2-.1-2.9-.4-1-.3-1.7-.8-2.3-1.5l3-2.9c.3.5.7 1 1.2 1.2.4.2 1 .4 1.6.4l1.4-.2c.4-.2.7-.5.7-.8.1-.4 0-.7-.4-.9l-1.3-.4-1.7-.4-1.6-.7a3 3 0 0 1-1.2-1.2c-.3-.5-.4-1.2-.3-2 .2-.9.4-1.6.8-2.2l1.6-1.5 2-.8a9 9 0 0 1 4.9.1c1 .3 1.6.8 2.2 1.5l-3 2.6zM215.6 68a5.8 5.8 0 0 1-1.7 1.5 5.9 5.9 0 0 1-5.3.2 3 3 0 0 1-1.4-1.4 5 5 0 0 1-.4-2c0-.9 0-1.7.2-2.7l1-7.6h4.4l-1 6.8-.2 1.2.1 1.2c.1.4.3.7.6 1l1.2.2c.6 0 1 0 1.4-.3.4-.2.7-.4 1-.8l.4-1 .3-1.4 1-7h4.3l-2 14h-4l.2-1.9zm-21.4-3.7c0 .8.4 1.4.9 2 .5.4 1.2.7 2 .7.7 0 1.3-.2 1.9-.5.5-.3 1-.7 1.4-1.2l2.7 2.2c-.8.9-1.7 1.5-2.9 2a8.6 8.6 0 0 1-6.3.2 5.8 5.8 0 0 1-3.6-3.8 8 8 0 0 1 2.8-8.3 9.5 9.5 0 0 1 5.8-2c1 0 1.9.2 2.6.5.8.4 1.4.9 2 1.5.4.6.7 1.4 1 2.3a9 9 0 0 1 0 3l-.3 1.4h-10zm-46.7 5.6h-4.3l2-14h4.3l-.3 2.3c.6-.9 1.2-1.5 2-2 .6-.4 1.4-.6 2.4-.6a9.8 9.8 0 0 1 1.4.2l-.5 3.9a6.8 6.8 0 0 0-1.8-.3 5 5 0 0 0-2 .3 3 3 0 0 0-1.3 1c-.3.4-.5 1-.7 1.5l-.4 1.9-.8 5.8zm29.9 0H173l3-21.7h4.3l-1.3 9.7.6-.8 1-.8a5.3 5.3 0 0 1 2.6-.7c1.1 0 2 .2 2.6.5.7.4 1.1.8 1.4 1.4.3.6.4 1.3.5 2.1 0 .8 0 1.7-.2 2.6l-1 7.7h-4.4l1-6.8.1-1.3v-1.2l-.6-.9c-.3-.2-.7-.3-1.3-.3a3 3 0 0 0-1.4.3l-.9.8-.5 1.1-.2 1.4-1 6.9zm-47-7c-.1 1 0 2 .6 2.6.5.6 1.3 1 2.4 1 1 0 2-.4 2.7-1 .7-.7 1.1-1.5 1.2-2.6.2-1 0-1.9-.5-2.5-.5-.7-1.3-1-2.4-1-1.1 0-2 .3-2.7 1-.7.6-1.1 1.5-1.3 2.5zm29.9 0c-.2 1 0 2 .5 2.6.5.6 1.3 1 2.4 1 1.1 0 2-.4 2.7-1 .7-.7 1.1-1.5 1.3-2.6.1-1 0-1.9-.6-2.5-.5-.7-1.3-1-2.4-1-1 0-2 .3-2.7 1-.6.6-1 1.5-1.2 2.5zm40-1.6c.1-.7 0-1.3-.4-1.8s-1-.8-1.8-.8a3.5 3.5 0 0 0-3.5 2.6h5.7z"></path></svg><div style="margin:0 auto;padding:20px 30px;display:flex;flex-direction:row;background:rgb(215 239 253 / 55%);text-align:center;align-items:center;position:relative"><h1 style="margin:0"><div style="color:hsl(211deg 23% 20%);text-decoration:none;padding:1rem 1rem;font-weight:600"><a href="/">Morpheus GraphQL</a></div></h1><div style="color:hsl(211deg 23% 20%);text-decoration:none;padding:1rem 1rem;font-weight:600"><a href="/server">Server</a></div><div style="color:hsl(211deg 23% 20%);text-decoration:none;padding:1rem 1rem;font-weight:600"><a href="/resolving">Resolving</a></div><div style="color:hsl(211deg 23% 20%);text-decoration:none;padding:1rem 1rem;font-weight:600"><a href="/client">Client</a></div><div style="color:hsl(211deg 23% 20%);text-decoration:none;padding:1rem 1rem;font-weight:600"><a href="/examples">Examples</a></div></div></div><div id="__next"><div style="width:100%;background:rgb(215 239 253 / 65%)"><div style="display:grid;grid-template-columns:repeat(12, 1fr);gap:2em;max-width:1260px;margin:0 auto;padding:8rem 2rem;background:rgb(243 251 255 / 81%);border:2px solid white;border-radius:5px"><nav style="grid-column:1 / 3;display:flex;padding-bottom:5px;flex-direction:column;position:sticky;top:5vh;height:80vh"></nav><div style="grid-column:3 / 13">
+<!-- --><h1>Server</h1>
+<!-- --><h2 id="type-system" style="color:black;text-decoration:none;padding:0.1rem 0rem">Type System</h2>
+<!-- --><p>Morpheus GraphQL covers all GraphQL data types with an equivalent
+Haskell representation. A prerequisite for these representation types is that
+they must be derived by <!-- --><code>Generic</code> and provide corresponding <!-- --><code>GQLType</code> instances.<!-- --></p>
+<!-- --><h3 id="objects" style="color:black;text-decoration:none;padding:0.1rem 0rem"><p>Object types</p></h3>
+<!-- --><p>Object types are represented in Morpheus with Haskell records,
+where the parameter <!-- --><code>m</code> passes the resolution monad
+to the field resolution functions. The following code snippet, for example,
+defines the type Deity with a nullable field <!-- --><code>power</code> and a non-nullable field <!-- --><code>name</code>.<!-- --></p>
+<!-- --><div class="remark-highlight"><pre class="language-haskell"><code class="language-haskell"><span class="token keyword">data</span> <!-- --><span class="token constant">Deity</span> <!-- --><span class="token hvariable">m</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token constant">Deity</span>
+  <!-- --><span class="token punctuation">{</span> <!-- --><span class="token hvariable">name</span> <!-- --><span class="token operator">::</span> <!-- --><span class="token hvariable">m</span> <!-- --><span class="token constant">Text</span>         <!-- --><span class="token comment">-- Non-Nullable Field</span>
+  <!-- --><span class="token punctuation">,</span> <!-- --><span class="token hvariable">power</span> <!-- --><span class="token operator">::</span> <!-- --><span class="token hvariable">m</span> <!-- --><span class="token constant">Maybe</span> <!-- --><span class="token constant">Text</span>   <!-- --><span class="token comment">-- Nullable Field</span>
+  <!-- --><span class="token punctuation">}</span> <!-- --><span class="token keyword">deriving</span>
+    <!-- --><span class="token punctuation">(</span> <!-- --><span class="token constant">Generic</span>
+    <!-- --><span class="token punctuation">,</span> <!-- --><span class="token constant">GQLType</span>
+    <!-- --><span class="token punctuation">)</span>
+<!-- --></code></pre></div>
+<!-- --><h3 id="arguments" style="color:black;text-decoration:none;padding:0.1rem 0rem"><p>Arguments</p></h3>
+<!-- --><p>GraphQL arguments can be represented with two ways:</p>
+<!-- --><h4>Haskell records</h4>
+<!-- --><p>we can use Haskell records to declare GraphQL arguments,
+where each field of a record represents a particular
+argument, and can be accessed by name.</p>
+<!-- --><div class="remark-highlight"><pre class="language-haskell"><code class="language-haskell"><span class="token keyword">data</span> <!-- --><span class="token constant">Query</span> <!-- --><span class="token hvariable">m</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token constant">Query</span>
+  <!-- --><span class="token punctuation">{</span> <!-- --><span class="token hvariable">deity</span> <!-- --><span class="token operator">::</span> <!-- --><span class="token constant">DeityArgs</span> <!-- --><span class="token operator">-&gt;</span> <!-- --><span class="token hvariable">m</span> <!-- --><span class="token constant">Deity</span>
+  <!-- --><span class="token punctuation">}</span> <!-- --><span class="token keyword">deriving</span>
+    <!-- --><span class="token punctuation">(</span> <!-- --><span class="token constant">Generic</span>
+    <!-- --><span class="token punctuation">,</span> <!-- --><span class="token constant">GQLType</span>
+    <!-- --><span class="token punctuation">)</span>
+
+<!-- --><span class="token keyword">data</span> <!-- --><span class="token constant">DeityArgs</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token constant">DeityArgs</span>
+  <!-- --><span class="token punctuation">{</span> <!-- --><span class="token hvariable">name</span>      <!-- --><span class="token operator">::</span> <!-- --><span class="token constant">Text</span>        <!-- --><span class="token comment">-- Required Argument</span>
+  <!-- --><span class="token punctuation">,</span> <!-- --><span class="token hvariable">mythology</span> <!-- --><span class="token operator">::</span> <!-- --><span class="token constant">Maybe</span> <!-- --><span class="token constant">Text</span>  <!-- --><span class="token comment">-- Optional Argument</span>
+  <!-- --><span class="token punctuation">}</span> <!-- --><span class="token keyword">deriving</span>
+     <!-- --><span class="token punctuation">(</span> <!-- --><span class="token constant">Generic</span><span class="token punctuation">,</span>
+       <!-- --><span class="token constant">GQLType</span>
+     <!-- --><span class="token punctuation">)</span>
+<!-- --></code></pre></div>
+<!-- --><p>This approach is quite convenient for representing multiple arguments,
+but cumbersome if we only need one argument for each field.
+That is why we also introduce &quot;Tagged Arguments&quot;.</p>
+<!-- --><h4>Tagged function arguments</h4>
+<!-- --><p>Tagged arguments leverage type-level literals and enable GraphQL
+arguments to be represented as a chain of named function arguments.
+e.g. the following type defines GraphQL field <!-- --><code>deity</code> with the
+optional argument <!-- --><code>name</code> of type <!-- --><code>String</code>.<!-- --></p>
+<!-- --><div class="remark-highlight"><pre class="language-haskell"><code class="language-haskell"><span class="token keyword">data</span> <!-- --><span class="token constant">Query</span> <!-- --><span class="token hvariable">m</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token constant">Query</span>
+  <!-- --><span class="token punctuation">{</span> <!-- --><span class="token hvariable">deity</span> <!-- --><span class="token operator">::</span> <!-- --><span class="token constant">Arg</span> <!-- --><span class="token string">&quot;name&quot;</span> <!-- --><span class="token punctuation">(</span><span class="token constant">Maybe</span> <!-- --><span class="token constant">Text</span><span class="token punctuation">)</span> <!-- --><span class="token operator">-&gt;</span> <!-- --><span class="token hvariable">m</span> <!-- --><span class="token constant">Deity</span>
+  <!-- --><span class="token punctuation">}</span> <!-- --><span class="token keyword">deriving</span>
+    <!-- --><span class="token punctuation">(</span> <!-- --><span class="token constant">Generic</span>
+    <!-- --><span class="token punctuation">,</span> <!-- --><span class="token constant">GQLType</span>
+    <!-- --><span class="token punctuation">)</span>
+<!-- --></code></pre></div>
+<!-- --><h3 id="query" style="color:black;text-decoration:none;padding:0.1rem 0rem"><p>Query</p></h3>
+<!-- --><p>the GraphQL query type is represented in Morpheus GraphQL as a regular object type named <!-- --><code>Query</code>.<!-- --></p>
+<!-- --><div class="remark-highlight"><pre class="language-haskell"><code class="language-haskell"><span class="token keyword">data</span> <!-- --><span class="token constant">Query</span> <!-- --><span class="token hvariable">m</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token constant">Query</span>
+  <!-- --><span class="token punctuation">{</span> <!-- --><span class="token hvariable">deity</span> <!-- --><span class="token operator">::</span>  <!-- --><span class="token hvariable">m</span> <!-- --><span class="token constant">Deity</span>
+  <!-- --><span class="token punctuation">}</span> <!-- --><span class="token keyword">deriving</span>
+    <!-- --><span class="token punctuation">(</span> <!-- --><span class="token constant">Generic</span>
+    <!-- --><span class="token punctuation">,</span> <!-- --><span class="token constant">GQLType</span>
+    <!-- --><span class="token punctuation">)</span>
+<!-- --></code></pre></div>
+<!-- --><h3 id="mutations" style="color:black;text-decoration:none;padding:0.1rem 0rem"><p>Mutations</p></h3>
+<!-- --><p>In addition to queries, Morpheus also supports mutations. They behave just like regular queries and are defined similarly:</p>
+<!-- --><div class="remark-highlight"><pre class="language-haskell"><code class="language-haskell"><span class="token keyword">newtype</span> <!-- --><span class="token constant">Mutation</span> <!-- --><span class="token hvariable">m</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token constant">Mutation</span>
+  <!-- --><span class="token punctuation">{</span> <!-- --><span class="token hvariable">createDeity</span> <!-- --><span class="token operator">::</span> <!-- --><span class="token constant">MutArgs</span> <!-- --><span class="token operator">-&gt;</span> <!-- --><span class="token hvariable">m</span> <!-- --><span class="token constant">Deity</span>
+  <!-- --><span class="token punctuation">}</span> <!-- --><span class="token keyword">deriving</span> <!-- --><span class="token punctuation">(</span><span class="token constant">Generic</span><span class="token punctuation">,</span> <!-- --><span class="token constant">GQLType</span><span class="token punctuation">)</span>
+
+<!-- --><span class="token hvariable">rootResolver</span> <!-- --><span class="token operator">::</span> <!-- --><span class="token constant">RootResolver</span> <!-- --><span class="token constant">IO</span>  <!-- --><span class="token punctuation">(</span><span class="token punctuation">)</span> <!-- --><span class="token constant">Query</span> <!-- --><span class="token constant">Mutation</span> <!-- --><span class="token constant">Undefined</span>
+<!-- --><span class="token hvariable">rootResolver</span> <!-- --><span class="token operator">=</span>
+  <!-- --><span class="token constant">RootResolver</span>
+    <!-- --><span class="token punctuation">{</span> <!-- --><span class="token hvariable">queryResolver</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token constant">Query</span> <!-- --><span class="token punctuation">{</span><span class="token operator">...</span><span class="token punctuation">}</span>
+    <!-- --><span class="token punctuation">,</span> <!-- --><span class="token hvariable">mutationResolver</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token constant">Mutation</span> <!-- --><span class="token punctuation">{</span> <!-- --><span class="token hvariable">createDeity</span> <!-- --><span class="token punctuation">}</span>
+    <!-- --><span class="token punctuation">,</span> <!-- --><span class="token hvariable">subscriptionResolver</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token constant">Undefined</span>
+    <!-- --><span class="token punctuation">}</span>
+    <!-- --><span class="token keyword">where</span>
+      <!-- --><span class="token comment">-- Mutation Without Event Triggering</span>
+      <!-- --><span class="token hvariable">createDeity</span> <!-- --><span class="token operator">::</span> <!-- --><span class="token constant">MutArgs</span> <!-- --><span class="token operator">-&gt;</span> <!-- --><span class="token constant">ResolverM</span> <!-- --><span class="token punctuation">(</span><span class="token punctuation">)</span> <!-- --><span class="token constant">IO</span> <!-- --><span class="token constant">Deity</span>
+      <!-- --><span class="token hvariable">createDeity_args</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token hvariable">lift</span> <!-- --><span class="token hvariable">setDBAddress</span>
+
+<!-- --><span class="token hvariable">gqlApi</span> <!-- --><span class="token operator">::</span> <!-- --><span class="token constant">ByteString</span> <!-- --><span class="token operator">-&gt;</span> <!-- --><span class="token constant">IO</span> <!-- --><span class="token constant">ByteString</span>
+<!-- --><span class="token hvariable">gqlApi</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token hvariable">interpreter</span> <!-- --><span class="token hvariable">rootResolver</span>
+<!-- --></code></pre></div>
+<!-- --><h3 id="subscription" style="color:black;text-decoration:none;padding:0.1rem 0rem"><p>Subscriptions</p></h3>
+<!-- --><p>In morpheus subscription and mutation communicate with Events,
+<!-- --><code>Event</code> consists with user defined <!-- --><code>Channel</code> and <!-- --><code>Content</code>.<!-- --></p>
+<!-- --><p>Every subscription has its own Channel by which it will be triggered</p>
+<!-- --><div class="remark-highlight"><pre class="language-haskell"><code class="language-haskell"><span class="token keyword">data</span> <!-- --><span class="token constant">Channel</span>
+  <!-- --><span class="token operator">=</span> <!-- --><span class="token constant">ChannelA</span>
+  <!-- --><span class="token operator">|</span> <!-- --><span class="token constant">ChannelB</span>
+
+<!-- --><span class="token keyword">data</span> <!-- --><span class="token constant">Content</span>
+  <!-- --><span class="token operator">=</span> <!-- --><span class="token constant">ContentA</span> <!-- --><span class="token constant">Int</span>
+  <!-- --><span class="token operator">|</span> <!-- --><span class="token constant">ContentB</span> <!-- --><span class="token constant">Text</span>
+
+<!-- --><span class="token keyword">type</span> <!-- --><span class="token constant">MyEvent</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token constant">Event</span> <!-- --><span class="token constant">Channel</span> <!-- --><span class="token constant">Content</span>
+
+<!-- --><span class="token keyword">newtype</span> <!-- --><span class="token constant">Query</span> <!-- --><span class="token hvariable">m</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token constant">Query</span>
+  <!-- --><span class="token punctuation">{</span> <!-- --><span class="token hvariable">deity</span> <!-- --><span class="token operator">::</span> <!-- --><span class="token hvariable">m</span> <!-- --><span class="token constant">Deity</span>
+  <!-- --><span class="token punctuation">}</span> <!-- --><span class="token keyword">deriving</span> <!-- --><span class="token punctuation">(</span><span class="token constant">Generic</span><span class="token punctuation">)</span>
+
+<!-- --><span class="token keyword">newtype</span> <!-- --><span class="token constant">Mutation</span> <!-- --><span class="token hvariable">m</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token constant">Mutation</span>
+  <!-- --><span class="token punctuation">{</span> <!-- --><span class="token hvariable">createDeity</span> <!-- --><span class="token operator">::</span> <!-- --><span class="token hvariable">m</span> <!-- --><span class="token constant">Deity</span>
+  <!-- --><span class="token punctuation">}</span> <!-- --><span class="token keyword">deriving</span> <!-- --><span class="token punctuation">(</span><span class="token constant">Generic</span><span class="token punctuation">)</span>
+
+<!-- --><span class="token keyword">newtype</span> <!-- --><span class="token constant">Subscription</span> <!-- --><span class="token punctuation">(</span><span class="token hvariable">m</span> <!-- --><span class="token operator">::</span>  <!-- --><span class="token operator">*</span> <!-- --><span class="token operator">-&gt;</span> <!-- --><span class="token operator">*</span> <!-- --><span class="token punctuation">)</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token constant">Subscription</span>
+  <!-- --><span class="token punctuation">{</span> <!-- --><span class="token hvariable">newDeity</span> <!-- --><span class="token operator">::</span> <!-- --><span class="token hvariable">m</span>  <!-- --><span class="token constant">Deity</span>
+  <!-- --><span class="token punctuation">}</span> <!-- --><span class="token keyword">deriving</span> <!-- --><span class="token punctuation">(</span><span class="token constant">Generic</span><span class="token punctuation">)</span>
+
+<!-- --><span class="token keyword">newtype</span> <!-- --><span class="token constant">Subscription</span> <!-- --><span class="token punctuation">(</span><span class="token hvariable">m</span> <!-- --><span class="token operator">::</span> <!-- --><span class="token operator">*</span> <!-- --><span class="token operator">-&gt;</span> <!-- --><span class="token operator">*</span><span class="token punctuation">)</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token constant">Subscription</span>
+<!-- --><span class="token punctuation">{</span> <!-- --><span class="token hvariable">newDeity</span> <!-- --><span class="token operator">::</span> <!-- --><span class="token constant">SubscriptionField</span> <!-- --><span class="token punctuation">(</span><span class="token hvariable">m</span> <!-- --><span class="token constant">Deity</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+<!-- --><span class="token punctuation">}</span>
+<!-- --><span class="token keyword">deriving</span> <!-- --><span class="token punctuation">(</span><span class="token constant">Generic</span><span class="token punctuation">)</span>
+
+
+<!-- --><span class="token keyword">type</span> <!-- --><span class="token constant">APIEvent</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token constant">Event</span> <!-- --><span class="token constant">Channel</span> <!-- --><span class="token constant">Content</span>
+
+<!-- --><span class="token hvariable">rootResolver</span> <!-- --><span class="token operator">::</span> <!-- --><span class="token constant">RootResolver</span> <!-- --><span class="token constant">IO</span> <!-- --><span class="token constant">APIEvent</span> <!-- --><span class="token constant">Query</span> <!-- --><span class="token constant">Mutation</span> <!-- --><span class="token constant">Subscription</span>
+<!-- --><span class="token hvariable">rootResolver</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token constant">RootResolver</span>
+  <!-- --><span class="token punctuation">{</span> <!-- --><span class="token hvariable">queryResolver</span>        <!-- --><span class="token operator">=</span> <!-- --><span class="token constant">Query</span> <!-- --><span class="token punctuation">{</span> <!-- --><span class="token hvariable">deity</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token hvariable">fetchDeity</span> <!-- --><span class="token punctuation">}</span>
+  <!-- --><span class="token punctuation">,</span> <!-- --><span class="token hvariable">mutationResolver</span>     <!-- --><span class="token operator">=</span> <!-- --><span class="token constant">Mutation</span> <!-- --><span class="token punctuation">{</span> <!-- --><span class="token hvariable">createDeity</span> <!-- --><span class="token punctuation">}</span>
+  <!-- --><span class="token punctuation">,</span> <!-- --><span class="token hvariable">subscriptionResolver</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token constant">Subscription</span> <!-- --><span class="token punctuation">{</span> <!-- --><span class="token hvariable">newDeity</span> <!-- --><span class="token punctuation">}</span>
+  <!-- --><span class="token punctuation">}</span>
+ <!-- --><span class="token keyword">where</span>
+  <!-- --><span class="token comment">-- Mutation Without Event Triggering</span>
+  <!-- --><span class="token hvariable">createDeity</span> <!-- --><span class="token operator">::</span> <!-- --><span class="token constant">ResolverM</span> <!-- --><span class="token constant">EVENT</span> <!-- --><span class="token constant">IO</span> <!-- --><span class="token constant">Address</span>
+  <!-- --><span class="token hvariable">createDeity</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token keyword">do</span>
+      <!-- --><span class="token hvariable">requireAuthorized</span>
+      <!-- --><span class="token hvariable">publish</span> <!-- --><span class="token punctuation">[</span><span class="token constant">Event</span> <!-- --><span class="token punctuation">{</span> <!-- --><span class="token hvariable">channels</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token punctuation">[</span><span class="token constant">ChannelA</span><span class="token punctuation">]</span><span class="token punctuation">,</span> <!-- --><span class="token hvariable">content</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token constant">ContentA</span> <!-- --><span class="token number">1</span> <!-- --><span class="token punctuation">}</span><span class="token punctuation">]</span>
+      <!-- --><span class="token hvariable">lift</span> <!-- --><span class="token hvariable">dbCreateDeity</span>
+  <!-- --><span class="token hvariable">newDeity</span> <!-- --><span class="token operator">::</span> <!-- --><span class="token constant">SubscriptionField</span> <!-- --><span class="token punctuation">(</span><span class="token constant">ResolverS</span> <!-- --><span class="token constant">EVENT</span> <!-- --><span class="token constant">IO</span> <!-- --><span class="token constant">Deity</span><span class="token punctuation">)</span>
+  <!-- --><span class="token hvariable">newDeity</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token hvariable">subscribe</span> <!-- --><span class="token constant">ChannelA</span> <!-- --><span class="token operator">$</span> <!-- --><span class="token keyword">do</span>
+    <!-- --><span class="token comment">-- executed only once</span>
+    <!-- --><span class="token comment">-- immediate response on failures</span>
+    <!-- --><span class="token hvariable">requireAuthorized</span>
+    <!-- --><span class="token hvariable">pure</span> <!-- --><span class="token operator">$</span> <!-- --><span class="token operator">\</span><span class="token punctuation">(</span><span class="token constant">Event</span> <!-- --><span class="token hvariable">_</span> <!-- --><span class="token hvariable">content</span><span class="token punctuation">)</span> <!-- --><span class="token operator">-&gt;</span> <!-- --><span class="token keyword">do</span>
+        <!-- --><span class="token comment">-- executes on every event</span>
+        <!-- --><span class="token hvariable">lift</span> <!-- --><span class="token punctuation">(</span><span class="token hvariable">getDBAddress</span> <!-- --><span class="token hvariable">content</span><span class="token punctuation">)</span>
+<!-- --></code></pre></div>
+<!-- --><h3 id="scalars" style="color:black;text-decoration:none;padding:0.1rem 0rem"><p>Scalar types</p></h3>
+<!-- --><p>any Haskell data type can be represented as a GraphQL scalar type.
+In order to do this, the type must be associated as
+<!-- --><code>SCALAR</code> and implemented with <!-- --><code>DecodeScalar</code> and <!-- --><code>EncodeScalar</code> instances.<!-- --></p>
+<!-- --><div class="remark-highlight"><pre class="language-haskell"><code class="language-haskell"><span class="token keyword">data</span> <!-- --><span class="token constant">Odd</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token constant">Odd</span> <!-- --><span class="token constant">Int</span>  <!-- --><span class="token keyword">deriving</span> <!-- --><span class="token punctuation">(</span><span class="token constant">Generic</span><span class="token punctuation">)</span>
+
+<!-- --><span class="token keyword">instance</span> <!-- --><span class="token constant">DecodeScalar</span> <!-- --><span class="token constant">Euro</span> <!-- --><span class="token keyword">where</span>
+  <!-- --><span class="token hvariable">decodeScalar</span> <!-- --><span class="token punctuation">(</span><span class="token constant">Int</span> <!-- --><span class="token hvariable">x</span><span class="token punctuation">)</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token hvariable">pure</span> <!-- --><span class="token operator">$</span> <!-- --><span class="token constant">Odd</span> <!-- --><span class="token punctuation">(</span><span class="token operator">...</span> <!-- --><span class="token punctuation">)</span>
+  <!-- --><span class="token hvariable">decodeScalar</span> <!-- --><span class="token hvariable">_</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token constant">Left</span> <!-- --><span class="token string">&quot;invalid Value!&quot;</span>
+
+<!-- --><span class="token keyword">instance</span> <!-- --><span class="token constant">EncodeScalar</span> <!-- --><span class="token constant">Euro</span> <!-- --><span class="token keyword">where</span>
+  <!-- --><span class="token hvariable">encodeScalar</span> <!-- --><span class="token punctuation">(</span><span class="token constant">Odd</span> <!-- --><span class="token hvariable">value</span><span class="token punctuation">)</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token constant">Int</span> <!-- --><span class="token hvariable">value</span>
+
+<!-- --><span class="token keyword">instance</span> <!-- --><span class="token constant">GQLType</span> <!-- --><span class="token constant">Odd</span> <!-- --><span class="token keyword">where</span>
+  <!-- --><span class="token keyword">type</span> <!-- --><span class="token constant">KIND</span> <!-- --><span class="token constant">Odd</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token constant">SCALAR</span>
+<!-- --></code></pre></div>
+<!-- --><h3 id="enums" style="color:black;text-decoration:none;padding:0.1rem 0rem"><p>Enumeration types</p></h3>
+<!-- --><p>Data types where all constructors are empty are derived as GraphQL enums.</p>
+<!-- --><div class="remark-highlight"><pre class="language-haskell"><code class="language-haskell"><span class="token keyword">data</span> <!-- --><span class="token constant">City</span>
+  <!-- --><span class="token operator">=</span> <!-- --><span class="token constant">Athens</span>
+  <!-- --><span class="token operator">|</span> <!-- --><span class="token constant">Sparta</span>
+  <!-- --><span class="token operator">|</span> <!-- --><span class="token constant">Corinth</span>
+  <!-- --><span class="token operator">|</span> <!-- --><span class="token constant">Delphi</span>
+  <!-- --><span class="token operator">|</span> <!-- --><span class="token constant">Argos</span>
+  <!-- --><span class="token keyword">deriving</span>
+    <!-- --><span class="token punctuation">(</span> <!-- --><span class="token constant">Generic</span>
+    <!-- --><span class="token punctuation">,</span> <!-- --><span class="token constant">GQLType</span>
+    <!-- --><span class="token punctuation">)</span>
+<!-- --></code></pre></div>
+<!-- --><h3 id="wrappers" style="color:black;text-decoration:none;padding:0.1rem 0rem"><p>Lists and Non-Null</p></h3>
+<!-- --><p>GraphQL Lists are represented with Haskell Lists.
+However, since in Haskell each type is intrinsically not nullable,
+nullable GraphQL fields are represented with <!-- --><code>Maybe</code> Haskell data type and non-nullable
+GraphQL fields with regular Haskell datatypes.<!-- --></p>
+<!-- --><h3 id="interfaces" style="color:black;text-decoration:none;padding:0.1rem 0rem"><p>Interfaces</p></h3>
+<!-- --><p>GraphQL interfaces is represented in Morpheus with <!-- --><code>TypeGuard</code>.
+in the following data type definition every use of <!-- --><code>PersonInterface</code>
+will be represented as GraphQL interface <!-- --><code>Person</code> and allow server to
+resolve different types from union <!-- --><code>PersonImplements</code>.<!-- --></p>
+<!-- --><p>All types of the union <!-- --><code>PersonImplements</code> must be objects
+and contain fields of type <!-- --><code>Person</code>, otherwise the derivation fails.<!-- --></p>
+<!-- --><div class="remark-highlight"><pre class="language-haskell"><code class="language-haskell"><span class="token comment">-- interface Person</span>
+<!-- --><span class="token keyword">data</span> <!-- --><span class="token constant">Person</span> <!-- --><span class="token hvariable">m</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token constant">Person</span> <!-- --><span class="token punctuation">{</span> <!-- --><span class="token hvariable">name</span> <!-- --><span class="token operator">::</span>  <!-- --><span class="token hvariable">m</span> <!-- --><span class="token constant">Text</span> <!-- --><span class="token punctuation">}</span>
+  <!-- --><span class="token keyword">deriving</span>
+    <!-- --><span class="token punctuation">(</span>
+      <!-- --><span class="token constant">Generic</span><span class="token punctuation">,</span>
+      <!-- --><span class="token constant">GQLType</span>
+    <!-- --><span class="token punctuation">)</span>
+
+<!-- --><span class="token keyword">data</span> <!-- --><span class="token constant">PersonImplements</span> <!-- --><span class="token hvariable">m</span>
+  <!-- --><span class="token operator">=</span> <!-- --><span class="token constant">PersonImplementsUser</span> <!-- --><span class="token punctuation">(</span><span class="token constant">User</span> <!-- --><span class="token hvariable">m</span><span class="token punctuation">)</span>
+  <!-- --><span class="token operator">|</span> <!-- --><span class="token constant">PersonImplementsDeity</span> <!-- --><span class="token punctuation">(</span><span class="token constant">Deity</span> <!-- --><span class="token hvariable">m</span><span class="token punctuation">)</span>
+  <!-- --><span class="token keyword">deriving</span>
+    <!-- --><span class="token punctuation">(</span>
+      <!-- --><span class="token constant">Generic</span><span class="token punctuation">,</span>
+      <!-- --><span class="token constant">GQLType</span>
+    <!-- --><span class="token punctuation">)</span>
+
+<!-- --><span class="token comment">-- typeGuard guards all variabts of union with person fields</span>
+<!-- --><span class="token keyword">type</span> <!-- --><span class="token constant">PersonInterface</span> <!-- --><span class="token hvariable">m</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token constant">TypeGuard</span> <!-- --><span class="token constant">Person</span> <!-- --><span class="token punctuation">(</span><span class="token constant">PersonImplements</span> <!-- --><span class="token hvariable">m</span><span class="token punctuation">)</span>
+<!-- --></code></pre></div>
+<!-- --><h3 id="unions" style="color:black;text-decoration:none;padding:0.1rem 0rem"><p>Unions</p></h3>
+<!-- --><p>To use union type, all you have to do is derive the <!-- --><code>GQLType</code> class. Using GraphQL <!-- --><a href="https://graphql.org/learn/queries/#fragments"><em>fragments</em></a>, the arguments of each data constructor can be accessed from the GraphQL client.<!-- --></p>
+<!-- --><div class="remark-highlight"><pre class="language-haskell"><code class="language-haskell"><span class="token keyword">data</span> <!-- --><span class="token constant">Character</span>
+  <!-- --><span class="token operator">=</span> <!-- --><span class="token constant">CharacterDeity</span> <!-- --><span class="token constant">Deity</span> <!-- --><span class="token comment">-- will be unwrapped, since Character + Deity = CharacterDeity</span>
+  <!-- --><span class="token operator">|</span> <!-- --><span class="token constant">SomeDeity</span> <!-- --><span class="token constant">Deity</span> <!-- --><span class="token comment">-- will be wrapped since Character + Deity != SomeDeity</span>
+  <!-- --><span class="token operator">|</span> <!-- --><span class="token constant">Creature</span> <!-- --><span class="token punctuation">{</span> <!-- --><span class="token hvariable">creatureName</span> <!-- --><span class="token operator">::</span> <!-- --><span class="token constant">Text</span><span class="token punctuation">,</span> <!-- --><span class="token hvariable">creatureAge</span> <!-- --><span class="token operator">::</span> <!-- --><span class="token constant">Int</span> <!-- --><span class="token punctuation">}</span>
+  <!-- --><span class="token operator">|</span> <!-- --><span class="token constant">Demigod</span> <!-- --><span class="token constant">Text</span> <!-- --><span class="token constant">Text</span>
+  <!-- --><span class="token operator">|</span> <!-- --><span class="token constant">Zeus</span>
+  <!-- --><span class="token keyword">deriving</span> <!-- --><span class="token punctuation">(</span><span class="token constant">Generic</span><span class="token punctuation">,</span> <!-- --><span class="token constant">GQLType</span><span class="token punctuation">)</span>
+<!-- --></code></pre></div>
+<!-- --><p>where <!-- --><code>Deity</code> is an object.<!-- --></p>
+<!-- --><p>As we see, there are different kinds of unions. <!-- --><code>Morpheus</code> handles them all.<!-- --></p>
+<!-- --><p>This type will be represented as</p>
+<!-- --><div class="remark-highlight"><pre class="language-graphql"><code class="language-graphql"><span class="token keyword">union</span> <!-- --><span class="token class-name">Character</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token property">Deity</span> <!-- --><span class="token operator">|</span> <!-- --><span class="token property">SomeDeity</span> <!-- --><span class="token operator">|</span> <!-- --><span class="token property">Creature</span> <!-- --><span class="token operator">|</span> <!-- --><span class="token property">SomeMulti</span> <!-- --><span class="token operator">|</span> <!-- --><span class="token property">Zeus</span>
+
+<!-- --><span class="token keyword">type</span> <!-- --><span class="token class-name">SomeDeity</span> <!-- --><span class="token punctuation">{</span>
+  <!-- --><span class="token attr-name">_0</span><span class="token punctuation">:</span> <!-- --><span class="token class-name">Deity</span><span class="token operator">!</span>
+<!-- --><span class="token punctuation">}</span>
+
+<!-- --><span class="token keyword">type</span> <!-- --><span class="token class-name">Creature</span> <!-- --><span class="token punctuation">{</span>
+  <!-- --><span class="token attr-name">creatureName</span><span class="token punctuation">:</span> <!-- --><span class="token scalar">String</span><span class="token operator">!</span>
+  <!-- --><span class="token attr-name">creatureAge</span><span class="token punctuation">:</span> <!-- --><span class="token scalar">Int</span><span class="token operator">!</span>
+<!-- --><span class="token punctuation">}</span>
+
+<!-- --><span class="token keyword">type</span> <!-- --><span class="token class-name">Demigod</span> <!-- --><span class="token punctuation">{</span>
+  <!-- --><span class="token attr-name">_0</span><span class="token punctuation">:</span> <!-- --><span class="token scalar">Int</span><span class="token operator">!</span>
+  <!-- --><span class="token attr-name">_1</span><span class="token punctuation">:</span> <!-- --><span class="token scalar">String</span><span class="token operator">!</span>
+<!-- --><span class="token punctuation">}</span>
+
+<!-- --><span class="token keyword">type</span> <!-- --><span class="token class-name">Zeus</span> <!-- --><span class="token punctuation">{</span>
+  <!-- --><span class="token attr-name">_</span><span class="token punctuation">:</span> <!-- --><span class="token class-name">Unit</span><span class="token operator">!</span>
+<!-- --><span class="token punctuation">}</span>
+<!-- --></code></pre></div>
+<!-- --><p>By default, union members will be generated with wrapper objects.
+There is one exception to this: if a constructor of a type is the type name concatenated with the name of the contained type, it will be referenced directly.
+That is, given:</p>
+<!-- --><div class="remark-highlight"><pre class="language-haskell"><code class="language-haskell"><span class="token keyword">data</span> <!-- --><span class="token constant">Song</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token punctuation">{</span> <!-- --><span class="token hvariable">songName</span> <!-- --><span class="token operator">::</span> <!-- --><span class="token constant">Text</span><span class="token punctuation">,</span> <!-- --><span class="token hvariable">songDuration</span> <!-- --><span class="token operator">::</span> <!-- --><span class="token constant">Float</span> <!-- --><span class="token punctuation">}</span> <!-- --><span class="token keyword">deriving</span> <!-- --><span class="token punctuation">(</span><span class="token constant">Generic</span><span class="token punctuation">,</span> <!-- --><span class="token constant">GQLType</span><span class="token punctuation">)</span>
+
+<!-- --><span class="token keyword">data</span> <!-- --><span class="token constant">Skit</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token punctuation">{</span> <!-- --><span class="token hvariable">skitName</span> <!-- --><span class="token operator">::</span> <!-- --><span class="token constant">Text</span><span class="token punctuation">,</span> <!-- --><span class="token hvariable">skitDuration</span> <!-- --><span class="token operator">::</span> <!-- --><span class="token constant">Float</span> <!-- --><span class="token punctuation">}</span> <!-- --><span class="token keyword">deriving</span> <!-- --><span class="token punctuation">(</span><span class="token constant">Generic</span><span class="token punctuation">,</span> <!-- --><span class="token constant">GQLType</span><span class="token punctuation">)</span>
+
+<!-- --><span class="token keyword">data</span> <!-- --><span class="token constant">WrappedNode</span>
+  <!-- --><span class="token operator">=</span> <!-- --><span class="token constant">WrappedSong</span> <!-- --><span class="token constant">Song</span>
+  <!-- --><span class="token operator">|</span> <!-- --><span class="token constant">WrappedSkit</span> <!-- --><span class="token constant">Skit</span>
+  <!-- --><span class="token keyword">deriving</span> <!-- --><span class="token punctuation">(</span><span class="token constant">Generic</span><span class="token punctuation">,</span> <!-- --><span class="token constant">GQLType</span><span class="token punctuation">)</span>
+
+<!-- --><span class="token keyword">data</span> <!-- --><span class="token constant">NonWrapped</span>
+  <!-- --><span class="token operator">=</span> <!-- --><span class="token constant">NonWrappedSong</span> <!-- --><span class="token constant">Song</span>
+  <!-- --><span class="token operator">|</span> <!-- --><span class="token constant">NonWrappedSkit</span> <!-- --><span class="token constant">Skit</span>
+  <!-- --><span class="token keyword">deriving</span> <!-- --><span class="token punctuation">(</span><span class="token constant">Generic</span><span class="token punctuation">,</span> <!-- --><span class="token constant">GQLType</span><span class="token punctuation">)</span>
+
+<!-- --></code></pre></div>
+<!-- --><p>You will get the following schema:</p>
+<!-- --><div class="remark-highlight"><pre class="language-graphql"><code class="language-graphql"><span class="token comment"># has wrapper types</span>
+<!-- --><span class="token keyword">union</span> <!-- --><span class="token class-name">WrappedNode</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token property">WrappedSong</span> <!-- --><span class="token operator">|</span> <!-- --><span class="token property">WrappedSkit</span>
+
+<!-- --><span class="token comment"># is a direct union</span>
+<!-- --><span class="token keyword">union</span> <!-- --><span class="token class-name">NonWrapped</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token property">Song</span> <!-- --><span class="token operator">|</span> <!-- --><span class="token property">Skit</span>
+
+<!-- --><span class="token keyword">type</span> <!-- --><span class="token class-name">WrappedSong</span> <!-- --><span class="token punctuation">{</span>
+  <!-- --><span class="token attr-name">_0</span><span class="token punctuation">:</span> <!-- --><span class="token class-name">Song</span><span class="token operator">!</span>
+<!-- --><span class="token punctuation">}</span>
+
+<!-- --><span class="token keyword">type</span> <!-- --><span class="token class-name">WrappedSKit</span> <!-- --><span class="token punctuation">{</span>
+  <!-- --><span class="token attr-name">_0</span><span class="token punctuation">:</span> <!-- --><span class="token class-name">Skit</span><span class="token operator">!</span>
+<!-- --><span class="token punctuation">}</span>
+
+<!-- --><span class="token keyword">type</span> <!-- --><span class="token class-name">Song</span> <!-- --><span class="token punctuation">{</span>
+  <!-- --><span class="token attr-name">songDuration</span><span class="token punctuation">:</span> <!-- --><span class="token scalar">Float</span><span class="token operator">!</span>
+  <!-- --><span class="token attr-name">songName</span><span class="token punctuation">:</span> <!-- --><span class="token scalar">String</span><span class="token operator">!</span>
+<!-- --><span class="token punctuation">}</span>
+
+<!-- --><span class="token keyword">type</span> <!-- --><span class="token class-name">Skit</span> <!-- --><span class="token punctuation">{</span>
+  <!-- --><span class="token attr-name">skitDuration</span><span class="token punctuation">:</span> <!-- --><span class="token scalar">Float</span><span class="token operator">!</span>
+  <!-- --><span class="token attr-name">skitName</span><span class="token punctuation">:</span> <!-- --><span class="token scalar">String</span><span class="token operator">!</span>
+<!-- --><span class="token punctuation">}</span>
+<!-- --></code></pre></div>
+<!-- --><ul>
+<!-- --><li>
+<!-- --><p>for all other unions will be generated new object type. for types without record syntax, fields will be automatically indexed.</p>
+<!-- --></li>
+<!-- --><li>
+<!-- --><p>empty constructors will get field <!-- --><code>_</code>associaced with type <!-- --><code>Unit</code>.<!-- --></p>
+<!-- --></li>
+<!-- --></ul>
+<!-- --><h3 id="inputs" style="color:black;text-decoration:none;padding:0.1rem 0rem"><p>Input types</p></h3>
+<!-- --><p>Like object types, input types are represented by Haskell records.
+However, they are not permitted to have monad parameters, as they represent serialisable values.</p>
+<!-- --><div class="remark-highlight"><pre class="language-haskell"><code class="language-haskell"><span class="token keyword">data</span> <!-- --><span class="token constant">Deity</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token constant">Deity</span>
+  <!-- --><span class="token punctuation">{</span> <!-- --><span class="token hvariable">name</span> <!-- --><span class="token operator">::</span> <!-- --><span class="token constant">Text</span>         <!-- --><span class="token comment">-- Non-Nullable Field</span>
+  <!-- --><span class="token punctuation">,</span> <!-- --><span class="token hvariable">power</span> <!-- --><span class="token operator">::</span> <!-- --><span class="token constant">Maybe</span> <!-- --><span class="token constant">Text</span>   <!-- --><span class="token comment">-- Nullable Field</span>
+  <!-- --><span class="token punctuation">}</span> <!-- --><span class="token keyword">deriving</span>
+    <!-- --><span class="token punctuation">(</span> <!-- --><span class="token constant">Generic</span>
+    <!-- --><span class="token punctuation">,</span> <!-- --><span class="token constant">GQLType</span>
+    <!-- --><span class="token punctuation">)</span>
+<!-- --></code></pre></div>
+<!-- --><h2 id="resolver" style="color:black;text-decoration:none;padding:0.1rem 0rem">Resolver API</h2>
+<!-- --><h3>Applicative and Monad instances</h3>
+<!-- --><p>The <!-- --><code>Resolver</code> type has <!-- --><code>Applicative</code> and <!-- --><code>Monad</code> instances that can be used to compose resolvers.<!-- --></p>
+<!-- --><h3>Handling Errors</h3>
+<!-- --><p>for errors you can use use either <!-- --><code>liftEither</code> or <!-- --><code>MonadFail</code>:
+at the and they have same result.<!-- --></p>
+<!-- --><p>with <!-- --><code>liftEither</code></p>
+<!-- --><div class="remark-highlight"><pre class="language-haskell"><code class="language-haskell"><span class="token hvariable">resolveDeity</span> <!-- --><span class="token operator">::</span> <!-- --><span class="token constant">DeityArgs</span> <!-- --><span class="token operator">-&gt;</span> <!-- --><span class="token constant">ResolverQ</span> <!-- --><span class="token hvariable">e</span> <!-- --><span class="token constant">IO</span> <!-- --><span class="token constant">Deity</span>
+<!-- --><span class="token hvariable">resolveDeity</span> <!-- --><span class="token constant">DeityArgs</span> <!-- --><span class="token punctuation">{</span><span class="token punctuation">}</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token hvariable">liftEither</span> <!-- --><span class="token operator">$</span> <!-- --><span class="token hvariable">dbDeity</span>
+
+<!-- --><span class="token hvariable">dbDeity</span> <!-- --><span class="token operator">::</span>  <!-- --><span class="token constant">IO</span> <!-- --><span class="token constant">Either</span> <!-- --><span class="token constant">Deity</span>
+<!-- --><span class="token hvariable">dbDeity</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token hvariable">pure</span> <!-- --><span class="token operator">$</span> <!-- --><span class="token constant">Left</span> <!-- --><span class="token string">&quot;db error&quot;</span>
+<!-- --></code></pre></div>
+<!-- --><p>with <!-- --><code>MonadFail</code></p>
+<!-- --><div class="remark-highlight"><pre class="language-haskell"><code class="language-haskell"><span class="token hvariable">resolveDeity</span> <!-- --><span class="token operator">::</span> <!-- --><span class="token constant">DeityArgs</span> <!-- --><span class="token operator">-&gt;</span> <!-- --><span class="token constant">ResolverQ</span> <!-- --><span class="token hvariable">e</span> <!-- --><span class="token constant">IO</span> <!-- --><span class="token constant">Deity</span>
+<!-- --><span class="token hvariable">resolveDeity</span> <!-- --><span class="token constant">DeityArgs</span> <!-- --><span class="token punctuation">{</span> <!-- --><span class="token punctuation">}</span> <!-- --><span class="token operator">=</span> <!-- --><span class="token builtin">fail</span> <!-- --><span class="token string">&quot;db error&quot;</span>
+<!-- --></code></pre></div></div></div></div></div><script id="__NEXT_DATA__" type="application/json">{"props":{"pageProps":{}},"page":"/server","query":{},"buildId":"8TVmdB1446ZD_A9CAtCU0","nextExport":true,"autoExport":true,"isFallback":false,"scriptLoader":[]}</script></body></html>
