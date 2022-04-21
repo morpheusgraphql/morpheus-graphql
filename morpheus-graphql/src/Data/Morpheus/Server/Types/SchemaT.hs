@@ -6,7 +6,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections #-}
@@ -92,15 +91,15 @@ toSchema ::
   SchemaT
     c
     ( TypeDefinition OBJECT CONST,
-      TypeDefinition OBJECT CONST,
-      TypeDefinition OBJECT CONST
+      Maybe (TypeDefinition OBJECT CONST),
+      Maybe (TypeDefinition OBJECT CONST)
     ) ->
   GQLResult (Schema CONST)
 toSchema (SchemaT v) = do
   ((q, m, s), typeDefs) <- v
   (typeDefinitions, implements) <- execUpdates (Map.empty, Map.empty) typeDefs
   types <- map (insertImplements implements) <$> checkTypeCollisions (Map.toList typeDefinitions)
-  defineSchemaWith types (optionalType q, optionalType m, optionalType s)
+  defineSchemaWith types (Just q, m, s)
 
 insertImplements :: Map TypeName [TypeName] -> TypeDefinition c CONST -> TypeDefinition c CONST
 insertImplements x TypeDefinition {typeContent = DataObject {..}, ..} =
@@ -147,11 +146,6 @@ failureRequirePrefix typename =
 withSameCategory :: TypeFingerprint -> TypeFingerprint
 withSameCategory (TypeableFingerprint _ xs) = TypeableFingerprint OUT xs
 withSameCategory x = x
-
-optionalType :: TypeDefinition OBJECT CONST -> Maybe (TypeDefinition OBJECT CONST)
-optionalType td@TypeDefinition {typeContent = DataObject {objectFields}}
-  | null objectFields = Nothing
-  | otherwise = Just td
 
 execUpdates :: Monad m => a -> [a -> m a] -> m a
 execUpdates = foldlM (&)

@@ -88,8 +88,6 @@ import Data.Morpheus.Types.GQLScalar
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition,
     CONST,
-    CONST,
-    FieldContent (..),
     FieldContent (..),
     FieldsDefinition,
     IN,
@@ -155,14 +153,14 @@ deriveSchema _ = toSchema schemaT
       SchemaT
         OUT
         ( TypeDefinition OBJECT CONST,
-          TypeDefinition OBJECT CONST,
-          TypeDefinition OBJECT CONST
+          Maybe (TypeDefinition OBJECT CONST),
+          Maybe (TypeDefinition OBJECT CONST)
         )
     schemaT =
       (,,)
-        <$> deriveObjectType (Proxy @(query (Resolver QUERY e m)))
-        <*> deriveObjectType (Proxy @(mut (Resolver MUTATION e m)))
-        <*> deriveObjectType (Proxy @(subs (Resolver SUBSCRIPTION e m)))
+        <$> deriveRoot (Proxy @(query (Resolver QUERY e m)))
+        <*> deriveMaybeRoot (Proxy @(mut (Resolver MUTATION e m)))
+        <*> deriveMaybeRoot (Proxy @(subs (Resolver SUBSCRIPTION e m)))
 
 -- |  Generates internal GraphQL Schema for query validation and introspection rendering
 class DeriveType (kind :: TypeCategory) (a :: Type) where
@@ -273,8 +271,14 @@ deriveInputType = updateByContent deriveTypeContent . inputType
 deriveOutputType :: DeriveTypeConstraint OUT a => f a -> SchemaT OUT ()
 deriveOutputType = updateByContent deriveTypeContent . outputType
 
-deriveObjectType :: DeriveTypeConstraint OUT a => f a -> SchemaT OUT (TypeDefinition OBJECT CONST)
-deriveObjectType = asObjectType (deriveFields . outputType)
+deriveRoot :: DeriveTypeConstraint OUT a => f a -> SchemaT OUT (TypeDefinition OBJECT CONST)
+deriveRoot = asObjectType (deriveFields . outputType)
+
+deriveMaybeRoot :: DeriveTypeConstraint OUT a => f a -> SchemaT OUT (Maybe (TypeDefinition OBJECT CONST))
+deriveMaybeRoot proxy
+  | __isEmptyType proxy =
+    pure Nothing
+  | otherwise = Just <$> asObjectType (deriveFields . outputType) proxy
 
 fieldContentConstraint :: f kind a -> TypeConstraint (DeriveType kind) (TyContentM kind) Proxy
 fieldContentConstraint _ = TypeConstraint deriveFieldContent
