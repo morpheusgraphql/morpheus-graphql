@@ -17,7 +17,7 @@ import Data.Morpheus.Types
     GQLType (..),
     GQLTypeOptions (..),
     RootResolver (..),
-    Undefined (..),
+    Undefined,
     defaultRootResolver,
   )
 import Data.Text

@@ -9,13 +9,14 @@ module Feature.Inference.TaggedArgumentsFail
   )
 where
 
+import Data.Kind (Type)
 import Data.Morpheus (interpreter)
 import Data.Morpheus.Types
   ( GQLRequest,
     GQLResponse,
     GQLType (..),
     RootResolver (..),
-    Undefined (..),
+    Undefined,
     defaultRootResolver,
   )
 import Data.Text
@@ -34,7 +35,7 @@ newtype B = B
   {a2 :: Text}
   deriving (Show, Generic, GQLType)
 
-newtype Query (m :: * -> *) = Query
+newtype Query (m :: Type -> Type) = Query
   { field1 :: A -> B -> m Text
   }
   deriving (Generic, GQLType)

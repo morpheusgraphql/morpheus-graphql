@@ -10,6 +10,7 @@ module Feature.Collision.CategoryCollisionFail
   )
 where
 
+import Data.Kind (Type)
 import Data.Morpheus (interpreter)
 import Data.Morpheus.Types
   ( GQLRequest,
@@ -35,7 +36,7 @@ newtype DeityArgs = DeityArgs
   }
   deriving (Show, Generic, GQLType)
 
-newtype Query (m :: * -> *) = Query
+newtype Query (m :: Type -> Type) = Query
   { deity :: DeityArgs -> m Deity
   }
   deriving (Generic, GQLType)

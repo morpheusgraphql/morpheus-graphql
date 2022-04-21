@@ -10,6 +10,7 @@ module Feature.Inference.TypeInference
   )
 where
 
+import Data.Kind (Type)
 import Data.Morpheus (interpreter)
 import Data.Morpheus.Types
   ( GQLRequest,
@@ -31,7 +32,7 @@ data Power
   | Hurricanes
   deriving (Generic, GQLType)
 
-data Deity (m :: * -> *) = Deity
+data Deity (m :: Type -> Type) = Deity
   { name :: Text,
     power :: Power
   }
@@ -52,7 +53,7 @@ data Monster
   | UnidentifiedMonster
   deriving (Show, Generic, GQLType)
 
-data Character (m :: * -> *)
+data Character (m :: Type -> Type)
   = CharacterDeity (Deity m) -- Only <tyCon name><type ref name> should generate direct link
   | Creature {creatureName :: Text, creatureAge :: Int}
   | BoxedDeity {boxedDeity :: Deity m}
@@ -82,7 +83,7 @@ newtype MonsterArgs = MonsterArgs
   }
   deriving (Show, Generic, GQLType)
 
-data Query (m :: * -> *) = Query
+data Query (m :: Type -> Type) = Query
   { deity :: Deity m,
     character :: [Character m],
     showMonster :: MonsterArgs -> m Text

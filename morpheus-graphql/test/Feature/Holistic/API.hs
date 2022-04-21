@@ -36,7 +36,7 @@ import Data.Morpheus.Types
     RootResolver (..),
     ScalarValue (..),
     TypeGuard (..),
-    Undefined (..),
+    Undefined,
     defaultRootResolver,
     liftEither,
     subscribe,

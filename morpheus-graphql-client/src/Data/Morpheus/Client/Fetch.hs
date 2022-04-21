@@ -1,5 +1,4 @@
 {-# LANGUAGE ConstrainedClassMethods #-}
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -44,7 +43,16 @@ import Data.Text
   ( pack,
   )
 import Language.Haskell.TH
-import Relude hiding (ByteString, Type)
+  ( Dec,
+    Q,
+    clause,
+    cxt,
+    funD,
+    instanceD,
+    normalB,
+  )
+import qualified Language.Haskell.TH as TH
+import Relude hiding (ByteString)
 
 fixVars :: A.Value -> Maybe A.Value
 fixVars x
@@ -69,7 +77,7 @@ class Fetch a where
       processResponse JSONResponse {responseData = result, responseErrors = (x : xs)} = Left $ FetchErrorProducedErrors (x :| xs) result
   fetch :: (Monad m, FromJSON a) => (ByteString -> m ByteString) -> Args a -> m (Either (FetchError a) a)
 
-deriveFetch :: Type -> TypeName -> String -> Q [Dec]
+deriveFetch :: TH.Type -> TypeName -> String -> Q [Dec]
 deriveFetch resultType typeName queryString =
   pure <$> instanceD (cxt []) iHead methods
   where

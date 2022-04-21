@@ -21,13 +21,11 @@ import Data.Morpheus.Types
     RootResolver (..),
     Undefined,
     defaultRootResolver,
-    render,
   )
 import Data.Sequence (Seq)
 import Data.Set (Set)
 import Data.Text
 import Data.Vector (Vector)
-import Debug.Trace (traceShow)
 import GHC.Generics (Generic)
 
 -- query

@@ -8,6 +8,7 @@ module Feature.Input.Variables
   )
 where
 
+import Data.Kind (Type)
 import Data.Morpheus (interpreter)
 import Data.Morpheus.Types
   ( GQLRequest,
@@ -39,7 +40,7 @@ data A = A
   }
   deriving (Generic, GQLType)
 
-newtype Query (m :: * -> *) = Query
+newtype Query (m :: Type -> Type) = Query
   { q1 :: A
   }
   deriving (Generic, GQLType)
