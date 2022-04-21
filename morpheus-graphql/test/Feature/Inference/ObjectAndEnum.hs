@@ -16,6 +16,7 @@ import Data.Morpheus.Types
     GQLType (..),
     RootResolver (..),
     Undefined (..),
+    defaultRootResolver,
   )
 import GHC.Generics (Generic)
 
@@ -31,17 +32,15 @@ data Query (m :: Type -> Type) = Query
   }
   deriving (Generic, GQLType)
 
-rootResolver :: RootResolver IO () Query Undefined Undefined
-rootResolver =
-  RootResolver
+root :: RootResolver IO () Query Undefined Undefined
+root =
+  defaultRootResolver
     { queryResolver =
         Query
           { enum = MyEnum,
             object = MyObject 0
-          },
-      mutationResolver = Undefined,
-      subscriptionResolver = Undefined
+          }
     }
 
 api :: GQLRequest -> IO GQLResponse
-api = interpreter rootResolver
+api = interpreter root

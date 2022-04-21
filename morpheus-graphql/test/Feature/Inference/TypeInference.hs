@@ -16,7 +16,8 @@ import Data.Morpheus.Types
     GQLResponse,
     GQLType (..),
     RootResolver (..),
-    Undefined (..),
+    Undefined,
+    defaultRootResolver,
   )
 import Data.Text
   ( Text,
@@ -90,15 +91,13 @@ data Query (m :: * -> *) = Query
 
 rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =
-  RootResolver
+  defaultRootResolver
     { queryResolver =
         Query
           { deity = deityRes,
             character = resolveCharacter,
             showMonster
-          },
-      mutationResolver = Undefined,
-      subscriptionResolver = Undefined
+          }
     }
   where
     showMonster MonsterArgs {monster} = pure (pack $ show monster)

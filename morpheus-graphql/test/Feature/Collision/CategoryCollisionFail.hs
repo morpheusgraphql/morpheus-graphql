@@ -16,7 +16,8 @@ import Data.Morpheus.Types
     GQLResponse,
     GQLType (..),
     RootResolver (..),
-    Undefined (..),
+    Undefined,
+    defaultRootResolver,
   )
 import Data.Text
   ( Text,
@@ -41,7 +42,7 @@ newtype Query (m :: * -> *) = Query
 
 rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =
-  RootResolver
+  defaultRootResolver
     { queryResolver =
         Query
           { deity =
@@ -52,9 +53,7 @@ rootResolver =
                         "Morpheus",
                       age = 1000
                     }
-          },
-      mutationResolver = Undefined,
-      subscriptionResolver = Undefined
+          }
     }
 
 api :: GQLRequest -> IO GQLResponse

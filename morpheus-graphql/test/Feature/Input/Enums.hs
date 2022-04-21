@@ -9,7 +9,14 @@ module Feature.Input.Enums
 where
 
 import Data.Morpheus (interpreter)
-import Data.Morpheus.Types (GQLRequest, GQLResponse, GQLType (..), RootResolver (..), Undefined (..))
+import Data.Morpheus.Types
+  ( GQLRequest,
+    GQLResponse,
+    GQLType (..),
+    RootResolver (..),
+    Undefined,
+    defaultRootResolver,
+  )
 import GHC.Generics (Generic)
 
 data TwoCon
@@ -53,10 +60,8 @@ data Query m = Query
 
 rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =
-  RootResolver
-    { queryResolver = Query {test = testRes, test2 = testRes, test3 = testRes},
-      mutationResolver = Undefined,
-      subscriptionResolver = Undefined
+  defaultRootResolver
+    { queryResolver = Query {test = testRes, test2 = testRes, test3 = testRes}
     }
 
 api :: GQLRequest -> IO GQLResponse

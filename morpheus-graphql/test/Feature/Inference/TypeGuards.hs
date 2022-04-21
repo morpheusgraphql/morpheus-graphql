@@ -18,6 +18,7 @@ import Data.Morpheus.Types
     RootResolver (..),
     TypeGuard (..),
     Undefined (..),
+    defaultRootResolver,
   )
 import Data.Text
   ( Text,
@@ -67,13 +68,8 @@ resolveCharacters =
 
 rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =
-  RootResolver
-    { queryResolver =
-        Query
-          { characters = resolveCharacters
-          },
-      mutationResolver = Undefined,
-      subscriptionResolver = Undefined
+  defaultRootResolver
+    { queryResolver = Query {characters = resolveCharacters}
     }
 
 api :: GQLRequest -> IO GQLResponse

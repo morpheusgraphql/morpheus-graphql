@@ -16,11 +16,9 @@ import GHC.Generics
   ( Generic,
   )
 import GHC.TypeLits (Symbol)
-import Prelude
-  ( Show,
-  )
+import Prelude (Bool, Show)
 
-data Undefined (m :: Type -> Type) = Undefined deriving (Show, Generic)
+newtype Undefined (m :: Type -> Type) = Undefined Bool deriving (Show, Generic)
 
 data Pair k v = Pair k v deriving (Generic)
 
