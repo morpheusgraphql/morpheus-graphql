@@ -29,7 +29,10 @@ import Data.Text (Text)
 importGQLDocument =<< makeRelativeToProject "src/Server/TH/simple.gql"
 
 rootResolver :: RootResolver IO () Query Undefined Undefined
-rootResolver = defaultRootResolver {queryResolver = Query {deity}}
+rootResolver =
+  defaultRootResolver
+    { queryResolver = Query {deity}
+    }
   where
     deity (Arg name) =
       pure
