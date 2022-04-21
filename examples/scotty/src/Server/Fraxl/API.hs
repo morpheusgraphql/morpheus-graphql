@@ -28,7 +28,8 @@ import Data.Morpheus.Server
 import Data.Morpheus.Types
   ( GQLType,
     RootResolver (..),
-    Undefined (..),
+    Undefined,
+    defaultRootResolver,
     render,
   )
 import Data.Set (Set, singleton)
@@ -207,10 +208,8 @@ resolveInstruments = lift (dataFetch GetInstruments) >>= sequenceA . (resolveIns
 
 rootResolver :: (Monad m) => RootResolver (FreerT Source m) () Query Undefined Undefined
 rootResolver =
-  RootResolver
-    { queryResolver = Query {instruments = resolveInstruments},
-      mutationResolver = Undefined,
-      subscriptionResolver = Undefined
+  defaultRootResolver
+    { queryResolver = Query {instruments = resolveInstruments}
     }
 
 app :: App () (FreerT Source DB.Query)

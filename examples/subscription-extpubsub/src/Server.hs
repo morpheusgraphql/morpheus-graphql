@@ -27,7 +27,8 @@ import Data.Morpheus.Types
     Resolver,
     RootResolver (..),
     SUBSCRIPTION,
-    Undefined (Undefined),
+    Undefined,
+    defaultRootResolver,
     subscribe,
   )
 import Data.Text (Text)
@@ -76,9 +77,9 @@ scottyServer = do
   where
     settings portNumber = Warp.setPort portNumber Warp.defaultSettings
     app publish =
-      scottyApp
-        $ post "/api"
-        $ raw =<< (liftIO . httpPubApp makeApp publish) =<< body
+      scottyApp $
+        post "/api" $
+          raw =<< (liftIO . httpPubApp makeApp publish) =<< body
 
 data EventChannel = PgChannel | RBMQChannel
   deriving (Eq, Show)
@@ -90,9 +91,8 @@ type AppEvent = Event EventChannel EventContent
 
 rootResolver :: RootResolver IO AppEvent Query Undefined Subscription
 rootResolver =
-  RootResolver
+  defaultRootResolver
     { queryResolver = queryInstance,
-      mutationResolver = Undefined,
       subscriptionResolver = subscriptionInstance
     }
 

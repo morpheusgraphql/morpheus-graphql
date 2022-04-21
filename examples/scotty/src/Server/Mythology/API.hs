@@ -17,7 +17,8 @@ import Data.Morpheus.Types
   ( GQLType,
     ResolverQ,
     RootResolver (..),
-    Undefined (..),
+    Undefined,
+    defaultRootResolver,
     liftEither,
   )
 import Data.Text (Text)
@@ -36,7 +37,7 @@ import Server.Mythology.Place (City)
 data Character m
   = CharacterHuman (Human m) -- Only <tyconName><conName> should generate direct link
   | CharacterDeity Deity -- Only <tyconName><conName> should generate direct link
-      -- RECORDS
+  -- RECORDS
   | Creature {name :: Text, age :: Int}
   | BoxedDeity {boxedDeity :: Deity}
   | SomeScalarRecord {scalar :: Text}
@@ -83,15 +84,13 @@ resolveCharacter =
 
 rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =
-  RootResolver
+  defaultRootResolver
     { queryResolver =
         Query
           { deity = resolveDeity,
             character = resolveCharacter,
             persons = resolvePersons
-          },
-      mutationResolver = Undefined,
-      subscriptionResolver = Undefined
+          }
     }
 
 app :: App () IO
