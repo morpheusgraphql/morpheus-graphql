@@ -36,7 +36,8 @@ import Data.Morpheus.Types
     RootResolver (..),
     ScalarValue (..),
     TypeGuard (..),
-    Undefined (..),
+    Undefined,
+    defaultRootResolver,
     liftEither,
     subscribe,
   )
@@ -44,12 +45,7 @@ import Data.Semigroup ((<>))
 import Data.Text (Text)
 import GHC.Generics (Generic)
 import Prelude
-  ( ($),
-    (*),
-    (+),
-    (.),
-    (<$>),
-    Applicative (..),
+  ( Applicative (..),
     Either (..),
     Eq (..),
     IO,
@@ -58,6 +54,11 @@ import Prelude
     Show (..),
     String,
     const,
+    ($),
+    (*),
+    (+),
+    (.),
+    (<$>),
   )
 
 data TestScalar
@@ -145,15 +146,13 @@ root =
 
 rootExt :: RootResolver IO EVENT ExtQuery Undefined Undefined
 rootExt =
-  RootResolver
+  defaultRootResolver
     { queryResolver =
         ExtQuery
           { fail1 = liftEither alwaysFail,
             fail2 = fail "fail with MonadFail",
             type' = \(Arg TypeInput {data'}) -> pure data'
-          },
-      mutationResolver = Undefined,
-      subscriptionResolver = Undefined
+          }
     }
 
 api :: GQLRequest -> IO GQLResponse

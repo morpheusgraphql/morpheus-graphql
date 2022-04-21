@@ -6,6 +6,7 @@
 
 module Server.Subscription.SimpleSubscription where
 
+import Data.Kind (Type)
 import Data.Morpheus.Subscriptions (Event (..))
 import Data.Morpheus.Types
   ( Resolver,
@@ -42,7 +43,7 @@ newtype Mutation m = Mutation
   }
   deriving (Generic)
 
-newtype Subscription (m :: * -> *) = Subscription
+newtype Subscription (m :: Type -> Type) = Subscription
   { newDeity :: SubscriptionField (m Deity)
   }
   deriving (Generic)
@@ -68,7 +69,7 @@ rootResolver =
         subResolver (Event [ChannelA] (ContentA _value)) = fetchDeity -- resolve New State
         subResolver (Event [ChannelA] (ContentB _value)) = fetchDeity -- resolve New State
         subResolver _ = fetchDeity -- Resolve Old State
-          ---------------------------------------------------------
+        ---------------------------------------------------------
     fetchDeity :: Applicative m => m Deity
     fetchDeity = pure someDeity
 

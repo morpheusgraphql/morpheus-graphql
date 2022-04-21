@@ -10,6 +10,7 @@ module Feature.Inference.TypeGuards
   )
 where
 
+import Data.Kind (Type)
 import Data.Morpheus (interpreter)
 import Data.Morpheus.Types
   ( GQLRequest,
@@ -17,7 +18,8 @@ import Data.Morpheus.Types
     GQLType (..),
     RootResolver (..),
     TypeGuard (..),
-    Undefined (..),
+    Undefined,
+    defaultRootResolver,
   )
 import Data.Text
   ( Text,
@@ -30,21 +32,21 @@ data Character = Hydra
   }
   deriving (Show, Generic, GQLType)
 
-data Deity (m :: * -> *) = Deity
+data Deity (m :: Type -> Type) = Deity
   { name :: Text,
     age :: Int,
     power :: Text
   }
   deriving (Generic, GQLType)
 
-data Implements (m :: * -> *)
+data Implements (m :: Type -> Type)
   = ImplementsDeity (Deity m)
   | Creature {name :: Text, age :: Int}
   deriving (Generic, GQLType)
 
 type Characters m = TypeGuard Character (Implements m)
 
-newtype Query (m :: * -> *) = Query
+newtype Query (m :: Type -> Type) = Query
   { characters :: [Characters m]
   }
   deriving (Generic, GQLType)
@@ -67,13 +69,8 @@ resolveCharacters =
 
 rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =
-  RootResolver
-    { queryResolver =
-        Query
-          { characters = resolveCharacters
-          },
-      mutationResolver = Undefined,
-      subscriptionResolver = Undefined
+  defaultRootResolver
+    { queryResolver = Query {characters = resolveCharacters}
     }
 
 api :: GQLRequest -> IO GQLResponse

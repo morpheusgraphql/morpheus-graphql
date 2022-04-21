@@ -27,7 +27,6 @@ import Data.Morpheus.App.Internal.Resolving
     ObjectTypeResolver,
     Resolver,
     ResolverState,
-    ResolverValue,
     ResolverValue (..),
     RootResolverValue (..),
     getArguments,
@@ -172,20 +171,20 @@ convertNode
     { dataTypeName,
       tyIsUnion,
       tyCons = cons@ConsRep {consFields, consName}
-    }
-    | tyIsUnion = encodeUnion consFields
-    | otherwise = mkObject dataTypeName (toFieldRes <$> consFields)
+    } = encodeTypeFields consFields
     where
       -- ENUM
-      encodeUnion ::
+      encodeTypeFields ::
         [FieldRep (m (ResolverValue m))] ->
         ResolverValue m
-      encodeUnion [] = mkEnum consName
+      encodeTypeFields [] = mkEnum consName
+      encodeTypeFields fields
+        | not tyIsUnion = mkObject dataTypeName (toFieldRes <$> fields)
       -- Type References --------------------------------------------------------------
-      encodeUnion [FieldRep {fieldTypeRef = TypeRef {typeConName}, fieldValue}]
-        | isUnionRef dataTypeName cons = ResLazy (ResObject (Just typeConName) <$> (fieldValue >>= requireObject))
+      encodeTypeFields [FieldRep {fieldTypeRef, fieldValue}]
+        | isUnionRef dataTypeName cons = ResLazy (ResObject (Just (typeConName fieldTypeRef)) <$> (fieldValue >>= requireObject))
       -- Inline Union Types ----------------------------------------------------------------------------
-      encodeUnion fields = mkUnion consName (toFieldRes <$> fields)
+      encodeTypeFields fields = mkUnion consName (toFieldRes <$> fields)
 
 -- Types & Constrains -------------------------------------------------------
 exploreResolvers ::

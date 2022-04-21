@@ -8,6 +8,7 @@ module Feature.Input.Variables
   )
 where
 
+import Data.Kind (Type)
 import Data.Morpheus (interpreter)
 import Data.Morpheus.Types
   ( GQLRequest,
@@ -15,7 +16,8 @@ import Data.Morpheus.Types
     GQLType (..),
     ResolverQ,
     RootResolver (..),
-    Undefined (..),
+    Undefined,
+    defaultRootResolver,
   )
 import Data.Text (Text)
 import GHC.Generics (Generic)
@@ -38,14 +40,14 @@ data A = A
   }
   deriving (Generic, GQLType)
 
-newtype Query (m :: * -> *) = Query
+newtype Query (m :: Type -> Type) = Query
   { q1 :: A
   }
   deriving (Generic, GQLType)
 
 rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =
-  RootResolver
+  defaultRootResolver
     { queryResolver =
         Query
           { q1 =
@@ -53,9 +55,7 @@ rootResolver =
                 { a1 = const $ return "a1Test",
                   a2 = const $ return 1
                 }
-          },
-      mutationResolver = Undefined,
-      subscriptionResolver = Undefined
+          }
     }
 
 api :: GQLRequest -> IO GQLResponse

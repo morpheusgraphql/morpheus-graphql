@@ -14,13 +14,13 @@ resolvePost ::
   ID ->
   m (Maybe (Post m))
 resolvePost postId =
-  pure
-    $ Just
-    $ Post
-      { API.Posts.Posts.id = pure postId,
-        title = pure "Post Tittle",
-        authorID = pure "Post Author"
-      }
+  pure $
+    Just $
+      Post
+        { API.Posts.Posts.id = pure postId,
+          title = pure "Post Tittle",
+          authorID = pure "Post Author"
+        }
 
 resolveQuery :: Monad m => Query m
 resolveQuery =
@@ -38,12 +38,7 @@ resolveQuery =
 rootResolver ::
   Monad m =>
   RootResolver m () Query Undefined Undefined
-rootResolver =
-  RootResolver
-    { queryResolver = resolveQuery,
-      mutationResolver = Undefined,
-      subscriptionResolver = Undefined
-    }
+rootResolver = defaultRootResolver {queryResolver = resolveQuery}
 
 app :: (Typeable m, Monad m) => App () m
 app = deriveApp rootResolver

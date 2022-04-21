@@ -14,7 +14,8 @@ import Data.Morpheus.Types
     GQLResponse,
     GQLType,
     RootResolver (..),
-    Undefined (..),
+    Undefined,
+    defaultRootResolver,
   )
 import Data.Text (Text)
 import GHC.Generics (Generic)
@@ -39,15 +40,13 @@ data Query m = Query
 
 rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =
-  RootResolver
+  defaultRootResolver
     { queryResolver =
         Query
           { testFloat = testRes,
             testInt = testRes,
             testString = testRes
-          },
-      mutationResolver = Undefined,
-      subscriptionResolver = Undefined
+          }
     }
 
 api :: GQLRequest -> IO GQLResponse

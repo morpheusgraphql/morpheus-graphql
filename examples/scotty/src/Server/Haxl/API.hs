@@ -26,7 +26,8 @@ import Data.Morpheus.Types
     Resolver,
     ResolverQ,
     RootResolver (..),
-    Undefined (..),
+    Undefined,
+    defaultRootResolver,
     lift,
     render,
   )
@@ -87,12 +88,7 @@ resolveQuery =
     }
 
 rootResolver :: RootResolver Haxl () Query Undefined Undefined
-rootResolver =
-  RootResolver
-    { queryResolver = resolveQuery,
-      mutationResolver = Undefined,
-      subscriptionResolver = Undefined
-    }
+rootResolver = defaultRootResolver {queryResolver = resolveQuery}
 
 app :: App () Haxl
 app = deriveApp rootResolver

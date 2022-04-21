@@ -23,7 +23,7 @@ module Data.Morpheus.Types
     RootResolver (..),
     constRes,
     constMutRes,
-    Undefined (..),
+    Undefined,
     Resolver,
     QUERY,
     MUTATION,
@@ -64,6 +64,7 @@ module Data.Morpheus.Types
     fieldLabelModifier,
     constructorTagModifier,
     typeNameModifier,
+    defaultRootResolver,
   )
 where
 
@@ -220,6 +221,14 @@ data
     mutationResolver :: mutation (Resolver MUTATION event m),
     subscriptionResolver :: subscription (Resolver SUBSCRIPTION event m)
   }
+
+defaultRootResolver :: RootResolver m event Undefined Undefined Undefined
+defaultRootResolver =
+  RootResolver
+    { queryResolver = Undefined False,
+      mutationResolver = Undefined False,
+      subscriptionResolver = Undefined False
+    }
 
 data
   NamedResolvers

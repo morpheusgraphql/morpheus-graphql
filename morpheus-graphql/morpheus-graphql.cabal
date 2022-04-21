@@ -112,6 +112,8 @@ data-files:
     test/Feature/Holistic/holistic/selection/unknownField/query.gql
     test/Feature/Holistic/schema-ext.gql
     test/Feature/Holistic/schema.gql
+    test/Feature/Inference/object-and-enum/introspection/query.gql
+    test/Feature/Inference/object-and-enum/resolving/query.gql
     test/Feature/Inference/tagged-arguments-fail/introspection/query.gql
     test/Feature/Inference/tagged-arguments-fail/resolving/query.gql
     test/Feature/Inference/tagged-arguments/introspection/query.gql
@@ -322,6 +324,8 @@ data-files:
     test/Feature/Holistic/holistic/selection/subscription/singleTopLevelField/fail/response.json
     test/Feature/Holistic/holistic/selection/subscription/singleTopLevelField/failAnonymous/response.json
     test/Feature/Holistic/holistic/selection/unknownField/response.json
+    test/Feature/Inference/object-and-enum/introspection/response.json
+    test/Feature/Inference/object-and-enum/resolving/response.json
     test/Feature/Inference/tagged-arguments-fail/introspection/response.json
     test/Feature/Inference/tagged-arguments-fail/resolving/response.json
     test/Feature/Inference/tagged-arguments/introspection/response.json
@@ -523,6 +527,7 @@ test-suite morpheus-graphql-test
       Feature.Collision.NameCollision
       Feature.Collision.NameCollisionHelper
       Feature.Holistic.API
+      Feature.Inference.ObjectAndEnum
       Feature.Inference.TaggedArguments
       Feature.Inference.TaggedArgumentsFail
       Feature.Inference.TypeGuards

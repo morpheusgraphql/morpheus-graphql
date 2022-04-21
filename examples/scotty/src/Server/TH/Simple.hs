@@ -18,17 +18,20 @@ where
 import Data.FileEmbed (makeRelativeToProject)
 import Data.Morpheus (App, deriveApp)
 import Data.Morpheus.Document (importGQLDocument)
-import Data.Morpheus.Types (Arg (Arg), RootResolver (..), Undefined (..))
+import Data.Morpheus.Types
+  ( Arg (..),
+    RootResolver (..),
+    Undefined,
+    defaultRootResolver,
+  )
 import Data.Text (Text)
 
 importGQLDocument =<< makeRelativeToProject "src/Server/TH/simple.gql"
 
 rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =
-  RootResolver
-    { queryResolver = Query {deity},
-      mutationResolver = Undefined,
-      subscriptionResolver = Undefined
+  defaultRootResolver
+    { queryResolver = Query {deity}
     }
   where
     deity (Arg name) =

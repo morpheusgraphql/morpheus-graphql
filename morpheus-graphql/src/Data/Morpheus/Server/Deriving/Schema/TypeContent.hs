@@ -34,6 +34,6 @@ buildTypeContent ::
   KindedType kind a ->
   [ConsRep (TyContent kind)] ->
   SchemaT kind (TypeContent TRUE kind CONST)
-buildTypeContent scope [ConsRep {consFields}] = buildObjectTypeContent scope consFields
 buildTypeContent scope cons | all isEmptyConstraint cons = buildEnumTypeContent scope (consName <$> cons)
+buildTypeContent scope [ConsRep {consFields}] = buildObjectTypeContent scope consFields
 buildTypeContent scope cons = buildUnionTypeContent scope cons

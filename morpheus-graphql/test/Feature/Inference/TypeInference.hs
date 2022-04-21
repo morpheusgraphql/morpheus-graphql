@@ -10,13 +10,15 @@ module Feature.Inference.TypeInference
   )
 where
 
+import Data.Kind (Type)
 import Data.Morpheus (interpreter)
 import Data.Morpheus.Types
   ( GQLRequest,
     GQLResponse,
     GQLType (..),
     RootResolver (..),
-    Undefined (..),
+    Undefined,
+    defaultRootResolver,
   )
 import Data.Text
   ( Text,
@@ -30,7 +32,7 @@ data Power
   | Hurricanes
   deriving (Generic, GQLType)
 
-data Deity (m :: * -> *) = Deity
+data Deity (m :: Type -> Type) = Deity
   { name :: Text,
     power :: Power
   }
@@ -51,7 +53,7 @@ data Monster
   | UnidentifiedMonster
   deriving (Show, Generic, GQLType)
 
-data Character (m :: * -> *)
+data Character (m :: Type -> Type)
   = CharacterDeity (Deity m) -- Only <tyCon name><type ref name> should generate direct link
   | Creature {creatureName :: Text, creatureAge :: Int}
   | BoxedDeity {boxedDeity :: Deity m}
@@ -81,7 +83,7 @@ newtype MonsterArgs = MonsterArgs
   }
   deriving (Show, Generic, GQLType)
 
-data Query (m :: * -> *) = Query
+data Query (m :: Type -> Type) = Query
   { deity :: Deity m,
     character :: [Character m],
     showMonster :: MonsterArgs -> m Text
@@ -90,15 +92,13 @@ data Query (m :: * -> *) = Query
 
 rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =
-  RootResolver
+  defaultRootResolver
     { queryResolver =
         Query
           { deity = deityRes,
             character = resolveCharacter,
             showMonster
-          },
-      mutationResolver = Undefined,
-      subscriptionResolver = Undefined
+          }
     }
   where
     showMonster MonsterArgs {monster} = pure (pack $ show monster)

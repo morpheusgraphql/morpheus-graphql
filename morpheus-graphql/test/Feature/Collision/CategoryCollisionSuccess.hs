@@ -9,6 +9,7 @@ module Feature.Collision.CategoryCollisionSuccess
   )
 where
 
+import Data.Kind (Type)
 import Data.Morpheus (interpreter)
 import Data.Morpheus.Types
   ( GQLRequest,
@@ -16,7 +17,8 @@ import Data.Morpheus.Types
     GQLType (..),
     GQLTypeOptions (..),
     RootResolver (..),
-    Undefined (..),
+    Undefined,
+    defaultRootResolver,
   )
 import Data.Text
   ( Text,
@@ -41,14 +43,14 @@ newtype DeityArgs = DeityArgs
   }
   deriving (Show, Generic, GQLType)
 
-newtype Query (m :: * -> *) = Query
+newtype Query (m :: Type -> Type) = Query
   { deity :: DeityArgs -> m Deity
   }
   deriving (Generic, GQLType)
 
 rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =
-  RootResolver
+  defaultRootResolver
     { queryResolver =
         Query
           { deity =
@@ -59,9 +61,7 @@ rootResolver =
                         "Morpheus",
                       age = 1000
                     }
-          },
-      mutationResolver = Undefined,
-      subscriptionResolver = Undefined
+          }
     }
 
 api :: GQLRequest -> IO GQLResponse

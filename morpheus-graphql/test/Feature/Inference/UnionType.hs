@@ -15,7 +15,8 @@ import Data.Morpheus.Types
     GQLType (..),
     ResolverQ,
     RootResolver (..),
-    Undefined (..),
+    Undefined,
+    defaultRootResolver,
   )
 import Data.Text (Text)
 import GHC.Generics (Generic)
@@ -44,25 +45,23 @@ data Sum
   deriving (Generic, GQLType)
 
 data Query m = Query
-  { union :: () -> m [Sum],
+  { union :: m [Sum],
     fc :: C
   }
   deriving (Generic, GQLType)
 
-resolveUnion :: () -> ResolverQ () IO [Sum]
-resolveUnion _ =
+resolveUnion :: ResolverQ () IO [Sum]
+resolveUnion =
   return [SumA A {aText = "at", aInt = 1}, SumB B {bText = "bt", bInt = 2}]
 
 rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =
-  RootResolver
+  defaultRootResolver
     { queryResolver =
         Query
           { union = resolveUnion,
             fc = C {cText = "", cInt = 3}
-          },
-      mutationResolver = Undefined,
-      subscriptionResolver = Undefined
+          }
     }
 
 api :: GQLRequest -> IO GQLResponse

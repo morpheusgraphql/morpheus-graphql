@@ -1,0 +1,6 @@
+{
+  "data": {
+    "enum": "MyEnum",
+    "object": { "_0": 0, "__typename": "MyObject" }
+  }
+}

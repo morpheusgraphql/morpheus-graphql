@@ -18,16 +18,14 @@ import Data.Morpheus.Types
     GQLResponse,
     GQLType (..),
     GQLTypeOptions (..),
-    GQLTypeOptions (..),
     RootResolver (..),
-    Undefined (..),
-    render,
+    Undefined,
+    defaultRootResolver,
   )
 import Data.Sequence (Seq)
 import Data.Set (Set)
 import Data.Text
 import Data.Vector (Vector)
-import Debug.Trace (traceShow)
 import GHC.Generics (Generic)
 
 -- query
@@ -60,7 +58,7 @@ data Query m = Query
 
 rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =
-  RootResolver
+  defaultRootResolver
     { queryResolver =
         Query
           { testSet = testRes,
@@ -71,9 +69,7 @@ rootResolver =
             testProduct = testRes,
             testMap = testRes,
             testAssoc = testRes
-          },
-      mutationResolver = Undefined,
-      subscriptionResolver = Undefined
+          }
     }
 
 app :: App () IO

@@ -34,7 +34,7 @@ instance DecodeScalar TestScalar where
 
 importGQLDocumentWithNamespace "test/Rendering/schema.gql"
 
-type APIResolver e (m :: * -> *) =
+type APIResolver e (m :: Type -> Type) =
   RootResolver m e MyQuery MyMutation Undefined
 
 proxy :: Proxy (APIResolver () IO)

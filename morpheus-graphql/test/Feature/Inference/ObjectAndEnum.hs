@@ -1,9 +1,9 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Feature.Collision.NameCollision
+module Feature.Inference.ObjectAndEnum
   ( api,
   )
 where
@@ -18,27 +18,29 @@ import Data.Morpheus.Types
     Undefined,
     defaultRootResolver,
   )
-import Data.Text (Text)
-import qualified Feature.Collision.NameCollisionHelper as A2 (A (..))
 import GHC.Generics (Generic)
 
-data A = A
-  { aText :: Text,
-    aInt :: Int
-  }
+data MyEnum = MyEnum deriving (Generic, GQLType)
+
+newtype MyObject
+  = MyObject Int
   deriving (Generic, GQLType)
 
 data Query (m :: Type -> Type) = Query
-  { a1 :: A,
-    a2 :: A2.A
+  { enum :: MyEnum,
+    object :: MyObject
   }
   deriving (Generic, GQLType)
 
-rootResolver :: RootResolver IO () Query Undefined Undefined
-rootResolver =
+root :: RootResolver IO () Query Undefined Undefined
+root =
   defaultRootResolver
-    { queryResolver = Query {a1 = A "" 0, a2 = A2.A 0}
+    { queryResolver =
+        Query
+          { enum = MyEnum,
+            object = MyObject 0
+          }
     }
 
 api :: GQLRequest -> IO GQLResponse
-api = interpreter rootResolver
+api = interpreter root

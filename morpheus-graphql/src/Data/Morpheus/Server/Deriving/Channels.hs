@@ -1,12 +1,13 @@
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -40,6 +41,7 @@ import Data.Morpheus.Server.Deriving.Utils
     toValue,
   )
 import Data.Morpheus.Server.Types.GQLType (GQLType)
+import Data.Morpheus.Server.Types.Types (Undefined)
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     OUT,
@@ -50,7 +52,7 @@ import Data.Morpheus.Types.Internal.AST
     internal,
   )
 import GHC.Generics
-import Relude
+import Relude hiding (Undefined)
 
 newtype DerivedChannel e = DerivedChannel
   { _unpackChannel :: Channel e
@@ -59,7 +61,7 @@ newtype DerivedChannel e = DerivedChannel
 type ChannelRes (e :: Type) = Selection VALID -> ResolverState (DerivedChannel e)
 
 type ChannelsConstraint e m (subs :: (Type -> Type) -> Type) =
-  ExploreConstraint e (subs (Resolver SUBSCRIPTION e m))
+  ExploreChannels (IsUndefined (subs (Resolver SUBSCRIPTION e m))) e (subs (Resolver SUBSCRIPTION e m))
 
 channelResolver ::
   forall e m subs.
@@ -72,7 +74,12 @@ channelResolver value = fmap _unpackChannel . channelSelector
     channelSelector ::
       Selection VALID ->
       ResolverState (DerivedChannel e)
-    channelSelector = selectBySelection (exploreChannels value)
+    channelSelector =
+      selectBySelection
+        ( exploreChannels
+            (Proxy @(IsUndefined (subs (Resolver SUBSCRIPTION e m))))
+            value
+        )
 
 selectBySelection ::
   HashMap FieldName (ChannelRes e) ->
@@ -115,20 +122,24 @@ instance
 
 ------------------------------------------------------
 
-type ExploreConstraint e a =
-  ( GQLType a,
-    Generic a,
-    TypeRep (GetChannel e) (ChannelRes e) (Rep a)
-  )
+type family IsUndefined a :: Bool where
+  IsUndefined (Undefined m) = 'True
+  IsUndefined a = 'False
 
-exploreChannels :: forall e a. ExploreConstraint e a => a -> HashMap FieldName (ChannelRes e)
-exploreChannels =
-  HM.fromList
-    . convertNode
-    . toValue
-      ( TypeConstraint (getChannel . runIdentity) :: TypeConstraint (GetChannel e) (ChannelRes e) Identity
-      )
-      (Proxy @OUT)
+class ExploreChannels (t :: Bool) e a where
+  exploreChannels :: f t -> a -> HashMap FieldName (ChannelRes e)
+
+instance (GQLType a, Generic a, TypeRep (GetChannel e) (ChannelRes e) (Rep a)) => ExploreChannels 'False e a where
+  exploreChannels _ =
+    HM.fromList
+      . convertNode
+      . toValue
+        ( TypeConstraint (getChannel . runIdentity) :: TypeConstraint (GetChannel e) (ChannelRes e) Identity
+        )
+        (Proxy @OUT)
+
+instance ExploreChannels 'True e (Undefined m) where
+  exploreChannels _ = pure HM.empty
 
 convertNode :: DataType (ChannelRes e) -> [(FieldName, ChannelRes e)]
 convertNode DataType {tyCons = ConsRep {consFields}} = map toChannels consFields
