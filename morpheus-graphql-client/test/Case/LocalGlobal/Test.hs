@@ -110,7 +110,7 @@ checkCities =
 checkUsers1 :: IO ()
 checkUsers1 =
   checkQuery
-    "users"
+    "users1"
     GetUsers1Args {user = UserInput {name = "odysseus"}}
     GetUsers1
       { user =
@@ -125,7 +125,7 @@ checkUsers1 =
 checkUsers2 :: IO ()
 checkUsers2 =
   checkQuery
-    "users"
+    "users2"
     GetUsers2Args {user = UserInput {name = "odysseus"}}
     GetUsers2
       { user =

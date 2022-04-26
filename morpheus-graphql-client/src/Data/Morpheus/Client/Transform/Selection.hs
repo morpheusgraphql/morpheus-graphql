@@ -68,27 +68,29 @@ toClientDefinition mode schema vars = flip runReaderT (schema, vars) . runConver
 
 genOperation :: Mode -> Operation VALID -> Converter ClientDefinition
 genOperation mode operation = do
-  (clientArguments, outputTypes, enums) <- renderOperationType operation
-  nonOutputTypes <- if mode == Both then renderNonOutputTypes enums else pure []
-  pure ClientDefinition {clientArguments, clientTypes = outputTypes <> nonOutputTypes}
+  (clientArguments, localTypes, globalTypes) <- renderOperationTypes mode operation
+  globalDefinitions <- renderNonOutputTypes globalTypes
+  pure ClientDefinition {clientArguments, clientTypes = localTypes <> globalDefinitions}
 
-renderOperationType ::
+renderOperationTypes ::
+  Mode ->
   Operation VALID ->
   Converter
     ( Maybe ClientTypeDefinition,
       [ClientTypeDefinition],
       [TypeName]
     )
-renderOperationType op@Operation {operationName, operationSelection} = do
+renderOperationTypes mode op@Operation {operationName, operationSelection} = do
+  let localGroupName = getOperationName operationName
   datatype <- asks fst >>= getOperationDataType op
   arguments <- renderOperationArguments op
-  (outputTypes, enums) <-
+  (outputTypes, globalTypes) <-
     genRecordType
-      []
-      (getOperationName operationName)
+      [coerce localGroupName | mode == Local]
+      localGroupName
       (toAny datatype)
       operationSelection
-  pure (arguments, outputTypes, enums)
+  pure (arguments, outputTypes, if mode == Both then globalTypes else [])
 
 -------------------------------------------------------------------------
 -- generates selection Object Types
