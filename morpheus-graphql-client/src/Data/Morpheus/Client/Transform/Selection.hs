@@ -17,7 +17,7 @@ import Data.Morpheus.Client.Internal.Types
   ( ClientConstructorDefinition (..),
     ClientDefinition (..),
     ClientTypeDefinition (..),
-    Mode (Local),
+    Mode (..),
     TypeNameTH (..),
   )
 import Data.Morpheus.Client.Transform.Core (Converter (..), compileError, deprecationWarning, getType, leafType, typeFrom)
@@ -69,7 +69,7 @@ toClientDefinition mode schema vars = flip runReaderT (schema, vars) . runConver
 genOperation :: Mode -> Operation VALID -> Converter ClientDefinition
 genOperation mode operation = do
   (clientArguments, outputTypes, enums) <- renderOperationType operation
-  nonOutputTypes <- if mode /= Local then renderNonOutputTypes enums else pure []
+  nonOutputTypes <- if mode == Both then renderNonOutputTypes enums else pure []
   pure ClientDefinition {clientArguments, clientTypes = outputTypes <> nonOutputTypes}
 
 renderOperationType ::

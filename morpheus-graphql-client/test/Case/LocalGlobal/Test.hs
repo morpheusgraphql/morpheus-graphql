@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -38,6 +39,7 @@ import Prelude
     IO,
     String,
     ($),
+    (>>=),
   )
 
 declareGlobalTypes (fixedSchemaPath "LocalGlobal")
@@ -51,28 +53,49 @@ declareLocalTypes
     }
   |]
 
-resolver :: ByteString -> IO ByteString
-resolver = mockApi "Enum"
+declareLocalTypes
+  (fixedSchemaPath "LocalGlobal")
+  [gql|
+    query MyQuery2( $city2: City!) {
+      city(city:$city2)
+      cities
+    }
+  |]
 
-client :: IO (Either (FetchError MyQuery) MyQuery)
-client = fetch resolver MyQueryArgs {inputCity = CityAthens}
+resolver :: ByteString -> IO ByteString
+resolver = mockApi "LocalGlobal"
+
+query1 :: IO (Either (FetchError MyQuery) MyQuery)
+query1 = fetch resolver MyQueryArgs {inputCity = CityAthens}
+
+query2 :: IO (Either (FetchError MyQuery2) MyQuery2)
+query2 = fetch resolver MyQuery2Args {city2 = CityAthens}
+
+expected1 =
+  MyQuery
+    { city = CityAthens,
+      cities =
+        [ CityAthens,
+          CitySparta,
+          CityCorinth,
+          CityDelphi,
+          CityArgos
+        ]
+    }
+
+expected2 =
+  MyQuery2
+    { city = CityAthens,
+      cities =
+        [ CityAthens,
+          CitySparta,
+          CityCorinth,
+          CityDelphi,
+          CityArgos
+        ]
+    }
 
 test :: TestTree
-test = testCase "test Enum" $ do
-  value <- client
-  assertEqual
-    "test Enum"
-    ( Right
-        ( MyQuery
-            { city = CityAthens,
-              cities =
-                [ CityAthens,
-                  CitySparta,
-                  CityCorinth,
-                  CityDelphi,
-                  CityArgos
-                ]
-            }
-        )
-    )
-    value
+test = testCase "Test LocalGlobal" $ do
+  query1 >>= assertEqual "Test local 1" (Right expected1)
+  query2 >>= assertEqual "Test local 2" (Right expected2)

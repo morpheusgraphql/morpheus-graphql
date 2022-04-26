@@ -2,7 +2,6 @@ enum City {
   Athens
   Sparta
   Corinth
-  # test lowercase enum
   delphi
   argos
 }

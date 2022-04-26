@@ -4,18 +4,14 @@
 module Data.Morpheus.Client.Internal.Utils
   ( removeDuplicates,
     isEnum,
-    isLocalType,
-    isGlobalType,
     withMode,
   )
 where
 
 import Data.Morpheus.Client.Internal.Types
   ( ClientConstructorDefinition (cFields),
-    ClientTypeDefinition (..),
     Mode (..),
   )
-import Data.Morpheus.CodeGen.Internal.AST (TypeKind (..))
 import Data.Morpheus.Types.Internal.AST (TypeDefinition (..), isNotSystemTypeName, isResolverType)
 import Relude
 
@@ -34,20 +30,7 @@ splitDuplicates = collectElems ([], [])
 isEnum :: [ClientConstructorDefinition] -> Bool
 isEnum = all (null . cFields)
 
-isLocalType :: TypeKind -> Bool
-isLocalType KindObject {} = True
-isLocalType KindUnion {} = True
-isLocalType KindInterface {} = True
-isLocalType _ = False
-
-isGlobalType :: TypeKind -> Bool
-isGlobalType KindScalar {} = True
-isGlobalType KindEnum {} = True
-isGlobalType KindInputObject {} = True
-isGlobalType KindInputUnion {} = True
-isGlobalType _ = False
-
 withMode :: Mode -> TypeDefinition k s -> Bool
-withMode Global t = isResolverType t && isNotSystemTypeName (typeName t)
-withMode Local t = not (isResolverType t)
+withMode Global t = not (isResolverType t) && isNotSystemTypeName (typeName t)
+withMode Local t = isResolverType t
 withMode Both _ = True
