@@ -1,12 +1,13 @@
-{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Internal.Types
   ( ClientTypeDefinition (..),
     TypeNameTH (..),
     ClientDefinition (..),
     ClientConstructorDefinition (..),
-    FetchError (..)
+    FetchError (..),
+    Mode (..),
   )
 where
 
@@ -51,3 +52,5 @@ data FetchError a
   | FetchErrorProducedErrors GQLErrors (Maybe a)
   | FetchErrorNoResult
   deriving (Show, Eq, Generic)
+
+data Mode = Local | Global | Both deriving (Show, Eq)

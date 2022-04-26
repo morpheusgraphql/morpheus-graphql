@@ -4,7 +4,7 @@
 module Data.Morpheus.Client
   ( gql,
     Fetch (..),
-    FetchError(..),
+    FetchError (..),
     defineQuery,
     defineByDocument,
     defineByDocumentFile,
@@ -12,6 +12,8 @@ module Data.Morpheus.Client
     defineByIntrospection,
     defineByIntrospectionFile,
     defineByIntrospectionFile',
+    declareLocalTypes,
+    declareGlobalTypes,
     ScalarValue (..),
     DecodeScalar (..),
     EncodeScalar (..),
@@ -23,24 +25,24 @@ import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as L
   ( readFile,
   )
+import Data.List (isSuffixOf)
 import Data.Morpheus.Client.Build
   ( defineQuery,
   )
 import Data.Morpheus.Client.Fetch
   ( Fetch (..),
   )
+import Data.Morpheus.Client.Internal.Types
+  ( FetchError (..),
+    Mode (..),
+  )
 import Data.Morpheus.Client.JSONSchema.Parse
   ( decodeIntrospection,
-  )
-import Data.Morpheus.Client.Internal.Types
-  ( FetchError(..),
   )
 import Data.Morpheus.Core
   ( parseFullSchema,
   )
-import Data.Morpheus.Internal.Ext
-  ( GQLResult,
-  )
+import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.QuasiQuoter (gql)
 import Data.Morpheus.Types.GQLScalar
   ( DecodeScalar (..),
@@ -78,10 +80,23 @@ defineByIntrospectionFile' :: Q FilePath -> (ExecutableDocument, String) -> Q [D
 defineByIntrospectionFile' qFilePath args = qFilePath >>= flip defineByIntrospectionFile args
 
 defineByDocument :: IO ByteString -> (ExecutableDocument, String) -> Q [Dec]
-defineByDocument doc = defineQuery (schemaByDocument doc)
-
-schemaByDocument :: IO ByteString -> IO (GQLResult (Schema VALID))
-schemaByDocument = fmap parseFullSchema
+defineByDocument doc = defineQuery Both (fmap parseFullSchema doc)
 
 defineByIntrospection :: IO ByteString -> (ExecutableDocument, String) -> Q [Dec]
-defineByIntrospection json = defineQuery (decodeIntrospection <$> json)
+defineByIntrospection json = defineQuery Both (decodeIntrospection <$> json)
+
+readSchema :: FilePath -> IO (GQLResult (Schema VALID))
+readSchema path
+  | ".json" `isSuffixOf` path = decodeIntrospection <$> L.readFile path
+  | ".gql" `isSuffixOf` path || ".graphql" `isSuffixOf` path = parseFullSchema <$> L.readFile path
+  | otherwise = fail "unsupported file format!"
+
+declareLocalTypes :: Q FilePath -> (ExecutableDocument, String) -> Q [Dec]
+declareLocalTypes qPath doc = do
+  p <- qPath
+  defineQuery Local (readSchema p) doc
+
+declareGlobalTypes :: Q FilePath -> (ExecutableDocument, String) -> Q [Dec]
+declareGlobalTypes qPath doc = do
+  p <- qPath
+  defineQuery Global (readSchema p) doc

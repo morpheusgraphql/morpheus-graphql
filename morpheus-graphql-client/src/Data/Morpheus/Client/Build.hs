@@ -8,13 +8,12 @@ module Data.Morpheus.Client.Build
   )
 where
 
---
--- MORPHEUS
 import Data.Morpheus.Client.Declare.Client
   ( declareClient,
   )
 import Data.Morpheus.Client.Internal.Types
   ( ClientDefinition (..),
+    Mode,
   )
 import Data.Morpheus.Client.Transform.Selection
   ( toClientDefinition,
@@ -41,15 +40,15 @@ import Data.Morpheus.Types.Internal.AST
 import Language.Haskell.TH
 import Relude
 
-defineQuery :: IO (GQLResult (Schema VALID)) -> (ExecutableDocument, String) -> Q [Dec]
-defineQuery ioSchema (query, src) = do
+defineQuery :: Mode -> IO (GQLResult (Schema VALID)) -> (ExecutableDocument, String) -> Q [Dec]
+defineQuery mode ioSchema (query, src) = do
   schema <- runIO ioSchema
   case schema >>= (`validateWith` query) of
     Failure errors -> fail (renderGQLErrors errors)
     Success
       { result,
         warnings
-      } -> gqlWarnings warnings >> declareClient src result
+      } -> gqlWarnings warnings >> declareClient mode src result
 
 validateWith :: Schema VALID -> ExecutableDocument -> GQLResult ClientDefinition
 validateWith
