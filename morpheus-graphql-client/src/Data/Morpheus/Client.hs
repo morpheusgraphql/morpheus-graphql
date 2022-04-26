@@ -27,7 +27,7 @@ import qualified Data.ByteString.Lazy as L
   )
 import Data.List (isSuffixOf)
 import Data.Morpheus.Client.Build
-  ( defineQuery,
+  ( defineQuery, defineGlobalTypes,
   )
 import Data.Morpheus.Client.Fetch
   ( Fetch (..),
@@ -96,7 +96,7 @@ declareLocalTypes qPath doc = do
   p <- qPath
   defineQuery Local (readSchema p) doc
 
-declareGlobalTypes :: Q FilePath -> (ExecutableDocument, String) -> Q [Dec]
-declareGlobalTypes qPath doc = do
+declareGlobalTypes :: Q FilePath -> Q [Dec]
+declareGlobalTypes qPath = do
   p <- qPath
-  defineQuery Global (readSchema p) doc
+  defineGlobalTypes (readSchema p)

@@ -9,6 +9,7 @@
 module Data.Morpheus.Client.Transform.Selection
   ( toClientDefinition,
     ClientDefinition (..),
+    toGlobalDefinitions,
   )
 where
 
@@ -57,6 +58,9 @@ import Data.Morpheus.Types.Internal.AST
 import Relude hiding (empty, show)
 import Prelude (show)
 
+toGlobalDefinitions :: Schema VALID -> GQLResult [ClientTypeDefinition]
+toGlobalDefinitions _ = pure []
+
 toClientDefinition ::
   Schema VALID ->
   VariableDefinitions RAW ->
@@ -103,8 +107,8 @@ genRecordType path tName dataType recordSelSet = do
         { clientTypeName = TypeNameTH path tName,
           clientCons = [con],
           clientKind = KindObject Nothing
-        }
-        : subTypes,
+        } :
+      subTypes,
       requests
     )
 
@@ -175,8 +179,8 @@ subTypesBySelection path dType Selection {selectionContent = UnionSelection inte
           { clientTypeName = TypeNameTH path (typeFrom [] dType),
             clientCons,
             clientKind = KindUnion
-          }
-          : concat subTypes,
+          } :
+        concat subTypes,
         concat requests
       )
   where

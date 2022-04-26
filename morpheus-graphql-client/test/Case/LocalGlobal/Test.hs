@@ -17,6 +17,7 @@ import Data.ByteString.Lazy.Char8
 import Data.Morpheus.Client
   ( Fetch (..),
     FetchError,
+    declareGlobalTypes,
     declareLocalTypes,
     gql,
   )
@@ -38,6 +39,8 @@ import Prelude
     String,
     ($),
   )
+
+declareGlobalTypes (fixedSchemaPath "LocalGlobal")
 
 declareLocalTypes
   (fixedSchemaPath "LocalGlobal")

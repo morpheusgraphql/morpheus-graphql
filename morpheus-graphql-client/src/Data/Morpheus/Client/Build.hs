@@ -5,18 +5,21 @@
 
 module Data.Morpheus.Client.Build
   ( defineQuery,
+    defineGlobalTypes,
   )
 where
 
 import Data.Morpheus.Client.Declare.Client
   ( declareClient,
+    declareTypes,
   )
 import Data.Morpheus.Client.Internal.Types
   ( ClientDefinition (..),
-    Mode,
+    Mode (Global),
   )
 import Data.Morpheus.Client.Transform.Selection
   ( toClientDefinition,
+    toGlobalDefinitions,
   )
 import Data.Morpheus.Core
   ( Config (..),
@@ -39,6 +42,16 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Language.Haskell.TH
 import Relude
+
+defineGlobalTypes :: IO (GQLResult (Schema VALID)) -> Q [Dec]
+defineGlobalTypes ioSchema = do
+  schema <- runIO ioSchema
+  case schema >>= toGlobalDefinitions of
+    Failure errors -> fail (renderGQLErrors errors)
+    Success
+      { result,
+        warnings
+      } -> gqlWarnings warnings >> declareTypes Global result
 
 defineQuery :: Mode -> IO (GQLResult (Schema VALID)) -> (ExecutableDocument, String) -> Q [Dec]
 defineQuery mode ioSchema (query, src) = do

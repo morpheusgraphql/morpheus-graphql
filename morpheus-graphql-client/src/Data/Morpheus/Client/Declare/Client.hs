@@ -6,6 +6,7 @@
 
 module Data.Morpheus.Client.Declare.Client
   ( declareClient,
+    declareTypes,
   )
 where
 
@@ -37,7 +38,10 @@ declareClient mode src ClientDefinition {clientArguments, clientTypes = rootType
       (queryArgumentType clientArguments)
       src
       rootType
-    <*> (concat <$> traverse declareType (withMode mode subTypes))
+    <*> declareTypes mode subTypes
+
+declareTypes :: Mode -> [ClientTypeDefinition] -> Q [Dec]
+declareTypes mode subTypes = concat <$> traverse declareType (withMode mode subTypes)
 
 declareType :: ClientTypeDefinition -> Q [Dec]
 declareType clientType@ClientTypeDefinition {clientKind} = do
