@@ -81,13 +81,13 @@ renderOperationTypes ::
       [TypeName]
     )
 renderOperationTypes mode op@Operation {operationName, operationSelection} = do
-  let localGroupName = getOperationName operationName
   datatype <- asks fst >>= getOperationDataType op
   arguments <- renderOperationArguments op
   (outputTypes, globalTypes) <-
     genRecordType
-      [coerce localGroupName | mode == Local]
-      localGroupName
+      (mode == Local)
+      []
+      (getOperationName operationName)
       (toAny datatype)
       operationSelection
   pure (arguments, outputTypes, if mode == Both then globalTypes else [])
@@ -95,13 +95,14 @@ renderOperationTypes mode op@Operation {operationName, operationSelection} = do
 -------------------------------------------------------------------------
 -- generates selection Object Types
 genRecordType ::
+  Bool ->
   [FieldName] ->
   TypeName ->
   TypeDefinition ANY VALID ->
   SelectionSet VALID ->
   Converter ([ClientTypeDefinition], [TypeName])
-genRecordType path tName dataType recordSelSet = do
-  (con, subTypes, requests) <- genConsD path tName dataType recordSelSet
+genRecordType localize path tName dataType recordSelSet = do
+  (con, subTypes, requests) <- genConsD (if localize then coerce tName : path else path) tName dataType recordSelSet
   pure
     ( ClientTypeDefinition
         { clientTypeName = TypeNameTH path tName,
@@ -165,7 +166,7 @@ subTypesBySelection ::
 subTypesBySelection _ dType Selection {selectionContent = SelectionField} =
   leafType dType
 subTypesBySelection path dType Selection {selectionContent = SelectionSet selectionSet} =
-  genRecordType path (typeFrom [] dType) dType selectionSet
+  genRecordType False path (typeFrom [] dType) dType selectionSet
 subTypesBySelection path dType Selection {selectionContent = UnionSelection interface unionSelections} =
   do
     (clientCons, subTypes, requests) <-

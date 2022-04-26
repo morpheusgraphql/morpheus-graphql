@@ -115,7 +115,7 @@ checkUsers1 =
     GetUsers1
       { user =
           Just
-            ( UserUser
+            ( GetUsers1UserUser
                 { name = "Odysseus",
                   home = Just CityIthaca
                 }
@@ -130,7 +130,7 @@ checkUsers2 =
     GetUsers2
       { user =
           Just
-            ( UserUser
+            ( GetUsers2UserUser
                 { name = "Morpheus"
                 }
             )

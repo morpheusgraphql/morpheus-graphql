@@ -8,9 +8,11 @@ module Data.Morpheus.Client.Internal.Types
     ClientConstructorDefinition (..),
     FetchError (..),
     Mode (..),
+    Source (..),
   )
 where
 
+import Data.ByteString.Lazy (ByteString)
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     FieldDefinition,
@@ -20,7 +22,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeName,
     VALID,
   )
-import Relude
+import Relude hiding (ByteString)
 
 data TypeNameTH = TypeNameTH
   { namespace :: [FieldName],
@@ -54,3 +56,8 @@ data FetchError a
   deriving (Show, Eq, Generic)
 
 data Mode = Local | Global | Both deriving (Show, Eq)
+
+data Source
+  = JSON ByteString
+  | GQL ByteString
+  deriving (Show, Eq)
