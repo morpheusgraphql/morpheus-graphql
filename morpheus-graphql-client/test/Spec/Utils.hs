@@ -6,6 +6,7 @@ module Spec.Utils
   ( mockApi,
     defineClientWith,
     defineClientWithJSON,
+    fixedSchemaPath,
   )
 where
 
@@ -51,12 +52,15 @@ fixFilePath x = prefix <$> runIO (doesFileExist x)
     prefix True = x
     prefix False = withProject x
 
+fixedSchemaPath :: FieldName -> Q FilePath
+fixedSchemaPath url = fixFilePath (path url <> "/schema.gql")
+
 defineClientWith ::
   FieldName ->
   (ExecutableDocument, String) ->
   Q [Dec]
 defineClientWith url exp = do
-  p <- fixFilePath (path url <> "/schema.gql")
+  p <- fixedSchemaPath url
   defineByDocumentFile p exp
 
 defineClientWithJSON ::

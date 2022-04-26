@@ -24,6 +24,7 @@ data-files:
     test/Case/Enum/schema.gql
     test/Case/Github/schema.gql
     test/Case/Interface/schema.gql
+    test/Case/LocalGlobal/schema.gql
     test/Case/LowercaseTypeName/schema.gql
     test/Case/Scalar/schema.gql
     test/Case/Enum/response.json
@@ -37,6 +38,7 @@ data-files:
     test/Case/JSON/Custom/Query/response.json
     test/Case/JSON/Custom/schema.json
     test/Case/JSON/Custom/Subscription/response.json
+    test/Case/LocalGlobal/response.json
     test/Case/LowercaseTypeName/response.json
     test/Case/Scalar/response.json
 
@@ -95,6 +97,7 @@ test-suite morpheus-graphql-client-test
       Case.JSON.Custom.PartialResponse
       Case.JSON.Custom.Query
       Case.JSON.Custom.Subscription
+      Case.LocalGlobal.Test
       Case.LowercaseTypeName.Test
       Case.Scalar.Test
       Spec.Utils
