@@ -18,6 +18,7 @@ import Data.ByteString.Lazy.Char8
 import Data.Morpheus.Client
   ( Fetch (..),
     FetchError,
+    ID,
     declareGlobalTypes,
     declareLocalTypes,
     gql,
@@ -25,7 +26,7 @@ import Data.Morpheus.Client
 import Spec.Utils
   ( defineClientWith,
     fixedSchemaPath,
-    mockApi,
+    getFile,
   )
 import Test.Tasty
   ( TestTree,
@@ -62,14 +63,20 @@ declareLocalTypes
     }
   |]
 
-resolver :: ByteString -> IO ByteString
-resolver = mockApi "LocalGlobal"
+citiesResolver :: ByteString -> IO ByteString
+citiesResolver _ = getFile "LocalGlobal/cities.json"
 
-query1 :: IO (Either (FetchError MyQuery) MyQuery)
-query1 = fetch resolver MyQueryArgs {inputCity = CityAthens}
+citiesQuery :: IO (Either (FetchError MyQuery) MyQuery)
+citiesQuery =
+  fetch
+    citiesResolver
+    MyQueryArgs {inputCity = CityAthens}
 
-query2 :: IO (Either (FetchError MyQuery2) MyQuery2)
-query2 = fetch resolver MyQuery2Args {city2 = CityAthens}
+usersQuery :: IO (Either (FetchError MyQuery2) MyQuery2)
+usersQuery =
+  fetch
+    citiesResolver
+    MyQuery2Args {city2 = CityAthens}
 
 expected1 =
   MyQuery
@@ -97,5 +104,5 @@ expected2 =
 
 test :: TestTree
 test = testCase "Test LocalGlobal" $ do
-  query1 >>= assertEqual "Test local 1" (Right expected1)
-  query2 >>= assertEqual "Test local 2" (Right expected2)
+  citiesQuery >>= assertEqual "Test local 1" (Right expected1)
+  usersQuery >>= assertEqual "Test local 2" (Right expected2)

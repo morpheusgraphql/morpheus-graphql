@@ -7,6 +7,7 @@ module Spec.Utils
     defineClientWith,
     defineClientWithJSON,
     fixedSchemaPath,
+    getFile,
   )
 where
 
@@ -43,8 +44,11 @@ path name = "test/Case/" <> T.unpack (unpackName name)
 withProject :: FilePath -> FilePath
 withProject = ("morpheus-graphql-client/" <>)
 
+getFile :: FieldName -> IO ByteString
+getFile p = L.readFile (path p)
+
 mockApi :: FieldName -> ByteString -> IO ByteString
-mockApi p _ = L.readFile (path p <> "/response.json")
+mockApi p _ = getFile (p <> "/response.json")
 
 fixFilePath :: FilePath -> Q FilePath
 fixFilePath x = prefix <$> runIO (doesFileExist x)

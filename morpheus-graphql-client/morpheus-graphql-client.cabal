@@ -38,7 +38,7 @@ data-files:
     test/Case/JSON/Custom/Query/response.json
     test/Case/JSON/Custom/schema.json
     test/Case/JSON/Custom/Subscription/response.json
-    test/Case/LocalGlobal/response.json
+    test/Case/LocalGlobal/cities.json
     test/Case/LowercaseTypeName/response.json
     test/Case/Scalar/response.json
 

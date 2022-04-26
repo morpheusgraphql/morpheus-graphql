@@ -6,6 +6,14 @@ enum City {
   argos
 }
 
+input UserInput {
+  name: ID!
+}
+
+type User {
+  name: String!
+}
+
 type Query {
   city(city: City!): City!
   cities: [City!]!
