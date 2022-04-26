@@ -22,26 +22,24 @@ import Data.Morpheus.Client.Fetch
 import Data.Morpheus.Client.Internal.Types
   ( ClientDefinition (..),
     ClientTypeDefinition (..),
-    Mode (..),
     TypeNameTH (..),
   )
-import Data.Morpheus.Client.Internal.Utils (withMode)
 import Data.Morpheus.CodeGen.Internal.TH (toCon)
 import Language.Haskell.TH
 import Relude hiding (Type)
 
-declareClient :: Mode -> String -> ClientDefinition -> Q [Dec]
-declareClient _ _ ClientDefinition {clientTypes = []} = pure []
-declareClient mode src ClientDefinition {clientArguments, clientTypes = rootType : subTypes} =
+declareClient :: String -> ClientDefinition -> Q [Dec]
+declareClient _ ClientDefinition {clientTypes = []} = pure []
+declareClient src ClientDefinition {clientArguments, clientTypes = rootType : subTypes} =
   (<>)
     <$> defineOperationType
       (queryArgumentType clientArguments)
       src
       rootType
-    <*> declareTypes mode subTypes
+    <*> declareTypes subTypes
 
-declareTypes :: Mode -> [ClientTypeDefinition] -> Q [Dec]
-declareTypes mode subTypes = concat <$> traverse declareType (withMode mode subTypes)
+declareTypes :: [ClientTypeDefinition] -> Q [Dec]
+declareTypes subTypes = concat <$> traverse declareType subTypes
 
 declareType :: ClientTypeDefinition -> Q [Dec]
 declareType clientType@ClientTypeDefinition {clientKind} = do

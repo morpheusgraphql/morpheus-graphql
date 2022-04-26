@@ -9,16 +9,19 @@
 module Data.Morpheus.Client.Transform.Inputs
   ( renderNonOutputTypes,
     renderOperationArguments,
+    toGlobalDefinitions,
   )
 where
 
 import Data.Morpheus.Client.Internal.Types
   ( ClientConstructorDefinition (..),
     ClientTypeDefinition (..),
+    Mode (..),
     TypeNameTH (..),
   )
 import Data.Morpheus.Client.Internal.Utils
   ( removeDuplicates,
+    withMode,
   )
 import Data.Morpheus.Client.Transform.Core
   ( Converter (..),
@@ -28,6 +31,7 @@ import Data.Morpheus.Client.Transform.Core
     resolveUpdates,
     typeFrom,
   )
+import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Internal.Utils
   ( empty,
   )
@@ -38,6 +42,7 @@ import Data.Morpheus.Types.Internal.AST
     IN,
     Operation (..),
     RAW,
+    Schema (Schema, types),
     TRUE,
     TypeContent (..),
     TypeDefinition (..),
@@ -51,6 +56,14 @@ import Data.Morpheus.Types.Internal.AST
     toAny,
   )
 import Relude hiding (empty)
+
+toGlobalDefinitions :: Schema VALID -> GQLResult [ClientTypeDefinition]
+toGlobalDefinitions schema@Schema {types} =
+  flip runReaderT (schema, empty) $
+    runConverter
+      ( catMaybes
+          <$> traverse generateGlobalType (filter (withMode Global) (toList types))
+      )
 
 renderArguments ::
   VariableDefinitions RAW ->
@@ -120,38 +133,39 @@ exploreInputTypeNames name collected
 buildInputType ::
   TypeName ->
   Converter [ClientTypeDefinition]
-buildInputType name = getType name >>= generateTypes
+buildInputType name = maybeToList <$> (getType name >>= generateGlobalType)
+
+generateGlobalType :: TypeDefinition ANY VALID -> Converter (Maybe ClientTypeDefinition)
+generateGlobalType TypeDefinition {typeName, typeContent} = subTypes typeContent
   where
-    generateTypes TypeDefinition {typeName, typeContent} = subTypes typeContent
-      where
-        subTypes :: TypeContent TRUE ANY VALID -> Converter [ClientTypeDefinition]
-        subTypes (DataInputObject inputFields) = do
-          fields <- traverse toClientFieldDefinition (toList inputFields)
-          pure
-            [ mkInputType
-                typeName
-                KindInputObject
-                [ ClientConstructorDefinition
-                    { cName = typeName,
-                      cFields = fmap toAny fields
-                    }
-                ]
+    subTypes :: TypeContent TRUE ANY VALID -> Converter (Maybe ClientTypeDefinition)
+    subTypes (DataInputObject inputFields) = do
+      fields <- traverse toClientFieldDefinition (toList inputFields)
+      pure $
+        Just $
+          mkInputType
+            typeName
+            KindInputObject
+            [ ClientConstructorDefinition
+                { cName = typeName,
+                  cFields = fmap toAny fields
+                }
             ]
-        subTypes (DataEnum enumTags) =
-          pure
-            [ mkInputType
-                typeName
-                KindEnum
-                (fmap mkConsEnum enumTags)
-            ]
-        subTypes DataScalar {} =
-          pure
-            [ mkInputType
-                typeName
-                KindScalar
-                []
-            ]
-        subTypes _ = pure []
+    subTypes (DataEnum enumTags) =
+      pure $
+        Just $
+          mkInputType
+            typeName
+            KindEnum
+            (fmap mkConsEnum enumTags)
+    subTypes DataScalar {} =
+      pure $
+        Just $
+          mkInputType
+            typeName
+            KindScalar
+            []
+    subTypes _ = pure Nothing
 
 mkConsEnum :: DataEnumValue s -> ClientConstructorDefinition
 mkConsEnum DataEnumValue {enumName} = ClientConstructorDefinition enumName []

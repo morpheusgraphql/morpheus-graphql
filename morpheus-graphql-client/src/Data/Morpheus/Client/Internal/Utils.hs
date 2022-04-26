@@ -16,6 +16,7 @@ import Data.Morpheus.Client.Internal.Types
     Mode (..),
   )
 import Data.Morpheus.CodeGen.Internal.AST (TypeKind (..))
+import Data.Morpheus.Types.Internal.AST (TypeDefinition (..), isNotSystemTypeName, isResolverType)
 import Relude
 
 removeDuplicates :: Eq a => [a] -> [a]
@@ -46,7 +47,7 @@ isGlobalType KindInputObject {} = True
 isGlobalType KindInputUnion {} = True
 isGlobalType _ = False
 
-withMode :: Mode -> [ClientTypeDefinition] -> [ClientTypeDefinition]
-withMode Global = filter (\ClientTypeDefinition {clientKind} -> isGlobalType clientKind)
-withMode Local = filter (\ClientTypeDefinition {clientKind} -> isLocalType clientKind)
-withMode Both = id
+withMode :: Mode -> TypeDefinition k s -> Bool
+withMode Global t = isResolverType t && isNotSystemTypeName (typeName t)
+withMode Local t = not (isResolverType t)
+withMode Both _ = True

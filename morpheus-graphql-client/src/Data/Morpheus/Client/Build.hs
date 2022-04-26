@@ -15,11 +15,11 @@ import Data.Morpheus.Client.Declare.Client
   )
 import Data.Morpheus.Client.Internal.Types
   ( ClientDefinition (..),
-    Mode (Global),
+    Mode,
   )
+import Data.Morpheus.Client.Transform.Inputs (toGlobalDefinitions)
 import Data.Morpheus.Client.Transform.Selection
   ( toClientDefinition,
-    toGlobalDefinitions,
   )
 import Data.Morpheus.Core
   ( Config (..),
@@ -51,26 +51,28 @@ defineGlobalTypes ioSchema = do
     Success
       { result,
         warnings
-      } -> gqlWarnings warnings >> declareTypes Global result
+      } -> gqlWarnings warnings >> declareTypes result
 
 defineQuery :: Mode -> IO (GQLResult (Schema VALID)) -> (ExecutableDocument, String) -> Q [Dec]
 defineQuery mode ioSchema (query, src) = do
   schema <- runIO ioSchema
-  case schema >>= (`validateWith` query) of
+  case schema >>= (\s -> validateWith mode s query) of
     Failure errors -> fail (renderGQLErrors errors)
     Success
       { result,
         warnings
-      } -> gqlWarnings warnings >> declareClient mode src result
+      } -> gqlWarnings warnings >> declareClient src result
 
-validateWith :: Schema VALID -> ExecutableDocument -> GQLResult ClientDefinition
+validateWith :: Mode -> Schema VALID -> ExecutableDocument -> GQLResult ClientDefinition
 validateWith
+  mode
   schema
   rawRequest@ExecutableDocument
     { operation = Operation {operationArguments}
     } = do
     validOperation <- validateRequest Config {debug = False, validationMode = WITHOUT_VARIABLES} schema rawRequest
     toClientDefinition
+      mode
       schema
       operationArguments
       validOperation

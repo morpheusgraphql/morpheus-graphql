@@ -9,7 +9,6 @@
 module Data.Morpheus.Client.Transform.Selection
   ( toClientDefinition,
     ClientDefinition (..),
-    toGlobalDefinitions,
   )
 where
 
@@ -18,6 +17,7 @@ import Data.Morpheus.Client.Internal.Types
   ( ClientConstructorDefinition (..),
     ClientDefinition (..),
     ClientTypeDefinition (..),
+    Mode (Local),
     TypeNameTH (..),
   )
 import Data.Morpheus.Client.Transform.Core (Converter (..), compileError, deprecationWarning, getType, leafType, typeFrom)
@@ -58,20 +58,18 @@ import Data.Morpheus.Types.Internal.AST
 import Relude hiding (empty, show)
 import Prelude (show)
 
-toGlobalDefinitions :: Schema VALID -> GQLResult [ClientTypeDefinition]
-toGlobalDefinitions _ = pure []
-
 toClientDefinition ::
+  Mode ->
   Schema VALID ->
   VariableDefinitions RAW ->
   Operation VALID ->
   GQLResult ClientDefinition
-toClientDefinition schema vars = flip runReaderT (schema, vars) . runConverter . genOperation
+toClientDefinition mode schema vars = flip runReaderT (schema, vars) . runConverter . genOperation mode
 
-genOperation :: Operation VALID -> Converter ClientDefinition
-genOperation operation = do
+genOperation :: Mode -> Operation VALID -> Converter ClientDefinition
+genOperation mode operation = do
   (clientArguments, outputTypes, enums) <- renderOperationType operation
-  nonOutputTypes <- renderNonOutputTypes enums
+  nonOutputTypes <- if mode /= Local then renderNonOutputTypes enums else pure []
   pure ClientDefinition {clientArguments, clientTypes = outputTypes <> nonOutputTypes}
 
 renderOperationType ::
