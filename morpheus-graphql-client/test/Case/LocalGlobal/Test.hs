@@ -23,6 +23,7 @@ import Data.Morpheus.Client
   )
 import Data.Morpheus.Types.Internal.AST (FieldName)
 import Data.Semigroup ((<>))
+import Data.Text (Text)
 import Spec.Utils
   ( fixedSchemaPath,
     getFile,
@@ -37,6 +38,7 @@ import Test.Tasty.HUnit
 import Prelude
   ( Either (..),
     IO,
+    Maybe (Just),
     Show (show),
     ($),
     (>>=),
@@ -56,9 +58,21 @@ declareLocalTypes
 declareLocalTypes
   (fixedSchemaPath "LocalGlobal")
   [gql|
-    query GetUsers( $city2: City!) {
-      city(city:$city2)
-      cities
+    query GetUsers1( $user: UserInput!) {
+      user(user:$user){
+        name
+        home
+      }
+    }
+  |]
+
+declareLocalTypes
+  (fixedSchemaPath "LocalGlobal")
+  [gql|
+    query GetUsers2( $user: UserInput!) {
+      user(user:$user){
+        name
+      }
     }
   |]
 
@@ -89,28 +103,41 @@ checkCities =
           [ CityAthens,
             CitySparta,
             CityCorinth,
-            CityDelphi,
-            CityArgos
+            CityDelphi
           ]
       }
 
-checkUsers :: IO ()
-checkUsers =
+checkUsers1 :: IO ()
+checkUsers1 =
   checkQuery
     "users"
-    GetUsersArgs {city2 = CityAthens}
-    GetUsers
-      { city = CityAthens,
-        cities =
-          [ CityAthens,
-            CitySparta,
-            CityCorinth,
-            CityDelphi,
-            CityArgos
-          ]
+    GetUsers1Args {user = UserInput {name = "odysseus"}}
+    GetUsers1
+      { user =
+          Just
+            ( UserUser
+                { name = "Odysseus",
+                  home = Just CityIthaca
+                }
+            )
+      }
+
+checkUsers2 :: IO ()
+checkUsers2 =
+  checkQuery
+    "users"
+    GetUsers2Args {user = UserInput {name = "odysseus"}}
+    GetUsers2
+      { user =
+          Just
+            ( UserUser
+                { name = "Morpheus"
+                }
+            )
       }
 
 test :: TestTree
 test = testCase "Test Local/Global types" $ do
   checkCities
-  checkUsers
+  checkUsers1
+  checkUsers2

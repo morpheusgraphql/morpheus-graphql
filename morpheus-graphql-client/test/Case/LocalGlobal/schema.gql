@@ -3,7 +3,8 @@ enum City {
   Sparta
   Corinth
   delphi
-  argos
+  Argos
+  Ithaca
 }
 
 input UserInput {
@@ -12,9 +13,11 @@ input UserInput {
 
 type User {
   name: String!
+  home: City
 }
 
 type Query {
+  user(user: UserInput): User
   city(city: City!): City!
   cities: [City!]!
 }
