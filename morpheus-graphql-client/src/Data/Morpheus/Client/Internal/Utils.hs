@@ -11,6 +11,7 @@ module Data.Morpheus.Client.Internal.Utils
   )
 where
 
+import Control.Monad.Except (MonadError (catchError))
 import qualified Data.ByteString.Lazy.Char8 as L
 import Data.List (isSuffixOf)
 import Data.Morpheus.Client.Internal.Types
@@ -46,23 +47,25 @@ withMode Global t = not (isResolverType t) && isNotSystemTypeName (typeName t)
 withMode Local t = isResolverType t
 withMode Legacy _ = True
 
-parseSource :: FilePath -> IO SchemaSource
+parseSource :: FilePath -> Q SchemaSource
 parseSource p
-  | ".json" `isSuffixOf` p = JSON <$> L.readFile p
-  | ".gql" `isSuffixOf` p || ".graphql" `isSuffixOf` p = GQL <$> L.readFile p
+  | ".json" `isSuffixOf` p = JSON <$> readWith L.readFile p
+  | ".gql" `isSuffixOf` p || ".graphql" `isSuffixOf` p = GQL <$> readWith L.readFile p
   | otherwise = fail "unsupported file format!"
 
 getFile :: Q FilePath -> Q Text
-getFile qPath = do
-  p <- qPath
+getFile qPath = qPath >>= readWith TIO.readFile
+
+readWith :: (FilePath -> IO a) -> FilePath -> Q a
+readWith f p = do
   qAddDependentFile p
-  runIO (TIO.readFile p)
+  file <- runIO (catchError ((fmap Right . f) p) (pure . Left . show))
+  case file of
+    Left x -> fail x
+    Right x -> pure x
 
 getSource :: Q FilePath -> Q SchemaSource
-getSource qPath = do
-  p <- qPath
-  qAddDependentFile p
-  runIO (parseSource p)
+getSource qPath = qPath >>= parseSource
 
 handleResult :: GQLResult t -> (t -> Q a) -> Q a
 handleResult x f = case x of
