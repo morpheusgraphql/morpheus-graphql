@@ -25,6 +25,7 @@ data-files:
     test/Case/Github/schema.gql
     test/Case/Interface/schema.gql
     test/Case/LocalGlobal/schema.gql
+    test/Case/LocalGlobal/users2.gql
     test/Case/LowercaseTypeName/schema.gql
     test/Case/Scalar/schema.gql
     test/Case/Enum/response.json

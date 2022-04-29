@@ -44,7 +44,7 @@ import Prelude
 
 declareAPITypes Nothing
 
-declareAPITypes $
+declareAPITypesInline $
   Just
     [raw|
         query GetCities ( $inputCity: City!) {
@@ -53,7 +53,7 @@ declareAPITypes $
         }
     |]
 
-declareAPITypes $
+declareAPITypesInline $
   Just
     [raw|
         query GetUsers1 ( $user: UserInput!) {
@@ -64,15 +64,7 @@ declareAPITypes $
         }
     |]
 
-declareAPITypes $
-  Just
-    [raw|
-        query GetUsers2 ( $user: UserInput!) {
-          user(user:$user){
-            name
-          }
-        }
-    |]
+declareAPITypes (Just "LocalGlobal/users2.gql")
 
 checkQuery ::
   ( Fetch a,

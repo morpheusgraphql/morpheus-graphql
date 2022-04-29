@@ -4,16 +4,28 @@
 
 module Case.LocalGlobal.Api
   ( declareAPITypes,
+    declareAPITypesInline,
   )
 where
 
 import Data.Maybe
-import Data.Morpheus.Client (declareClientTypesInline)
+import Data.Morpheus.Client
+  ( declareClientTypes,
+    declareClientTypesInline,
+  )
+import Data.Morpheus.Types.Internal.AST (FieldName)
 import Data.Text
 import Language.Haskell.TH
+import Relude
 import Spec.Utils
   ( relativePath,
   )
 
-declareAPITypes :: Maybe Text -> Q [Dec]
-declareAPITypes = declareClientTypesInline (relativePath "LocalGlobal/schema.gql")
+schema :: Q FilePath
+schema = relativePath "LocalGlobal/schema.gql"
+
+declareAPITypes :: Maybe FieldName -> Q [Dec]
+declareAPITypes src = declareClientTypes schema (relativePath <$> src)
+
+declareAPITypesInline :: Maybe Text -> Q [Dec]
+declareAPITypesInline = declareClientTypesInline schema
