@@ -32,15 +32,16 @@ library:
   source-dirs: src
   exposed-modules:
     - Data.Morpheus.Client
-  ghc-options: '-Wall'
+  ghc-options: "-Wall"
 tests:
   morpheus-graphql-client-test:
     main: Spec.hs
     source-dirs: test
-    ghc-options: '-Wall'
+    ghc-options: "-Wall"
     dependencies:
       - aeson                    >=  1.4.4  &&  <  3.0.0
       - directory                >=  1.0.0  &&  <  2.0.0
       - morpheus-graphql-client
       - tasty                    >=  0.1.0  &&  <  1.5.0
       - tasty-hunit              >=  0.1.0  &&  <  1.0.0
+      - file-embed

@@ -21,9 +21,9 @@ import Data.Morpheus.Client
   ( DecodeScalar (..),
     EncodeScalar (..),
     Fetch (..),
-    FetchError(..),
+    FetchError (..),
     ScalarValue (..),
-    gql,
+    raw,
   )
 import Data.Text (Text)
 import Spec.Utils
@@ -38,13 +38,12 @@ import Test.Tasty.HUnit
     testCase,
   )
 import Prelude
-  ( ($),
-    (.),
-    Either (..),
+  ( Either (..),
     Eq,
     IO,
     Show,
-    String,
+    ($),
+    (.),
   )
 
 newtype Uuid = Uuid
@@ -61,7 +60,7 @@ instance DecodeScalar Uuid where
 
 defineClientWith
   "LowercaseTypeName"
-  [gql|
+  [raw|
     query MyQuery {
       user(id: "11343135") {
         id

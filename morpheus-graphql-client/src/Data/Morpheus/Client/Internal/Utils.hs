@@ -7,6 +7,7 @@ module Data.Morpheus.Client.Internal.Utils
     withMode,
     getSource,
     handleResult,
+    getFile,
   )
 where
 
@@ -15,11 +16,12 @@ import Data.List (isSuffixOf)
 import Data.Morpheus.Client.Internal.Types
   ( ClientConstructorDefinition (cFields),
     Mode (..),
-    Source (..),
+    SchemaSource (..),
   )
 import Data.Morpheus.Error (gqlWarnings, renderGQLErrors)
 import Data.Morpheus.Internal.Ext (GQLResult, Result (..))
 import Data.Morpheus.Types.Internal.AST (TypeDefinition (..), isNotSystemTypeName, isResolverType)
+import qualified Data.Text.IO as TIO
 import Language.Haskell.TH (Q, runIO)
 import Language.Haskell.TH.Syntax (qAddDependentFile)
 import Relude
@@ -44,13 +46,19 @@ withMode Global t = not (isResolverType t) && isNotSystemTypeName (typeName t)
 withMode Local t = isResolverType t
 withMode Legacy _ = True
 
-parseSource :: FilePath -> IO Source
+parseSource :: FilePath -> IO SchemaSource
 parseSource p
   | ".json" `isSuffixOf` p = JSON <$> L.readFile p
   | ".gql" `isSuffixOf` p || ".graphql" `isSuffixOf` p = GQL <$> L.readFile p
   | otherwise = fail "unsupported file format!"
 
-getSource :: Q FilePath -> Q Source
+getFile :: Q FilePath -> Q Text
+getFile qPath = do
+  p <- qPath
+  qAddDependentFile p
+  runIO (TIO.readFile p)
+
+getSource :: Q FilePath -> Q SchemaSource
 getSource qPath = do
   p <- qPath
   qAddDependentFile p

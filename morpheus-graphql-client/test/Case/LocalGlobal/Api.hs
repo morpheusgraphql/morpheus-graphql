@@ -7,9 +7,13 @@ module Case.LocalGlobal.Api
   )
 where
 
-import Data.Morpheus.Client
+import Data.Maybe
+import Data.Morpheus.Client (declareClientTypesInline)
+import Data.Text
+import Language.Haskell.TH
 import Spec.Utils
-  ( fixedSchemaPath,
+  ( relativePath,
   )
 
-declareAPITypes = declareClientTypes (fixedSchemaPath "LocalGlobal")
+declareAPITypes :: Maybe Text -> Q [Dec]
+declareAPITypes = declareClientTypesInline (relativePath "LocalGlobal/schema.gql")

@@ -8,15 +8,14 @@ module Data.Morpheus.Client.Internal.Types
     ClientConstructorDefinition (..),
     FetchError (..),
     Mode (..),
-    Source (..),
-    ExecutableClientDocument,
+    SchemaSource (..),
+    ExecutableSource,
   )
 where
 
 import Data.ByteString.Lazy (ByteString)
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
-    ExecutableDocument,
     FieldDefinition,
     FieldName,
     GQLErrors,
@@ -63,9 +62,9 @@ data Mode
   | Legacy
   deriving (Show, Eq)
 
-data Source
+data SchemaSource
   = JSON ByteString
   | GQL ByteString
   deriving (Show, Eq)
 
-type ExecutableClientDocument = (ExecutableDocument, String)
+type ExecutableSource = Text

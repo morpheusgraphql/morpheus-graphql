@@ -2,8 +2,9 @@
 
 module Data.Morpheus.Client.Declare
   ( declareTypesLegacy,
-    declareClientTypesIO,
+    clientTypeDeclarations,
     declareClientTypes,
+    declareClientTypesInline,
   )
 where
 
@@ -12,37 +13,54 @@ import Data.Morpheus.Client.Declare.Client
     declareTypes,
   )
 import Data.Morpheus.Client.Internal.Types
-  ( ExecutableClientDocument,
+  ( ExecutableSource,
     Mode (Local),
-    Source,
+    SchemaSource,
   )
-import Data.Morpheus.Client.Internal.Utils (getSource, handleResult)
+import Data.Morpheus.Client.Internal.Utils (getFile, getSource, handleResult)
 import Data.Morpheus.Client.Schema.Parse (parseSchema)
 import Data.Morpheus.Client.Transform
   ( toGlobalDefinitions,
     toLocalDefinitions,
   )
+import Data.Morpheus.Core (parseRequest)
+import Data.Morpheus.Types.IO (GQLRequest (..))
+import qualified Data.Text as T
 import Language.Haskell.TH (Dec, Q, runIO)
 import Relude
 
-declareTypesLegacy :: IO Source -> Mode -> ExecutableClientDocument -> Q [Dec]
-declareTypesLegacy doc mode (query, source) = do
-  schema <- runIO (parseSchema <$> doc)
+declareTypesLegacy :: IO SchemaSource -> Mode -> ExecutableSource -> Q [Dec]
+declareTypesLegacy schemaSrc mode querySrc = do
+  schemaText <- runIO schemaSrc
+  let request =
+        GQLRequest
+          { query = querySrc,
+            operationName = Nothing,
+            variables = Nothing
+          }
   handleResult
-    (schema >>= toLocalDefinitions mode query)
+    ( do
+        schemaDoc <- parseSchema schemaText
+        executableDoc <- parseRequest request
+        toLocalDefinitions mode executableDoc schemaDoc
+    )
     ( \(fetch, types) ->
         (<>)
-          <$> declareFetch source fetch
+          <$> declareFetch (T.unpack querySrc) fetch
           <*> declareTypes types
     )
 
-declareClientTypesIO :: IO Source -> Maybe ExecutableClientDocument -> Q [Dec]
-declareClientTypesIO src (Just doc) = declareTypesLegacy src Local doc
-declareClientTypesIO src Nothing = do
-  schema <- runIO (parseSchema <$> src)
-  handleResult (schema >>= toGlobalDefinitions) declareTypes
+clientTypeDeclarations :: SchemaSource -> Maybe ExecutableSource -> Q [Dec]
+clientTypeDeclarations src (Just doc) = declareTypesLegacy (pure src) Local doc
+clientTypeDeclarations src Nothing = do
+  handleResult (parseSchema src >>= toGlobalDefinitions) declareTypes
 
-declareClientTypes :: Q FilePath -> Maybe ExecutableClientDocument -> Q [Dec]
-declareClientTypes schemaPath doc = do
+declareClientTypesInline :: Q FilePath -> Maybe Text -> Q [Dec]
+declareClientTypesInline schemaPath queryText = do
   src <- getSource schemaPath
-  declareClientTypesIO (pure src) doc
+  clientTypeDeclarations src queryText
+
+declareClientTypes :: Q FilePath -> Maybe (Q FilePath) -> Q [Dec]
+declareClientTypes schemaPath queryPath = do
+  queryText <- traverse getFile queryPath
+  declareClientTypesInline schemaPath queryText

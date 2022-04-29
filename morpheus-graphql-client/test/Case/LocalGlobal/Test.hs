@@ -18,7 +18,7 @@ import Data.Eq (Eq)
 import Data.Morpheus.Client
   ( Fetch (..),
     ID,
-    gql,
+    raw,
   )
 import Data.Morpheus.Types.Internal.AST (FieldName)
 import Data.Semigroup ((<>))
@@ -46,8 +46,8 @@ declareAPITypes Nothing
 
 declareAPITypes $
   Just
-    [gql|
-        query GetCities( $inputCity: City!) {
+    [raw|
+        query GetCities ( $inputCity: City!) {
           city(city:$inputCity)
           cities
         }
@@ -55,8 +55,8 @@ declareAPITypes $
 
 declareAPITypes $
   Just
-    [gql|
-        query GetUsers1( $user: UserInput!) {
+    [raw|
+        query GetUsers1 ( $user: UserInput!) {
           user(user:$user){
             name
             home
@@ -66,8 +66,8 @@ declareAPITypes $
 
 declareAPITypes $
   Just
-    [gql|
-        query GetUsers2( $user: UserInput!) {
+    [raw|
+        query GetUsers2 ( $user: UserInput!) {
           user(user:$user){
             name
           }
