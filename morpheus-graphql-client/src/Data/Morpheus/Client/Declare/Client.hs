@@ -5,7 +5,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Declare.Client
-  ( declareClient,
+  ( declareFetch,
     declareTypes,
   )
 where
@@ -20,23 +20,17 @@ import Data.Morpheus.Client.Fetch
   ( deriveFetch,
   )
 import Data.Morpheus.Client.Internal.Types
-  ( ClientDefinition (..),
-    ClientTypeDefinition (..),
+  ( ClientTypeDefinition (..),
+    FetchDefinition (..),
     TypeNameTH (..),
   )
 import Data.Morpheus.CodeGen.Internal.TH (toCon)
 import Language.Haskell.TH
 import Relude hiding (Type)
 
-declareClient :: String -> ClientDefinition -> Q [Dec]
-declareClient _ ClientDefinition {clientTypes = []} = pure []
-declareClient src ClientDefinition {clientArguments, clientTypes = rootType : subTypes} =
-  (<>)
-    <$> defineOperationType
-      (queryArgumentType clientArguments)
-      src
-      rootType
-    <*> declareTypes subTypes
+declareFetch :: String -> FetchDefinition -> Q [Dec]
+declareFetch query FetchDefinition {clientArgumentsTypeName, rootTypeName} = do
+  deriveFetch (argumentType clientArgumentsTypeName) (typename rootTypeName) query
 
 declareTypes :: [ClientTypeDefinition] -> Q [Dec]
 declareTypes subTypes = concat <$> traverse declareType subTypes
@@ -47,20 +41,6 @@ declareType clientType@ClientTypeDefinition {clientKind} = do
   instances <- aesonDeclarations clientKind clientType
   pure (types <> instances)
 
-queryArgumentType :: Maybe ClientTypeDefinition -> (Type, Q [Dec])
-queryArgumentType Nothing = (toCon ("()" :: String), pure [])
-queryArgumentType (Just client@ClientTypeDefinition {clientTypeName}) =
-  (toCon (typename clientTypeName), declareType client)
-
-defineOperationType :: (Type, Q [Dec]) -> String -> ClientTypeDefinition -> Q [Dec]
-defineOperationType
-  (argType, argumentTypes)
-  query
-  clientType@ClientTypeDefinition
-    { clientTypeName = TypeNameTH {typename}
-    } =
-    do
-      rootType <- declareType clientType
-      typeClassFetch <- deriveFetch argType typename query
-      argsT <- argumentTypes
-      pure $ rootType <> typeClassFetch <> argsT
+argumentType :: Maybe TypeNameTH -> Type
+argumentType Nothing = toCon ("()" :: String)
+argumentType (Just clientTypeName) = toCon (typename clientTypeName)

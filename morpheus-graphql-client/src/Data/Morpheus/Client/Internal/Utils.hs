@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Internal.Utils
@@ -5,6 +6,7 @@ module Data.Morpheus.Client.Internal.Utils
     isEnum,
     withMode,
     getSource,
+    handleResult,
   )
 where
 
@@ -15,6 +17,8 @@ import Data.Morpheus.Client.Internal.Types
     Mode (..),
     Source (..),
   )
+import Data.Morpheus.Error (gqlWarnings, renderGQLErrors)
+import Data.Morpheus.Internal.Ext (GQLResult, Result (..))
 import Data.Morpheus.Types.Internal.AST (TypeDefinition (..), isNotSystemTypeName, isResolverType)
 import Language.Haskell.TH (Q, runIO)
 import Language.Haskell.TH.Syntax (qAddDependentFile)
@@ -51,3 +55,11 @@ getSource qPath = do
   p <- qPath
   qAddDependentFile p
   runIO (parseSource p)
+
+handleResult :: GQLResult t -> (t -> Q a) -> Q a
+handleResult x f = case x of
+  Failure errors -> fail (renderGQLErrors errors)
+  Success
+    { result,
+      warnings
+    } -> gqlWarnings warnings >> f result

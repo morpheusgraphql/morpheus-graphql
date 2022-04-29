@@ -12,21 +12,19 @@ module Case.LocalGlobal.Test
   )
 where
 
+import Case.LocalGlobal.Api
 import Data.Aeson
 import Data.Eq (Eq)
 import Data.Morpheus.Client
   ( Fetch (..),
     ID,
-    declareGlobalTypes,
-    declareLocalTypes,
     gql,
   )
 import Data.Morpheus.Types.Internal.AST (FieldName)
 import Data.Semigroup ((<>))
 import Data.Text (Text)
 import Spec.Utils
-  ( fixedSchemaPath,
-    getFile,
+  ( getFile,
   )
 import Test.Tasty
   ( TestTree,
@@ -38,43 +36,43 @@ import Test.Tasty.HUnit
 import Prelude
   ( Either (..),
     IO,
-    Maybe (Just),
+    Maybe (Just, Nothing),
     Show (show),
     ($),
     (>>=),
   )
 
-declareGlobalTypes (fixedSchemaPath "LocalGlobal")
+declareAPITypes Nothing
 
-declareLocalTypes
-  (fixedSchemaPath "LocalGlobal")
-  [gql|
-    query GetCities( $inputCity: City!) {
-      city(city:$inputCity)
-      cities
-    }
-  |]
+declareAPITypes $
+  Just
+    [gql|
+        query GetCities( $inputCity: City!) {
+          city(city:$inputCity)
+          cities
+        }
+    |]
 
-declareLocalTypes
-  (fixedSchemaPath "LocalGlobal")
-  [gql|
-    query GetUsers1( $user: UserInput!) {
-      user(user:$user){
-        name
-        home
-      }
-    }
-  |]
+declareAPITypes $
+  Just
+    [gql|
+        query GetUsers1( $user: UserInput!) {
+          user(user:$user){
+            name
+            home
+          }
+        }
+    |]
 
-declareLocalTypes
-  (fixedSchemaPath "LocalGlobal")
-  [gql|
-    query GetUsers2( $user: UserInput!) {
-      user(user:$user){
-        name
-      }
-    }
-  |]
+declareAPITypes $
+  Just
+    [gql|
+        query GetUsers2( $user: UserInput!) {
+          user(user:$user){
+            name
+          }
+        }
+    |]
 
 checkQuery ::
   ( Fetch a,

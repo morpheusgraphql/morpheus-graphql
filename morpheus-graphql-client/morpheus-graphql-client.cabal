@@ -52,7 +52,6 @@ library
   exposed-modules:
       Data.Morpheus.Client
   other-modules:
-      Data.Morpheus.Client.Build
       Data.Morpheus.Client.Declare
       Data.Morpheus.Client.Declare.Aeson
       Data.Morpheus.Client.Declare.Client
@@ -66,6 +65,7 @@ library
       Data.Morpheus.Client.Schema.JSON.TypeRef
       Data.Morpheus.Client.Schema.JSON.Types
       Data.Morpheus.Client.Schema.Parse
+      Data.Morpheus.Client.Transform
       Data.Morpheus.Client.Transform.Core
       Data.Morpheus.Client.Transform.Inputs
       Data.Morpheus.Client.Transform.Selection
@@ -101,6 +101,7 @@ test-suite morpheus-graphql-client-test
       Case.JSON.Custom.PartialResponse
       Case.JSON.Custom.Query
       Case.JSON.Custom.Subscription
+      Case.LocalGlobal.Api
       Case.LocalGlobal.Test
       Case.LowercaseTypeName.Test
       Case.Scalar.Test

@@ -7,21 +7,21 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Transform.Selection
-  ( toClientDefinition,
-    ClientDefinition (..),
+  ( toLocalDefinitions,
   )
 where
 
 import Control.Monad.Except (MonadError (throwError))
 import Data.Morpheus.Client.Internal.Types
   ( ClientConstructorDefinition (..),
-    ClientDefinition (..),
     ClientTypeDefinition (..),
+    FetchDefinition (..),
     Mode (..),
     TypeNameTH (..),
   )
 import Data.Morpheus.Client.Transform.Core (Converter (..), compileError, deprecationWarning, getType, leafType, typeFrom)
 import Data.Morpheus.Client.Transform.Inputs (renderNonOutputTypes, renderOperationArguments)
+import Data.Morpheus.Core (Config (..), VALIDATION_MODE (WITHOUT_VARIABLES), validateRequest)
 import Data.Morpheus.Internal.Ext
   ( GQLResult,
   )
@@ -32,10 +32,10 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
+    ExecutableDocument (..),
     FieldDefinition (..),
     FieldName,
     Operation (..),
-    RAW,
     Ref (..),
     Schema (..),
     Selection (..),
@@ -48,7 +48,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef (..),
     UnionTag (..),
     VALID,
-    VariableDefinitions,
     getOperationDataType,
     getOperationName,
     mkTypeRef,
@@ -58,26 +57,51 @@ import Data.Morpheus.Types.Internal.AST
 import Relude hiding (empty, show)
 import Prelude (show)
 
-toClientDefinition ::
-  Mode ->
-  Schema VALID ->
-  VariableDefinitions RAW ->
-  Operation VALID ->
-  GQLResult ClientDefinition
-toClientDefinition mode schema vars = flip runReaderT (schema, vars) . runConverter . genOperation mode
+clientConfig :: Config
+clientConfig =
+  Config
+    { debug = False,
+      validationMode = WITHOUT_VARIABLES
+    }
 
-genOperation :: Mode -> Operation VALID -> Converter ClientDefinition
+toLocalDefinitions ::
+  Mode ->
+  ExecutableDocument ->
+  Schema VALID ->
+  GQLResult
+    ( FetchDefinition,
+      [ClientTypeDefinition]
+    )
+toLocalDefinitions mode request schema = do
+  validOperation <- validateRequest clientConfig schema request
+  flip runReaderT (schema, operationArguments $ operation request) $
+    runConverter $
+      genOperation mode validOperation
+
+genOperation ::
+  Mode ->
+  Operation VALID ->
+  Converter
+    ( FetchDefinition,
+      [ClientTypeDefinition]
+    )
 genOperation mode operation = do
-  (clientArguments, localTypes, globalTypes) <- renderOperationTypes mode operation
+  (argumentsType, rootType :| localTypes, globalTypes) <- renderOperationTypes mode operation
   globalDefinitions <- renderNonOutputTypes globalTypes
-  pure ClientDefinition {clientArguments, clientTypes = localTypes <> globalDefinitions}
+  pure
+    ( FetchDefinition
+        { clientArgumentsTypeName = fmap clientTypeName argumentsType,
+          rootTypeName = clientTypeName rootType
+        },
+      rootType : (localTypes <> maybeToList argumentsType <> globalDefinitions)
+    )
 
 renderOperationTypes ::
   Mode ->
   Operation VALID ->
   Converter
     ( Maybe ClientTypeDefinition,
-      [ClientTypeDefinition],
+      NonEmpty ClientTypeDefinition,
       [TypeName]
     )
 renderOperationTypes mode op@Operation {operationName, operationSelection} = do
@@ -100,7 +124,7 @@ genRecordType ::
   TypeName ->
   TypeDefinition ANY VALID ->
   SelectionSet VALID ->
-  Converter ([ClientTypeDefinition], [TypeName])
+  Converter (NonEmpty ClientTypeDefinition, [TypeName])
 genRecordType localize path tName dataType recordSelSet = do
   (con, subTypes, requests) <- genConsD (if localize then coerce tName : path else path) tName dataType recordSelSet
   pure
@@ -108,8 +132,8 @@ genRecordType localize path tName dataType recordSelSet = do
         { clientTypeName = TypeNameTH path tName,
           clientCons = [con],
           clientKind = KindObject Nothing
-        } :
-      subTypes,
+        }
+        :| subTypes,
       requests
     )
 
@@ -165,8 +189,9 @@ subTypesBySelection ::
     )
 subTypesBySelection _ dType Selection {selectionContent = SelectionField} =
   leafType dType
-subTypesBySelection path dType Selection {selectionContent = SelectionSet selectionSet} =
-  genRecordType False path (typeFrom [] dType) dType selectionSet
+subTypesBySelection path dType Selection {selectionContent = SelectionSet selectionSet} = do
+  (x :| xs, requests) <- genRecordType False path (typeFrom [] dType) dType selectionSet
+  pure (x : xs, requests)
 subTypesBySelection path dType Selection {selectionContent = UnionSelection interface unionSelections} =
   do
     (clientCons, subTypes, requests) <-

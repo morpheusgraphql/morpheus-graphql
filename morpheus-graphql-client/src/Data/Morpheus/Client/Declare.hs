@@ -1,41 +1,48 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 module Data.Morpheus.Client.Declare
-  ( declareTypesIO,
-    declareLocalTypesIO,
-    declareGlobalTypesIO,
-    declareLocalTypes,
-    declareGlobalTypes,
+  ( declareTypesLegacy,
+    declareClientTypesIO,
+    declareClientTypes,
   )
 where
 
-import Data.Morpheus.Client.Build
+import Data.Morpheus.Client.Declare.Client
+  ( declareFetch,
+    declareTypes,
+  )
 import Data.Morpheus.Client.Internal.Types
   ( ExecutableClientDocument,
     Mode (Local),
     Source,
   )
-import Data.Morpheus.Client.Internal.Utils (getSource)
+import Data.Morpheus.Client.Internal.Utils (getSource, handleResult)
 import Data.Morpheus.Client.Schema.Parse (parseSchema)
+import Data.Morpheus.Client.Transform
+  ( toGlobalDefinitions,
+    toLocalDefinitions,
+  )
 import Language.Haskell.TH (Dec, Q, runIO)
+import Relude
 
-declareTypesIO :: IO Source -> Mode -> ExecutableClientDocument -> Q [Dec]
-declareTypesIO doc mode query = do
+declareTypesLegacy :: IO Source -> Mode -> ExecutableClientDocument -> Q [Dec]
+declareTypesLegacy doc mode (query, source) = do
   schema <- runIO (parseSchema <$> doc)
-  defineQueryTypes mode schema query
+  handleResult
+    (schema >>= toLocalDefinitions mode query)
+    ( \(fetch, types) ->
+        (<>)
+          <$> declareFetch source fetch
+          <*> declareTypes types
+    )
 
-declareLocalTypesIO :: IO Source -> ExecutableClientDocument -> Q [Dec]
-declareLocalTypesIO doc = declareTypesIO doc Local
+declareClientTypesIO :: IO Source -> Maybe ExecutableClientDocument -> Q [Dec]
+declareClientTypesIO src (Just doc) = declareTypesLegacy src Local doc
+declareClientTypesIO src Nothing = do
+  schema <- runIO (parseSchema <$> src)
+  handleResult (schema >>= toGlobalDefinitions) declareTypes
 
-declareGlobalTypesIO :: IO Source -> Q [Dec]
-declareGlobalTypesIO doc = runIO (parseSchema <$> doc) >>= defineGlobalTypes
-
--- With PATH
-
-declareLocalTypes :: Q FilePath -> ExecutableClientDocument -> Q [Dec]
-declareLocalTypes qPath doc = do
-  src <- getSource qPath
-  declareTypesIO (pure src) Local doc
-
-declareGlobalTypes :: Q FilePath -> Q [Dec]
-declareGlobalTypes qPath = do
-  src <- getSource qPath
-  declareGlobalTypesIO (pure src)
+declareClientTypes :: Q FilePath -> Maybe ExecutableClientDocument -> Q [Dec]
+declareClientTypes schemaPath doc = do
+  src <- getSource schemaPath
+  declareClientTypesIO (pure src) doc

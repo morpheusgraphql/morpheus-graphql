@@ -4,7 +4,7 @@
 module Data.Morpheus.Client.Internal.Types
   ( ClientTypeDefinition (..),
     TypeNameTH (..),
-    ClientDefinition (..),
+    FetchDefinition (..),
     ClientConstructorDefinition (..),
     FetchError (..),
     Mode (..),
@@ -45,9 +45,9 @@ data ClientTypeDefinition = ClientTypeDefinition
   }
   deriving (Show)
 
-data ClientDefinition = ClientDefinition
-  { clientArguments :: Maybe ClientTypeDefinition,
-    clientTypes :: [ClientTypeDefinition]
+data FetchDefinition = FetchDefinition
+  { rootTypeName :: TypeNameTH,
+    clientArgumentsTypeName :: Maybe TypeNameTH
   }
   deriving (Show)
 
