@@ -7,7 +7,7 @@ module Spec.Utils
     defineClientWith,
     defineClientWithJSON,
     getFile,
-    relativePath,
+    path,
   )
 where
 
@@ -18,13 +18,8 @@ import Data.Morpheus.Client
   ( defineByDocumentFile,
     defineByIntrospectionFile,
   )
-import Data.Morpheus.Types.Internal.AST
-  ( FieldName,
-    unpackName,
-  )
 import Data.Semigroup ((<>))
 import Data.Text
-import qualified Data.Text as T
 import Language.Haskell.TH
   ( Dec,
     Q,
@@ -34,24 +29,24 @@ import Prelude
     IO,
   )
 
-path :: FieldName -> FilePath
-path name = "test/Case/" <> T.unpack (unpackName name)
+path :: FilePath -> FilePath
+path name = "test/Case/" <> name
 
-getFile :: FieldName -> IO ByteString
+getFile :: FilePath -> IO ByteString
 getFile p = L.readFile (path p)
 
-mockApi :: FieldName -> ByteString -> IO ByteString
+mockApi :: FilePath -> ByteString -> IO ByteString
 mockApi p _ = getFile (p <> "/response.json")
 
-relativePath :: FieldName -> Q FilePath
+relativePath :: FilePath -> Q FilePath
 relativePath url = makeRelativeToProject (path url)
 
-defineClientWith :: FieldName -> Text -> Q [Dec]
+defineClientWith :: FilePath -> Text -> Q [Dec]
 defineClientWith url exp = do
   p <- relativePath (url <> "/schema.gql")
   defineByDocumentFile p exp
 
-defineClientWithJSON :: FieldName -> Text -> Q [Dec]
+defineClientWithJSON :: FilePath -> Text -> Q [Dec]
 defineClientWithJSON url exp = do
   p <- relativePath (url <> "/schema.json")
   defineByIntrospectionFile p exp

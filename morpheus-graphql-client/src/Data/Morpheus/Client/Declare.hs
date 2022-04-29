@@ -3,7 +3,6 @@
 
 module Data.Morpheus.Client.Declare
   ( declareTypesLegacy,
-    clientTypeDeclarations,
     declareClientTypes,
     declareClientTypesInline,
   )
@@ -55,12 +54,12 @@ clientTypeDeclarations src (Just doc) = declareTypesLegacy (pure src) Local doc
 clientTypeDeclarations src Nothing = do
   handleResult (parseSchema src >>= toGlobalDefinitions) declareTypes
 
-declareClientTypesInline :: Q FilePath -> Text -> Q [Dec]
+declareClientTypesInline :: FilePath -> ExecutableSource -> Q [Dec]
 declareClientTypesInline schemaPath query = do
   schema <- getSource schemaPath
   clientTypeDeclarations schema (Just query)
 
-declareClientTypes :: Q FilePath -> Maybe (Q FilePath) -> Q [Dec]
+declareClientTypes :: FilePath -> Maybe FilePath -> Q [Dec]
 declareClientTypes schemaPath queryPath = do
   schema <- getSource schemaPath
   query <- traverse getFile queryPath

@@ -20,7 +20,6 @@ import Data.Morpheus.Client
     ID,
     raw,
   )
-import Data.Morpheus.Types.Internal.AST (FieldName)
 import Data.Semigroup ((<>))
 import Data.Text (Text)
 import Spec.Utils
@@ -35,6 +34,7 @@ import Test.Tasty.HUnit
   )
 import Prelude
   ( Either (..),
+    FilePath,
     IO,
     Maybe (Just, Nothing),
     Show (show),
@@ -52,8 +52,8 @@ declareAPITypesInline
     }
   |]
 
-declareAPITypes (Just "LocalGlobal/users1.gql")
-declareAPITypes (Just "LocalGlobal/users2.gql")
+declareAPITypes (Just "users1.gql")
+declareAPITypes (Just "users2.gql")
 
 checkQuery ::
   ( Fetch a,
@@ -61,7 +61,7 @@ checkQuery ::
     Eq a,
     Show a
   ) =>
-  FieldName ->
+  FilePath ->
   Args a ->
   a ->
   IO ()

@@ -28,6 +28,8 @@ dependencies:
   - template-haskell           >=  2.0.0   &&  <  3.0.0
   - transformers               >=  0.3.0   &&  <  0.6.0
   - unordered-containers       >=  0.2.8   &&  <  0.3.0
+  - file-embed
+
 library:
   source-dirs: src
   exposed-modules:

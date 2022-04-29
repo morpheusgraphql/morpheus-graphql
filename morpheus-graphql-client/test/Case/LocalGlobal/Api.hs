@@ -13,19 +13,20 @@ import Data.Morpheus.Client
   ( declareClientTypes,
     declareClientTypesInline,
   )
-import Data.Morpheus.Types.Internal.AST (FieldName)
-import Data.Text
 import Language.Haskell.TH
 import Relude
 import Spec.Utils
-  ( relativePath,
+  ( path,
   )
 
-schema :: Q FilePath
-schema = relativePath "LocalGlobal/schema.gql"
+loc :: FilePath -> FilePath
+loc x = path ("LocalGlobal/" <> x)
 
-declareAPITypes :: Maybe FieldName -> Q [Dec]
-declareAPITypes src = declareClientTypes schema (relativePath <$> src)
+schema :: FilePath
+schema = loc "schema.gql"
+
+declareAPITypes :: Maybe FilePath -> Q [Dec]
+declareAPITypes = declareClientTypes schema . fmap loc
 
 declareAPITypesInline :: Text -> Q [Dec]
 declareAPITypesInline = declareClientTypesInline schema
