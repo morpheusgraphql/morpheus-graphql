@@ -1,18 +1,23 @@
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Internal.Utils
   ( removeDuplicates,
     isEnum,
     withMode,
+    getSource,
   )
 where
 
+import qualified Data.ByteString.Lazy.Char8 as L
+import Data.List (isSuffixOf)
 import Data.Morpheus.Client.Internal.Types
   ( ClientConstructorDefinition (cFields),
     Mode (..),
+    Source (..),
   )
 import Data.Morpheus.Types.Internal.AST (TypeDefinition (..), isNotSystemTypeName, isResolverType)
+import Language.Haskell.TH (Q, runIO)
+import Language.Haskell.TH.Syntax (qAddDependentFile)
 import Relude
 
 removeDuplicates :: Eq a => [a] -> [a]
@@ -33,4 +38,16 @@ isEnum = all (null . cFields)
 withMode :: Mode -> TypeDefinition k s -> Bool
 withMode Global t = not (isResolverType t) && isNotSystemTypeName (typeName t)
 withMode Local t = isResolverType t
-withMode Both _ = True
+withMode Legacy _ = True
+
+parseSource :: FilePath -> IO Source
+parseSource p
+  | ".json" `isSuffixOf` p = JSON <$> L.readFile p
+  | ".gql" `isSuffixOf` p || ".graphql" `isSuffixOf` p = GQL <$> L.readFile p
+  | otherwise = fail "unsupported file format!"
+
+getSource :: Q FilePath -> Q Source
+getSource qPath = do
+  p <- qPath
+  qAddDependentFile p
+  runIO (parseSource p)

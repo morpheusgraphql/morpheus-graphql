@@ -24,7 +24,7 @@ import Data.ByteString.Lazy (ByteString)
 import Data.Morpheus.Client.Internal.Types
   ( FetchError (..),
   )
-import Data.Morpheus.Client.JSONSchema.Types
+import Data.Morpheus.Client.Schema.JSON.Types
   ( JSONResponse (..),
   )
 import Data.Morpheus.CodeGen.Internal.TH

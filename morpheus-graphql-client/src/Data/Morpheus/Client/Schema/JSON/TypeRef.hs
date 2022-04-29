@@ -2,7 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Client.JSONSchema.TypeRef
+module Data.Morpheus.Client.Schema.JSON.TypeRef
   ( TypeRef (..),
   )
 where

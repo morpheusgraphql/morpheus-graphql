@@ -90,7 +90,7 @@ renderOperationTypes mode op@Operation {operationName, operationSelection} = do
       (getOperationName operationName)
       (toAny datatype)
       operationSelection
-  pure (arguments, outputTypes, if mode == Both then globalTypes else [])
+  pure (arguments, outputTypes, if mode == Legacy then globalTypes else [])
 
 -------------------------------------------------------------------------
 -- generates selection Object Types

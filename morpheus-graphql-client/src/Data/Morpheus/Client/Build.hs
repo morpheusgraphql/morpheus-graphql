@@ -4,7 +4,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Build
-  ( defineQuery,
+  ( defineQueryTypes,
     defineGlobalTypes,
   )
 where
@@ -43,36 +43,39 @@ import Data.Morpheus.Types.Internal.AST
 import Language.Haskell.TH
 import Relude
 
-defineGlobalTypes :: IO (GQLResult (Schema VALID)) -> Q [Dec]
-defineGlobalTypes ioSchema = do
-  schema <- runIO ioSchema
-  case schema >>= toGlobalDefinitions of
-    Failure errors -> fail (renderGQLErrors errors)
-    Success
-      { result,
-        warnings
-      } -> gqlWarnings warnings >> declareTypes result
+handleResult :: GQLResult t -> (t -> Q a) -> Q a
+handleResult x f = case x of
+  Failure errors -> fail (renderGQLErrors errors)
+  Success
+    { result,
+      warnings
+    } -> gqlWarnings warnings >> f result
 
-defineQuery :: Mode -> IO (GQLResult (Schema VALID)) -> (ExecutableDocument, String) -> Q [Dec]
-defineQuery mode ioSchema (query, src) = do
-  schema <- runIO ioSchema
-  case schema >>= (\s -> validateWith mode s query) of
-    Failure errors -> fail (renderGQLErrors errors)
-    Success
-      { result,
-        warnings
-      } -> gqlWarnings warnings >> declareClient src result
+defineGlobalTypes :: GQLResult (Schema VALID) -> Q [Dec]
+defineGlobalTypes schema =
+  handleResult
+    (schema >>= toGlobalDefinitions)
+    declareTypes
 
-validateWith :: Mode -> Schema VALID -> ExecutableDocument -> GQLResult ClientDefinition
+defineQueryTypes :: Mode -> GQLResult (Schema VALID) -> (ExecutableDocument, String) -> Q [Dec]
+defineQueryTypes mode schema (query, src) =
+  handleResult
+    (schema >>= validateWith mode query)
+    (declareClient src)
+
+validateWith :: Mode -> ExecutableDocument -> Schema VALID -> GQLResult ClientDefinition
 validateWith
   mode
-  schema
-  rawRequest@ExecutableDocument
-    { operation = Operation {operationArguments}
-    } = do
-    validOperation <- validateRequest Config {debug = False, validationMode = WITHOUT_VARIABLES} schema rawRequest
-    toClientDefinition
-      mode
-      schema
-      operationArguments
-      validOperation
+  rawRequest@ExecutableDocument {operation}
+  schema =
+    do
+      validOperation <-
+        validateRequest
+          Config {debug = False, validationMode = WITHOUT_VARIABLES}
+          schema
+          rawRequest
+      toClientDefinition
+        mode
+        schema
+        (operationArguments operation)
+        validOperation

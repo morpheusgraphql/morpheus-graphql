@@ -5,7 +5,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Client.JSONSchema.Types
+module Data.Morpheus.Client.Schema.JSON.Types
   ( Introspection (..),
     Schema (..),
     Type (..),
@@ -19,8 +19,8 @@ where
 import Data.Aeson
 --
 -- MORPHEUS
-import Data.Morpheus.Client.JSONSchema.TypeKind (TypeKind)
-import Data.Morpheus.Client.JSONSchema.TypeRef (TypeRef)
+import Data.Morpheus.Client.Schema.JSON.TypeKind (TypeKind)
+import Data.Morpheus.Client.Schema.JSON.TypeRef (TypeRef)
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     GQLError,

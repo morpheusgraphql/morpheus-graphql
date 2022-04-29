@@ -9,12 +9,14 @@ module Data.Morpheus.Client.Internal.Types
     FetchError (..),
     Mode (..),
     Source (..),
+    ExecutableClientDocument,
   )
 where
 
 import Data.ByteString.Lazy (ByteString)
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
+    ExecutableDocument,
     FieldDefinition,
     FieldName,
     GQLErrors,
@@ -55,9 +57,15 @@ data FetchError a
   | FetchErrorNoResult
   deriving (Show, Eq, Generic)
 
-data Mode = Local | Global | Both deriving (Show, Eq)
+data Mode
+  = Local
+  | Global
+  | Legacy
+  deriving (Show, Eq)
 
 data Source
   = JSON ByteString
   | GQL ByteString
   deriving (Show, Eq)
+
+type ExecutableClientDocument = (ExecutableDocument, String)

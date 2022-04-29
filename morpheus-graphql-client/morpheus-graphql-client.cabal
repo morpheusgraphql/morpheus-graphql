@@ -53,6 +53,7 @@ library
       Data.Morpheus.Client
   other-modules:
       Data.Morpheus.Client.Build
+      Data.Morpheus.Client.Declare
       Data.Morpheus.Client.Declare.Aeson
       Data.Morpheus.Client.Declare.Client
       Data.Morpheus.Client.Declare.Type
@@ -60,10 +61,11 @@ library
       Data.Morpheus.Client.Internal.TH
       Data.Morpheus.Client.Internal.Types
       Data.Morpheus.Client.Internal.Utils
-      Data.Morpheus.Client.JSONSchema.Parse
-      Data.Morpheus.Client.JSONSchema.TypeKind
-      Data.Morpheus.Client.JSONSchema.TypeRef
-      Data.Morpheus.Client.JSONSchema.Types
+      Data.Morpheus.Client.Schema.JSON.Parse
+      Data.Morpheus.Client.Schema.JSON.TypeKind
+      Data.Morpheus.Client.Schema.JSON.TypeRef
+      Data.Morpheus.Client.Schema.JSON.Types
+      Data.Morpheus.Client.Schema.Parse
       Data.Morpheus.Client.Transform.Core
       Data.Morpheus.Client.Transform.Inputs
       Data.Morpheus.Client.Transform.Selection
