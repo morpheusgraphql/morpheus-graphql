@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Declare
@@ -9,9 +10,9 @@ module Data.Morpheus.Client.Declare
 where
 
 import Data.Morpheus.Client.Declare.Client
-  ( declareFetch,
-    declareTypes,
+  ( declareTypes,
   )
+import Data.Morpheus.Client.Declare.Fetch
 import Data.Morpheus.Client.Internal.Types
   ( ExecutableSource,
     Mode (Local),
@@ -25,16 +26,15 @@ import Data.Morpheus.Client.Transform
   )
 import Data.Morpheus.Core (parseRequest)
 import Data.Morpheus.Types.IO (GQLRequest (..))
-import qualified Data.Text as T
 import Language.Haskell.TH (Dec, Q, runIO)
 import Relude
 
 declareTypesLegacy :: IO SchemaSource -> Mode -> ExecutableSource -> Q [Dec]
-declareTypesLegacy schemaSrc mode querySrc = do
+declareTypesLegacy schemaSrc mode query = do
   schemaText <- runIO schemaSrc
   let request =
         GQLRequest
-          { query = querySrc,
+          { query,
             operationName = Nothing,
             variables = Nothing
           }
@@ -46,7 +46,7 @@ declareTypesLegacy schemaSrc mode querySrc = do
     )
     ( \(fetch, types) ->
         (<>)
-          <$> declareFetch (T.unpack querySrc) fetch
+          <$> declareFetch query fetch
           <*> declareTypes types
     )
 
@@ -55,12 +55,13 @@ clientTypeDeclarations src (Just doc) = declareTypesLegacy (pure src) Local doc
 clientTypeDeclarations src Nothing = do
   handleResult (parseSchema src >>= toGlobalDefinitions) declareTypes
 
-declareClientTypesInline :: Q FilePath -> Maybe Text -> Q [Dec]
-declareClientTypesInline schemaPath queryText = do
-  src <- getSource schemaPath
-  clientTypeDeclarations src queryText
+declareClientTypesInline :: Q FilePath -> Text -> Q [Dec]
+declareClientTypesInline schemaPath query = do
+  schema <- getSource schemaPath
+  clientTypeDeclarations schema (Just query)
 
 declareClientTypes :: Q FilePath -> Maybe (Q FilePath) -> Q [Dec]
 declareClientTypes schemaPath queryPath = do
-  queryText <- traverse getFile queryPath
-  declareClientTypesInline schemaPath queryText
+  schema <- getSource schemaPath
+  query <- traverse getFile queryPath
+  clientTypeDeclarations schema query

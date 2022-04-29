@@ -44,26 +44,15 @@ import Prelude
 
 declareAPITypes Nothing
 
-declareAPITypesInline $
-  Just
-    [raw|
-        query GetCities ( $inputCity: City!) {
-          city(city:$inputCity)
-          cities
-        }
-    |]
+declareAPITypesInline
+  [raw|
+    query GetCities ( $inputCity: City!) {
+      city(city:$inputCity)
+      cities
+    }
+  |]
 
-declareAPITypesInline $
-  Just
-    [raw|
-        query GetUsers1 ( $user: UserInput!) {
-          user(user:$user){
-            name
-            home
-          }
-        }
-    |]
-
+declareAPITypes (Just "LocalGlobal/users1.gql")
 declareAPITypes (Just "LocalGlobal/users2.gql")
 
 checkQuery ::

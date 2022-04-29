@@ -27,5 +27,5 @@ schema = relativePath "LocalGlobal/schema.gql"
 declareAPITypes :: Maybe FieldName -> Q [Dec]
 declareAPITypes src = declareClientTypes schema (relativePath <$> src)
 
-declareAPITypesInline :: Maybe Text -> Q [Dec]
+declareAPITypesInline :: Text -> Q [Dec]
 declareAPITypesInline = declareClientTypesInline schema

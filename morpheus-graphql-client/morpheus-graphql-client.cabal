@@ -25,6 +25,7 @@ data-files:
     test/Case/Github/schema.gql
     test/Case/Interface/schema.gql
     test/Case/LocalGlobal/schema.gql
+    test/Case/LocalGlobal/users1.gql
     test/Case/LocalGlobal/users2.gql
     test/Case/LowercaseTypeName/schema.gql
     test/Case/Scalar/schema.gql
@@ -56,6 +57,7 @@ library
       Data.Morpheus.Client.Declare
       Data.Morpheus.Client.Declare.Aeson
       Data.Morpheus.Client.Declare.Client
+      Data.Morpheus.Client.Declare.Fetch
       Data.Morpheus.Client.Declare.Type
       Data.Morpheus.Client.Fetch
       Data.Morpheus.Client.Internal.TH
