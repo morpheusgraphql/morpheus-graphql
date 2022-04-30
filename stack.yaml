@@ -1,4 +1,4 @@
-resolver: nightly-2022-02-19
+resolver: nightly-2022-03-02
 save-hackage-creds: false
 packages:
   # examples
