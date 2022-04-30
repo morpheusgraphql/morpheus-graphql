@@ -63,34 +63,29 @@ clientTypeDeclarations src Nothing = do
 
 -- | declares input, enum and scalar types for specified schema
 declareGlobalTypes ::
-  -- | the schema path relative to the  project location,
+  FilePath  -- ^ the schema path relative to the  project location,
   -- both introspection (`.json`) and
   -- schema definition (`.gql`, `.graphql`) are accepted.
-  FilePath ->
-  Q [Dec]
+  -> Q [Dec]
 declareGlobalTypes = flip declareClientTypes Nothing
 
 -- | declares object, interface and union types for
 -- specified schema and query.
 declareLocalTypes ::
-  -- | the schema path relative to the  project location.
+  FilePath -- ^ the schema path relative to the  project location.
   -- both introspection (`.json`) and
   -- schema definition (`.gql`, `.graphql`) are accepted.
-  FilePath ->
-  -- | query path relative to the  project location
-  FilePath ->
-  Q [Dec]
+  -> FilePath  -- ^ query path relative to the  project location
+  -> Q [Dec]
 declareLocalTypes schema query = declareClientTypes schema (Just query)
 
 -- | inline version of `declareLocalTypes`
 declareLocalTypesInline ::
-  -- | the schema path relative to the  project location.
+  FilePath   -- ^ the schema path relative to the  project location.
   -- both introspection (`.json`) and
   -- schema definition (`.gql`, `.graphql`) are accepted.
-  FilePath ->
-  -- | inline graphql query in Text format
-  ExecutableSource ->
-  Q [Dec]
+  -> ExecutableSource -- ^ inline graphql query in Text format
+  -> Q [Dec]
 declareLocalTypesInline schemaPath query = do
   schema <- getSource schemaPath
   clientTypeDeclarations schema (Just query)
