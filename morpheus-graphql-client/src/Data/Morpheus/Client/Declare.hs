@@ -2,9 +2,11 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Declare
-  ( declareTypesLegacy,
-    declareClientTypes,
-    declareClientTypesInline,
+  ( declareGlobalTypes,
+    declareLocalTypes,
+    declareLocalTypesInline,
+    internalLegacyDeclareTypes,
+    clientTypeDeclarations,
   )
 where
 
@@ -28,8 +30,8 @@ import Data.Morpheus.Types.IO (GQLRequest (..))
 import Language.Haskell.TH (Dec, Q, runIO)
 import Relude
 
-declareTypesLegacy :: IO SchemaSource -> Mode -> ExecutableSource -> Q [Dec]
-declareTypesLegacy schemaSrc mode query = do
+internalLegacyDeclareTypes :: IO SchemaSource -> Mode -> ExecutableSource -> Q [Dec]
+internalLegacyDeclareTypes schemaSrc mode query = do
   schemaText <- runIO schemaSrc
   let request =
         GQLRequest
@@ -50,14 +52,20 @@ declareTypesLegacy schemaSrc mode query = do
     )
 
 clientTypeDeclarations :: SchemaSource -> Maybe ExecutableSource -> Q [Dec]
-clientTypeDeclarations src (Just doc) = declareTypesLegacy (pure src) Local doc
+clientTypeDeclarations src (Just doc) = internalLegacyDeclareTypes (pure src) Local doc
 clientTypeDeclarations src Nothing = do
   handleResult (parseSchema src >>= toGlobalDefinitions) declareTypes
 
-declareClientTypesInline :: FilePath -> ExecutableSource -> Q [Dec]
-declareClientTypesInline schemaPath query = do
+declareLocalTypesInline :: FilePath -> ExecutableSource -> Q [Dec]
+declareLocalTypesInline schemaPath query = do
   schema <- getSource schemaPath
   clientTypeDeclarations schema (Just query)
+
+declareGlobalTypes :: FilePath -> Q [Dec]
+declareGlobalTypes = flip declareClientTypes Nothing
+
+declareLocalTypes :: FilePath -> FilePath -> Q [Dec]
+declareLocalTypes schema query = declareClientTypes schema (Just query)
 
 declareClientTypes :: FilePath -> Maybe FilePath -> Q [Dec]
 declareClientTypes schemaPath queryPath = do

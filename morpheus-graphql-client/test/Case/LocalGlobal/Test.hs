@@ -18,6 +18,9 @@ import Data.Eq (Eq)
 import Data.Morpheus.Client
   ( Fetch (..),
     ID,
+    declareGlobalTypes,
+    declareLocalTypes,
+    declareLocalTypesInline,
     raw,
   )
 import Data.Semigroup ((<>))
@@ -42,9 +45,10 @@ import Prelude
     (>>=),
   )
 
-declareAPITypes Nothing
+declareGlobalTypes schema
 
-declareAPITypesInline
+declareLocalTypesInline
+  schema
   [raw|
     query GetCities ( $inputCity: City!) {
       city(city:$inputCity)
@@ -52,8 +56,8 @@ declareAPITypesInline
     }
   |]
 
-declareAPITypes (Just "users1.gql")
-declareAPITypes (Just "users2.gql")
+declareLocalTypes schema (loc "users1.gql")
+declareLocalTypes schema (loc "users2.gql")
 
 checkQuery ::
   ( Fetch a,

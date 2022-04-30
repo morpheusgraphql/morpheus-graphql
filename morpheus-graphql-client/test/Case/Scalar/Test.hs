@@ -17,7 +17,7 @@ import Data.ByteString.Lazy.Char8
 import Data.Morpheus.Client
   ( Fetch (..),
     FetchError (..),
-    declareClientTypesInline,
+    declareLocalTypesInline,
     raw,
   )
 import Data.Text (Text)
@@ -41,7 +41,7 @@ import Prelude
     ($),
   )
 
-declareClientTypesInline
+declareLocalTypesInline
   (path "Scalar/schema.gql")
   [raw|
     query MyQuery(

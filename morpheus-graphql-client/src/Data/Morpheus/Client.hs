@@ -2,22 +2,25 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client
-  ( gql,
-    raw,
+  ( raw,
     Fetch (..),
     FetchError (..),
+    ScalarValue (..),
+    DecodeScalar (..),
+    EncodeScalar (..),
+    ID (..),
+    declareGlobalTypes,
+    declareLocalTypes,
+    declareLocalTypesInline,
+    clientTypeDeclarations,
+    -- DEPRECATED EXPORTS
+    gql,
     defineByDocument,
     defineByDocumentFile,
     defineByDocumentFile',
     defineByIntrospection,
     defineByIntrospectionFile,
     defineByIntrospectionFile',
-    ScalarValue (..),
-    DecodeScalar (..),
-    EncodeScalar (..),
-    ID (..),
-    declareClientTypes,
-    declareClientTypesInline,
   )
 where
 
@@ -26,9 +29,11 @@ import qualified Data.ByteString.Lazy as L
   ( readFile,
   )
 import Data.Morpheus.Client.Declare
-  ( declareClientTypes,
-    declareClientTypesInline,
-    declareTypesLegacy,
+  ( clientTypeDeclarations,
+    declareGlobalTypes,
+    declareLocalTypes,
+    declareLocalTypesInline,
+    internalLegacyDeclareTypes,
   )
 import Data.Morpheus.Client.Fetch
   ( Fetch (..),
@@ -61,13 +66,13 @@ gql = raw
 
 -- DEPRECATED: Legacy Code Exports
 
-{-# DEPRECATED defineByDocumentFile' "use declareClientTypes" #-}
+{-# DEPRECATED defineByDocumentFile' "use declareLocalTypes" #-}
 
 -- | This variant exposes 'Q FilePath' enabling the use of TH to generate the 'FilePath'. For example, https://hackage.haskell.org/package/file-embed-0.0.13.0/docs/Data-FileEmbed.html#v:makeRelativeToProject can be used to handle multi package projects more reliably.
 defineByDocumentFile' :: Q FilePath -> ExecutableSource -> Q [Dec]
 defineByDocumentFile' qFilePath args = qFilePath >>= flip defineByDocumentFile args
 
-{-# DEPRECATED defineByIntrospectionFile' "use declareClientTypes" #-}
+{-# DEPRECATED defineByIntrospectionFile' "use declareLocalTypes" #-}
 
 -- | This variant exposes 'Q FilePath' enabling the use of TH to generate the 'FilePath'. For example, https://hackage.haskell.org/package/file-embed-0.0.13.0/docs/Data-FileEmbed.html#v:makeRelativeToProject can be used to handle multi package projects more reliably.
 defineByIntrospectionFile' :: Q FilePath -> ExecutableSource -> Q [Dec]
@@ -75,13 +80,13 @@ defineByIntrospectionFile' path args = path >>= flip defineByIntrospectionFile a
 
 -- with file
 
-{-# DEPRECATED defineByIntrospectionFile "use declareClientTypes" #-}
+{-# DEPRECATED defineByIntrospectionFile "use declareLocalTypes" #-}
 defineByIntrospectionFile :: FilePath -> ExecutableSource -> Q [Dec]
 defineByIntrospectionFile filePath args = do
   qAddDependentFile filePath
   defineByIntrospection (L.readFile filePath) args
 
-{-# DEPRECATED defineByDocumentFile "use declareClientTypes" #-}
+{-# DEPRECATED defineByDocumentFile "use declareLocalTypes" #-}
 defineByDocumentFile :: FilePath -> ExecutableSource -> Q [Dec]
 defineByDocumentFile filePath args = do
   qAddDependentFile filePath
@@ -89,10 +94,10 @@ defineByDocumentFile filePath args = do
 
 -- direct
 
-{-# DEPRECATED defineByDocument "use declareClientTypesIO" #-}
+{-# DEPRECATED defineByDocument "use clientTypeDeclarations" #-}
 defineByDocument :: IO ByteString -> ExecutableSource -> Q [Dec]
-defineByDocument doc = declareTypesLegacy (GQL <$> doc) Legacy
+defineByDocument doc = internalLegacyDeclareTypes (GQL <$> doc) Legacy
 
-{-# DEPRECATED defineByIntrospection "use declareClientTypesIO" #-}
+{-# DEPRECATED defineByIntrospection "use clientTypeDeclarations" #-}
 defineByIntrospection :: IO ByteString -> ExecutableSource -> Q [Dec]
-defineByIntrospection doc = declareTypesLegacy (JSON <$> doc) Legacy
+defineByIntrospection doc = internalLegacyDeclareTypes (JSON <$> doc) Legacy

@@ -23,8 +23,8 @@ import Data.Morpheus.Client
     Fetch (..),
     FetchError (..),
     ScalarValue (..),
-    declareClientTypes,
-    declareClientTypesInline,
+    declareGlobalTypes,
+    declareLocalTypesInline,
     raw,
   )
 import Data.Text (Text)
@@ -61,9 +61,9 @@ instance DecodeScalar Uuid where
   decodeScalar (String x) = pure (Uuid x)
   decodeScalar _ = Left "not valid uid"
 
-declareClientTypes (path "LowercaseTypeName/schema.gql") Nothing
+declareGlobalTypes (path "LowercaseTypeName/schema.gql")
 
-declareClientTypesInline
+declareLocalTypesInline
   (path "LowercaseTypeName/schema.gql")
   [raw|
     query MyQuery {

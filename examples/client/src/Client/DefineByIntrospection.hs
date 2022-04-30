@@ -21,7 +21,7 @@ import Data.Morpheus.Client
     Fetch (..),
     FetchError,
     ScalarValue (..),
-    declareClientTypesInline,
+    declareLocalTypesInline,
     raw,
   )
 import Data.Semigroup ((<>))
@@ -52,7 +52,7 @@ instance EncodeScalar Euro where
 instance DecodeScalar Euro where
   decodeScalar _ = pure (Euro 1 0)
 
-declareClientTypesInline
+declareLocalTypesInline
   "assets/introspection.json"
   [raw|
     # Query Hero with Compile time Validation

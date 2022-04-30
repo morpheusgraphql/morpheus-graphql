@@ -22,8 +22,8 @@ import Data.Morpheus.Client
     FetchError,
     ID (..),
     ScalarValue (..),
-    declareClientTypes,
-    declareClientTypesInline,
+    declareGlobalTypes,
+    declareLocalTypesInline,
     raw,
   )
 import Data.Text (Text)
@@ -48,9 +48,9 @@ instance EncodeScalar Power where
 instance DecodeScalar Power where
   decodeScalar _ = pure (Power 1)
 
-declareClientTypes "assets/mythology.gql" Nothing
+declareGlobalTypes "assets/mythology.gql"
 
-declareClientTypesInline
+declareLocalTypesInline
   "assets/mythology.gql"
   [raw|
     # Query Hero with Compile time Validatio!

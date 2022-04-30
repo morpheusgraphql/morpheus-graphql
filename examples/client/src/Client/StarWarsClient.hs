@@ -15,7 +15,7 @@ import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Morpheus.Client
   ( Fetch (..),
     FetchError,
-    declareClientTypesInline,
+    declareLocalTypesInline,
     raw,
   )
 import Data.Text (Text)
@@ -31,7 +31,7 @@ import Network.HTTP.Req
     runReq,
   )
 
-declareClientTypesInline
+declareLocalTypesInline
   "assets/starwars.graphql"
   [raw|
     query StarWarsFilms {
