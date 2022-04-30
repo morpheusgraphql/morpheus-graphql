@@ -1,0 +1,23 @@
+enum City {
+  Athens
+  Sparta
+  Corinth
+  delphi
+  Argos
+  Ithaca
+}
+
+input UserInput {
+  name: ID!
+}
+
+type User {
+  name: String!
+  home: City
+}
+
+type Query {
+  user(user: UserInput): User
+  city(city: City!): City!
+  cities: [City!]!
+}

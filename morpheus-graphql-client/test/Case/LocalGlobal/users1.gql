@@ -1,0 +1,6 @@
+query GetUsers1($user: UserInput!) {
+  user(user: $user) {
+    name
+    home
+  }
+}

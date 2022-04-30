@@ -17,12 +17,13 @@ import Data.ByteString.Lazy.Char8
 import Data.Morpheus.Client
   ( Fetch (..),
     FetchError (..),
-    gql,
+    declareLocalTypesInline,
+    raw,
   )
 import Data.Text (Text)
 import Spec.Utils
-  ( defineClientWith,
-    mockApi,
+  ( mockApi,
+    path,
   )
 import Test.Tasty
   ( TestTree,
@@ -32,18 +33,17 @@ import Test.Tasty.HUnit
     testCase,
   )
 import Prelude
-  ( ($),
-    Bool (True),
+  ( Bool (True),
     Double,
     Either (..),
     IO,
     Int,
-    String,
+    ($),
   )
 
-defineClientWith
-  "Scalar"
-  [gql|
+declareLocalTypesInline
+  (path "Scalar/schema.gql")
+  [raw|
     query MyQuery(
       $inputBoolean: Boolean!
       $inputInt: Int!

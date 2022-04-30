@@ -2,20 +2,25 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client
-  ( gql,
+  ( raw,
     Fetch (..),
-    FetchError(..),
-    defineQuery,
+    FetchError (..),
+    ScalarValue (..),
+    DecodeScalar (..),
+    EncodeScalar (..),
+    ID (..),
+    declareGlobalTypes,
+    declareLocalTypes,
+    declareLocalTypesInline,
+    clientTypeDeclarations,
+    -- DEPRECATED EXPORTS
+    gql,
     defineByDocument,
     defineByDocumentFile,
     defineByDocumentFile',
     defineByIntrospection,
     defineByIntrospectionFile,
     defineByIntrospectionFile',
-    ScalarValue (..),
-    DecodeScalar (..),
-    EncodeScalar (..),
-    ID (..),
   )
 where
 
@@ -23,65 +28,76 @@ import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as L
   ( readFile,
   )
-import Data.Morpheus.Client.Build
-  ( defineQuery,
+import Data.Morpheus.Client.Declare
+  ( clientTypeDeclarations,
+    declareGlobalTypes,
+    declareLocalTypes,
+    declareLocalTypesInline,
+    internalLegacyDeclareTypes,
   )
 import Data.Morpheus.Client.Fetch
   ( Fetch (..),
   )
-import Data.Morpheus.Client.JSONSchema.Parse
-  ( decodeIntrospection,
-  )
 import Data.Morpheus.Client.Internal.Types
-  ( FetchError(..),
+  ( ExecutableSource,
+    FetchError (..),
+    Mode (..),
+    SchemaSource (..),
   )
-import Data.Morpheus.Core
-  ( parseFullSchema,
-  )
-import Data.Morpheus.Internal.Ext
-  ( GQLResult,
-  )
-import Data.Morpheus.QuasiQuoter (gql)
+import Data.Morpheus.Client.QuasiQuoter (raw)
 import Data.Morpheus.Types.GQLScalar
   ( DecodeScalar (..),
     EncodeScalar (..),
   )
 import Data.Morpheus.Types.ID (ID (..))
 import Data.Morpheus.Types.Internal.AST
-  ( ExecutableDocument,
-    ScalarValue (..),
-    Schema,
-    VALID,
+  ( ScalarValue (..),
   )
 import Language.Haskell.TH
+import Language.Haskell.TH.Quote (QuasiQuoter)
 import Language.Haskell.TH.Syntax
   ( qAddDependentFile,
   )
 import Relude hiding (ByteString)
 
-defineByDocumentFile :: FilePath -> (ExecutableDocument, String) -> Q [Dec]
-defineByDocumentFile filePath args = do
-  qAddDependentFile filePath
-  defineByDocument (L.readFile filePath) args
+{-# DEPRECATED gql "use raw" #-}
+gql :: QuasiQuoter
+gql = raw
+
+-- DEPRECATED: Legacy Code Exports
+
+{-# DEPRECATED defineByDocumentFile' "use declareLocalTypes" #-}
 
 -- | This variant exposes 'Q FilePath' enabling the use of TH to generate the 'FilePath'. For example, https://hackage.haskell.org/package/file-embed-0.0.13.0/docs/Data-FileEmbed.html#v:makeRelativeToProject can be used to handle multi package projects more reliably.
-defineByDocumentFile' :: Q FilePath -> (ExecutableDocument, String) -> Q [Dec]
+defineByDocumentFile' :: Q FilePath -> ExecutableSource -> Q [Dec]
 defineByDocumentFile' qFilePath args = qFilePath >>= flip defineByDocumentFile args
 
-defineByIntrospectionFile :: FilePath -> (ExecutableDocument, String) -> Q [Dec]
+{-# DEPRECATED defineByIntrospectionFile' "use declareLocalTypes" #-}
+
+-- | This variant exposes 'Q FilePath' enabling the use of TH to generate the 'FilePath'. For example, https://hackage.haskell.org/package/file-embed-0.0.13.0/docs/Data-FileEmbed.html#v:makeRelativeToProject can be used to handle multi package projects more reliably.
+defineByIntrospectionFile' :: Q FilePath -> ExecutableSource -> Q [Dec]
+defineByIntrospectionFile' path args = path >>= flip defineByIntrospectionFile args
+
+-- with file
+
+{-# DEPRECATED defineByIntrospectionFile "use declareLocalTypes" #-}
+defineByIntrospectionFile :: FilePath -> ExecutableSource -> Q [Dec]
 defineByIntrospectionFile filePath args = do
   qAddDependentFile filePath
   defineByIntrospection (L.readFile filePath) args
 
--- | This variant exposes 'Q FilePath' enabling the use of TH to generate the 'FilePath'. For example, https://hackage.haskell.org/package/file-embed-0.0.13.0/docs/Data-FileEmbed.html#v:makeRelativeToProject can be used to handle multi package projects more reliably.
-defineByIntrospectionFile' :: Q FilePath -> (ExecutableDocument, String) -> Q [Dec]
-defineByIntrospectionFile' qFilePath args = qFilePath >>= flip defineByIntrospectionFile args
+{-# DEPRECATED defineByDocumentFile "use declareLocalTypes" #-}
+defineByDocumentFile :: FilePath -> ExecutableSource -> Q [Dec]
+defineByDocumentFile filePath args = do
+  qAddDependentFile filePath
+  defineByDocument (L.readFile filePath) args
 
-defineByDocument :: IO ByteString -> (ExecutableDocument, String) -> Q [Dec]
-defineByDocument doc = defineQuery (schemaByDocument doc)
+-- direct
 
-schemaByDocument :: IO ByteString -> IO (GQLResult (Schema VALID))
-schemaByDocument = fmap parseFullSchema
+{-# DEPRECATED defineByDocument "use clientTypeDeclarations" #-}
+defineByDocument :: IO ByteString -> ExecutableSource -> Q [Dec]
+defineByDocument doc = internalLegacyDeclareTypes (GQL <$> doc) Legacy
 
-defineByIntrospection :: IO ByteString -> (ExecutableDocument, String) -> Q [Dec]
-defineByIntrospection json = defineQuery (decodeIntrospection <$> json)
+{-# DEPRECATED defineByIntrospection "use clientTypeDeclarations" #-}
+defineByIntrospection :: IO ByteString -> ExecutableSource -> Q [Dec]
+defineByIntrospection doc = internalLegacyDeclareTypes (JSON <$> doc) Legacy

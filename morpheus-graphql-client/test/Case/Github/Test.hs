@@ -23,6 +23,7 @@ import Data.Morpheus.Client
     FetchError,
     ScalarValue (..),
     gql,
+    raw,
   )
 import Data.Text (Text)
 import Spec.Utils
@@ -37,15 +38,14 @@ import Test.Tasty.HUnit
     testCase,
   )
 import Prelude
-  ( ($),
-    Applicative (..),
+  ( Applicative (..),
     Bool (..),
     Either (..),
     Eq (..),
     IO,
     Maybe (..),
     Show,
-    String,
+    ($),
   )
 
 newtype GitTimestamp = GitTimestamp
@@ -62,7 +62,7 @@ instance EncodeScalar GitTimestamp where
 
 defineClientWith
   "Github"
-  [gql|
+  [raw|
     query GetTags ($user: String!, $repo: String!)
       {
         repository(owner: $user, name: $repo) {

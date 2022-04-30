@@ -23,3 +23,6 @@ samples:
 
 build-th:
 	stack install --ghc-options -ddump-splices
+
+doc:
+	stack build --haddock --no-haddock-deps

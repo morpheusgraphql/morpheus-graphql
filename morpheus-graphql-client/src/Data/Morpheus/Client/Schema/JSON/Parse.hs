@@ -6,7 +6,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Client.JSONSchema.Parse
+module Data.Morpheus.Client.Schema.JSON.Parse
   ( decodeIntrospection,
   )
 where
@@ -14,9 +14,9 @@ where
 import Control.Monad.Except (MonadError (throwError))
 import Data.Aeson
 import Data.ByteString.Lazy (ByteString)
-import Data.Morpheus.Client.JSONSchema.TypeKind (TypeKind (..))
-import qualified Data.Morpheus.Client.JSONSchema.TypeRef as Ref
-import Data.Morpheus.Client.JSONSchema.Types
+import Data.Morpheus.Client.Schema.JSON.TypeKind (TypeKind (..))
+import qualified Data.Morpheus.Client.Schema.JSON.TypeRef as Ref
+import Data.Morpheus.Client.Schema.JSON.Types
   ( EnumValue (..),
     Field (..),
     InputValue (..),

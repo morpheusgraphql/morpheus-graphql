@@ -21,14 +21,16 @@ import Data.Morpheus.Client
   ( DecodeScalar (..),
     EncodeScalar (..),
     Fetch (..),
-    FetchError(..),
+    FetchError (..),
     ScalarValue (..),
-    gql,
+    declareGlobalTypes,
+    declareLocalTypesInline,
+    raw,
   )
 import Data.Text (Text)
 import Spec.Utils
-  ( defineClientWith,
-    mockApi,
+  ( mockApi,
+    path,
   )
 import Test.Tasty
   ( TestTree,
@@ -38,13 +40,13 @@ import Test.Tasty.HUnit
     testCase,
   )
 import Prelude
-  ( ($),
-    (.),
-    Either (..),
+  ( Either (..),
     Eq,
     IO,
+    Maybe (Nothing),
     Show,
-    String,
+    ($),
+    (.),
   )
 
 newtype Uuid = Uuid
@@ -59,9 +61,11 @@ instance DecodeScalar Uuid where
   decodeScalar (String x) = pure (Uuid x)
   decodeScalar _ = Left "not valid uid"
 
-defineClientWith
-  "LowercaseTypeName"
-  [gql|
+declareGlobalTypes (path "LowercaseTypeName/schema.gql")
+
+declareLocalTypesInline
+  (path "LowercaseTypeName/schema.gql")
+  [raw|
     query MyQuery {
       user(id: "11343135") {
         id
@@ -83,7 +87,7 @@ testLowercaseTypeName = testCase "test lowercase type names" $ do
     ( Right
         ( MyQuery
             { user =
-                UserUser
+                MyQueryUserUser
                   { id = Uuid "11343135"
                   }
             }

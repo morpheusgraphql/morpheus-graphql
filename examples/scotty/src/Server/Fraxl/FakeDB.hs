@@ -17,16 +17,15 @@ where
 
 import Data.Foldable (fold)
 import Data.Functor.Identity (Identity (..), runIdentity)
-import qualified Data.Map as M
 import Data.Map (Map)
+import qualified Data.Map as M
 import Data.Set (Set, toList)
 import Data.Text (Text)
 
-data Band
-  = Band
-      { name :: Text,
-        id :: Int
-      }
+data Band = Band
+  { name :: Text,
+    id :: Int
+  }
 
 bandDB :: [Band]
 bandDB =
@@ -34,12 +33,11 @@ bandDB =
     Band "The Misfits" 1
   ]
 
-data Member
-  = Member
-      { name :: Text,
-        instrumentID :: Int,
-        bandID :: Int
-      }
+data Member = Member
+  { name :: Text,
+    instrumentID :: Int,
+    bandID :: Int
+  }
 
 memberDB :: [Member]
 memberDB =
@@ -54,11 +52,10 @@ memberDB =
     Member "Jim" 4 1
   ]
 
-data Instrument
-  = Instrument
-      { name :: Text,
-        id :: Int
-      }
+data Instrument = Instrument
+  { name :: Text,
+    id :: Int
+  }
 
 instrumentDB :: [Instrument]
 instrumentDB =
@@ -78,10 +75,16 @@ getInstruments :: Query [Instrument]
 getInstruments = pure instrumentDB
 
 lookupOneToMany :: (Ord b) => (a -> b) -> [a] -> Set b -> Map b [a]
-lookupOneToMany x ys xs = fold ((\x' -> M.singleton x' (filter (\y -> x y == x') ys)) <$> toList xs)
+lookupOneToMany x ys xs =
+  foldMap
+    (\x' -> M.singleton x' (filter (\y -> x y == x') ys))
+    (toList xs)
 
 lookupOneToOne :: (Ord b) => (a -> b) -> [a] -> Set b -> Map b a
-lookupOneToOne x ys xs = fold ((\y -> M.singleton (x y) y) <$> filter (\y -> x y `elem` xs) ys)
+lookupOneToOne x ys xs =
+  foldMap
+    (\y -> M.singleton (x y) y)
+    (filter (\y -> x y `elem` xs) ys)
 
 getBandMembersByInstrumentID :: Set Int -> Query (Map Int [Member])
 getBandMembersByInstrumentID = pure . lookupOneToMany instrumentID memberDB

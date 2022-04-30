@@ -1,11 +1,10 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Declare.Client
-  ( declareClient,
+  ( declareTypes,
   )
 where
 
@@ -15,48 +14,17 @@ import Data.Morpheus.Client.Declare.Aeson
 import Data.Morpheus.Client.Declare.Type
   ( typeDeclarations,
   )
-import Data.Morpheus.Client.Fetch
-  ( deriveFetch,
-  )
 import Data.Morpheus.Client.Internal.Types
-  ( ClientDefinition (..),
-    ClientTypeDefinition (..),
-    TypeNameTH (..),
+  ( ClientTypeDefinition (..),
   )
-import Data.Morpheus.CodeGen.Internal.TH (toCon)
 import Language.Haskell.TH
 import Relude hiding (Type)
 
-declareClient :: String -> ClientDefinition -> Q [Dec]
-declareClient _ ClientDefinition {clientTypes = []} = pure []
-declareClient src ClientDefinition {clientArguments, clientTypes = rootType : subTypes} =
-  (<>)
-    <$> defineOperationType
-      (queryArgumentType clientArguments)
-      src
-      rootType
-    <*> (concat <$> traverse declareType subTypes)
+declareTypes :: [ClientTypeDefinition] -> Q [Dec]
+declareTypes subTypes = concat <$> traverse declareType subTypes
 
 declareType :: ClientTypeDefinition -> Q [Dec]
-declareType clientType@ClientTypeDefinition{clientKind} = do
-    types <- typeDeclarations clientKind clientType
-    instances <- aesonDeclarations clientKind clientType
-    pure (types <> instances)
-
-queryArgumentType :: Maybe ClientTypeDefinition -> (Type, Q [Dec])
-queryArgumentType Nothing = (toCon ("()" :: String), pure [])
-queryArgumentType (Just client@ClientTypeDefinition {clientTypeName}) =
-  (toCon (typename clientTypeName), declareType client)
-
-defineOperationType :: (Type, Q [Dec]) -> String -> ClientTypeDefinition -> Q [Dec]
-defineOperationType
-  (argType, argumentTypes)
-  query
-  clientType@ClientTypeDefinition
-    { clientTypeName = TypeNameTH {typename}
-    } =
-    do
-      rootType <- declareType clientType
-      typeClassFetch <- deriveFetch argType typename query
-      argsT <- argumentTypes
-      pure $ rootType <> typeClassFetch <> argsT
+declareType clientType@ClientTypeDefinition {clientKind} = do
+  types <- typeDeclarations clientKind clientType
+  instances <- aesonDeclarations clientKind clientType
+  pure (types <> instances)

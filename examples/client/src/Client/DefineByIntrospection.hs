@@ -15,15 +15,14 @@ module Client.DefineByIntrospection
 where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.FileEmbed (makeRelativeToProject)
 import Data.Morpheus.Client
   ( DecodeScalar (..),
     EncodeScalar (..),
     Fetch (..),
     FetchError,
     ScalarValue (..),
-    defineByIntrospectionFile',
-    gql,
+    declareLocalTypesInline,
+    raw,
   )
 import Data.Semigroup ((<>))
 import Data.Text (Text)
@@ -53,10 +52,9 @@ instance EncodeScalar Euro where
 instance DecodeScalar Euro where
   decodeScalar _ = pure (Euro 1 0)
 
-defineByIntrospectionFile'
-  (makeRelativeToProject "assets/introspection.json")
-  [gql|
-
+declareLocalTypesInline
+  "assets/introspection.json"
+  [raw|
     # Query Hero with Compile time Validation
     query GetUser ($coordinates: Coordinates!)
       {

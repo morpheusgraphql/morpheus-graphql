@@ -6,63 +6,47 @@ module Spec.Utils
   ( mockApi,
     defineClientWith,
     defineClientWithJSON,
+    getFile,
+    path,
   )
 where
 
 import qualified Data.ByteString.Lazy as L (readFile)
 import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.Functor ((<$>))
+import Data.FileEmbed (makeRelativeToProject)
 import Data.Morpheus.Client
   ( defineByDocumentFile,
     defineByIntrospectionFile,
   )
-import Data.Morpheus.Types.Internal.AST
-  ( ExecutableDocument,
-    FieldName,
-    unpackName,
-  )
 import Data.Semigroup ((<>))
-import qualified Data.Text as T
+import Data.Text
 import Language.Haskell.TH
   ( Dec,
     Q,
-    runIO,
   )
-import System.Directory (doesFileExist)
 import Prelude
-  ( Bool (..),
-    FilePath,
+  ( FilePath,
     IO,
-    String,
   )
 
-path :: FieldName -> FilePath
-path name = "test/Case/" <> T.unpack (unpackName name)
+path :: FilePath -> FilePath
+path name = "test/Case/" <> name
 
-withProject :: FilePath -> FilePath
-withProject = ("morpheus-graphql-client/" <>)
+getFile :: FilePath -> IO ByteString
+getFile p = L.readFile (path p)
 
-mockApi :: FieldName -> ByteString -> IO ByteString
-mockApi p _ = L.readFile (path p <> "/response.json")
+mockApi :: FilePath -> ByteString -> IO ByteString
+mockApi p _ = getFile (p <> "/response.json")
 
-fixFilePath :: FilePath -> Q FilePath
-fixFilePath x = prefix <$> runIO (doesFileExist x)
-  where
-    prefix True = x
-    prefix False = withProject x
+relativePath :: FilePath -> Q FilePath
+relativePath url = makeRelativeToProject (path url)
 
-defineClientWith ::
-  FieldName ->
-  (ExecutableDocument, String) ->
-  Q [Dec]
+defineClientWith :: FilePath -> Text -> Q [Dec]
 defineClientWith url exp = do
-  p <- fixFilePath (path url <> "/schema.gql")
+  p <- relativePath (url <> "/schema.gql")
   defineByDocumentFile p exp
 
-defineClientWithJSON ::
-  FieldName ->
-  (ExecutableDocument, String) ->
-  Q [Dec]
+defineClientWithJSON :: FilePath -> Text -> Q [Dec]
 defineClientWithJSON url exp = do
-  p <- fixFilePath (path url <> "/schema.json")
+  p <- relativePath (url <> "/schema.json")
   defineByIntrospectionFile p exp
