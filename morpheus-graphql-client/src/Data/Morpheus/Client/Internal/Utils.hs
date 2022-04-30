@@ -52,7 +52,7 @@ getSource :: FilePath -> Q SchemaSource
 getSource p
   | ".json" `isSuffixOf` p = JSON <$> readWith L.readFile p
   | ".gql" `isSuffixOf` p || ".graphql" `isSuffixOf` p = GQL <$> readWith L.readFile p
-  | otherwise = fail "unsupported file format!"
+  | otherwise = fail "Unsupported file format! The input should have one of the following extensions: json, gql, graphql"
 
 getFile :: FilePath -> Q Text
 getFile = readWith TIO.readFile

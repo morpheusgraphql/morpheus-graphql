@@ -20,6 +20,7 @@ dependencies:
   - aeson                      >=  1.4.4   &&  <  3.0.0
   - base                       >=  4.7.0   &&  <  5.0.0
   - bytestring                 >=  0.10.4  &&  <  0.12.0
+  - file-embed                 >=  0.0.10  &&  <  1.0.0
   - morpheus-graphql-code-gen  >=  0.19.0  &&  <  0.20.0
   - morpheus-graphql-core      >=  0.19.0  &&  <  0.20.0
   - mtl                        >=  2.0.0   &&  <  3.0.0
@@ -28,22 +29,20 @@ dependencies:
   - template-haskell           >=  2.0.0   &&  <  3.0.0
   - transformers               >=  0.3.0   &&  <  0.6.0
   - unordered-containers       >=  0.2.8   &&  <  0.3.0
-  - file-embed
-
 library:
   source-dirs: src
   exposed-modules:
     - Data.Morpheus.Client
-  ghc-options: "-Wall"
+  ghc-options: '-Wall'
 tests:
   morpheus-graphql-client-test:
     main: Spec.hs
     source-dirs: test
-    ghc-options: "-Wall"
+    ghc-options: '-Wall'
     dependencies:
-      - aeson                    >=  1.4.4  &&  <  3.0.0
-      - directory                >=  1.0.0  &&  <  2.0.0
+      - aeson                    >=  1.4.4   &&  <  3.0.0
+      - directory                >=  1.0.0   &&  <  2.0.0
+      - file-embed               >=  0.0.10  &&  <  1.0.0
       - morpheus-graphql-client
-      - tasty                    >=  0.1.0  &&  <  1.5.0
-      - tasty-hunit              >=  0.1.0  &&  <  1.0.0
-      - file-embed
+      - tasty                    >=  0.1.0   &&  <  1.5.0
+      - tasty-hunit              >=  0.1.0   &&  <  1.0.0

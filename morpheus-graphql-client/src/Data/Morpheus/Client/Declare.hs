@@ -51,21 +51,49 @@ internalLegacyDeclareTypes schemaSrc mode query = do
           <*> declareTypes types
     )
 
-clientTypeDeclarations :: SchemaSource -> Maybe ExecutableSource -> Q [Dec]
+-- | declares global or local types, depending
+-- on whether the second argument is specified or not
+clientTypeDeclarations ::
+  SchemaSource ->
+  Maybe ExecutableSource ->
+  Q [Dec]
 clientTypeDeclarations src (Just doc) = internalLegacyDeclareTypes (pure src) Local doc
 clientTypeDeclarations src Nothing = do
   handleResult (parseSchema src >>= toGlobalDefinitions) declareTypes
 
-declareLocalTypesInline :: FilePath -> ExecutableSource -> Q [Dec]
+-- | declares input, enum and scalar types for specified schema
+declareGlobalTypes ::
+  -- | the schema path relative to the  project location,
+  -- both introspection (`.json`) and
+  -- schema definition (`.gql`, `.graphql`) are accepted.
+  FilePath ->
+  Q [Dec]
+declareGlobalTypes = flip declareClientTypes Nothing
+
+-- | declares object, interface and union types for
+-- specified schema and query.
+declareLocalTypes ::
+  -- | the schema path relative to the  project location.
+  -- both introspection (`.json`) and
+  -- schema definition (`.gql`, `.graphql`) are accepted.
+  FilePath ->
+  -- | query path relative to the  project location
+  FilePath ->
+  Q [Dec]
+declareLocalTypes schema query = declareClientTypes schema (Just query)
+
+-- | inline version of `declareLocalTypes`
+declareLocalTypesInline ::
+  -- | the schema path relative to the  project location.
+  -- both introspection (`.json`) and
+  -- schema definition (`.gql`, `.graphql`) are accepted.
+  FilePath ->
+  -- | inline graphql query in Text format
+  ExecutableSource ->
+  Q [Dec]
 declareLocalTypesInline schemaPath query = do
   schema <- getSource schemaPath
   clientTypeDeclarations schema (Just query)
-
-declareGlobalTypes :: FilePath -> Q [Dec]
-declareGlobalTypes = flip declareClientTypes Nothing
-
-declareLocalTypes :: FilePath -> FilePath -> Q [Dec]
-declareLocalTypes schema query = declareClientTypes schema (Just query)
 
 declareClientTypes :: FilePath -> Maybe FilePath -> Q [Dec]
 declareClientTypes schemaPath queryPath = do
