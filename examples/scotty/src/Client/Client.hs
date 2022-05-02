@@ -86,7 +86,7 @@ fetchUser = flip fetch args
     args =
       GetUserArgs
         { coordinates =
-            GetUserCoordinates
+            Coordinates
               { longitude = [],
                 latitude = Euro 1 2
               }

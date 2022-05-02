@@ -44,7 +44,9 @@ plan:
       - fraxl-0.3.0.0
       - haxl-2.3.0.0
       - type-aligned-0.9.6
-    optional:
+    skip:
+      - examples/scotty
+    include:
       - morpheus-graphql-benchmarks
     resolver: nightly-2022-03-02
 rules:

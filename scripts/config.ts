@@ -28,12 +28,12 @@ const setup = async (version: string) => {
 
   const extraDeps = matchingVersions.flatMap((v) => plan[v].deps ?? []);
 
-  const { optional = [], ignore = [] } = current;
+  const { include = [], skip = [] } = current;
 
   writeYAML("stack.yaml", {
     resolver: current.resolver,
     "save-hackage-creds": false,
-    packages: difference([...examples, ...optional, ...packages], ignore),
+    packages: difference([...examples, ...include, ...packages], skip),
     "extra-deps": extraDeps,
   });
 };

@@ -9,8 +9,8 @@ export type PackageName = string;
 export type StackPlan = {
   deps?: string[];
   resolver: string;
-  optional?: string[];
-  ignore?: string[];
+  include?: string[];
+  skip?: string[];
 };
 
 export type Config = {
