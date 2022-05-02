@@ -10,6 +10,7 @@ module Data.Morpheus.Client
     EncodeScalar (..),
     ID (..),
     declareGlobalTypes,
+    declareGlobalTypesByName,
     declareLocalTypes,
     declareLocalTypesInline,
     clientTypeDeclarations,
@@ -31,10 +32,11 @@ import qualified Data.ByteString.Lazy as L
 import Data.Morpheus.Client.Declare
   ( clientTypeDeclarations,
     declareGlobalTypes,
+    declareGlobalTypesByName,
     declareLocalTypes,
     declareLocalTypesInline,
     internalLegacyDeclareTypes,
-    raw
+    raw,
   )
 import Data.Morpheus.Client.Fetch
   ( Fetch (..),

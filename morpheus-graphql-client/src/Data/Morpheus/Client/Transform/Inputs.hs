@@ -57,13 +57,15 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Relude hiding (empty)
 
-toGlobalDefinitions :: Schema VALID -> GQLResult [ClientTypeDefinition]
-toGlobalDefinitions schema@Schema {types} =
+toGlobalDefinitions :: (TypeName -> Bool) -> Schema VALID -> GQLResult [ClientTypeDefinition]
+toGlobalDefinitions f schema@Schema {types} =
   flip runReaderT (schema, empty) $
     runConverter
       ( catMaybes
-          <$> traverse generateGlobalType (filter (withMode Global) (toList types))
+          <$> traverse generateGlobalType (filter shouldInclude (toList types))
       )
+  where
+    shouldInclude t = withMode Global t && f (typeName t)
 
 renderArguments ::
   VariableDefinitions RAW ->

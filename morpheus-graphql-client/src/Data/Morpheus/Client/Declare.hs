@@ -3,15 +3,14 @@
 
 module Data.Morpheus.Client.Declare
   ( declareGlobalTypes,
+    declareGlobalTypesByName,
     declareLocalTypes,
     declareLocalTypesInline,
     internalLegacyDeclareTypes,
     clientTypeDeclarations,
-    raw
+    raw,
   )
 where
-
-import Data.Morpheus.Client.QuasiQuoter (raw)
 
 import Data.Morpheus.Client.Declare.Client
   ( declareTypes,
@@ -23,13 +22,16 @@ import Data.Morpheus.Client.Internal.Types
     SchemaSource,
   )
 import Data.Morpheus.Client.Internal.Utils (getFile, getSource, handleResult)
+import Data.Morpheus.Client.QuasiQuoter (raw)
 import Data.Morpheus.Client.Schema.Parse (parseSchema)
 import Data.Morpheus.Client.Transform
   ( toGlobalDefinitions,
     toLocalDefinitions,
   )
+import Data.Morpheus.CodeGen.Internal.AST
 import Data.Morpheus.Core (parseRequest)
 import Data.Morpheus.Types.IO (GQLRequest (..))
+import Data.Set
 import Language.Haskell.TH (Dec, Q, runIO)
 import Relude
 
@@ -54,6 +56,9 @@ internalLegacyDeclareTypes schemaSrc mode query = do
           <*> declareTypes types
     )
 
+globalTypeDeclarations :: SchemaSource -> (TypeName -> Bool) -> Q [Dec]
+globalTypeDeclarations src f = handleResult (parseSchema src >>= toGlobalDefinitions f) declareTypes
+
 -- | declares global or local types, depending
 -- on whether the second argument is specified or not
 clientTypeDeclarations ::
@@ -61,8 +66,7 @@ clientTypeDeclarations ::
   Maybe ExecutableSource ->
   Q [Dec]
 clientTypeDeclarations src (Just doc) = internalLegacyDeclareTypes (pure src) Local doc
-clientTypeDeclarations src Nothing = do
-  handleResult (parseSchema src >>= toGlobalDefinitions) declareTypes
+clientTypeDeclarations src Nothing = globalTypeDeclarations src (const True)
 
 -- | declares input, enum and scalar types for specified schema
 --
@@ -77,13 +81,20 @@ clientTypeDeclarations src Nothing = do
 -- @
 -- 'declareGlobalTypes' "schema.json"
 -- @
--- 
 declareGlobalTypes ::
-  FilePath  -- ^ the schema path relative to the  project location,
+  -- | the schema path relative to the  project location,
   -- both introspection (.json) and
   -- schema definition (.gql, .graphql) are accepted.
-  -> Q [Dec]
+  FilePath ->
+  Q [Dec]
 declareGlobalTypes = flip declareClientTypes Nothing
+
+-- declares global types like 'declareGlobalTypes',
+-- while enabling to select only the types that are needed.
+declareGlobalTypesByName :: FilePath -> Set TypeName -> Q [Dec]
+declareGlobalTypesByName path names = do
+  schema <- getSource path
+  globalTypeDeclarations schema (`member` names)
 
 -- | declares object, interface and union types for
 -- specified schema and query.
@@ -99,22 +110,23 @@ declareGlobalTypes = flip declareClientTypes Nothing
 -- @
 -- 'declareLocalTypes' "schema.json" "query.gql"
 -- @
--- 
 declareLocalTypes ::
-  FilePath -- ^ the schema path relative to the  project location.
+  -- | the schema path relative to the  project location.
   -- both introspection (`.json`) and
   -- schema definition (`.gql`, `.graphql`) are accepted.
-  -> FilePath  -- ^ query path relative to the  project location
-  -> Q [Dec]
+  FilePath ->
+  -- | query path relative to the  project location
+  FilePath ->
+  Q [Dec]
 declareLocalTypes schema query = declareClientTypes schema (Just query)
 
 -- | inline version of `declareLocalTypes`, however
--- instead of specifying the file path, you can simply 
+-- instead of specifying the file path, you can simply
 -- pass the query as text using QuasiQuoter `raw`
 --
 -- @
--- `declareLocalTypesInline` "schema.gql" 
---     [`raw`| 
+-- `declareLocalTypesInline` "schema.gql"
+--     [`raw`|
 --        query GetUsers {
 --           users {
 --             name
@@ -122,13 +134,14 @@ declareLocalTypes schema query = declareClientTypes schema (Just query)
 --        }
 --     ]
 --  @
---
 declareLocalTypesInline ::
-  FilePath   -- ^ the schema path relative to the  project location.
+  -- | the schema path relative to the  project location.
   -- both introspection (`.json`) and
   -- schema definition (`.gql`, `.graphql`) are accepted.
-  -> ExecutableSource -- ^ inline graphql query in Text format
-  -> Q [Dec]
+  FilePath ->
+  -- | inline graphql query in Text format
+  ExecutableSource ->
+  Q [Dec]
 declareLocalTypesInline schemaPath query = do
   schema <- getSource schemaPath
   clientTypeDeclarations schema (Just query)
