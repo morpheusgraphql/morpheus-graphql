@@ -6,7 +6,7 @@ module Data.Morpheus.Client.Declare
     declareGlobalTypesByName,
     declareLocalTypes,
     declareLocalTypesInline,
-    internalLegacyDeclareTypes,
+    internalLegacyLocalDeclareTypes,
     clientTypeDeclarations,
     raw,
   )
@@ -36,8 +36,8 @@ import qualified Data.Set as S
 import Language.Haskell.TH (Dec, Q, runIO)
 import Relude
 
-internalLegacyDeclareTypes :: IO SchemaSource -> Mode -> ExecutableSource -> Q [Dec]
-internalLegacyDeclareTypes schemaSrc mode query = do
+internalLegacyLocalDeclareTypes :: IO SchemaSource -> ExecutableSource -> Q [Dec]
+internalLegacyLocalDeclareTypes schemaSrc query = do
   schemaText <- runIO schemaSrc
   let request =
         GQLRequest
@@ -49,7 +49,7 @@ internalLegacyDeclareTypes schemaSrc mode query = do
     ( do
         schemaDoc <- parseSchema schemaText
         executableDoc <- parseRequest request
-        toLocalDefinitions mode executableDoc schemaDoc
+        toLocalDefinitions Local executableDoc schemaDoc
     )
     ( \(fetch, types) ->
         (<>)
@@ -66,7 +66,7 @@ clientTypeDeclarations ::
   SchemaSource ->
   Maybe ExecutableSource ->
   Q [Dec]
-clientTypeDeclarations src (Just doc) = internalLegacyDeclareTypes (pure src) Local doc
+clientTypeDeclarations src (Just doc) = internalLegacyLocalDeclareTypes (pure src) doc
 clientTypeDeclarations src Nothing = globalTypeDeclarations src (const True)
 
 -- | declares input, enum and scalar types for specified schema

@@ -46,7 +46,6 @@ isEnum = all (null . cFields)
 withMode :: Mode -> TypeDefinition k s -> Bool
 withMode Global t = not (isResolverType t) && isNotSystemTypeName (typeName t)
 withMode Local t = isResolverType t
-withMode Legacy _ = True
 
 getSource :: FilePath -> Q SchemaSource
 getSource p

@@ -59,7 +59,6 @@ data FetchError a
 data Mode
   = Local
   | Global
-  | Legacy
   deriving (Show, Eq)
 
 data SchemaSource

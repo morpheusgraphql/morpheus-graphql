@@ -12,7 +12,8 @@ module Case.Enum.Test
 where
 
 import Data.Morpheus.Client
-  ( declareLocalTypesInline,
+  ( declareGlobalTypes,
+    declareLocalTypesInline,
     raw,
   )
 import Relude
@@ -23,6 +24,8 @@ import Spec.Utils
 import Test.Tasty
   ( TestTree,
   )
+
+declareGlobalTypes (path "Enum/schema.gql")
 
 declareLocalTypesInline
   (path "Enum/schema.gql")

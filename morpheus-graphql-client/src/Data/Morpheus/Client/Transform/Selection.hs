@@ -4,7 +4,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Transform.Selection
@@ -20,8 +19,8 @@ import Data.Morpheus.Client.Internal.Types
     Mode (..),
     TypeNameTH (..),
   )
-import Data.Morpheus.Client.Transform.Core (Converter (..), compileError, deprecationWarning, getType, leafType, typeFrom)
-import Data.Morpheus.Client.Transform.Inputs (renderNonOutputTypes, renderOperationArguments)
+import Data.Morpheus.Client.Transform.Core (Converter (..), compileError, deprecationWarning, getType, typeFrom)
+import Data.Morpheus.Client.Transform.Inputs (renderOperationArguments)
 import Data.Morpheus.Core (Config (..), VALIDATION_MODE (WITHOUT_VARIABLES), validateRequest)
 import Data.Morpheus.Internal.Ext
   ( GQLResult,
@@ -87,14 +86,13 @@ genOperation ::
       [ClientTypeDefinition]
     )
 genOperation mode operation = do
-  (argumentsType, rootType :| localTypes, globalTypes) <- renderOperationTypes mode operation
-  globalDefinitions <- renderNonOutputTypes globalTypes
+  (argumentsType, rootType :| localTypes) <- renderOperationTypes mode operation
   pure
     ( FetchDefinition
         { clientArgumentsTypeName = fmap clientTypeName argumentsType,
           rootTypeName = clientTypeName rootType
         },
-      rootType : (localTypes <> maybeToList argumentsType <> globalDefinitions)
+      rootType : (localTypes <> maybeToList argumentsType)
     )
 
 renderOperationTypes ::
@@ -102,20 +100,19 @@ renderOperationTypes ::
   Operation VALID ->
   Converter
     ( Maybe ClientTypeDefinition,
-      NonEmpty ClientTypeDefinition,
-      [TypeName]
+      NonEmpty ClientTypeDefinition
     )
 renderOperationTypes mode op@Operation {operationName, operationSelection} = do
   datatype <- asks fst >>= getOperationDataType op
   arguments <- renderOperationArguments op
-  (outputTypes, globalTypes) <-
+  outputTypes <-
     genRecordType
       (mode == Local)
       []
       (getOperationName operationName)
       (toAny datatype)
       operationSelection
-  pure (arguments, outputTypes, if mode == Legacy then globalTypes else [])
+  pure (arguments, outputTypes)
 
 -------------------------------------------------------------------------
 -- generates selection Object Types
@@ -125,40 +122,34 @@ genRecordType ::
   TypeName ->
   TypeDefinition ANY VALID ->
   SelectionSet VALID ->
-  Converter (NonEmpty ClientTypeDefinition, [TypeName])
+  Converter (NonEmpty ClientTypeDefinition)
 genRecordType localize path tName dataType recordSelSet = do
-  (con, subTypes, requests) <- genConsD (if localize then coerce tName : path else path) tName dataType recordSelSet
-  pure
-    ( ClientTypeDefinition
-        { clientTypeName = TypeNameTH path tName,
-          clientCons = [con],
-          clientKind = KindObject Nothing
-        }
-        :| subTypes,
-      requests
-    )
+  (con, subTypes) <- genConsD (if localize then coerce tName : path else path) tName dataType recordSelSet
+  pure $
+    ClientTypeDefinition
+      { clientTypeName = TypeNameTH path tName,
+        clientCons = [con],
+        clientKind = KindObject Nothing
+      }
+      :| subTypes
 
 genConsD ::
   [FieldName] ->
   TypeName ->
   TypeDefinition ANY VALID ->
   SelectionSet VALID ->
-  Converter
-    ( ClientConstructorDefinition,
-      [ClientTypeDefinition],
-      [TypeName]
-    )
+  Converter (ClientConstructorDefinition, [ClientTypeDefinition])
 genConsD path cName datatype selSet = do
-  (cFields, subTypes, requests) <- unzip3 <$> traverse genField (toList selSet)
-  pure (ClientConstructorDefinition {cName, cFields}, concat subTypes, concat requests)
+  (cFields, subTypes) <- unzip <$> traverse genField (toList selSet)
+  pure (ClientConstructorDefinition {cName, cFields}, concat subTypes)
   where
     genField ::
       Selection VALID ->
-      Converter (FieldDefinition ANY VALID, [ClientTypeDefinition], [TypeName])
+      Converter (FieldDefinition ANY VALID, [ClientTypeDefinition])
     genField sel =
       do
         (fieldDataType, fieldType) <- getFieldType fieldPath datatype sel
-        (subTypes, requests) <- subTypesBySelection fieldPath fieldDataType sel
+        subTypes <- subTypesBySelection fieldPath fieldDataType sel
         pure
           ( FieldDefinition
               { fieldName,
@@ -167,8 +158,7 @@ genConsD path cName datatype selSet = do
                 fieldDescription = Nothing,
                 fieldDirectives = empty
               },
-            subTypes,
-            requests
+            subTypes
           )
       where
         fieldPath = path <> [fieldName]
@@ -180,19 +170,15 @@ subTypesBySelection ::
   [FieldName] ->
   TypeDefinition ANY VALID ->
   Selection VALID ->
-  Converter
-    ( [ClientTypeDefinition],
-      [TypeName]
-    )
-subTypesBySelection _ dType Selection {selectionContent = SelectionField} =
-  ([],) <$> leafType dType
+  Converter [ClientTypeDefinition]
+subTypesBySelection _ _ Selection {selectionContent = SelectionField} = pure []
 subTypesBySelection path dType Selection {selectionContent = SelectionSet selectionSet} = do
-  (x :| xs, requests) <- genRecordType False path (typeFrom [] dType) dType selectionSet
-  pure (x : xs, requests)
+  (x :| xs) <- genRecordType False path (typeFrom [] dType) dType selectionSet
+  pure (x : xs)
 subTypesBySelection path dType Selection {selectionContent = UnionSelection interface unionSelections} =
   do
-    (clientCons, subTypes, requests) <-
-      unzip3
+    (clientCons, subTypes) <-
+      unzip
         <$> traverse
           getUnionType
           ( UnionTag (typeName dType) interface : toList unionSelections
@@ -203,8 +189,7 @@ subTypesBySelection path dType Selection {selectionContent = UnionSelection inte
             clientCons,
             clientKind = KindUnion
           } :
-        concat subTypes,
-        concat requests
+        concat subTypes
       )
   where
     getUnionType (UnionTag selectedTyName selectionVariant) = do
