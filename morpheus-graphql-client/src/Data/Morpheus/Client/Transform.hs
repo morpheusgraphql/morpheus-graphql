@@ -4,7 +4,7 @@ module Data.Morpheus.Client.Transform
   )
 where
 
-import Data.Morpheus.Client.Transform.Inputs (toGlobalDefinitions)
+import Data.Morpheus.Client.Transform.Global (toGlobalDefinitions)
 import Data.Morpheus.Client.Transform.Selection
   ( toLocalDefinitions,
   )

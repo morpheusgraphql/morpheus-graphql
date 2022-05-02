@@ -20,7 +20,7 @@ import Data.Morpheus.Client.Internal.Types
     TypeNameTH (..),
   )
 import Data.Morpheus.Client.Transform.Core (Converter (..), compileError, deprecationWarning, getType, typeFrom)
-import Data.Morpheus.Client.Transform.Inputs (renderOperationArguments)
+import Data.Morpheus.Client.Transform.Global (renderOperationArguments)
 import Data.Morpheus.Core (Config (..), VALIDATION_MODE (WITHOUT_VARIABLES), validateRequest)
 import Data.Morpheus.Internal.Ext
   ( GQLResult,

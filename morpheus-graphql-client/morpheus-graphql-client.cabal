@@ -73,7 +73,7 @@ library
       Data.Morpheus.Client.Schema.Parse
       Data.Morpheus.Client.Transform
       Data.Morpheus.Client.Transform.Core
-      Data.Morpheus.Client.Transform.Inputs
+      Data.Morpheus.Client.Transform.Global
       Data.Morpheus.Client.Transform.Selection
       Paths_morpheus_graphql_client
   hs-source-dirs:

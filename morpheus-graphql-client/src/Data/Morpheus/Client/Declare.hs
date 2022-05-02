@@ -58,7 +58,7 @@ internalLegacyLocalDeclareTypes schemaSrc query = do
     )
 
 globalTypeDeclarations :: SchemaSource -> (TypeName -> Bool) -> Q [Dec]
-globalTypeDeclarations src f = handleResult (parseSchema src >>= toGlobalDefinitions f) declareTypes
+globalTypeDeclarations src f = handleResult (toGlobalDefinitions f <$> parseSchema src) declareTypes
 
 -- | declares global or local types, depending
 -- on whether the second argument is specified or not
