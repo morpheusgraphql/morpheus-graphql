@@ -13,20 +13,18 @@ module Case.JSON.Custom.Query
   )
 where
 
-import Data.ByteString.Lazy.Char8
-  ( ByteString,
-  )
 import Data.Morpheus.Client
   ( EncodeScalar (..),
     Fetch (..),
     FetchError,
     ScalarValue (..),
-    gql,
+    declareLocalTypesInline,
+    raw,
   )
-import Data.Text (Text)
+import Relude
 import Spec.Utils
-  ( defineClientWithJSON,
-    mockApi,
+  ( mockApi,
+    path,
   )
 import Test.Tasty
   ( TestTree,
@@ -34,15 +32,6 @@ import Test.Tasty
 import Test.Tasty.HUnit
   ( assertEqual,
     testCase,
-  )
-import Prelude
-  ( ($),
-    Either (..),
-    Eq (..),
-    IO,
-    Maybe (..),
-    Show,
-    String,
   )
 
 newtype GitTimestamp = GitTimestamp
@@ -53,20 +42,17 @@ newtype GitTimestamp = GitTimestamp
 instance EncodeScalar GitTimestamp where
   encodeScalar (GitTimestamp x) = String x
 
-defineClientWithJSON
-  "JSON/Custom"
-  [gql|
+declareLocalTypesInline
+  (path "JSON/Custom/schema.json")
+  [raw|
     query TestQuery
       {
         queryTypeName
       }
   |]
 
-resolver :: ByteString -> IO ByteString
-resolver = mockApi "JSON/Custom/Query"
-
 client :: IO (Either (FetchError TestQuery) TestQuery)
-client = fetch resolver ()
+client = fetch (mockApi "JSON/Custom/Query") ()
 
 test :: TestTree
 test = testCase "test Query" $ do

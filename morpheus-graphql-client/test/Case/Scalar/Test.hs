@@ -11,16 +11,13 @@ module Case.Scalar.Test
   )
 where
 
-import Data.ByteString.Lazy.Char8
-  ( ByteString,
-  )
 import Data.Morpheus.Client
   ( Fetch (..),
     FetchError (..),
     declareLocalTypesInline,
     raw,
   )
-import Data.Text (Text)
+import Relude
 import Spec.Utils
   ( mockApi,
     path,
@@ -31,14 +28,6 @@ import Test.Tasty
 import Test.Tasty.HUnit
   ( assertEqual,
     testCase,
-  )
-import Prelude
-  ( Bool (True),
-    Double,
-    Either (..),
-    IO,
-    Int,
-    ($),
   )
 
 declareLocalTypesInline
@@ -56,9 +45,6 @@ declareLocalTypesInline
       stringResolver(stringValue: $inputString)
     }
   |]
-
-resolver :: ByteString -> IO ByteString
-resolver = mockApi "Scalar"
 
 -- GraphQL Boolean types must be represented with Haskell Bool types
 testBoolean :: Bool
@@ -79,7 +65,7 @@ testText = "Athens"
 client :: IO (Either (FetchError MyQuery) MyQuery)
 client =
   fetch
-    resolver
+    (mockApi "Scalar")
     MyQueryArgs
       { inputBoolean = testBoolean,
         inputInt = testInt,

@@ -14,7 +14,6 @@ where
 
 import Case.LocalGlobal.Api
 import Data.Aeson
-import Data.Eq (Eq)
 import Data.Morpheus.Client
   ( Fetch (..),
     ID,
@@ -23,8 +22,7 @@ import Data.Morpheus.Client
     declareLocalTypesInline,
     raw,
   )
-import Data.Semigroup ((<>))
-import Data.Text (Text)
+import Relude
 import Spec.Utils
   ( getFile,
   )
@@ -34,15 +32,6 @@ import Test.Tasty
 import Test.Tasty.HUnit
   ( assertEqual,
     testCase,
-  )
-import Prelude
-  ( Either (..),
-    FilePath,
-    IO,
-    Maybe (Just, Nothing),
-    Show (show),
-    ($),
-    (>>=),
   )
 
 declareGlobalTypes schema

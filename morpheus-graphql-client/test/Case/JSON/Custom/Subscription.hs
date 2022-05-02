@@ -13,15 +13,12 @@ module Case.JSON.Custom.Subscription
   )
 where
 
-import Data.ByteString.Lazy.Char8
-  ( ByteString,
-  )
 import Data.Morpheus.Client
   ( Fetch (..),
     FetchError,
-    gql,
+    raw,
   )
-import Data.Text (Text)
+import Relude
 import Spec.Utils
   ( defineClientWithJSON,
     mockApi,
@@ -33,28 +30,18 @@ import Test.Tasty.HUnit
   ( assertEqual,
     testCase,
   )
-import Prelude
-  ( ($),
-    Either (..),
-    IO,
-    Maybe (..),
-    String,
-  )
 
 defineClientWithJSON
   "JSON/Custom"
-  [gql|
+  [raw|
     subscription TestSubscription
       {
         subscriptionTypeName
       }
   |]
 
-resolver :: ByteString -> IO ByteString
-resolver = mockApi "JSON/Custom/Subscription"
-
 client :: IO (Either (FetchError TestSubscription) TestSubscription)
-client = fetch resolver ()
+client = fetch (mockApi "JSON/Custom/Subscription") ()
 
 test :: TestTree
 test = testCase "test Subscription" $ do

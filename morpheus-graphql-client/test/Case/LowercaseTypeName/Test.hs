@@ -13,10 +13,6 @@ module Case.LowercaseTypeName.Test
   )
 where
 
-import Control.Applicative (pure)
-import Data.ByteString.Lazy.Char8
-  ( ByteString,
-  )
 import Data.Morpheus.Client
   ( DecodeScalar (..),
     EncodeScalar (..),
@@ -27,7 +23,7 @@ import Data.Morpheus.Client
     declareLocalTypesInline,
     raw,
   )
-import Data.Text (Text)
+import Relude
 import Spec.Utils
   ( mockApi,
     path,
@@ -38,15 +34,6 @@ import Test.Tasty
 import Test.Tasty.HUnit
   ( assertEqual,
     testCase,
-  )
-import Prelude
-  ( Either (..),
-    Eq,
-    IO,
-    Maybe (Nothing),
-    Show,
-    ($),
-    (.),
   )
 
 newtype Uuid = Uuid
@@ -73,11 +60,8 @@ declareLocalTypesInline
     }
   |]
 
-resolver :: ByteString -> IO ByteString
-resolver = mockApi "LowercaseTypeName"
-
 client :: IO (Either (FetchError MyQuery) MyQuery)
-client = fetch resolver ()
+client = fetch (mockApi "LowercaseTypeName") ()
 
 testLowercaseTypeName :: TestTree
 testLowercaseTypeName = testCase "test lowercase type names" $ do

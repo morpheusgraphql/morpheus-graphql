@@ -23,6 +23,7 @@ extra-source-files:
 data-files:
     test/Case/Enum/schema.gql
     test/Case/Github/schema.gql
+    test/Case/Interface/query.gql
     test/Case/Interface/schema.gql
     test/Case/LocalGlobal/schema.gql
     test/Case/LocalGlobal/users1.gql

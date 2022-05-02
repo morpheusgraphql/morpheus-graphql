@@ -13,18 +13,16 @@ module Case.JSON.Custom.Mutation
   )
 where
 
-import Data.ByteString.Lazy.Char8
-  ( ByteString,
-  )
 import Data.Morpheus.Client
   ( Fetch (..),
     FetchError,
-    gql,
+    declareLocalTypesInline,
+    raw,
   )
-import Data.Text (Text)
+import Relude
 import Spec.Utils
-  ( defineClientWithJSON,
-    mockApi,
+  ( mockApi,
+    path,
   )
 import Test.Tasty
   ( TestTree,
@@ -33,28 +31,18 @@ import Test.Tasty.HUnit
   ( assertEqual,
     testCase,
   )
-import Prelude
-  ( ($),
-    Either (..),
-    IO,
-    Maybe (..),
-    String,
-  )
 
-defineClientWithJSON
-  "JSON/Custom"
-  [gql|
+declareLocalTypesInline
+  (path "JSON/Custom/schema.json")
+  [raw|
     mutation TestMutation
       {
         mutationTypeName
       }
   |]
 
-resolver :: ByteString -> IO ByteString
-resolver = mockApi "JSON/Custom/Mutation"
-
 client :: IO (Either (FetchError TestMutation) TestMutation)
-client = fetch resolver ()
+client = fetch (mockApi "JSON/Custom/Mutation") ()
 
 test :: TestTree
 test = testCase "test Mutation" $ do

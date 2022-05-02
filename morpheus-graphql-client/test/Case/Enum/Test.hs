@@ -11,17 +11,16 @@ module Case.Enum.Test
   )
 where
 
-import Data.ByteString.Lazy.Char8
-  ( ByteString,
-  )
 import Data.Morpheus.Client
   ( Fetch (..),
     FetchError,
-    gql,
+    declareLocalTypesInline,
+    raw,
   )
+import Relude
 import Spec.Utils
-  ( defineClientWith,
-    mockApi,
+  ( mockApi,
+    path,
   )
 import Test.Tasty
   ( TestTree,
@@ -30,27 +29,18 @@ import Test.Tasty.HUnit
   ( assertEqual,
     testCase,
   )
-import Prelude
-  ( ($),
-    Either (..),
-    IO,
-    String,
-  )
 
-defineClientWith
-  "Enum"
-  [gql|
+declareLocalTypesInline
+  (path "Enum/schema.gql")
+  [raw|
     query MyQuery( $inputCity: City!) {
       city(city:$inputCity)
       cities
     }
   |]
 
-resolver :: ByteString -> IO ByteString
-resolver = mockApi "Enum"
-
 client :: IO (Either (FetchError MyQuery) MyQuery)
-client = fetch resolver MyQueryArgs {inputCity = CityAthens}
+client = fetch (mockApi "Enum") MyQueryArgs {inputCity = CityAthens}
 
 test :: TestTree
 test = testCase "test Enum" $ do

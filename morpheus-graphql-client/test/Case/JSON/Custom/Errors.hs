@@ -24,17 +24,19 @@ import Data.Morpheus.Client
     Fetch (..),
     FetchError (..),
     ScalarValue (..),
-    gql,
+    declareLocalTypesInline,
+    raw,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Position (..),
+    PropName (PropIndex),
     at,
-    withPath, PropName (PropIndex),
+    withPath,
   )
 import Data.Text (Text)
 import Spec.Utils
-  ( defineClientWithJSON,
-    mockApi,
+  ( mockApi,
+    path,
   )
 import Test.Tasty
   ( TestTree,
@@ -60,9 +62,9 @@ newtype GitTimestamp = GitTimestamp
 instance EncodeScalar GitTimestamp where
   encodeScalar (GitTimestamp x) = String x
 
-defineClientWithJSON
-  "JSON/Custom"
-  [gql|
+declareLocalTypesInline
+  (path "JSON/Custom/schema.json")
+  [raw|
     query TestQuery
       {
         queryTypeName

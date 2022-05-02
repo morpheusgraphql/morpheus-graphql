@@ -13,19 +13,15 @@ module Case.Github.Test
   )
 where
 
-import Data.ByteString.Lazy.Char8
-  ( ByteString,
-  )
 import Data.Morpheus.Client
   ( DecodeScalar (..),
     EncodeScalar (..),
     Fetch (..),
     FetchError,
     ScalarValue (..),
-    gql,
     raw,
   )
-import Data.Text (Text)
+import Relude
 import Spec.Utils
   ( defineClientWith,
     mockApi,
@@ -36,16 +32,6 @@ import Test.Tasty
 import Test.Tasty.HUnit
   ( assertEqual,
     testCase,
-  )
-import Prelude
-  ( Applicative (..),
-    Bool (..),
-    Either (..),
-    Eq (..),
-    IO,
-    Maybe (..),
-    Show,
-    ($),
   )
 
 newtype GitTimestamp = GitTimestamp
@@ -90,13 +76,10 @@ defineClientWith
       }
   |]
 
-resolver :: ByteString -> IO ByteString
-resolver = mockApi "Interface"
-
 client :: IO (Either (FetchError GetTags) GetTags)
 client =
   fetch
-    resolver
+    (mockApi "Interface")
     GetTagsArgs
       { user = "UserName",
         repo = "repoName"

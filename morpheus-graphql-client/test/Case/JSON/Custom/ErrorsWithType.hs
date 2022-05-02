@@ -13,18 +13,13 @@ module Case.JSON.Custom.ErrorsWithType
   )
 where
 
-import Data.ByteString.Lazy.Char8
-  ( ByteString,
-  )
-import Data.List.NonEmpty
-  ( NonEmpty (..),
-  )
 import Data.Morpheus.Client
   ( EncodeScalar (..),
     Fetch (..),
     FetchError (..),
     ScalarValue (..),
-    gql,
+    declareLocalTypesInline,
+    raw,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Position (..),
@@ -32,10 +27,10 @@ import Data.Morpheus.Types.Internal.AST
     custom,
     withPath,
   )
-import Data.Text (Text)
+import Relude
 import Spec.Utils
-  ( defineClientWithJSON,
-    mockApi,
+  ( mockApi,
+    path,
   )
 import Test.Tasty
   ( TestTree,
@@ -43,14 +38,6 @@ import Test.Tasty
 import Test.Tasty.HUnit
   ( assertEqual,
     testCase,
-  )
-import Prelude
-  ( ($),
-    Either (..),
-    Eq (..),
-    IO,
-    Maybe (..),
-    Show,
   )
 
 newtype GitTimestamp = GitTimestamp
@@ -61,20 +48,17 @@ newtype GitTimestamp = GitTimestamp
 instance EncodeScalar GitTimestamp where
   encodeScalar (GitTimestamp x) = String x
 
-defineClientWithJSON
-  "JSON/Custom"
-  [gql|
+declareLocalTypesInline
+  (path "JSON/Custom/schema.json")
+  [raw|
     query TestQuery
       {
         queryTypeName
       }
   |]
 
-resolver :: ByteString -> IO ByteString
-resolver = mockApi "JSON/Custom/ErrorsWithType"
-
 client :: IO (Either (FetchError TestQuery) TestQuery)
-client = fetch resolver ()
+client = fetch (mockApi "JSON/Custom/ErrorsWithType") ()
 
 test :: TestTree
 test = testCase "test Errors With Type" $ do

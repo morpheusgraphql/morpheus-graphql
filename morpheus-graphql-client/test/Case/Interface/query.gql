@@ -1,0 +1,29 @@
+query MyQuery {
+  character {
+    name
+    ... on Deity {
+      power
+    }
+
+    ... on Hero {
+      hobby
+    }
+  }
+  character2: character {
+    name1: name
+    name
+  }
+  character3: character {
+    ... on Hero {
+      hobby
+    }
+    ... on Character {
+      name2: name
+    }
+  }
+  character4: character {
+    ... on Hero {
+      hobby
+    }
+  }
+}
