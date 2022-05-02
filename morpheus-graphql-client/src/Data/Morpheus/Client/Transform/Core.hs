@@ -95,12 +95,12 @@ customScalarTypes typeName
   | isNotSystemTypeName typeName = [typeName]
   | otherwise = []
 
-leafType :: TypeDefinition a VALID -> Converter ([ClientTypeDefinition], [TypeName])
+leafType :: TypeDefinition a VALID -> Converter [TypeName]
 leafType TypeDefinition {typeName, typeContent} = fromKind typeContent
   where
-    fromKind :: TypeContent TRUE a VALID -> Converter ([ClientTypeDefinition], [TypeName])
-    fromKind DataEnum {} = pure ([], [typeName])
-    fromKind DataScalar {} = pure ([], customScalarTypes typeName)
+    fromKind :: TypeContent TRUE a VALID -> Converter [TypeName]
+    fromKind DataEnum {} = pure [typeName]
+    fromKind DataScalar {} = pure (customScalarTypes typeName)
     fromKind _ = throwError $ compileError "Invalid schema Expected scalar"
 
 typeFrom :: [FieldName] -> TypeDefinition a VALID -> TypeName

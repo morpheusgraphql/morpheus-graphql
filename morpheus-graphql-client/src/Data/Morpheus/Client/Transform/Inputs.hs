@@ -138,35 +138,19 @@ buildInputType ::
 buildInputType name = maybeToList <$> (getType name >>= generateGlobalType)
 
 generateGlobalType :: TypeDefinition ANY VALID -> Converter (Maybe ClientTypeDefinition)
-generateGlobalType TypeDefinition {typeName, typeContent} = subTypes typeContent
+generateGlobalType TypeDefinition {typeName, typeContent} =
+  fmap (uncurry (mkInputType typeName) <$>) (subTypes typeContent)
   where
-    subTypes :: TypeContent TRUE ANY VALID -> Converter (Maybe ClientTypeDefinition)
+    subTypes :: TypeContent TRUE ANY VALID -> Converter (Maybe (TypeKind, [ClientConstructorDefinition]))
     subTypes (DataInputObject inputFields) = do
       fields <- traverse toClientFieldDefinition (toList inputFields)
       pure $
         Just $
-          mkInputType
-            typeName
-            KindInputObject
-            [ ClientConstructorDefinition
-                { cName = typeName,
-                  cFields = fmap toAny fields
-                }
-            ]
-    subTypes (DataEnum enumTags) =
-      pure $
-        Just $
-          mkInputType
-            typeName
-            KindEnum
-            (fmap mkConsEnum enumTags)
-    subTypes DataScalar {} =
-      pure $
-        Just $
-          mkInputType
-            typeName
-            KindScalar
-            []
+          ( KindInputObject,
+            [ClientConstructorDefinition {cName = typeName, cFields = fmap toAny fields}]
+          )
+    subTypes (DataEnum enumTags) = pure $ Just (KindEnum, mkConsEnum <$> enumTags)
+    subTypes DataScalar {} = pure $ Just (KindScalar, [])
     subTypes _ = pure Nothing
 
 mkConsEnum :: DataEnumValue s -> ClientConstructorDefinition

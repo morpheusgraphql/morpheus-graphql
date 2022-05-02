@@ -4,6 +4,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Transform.Selection
@@ -156,11 +157,7 @@ genConsD path cName datatype selSet = do
       Converter (FieldDefinition ANY VALID, [ClientTypeDefinition], [TypeName])
     genField sel =
       do
-        (fieldDataType, fieldType) <-
-          getFieldType
-            fieldPath
-            datatype
-            sel
+        (fieldDataType, fieldType) <- getFieldType fieldPath datatype sel
         (subTypes, requests) <- subTypesBySelection fieldPath fieldDataType sel
         pure
           ( FieldDefinition
@@ -188,7 +185,7 @@ subTypesBySelection ::
       [TypeName]
     )
 subTypesBySelection _ dType Selection {selectionContent = SelectionField} =
-  leafType dType
+  ([],) <$> leafType dType
 subTypesBySelection path dType Selection {selectionContent = SelectionSet selectionSet} = do
   (x :| xs, requests) <- genRecordType False path (typeFrom [] dType) dType selectionSet
   pure (x : xs, requests)
