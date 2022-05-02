@@ -108,7 +108,7 @@ plan:
     deps:
       - dependent-map-0.2.4.0
       - dependent-sum-0.4
-      - fastsum-0.1.1.1
+      - fastsum-0.1.0.0
   8.8.3:
     resolver: lts-16.2
   8.6.5:
@@ -124,6 +124,5 @@ plan:
       - modern-uri-0.3.0.0
       - retry-0.8.1.0
       - relude-0.3.0
-      - fastsum-0.1.0.0
   8.2.2:
     resolver: lts-11.10
