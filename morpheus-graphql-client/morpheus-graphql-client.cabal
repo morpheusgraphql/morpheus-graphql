@@ -103,11 +103,7 @@ test-suite morpheus-graphql-client-test
       Case.Interface.Test
       Case.JSON.Custom.Errors
       Case.JSON.Custom.ErrorsWithType
-      Case.JSON.Custom.Mutation
-      Case.JSON.Custom.NoResponseOrError
-      Case.JSON.Custom.PartialResponse
-      Case.JSON.Custom.Query
-      Case.JSON.Custom.Subscription
+      Case.JSON.Custom.Test
       Case.LocalGlobal.Api
       Case.LocalGlobal.Test
       Case.LowercaseTypeName.Test

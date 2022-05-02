@@ -60,10 +60,11 @@ testLowercaseTypeName =
     "LowercaseTypeName"
     Nothing
     ()
-    ( MyQuery
-        { user =
-            MyQueryUserUser
-              { id = Uuid "11343135"
-              }
-        }
+    ( Right
+        MyQuery
+          { user =
+              MyQueryUserUser
+                { id = Uuid "11343135"
+                }
+          }
     )

@@ -58,35 +58,37 @@ test =
       { user = "UserName",
         repo = "repoName"
       }
-    GetTags
-      { repository =
-          Just
-            GetTagsRepositoryRepository
-              { refs =
-                  Just
-                    GetTagsRepositoryRefsRefConnection
-                      { pageInfo =
-                          GetTagsRepositoryRefsPageInfoPageInfo
-                            { endCursor = Just "test value 1",
-                              hasNextPage = False
-                            },
-                        edges =
-                          Just
-                            [ Just
-                                GetTagsRepositoryRefsEdgesRefEdge
-                                  { cursor = "test cursor",
-                                    node =
-                                      Just
-                                        GetTagsRepositoryRefsEdgesNodeRef
-                                          { name = "test name",
-                                            target =
-                                              Just
-                                                GetTagsRepositoryRefsEdgesNodeTargetGitObject
-                                                  { __typename = "GitObject"
-                                                  }
-                                          }
-                                  }
-                            ]
-                      }
-              }
-      }
+    ( Right
+        GetTags
+          { repository =
+              Just
+                GetTagsRepositoryRepository
+                  { refs =
+                      Just
+                        GetTagsRepositoryRefsRefConnection
+                          { pageInfo =
+                              GetTagsRepositoryRefsPageInfoPageInfo
+                                { endCursor = Just "test value 1",
+                                  hasNextPage = False
+                                },
+                            edges =
+                              Just
+                                [ Just
+                                    GetTagsRepositoryRefsEdgesRefEdge
+                                      { cursor = "test cursor",
+                                        node =
+                                          Just
+                                            GetTagsRepositoryRefsEdgesNodeRef
+                                              { name = "test name",
+                                                target =
+                                                  Just
+                                                    GetTagsRepositoryRefsEdgesNodeTargetGitObject
+                                                      { __typename = "GitObject"
+                                                      }
+                                              }
+                                      }
+                                ]
+                          }
+                  }
+          }
+    )

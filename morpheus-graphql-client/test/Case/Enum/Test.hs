@@ -39,13 +39,15 @@ test =
     "Enum"
     Nothing
     MyQueryArgs {inputCity = CityAthens}
-    MyQuery
-      { city = CityAthens,
-        cities =
-          [ CityAthens,
-            CitySparta,
-            CityCorinth,
-            CityDelphi,
-            CityArgos
-          ]
-      }
+    ( Right
+        MyQuery
+          { city = CityAthens,
+            cities =
+              [ CityAthens,
+                CitySparta,
+                CityCorinth,
+                CityDelphi,
+                CityArgos
+              ]
+          }
+    )

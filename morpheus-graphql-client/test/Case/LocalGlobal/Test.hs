@@ -55,7 +55,12 @@ checkQuery ::
   Args a ->
   a ->
   TestTree
-checkQuery x = assertFetch "LocalGlobal" (Just x)
+checkQuery x args v =
+  assertFetch
+    "LocalGlobal"
+    (Just x)
+    args
+    (Right v)
 
 checkCities :: TestTree
 checkCities =

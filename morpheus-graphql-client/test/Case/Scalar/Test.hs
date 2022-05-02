@@ -67,9 +67,11 @@ test =
         inputFloat = testFloat,
         inputString = testText
       }
-    MyQuery
-      { booleanResolver = testBoolean,
-        intResolver = testInt,
-        floatResolver = testFloat,
-        stringResolver = testText
-      }
+    ( Right
+        MyQuery
+          { booleanResolver = testBoolean,
+            intResolver = testInt,
+            floatResolver = testFloat,
+            stringResolver = testText
+          }
+    )

@@ -14,6 +14,7 @@ import qualified Data.ByteString.Lazy as L (readFile)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Morpheus.Client
   ( Fetch (..),
+    FetchError,
   )
 import Relude hiding (ByteString, exp)
 import Test.Tasty
@@ -45,12 +46,12 @@ assertFetch ::
   FilePath ->
   Maybe FilePath ->
   Args a ->
-  a ->
+  Either (FetchError a) a ->
   TestTree
 assertFetch folder file args v =
   testCase display $ do
     response <- fetch (getJSON (folder <> "/" <> fileName)) args
-    assertEqual ("Test " <> display) (Right v) response
+    assertEqual ("Test " <> display) v response
   where
     fileName = fromMaybe "response" file
     display = fromMaybe folder file
