@@ -31,6 +31,7 @@ const getStack = async (version: string) => {
   const { include = [], skip = [] } = current;
 
   return {
+    ...(version === "latest" ? { "allow-newer": true } : {}),
     resolver: current.resolver,
     "save-hackage-creds": false,
     packages: difference([...examples, ...include, ...packages], skip),
