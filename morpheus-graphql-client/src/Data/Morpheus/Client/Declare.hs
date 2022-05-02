@@ -7,8 +7,11 @@ module Data.Morpheus.Client.Declare
     declareLocalTypesInline,
     internalLegacyDeclareTypes,
     clientTypeDeclarations,
+    raw
   )
 where
+
+import Data.Morpheus.Client.QuasiQuoter (raw)
 
 import Data.Morpheus.Client.Declare.Client
   ( declareTypes,
@@ -62,15 +65,41 @@ clientTypeDeclarations src Nothing = do
   handleResult (parseSchema src >>= toGlobalDefinitions) declareTypes
 
 -- | declares input, enum and scalar types for specified schema
+--
+-- Example where the schema is defined in SDL format
+--
+-- @
+-- 'declareGlobalTypes' "schema.gql"
+-- @
+--
+-- Example with schema as introspection in JSON format.
+--
+-- @
+-- 'declareGlobalTypes' "schema.json"
+-- @
+-- 
 declareGlobalTypes ::
   FilePath  -- ^ the schema path relative to the  project location,
-  -- both introspection (`.json`) and
-  -- schema definition (`.gql`, `.graphql`) are accepted.
+  -- both introspection (.json) and
+  -- schema definition (.gql, .graphql) are accepted.
   -> Q [Dec]
 declareGlobalTypes = flip declareClientTypes Nothing
 
 -- | declares object, interface and union types for
 -- specified schema and query.
+--
+-- Example where the schema is defined in SDL format
+--
+-- @
+-- 'declareLocalTypes' "schema.gql" "query.gql"
+-- @
+--
+-- Example with schema as introspection in JSON format.
+--
+-- @
+-- 'declareLocalTypes' "schema.json" "query.gql"
+-- @
+-- 
 declareLocalTypes ::
   FilePath -- ^ the schema path relative to the  project location.
   -- both introspection (`.json`) and
@@ -79,7 +108,21 @@ declareLocalTypes ::
   -> Q [Dec]
 declareLocalTypes schema query = declareClientTypes schema (Just query)
 
--- | inline version of `declareLocalTypes`
+-- | inline version of `declareLocalTypes`, however
+-- instead of specifying the file path, you can simply 
+-- pass the query as text using QuasiQuoter `raw`
+--
+-- @
+-- `declareLocalTypesInline` "schema.gql" 
+--     [`raw`| 
+--        query GetUsers {
+--           users {
+--             name
+--           }
+--        }
+--     ]
+--  @
+--
 declareLocalTypesInline ::
   FilePath   -- ^ the schema path relative to the  project location.
   -- both introspection (`.json`) and

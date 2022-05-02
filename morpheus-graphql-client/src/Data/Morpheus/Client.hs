@@ -34,6 +34,7 @@ import Data.Morpheus.Client.Declare
     declareLocalTypes,
     declareLocalTypesInline,
     internalLegacyDeclareTypes,
+    raw
   )
 import Data.Morpheus.Client.Fetch
   ( Fetch (..),
@@ -44,7 +45,6 @@ import Data.Morpheus.Client.Internal.Types
     Mode (..),
     SchemaSource (..),
   )
-import Data.Morpheus.Client.QuasiQuoter (raw)
 import Data.Morpheus.Types.GQLScalar
   ( DecodeScalar (..),
     EncodeScalar (..),
