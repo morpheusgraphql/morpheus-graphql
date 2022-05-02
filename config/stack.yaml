@@ -20,6 +20,7 @@ plan:
     deps:
       - dependent-map-0.2.4.0
       - dependent-sum-0.4
+      - fastsum-0.1.0.0
     resolver: lts-18.10
   8.2.2:
     resolver: lts-11.10
@@ -43,7 +44,6 @@ plan:
       - fraxl-0.3.0.0
       - haxl-2.3.0.0
       - type-aligned-0.9.6
-      - fastsum-0.1.0.0
     include:
       - morpheus-graphql-benchmarks
     resolver: nightly-2022-03-02
