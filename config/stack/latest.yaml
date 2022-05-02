@@ -1,7 +1,6 @@
 resolver: nightly-2022-03-02
 save-hackage-creds: false
 packages:
-  - examples/scotty
   - examples/scotty-freer-simple
   - examples/servant
   - examples/client

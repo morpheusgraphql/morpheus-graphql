@@ -5,7 +5,7 @@ import { isHigherOrEQ, parseVersion } from "./lib/utils/version";
 
 const cli = new Command();
 
-const setup = async (version: string) => {
+const getStack = async (version: string) => {
   const { plan, examples, packages } = await getConfig();
   const plans = Object.keys(plan);
   const current = plan[version];
@@ -30,13 +30,16 @@ const setup = async (version: string) => {
 
   const { include = [], skip = [] } = current;
 
-  writeYAML("stack.yaml", {
+  return {
     resolver: current.resolver,
     "save-hackage-creds": false,
     packages: difference([...examples, ...include, ...packages], skip),
     "extra-deps": extraDeps,
-  });
+  };
 };
+
+const setup = async (version: string) =>
+  writeYAML("stack.yaml", await getStack(version));
 
 cli.name("config").description("setup stack config").version("0.0.0");
 
@@ -47,6 +50,16 @@ cli
   .action((version: string) => {
     console.log(version);
     setup(version);
+  });
+
+cli
+  .command("all")
+  .description("config stack env")
+  .action(async () => {
+    const { plan } = await getConfig();
+    Object.keys(plan).forEach(async (v) =>
+      writeYAML(`./config/stack/${v}.yaml`, await getStack(v))
+    );
   });
 
 cli.parse();
