@@ -101,8 +101,6 @@ test-suite morpheus-graphql-client-test
       Case.Enum.Test
       Case.Github.Test
       Case.Interface.Test
-      Case.JSON.Custom.Errors
-      Case.JSON.Custom.ErrorsWithType
       Case.JSON.Custom.Test
       Case.LocalGlobal.Api
       Case.LocalGlobal.Test

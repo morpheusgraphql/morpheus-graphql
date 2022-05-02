@@ -22,6 +22,13 @@ import Data.Morpheus.Client
     declareLocalTypesInline,
     raw,
   )
+import Data.Morpheus.Types.Internal.AST
+  ( Position (..),
+    PropName (PropIndex),
+    at,
+    custom,
+    withPath,
+  )
 import Relude
 import Spec.Utils
   ( assertFetch,
@@ -119,6 +126,52 @@ simpleSubscription =
         }
     )
 
+declareLocalTypesInline
+  (path "JSON/Custom/schema.json")
+  [raw|
+    query ErrorsWithType
+      {
+        queryTypeName
+      }
+  |]
+
+errorsWithType :: Res ErrorsWithType
+errorsWithType =
+  Left
+    ( FetchErrorProducedErrors
+        ( ("Failure" `at` Position {line = 3, column = 7})
+            `withPath` ["queryTypeName"]
+            `custom` "QUERY_BAD" :| []
+        )
+        (Just ErrorsWithType {queryTypeName = Just "TestQuery"})
+    )
+
+declareLocalTypesInline
+  (path "JSON/Custom/schema.json")
+  [raw|
+    query TestErrorsQuery
+      {
+        queryTypeName
+      }
+  |]
+
+testErrorsQuery :: Res TestErrorsQuery
+testErrorsQuery =
+  Left
+    ( FetchErrorProducedErrors
+        ( ("Failure" `at` Position {line = 3, column = 7})
+            `withPath` [ "queryTypeName",
+                         PropIndex 0
+                       ]
+              :| []
+        )
+        ( Just
+            TestErrorsQuery
+              { queryTypeName = Just "TestQuery"
+              }
+        )
+    )
+
 check ::
   ( Args a ~ (),
     Fetch a,
@@ -143,5 +196,7 @@ test =
       check "PartialResponse" partialResponse,
       check "NoResponseOrError" noResponseOrError,
       check "Mutation" simpleMutation,
-      check "Subscription" simpleSubscription
+      check "Subscription" simpleSubscription,
+      check "ErrorsWithType" errorsWithType,
+      check "Errors" testErrorsQuery
     ]
