@@ -4,7 +4,6 @@
 
 module Spec.Utils
   ( mockApi,
-    defineClientWith,
     path,
     assertFetch,
   )
@@ -13,15 +12,8 @@ where
 import Data.Aeson (FromJSON)
 import qualified Data.ByteString.Lazy as L (readFile)
 import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.FileEmbed (makeRelativeToProject)
 import Data.Morpheus.Client
   ( Fetch (..),
-    defineByDocumentFile,
-  )
-import Data.Text
-import Language.Haskell.TH
-  ( Dec,
-    Q,
   )
 import Relude hiding (ByteString, exp)
 import Test.Tasty
@@ -43,14 +35,6 @@ getJSON p _ = getFile (p <> ".json")
 
 mockApi :: FilePath -> ByteString -> IO ByteString
 mockApi p = getJSON (p <> "/response")
-
-relativePath :: FilePath -> Q FilePath
-relativePath url = makeRelativeToProject (path url)
-
-defineClientWith :: FilePath -> Text -> Q [Dec]
-defineClientWith url exp = do
-  p <- relativePath (url <> "/schema.gql")
-  defineByDocumentFile p exp
 
 assertFetch ::
   ( Fetch a,

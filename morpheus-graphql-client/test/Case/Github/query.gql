@@ -1,0 +1,24 @@
+query GetTags($user: String!, $repo: String!) {
+  repository(owner: $user, name: $repo) {
+    refs(refPrefix: "refs/tags/", first: 100) {
+      pageInfo {
+        endCursor
+        hasNextPage
+      }
+      edges {
+        cursor
+        node {
+          name
+          target {
+            __typename
+            ... on Tag {
+              tagger {
+                date
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

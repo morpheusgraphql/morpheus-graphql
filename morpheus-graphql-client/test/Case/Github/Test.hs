@@ -17,12 +17,13 @@ import Data.Morpheus.Client
   ( DecodeScalar (..),
     EncodeScalar (..),
     ScalarValue (..),
-    raw,
+    declareGlobalTypesByName,
+    declareLocalTypes,
   )
 import Relude
 import Spec.Utils
   ( assertFetch,
-    defineClientWith,
+    path,
   )
 import Test.Tasty
   ( TestTree,
@@ -40,35 +41,13 @@ instance DecodeScalar GitTimestamp where
 instance EncodeScalar GitTimestamp where
   encodeScalar (GitTimestamp x) = String x
 
-defineClientWith
-  "Github"
-  [raw|
-    query GetTags ($user: String!, $repo: String!)
-      {
-        repository(owner: $user, name: $repo) {
-          refs(refPrefix: "refs/tags/", first: 100) {
-            pageInfo {
-              endCursor
-              hasNextPage
-            }
-            edges {
-              cursor
-              node {
-                name
-                target {
-                  __typename
-                  ... on Tag {
-                    tagger {
-                      date
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-  |]
+declareGlobalTypesByName
+  (path "Github/schema.gql")
+  ["GitTimestamp"]
+
+declareLocalTypes
+  (path "Github/schema.gql")
+  (path "Github/query.gql")
 
 test :: TestTree
 test =
@@ -82,27 +61,27 @@ test =
     GetTags
       { repository =
           Just
-            RepositoryRepository
+            GetTagsRepositoryRepository
               { refs =
                   Just
-                    RepositoryRefsRefConnection
+                    GetTagsRepositoryRefsRefConnection
                       { pageInfo =
-                          RepositoryRefsPageInfoPageInfo
+                          GetTagsRepositoryRefsPageInfoPageInfo
                             { endCursor = Just "test value 1",
                               hasNextPage = False
                             },
                         edges =
                           Just
                             [ Just
-                                RepositoryRefsEdgesRefEdge
+                                GetTagsRepositoryRefsEdgesRefEdge
                                   { cursor = "test cursor",
                                     node =
                                       Just
-                                        RepositoryRefsEdgesNodeRef
+                                        GetTagsRepositoryRefsEdgesNodeRef
                                           { name = "test name",
                                             target =
                                               Just
-                                                RepositoryRefsEdgesNodeTargetGitObject
+                                                GetTagsRepositoryRefsEdgesNodeTargetGitObject
                                                   { __typename = "GitObject"
                                                   }
                                           }

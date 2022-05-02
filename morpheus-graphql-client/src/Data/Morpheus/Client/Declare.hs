@@ -32,6 +32,7 @@ import Data.Morpheus.CodeGen.Internal.AST
 import Data.Morpheus.Core (parseRequest)
 import Data.Morpheus.Types.IO (GQLRequest (..))
 import Data.Set
+import qualified Data.Set as S
 import Language.Haskell.TH (Dec, Q, runIO)
 import Relude
 
@@ -91,10 +92,10 @@ declareGlobalTypes = flip declareClientTypes Nothing
 
 -- declares global types like 'declareGlobalTypes',
 -- while enabling to select only the types that are needed.
-declareGlobalTypesByName :: FilePath -> Set TypeName -> Q [Dec]
+declareGlobalTypesByName :: FilePath -> [TypeName] -> Q [Dec]
 declareGlobalTypesByName path names = do
   schema <- getSource path
-  globalTypeDeclarations schema (`member` names)
+  globalTypeDeclarations schema (`member` S.fromList names)
 
 -- | declares object, interface and union types for
 -- specified schema and query.
