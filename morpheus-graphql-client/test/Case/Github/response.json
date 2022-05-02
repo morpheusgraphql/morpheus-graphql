@@ -1,52 +1,23 @@
 {
   "data": {
-    "character": [
-      {
-        "__typename": "Deity",
-        "name": "Deity Name",
-        "power": "Deity Power"
-      },
-      {
-        "__typename": "Character",
-        "name": "Character Name"
-      },
-      {
-        "__typename": "Hero",
-        "name": "Hero Name",
-        "hobby": "Deity Power"
+    "repository": {
+      "refs": {
+        "pageInfo": {
+          "endCursor": "test value 1",
+          "hasNextPage": false
+        },
+        "edges": [
+          {
+            "cursor": "test cursor",
+            "node": {
+              "name": "test name",
+              "target": {
+                "__typename": "GitObject"
+              }
+            }
+          }
+        ]
       }
-    ],
-    "character2": [
-      {
-        "name1": "test name",
-        "name": "test name"
-      }
-    ],
-    "character3": [
-      {
-        "__typename": "Hero",
-        "hobby": "Hero Hobby",
-        "name2": "Hero name2"
-      },
-      {
-        "__typename": "Deity",
-        "name2": "Hero name2"
-      },
-      {
-        "__typename": "Character",
-        "name2": "Character name2"
-      }
-    ],
-    "character4": [
-      {
-        "__typename": "Character",
-        "name2": "Character name2"
-      },
-      {
-        "__typename": "Hero",
-        "hobby": "Hero Hobby",
-        "name2": "Hero name2"
-      }
-    ]
+    }
   }
 }

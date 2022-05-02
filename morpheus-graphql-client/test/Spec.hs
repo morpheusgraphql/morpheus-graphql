@@ -7,6 +7,7 @@ module Main
 where
 
 import qualified Case.Enum.Test as Enum
+import qualified Case.Github.Test as GH
 import Case.Interface.Test (testInterface)
 import qualified Case.JSON.Custom.Errors as JSONCustomErrors
 import qualified Case.JSON.Custom.ErrorsWithType as JSONCustomErrorsWithType
@@ -45,5 +46,6 @@ main =
         JSONCustomPartialResponse.test,
         JSONCustomQuery.test,
         JSONCustomSubscription.test,
-        JSONNoResponseOrError.test
+        JSONNoResponseOrError.test,
+        GH.test
       ]

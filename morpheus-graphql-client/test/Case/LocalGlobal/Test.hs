@@ -24,14 +24,11 @@ import Data.Morpheus.Client
   )
 import Relude
 import Spec.Utils
-  ( getFile,
+  ( assertFetch,
   )
 import Test.Tasty
   ( TestTree,
-  )
-import Test.Tasty.HUnit
-  ( assertEqual,
-    testCase,
+    testGroup,
   )
 
 declareGlobalTypes schema
@@ -57,14 +54,10 @@ checkQuery ::
   FilePath ->
   Args a ->
   a ->
-  IO ()
-checkQuery p args v =
-  fetch
-    (\_ -> getFile ("LocalGlobal/" <> p <> ".json"))
-    args
-    >>= assertEqual ("Test " <> show p) (Right v)
+  TestTree
+checkQuery x = assertFetch "LocalGlobal" (Just x)
 
-checkCities :: IO ()
+checkCities :: TestTree
 checkCities =
   checkQuery
     "cities"
@@ -79,7 +72,7 @@ checkCities =
           ]
       }
 
-checkUsers1 :: IO ()
+checkUsers1 :: TestTree
 checkUsers1 =
   checkQuery
     "users1"
@@ -94,7 +87,7 @@ checkUsers1 =
             )
       }
 
-checkUsers2 :: IO ()
+checkUsers2 :: TestTree
 checkUsers2 =
   checkQuery
     "users2"
@@ -109,7 +102,10 @@ checkUsers2 =
       }
 
 test :: TestTree
-test = testCase "Test Local/Global types" $ do
-  checkCities
-  checkUsers1
-  checkUsers2
+test =
+  testGroup
+    "Local/Global"
+    [ checkCities,
+      checkUsers1,
+      checkUsers2
+    ]

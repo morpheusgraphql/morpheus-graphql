@@ -9,29 +9,23 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Case.Github.Test
-  ( testInterface,
+  ( test,
   )
 where
 
 import Data.Morpheus.Client
   ( DecodeScalar (..),
     EncodeScalar (..),
-    Fetch (..),
-    FetchError,
     ScalarValue (..),
     raw,
   )
 import Relude
 import Spec.Utils
-  ( defineClientWith,
-    mockApi,
+  ( assertFetch,
+    defineClientWith,
   )
 import Test.Tasty
   ( TestTree,
-  )
-import Test.Tasty.HUnit
-  ( assertEqual,
-    testCase,
   )
 
 newtype GitTimestamp = GitTimestamp
@@ -76,53 +70,44 @@ defineClientWith
       }
   |]
 
-client :: IO (Either (FetchError GetTags) GetTags)
-client =
-  fetch
-    (mockApi "Interface")
+test :: TestTree
+test =
+  assertFetch
+    "Github"
+    Nothing
     GetTagsArgs
       { user = "UserName",
         repo = "repoName"
       }
-
-testInterface :: TestTree
-testInterface = testCase "test Github interfaces" $ do
-  value <- client
-  assertEqual
-    "test Github interface"
-    ( Right
-        ( GetTags
-            { repository =
-                Just
-                  RepositoryRepository
-                    { refs =
-                        Just
-                          RepositoryRefsRefConnection
-                            { pageInfo =
-                                RepositoryRefsPageInfoPageInfo
-                                  { endCursor = Just "",
-                                    hasNextPage = False
-                                  },
-                              edges =
-                                Just
-                                  [ Just
-                                      RepositoryRefsEdgesRefEdge
-                                        { cursor = "",
-                                          node =
-                                            Just
-                                              RepositoryRefsEdgesNodeRef
-                                                { name = "",
-                                                  target =
-                                                    Just
-                                                      RepositoryRefsEdgesNodeTargetGitObject
-                                                        { __typename = ""
-                                                        }
-                                                }
-                                        }
-                                  ]
-                            }
-                    }
-            }
-        )
-    )
-    value
+    GetTags
+      { repository =
+          Just
+            RepositoryRepository
+              { refs =
+                  Just
+                    RepositoryRefsRefConnection
+                      { pageInfo =
+                          RepositoryRefsPageInfoPageInfo
+                            { endCursor = Just "test value 1",
+                              hasNextPage = False
+                            },
+                        edges =
+                          Just
+                            [ Just
+                                RepositoryRefsEdgesRefEdge
+                                  { cursor = "test cursor",
+                                    node =
+                                      Just
+                                        RepositoryRefsEdgesNodeRef
+                                          { name = "test name",
+                                            target =
+                                              Just
+                                                RepositoryRefsEdgesNodeTargetGitObject
+                                                  { __typename = "GitObject"
+                                                  }
+                                          }
+                                  }
+                            ]
+                      }
+              }
+      }

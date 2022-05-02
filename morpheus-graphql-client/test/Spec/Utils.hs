@@ -5,28 +5,31 @@
 module Spec.Utils
   ( mockApi,
     defineClientWith,
-    defineClientWithJSON,
-    getFile,
     path,
+    assertFetch,
   )
 where
 
+import Data.Aeson (FromJSON)
 import qualified Data.ByteString.Lazy as L (readFile)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.FileEmbed (makeRelativeToProject)
 import Data.Morpheus.Client
-  ( defineByDocumentFile,
-    defineByIntrospectionFile,
+  ( Fetch (..),
+    defineByDocumentFile,
   )
-import Data.Semigroup ((<>))
 import Data.Text
 import Language.Haskell.TH
   ( Dec,
     Q,
   )
-import Prelude
-  ( FilePath,
-    IO,
+import Relude hiding (ByteString, exp)
+import Test.Tasty
+  ( TestTree,
+  )
+import Test.Tasty.HUnit
+  ( assertEqual,
+    testCase,
   )
 
 path :: FilePath -> FilePath
@@ -35,8 +38,11 @@ path name = "test/Case/" <> name
 getFile :: FilePath -> IO ByteString
 getFile p = L.readFile (path p)
 
+getJSON :: FilePath -> ByteString -> IO ByteString
+getJSON p _ = getFile (p <> ".json")
+
 mockApi :: FilePath -> ByteString -> IO ByteString
-mockApi p _ = getFile (p <> "/response.json")
+mockApi p = getJSON (p <> "/response")
 
 relativePath :: FilePath -> Q FilePath
 relativePath url = makeRelativeToProject (path url)
@@ -46,7 +52,21 @@ defineClientWith url exp = do
   p <- relativePath (url <> "/schema.gql")
   defineByDocumentFile p exp
 
-defineClientWithJSON :: FilePath -> Text -> Q [Dec]
-defineClientWithJSON url exp = do
-  p <- relativePath (url <> "/schema.json")
-  defineByIntrospectionFile p exp
+assertFetch ::
+  ( Fetch a,
+    FromJSON a,
+    Eq a,
+    Show a
+  ) =>
+  FilePath ->
+  Maybe FilePath ->
+  Args a ->
+  a ->
+  TestTree
+assertFetch folder file args v =
+  testCase display $ do
+    response <- fetch (getJSON (folder <> "/" <> fileName)) args
+    assertEqual ("Test " <> display) (Right v) response
+  where
+    fileName = fromMaybe "response" file
+    display = fromMaybe folder file

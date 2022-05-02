@@ -12,22 +12,16 @@ module Case.Scalar.Test
 where
 
 import Data.Morpheus.Client
-  ( Fetch (..),
-    FetchError (..),
-    declareLocalTypesInline,
+  ( declareLocalTypesInline,
     raw,
   )
 import Relude
 import Spec.Utils
-  ( mockApi,
+  ( assertFetch,
     path,
   )
 import Test.Tasty
   ( TestTree,
-  )
-import Test.Tasty.HUnit
-  ( assertEqual,
-    testCase,
   )
 
 declareLocalTypesInline
@@ -62,29 +56,20 @@ testFloat = 21233.1234145
 testText :: Text
 testText = "Athens"
 
-client :: IO (Either (FetchError MyQuery) MyQuery)
-client =
-  fetch
-    (mockApi "Scalar")
+test :: TestTree
+test =
+  assertFetch
+    "Scalar"
+    Nothing
     MyQueryArgs
       { inputBoolean = testBoolean,
         inputInt = testInt,
         inputFloat = testFloat,
         inputString = testText
       }
-
-test :: TestTree
-test = testCase "test Scalar" $ do
-  value <- client
-  assertEqual
-    "test Scalar"
-    ( Right
-        ( MyQuery
-            { booleanResolver = testBoolean,
-              intResolver = testInt,
-              floatResolver = testFloat,
-              stringResolver = testText
-            }
-        )
-    )
-    value
+    MyQuery
+      { booleanResolver = testBoolean,
+        intResolver = testInt,
+        floatResolver = testFloat,
+        stringResolver = testText
+      }

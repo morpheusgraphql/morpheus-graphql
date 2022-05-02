@@ -16,8 +16,6 @@ where
 import Data.Morpheus.Client
   ( DecodeScalar (..),
     EncodeScalar (..),
-    Fetch (..),
-    FetchError (..),
     ScalarValue (..),
     declareGlobalTypes,
     declareLocalTypesInline,
@@ -25,15 +23,11 @@ import Data.Morpheus.Client
   )
 import Relude
 import Spec.Utils
-  ( mockApi,
+  ( assertFetch,
     path,
   )
 import Test.Tasty
   ( TestTree,
-  )
-import Test.Tasty.HUnit
-  ( assertEqual,
-    testCase,
   )
 
 newtype Uuid = Uuid
@@ -60,21 +54,16 @@ declareLocalTypesInline
     }
   |]
 
-client :: IO (Either (FetchError MyQuery) MyQuery)
-client = fetch (mockApi "LowercaseTypeName") ()
-
 testLowercaseTypeName :: TestTree
-testLowercaseTypeName = testCase "test lowercase type names" $ do
-  value <- client
-  assertEqual
-    "test interface"
-    ( Right
-        ( MyQuery
-            { user =
-                MyQueryUserUser
-                  { id = Uuid "11343135"
-                  }
-            }
-        )
+testLowercaseTypeName =
+  assertFetch
+    "LowercaseTypeName"
+    Nothing
+    ()
+    ( MyQuery
+        { user =
+            MyQueryUserUser
+              { id = Uuid "11343135"
+              }
+        }
     )
-    value

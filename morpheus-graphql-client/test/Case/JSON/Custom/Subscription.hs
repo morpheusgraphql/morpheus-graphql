@@ -16,12 +16,13 @@ where
 import Data.Morpheus.Client
   ( Fetch (..),
     FetchError,
+    declareLocalTypesInline,
     raw,
   )
 import Relude
 import Spec.Utils
-  ( defineClientWithJSON,
-    mockApi,
+  ( mockApi,
+    path,
   )
 import Test.Tasty
   ( TestTree,
@@ -31,8 +32,8 @@ import Test.Tasty.HUnit
     testCase,
   )
 
-defineClientWithJSON
-  "JSON/Custom"
+declareLocalTypesInline
+  (path "JSON/Custom/schema.json")
   [raw|
     subscription TestSubscription
       {
