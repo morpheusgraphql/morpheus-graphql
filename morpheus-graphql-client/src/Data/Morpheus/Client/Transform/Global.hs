@@ -80,7 +80,7 @@ toGlobalDefinitions f Schema {types} =
 
 generateGlobalType :: TypeDefinition ANY VALID -> Maybe ClientTypeDefinition
 generateGlobalType TypeDefinition {typeName, typeContent} = do
-  (clientKind, clientCons) <- subTypes typeContent
+  (clientKind, clientCons) <- genContent typeContent
   pure
     ClientTypeDefinition
       { clientTypeName = TypeNameTH [] typeName,
@@ -88,8 +88,8 @@ generateGlobalType TypeDefinition {typeName, typeContent} = do
         clientCons
       }
   where
-    subTypes :: TypeContent TRUE ANY VALID -> Maybe (TypeKind, [ClientConstructorDefinition])
-    subTypes (DataInputObject inputFields) = do
+    genContent :: TypeContent TRUE ANY VALID -> Maybe (TypeKind, [ClientConstructorDefinition])
+    genContent (DataInputObject inputFields) = do
       pure
         ( KindInputObject,
           [ ClientConstructorDefinition
@@ -98,9 +98,9 @@ generateGlobalType TypeDefinition {typeName, typeContent} = do
               }
           ]
         )
-    subTypes (DataEnum enumTags) = pure (KindEnum, mkConsEnum <$> enumTags)
-    subTypes DataScalar {} = pure (KindScalar, [])
-    subTypes _ = Nothing
+    genContent (DataEnum enumTags) = pure (KindEnum, mkConsEnum <$> enumTags)
+    genContent DataScalar {} = pure (KindScalar, [])
+    genContent _ = Nothing
 
 mkConsEnum :: DataEnumValue s -> ClientConstructorDefinition
 mkConsEnum DataEnumValue {enumName} = ClientConstructorDefinition enumName []

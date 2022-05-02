@@ -125,25 +125,22 @@ toConstructorDefinition path cName datatype selSet = do
   (cFields, subTypes) <- unzip <$> traverse genField (toList selSet)
   pure (ClientConstructorDefinition {cName, cFields}, concat subTypes)
   where
-    genField ::
-      Selection VALID ->
-      Converter (FieldDefinition ANY VALID, [ClientTypeDefinition])
-    genField sel =
-      do
-        let fieldName = keyOf sel
-        let fieldPath = path <> [fieldName]
-        (fieldDataType, fieldType) <- getFieldType fieldPath datatype sel
-        subTypes <- subTypesBySelection fieldPath fieldDataType sel
-        pure
-          ( FieldDefinition
-              { fieldName,
-                fieldType,
-                fieldContent = Nothing,
-                fieldDescription = Nothing,
-                fieldDirectives = empty
-              },
-            subTypes
-          )
+    genField :: Selection VALID -> Converter (FieldDefinition ANY VALID, [ClientTypeDefinition])
+    genField sel = do
+      let fieldName = keyOf sel
+      let fieldPath = path <> [fieldName]
+      (fieldDataType, fieldType) <- getFieldType fieldPath datatype sel
+      subTypes <- subTypesBySelection fieldPath fieldDataType sel
+      pure
+        ( FieldDefinition
+            { fieldName,
+              fieldType,
+              fieldContent = Nothing,
+              fieldDescription = Nothing,
+              fieldDirectives = empty
+            },
+          subTypes
+        )
 
 ------------------------------------------
 subTypesBySelection ::
