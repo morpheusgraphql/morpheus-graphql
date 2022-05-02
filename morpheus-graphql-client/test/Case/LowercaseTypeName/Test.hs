@@ -9,7 +9,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Case.LowercaseTypeName.Test
-  ( testLowercaseTypeName,
+  ( test,
   )
 where
 
@@ -54,8 +54,8 @@ declareLocalTypesInline
     }
   |]
 
-testLowercaseTypeName :: TestTree
-testLowercaseTypeName =
+test :: TestTree
+test =
   assertFetch
     "LowercaseTypeName"
     Nothing

@@ -3,8 +3,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Spec.Utils
-  ( mockApi,
-    path,
+  ( path,
     assertFetch,
   )
 where
@@ -31,11 +30,8 @@ path name = "test/Case/" <> name
 getFile :: FilePath -> IO ByteString
 getFile p = L.readFile (path p)
 
-getJSON :: FilePath -> ByteString -> IO ByteString
-getJSON p _ = getFile (p <> ".json")
-
-mockApi :: FilePath -> ByteString -> IO ByteString
-mockApi p = getJSON (p <> "/response")
+mockJSON :: FilePath -> ByteString -> IO ByteString
+mockJSON p _ = getFile (p <> ".json")
 
 assertFetch ::
   ( Fetch a,
@@ -50,7 +46,7 @@ assertFetch ::
   TestTree
 assertFetch folder file args v =
   testCase display $ do
-    response <- fetch (getJSON (folder <> "/" <> fileName)) args
+    response <- fetch (mockJSON (folder <> "/" <> fileName)) args
     assertEqual ("Test " <> display) v response
   where
     fileName = fromMaybe "response" file

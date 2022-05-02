@@ -8,7 +8,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Case.JSON.Custom.Test
+module Case.ResponseTypes.Test
   ( test,
   )
 where
@@ -50,7 +50,7 @@ instance EncodeScalar GitTimestamp where
 type Res a = Either (FetchError a) a
 
 declareLocalTypesInline
-  (path "JSON/Custom/schema.json")
+  (path "ResponseTypes/schema.json")
   [raw| 
     query SimpleQuery 
       { queryTypeName 
@@ -65,7 +65,7 @@ simpleQuery =
       }
 
 declareLocalTypesInline
-  (path "JSON/Custom/schema.json")
+  (path "ResponseTypes/schema.json")
   [raw|
     query PartialResponse
       { queryTypeName
@@ -80,7 +80,7 @@ partialResponse =
     )
 
 declareLocalTypesInline
-  (path "JSON/Custom/schema.json")
+  (path "ResponseTypes/schema.json")
   [raw|
     query NoResponseOrError
       {
@@ -92,7 +92,7 @@ noResponseOrError :: Res NoResponseOrError
 noResponseOrError = Left FetchErrorNoResult
 
 declareLocalTypesInline
-  (path "JSON/Custom/schema.json")
+  (path "ResponseTypes/schema.json")
   [raw|
     mutation SimpleMutation
       {
@@ -109,9 +109,9 @@ simpleMutation =
     )
 
 declareLocalTypesInline
-  (path "JSON/Custom/schema.json")
+  (path "ResponseTypes/schema.json")
   [raw|
-    subscription simpleSubscription
+    subscription SimpleSubscription
       {
         subscriptionTypeName
       }
@@ -127,7 +127,7 @@ simpleSubscription =
     )
 
 declareLocalTypesInline
-  (path "JSON/Custom/schema.json")
+  (path "ResponseTypes/schema.json")
   [raw|
     query ErrorsWithType
       {
@@ -147,7 +147,7 @@ errorsWithType =
     )
 
 declareLocalTypesInline
-  (path "JSON/Custom/schema.json")
+  (path "ResponseTypes/schema.json")
   [raw|
     query TestErrorsQuery
       {
@@ -184,19 +184,19 @@ check ::
   TestTree
 check name =
   assertFetch
-    "JSON/Custom"
-    (Just (name <> "/response"))
+    "ResponseTypes"
+    (Just name)
     ()
 
 test :: TestTree
 test =
   testGroup
     "Response Types"
-    [ check "Query" simpleQuery,
-      check "PartialResponse" partialResponse,
-      check "NoResponseOrError" noResponseOrError,
-      check "Mutation" simpleMutation,
-      check "Subscription" simpleSubscription,
-      check "ErrorsWithType" errorsWithType,
-      check "Errors" testErrorsQuery
+    [ check "query" simpleQuery,
+      check "partialResponse" partialResponse,
+      check "noResponseOrError" noResponseOrError,
+      check "mutation" simpleMutation,
+      check "subscription" simpleSubscription,
+      check "errorsWithType" errorsWithType,
+      check "errors" testErrorsQuery
     ]

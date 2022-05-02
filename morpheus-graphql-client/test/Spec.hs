@@ -7,13 +7,11 @@ module Main
 where
 
 import qualified Case.Enum.Test as Enum
-import qualified Case.Github.Test as GH
-import Case.Interface.Test (testInterface)
-import qualified Case.JSON.Custom.Test as JSONCustom
-import qualified Case.LocalGlobal.Test as LG
-import Case.LowercaseTypeName.Test
-  ( testLowercaseTypeName,
-  )
+import qualified Case.Github.Test as Github
+import qualified Case.Interface.Test as Interface
+import qualified Case.LocalGlobal.Test as LocalGlobal
+import qualified Case.LowercaseTypeName.Test as LowercaseTypeName
+import qualified Case.ResponseTypes.Test as ResponseTypes
 import qualified Case.Scalar.Test as Scalar
 import Test.Tasty
   ( defaultMain,
@@ -28,12 +26,12 @@ main :: IO ()
 main =
   defaultMain $
     testGroup
-      "client tests"
-      [ testInterface,
-        testLowercaseTypeName,
-        LG.test,
+      "Client tests"
+      [ Interface.test,
+        LowercaseTypeName.test,
+        LocalGlobal.test,
         Enum.test,
         Scalar.test,
-        JSONCustom.test,
-        GH.test
+        ResponseTypes.test,
+        Github.test
       ]

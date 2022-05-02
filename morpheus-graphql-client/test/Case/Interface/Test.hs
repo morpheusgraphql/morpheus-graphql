@@ -9,7 +9,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Case.Interface.Test
-  ( testInterface,
+  ( test,
   )
 where
 
@@ -29,8 +29,8 @@ declareLocalTypes
   (path "Interface/schema.gql")
   (path "Interface/query.gql")
 
-testInterface :: TestTree
-testInterface =
+test :: TestTree
+test =
   assertFetch
     "Interface"
     Nothing
