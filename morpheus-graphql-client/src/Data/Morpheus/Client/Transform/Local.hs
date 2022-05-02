@@ -6,7 +6,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Client.Transform.Selection
+module Data.Morpheus.Client.Transform.Local
   ( toLocalDefinitions,
   )
 where
@@ -20,7 +20,7 @@ import Data.Morpheus.Client.Internal.Types
     TypeNameTH (..),
   )
 import Data.Morpheus.Client.Transform.Core (Converter (..), compileError, deprecationWarning, getType, typeFrom)
-import Data.Morpheus.Client.Transform.Global (renderOperationArguments)
+import Data.Morpheus.Client.Transform.Global (toArgumentsType)
 import Data.Morpheus.Core (Config (..), VALIDATION_MODE (WITHOUT_VARIABLES), validateRequest)
 import Data.Morpheus.Internal.Ext
   ( GQLResult,
@@ -65,28 +65,33 @@ clientConfig =
     }
 
 toLocalDefinitions ::
-  Mode ->
   ExecutableDocument ->
   Schema VALID ->
   GQLResult
     ( FetchDefinition,
       [ClientTypeDefinition]
     )
-toLocalDefinitions mode request schema = do
+toLocalDefinitions request schema = do
   validOperation <- validateRequest clientConfig schema request
   flip runReaderT (schema, operationArguments $ operation request) $
-    runConverter $
-      genOperation mode validOperation
+    runConverter $ genOperation validOperation
 
 genOperation ::
-  Mode ->
   Operation VALID ->
   Converter
     ( FetchDefinition,
       [ClientTypeDefinition]
     )
-genOperation mode operation = do
-  (argumentsType, rootType :| localTypes) <- renderOperationTypes mode operation
+genOperation op@Operation {operationName, operationSelection} = do
+  (schema, varDefs) <- asks id
+  datatype <- getOperationDataType op schema
+  let argumentsType = toArgumentsType (getOperationName operationName <> "Args") varDefs
+  (rootType :| localTypes) <-
+    genRecordType
+      [coerce (getOperationName operationName)]
+      (getOperationName operationName)
+      (toAny datatype)
+      operationSelection
   pure
     ( FetchDefinition
         { clientArgumentsTypeName = fmap clientTypeName argumentsType,
@@ -95,36 +100,16 @@ genOperation mode operation = do
       rootType : (localTypes <> maybeToList argumentsType)
     )
 
-renderOperationTypes ::
-  Mode ->
-  Operation VALID ->
-  Converter
-    ( Maybe ClientTypeDefinition,
-      NonEmpty ClientTypeDefinition
-    )
-renderOperationTypes mode op@Operation {operationName, operationSelection} = do
-  datatype <- asks fst >>= getOperationDataType op
-  arguments <- renderOperationArguments op
-  outputTypes <-
-    genRecordType
-      (mode == Local)
-      []
-      (getOperationName operationName)
-      (toAny datatype)
-      operationSelection
-  pure (arguments, outputTypes)
-
 -------------------------------------------------------------------------
 -- generates selection Object Types
 genRecordType ::
-  Bool ->
   [FieldName] ->
   TypeName ->
   TypeDefinition ANY VALID ->
   SelectionSet VALID ->
   Converter (NonEmpty ClientTypeDefinition)
-genRecordType localize path tName dataType recordSelSet = do
-  (con, subTypes) <- genConsD (if localize then coerce tName : path else path) tName dataType recordSelSet
+genRecordType path tName dataType recordSelSet = do
+  (con, subTypes) <- genConsD path tName dataType recordSelSet
   pure $
     ClientTypeDefinition
       { clientTypeName = TypeNameTH path tName,
@@ -173,8 +158,7 @@ subTypesBySelection ::
   Converter [ClientTypeDefinition]
 subTypesBySelection _ _ Selection {selectionContent = SelectionField} = pure []
 subTypesBySelection path dType Selection {selectionContent = SelectionSet selectionSet} = do
-  (x :| xs) <- genRecordType False path (typeFrom [] dType) dType selectionSet
-  pure (x : xs)
+  toList <$> genRecordType path (typeFrom [] dType) dType selectionSet
 subTypesBySelection path dType Selection {selectionContent = UnionSelection interface unionSelections} =
   do
     (clientCons, subTypes) <-

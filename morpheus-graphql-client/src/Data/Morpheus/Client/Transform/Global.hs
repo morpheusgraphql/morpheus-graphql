@@ -6,7 +6,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Transform.Global
-  ( renderOperationArguments,
+  ( toArgumentsType,
     toGlobalDefinitions,
   )
 where
@@ -20,9 +20,6 @@ import Data.Morpheus.Client.Internal.Types
 import Data.Morpheus.Client.Internal.Utils
   ( withMode,
   )
-import Data.Morpheus.Client.Transform.Core
-  ( Converter (..),
-  )
 import Data.Morpheus.Internal.Utils
   ( empty,
   )
@@ -30,7 +27,6 @@ import Data.Morpheus.Types.Internal.AST
   ( ANY,
     DataEnumValue (DataEnumValue, enumName),
     FieldDefinition (..),
-    Operation (..),
     RAW,
     Schema (Schema, types),
     TRUE,
@@ -41,22 +37,15 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
     Variable (..),
     VariableDefinitions,
-    getOperationName,
     toAny,
   )
 import Relude hiding (empty)
 
-renderOperationArguments ::
-  Operation VALID ->
-  Converter (Maybe ClientTypeDefinition)
-renderOperationArguments Operation {operationName} =
-  asks ((`renderArguments` (getOperationName operationName <> "Args")) . snd)
-
-renderArguments ::
-  VariableDefinitions RAW ->
+toArgumentsType ::
   TypeName ->
+  VariableDefinitions RAW ->
   Maybe ClientTypeDefinition
-renderArguments variables cName
+toArgumentsType cName variables
   | null variables = Nothing
   | otherwise =
     Just

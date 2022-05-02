@@ -74,7 +74,7 @@ library
       Data.Morpheus.Client.Transform
       Data.Morpheus.Client.Transform.Core
       Data.Morpheus.Client.Transform.Global
-      Data.Morpheus.Client.Transform.Selection
+      Data.Morpheus.Client.Transform.Local
       Paths_morpheus_graphql_client
   hs-source-dirs:
       src
