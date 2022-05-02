@@ -21,14 +21,18 @@ words:
   - bgroup
   - Bifunctor
   - bimap
+  - bytestring
+  - compat
   - concat
   - cond
   - cronos
   - Daviti
+  - deps
   - dups
   - Eithers
   - elems
   - elif
+  - fastsum
   - fbexp
   - fmap
   - foldl
@@ -41,6 +45,7 @@ words:
   - hlint
   - hpack
   - hsep
+  - hunit
   - ifromJSON
   - inlineable
   - jsdelivr
@@ -53,9 +58,11 @@ words:
   - Nalchevanidze
   - normalise
   - nullary
+  - optparse
   - parens
   - Posix
   - prefs
+  - prettyprinter
   - Relude
   - rmap
   - sconcat
@@ -63,6 +70,7 @@ words:
   - semigroup
   - shapeshifting
   - stimes
+  - stylesheet
   - subparser
   - subprotocols
   - Subtyping
@@ -71,8 +79,8 @@ words:
   - uncapitalize
   - uncurry
   - unlift
+  - unliftio
   - Unpackedness
   - vsep
-  - whnf
-  - stylesheet
   - websockets
+  - whnf

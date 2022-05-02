@@ -6,6 +6,17 @@ export type VersionUpdate = {
 
 type Version = [number, number, number];
 
+export const isHigherOrEQ = (
+  [x, ...xs]: number[],
+  [y, ...ys]: number[]
+): boolean => {
+  if (x === undefined && y == undefined) {
+    return true;
+  }
+
+  return x > y || (x === y && isHigherOrEQ(xs, ys));
+};
+
 const parseVersion = (versionTag: string): Version => {
   const vs = versionTag.split(".").map((v) => parseInt(v, 10));
 

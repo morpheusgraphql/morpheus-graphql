@@ -1,25 +1,20 @@
 resolver: nightly-2022-03-02
 save-hackage-creds: false
 packages:
-  # examples
-  # TODO: - examples/scotty
-  # TODO: - examples/scotty-freer-simple
+  - examples/scotty
+  - examples/scotty-freer-simple
   - examples/servant
   - examples/client
   - examples/code-gen
-  # benchmarks: TODO: restore when GraphQL supports Aeson 2
-  # - morpheus-graphql-benchmarks
-  # libs
+  - morpheus-graphql-benchmarks
   - morpheus-graphql-tests
   - morpheus-graphql-core
-  - morpheus-graphql-app
-  - morpheus-graphql-subscriptions
   - morpheus-graphql-code-gen
+  - morpheus-graphql-app
   - morpheus-graphql-client
+  - morpheus-graphql-subscriptions
   - morpheus-graphql
-
 extra-deps:
   - fraxl-0.3.0.0
   - haxl-2.3.0.0
   - type-aligned-0.9.6
-  # - graphql-0.11.0.0
