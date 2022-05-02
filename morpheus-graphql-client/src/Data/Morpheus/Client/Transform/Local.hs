@@ -3,6 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -34,12 +35,14 @@ import Data.Morpheus.Types.Internal.AST
     ExecutableDocument (..),
     FieldDefinition (..),
     FieldName,
+    OUT,
     Operation (..),
     Ref (..),
     Schema (..),
     Selection (..),
     SelectionContent (..),
     SelectionSet,
+    TRUE,
     TypeContent (..),
     TypeDefinition (..),
     TypeKind (..),
@@ -103,7 +106,7 @@ genLocalTypes ::
   SelectionSet VALID ->
   Converter (NonEmpty ClientTypeDefinition)
 genLocalTypes path tName dataType recordSelSet = do
-  (con, subTypes) <- genConsD (if null path then [coerce tName] else path) tName dataType recordSelSet
+  (con, subTypes) <- toConstructorDefinition (if null path then [coerce tName] else path) tName dataType recordSelSet
   pure $
     ClientTypeDefinition
       { clientTypeName = TypeNameTH path tName,
@@ -112,13 +115,13 @@ genLocalTypes path tName dataType recordSelSet = do
       }
       :| subTypes
 
-genConsD ::
+toConstructorDefinition ::
   [FieldName] ->
   TypeName ->
   TypeDefinition ANY VALID ->
   SelectionSet VALID ->
   Converter (ClientConstructorDefinition, [ClientTypeDefinition])
-genConsD path cName datatype selSet = do
+toConstructorDefinition path cName datatype selSet = do
   (cFields, subTypes) <- unzip <$> traverse genField (toList selSet)
   pure (ClientConstructorDefinition {cName, cFields}, concat subTypes)
   where
@@ -153,12 +156,8 @@ subTypesBySelection path dType Selection {selectionContent = SelectionSet select
   toList <$> genLocalTypes path (typeFrom [] dType) dType selectionSet
 subTypesBySelection path dType Selection {selectionContent = UnionSelection interface unionSelections} =
   do
-    (clientCons, subTypes) <-
-      unzip
-        <$> traverse
-          getUnionType
-          ( UnionTag (typeName dType) interface : toList unionSelections
-          )
+    let variants = UnionTag (typeName dType) interface : toList unionSelections
+    (clientCons, subTypes) <- unzip <$> traverse (getVariantType path) variants
     pure
       ( ClientTypeDefinition
           { clientTypeName = TypeNameTH path (typeFrom [] dType),
@@ -167,10 +166,11 @@ subTypesBySelection path dType Selection {selectionContent = UnionSelection inte
           } :
         concat subTypes
       )
-  where
-    getUnionType (UnionTag selectedTyName selectionVariant) = do
-      conDatatype <- getType selectedTyName
-      genConsD path selectedTyName conDatatype selectionVariant
+
+getVariantType :: [FieldName] -> UnionTag -> Converter (ClientConstructorDefinition, [ClientTypeDefinition])
+getVariantType path (UnionTag selectedTyName selectionVariant) = do
+  conDatatype <- getType selectedTyName
+  toConstructorDefinition path selectedTyName conDatatype selectionVariant
 
 getFieldType ::
   [FieldName] ->
@@ -183,39 +183,32 @@ getFieldType
   Selection
     { selectionName,
       selectionPosition
-    }
-    | selectionName == "__typename" =
-      processDeprecation
-        FieldDefinition
-          { fieldName = "__typename",
-            fieldDescription = Nothing,
-            fieldType = mkTypeRef "String",
-            fieldDirectives = empty,
-            fieldContent = Nothing
-          }
-    | otherwise = withTypeContent typeContent
+    } = toFieldDef typeContent >>= processFieldDefinition
     where
-      withTypeContent DataObject {objectFields} =
-        selectBy selError selectionName objectFields >>= processDeprecation
-      withTypeContent DataInterface {interfaceFields} =
-        selectBy selError selectionName interfaceFields >>= processDeprecation
-      withTypeContent dt =
-        throwError (compileError $ "Type should be output Object \"" <> msg (show dt))
+      toFieldDef :: TypeContent TRUE ANY VALID -> Converter (FieldDefinition OUT VALID)
+      toFieldDef _
+        | selectionName == "__typename" =
+          pure
+            FieldDefinition
+              { fieldName = "__typename",
+                fieldDescription = Nothing,
+                fieldType = mkTypeRef "String",
+                fieldDirectives = empty,
+                fieldContent = Nothing
+              }
+      toFieldDef DataObject {objectFields} = selectBy selError selectionName objectFields
+      toFieldDef DataInterface {interfaceFields} = selectBy selError selectionName interfaceFields
+      toFieldDef dt = throwError (compileError $ "Type should be output Object \"" <> msg (show dt))
       selError = compileError $ "can't find field " <> msg selectionName <> " on type: " <> msg (show typeContent)
-      processDeprecation
+      --
+      processFieldDefinition
         FieldDefinition
-          { fieldType = alias@TypeRef {typeConName},
+          { fieldType = TypeRef {..},
             fieldDirectives
           } =
           checkDeprecated *> (trans <$> getType typeConName)
           where
-            trans x =
-              (x, alias {typeConName = typeFrom path x})
+            trans x = (x, TypeRef {typeConName = typeFrom path x, ..})
             ------------------------------------------------------------------
             checkDeprecated :: Converter ()
-            checkDeprecated =
-              deprecationWarning
-                fieldDirectives
-                ( coerce typeName,
-                  Ref {refName = selectionName, refPosition = selectionPosition}
-                )
+            checkDeprecated = deprecationWarning fieldDirectives (coerce typeName, Ref selectionName selectionPosition)
