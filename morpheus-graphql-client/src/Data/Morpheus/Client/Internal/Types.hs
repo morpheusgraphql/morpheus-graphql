@@ -7,7 +7,6 @@ module Data.Morpheus.Client.Internal.Types
     FetchDefinition (..),
     ClientConstructorDefinition (..),
     FetchError (..),
-    Mode (..),
     SchemaSource (..),
     ExecutableSource,
   )
@@ -55,11 +54,6 @@ data FetchError a
   | FetchErrorProducedErrors GQLErrors (Maybe a)
   | FetchErrorNoResult
   deriving (Show, Eq, Generic)
-
-data Mode
-  = Local
-  | Global
-  deriving (Show, Eq)
 
 data SchemaSource
   = JSON ByteString

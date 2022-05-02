@@ -16,7 +16,6 @@ import Data.Morpheus.Client.Internal.Types
   ( ClientConstructorDefinition (..),
     ClientTypeDefinition (..),
     FetchDefinition (..),
-    Mode (..),
     TypeNameTH (..),
   )
 import Data.Morpheus.Client.Transform.Core (Converter (..), compileError, deprecationWarning, getType, typeFrom)
@@ -76,19 +75,14 @@ toLocalDefinitions request schema = do
   flip runReaderT (schema, operationArguments $ operation request) $
     runConverter $ genOperation validOperation
 
-genOperation ::
-  Operation VALID ->
-  Converter
-    ( FetchDefinition,
-      [ClientTypeDefinition]
-    )
+genOperation :: Operation VALID -> Converter (FetchDefinition, [ClientTypeDefinition])
 genOperation op@Operation {operationName, operationSelection} = do
   (schema, varDefs) <- asks id
   datatype <- getOperationDataType op schema
   let argumentsType = toArgumentsType (getOperationName operationName <> "Args") varDefs
   (rootType :| localTypes) <-
-    genRecordType
-      [coerce (getOperationName operationName)]
+    genLocalTypes
+      []
       (getOperationName operationName)
       (toAny datatype)
       operationSelection
@@ -102,14 +96,14 @@ genOperation op@Operation {operationName, operationSelection} = do
 
 -------------------------------------------------------------------------
 -- generates selection Object Types
-genRecordType ::
+genLocalTypes ::
   [FieldName] ->
   TypeName ->
   TypeDefinition ANY VALID ->
   SelectionSet VALID ->
   Converter (NonEmpty ClientTypeDefinition)
-genRecordType path tName dataType recordSelSet = do
-  (con, subTypes) <- genConsD path tName dataType recordSelSet
+genLocalTypes path tName dataType recordSelSet = do
+  (con, subTypes) <- genConsD (if null path then [coerce tName] else path) tName dataType recordSelSet
   pure $
     ClientTypeDefinition
       { clientTypeName = TypeNameTH path tName,
@@ -133,6 +127,8 @@ genConsD path cName datatype selSet = do
       Converter (FieldDefinition ANY VALID, [ClientTypeDefinition])
     genField sel =
       do
+        let fieldName = keyOf sel
+        let fieldPath = path <> [fieldName]
         (fieldDataType, fieldType) <- getFieldType fieldPath datatype sel
         subTypes <- subTypesBySelection fieldPath fieldDataType sel
         pure
@@ -145,10 +141,6 @@ genConsD path cName datatype selSet = do
               },
             subTypes
           )
-      where
-        fieldPath = path <> [fieldName]
-        -------------------------------
-        fieldName = keyOf sel
 
 ------------------------------------------
 subTypesBySelection ::
@@ -158,7 +150,7 @@ subTypesBySelection ::
   Converter [ClientTypeDefinition]
 subTypesBySelection _ _ Selection {selectionContent = SelectionField} = pure []
 subTypesBySelection path dType Selection {selectionContent = SelectionSet selectionSet} = do
-  toList <$> genRecordType path (typeFrom [] dType) dType selectionSet
+  toList <$> genLocalTypes path (typeFrom [] dType) dType selectionSet
 subTypesBySelection path dType Selection {selectionContent = UnionSelection interface unionSelections} =
   do
     (clientCons, subTypes) <-

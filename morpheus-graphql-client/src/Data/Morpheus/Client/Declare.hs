@@ -18,7 +18,6 @@ import Data.Morpheus.Client.Declare.Client
 import Data.Morpheus.Client.Declare.Fetch
 import Data.Morpheus.Client.Internal.Types
   ( ExecutableSource,
-    Mode (Local),
     SchemaSource,
   )
 import Data.Morpheus.Client.Internal.Utils (getFile, getSource, handleResult)
@@ -49,7 +48,7 @@ internalLegacyLocalDeclareTypes schemaSrc query = do
     ( do
         schemaDoc <- parseSchema schemaText
         executableDoc <- parseRequest request
-        toLocalDefinitions Local executableDoc schemaDoc
+        toLocalDefinitions executableDoc schemaDoc
     )
     ( \(fetch, types) ->
         (<>)

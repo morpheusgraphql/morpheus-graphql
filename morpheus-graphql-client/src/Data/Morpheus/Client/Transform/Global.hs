@@ -14,11 +14,7 @@ where
 import Data.Morpheus.Client.Internal.Types
   ( ClientConstructorDefinition (..),
     ClientTypeDefinition (..),
-    Mode (..),
     TypeNameTH (..),
-  )
-import Data.Morpheus.Client.Internal.Utils
-  ( withMode,
   )
 import Data.Morpheus.Internal.Utils
   ( empty,
@@ -37,6 +33,8 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
     Variable (..),
     VariableDefinitions,
+    isNotSystemTypeName,
+    isResolverType,
     toAny,
   )
 import Relude hiding (empty)
@@ -75,7 +73,10 @@ toGlobalDefinitions f Schema {types} =
   mapMaybe generateGlobalType $
     filter shouldInclude (toList types)
   where
-    shouldInclude t = withMode Global t && f (typeName t)
+    shouldInclude t =
+      not (isResolverType t)
+        && isNotSystemTypeName (typeName t)
+        && f (typeName t)
 
 generateGlobalType :: TypeDefinition ANY VALID -> Maybe ClientTypeDefinition
 generateGlobalType TypeDefinition {typeName, typeContent} = do
