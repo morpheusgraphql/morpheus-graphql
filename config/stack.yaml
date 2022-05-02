@@ -1,6 +1,12 @@
 bounds:
   - 0.19.0
   - 0.20.0
+examples:
+  - examples/scotty
+  - examples/scotty-freer-simple
+  - examples/servant
+  - examples/client
+  - examples/code-gen
 packages:
   - morpheus-graphql-tests
   - morpheus-graphql-core
@@ -9,6 +15,38 @@ packages:
   - morpheus-graphql-client
   - morpheus-graphql-subscriptions
   - morpheus-graphql
+plan:
+  8.10.7:
+    deps:
+      - dependent-map-0.2.4.0
+      - dependent-sum-0.4
+      - fastsum-0.1.0.0
+    resolver: lts-18.10
+  8.2.2:
+    resolver: lts-11.10
+  8.4.4:
+    deps:
+      - megaparsec-7.0.5
+      - aeson-1.4.4.0
+      - time-compat-1.9.2.2
+      - base-orphans-0.8.1
+      - req-2.1.0
+      - modern-uri-0.3.0.0
+      - retry-0.8.1.0
+      - relude-0.3.0
+    resolver: lts-12.16
+  8.6.5:
+    resolver: lts-14.14
+  8.8.3:
+    resolver: lts-16.2
+  latest:
+    deps:
+      - fraxl-0.3.0.0
+      - haxl-2.3.0.0
+      - type-aligned-0.9.6
+    optional:
+      - morpheus-graphql-benchmarks
+    resolver: nightly-2022-03-02
 rules:
   aeson:
     - 1.4.4
@@ -86,43 +124,3 @@ rules:
     - 0.11.0
     - 1.0.0
 version: 0.19.3
-
-examples:
-  - examples/scotty
-  - examples/scotty-freer-simple
-  - examples/servant
-  - examples/client
-  - examples/code-gen
-
-plan:
-  latest:
-    optional:
-      - morpheus-graphql-benchmarks
-    resolver: nightly-2022-03-02
-    deps:
-      - fraxl-0.3.0.0
-      - haxl-2.3.0.0
-      - type-aligned-0.9.6
-  8.10.7:
-    resolver: lts-18.10
-    deps:
-      - dependent-map-0.2.4.0
-      - dependent-sum-0.4
-      - fastsum-0.1.0.0
-  8.8.3:
-    resolver: lts-16.2
-  8.6.5:
-    resolver: lts-14.14
-  8.4.4:
-    resolver: lts-12.16
-    deps:
-      - megaparsec-7.0.5
-      - aeson-1.4.4.0
-      - time-compat-1.9.2.2
-      - base-orphans-0.8.1
-      - req-2.1.0
-      - modern-uri-0.3.0.0
-      - retry-0.8.1.0
-      - relude-0.3.0
-  8.2.2:
-    resolver: lts-11.10
