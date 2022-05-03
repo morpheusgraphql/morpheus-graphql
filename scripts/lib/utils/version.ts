@@ -6,15 +6,25 @@ export type VersionUpdate = {
 
 type Version = [number, number, number];
 
-export const isHigherOrEQ = (
+export const compareVersion = (x: string, y: string) =>
+  compareSeries(parseX(x), parseX(y));
+
+const parseX = (x: string): Version =>
+  x === "latest" ? [Infinity, 0, 0] : parseVersion(x);
+
+export const compareSeries = (
   [x, ...xs]: number[],
   [y, ...ys]: number[]
-): boolean => {
+): number => {
   if (x === undefined && y == undefined) {
-    return true;
+    return 0;
   }
 
-  return x > y || (x === y && isHigherOrEQ(xs, ys));
+  if (x === y) {
+    return compareSeries(xs, ys);
+  }
+
+  return x - y;
 };
 
 const parseVersion = (versionTag: string): Version => {

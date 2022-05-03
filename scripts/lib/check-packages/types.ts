@@ -7,7 +7,7 @@ export type Bounds = [VersionNumber, VersionNumber];
 export type PackageName = string;
 
 export type StackPlan = {
-  deps?: string[];
+  deps?: Record<string, string>;
   resolver: string;
   include?: string[];
   skip?: string[];
