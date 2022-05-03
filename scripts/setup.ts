@@ -54,10 +54,6 @@ const setup = async (version: string) => {
 
 cli.name("config").description("setup stack config").version("0.0.0");
 
-cli
-  .command("setup")
-  .description("config stack env")
-  .argument("<string>", "version number")
-  .action(setup);
+cli.argument("<string>", "version number").action(setup);
 
 cli.parse();
