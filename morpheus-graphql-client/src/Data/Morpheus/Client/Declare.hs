@@ -68,6 +68,7 @@ clientTypeDeclarations ::
 clientTypeDeclarations src (Just doc) = internalLegacyLocalDeclareTypes (pure src) doc
 clientTypeDeclarations src Nothing = globalTypeDeclarations src (const True)
 
+{- ORMOLU_DISABLE -}
 -- | declares input, enum and scalar types for specified schema
 --
 -- Example where the schema is defined in SDL format
@@ -82,12 +83,12 @@ clientTypeDeclarations src Nothing = globalTypeDeclarations src (const True)
 -- 'declareGlobalTypes' "schema.json"
 -- @
 declareGlobalTypes ::
-  -- | the schema path relative to the  project location,
+  FilePath  -- ^ the schema path relative to the  project location,
   -- both introspection (.json) and
   -- schema definition (.gql, .graphql) are accepted.
-  FilePath ->
-  Q [Dec]
+  -> Q [Dec]
 declareGlobalTypes = flip declareClientTypes Nothing
+{- ORMOLU_ENABLE -}
 
 -- declares global types like 'declareGlobalTypes',
 -- while enabling to select only the types that are needed.
@@ -96,6 +97,7 @@ declareGlobalTypesByName path names = do
   schema <- getSource path
   globalTypeDeclarations schema (`member` S.fromList names)
 
+{- ORMOLU_DISABLE -}
 -- | declares object, interface and union types for
 -- specified schema and query.
 --
@@ -111,15 +113,15 @@ declareGlobalTypesByName path names = do
 -- 'declareLocalTypes' "schema.json" "query.gql"
 -- @
 declareLocalTypes ::
-  -- | the schema path relative to the  project location.
+  FilePath -- ^  the schema path relative to the  project location.
   -- both introspection (`.json`) and
   -- schema definition (`.gql`, `.graphql`) are accepted.
-  FilePath ->
-  -- | query path relative to the  project location
-  FilePath ->
-  Q [Dec]
+  -> FilePath -- ^ query path relative to the  project location
+  -> Q [Dec]
 declareLocalTypes schema query = declareClientTypes schema (Just query)
+{- ORMOLU_ENABLE -}
 
+{- ORMOLU_DISABLE -}
 -- | inline version of `declareLocalTypes`, however
 -- instead of specifying the file path, you can simply
 -- pass the query as text using QuasiQuoter `raw`
@@ -135,16 +137,15 @@ declareLocalTypes schema query = declareClientTypes schema (Just query)
 --     ]
 --  @
 declareLocalTypesInline ::
-  -- | the schema path relative to the  project location.
+  FilePath -- ^ the schema path relative to the  project location.
   -- both introspection (`.json`) and
   -- schema definition (`.gql`, `.graphql`) are accepted.
-  FilePath ->
-  -- | inline graphql query in Text format
-  ExecutableSource ->
-  Q [Dec]
+  -> ExecutableSource -- ^ inline graphql query in Text format
+  -> Q [Dec]
 declareLocalTypesInline schemaPath query = do
   schema <- getSource schemaPath
   clientTypeDeclarations schema (Just query)
+{- ORMOLU_ENABLE -}
 
 declareClientTypes :: FilePath -> Maybe FilePath -> Q [Dec]
 declareClientTypes schemaPath queryPath = do
