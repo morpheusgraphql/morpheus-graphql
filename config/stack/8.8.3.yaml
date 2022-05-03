@@ -18,5 +18,6 @@ extra-deps:
   - dependent-sum-0.4
   - fastsum-0.1.1.1
   - fraxl-0.3.0.0
+  - graphql-0.11.1.0
   - haxl-2.4.0.0
   - type-aligned-0.9.6
