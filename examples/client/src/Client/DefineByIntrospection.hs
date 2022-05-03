@@ -21,6 +21,7 @@ import Data.Morpheus.Client
     Fetch (..),
     FetchError,
     ScalarValue (..),
+    declareGlobalTypes,
     declareLocalTypesInline,
     raw,
   )
@@ -51,6 +52,8 @@ instance EncodeScalar Euro where
 
 instance DecodeScalar Euro where
   decodeScalar _ = pure (Euro 1 0)
+
+declareGlobalTypes "assets/introspection.json"
 
 declareLocalTypesInline
   "assets/introspection.json"

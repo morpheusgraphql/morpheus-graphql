@@ -10,6 +10,7 @@ module Data.Morpheus.Client
     EncodeScalar (..),
     ID (..),
     declareGlobalTypes,
+    declareGlobalTypesByName,
     declareLocalTypes,
     declareLocalTypesInline,
     clientTypeDeclarations,
@@ -31,10 +32,11 @@ import qualified Data.ByteString.Lazy as L
 import Data.Morpheus.Client.Declare
   ( clientTypeDeclarations,
     declareGlobalTypes,
+    declareGlobalTypesByName,
     declareLocalTypes,
     declareLocalTypesInline,
-    internalLegacyDeclareTypes,
-    raw
+    internalLegacyLocalDeclareTypes,
+    raw,
   )
 import Data.Morpheus.Client.Fetch
   ( Fetch (..),
@@ -42,7 +44,6 @@ import Data.Morpheus.Client.Fetch
 import Data.Morpheus.Client.Internal.Types
   ( ExecutableSource,
     FetchError (..),
-    Mode (..),
     SchemaSource (..),
   )
 import Data.Morpheus.Types.GQLScalar
@@ -96,8 +97,8 @@ defineByDocumentFile filePath args = do
 
 {-# DEPRECATED defineByDocument "use clientTypeDeclarations" #-}
 defineByDocument :: IO ByteString -> ExecutableSource -> Q [Dec]
-defineByDocument doc = internalLegacyDeclareTypes (GQL <$> doc) Legacy
+defineByDocument doc = internalLegacyLocalDeclareTypes (GQL <$> doc)
 
 {-# DEPRECATED defineByIntrospection "use clientTypeDeclarations" #-}
 defineByIntrospection :: IO ByteString -> ExecutableSource -> Q [Dec]
-defineByIntrospection doc = internalLegacyDeclareTypes (JSON <$> doc) Legacy
+defineByIntrospection doc = internalLegacyLocalDeclareTypes (JSON <$> doc)

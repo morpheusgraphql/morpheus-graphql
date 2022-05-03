@@ -19,8 +19,9 @@ import Data.FileEmbed (makeRelativeToProject)
 import Data.Morpheus.Client
   ( Fetch (..),
     FetchError,
-    defineByDocumentFile',
-    gql,
+    declareGlobalTypes,
+    declareLocalTypesInline,
+    raw,
   )
 import Data.Morpheus.Types
   ( DecodeScalar (..),
@@ -42,9 +43,11 @@ instance DecodeScalar Euro where
 instance EncodeScalar Euro where
   encodeScalar (Euro x y) = Int (x * 101 + y)
 
-defineByDocumentFile'
-  (makeRelativeToProject "src/Server/Sophisticated/api.gql")
-  [gql|
+declareGlobalTypes "src/Server/Sophisticated/api.gql"
+
+declareLocalTypesInline
+  "src/Server/Sophisticated/api.gql"
+  [raw|
     # Subscription Test Query
     subscription MySubscription
     {
@@ -53,9 +56,9 @@ defineByDocumentFile'
     }
   |]
 
-defineByDocumentFile'
-  (makeRelativeToProject "src/Server/Sophisticated/api.gql")
-  [gql|
+declareLocalTypesInline
+  "src/Server/Sophisticated/api.gql"
+  [raw|
     # Query Hero with Compile time Validation
     query GetUser ($coordinates: Coordinates!)
       {

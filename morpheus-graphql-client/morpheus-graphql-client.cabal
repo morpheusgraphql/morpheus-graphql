@@ -22,7 +22,9 @@ extra-source-files:
     changelog.md
 data-files:
     test/Case/Enum/schema.gql
+    test/Case/Github/query.gql
     test/Case/Github/schema.gql
+    test/Case/Interface/query.gql
     test/Case/Interface/schema.gql
     test/Case/LocalGlobal/schema.gql
     test/Case/LocalGlobal/users1.gql
@@ -32,18 +34,18 @@ data-files:
     test/Case/Enum/response.json
     test/Case/Github/response.json
     test/Case/Interface/response.json
-    test/Case/JSON/Custom/Errors/response.json
-    test/Case/JSON/Custom/ErrorsWithType/response.json
-    test/Case/JSON/Custom/Mutation/response.json
-    test/Case/JSON/Custom/NoResponseOrError/response.json
-    test/Case/JSON/Custom/PartialResponse/response.json
-    test/Case/JSON/Custom/Query/response.json
-    test/Case/JSON/Custom/schema.json
-    test/Case/JSON/Custom/Subscription/response.json
     test/Case/LocalGlobal/cities.json
     test/Case/LocalGlobal/users1.json
     test/Case/LocalGlobal/users2.json
     test/Case/LowercaseTypeName/response.json
+    test/Case/ResponseTypes/errors.json
+    test/Case/ResponseTypes/errorsWithType.json
+    test/Case/ResponseTypes/mutation.json
+    test/Case/ResponseTypes/noResponseOrError.json
+    test/Case/ResponseTypes/partialResponse.json
+    test/Case/ResponseTypes/query.json
+    test/Case/ResponseTypes/schema.json
+    test/Case/ResponseTypes/subscription.json
     test/Case/Scalar/response.json
 
 source-repository head
@@ -71,8 +73,8 @@ library
       Data.Morpheus.Client.Schema.Parse
       Data.Morpheus.Client.Transform
       Data.Morpheus.Client.Transform.Core
-      Data.Morpheus.Client.Transform.Inputs
-      Data.Morpheus.Client.Transform.Selection
+      Data.Morpheus.Client.Transform.Global
+      Data.Morpheus.Client.Transform.Local
       Paths_morpheus_graphql_client
   hs-source-dirs:
       src
@@ -81,6 +83,7 @@ library
       aeson >=1.4.4 && <3.0.0
     , base >=4.7.0 && <5.0.0
     , bytestring >=0.10.4 && <0.12.0
+    , containers >=0.4.2.1 && <0.7.0
     , file-embed >=0.0.10 && <1.0.0
     , morpheus-graphql-code-gen >=0.19.0 && <0.20.0
     , morpheus-graphql-core >=0.19.0 && <0.20.0
@@ -99,16 +102,10 @@ test-suite morpheus-graphql-client-test
       Case.Enum.Test
       Case.Github.Test
       Case.Interface.Test
-      Case.JSON.Custom.Errors
-      Case.JSON.Custom.ErrorsWithType
-      Case.JSON.Custom.Mutation
-      Case.JSON.Custom.NoResponseOrError
-      Case.JSON.Custom.PartialResponse
-      Case.JSON.Custom.Query
-      Case.JSON.Custom.Subscription
       Case.LocalGlobal.Api
       Case.LocalGlobal.Test
       Case.LowercaseTypeName.Test
+      Case.ResponseTypes.Test
       Case.Scalar.Test
       Spec.Utils
       Paths_morpheus_graphql_client
@@ -119,6 +116,7 @@ test-suite morpheus-graphql-client-test
       aeson >=1.4.4 && <3.0.0
     , base >=4.7.0 && <5.0.0
     , bytestring >=0.10.4 && <0.12.0
+    , containers >=0.4.2.1 && <0.7.0
     , directory >=1.0.0 && <2.0.0
     , file-embed >=0.0.10 && <1.0.0
     , morpheus-graphql-client

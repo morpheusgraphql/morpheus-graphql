@@ -9,43 +9,24 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Case.Github.Test
-  ( testInterface,
+  ( test,
   )
 where
 
-import Data.ByteString.Lazy.Char8
-  ( ByteString,
-  )
 import Data.Morpheus.Client
   ( DecodeScalar (..),
     EncodeScalar (..),
-    Fetch (..),
-    FetchError,
     ScalarValue (..),
-    gql,
-    raw,
+    declareGlobalTypesByName,
+    declareLocalTypes,
   )
-import Data.Text (Text)
+import Relude
 import Spec.Utils
-  ( defineClientWith,
-    mockApi,
+  ( assertFetch,
+    path,
   )
 import Test.Tasty
   ( TestTree,
-  )
-import Test.Tasty.HUnit
-  ( assertEqual,
-    testCase,
-  )
-import Prelude
-  ( Applicative (..),
-    Bool (..),
-    Either (..),
-    Eq (..),
-    IO,
-    Maybe (..),
-    Show,
-    ($),
   )
 
 newtype GitTimestamp = GitTimestamp
@@ -60,86 +41,54 @@ instance DecodeScalar GitTimestamp where
 instance EncodeScalar GitTimestamp where
   encodeScalar (GitTimestamp x) = String x
 
-defineClientWith
-  "Github"
-  [raw|
-    query GetTags ($user: String!, $repo: String!)
-      {
-        repository(owner: $user, name: $repo) {
-          refs(refPrefix: "refs/tags/", first: 100) {
-            pageInfo {
-              endCursor
-              hasNextPage
-            }
-            edges {
-              cursor
-              node {
-                name
-                target {
-                  __typename
-                  ... on Tag {
-                    tagger {
-                      date
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-  |]
+declareGlobalTypesByName
+  (path "Github/schema.gql")
+  ["GitTimestamp"]
 
-resolver :: ByteString -> IO ByteString
-resolver = mockApi "Interface"
+declareLocalTypes
+  (path "Github/schema.gql")
+  (path "Github/query.gql")
 
-client :: IO (Either (FetchError GetTags) GetTags)
-client =
-  fetch
-    resolver
+test :: TestTree
+test =
+  assertFetch
+    "Github"
+    Nothing
     GetTagsArgs
       { user = "UserName",
         repo = "repoName"
       }
-
-testInterface :: TestTree
-testInterface = testCase "test Github interfaces" $ do
-  value <- client
-  assertEqual
-    "test Github interface"
     ( Right
-        ( GetTags
-            { repository =
-                Just
-                  RepositoryRepository
-                    { refs =
-                        Just
-                          RepositoryRefsRefConnection
-                            { pageInfo =
-                                RepositoryRefsPageInfoPageInfo
-                                  { endCursor = Just "",
-                                    hasNextPage = False
-                                  },
-                              edges =
-                                Just
-                                  [ Just
-                                      RepositoryRefsEdgesRefEdge
-                                        { cursor = "",
-                                          node =
-                                            Just
-                                              RepositoryRefsEdgesNodeRef
-                                                { name = "",
-                                                  target =
-                                                    Just
-                                                      RepositoryRefsEdgesNodeTargetGitObject
-                                                        { __typename = ""
-                                                        }
-                                                }
-                                        }
-                                  ]
-                            }
-                    }
-            }
-        )
+        GetTags
+          { repository =
+              Just
+                GetTagsRepositoryRepository
+                  { refs =
+                      Just
+                        GetTagsRepositoryRefsRefConnection
+                          { pageInfo =
+                              GetTagsRepositoryRefsPageInfoPageInfo
+                                { endCursor = Just "test value 1",
+                                  hasNextPage = False
+                                },
+                            edges =
+                              Just
+                                [ Just
+                                    GetTagsRepositoryRefsEdgesRefEdge
+                                      { cursor = "test cursor",
+                                        node =
+                                          Just
+                                            GetTagsRepositoryRefsEdgesNodeRef
+                                              { name = "test name",
+                                                target =
+                                                  Just
+                                                    GetTagsRepositoryRefsEdgesNodeTargetGitObject
+                                                      { __typename = "GitObject"
+                                                      }
+                                              }
+                                      }
+                                ]
+                          }
+                  }
+          }
     )
-    value

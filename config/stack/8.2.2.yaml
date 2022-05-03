@@ -1,35 +1,31 @@
-# ghc 8.2.2
 resolver: lts-11.10
 save-hackage-creds: false
 packages:
-  # examples
   - examples/scotty
   - examples/scotty-freer-simple
   - examples/servant
   - examples/client
   - examples/code-gen
-  # libs
   - morpheus-graphql-tests
   - morpheus-graphql-core
-  - morpheus-graphql-app
-  - morpheus-graphql-subscriptions
   - morpheus-graphql-code-gen
+  - morpheus-graphql-app
   - morpheus-graphql-client
+  - morpheus-graphql-subscriptions
   - morpheus-graphql
-
-allow-newer: true
 extra-deps:
-  - megaparsec-7.0.5
   - aeson-1.4.4.0
-  - time-compat-1.9.2.2
   - base-orphans-0.8.1
-  - req-2.1.0
-  - modern-uri-0.3.0.0
-  - retry-0.8.1.0
-  - relude-0.3.0
-  - fraxl-0.3.0.0
   - dependent-map-0.2.4.0
   - dependent-sum-0.4
   - fastsum-0.1.0.0
+  - fraxl-0.3.0.0
+  - graphql-0.11.1.0
+  - haxl-2.4.0.0
+  - megaparsec-7.0.5
+  - modern-uri-0.3.0.0
+  - relude-0.3.0
+  - req-2.1.0
+  - retry-0.8.1.0
+  - time-compat-1.9.2.2
   - type-aligned-0.9.6
-  - haxl-2.3.0.0

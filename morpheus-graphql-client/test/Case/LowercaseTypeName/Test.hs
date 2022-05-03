@@ -9,44 +9,25 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Case.LowercaseTypeName.Test
-  ( testLowercaseTypeName,
+  ( test,
   )
 where
 
-import Control.Applicative (pure)
-import Data.ByteString.Lazy.Char8
-  ( ByteString,
-  )
 import Data.Morpheus.Client
   ( DecodeScalar (..),
     EncodeScalar (..),
-    Fetch (..),
-    FetchError (..),
     ScalarValue (..),
     declareGlobalTypes,
     declareLocalTypesInline,
     raw,
   )
-import Data.Text (Text)
+import Relude
 import Spec.Utils
-  ( mockApi,
+  ( assertFetch,
     path,
   )
 import Test.Tasty
   ( TestTree,
-  )
-import Test.Tasty.HUnit
-  ( assertEqual,
-    testCase,
-  )
-import Prelude
-  ( Either (..),
-    Eq,
-    IO,
-    Maybe (Nothing),
-    Show,
-    ($),
-    (.),
   )
 
 newtype Uuid = Uuid
@@ -73,24 +54,17 @@ declareLocalTypesInline
     }
   |]
 
-resolver :: ByteString -> IO ByteString
-resolver = mockApi "LowercaseTypeName"
-
-client :: IO (Either (FetchError MyQuery) MyQuery)
-client = fetch resolver ()
-
-testLowercaseTypeName :: TestTree
-testLowercaseTypeName = testCase "test lowercase type names" $ do
-  value <- client
-  assertEqual
-    "test interface"
+test :: TestTree
+test =
+  assertFetch
+    "LowercaseTypeName"
+    Nothing
+    ()
     ( Right
-        ( MyQuery
-            { user =
-                MyQueryUserUser
-                  { id = Uuid "11343135"
-                  }
-            }
-        )
+        MyQuery
+          { user =
+              MyQueryUserUser
+                { id = Uuid "11343135"
+                }
+          }
     )
-    value

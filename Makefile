@@ -7,7 +7,7 @@ env:
 	cp config/stack/$(v).yaml  stack.yaml
 
 build:
-	stack install --fast --test
+	stack build --fast --test --bench --no-run-benchmarks --haddock --no-haddock-deps
 
 clean:
 	find . -name "*.cabal" -exec rm -rf {} \;

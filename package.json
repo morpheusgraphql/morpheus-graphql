@@ -10,7 +10,8 @@
     "check:spelling": "cspell --cache --no-progress '**/*.hs'",
     "check:packages": "ts-node scripts/check-packages.ts",
     "changelog": "ts-node scripts/changelog.ts",
-    "release": "ts-node scripts/release.ts"
+    "release": "ts-node scripts/release.ts",
+    "setup": "ts-node scripts/setup.ts "
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.5",

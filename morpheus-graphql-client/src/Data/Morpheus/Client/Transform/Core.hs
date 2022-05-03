@@ -11,19 +11,12 @@ module Data.Morpheus.Client.Transform.Core
   ( Converter (..),
     compileError,
     getType,
-    leafType,
     typeFrom,
     deprecationWarning,
-    customScalarTypes,
-    UpdateT (..),
-    resolveUpdates,
   )
 where
 
-import Control.Monad.Except (MonadError (throwError))
-import Data.Morpheus.Client.Internal.Types
-  ( ClientTypeDefinition (..),
-  )
+import Control.Monad.Except (MonadError)
 import Data.Morpheus.CodeGen.Internal.TH
   ( camelCaseTypeName,
   )
@@ -45,14 +38,12 @@ import Data.Morpheus.Types.Internal.AST
     RAW,
     Ref (..),
     Schema (..),
-    TRUE,
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
     VALID,
     VariableDefinitions,
     internal,
-    isNotSystemTypeName,
     lookupDeprecated,
     lookupDeprecatedReason,
     msg,
@@ -77,11 +68,6 @@ newtype Converter a = Converter
       MonadError GQLError
     )
 
-newtype UpdateT m a = UpdateT {updateTState :: a -> m a}
-
-resolveUpdates :: Monad m => a -> [UpdateT m a] -> m a
-resolveUpdates a = foldlM (&) a . fmap updateTState
-
 compileError :: GQLError -> GQLError
 compileError x = internal $ "Unhandled Compile Time Error: \"" <> x <> "\" ;"
 
@@ -89,19 +75,6 @@ getType :: TypeName -> Converter (TypeDefinition ANY VALID)
 getType typename =
   asks (typeDefinitions . fst)
     >>= selectBy (compileError $ " can't find Type" <> msg typename) typename
-
-customScalarTypes :: TypeName -> [TypeName]
-customScalarTypes typeName
-  | isNotSystemTypeName typeName = [typeName]
-  | otherwise = []
-
-leafType :: TypeDefinition a VALID -> Converter ([ClientTypeDefinition], [TypeName])
-leafType TypeDefinition {typeName, typeContent} = fromKind typeContent
-  where
-    fromKind :: TypeContent TRUE a VALID -> Converter ([ClientTypeDefinition], [TypeName])
-    fromKind DataEnum {} = pure ([], [typeName])
-    fromKind DataScalar {} = pure ([], customScalarTypes typeName)
-    fromKind _ = throwError $ compileError "Invalid schema Expected scalar"
 
 typeFrom :: [FieldName] -> TypeDefinition a VALID -> TypeName
 typeFrom path TypeDefinition {typeName, typeContent} = __typeFrom typeContent

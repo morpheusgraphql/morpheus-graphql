@@ -4,7 +4,6 @@
 module Data.Morpheus.Client.Internal.Utils
   ( removeDuplicates,
     isEnum,
-    withMode,
     getSource,
     handleResult,
     getFile,
@@ -17,12 +16,10 @@ import Data.FileEmbed (makeRelativeToProject)
 import Data.List (isSuffixOf)
 import Data.Morpheus.Client.Internal.Types
   ( ClientConstructorDefinition (cFields),
-    Mode (..),
     SchemaSource (..),
   )
 import Data.Morpheus.Error (gqlWarnings, renderGQLErrors)
 import Data.Morpheus.Internal.Ext (GQLResult, Result (..))
-import Data.Morpheus.Types.Internal.AST (TypeDefinition (..), isNotSystemTypeName, isResolverType)
 import qualified Data.Text.IO as TIO
 import Language.Haskell.TH (Q, runIO)
 import Language.Haskell.TH.Syntax (qAddDependentFile)
@@ -42,11 +39,6 @@ splitDuplicates = collectElems ([], [])
 
 isEnum :: [ClientConstructorDefinition] -> Bool
 isEnum = all (null . cFields)
-
-withMode :: Mode -> TypeDefinition k s -> Bool
-withMode Global t = not (isResolverType t) && isNotSystemTypeName (typeName t)
-withMode Local t = isResolverType t
-withMode Legacy _ = True
 
 getSource :: FilePath -> Q SchemaSource
 getSource p

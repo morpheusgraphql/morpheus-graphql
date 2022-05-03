@@ -14,7 +14,6 @@ where
 
 import Case.LocalGlobal.Api
 import Data.Aeson
-import Data.Eq (Eq)
 import Data.Morpheus.Client
   ( Fetch (..),
     ID,
@@ -23,26 +22,13 @@ import Data.Morpheus.Client
     declareLocalTypesInline,
     raw,
   )
-import Data.Semigroup ((<>))
-import Data.Text (Text)
+import Relude
 import Spec.Utils
-  ( getFile,
+  ( assertFetch,
   )
 import Test.Tasty
   ( TestTree,
-  )
-import Test.Tasty.HUnit
-  ( assertEqual,
-    testCase,
-  )
-import Prelude
-  ( Either (..),
-    FilePath,
-    IO,
-    Maybe (Just, Nothing),
-    Show (show),
-    ($),
-    (>>=),
+    testGroup,
   )
 
 declareGlobalTypes schema
@@ -68,14 +54,15 @@ checkQuery ::
   FilePath ->
   Args a ->
   a ->
-  IO ()
-checkQuery p args v =
-  fetch
-    (\_ -> getFile ("LocalGlobal/" <> p <> ".json"))
+  TestTree
+checkQuery x args v =
+  assertFetch
+    "LocalGlobal"
+    (Just x)
     args
-    >>= assertEqual ("Test " <> show p) (Right v)
+    (Right v)
 
-checkCities :: IO ()
+checkCities :: TestTree
 checkCities =
   checkQuery
     "cities"
@@ -90,7 +77,7 @@ checkCities =
           ]
       }
 
-checkUsers1 :: IO ()
+checkUsers1 :: TestTree
 checkUsers1 =
   checkQuery
     "users1"
@@ -105,7 +92,7 @@ checkUsers1 =
             )
       }
 
-checkUsers2 :: IO ()
+checkUsers2 :: TestTree
 checkUsers2 =
   checkQuery
     "users2"
@@ -120,7 +107,10 @@ checkUsers2 =
       }
 
 test :: TestTree
-test = testCase "Test Local/Global types" $ do
-  checkCities
-  checkUsers1
-  checkUsers2
+test =
+  testGroup
+    "Local/Global"
+    [ checkCities,
+      checkUsers1,
+      checkUsers2
+    ]

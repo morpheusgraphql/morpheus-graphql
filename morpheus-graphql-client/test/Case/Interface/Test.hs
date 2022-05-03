@@ -9,135 +9,83 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Case.Interface.Test
-  ( testInterface,
+  ( test,
   )
 where
 
-import Data.ByteString.Lazy.Char8
-  ( ByteString,
-  )
 import Data.Morpheus.Client
-  ( Fetch (..),
-    FetchError,
-    gql,
+  ( declareLocalTypes,
   )
-import Data.Text (Text)
+import Relude
 import Spec.Utils
-  ( defineClientWith,
-    mockApi,
+  ( assertFetch,
+    path,
   )
 import Test.Tasty
   ( TestTree,
   )
-import Test.Tasty.HUnit
-  ( assertEqual,
-    testCase,
-  )
-import Prelude
-  ( ($),
-    Either (..),
-    IO,
-    String,
-  )
 
-defineClientWith
-  "Interface"
-  [gql|
-    query MyQuery {
-      character {
-        name
-        ... on Deity {
-              power
-        }
+declareLocalTypes
+  (path "Interface/schema.gql")
+  (path "Interface/query.gql")
 
-        ... on Hero {
-              hobby
-        }
-      }
-      character2: character {
-        name1: name
-        name
-      }
-      character3: character {
-        ... on Hero {
-              hobby
-        }
-        ... on Character {
-              name2: name
-        }
-      }
-      character4: character {
-        ... on Hero {
-          hobby
-        }
-      }
-    }
-  |]
-
-resolver :: ByteString -> IO ByteString
-resolver = mockApi "Interface"
-
-client :: IO (Either (FetchError MyQuery) MyQuery)
-client = fetch resolver ()
-
-testInterface :: TestTree
-testInterface = testCase "test interfaces" $ do
-  value <- client
-  assertEqual
-    "test interface"
+test :: TestTree
+test =
+  assertFetch
+    "Interface"
+    Nothing
+    ()
     ( Right
-        ( MyQuery
-            { character =
-                [ CharacterDeity
-                    { __typename = "Deity",
-                      name = "Deity Name",
-                      power = "Deity Power"
-                    },
-                  CharacterCharacter
-                    { __typename = "Character",
-                      name = "Character Name"
-                    },
-                  CharacterHero
-                    { __typename = "Hero",
-                      name = "Hero Name",
-                      hobby = "Deity Power"
-                    }
-                ],
-              character2 =
-                [ Character2Character
-                    { __typename = "Character",
-                      name1 = "test name",
-                      name = "test name"
-                    }
-                ],
-              character3 =
-                [ Character3Hero
-                    { __typename = "Hero",
-                      hobby = "Hero Hobby",
-                      name2 = "Hero name2"
-                    },
-                  Character3Character
-                    { __typename = "Deity",
-                      name2 = "Hero name2"
-                    },
-                  Character3Character
-                    { __typename = "Character",
-                      name2 = "Character name2"
-                    }
-                ],
-              character4 =
-                [ Character4Character
-                    { __typename = "Character"
-                    },
-                  Character4Hero
-                    { __typename = "Hero",
-                      hobby = "Hero Hobby"
-                    },
-                  Character4Character
-                    { __typename = "Deity"
-                    }
-                ]
-            }
-        )
+        MyQuery
+          { character =
+              [ MyQueryCharacterDeity
+                  { __typename = "Deity",
+                    name = "Deity Name",
+                    power = "Deity Power"
+                  },
+                MyQueryCharacterCharacter
+                  { __typename = "Character",
+                    name = "Character Name"
+                  },
+                MyQueryCharacterHero
+                  { __typename = "Hero",
+                    name = "Hero Name",
+                    hobby = "Deity Power"
+                  }
+              ],
+            character2 =
+              [ MyQueryCharacter2Character
+                  { __typename = "Character",
+                    name1 = "test name",
+                    name = "test name"
+                  }
+              ],
+            character3 =
+              [ MyQueryCharacter3Hero
+                  { __typename = "Hero",
+                    hobby = "Hero Hobby",
+                    name2 = "Hero name2"
+                  },
+                MyQueryCharacter3Character
+                  { __typename = "Deity",
+                    name2 = "Hero name2"
+                  },
+                MyQueryCharacter3Character
+                  { __typename = "Character",
+                    name2 = "Character name2"
+                  }
+              ],
+            character4 =
+              [ MyQueryCharacter4Character
+                  { __typename = "Character"
+                  },
+                MyQueryCharacter4Hero
+                  { __typename = "Hero",
+                    hobby = "Hero Hobby"
+                  },
+                MyQueryCharacter4Character
+                  { __typename = "Deity"
+                  }
+              ]
+          }
     )
-    value

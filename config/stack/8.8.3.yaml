@@ -1,26 +1,23 @@
-# ghc-8.8.3
 resolver: lts-16.2
 save-hackage-creds: false
 packages:
-  # examples
   - examples/scotty
   - examples/scotty-freer-simple
   - examples/servant
   - examples/client
   - examples/code-gen
-  # libs
   - morpheus-graphql-tests
   - morpheus-graphql-core
-  - morpheus-graphql-app
-  - morpheus-graphql-subscriptions
   - morpheus-graphql-code-gen
+  - morpheus-graphql-app
   - morpheus-graphql-client
+  - morpheus-graphql-subscriptions
   - morpheus-graphql
-
 extra-deps:
-  - fraxl-0.3.0.0
   - dependent-map-0.2.4.0
   - dependent-sum-0.4
   - fastsum-0.1.1.1
+  - fraxl-0.3.0.0
+  - graphql-0.11.1.0
+  - haxl-2.4.0.0
   - type-aligned-0.9.6
-  - haxl-2.3.0.0
