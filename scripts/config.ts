@@ -41,15 +41,15 @@ const getStack = async (version: string) => {
 
 const setup = async (version: string) => {
   const { plan } = await getConfig();
+  const plans = Object.keys(plan);
 
-  if (version !== "all") {
-    return writeYAML("stack.yaml", await getStack(version));
-  }
-
-  writeYAML("stack.yaml", await getStack("latest"));
-  Object.keys(plan).forEach(async (v) =>
-    writeYAML(`./config/stack/${v}.yaml`, await getStack(v))
+  await Promise.all(
+    plans.map((v) =>
+      getStack(v).then((con) => writeYAML(`./config/stack/${v}.yaml`, con))
+    )
   );
+
+  writeYAML("stack.yaml", await getStack(version));
 };
 
 cli.name("config").description("setup stack config").version("0.0.0");
@@ -59,10 +59,5 @@ cli
   .description("config stack env")
   .argument("<string>", "version number")
   .action(setup);
-
-cli
-  .command("all")
-  .description("config stack env")
-  .action(async () => {});
 
 cli.parse();

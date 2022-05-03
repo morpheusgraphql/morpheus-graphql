@@ -6,6 +6,7 @@ packages:
   - examples/servant
   - examples/client
   - examples/code-gen
+  - morpheus-graphql-benchmarks
   - morpheus-graphql-tests
   - morpheus-graphql-core
   - morpheus-graphql-code-gen

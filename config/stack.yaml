@@ -17,6 +17,8 @@ packages:
   - morpheus-graphql
 plan:
   8.10.7:
+    include:
+      - morpheus-graphql-benchmarks
     deps:
       dependent-map: 0.2.4.0
       dependent-sum: 0.4
@@ -45,8 +47,6 @@ plan:
       haxl: 2.4.0.0
       type-aligned: 0.9.6
       fastsum: 0.1.1.1
-    include:
-      - morpheus-graphql-benchmarks
     skip:
       - examples/scotty
     resolver: nightly-2022-03-02
