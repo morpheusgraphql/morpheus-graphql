@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           morpheus-graphql-client
-version:        0.19.3
+version:        0.20.0
 synopsis:       Morpheus GraphQL Client
 description:    Build GraphQL APIs with your favourite functional language!
 category:       web, graphql, client
@@ -85,8 +85,8 @@ library
     , bytestring >=0.10.4 && <0.12.0
     , containers >=0.4.2.1 && <0.7.0
     , file-embed >=0.0.10 && <1.0.0
-    , morpheus-graphql-code-gen >=0.19.0 && <0.20.0
-    , morpheus-graphql-core >=0.19.0 && <0.20.0
+    , morpheus-graphql-code-gen >=0.20.0 && <0.21.0
+    , morpheus-graphql-core >=0.20.0 && <0.21.0
     , mtl >=2.0.0 && <3.0.0
     , relude >=0.3.0 && <2.0.0
     , template-haskell >=2.0.0 && <3.0.0
@@ -120,8 +120,8 @@ test-suite morpheus-graphql-client-test
     , directory >=1.0.0 && <2.0.0
     , file-embed >=0.0.10 && <1.0.0
     , morpheus-graphql-client
-    , morpheus-graphql-code-gen >=0.19.0 && <0.20.0
-    , morpheus-graphql-core >=0.19.0 && <0.20.0
+    , morpheus-graphql-code-gen >=0.20.0 && <0.21.0
+    , morpheus-graphql-core >=0.20.0 && <0.21.0
     , mtl >=2.0.0 && <3.0.0
     , relude >=0.3.0 && <2.0.0
     , tasty >=0.1.0 && <1.5.0
