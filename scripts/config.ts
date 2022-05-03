@@ -46,7 +46,7 @@ const setup = async (version: string) => {
     return writeYAML("stack.yaml", await getStack(version));
   }
 
-  // writeYAML("stack.yaml", await getStack("latest"));
+  writeYAML("stack.yaml", await getStack("latest"));
   Object.keys(plan).forEach(async (v) =>
     writeYAML(`./config/stack/${v}.yaml`, await getStack(v))
   );

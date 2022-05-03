@@ -47,6 +47,8 @@ plan:
       fastsum: 0.1.1.1
     include:
       - morpheus-graphql-benchmarks
+    skip:
+      - examples/scotty
     resolver: nightly-2022-03-02
 rules:
   aeson:
