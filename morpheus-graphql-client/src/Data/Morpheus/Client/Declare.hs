@@ -90,7 +90,7 @@ declareGlobalTypes ::
 declareGlobalTypes = flip declareClientTypes Nothing
 {- ORMOLU_ENABLE -}
 
--- declares global types like 'declareGlobalTypes',
+-- | declares global types like 'declareGlobalTypes',
 -- while enabling to select only the types that are needed.
 declareGlobalTypesByName :: FilePath -> [TypeName] -> Q [Dec]
 declareGlobalTypesByName path names = do
@@ -147,7 +147,10 @@ declareLocalTypesInline schemaPath query = do
   clientTypeDeclarations schema (Just query)
 {- ORMOLU_ENABLE -}
 
-declareClientTypes :: FilePath -> Maybe FilePath -> Q [Dec]
+declareClientTypes ::
+  FilePath ->
+  Maybe FilePath ->
+  Q [Dec]
 declareClientTypes schemaPath queryPath = do
   schema <- getSource schemaPath
   query <- traverse getFile queryPath
