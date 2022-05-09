@@ -118,6 +118,7 @@ mkEntryWith conName f FieldDefinition {fieldName} =
 -- WAS WAS (User name id)
 -- >>>
 destructRecord :: TypeName -> [FieldDefinition cat s] -> PatQ
+destructRecord _ [] = wildP
 destructRecord conName fields = conP (toName conName) (vars names)
   where
     names = map (camelCaseFieldName conName . fieldName) fields
