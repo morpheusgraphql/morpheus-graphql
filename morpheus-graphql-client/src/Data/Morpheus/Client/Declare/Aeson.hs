@@ -132,7 +132,7 @@ deriveFromJSON ClientTypeDefinition {clientCons = [], clientTypeName} =
     $ "Type "
       <> msg (typename clientTypeName)
       <> " Should Have at least one Constructor"
-deriveFromJSON typeD@ClientTypeDefinition {clientTypeName, clientCons}
+deriveFromJSON ClientTypeDefinition {clientTypeName, clientCons}
   | isEnum clientCons =
     defineFromJSON clientTypeName $
       aesonFromJSONEnumBody clientTypeName clientCons
@@ -143,7 +143,7 @@ deriveFromJSON
     } =
     defineFromJSON clientTypeName $
       aesonObject namespace cons
-deriveFromJSON typeD@ClientTypeDefinition {clientTypeName, clientCons}
+deriveFromJSON typeD@ClientTypeDefinition {clientTypeName}
       =
     defineFromJSON clientTypeName $
       aesonUnionObject typeD
