@@ -7,7 +7,12 @@ enum City {
   argos
 }
 
+enum Planet {
+  Earth
+}
+
 type Query {
   city(city: City!): City!
   cities: [City!]!
+  planets: [Planet!]!
 }

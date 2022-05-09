@@ -33,6 +33,7 @@ declareLocalTypesInline
     query MyQuery( $inputCity: City!) {
       city(city:$inputCity)
       cities
+      planets
     }
   |]
 
@@ -51,6 +52,9 @@ test =
                 CityCorinth,
                 CityDelphi,
                 CityArgos
+              ],
+            planets =
+              [ PlanetEarth
               ]
           }
     )
