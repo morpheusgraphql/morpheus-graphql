@@ -236,6 +236,15 @@ deriveToJSON
     fail "Type Should Have at least one Constructor"
 deriveToJSON
   ClientTypeDefinition
+    { clientTypeName = clientTypeName@TypeNameTH {typename},
+      clientCons
+    }
+    | isEnum clientCons = instanceD (cxt []) typeDef body
+    where
+      typeDef = applyCons ''ToJSON [typename]
+      body = [funDSimple 'toJSON [] (aesonToJSONEnumBody clientTypeName clientCons)]
+deriveToJSON
+  ClientTypeDefinition
     { clientTypeName = TypeNameTH {typename},
       clientCons = [ClientConstructorDefinition {cFields}]
     } =
@@ -252,16 +261,7 @@ deriveToJSON
               AppE
                 (VarE 'omitNulls)
                 (mkFieldsE typename '(.=) cFields)
-deriveToJSON
-  ClientTypeDefinition
-    { clientTypeName = clientTypeName@TypeNameTH {typename},
-      clientCons
-    }
-    | isEnum clientCons = instanceD (cxt []) typeDef body
-    | otherwise = fail "Input Unions are not yet supported"
-    where
-      typeDef = applyCons ''ToJSON [typename]
-      body = [funDSimple 'toJSON [] (aesonToJSONEnumBody clientTypeName clientCons)]
+deriveToJSON _ = fail "Input Unions are not yet supported"
 
 omitNulls :: [Pair] -> Value
 omitNulls = object . filter notNull
