@@ -31,9 +31,6 @@ import Data.Morpheus.Client.Internal.Types
     ClientTypeDefinition (..),
     TypeNameTH (..),
   )
-import Data.Morpheus.Client.Internal.Utils
-  ( isEnum,
-  )
 import Data.Morpheus.CodeGen.Internal.TH
   ( _',
     applyCons,
