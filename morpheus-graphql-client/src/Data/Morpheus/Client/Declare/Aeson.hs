@@ -132,8 +132,8 @@ deriveFromJSON ClientTypeDefinition {clientCons = [], clientTypeName} =
     $ "Type "
       <> msg (typename clientTypeName)
       <> " Should Have at least one Constructor"
-deriveFromJSON ClientTypeDefinition {clientTypeName, clientCons}
-  | isEnum clientCons =
+deriveFromJSON ClientTypeDefinition {clientTypeName, clientCons, clientKind = KindEnum}
+  =
     defineFromJSON clientTypeName $
       aesonFromJSONEnumBody clientTypeName clientCons
 deriveFromJSON
@@ -237,9 +237,9 @@ deriveToJSON
 deriveToJSON
   ClientTypeDefinition
     { clientTypeName = clientTypeName@TypeNameTH {typename},
-      clientCons
-    }
-    | isEnum clientCons = instanceD (cxt []) typeDef body
+      clientCons,
+      clientKind = KindEnum
+    } = instanceD (cxt []) typeDef body
     where
       typeDef = applyCons ''ToJSON [typename]
       body = [funDSimple 'toJSON [] (aesonToJSONEnumBody clientTypeName clientCons)]
