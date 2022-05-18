@@ -31,9 +31,6 @@ import Data.Morpheus.Client.Internal.Types
     ClientTypeDefinition (..),
     TypeNameTH (..),
   )
-import Data.Morpheus.Client.Internal.Utils
-  ( isEnum,
-  )
 import Data.Morpheus.CodeGen.Internal.TH
   ( _',
     applyCons,
@@ -132,6 +129,10 @@ deriveFromJSON ClientTypeDefinition {clientCons = [], clientTypeName} =
     $ "Type "
       <> msg (typename clientTypeName)
       <> " Should Have at least one Constructor"
+deriveFromJSON ClientTypeDefinition {clientTypeName, clientCons, clientKind = KindEnum}
+  =
+    defineFromJSON clientTypeName $
+      aesonFromJSONEnumBody clientTypeName clientCons
 deriveFromJSON
   ClientTypeDefinition
     { clientTypeName = clientTypeName@TypeNameTH {namespace},
@@ -139,11 +140,8 @@ deriveFromJSON
     } =
     defineFromJSON clientTypeName $
       aesonObject namespace cons
-deriveFromJSON typeD@ClientTypeDefinition {clientTypeName, clientCons}
-  | isEnum clientCons =
-    defineFromJSON clientTypeName $
-      aesonFromJSONEnumBody clientTypeName clientCons
-  | otherwise =
+deriveFromJSON typeD@ClientTypeDefinition {clientTypeName}
+      =
     defineFromJSON clientTypeName $
       aesonUnionObject typeD
 
@@ -235,6 +233,15 @@ deriveToJSON
     fail "Type Should Have at least one Constructor"
 deriveToJSON
   ClientTypeDefinition
+    { clientTypeName = clientTypeName@TypeNameTH {typename},
+      clientCons,
+      clientKind = KindEnum
+    } = instanceD (cxt []) typeDef body
+    where
+      typeDef = applyCons ''ToJSON [typename]
+      body = [funDSimple 'toJSON [] (aesonToJSONEnumBody clientTypeName clientCons)]
+deriveToJSON
+  ClientTypeDefinition
     { clientTypeName = TypeNameTH {typename},
       clientCons = [ClientConstructorDefinition {cFields}]
     } =
@@ -251,16 +258,7 @@ deriveToJSON
               AppE
                 (VarE 'omitNulls)
                 (mkFieldsE typename '(.=) cFields)
-deriveToJSON
-  ClientTypeDefinition
-    { clientTypeName = clientTypeName@TypeNameTH {typename},
-      clientCons
-    }
-    | isEnum clientCons = instanceD (cxt []) typeDef body
-    | otherwise = fail "Input Unions are not yet supported"
-    where
-      typeDef = applyCons ''ToJSON [typename]
-      body = [funDSimple 'toJSON [] (aesonToJSONEnumBody clientTypeName clientCons)]
+deriveToJSON _ = fail "Input Unions are not yet supported"
 
 omitNulls :: [Pair] -> Value
 omitNulls = object . filter notNull
