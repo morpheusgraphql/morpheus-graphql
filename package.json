@@ -20,7 +20,7 @@
     "cspell": "^5.18.5"
   },
   "dependencies": {
-    "@actions/core": "^1.6.0",
+    "@actions/core": "^1.9.1",
     "axios": "^0.26.1",
     "commander": "^9.1.0",
     "js-yaml": "^4.1.0",
