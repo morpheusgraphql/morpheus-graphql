@@ -10,3 +10,4 @@ dist-newstyle/
 node_modules/
 .cspellcache
 .env
+.vscode/*.log

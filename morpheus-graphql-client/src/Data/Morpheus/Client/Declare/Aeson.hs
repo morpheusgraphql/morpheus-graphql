@@ -21,10 +21,10 @@ import Data.Morpheus.Client.Internal.TH
   ( decodeObjectE,
     destructRecord,
     failExp,
+    hasInstance,
+    isTypeDeclared,
     matchWith,
     mkFieldsE,
-    isTypeDeclared,
-    hasInstance
   )
 import Data.Morpheus.Client.Internal.Types
   ( ClientConstructorDefinition (..),
@@ -32,14 +32,14 @@ import Data.Morpheus.Client.Internal.Types
     TypeNameTH (..),
   )
 import Data.Morpheus.CodeGen.Internal.TH
-  ( _',
-    applyCons,
+  ( applyCons,
     camelCaseTypeName,
     funDSimple,
     toCon,
     toName,
     toString,
     v',
+    _',
   )
 import Data.Morpheus.Internal.Utils (IsMap (lookup))
 import Data.Morpheus.Types.GQLScalar
@@ -68,45 +68,44 @@ import Language.Haskell.TH
     cxt,
     instanceD,
     tupP,
- )
+  )
 import Language.Haskell.TH.Syntax (Dec)
 import Relude hiding (toString)
 
 aesonDeclarations :: TypeKind -> ClientTypeDefinition -> Q [Dec]
 aesonDeclarations KindEnum clientDef = do
-    a <- deriveIfNotDefined deriveFromJSON ''FromJSON clientDef
-    b <- deriveIfNotDefined deriveToJSON ''ToJSON clientDef
-    pure (a <> b)
+  a <- deriveIfNotDefined deriveFromJSON ''FromJSON clientDef
+  b <- deriveIfNotDefined deriveToJSON ''ToJSON clientDef
+  pure (a <> b)
 aesonDeclarations KindScalar clientDef = deriveScalarJSON clientDef
 aesonDeclarations kind clientDef
-    | isResolverType kind = deriveIfNotDefined deriveFromJSON ''FromJSON clientDef
-    | otherwise = deriveIfNotDefined deriveToJSON ''ToJSON clientDef
+  | isResolverType kind = deriveIfNotDefined deriveFromJSON ''FromJSON clientDef
+  | otherwise = deriveIfNotDefined deriveToJSON ''ToJSON clientDef
 
 deriveIfNotDefined :: (ClientTypeDefinition -> Q Dec) -> Name -> ClientTypeDefinition -> Q [Dec]
 deriveIfNotDefined derivation typeClass clientDef = do
-    exists <- isTypeDeclared clientDef
-    if exists
-        then do
-            has <- hasInstance typeClass clientDef
-            if has
-                then pure []
-                else mkDerivation
+  exists <- isTypeDeclared clientDef
+  if exists
+    then do
+      has <- hasInstance typeClass clientDef
+      if has
+        then pure []
         else mkDerivation
+    else mkDerivation
   where
     mkDerivation :: Q [Dec]
     mkDerivation = do
-        derived <- derivation clientDef
-        pure [derived]
-
+      derived <- derivation clientDef
+      pure [derived]
 
 failure :: GQLError -> Q a
 failure = fail . show
 
 deriveScalarJSON :: ClientTypeDefinition -> Q [Dec]
 deriveScalarJSON clientDef = do
-    a <- deriveIfNotDefined deriveScalarFromJSON ''FromJSON clientDef
-    b <- deriveIfNotDefined deriveScalarToJSON ''ToJSON clientDef
-    pure (a <> b)
+  a <- deriveIfNotDefined deriveScalarFromJSON ''FromJSON clientDef
+  b <- deriveIfNotDefined deriveScalarToJSON ''ToJSON clientDef
+  pure (a <> b)
 
 deriveScalarFromJSON :: ClientTypeDefinition -> DecQ
 deriveScalarFromJSON ClientTypeDefinition {clientTypeName} =
@@ -124,15 +123,14 @@ deriveScalarToJSON
 -- FromJSON
 deriveFromJSON :: ClientTypeDefinition -> DecQ
 deriveFromJSON ClientTypeDefinition {clientCons = [], clientTypeName} =
-  failure
-    $ internal
-    $ "Type "
-      <> msg (typename clientTypeName)
-      <> " Should Have at least one Constructor"
-deriveFromJSON ClientTypeDefinition {clientTypeName, clientCons, clientKind = KindEnum}
-  =
-    defineFromJSON clientTypeName $
-      aesonFromJSONEnumBody clientTypeName clientCons
+  failure $
+    internal $
+      "Type "
+        <> msg (typename clientTypeName)
+        <> " Should Have at least one Constructor"
+deriveFromJSON ClientTypeDefinition {clientTypeName, clientCons, clientKind = KindEnum} =
+  defineFromJSON clientTypeName $
+    aesonFromJSONEnumBody clientTypeName clientCons
 deriveFromJSON
   ClientTypeDefinition
     { clientTypeName = clientTypeName@TypeNameTH {namespace},
@@ -140,10 +138,9 @@ deriveFromJSON
     } =
     defineFromJSON clientTypeName $
       aesonObject namespace cons
-deriveFromJSON typeD@ClientTypeDefinition {clientTypeName}
-      =
-    defineFromJSON clientTypeName $
-      aesonUnionObject typeD
+deriveFromJSON typeD@ClientTypeDefinition {clientTypeName} =
+  defineFromJSON clientTypeName $
+    aesonUnionObject typeD
 
 aesonObject :: [FieldName] -> ClientConstructorDefinition -> ExpQ
 aesonObject tNamespace con@ClientConstructorDefinition {cName} =
@@ -191,7 +188,7 @@ aesonUnionObject
 takeValueType :: ((String, Object) -> Parser a) -> Value -> Parser a
 takeValueType f (Object hMap) = case lookup "__typename" hMap of
   Nothing -> fail "key \"__typename\" not found on object"
-  Just (String x) -> pure (T.unpack x, hMap) >>= f
+  Just (String x) -> f (T.unpack x, hMap)
   Just val ->
     fail $ "key \"__typename\" should be string but found: " <> show val
 takeValueType _ _ = fail "expected Object"
