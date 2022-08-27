@@ -77,8 +77,7 @@ see latest changes on [Github](https://github.com/morpheusgraphql/morpheus-graph
 
 ### breaking changes
 
-- from now you should provide for every custom graphql scalar definition corresponding haskell type definition and `GQLScalar` implementation fot it. for details see [`examples-client`](https://github.com/morpheusgraphql/morpheus-graphql/tree/master/examples-client)
-
+- from now you should provide for every custom graphql scalar definition corresponding haskell type definition and `GQLScalar` implementation fot it.
 - input fields and query arguments are imported without namespace
 
 ### new features

@@ -50,8 +50,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: lint
-        run: |
-          curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s .
+        run: make lint
 
 concurrency:
   group: ${{ github.ref }}
