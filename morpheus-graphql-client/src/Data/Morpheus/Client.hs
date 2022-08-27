@@ -102,3 +102,28 @@ defineByDocument doc = internalLegacyLocalDeclareTypes (GQL <$> doc)
 {-# DEPRECATED defineByIntrospection "use clientTypeDeclarations" #-}
 defineByIntrospection :: IO ByteString -> ExecutableSource -> Q [Dec]
 defineByIntrospection doc = internalLegacyLocalDeclareTypes (JSON <$> doc)
+
+
+resolver :: String -> ByteString -> IO ByteString
+resolver tok b = runReq defaultHttpConfig $ do
+    let headers = header "Content-Type" "application/json"
+    responseBody <$> req POST (https "swapi.graph.cool") (ReqBodyLbs b) lbsResponse headers
+
+subscribe :: 
+     Args a 
+    -> (  Either String  a -> IO () )  -- callback
+    -> ClientApp ()
+subscribe args callback connection = do 
+              -- send initial GQL Request
+              sendTextData connection request
+
+             -- handle GQL Subscription responses
+              void . forkIO . forever $ do
+                message <- receiveData connection
+                value <- buildResponse message
+                callback value
+    where 
+        request = encode (buildRequest (Proxy @a) args)
+
+
+main = runSecureClient "<api url>" 443 "/" (subscribe (SomeArgs {}) callback)
