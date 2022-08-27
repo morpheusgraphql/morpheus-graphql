@@ -9,7 +9,7 @@ maintainer: d.nalchevanidze@gmail.com
 homepage: https://morpheusgraphql.com
 copyright: (c) 2019 Daviti Nalchevanidze
 license-file: LICENSE
-description: Build GraphQL APIs with your favourite functional language!
+description: Build GraphQL APIs with your favorite functional language!
 extra-source-files:
   - README.md
   - changelog.md
@@ -32,6 +32,7 @@ dependencies:
   - unordered-containers       >=  0.2.8    &&  <  0.3.0
   - req                        >=  2.1.0
   - wuss
+  - websockets             >=  0.11.0  &&  <  1.0.0
 library:
   source-dirs: src
   exposed-modules:

@@ -12,7 +12,10 @@ module Data.Morpheus.Client.Declare.Fetch
   )
 where
 
-import Data.Morpheus.Client.Fetch (Fetch (..))
+import Data.Morpheus.Client.Fetch
+  ( Fetch (..),
+    RequestType (..),
+  )
 import Data.Morpheus.Client.Internal.Types
   ( FetchDefinition (..),
     TypeNameTH (..),
@@ -41,9 +44,10 @@ declareFetch query FetchDefinition {clientArgumentsTypeName, rootTypeName} =
   where
     queryString = T.unpack query
     typeName = typename rootTypeName
-    iHead = applyCons ''Fetch [typeName]
+    iHead = applyCons ''RequestType [typeName]
     methods =
-      [ funD 'fetch [clause [] (normalB [|__fetch queryString typeName|]) []],
+      [ funD '__name [clause [] (normalB [|typeName|]) []],
+        funD '__query [clause [] (normalB [|queryString|]) []],
         pure $ typeInstanceDec ''Args (toCon typeName) (argumentType clientArgumentsTypeName)
       ]
 

@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Internal.Types
@@ -9,6 +10,8 @@ module Data.Morpheus.Client.Internal.Types
     FetchError (..),
     SchemaSource (..),
     ExecutableSource,
+    ClientResult,
+    METHOD (..),
   )
 where
 
@@ -61,3 +64,7 @@ data SchemaSource
   deriving (Show, Eq)
 
 type ExecutableSource = Text
+
+type ClientResult (a :: Type) = (Either (FetchError a) a)
+
+data METHOD = HTTP | WS

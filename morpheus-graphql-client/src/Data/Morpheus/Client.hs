@@ -1,4 +1,10 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client
@@ -22,9 +28,11 @@ module Data.Morpheus.Client
     defineByIntrospection,
     defineByIntrospectionFile,
     defineByIntrospectionFile',
+    request,
   )
 where
 
+import Control.Concurrent
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as L
   ( readFile,
@@ -40,6 +48,10 @@ import Data.Morpheus.Client.Declare
   )
 import Data.Morpheus.Client.Fetch
   ( Fetch (..),
+    Request (..),
+    Response,
+    decodeResponse,
+    encodeRequest,
   )
 import Data.Morpheus.Client.Internal.Types
   ( ExecutableSource,
@@ -54,11 +66,14 @@ import Data.Morpheus.Types.ID (ID (..))
 import Data.Morpheus.Types.Internal.AST
   ( ScalarValue (..),
   )
+import qualified Data.Text as T
 import Language.Haskell.TH
 import Language.Haskell.TH.Quote (QuasiQuoter)
 import Language.Haskell.TH.Syntax
   ( qAddDependentFile,
   )
+import Network.HTTP.Req
+import Network.WebSockets (receiveData, runClient, sendTextData)
 import Relude hiding (ByteString)
 
 {-# DEPRECATED gql "use raw" #-}
@@ -103,27 +118,26 @@ defineByDocument doc = internalLegacyLocalDeclareTypes (GQL <$> doc)
 defineByIntrospection :: IO ByteString -> ExecutableSource -> Q [Dec]
 defineByIntrospection doc = internalLegacyLocalDeclareTypes (JSON <$> doc)
 
-
-resolver :: String -> ByteString -> IO ByteString
-resolver tok b = runReq defaultHttpConfig $ do
-    let headers = header "Content-Type" "application/json"
-    responseBody <$> req POST (https "swapi.graph.cool") (ReqBodyLbs b) lbsResponse headers
-
-subscribe :: 
-     Args a 
-    -> (  Either String  a -> IO () )  -- callback
-    -> ClientApp ()
-subscribe args callback connection = do 
-              -- send initial GQL Request
-              sendTextData connection request
-
-             -- handle GQL Subscription responses
-              void . forkIO . forever $ do
-                message <- receiveData connection
-                value <- buildResponse message
-                callback value
-    where 
-        request = encode (buildRequest (Proxy @a) args)
-
-
-main = runSecureClient "<api url>" 443 "/" (subscribe (SomeArgs {}) callback)
+request :: Fetch a => Request method IO a -> Response method IO a
+request r@HttpRequest {httpEndpoint} = runReq defaultHttpConfig $ do
+  let headers = header "Content-Type" "application/json"
+  decodeResponse . responseBody
+    <$> req
+      POST
+      (https httpEndpoint)
+      (ReqBodyLbs (encodeRequest r))
+      lbsResponse
+      headers
+request r@WSSubscription {subscriptionHandler, wsEndpoint} =
+  runClient
+    (T.unpack wsEndpoint)
+    0
+    ""
+    ( \conn -> do
+        -- send initial GQL Request for subscription
+        sendTextData conn (encodeRequest r)
+        -- handle GQL subscription responses
+        void . forkIO . forever $ do
+          message <- receiveData conn
+          subscriptionHandler (decodeResponse message)
+    )
