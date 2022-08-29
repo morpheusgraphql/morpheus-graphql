@@ -9,22 +9,21 @@ import Client.DefineByIntrospection
 import Client.Mythology
   ( fetchHero,
   )
-import Client.NewUsers
-  ( subscribeNewUsers,
-  )
+import Client.NewUsers (newUsers)
 import Client.Users
   ( fetchUser,
   )
+import Data.Morpheus.Client (forEach, single)
 
 main :: IO ()
 main = do
-  fetchUser >>= print
+  fetchUser >>= single >>= print
   putStrLn "\n"
 
-  fetchHero >>= print
+  fetchHero >>= single >>= print
   putStrLn "\n"
 
   fetchUsers >>= print
   putStrLn "\n"
 
-  subscribeNewUsers
+  newUsers >>= forEach print

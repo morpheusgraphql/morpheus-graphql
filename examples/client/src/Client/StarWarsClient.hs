@@ -12,8 +12,7 @@ module Client.StarWarsClient
 where
 
 import Data.Morpheus.Client
-  ( FetchError,
-    Request (..),
+  ( ResponseStream,
     declareLocalTypesInline,
     raw,
     request,
@@ -33,7 +32,5 @@ declareLocalTypesInline
     }
   |]
 
-fetchFilms :: IO (Either (FetchError StarWarsFilms) StarWarsFilms)
-fetchFilms =
-  request "https://swapi.graph.cool" $
-    HttpRequest {requestArgs = ()}
+fetchFilms :: IO (ResponseStream StarWarsFilms)
+fetchFilms = request "https://swapi.graph.cool" ()

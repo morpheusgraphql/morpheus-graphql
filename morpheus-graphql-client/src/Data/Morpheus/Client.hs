@@ -32,7 +32,8 @@ module Data.Morpheus.Client
     request,
     forEach,
     single,
-    ClientStream,
+    ResponseStream,
+    ClientResult,
   )
 where
 
@@ -62,6 +63,7 @@ import Data.Morpheus.Client.Internal.Types
   ( ClientResult,
     ExecutableSource,
     FetchError (..),
+    HTTP,
     SchemaSource (..),
   )
 import Data.Morpheus.Client.Schema.JSON.Types
@@ -204,20 +206,20 @@ initMessage = ApolloSubscription {apolloType = "connection_init", apolloPayload 
 -- endMessage :: Text -> ApolloSubscription ()
 -- endMessage uid = ApolloSubscription {apolloType = "stop", apolloPayload = Nothing, apolloId = Just uid}
 
-data ClientStream t a = Fetch a =>
-  ClientStream
-  { _req :: Request t a,
+data ResponseStream a = Fetch a =>
+  ResponseStream
+  { _req :: Request HTTP a,
     _uri :: URI
   }
 
-request :: Fetch a => String -> Args a -> IO (ClientStream t a)
+request :: Fetch a => String -> Args a -> IO (ResponseStream a)
 request uri requestArgs = do
   _uri <- parseURI uri
   let _req = Request {requestArgs}
-  pure ClientStream {_req, _uri}
+  pure ResponseStream {_req, _uri}
 
-forEach :: (ClientResult a -> IO ()) -> ClientStream method a -> IO ()
-forEach f ClientStream {_uri, _req} = requestStream _uri _req f
+forEach :: (ClientResult a -> IO ()) -> ResponseStream a -> IO ()
+forEach f ResponseStream {_uri, _req} = requestStream _uri _req f
 
-single :: ClientStream method a -> IO (ClientResult a)
-single ClientStream {_req, _uri} = requestSingle _uri _req
+single :: ResponseStream a -> IO (ClientResult a)
+single ResponseStream {_req, _uri} = requestSingle _uri _req
