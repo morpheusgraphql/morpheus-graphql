@@ -12,9 +12,13 @@ import Client.Mythology
 import Client.StarWarsClient
   ( fetchFilms,
   )
+import Client.Users
+  ( fetchUser,
+  )
 
 main :: IO ()
 main = do
+  fetchUser (runApp app) >>= print
   fetchFilms >>= print
   putStrLn "\n"
   fetchUsers >>= print

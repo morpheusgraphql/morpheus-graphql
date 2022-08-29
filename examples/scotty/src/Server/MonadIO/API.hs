@@ -155,17 +155,23 @@ requireAuthorized = do
 rootResolver :: RootResolver Web () Query Mutation Undefined
 rootResolver =
   defaultRootResolver
-    { queryResolver =
-        Query
-          { login = loginResolver,
-            getUser = getUserResolver,
-            dogs = dogsResolver
-          },
-      mutationResolver = Mutation {addDog = addDogResolver}
+    { queryResolver = resolveQuery,
+      mutationResolver = resolveMutation
+    }
+
+resolveMutation :: Mutation (Resolver MUTATION () Web)
+resolveMutation = Mutation {addDog = addDogResolver}
+
+resolveQuery :: Query (Resolver QUERY () Web)
+resolveQuery =
+  Query
+    { login = loginResolver,
+      getUser = getUserResolver,
+      dogs = dogsResolver
     }
 
 -------------------------------------------------------------------------------
-loginResolver :: LoginArgs -> Composed QUERY Maybe Session
+loginResolver :: LoginArgs -> Composed o Maybe Session
 loginResolver LoginArgs {username, password} = do
   users <- fmap userTable getDB
   let match user =

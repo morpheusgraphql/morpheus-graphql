@@ -10,11 +10,8 @@ module Server.Scotty
 where
 
 -- examples
-import Client.Client
-  ( fetchUser,
-  )
+
 import Data.Functor.Identity (Identity (..))
-import Data.Morpheus (runApp)
 import Data.Morpheus.Server
   ( compileTimeSchemaValidation,
   )
@@ -43,7 +40,6 @@ _validateSchema = $(compileTimeSchemaValidation (Identity root))
 scottyServer :: IO ()
 scottyServer = do
   (wsApp, publish) <- webSocketsApp app
-  fetchUser (runApp app) >>= print
   startServer wsApp (httpApp publish)
   where
     httpApp :: (EVENT -> IO ()) -> ScottyM ()

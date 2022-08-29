@@ -17,16 +17,13 @@ where
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.FileEmbed (makeRelativeToProject)
 import Data.Morpheus.Client
-  ( Fetch (..),
+  ( DecodeScalar (..),
+    EncodeScalar (..),
+    Fetch (..),
     FetchError,
     declareGlobalTypes,
     declareLocalTypesInline,
     raw,
-  )
-import Data.Morpheus.Types
-  ( DecodeScalar (..),
-    EncodeScalar (..),
-    ScalarValue (..),
   )
 import Data.Text (Text)
 import Prelude
@@ -43,10 +40,10 @@ instance DecodeScalar Euro where
 instance EncodeScalar Euro where
   encodeScalar (Euro x y) = Int (x * 101 + y)
 
-declareGlobalTypes "src/Server/Sophisticated/api.gql"
+declareGlobalTypes "assets/users.gql"
 
 declareLocalTypesInline
-  "src/Server/Sophisticated/api.gql"
+  "assets/users.gql"
   [raw|
     # Subscription Test Query
     subscription MySubscription
@@ -57,7 +54,7 @@ declareLocalTypesInline
   |]
 
 declareLocalTypesInline
-  "src/Server/Sophisticated/api.gql"
+  "assets/users.gql"
   [raw|
     # Query Hero with Compile time Validation
     query GetUser ($coordinates: Coordinates!)

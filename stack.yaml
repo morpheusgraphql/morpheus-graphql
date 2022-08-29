@@ -13,6 +13,7 @@ packages:
   - morpheus-graphql-client
   - morpheus-graphql-subscriptions
   - morpheus-graphql
+  - examples/scotty
 extra-deps:
   - fastsum-0.1.1.1
   - fraxl-0.3.0.0

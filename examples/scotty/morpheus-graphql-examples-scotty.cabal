@@ -28,7 +28,6 @@ source-repository head
 executable scotty-server
   main-is: Main.hs
   other-modules:
-      Client.Client
       Files
       Server.Fraxl.API
       Server.Fraxl.FakeDB
@@ -65,7 +64,6 @@ executable scotty-server
     , http-types
     , morpheus-graphql
     , morpheus-graphql-app
-    , morpheus-graphql-client
     , morpheus-graphql-core
     , morpheus-graphql-subscriptions
     , mtl >=2.0 && <=2.3
