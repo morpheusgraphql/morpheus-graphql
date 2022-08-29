@@ -29,6 +29,7 @@ module Data.Morpheus.Client
     defineByIntrospectionFile,
     defineByIntrospectionFile',
     request,
+    Request (..),
   )
 where
 
@@ -75,6 +76,8 @@ import Language.Haskell.TH.Syntax
 import Network.HTTP.Req
 import Network.WebSockets (receiveData, runClient, sendTextData)
 import Relude hiding (ByteString)
+import Text.URI (mkURI)
+import Wuss (runSecureClient)
 
 {-# DEPRECATED gql "use raw" #-}
 gql :: QuasiQuoter
@@ -118,26 +121,28 @@ defineByDocument doc = internalLegacyLocalDeclareTypes (GQL <$> doc)
 defineByIntrospection :: IO ByteString -> ExecutableSource -> Q [Dec]
 defineByIntrospection doc = internalLegacyLocalDeclareTypes (JSON <$> doc)
 
-request :: Fetch a => Request method IO a -> Response method IO a
-request r@HttpRequest {httpEndpoint} = runReq defaultHttpConfig $ do
-  let headers = header "Content-Type" "application/json"
-  decodeResponse . responseBody
-    <$> req
-      POST
-      (https httpEndpoint)
-      (ReqBodyLbs (encodeRequest r))
-      lbsResponse
-      headers
+headers :: Network.HTTP.Req.Option scheme
+headers = header "Content-Type" "application/json"
+
+post :: Text -> ByteString -> IO ByteString
+post url body = case mkURI url >>= useURI of
+  Nothing -> fail ("Invalid Endpoint: " <> show url <> "!")
+  (Just (Left (u, o))) -> responseBody <$> runReq defaultHttpConfig (req POST u (ReqBodyLbs body) lbsResponse (o <> headers))
+  (Just (Right (u, o))) -> responseBody <$> runReq defaultHttpConfig (req POST u (ReqBodyLbs body) lbsResponse (o <> headers))
+
+request :: (Fetch a) => Request method IO a -> Response method IO a
+request r@HttpRequest {httpEndpoint} = decodeResponse <$> post httpEndpoint (encodeRequest r)
 request r@WSSubscription {subscriptionHandler, wsEndpoint} =
   runClient
     (T.unpack wsEndpoint)
-    0
+    3000
     ""
-    ( \conn -> do
-        -- send initial GQL Request for subscription
-        sendTextData conn (encodeRequest r)
-        -- handle GQL subscription responses
-        void . forkIO . forever $ do
-          message <- receiveData conn
-          subscriptionHandler (decodeResponse message)
-    )
+    app
+  where
+    app conn = do
+      -- send initial GQL Request for subscription
+      sendTextData conn (encodeRequest r)
+      -- handle GQL subscription responses
+      forever $ do
+        message <- receiveData conn
+        subscriptionHandler (decodeResponse message)

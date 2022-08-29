@@ -11,25 +11,14 @@ module Client.StarWarsClient
   )
 where
 
-import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Morpheus.Client
-  ( Fetch (..),
-    FetchError,
+  ( FetchError,
+    Request (..),
     declareLocalTypesInline,
     raw,
+    request,
   )
 import Data.Text (Text)
-import Network.HTTP.Req
-  ( POST (..),
-    ReqBodyLbs (..),
-    defaultHttpConfig,
-    header,
-    https,
-    lbsResponse,
-    req,
-    responseBody,
-    runReq,
-  )
 
 declareLocalTypesInline
   "assets/starwars.graphql"
@@ -44,16 +33,10 @@ declareLocalTypesInline
     }
   |]
 
-resolver :: ByteString -> IO ByteString
-resolver b = runReq defaultHttpConfig $ do
-  let headers = header "Content-Type" "application/json"
-  responseBody
-    <$> req
-      POST
-      (https "swapi.graph.cool")
-      (ReqBodyLbs b)
-      lbsResponse
-      headers
-
 fetchFilms :: IO (Either (FetchError StarWarsFilms) StarWarsFilms)
-fetchFilms = fetch resolver ()
+fetchFilms =
+  request $
+    HttpRequest
+      { requestArgs = (),
+        httpEndpoint = "https://swapi.graph.cool"
+      }

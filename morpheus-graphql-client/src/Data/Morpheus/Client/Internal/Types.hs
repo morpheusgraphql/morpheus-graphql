@@ -1,4 +1,6 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -12,6 +14,8 @@ module Data.Morpheus.Client.Internal.Types
     ExecutableSource,
     ClientResult,
     METHOD (..),
+    HTTP,
+    WS,
   )
 where
 
@@ -48,7 +52,8 @@ data ClientTypeDefinition = ClientTypeDefinition
 
 data FetchDefinition = FetchDefinition
   { rootTypeName :: TypeNameTH,
-    clientArgumentsTypeName :: Maybe TypeNameTH
+    clientArgumentsTypeName :: Maybe TypeNameTH,
+    fetchMethod :: METHOD
   }
   deriving (Show)
 
@@ -67,4 +72,8 @@ type ExecutableSource = Text
 
 type ClientResult (a :: Type) = (Either (FetchError a) a)
 
-data METHOD = HTTP | WS
+type HTTP = 'Http
+
+type WS = 'Ws
+
+data METHOD = Http | Ws deriving (Show)

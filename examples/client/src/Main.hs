@@ -9,6 +9,9 @@ import Client.DefineByIntrospection
 import Client.Mythology
   ( fetchHero,
   )
+import Client.NewUsers
+  ( subscribeNewUsers,
+  )
 import Client.StarWarsClient
   ( fetchFilms,
   )
@@ -18,9 +21,13 @@ import Client.Users
 
 main :: IO ()
 main = do
-  -- fetchUser (runApp app) >>= print
-  fetchFilms >>= print
+  fetchUser >>= print
   putStrLn "\n"
+
+  fetchHero >>= print
+  putStrLn "\n"
+
   fetchUsers >>= print
   putStrLn "\n"
-  fetchHero >>= print
+
+  subscribeNewUsers

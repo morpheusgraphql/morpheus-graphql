@@ -34,7 +34,9 @@ import Data.ByteString.Lazy (ByteString)
 import Data.Morpheus.Client.Internal.Types
   ( ClientResult,
     FetchError (..),
+    HTTP,
     METHOD (..),
+    WS,
   )
 import Data.Morpheus.Client.Schema.JSON.Types
   ( JSONResponse (..),
@@ -97,7 +99,7 @@ instance (RequestType a, ToJSON (Args a), FromJSON a) => Fetch a where
   type Args a = RequestArgs a
   fetch f args = decodeResponse <$> f (encodeRequest request)
     where
-      request :: Request 'HTTP m a
+      request :: Request HTTP m a
       request = HttpRequest args ""
 
 class RequestType a where
@@ -111,18 +113,18 @@ data Request (method :: METHOD) m (a :: Type) where
     { requestArgs :: Args a,
       httpEndpoint :: Text
     } ->
-    Request 'HTTP m a
+    Request HTTP m a
   WSSubscription ::
     { subscriptionArgs :: Args a,
       wsEndpoint :: Text,
       subscriptionHandler :: ClientResult a -> m ()
     } ->
-    Request 'WS m a
+    Request WS m a
 
 getRequestArgs :: Request stream m a -> Args a
 getRequestArgs HttpRequest {requestArgs} = requestArgs
 getRequestArgs WSSubscription {subscriptionArgs} = subscriptionArgs
 
 type family Response method m a where
-  Response 'WS m a = m ()
-  Response 'HTTP m a = m (ClientResult a)
+  Response WS m a = m ()
+  Response HTTP m a = m (ClientResult a)

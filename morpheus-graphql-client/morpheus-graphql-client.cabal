@@ -85,6 +85,7 @@ library
     , bytestring >=0.10.4 && <0.12.0
     , containers >=0.4.2.1 && <0.7.0
     , file-embed >=0.0.10 && <1.0.0
+    , modern-uri
     , morpheus-graphql-code-gen >=0.20.0 && <0.21.0
     , morpheus-graphql-core >=0.20.0 && <0.21.0
     , mtl >=2.0.0 && <3.0.0
@@ -122,6 +123,7 @@ test-suite morpheus-graphql-client-test
     , containers >=0.4.2.1 && <0.7.0
     , directory >=1.0.0 && <2.0.0
     , file-embed >=0.0.10 && <1.0.0
+    , modern-uri
     , morpheus-graphql-client
     , morpheus-graphql-code-gen >=0.20.0 && <0.21.0
     , morpheus-graphql-core >=0.20.0 && <0.21.0

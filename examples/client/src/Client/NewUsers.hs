@@ -9,8 +9,8 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Client.Users
-  ( fetchUser,
+module Client.NewUsers
+  ( subscribeNewUsers,
   )
 where
 
@@ -57,37 +57,31 @@ declareLocalTypesInline
   "assets/users.gql"
   [raw|
     # Query Hero with Compile time Validation
-    query GetUser ($coordinates: Coordinates!)
+    subscription NewUsers ($loc: Coordinates!)
       {
-        myUser: user {
+         newUser {
            name
-           aliasEmail: email
-           address (coordinates: $coordinates ){
+           email
+           address (coordinates: $loc ){
              city
            }
-           aliasAdress: address (coordinates: $coordinates ){
-              city
-           }
-        }
-        user {
-          email
-          name
         }
       }
   |]
 
-fetchUser :: IO (Either (FetchError GetUser) GetUser)
-fetchUser =
+args :: NewUsersArgs
+args = NewUsersArgs {loc = Coordinates {longitude = [], latitude = Euro 1 2}}
+
+handler :: Either (FetchError NewUsers) NewUsers -> IO ()
+handler (Right NewUsers {newUser}) = print newUser
+handler (Left e) = print e
+
+subscribeNewUsers :: IO ()
+subscribeNewUsers =
   request
-    ( HttpRequest
-        { requestArgs =
-            GetUserArgs
-              { coordinates =
-                  Coordinates
-                    { longitude = [],
-                      latitude = Euro 1 2
-                    }
-              },
-          httpEndpoint = "http://localhost:3000"
+    ( WSSubscription
+        { subscriptionArgs = args,
+          wsEndpoint = "127.0.0.1",
+          subscriptionHandler = handler
         }
     )

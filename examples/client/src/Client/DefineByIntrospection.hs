@@ -34,8 +34,6 @@ import Prelude
     IO,
     Int,
     Show,
-    print,
-    putStrLn,
     ($),
     (*),
     (+),
@@ -78,9 +76,7 @@ declareLocalTypesInline
   |]
 
 usersApi :: ByteString -> IO ByteString
-usersApi req = do
-  print req
-  putStrLn ""
+usersApi _ =
   pure $
     "{\"data\":{"
       <> "\"myUser\":{ "
