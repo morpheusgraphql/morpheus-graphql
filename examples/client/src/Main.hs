@@ -12,9 +12,6 @@ import Client.Mythology
 import Client.NewUsers
   ( subscribeNewUsers,
   )
-import Client.StarWarsClient
-  ( fetchFilms,
-  )
 import Client.Users
   ( fetchUser,
   )

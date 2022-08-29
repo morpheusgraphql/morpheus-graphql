@@ -88,6 +88,7 @@ library
     , modern-uri
     , morpheus-graphql-code-gen >=0.20.0 && <0.21.0
     , morpheus-graphql-core >=0.20.0 && <0.21.0
+    , morpheus-graphql-subscriptions
     , mtl >=2.0.0 && <3.0.0
     , relude >=0.3.0 && <2.0.0
     , req >=2.1.0
@@ -127,6 +128,7 @@ test-suite morpheus-graphql-client-test
     , morpheus-graphql-client
     , morpheus-graphql-code-gen >=0.20.0 && <0.21.0
     , morpheus-graphql-core >=0.20.0 && <0.21.0
+    , morpheus-graphql-subscriptions
     , mtl >=2.0.0 && <3.0.0
     , relude >=0.3.0 && <2.0.0
     , req >=2.1.0

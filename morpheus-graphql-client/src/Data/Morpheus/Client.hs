@@ -28,12 +28,16 @@ module Data.Morpheus.Client
     defineByIntrospection,
     defineByIntrospectionFile,
     defineByIntrospectionFile',
-    request,
     Request (..),
+    request,
+    forEach,
+    single,
+    ClientStream,
   )
 where
 
-import Control.Concurrent
+import Data.Aeson
+import qualified Data.Aeson as A
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as L
   ( readFile,
@@ -50,15 +54,18 @@ import Data.Morpheus.Client.Declare
 import Data.Morpheus.Client.Fetch
   ( Fetch (..),
     Request (..),
-    Response,
     decodeResponse,
-    encodeRequest,
+    processResponse,
+    toRequest,
   )
 import Data.Morpheus.Client.Internal.Types
-  ( ExecutableSource,
+  ( ClientResult,
+    ExecutableSource,
     FetchError (..),
     SchemaSource (..),
   )
+import Data.Morpheus.Client.Schema.JSON.Types
+import Data.Morpheus.Subscriptions.Internal (ApolloSubscription (..))
 import Data.Morpheus.Types.GQLScalar
   ( DecodeScalar (..),
     EncodeScalar (..),
@@ -74,10 +81,20 @@ import Language.Haskell.TH.Syntax
   ( qAddDependentFile,
   )
 import Network.HTTP.Req
-import Network.WebSockets (receiveData, runClient, sendTextData)
+  ( Option,
+    POST (..),
+    ReqBodyLbs (..),
+    defaultHttpConfig,
+    header,
+    lbsResponse,
+    req,
+    responseBody,
+    runReq,
+    useURI,
+  )
+import Network.WebSockets (ClientApp, receiveData, runClient, sendTextData)
 import Relude hiding (ByteString)
-import Text.URI (mkURI)
-import Wuss (runSecureClient)
+import Text.URI (Authority (..), RText, RTextLabel (PathPiece), URI (..), mkURI, unRText)
 
 {-# DEPRECATED gql "use raw" #-}
 gql :: QuasiQuoter
@@ -124,25 +141,83 @@ defineByIntrospection doc = internalLegacyLocalDeclareTypes (JSON <$> doc)
 headers :: Network.HTTP.Req.Option scheme
 headers = header "Content-Type" "application/json"
 
-post :: Text -> ByteString -> IO ByteString
-post url body = case mkURI url >>= useURI of
-  Nothing -> fail ("Invalid Endpoint: " <> show url <> "!")
+post :: URI -> ByteString -> IO ByteString
+post uri body = case useURI uri of
+  Nothing -> fail ("Invalid Endpoint: " <> show uri <> "!")
   (Just (Left (u, o))) -> responseBody <$> runReq defaultHttpConfig (req POST u (ReqBodyLbs body) lbsResponse (o <> headers))
   (Just (Right (u, o))) -> responseBody <$> runReq defaultHttpConfig (req POST u (ReqBodyLbs body) lbsResponse (o <> headers))
 
-request :: (Fetch a) => Request method IO a -> Response method IO a
-request r@HttpRequest {httpEndpoint} = decodeResponse <$> post httpEndpoint (encodeRequest r)
-request r@WSSubscription {subscriptionHandler, wsEndpoint} =
-  runClient
-    (T.unpack wsEndpoint)
-    3000
-    ""
-    app
+parseURI :: MonadFail m => String -> m URI
+parseURI url = maybe (fail ("Invalid Endpoint: " <> show url <> "!")) pure (mkURI (T.pack url))
+
+toPort :: Maybe Word -> Int
+toPort Nothing = 80
+toPort (Just x) = fromIntegral x
+
+getPath :: Maybe (Bool, NonEmpty (RText 'PathPiece)) -> String
+getPath (Just (_, h :| t)) = T.unpack $ T.intercalate "/" $ fmap unRText (h : t)
+getPath _ = ""
+
+useWS :: URI -> ClientApp () -> IO ()
+useWS URI {uriScheme = Just scheme, uriAuthority = Right Authority {authHost, authPort}, uriPath} app
+  | unRText scheme == "ws" = do
+    let rPath = getPath uriPath
+    let rPort = toPort authPort
+    let rHost = handleHost $ unRText authHost
+    runClient rHost rPort rPath app
+useWS uri _ = fail ("Invalid Endpoint: " <> show uri <> "!")
+
+handleHost :: Text -> String
+handleHost "localhost" = "127.0.0.1"
+handleHost x = T.unpack x
+
+requestSingle :: Fetch a => URI -> Request method a -> IO (Either (FetchError a) a)
+requestSingle uri r = decodeResponse <$> post uri (A.encode $ toRequest r)
+
+requestStream :: (Fetch a) => URI -> Request method a -> (ClientResult a -> IO ()) -> IO ()
+requestStream uri r f = useWS uri app
   where
+    decodeMessage = (first FetchErrorParseFailure . eitherDecode) >=> processMessage
+    processMessage :: ApolloSubscription (JSONResponse a) -> Either (FetchError a) a
+    processMessage ApolloSubscription {apolloPayload = Just payload} = processResponse payload
+    processMessage ApolloSubscription {} = Left (FetchErrorParseFailure "empty message")
     app conn = do
+      sendTextData conn (A.encode initMessage)
       -- send initial GQL Request for subscription
-      sendTextData conn (encodeRequest r)
+      sendTextData
+        conn
+        ( A.encode
+            ApolloSubscription
+              { apolloPayload = Just (toRequest r),
+                apolloType = "start",
+                apolloId = Just "01"
+              }
+        )
       -- handle GQL subscription responses
       forever $ do
         message <- receiveData conn
-        subscriptionHandler (decodeResponse message)
+        f (decodeMessage message)
+
+initMessage :: ApolloSubscription ()
+initMessage = ApolloSubscription {apolloType = "connection_init", apolloPayload = Nothing, apolloId = Nothing}
+
+-- endMessage :: Text -> ApolloSubscription ()
+-- endMessage uid = ApolloSubscription {apolloType = "stop", apolloPayload = Nothing, apolloId = Just uid}
+
+data ClientStream t a = Fetch a =>
+  ClientStream
+  { _req :: Request t a,
+    _uri :: URI
+  }
+
+request :: Fetch a => String -> Args a -> IO (ClientStream t a)
+request uri requestArgs = do
+  _uri <- parseURI uri
+  let _req = Request {requestArgs}
+  pure ClientStream {_req, _uri}
+
+forEach :: (ClientResult a -> IO ()) -> ClientStream method a -> IO ()
+forEach f ClientStream {_uri, _req} = requestStream _uri _req f
+
+single :: ClientStream method a -> IO (ClientResult a)
+single ClientStream {_req, _uri} = requestSingle _uri _req

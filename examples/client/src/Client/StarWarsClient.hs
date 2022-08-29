@@ -35,8 +35,5 @@ declareLocalTypesInline
 
 fetchFilms :: IO (Either (FetchError StarWarsFilms) StarWarsFilms)
 fetchFilms =
-  request $
-    HttpRequest
-      { requestArgs = (),
-        httpEndpoint = "https://swapi.graph.cool"
-      }
+  request "https://swapi.graph.cool" $
+    HttpRequest {requestArgs = ()}

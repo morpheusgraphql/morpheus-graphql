@@ -15,10 +15,9 @@ module Client.Mythology
 where
 
 import Data.Morpheus.Client
-  ( DecodeScalar (..),
+  ( ClientStream (ClientStream),
+    DecodeScalar (..),
     EncodeScalar (..),
-    FetchError,
-    Request (HttpRequest, httpEndpoint, requestArgs),
     ScalarValue (..),
     declareGlobalTypes,
     declareLocalTypesInline,
@@ -83,14 +82,5 @@ declareLocalTypesInline
       }
   |]
 
-fetchHero :: IO (Either (FetchError GetHero) GetHero)
-fetchHero =
-  request
-    HttpRequest
-      { requestArgs =
-          GetHeroArgs
-            { name = "morpheus",
-              city = CityIthaca
-            },
-        httpEndpoint = "http://localhost:3000/mythology"
-      }
+fetchHero :: IO (ClientStream t GetHero)
+fetchHero = request "http://localhost:3000/mythology" GetHeroArgs {name = "morpheus", city = CityIthaca}

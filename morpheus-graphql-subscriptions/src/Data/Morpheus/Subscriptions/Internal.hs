@@ -32,6 +32,8 @@ module Data.Morpheus.Subscriptions.Internal
     storedSessions,
     storedChannels,
     streamApp,
+    ApolloSubscription (..),
+    ApolloAction (..),
   )
 where
 
@@ -53,7 +55,9 @@ import Data.Morpheus.Internal.Utils
   ( empty,
   )
 import Data.Morpheus.Subscriptions.Apollo
-  ( acceptApolloRequest,
+  ( ApolloAction (..),
+    ApolloSubscription (..),
+    acceptApolloRequest,
   )
 import Data.Morpheus.Subscriptions.ClientConnectionStore
   ( ClientConnectionStore,

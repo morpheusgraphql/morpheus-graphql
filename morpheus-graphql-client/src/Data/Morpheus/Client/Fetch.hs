@@ -11,14 +11,18 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
+{-# HLINT ignore "Use newtype instead of data" #-}
 
 module Data.Morpheus.Client.Fetch
   ( Fetch (..),
-    encodeRequest,
+    toRequest,
     decodeResponse,
     Request (..),
     RequestType (..),
     Response,
+    processResponse,
   )
 where
 
@@ -59,7 +63,6 @@ import Relude
     NonEmpty ((:|)),
     Proxy (..),
     String,
-    Text,
     Type,
     otherwise,
     ($),
@@ -73,15 +76,14 @@ fixVars x
   | x == A.emptyArray = Nothing
   | otherwise = Just x
 
-encodeRequest :: forall m s a. (RequestType a, ToJSON (Args a)) => Request s m a -> ByteString
-encodeRequest req =
-  encode
-    ( GQLRequest
-        { operationName = Just (__name (Proxy @a)),
-          query = pack (__query (Proxy @a)),
-          variables = fixVars (toJSON (getRequestArgs req))
-        }
-    )
+toRequest :: forall s a. (RequestType a, ToJSON (Args a)) => Request s a -> GQLRequest
+toRequest Request {requestArgs} =
+  ( GQLRequest
+      { operationName = Just (__name (Proxy @a)),
+        query = pack (__query (Proxy @a)),
+        variables = fixVars (toJSON requestArgs)
+      }
+  )
 
 decodeResponse :: FromJSON a => ByteString -> Either (FetchError a) a
 decodeResponse = (first FetchErrorParseFailure . eitherDecode) >=> processResponse
@@ -97,10 +99,10 @@ class (RequestType a, ToJSON (Args a), FromJSON a) => Fetch a where
 
 instance (RequestType a, ToJSON (Args a), FromJSON a) => Fetch a where
   type Args a = RequestArgs a
-  fetch f args = decodeResponse <$> f (encodeRequest request)
+  fetch f args = decodeResponse <$> f (encode $ toRequest request)
     where
-      request :: Request HTTP m a
-      request = HttpRequest args ""
+      request :: Request HTTP a
+      request = Request args
 
 class RequestType a where
   type RequestMethod a :: METHOD
@@ -108,22 +110,7 @@ class RequestType a where
   __name :: Proxy a -> FieldName
   __query :: Proxy a -> String
 
-data Request (method :: METHOD) m (a :: Type) where
-  HttpRequest ::
-    { requestArgs :: Args a,
-      httpEndpoint :: Text
-    } ->
-    Request HTTP m a
-  WSSubscription ::
-    { subscriptionArgs :: Args a,
-      wsEndpoint :: Text,
-      subscriptionHandler :: ClientResult a -> m ()
-    } ->
-    Request WS m a
-
-getRequestArgs :: Request stream m a -> Args a
-getRequestArgs HttpRequest {requestArgs} = requestArgs
-getRequestArgs WSSubscription {subscriptionArgs} = subscriptionArgs
+newtype Request (method :: METHOD) (a :: Type) = Request {requestArgs :: Args a}
 
 type family Response method m a where
   Response WS m a = m ()

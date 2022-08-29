@@ -79,6 +79,7 @@ declareLocalTypesInline
 fetchUser :: IO (Either (FetchError GetUser) GetUser)
 fetchUser =
   request
+    "http://localhost:3000"
     ( HttpRequest
         { requestArgs =
             GetUserArgs
@@ -87,7 +88,6 @@ fetchUser =
                     { longitude = [],
                       latitude = Euro 1 2
                     }
-              },
-          httpEndpoint = "http://localhost:3000"
+              }
         }
     )

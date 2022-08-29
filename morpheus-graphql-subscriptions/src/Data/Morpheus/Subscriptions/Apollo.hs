@@ -10,22 +10,23 @@ module Data.Morpheus.Subscriptions.Apollo
     acceptApolloRequest,
     toApolloResponse,
     Validation,
+    ApolloSubscription (..),
   )
 where
 
 import Control.Applicative (Applicative (..))
 import Control.Monad.IO.Class (MonadIO (..))
 import Data.Aeson
-  ( (.:),
-    (.:?),
-    (.=),
-    FromJSON (..),
+  ( FromJSON (..),
     ToJSON (..),
     Value (..),
     eitherDecode,
     encode,
     pairs,
     withObject,
+    (.:),
+    (.:?),
+    (.=),
   )
 import Data.ByteString.Lazy.Char8
   ( ByteString,
@@ -64,10 +65,10 @@ import Network.WebSockets
     pendingRequest,
   )
 import Prelude
-  ( ($),
-    (.),
-    Show,
+  ( Show,
     String,
+    ($),
+    (.),
   )
 
 type ID = Text

@@ -15,10 +15,10 @@ module Client.NewUsers
 where
 
 import Data.Morpheus.Client
-  ( DecodeScalar (..),
+  ( ClientStream,
+    DecodeScalar (..),
     EncodeScalar (..),
     FetchError,
-    Request (..),
     ScalarValue (Int),
     declareGlobalTypes,
     declareLocalTypesInline,
@@ -72,16 +72,9 @@ declareLocalTypesInline
 args :: NewUsersArgs
 args = NewUsersArgs {loc = Coordinates {longitude = [], latitude = Euro 1 2}}
 
-handler :: Either (FetchError NewUsers) NewUsers -> IO ()
-handler (Right NewUsers {newUser}) = print newUser
-handler (Left e) = print e
+printResponse :: Either (FetchError NewUsers) NewUsers -> IO ()
+printResponse (Right NewUsers {newUser}) = print newUser
+printResponse (Left e) = print e
 
-subscribeNewUsers :: IO ()
-subscribeNewUsers =
-  request
-    ( WSSubscription
-        { subscriptionArgs = args,
-          wsEndpoint = "127.0.0.1",
-          subscriptionHandler = handler
-        }
-    )
+stream :: IO (ClientStream t NewUsers)
+stream = request "ws://localhost:3000" args >>= forEach handler
