@@ -9,18 +9,18 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Client.Client
+module Client.Users
   ( fetchUser,
   )
 where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.FileEmbed (makeRelativeToProject)
 import Data.Morpheus.Client
   ( DecodeScalar (..),
     EncodeScalar (..),
     Fetch (..),
     FetchError,
+    ScalarValue (Int),
     declareGlobalTypes,
     declareLocalTypesInline,
     raw,

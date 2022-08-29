@@ -2,12 +2,14 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Fetch
@@ -46,7 +48,6 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Text
   ( pack,
   )
-import Network.WebSockets (Connection)
 import Relude
   ( Bifunctor (first),
     Either (..),
@@ -89,15 +90,19 @@ processResponse JSONResponse {responseData = Nothing, responseErrors = []} = Lef
 processResponse JSONResponse {responseData = result, responseErrors = (x : xs)} = Left $ FetchErrorProducedErrors (x :| xs) result
 
 class (RequestType a, ToJSON (Args a), FromJSON a) => Fetch a where
+  type Args a :: Type
   fetch :: Monad m => (ByteString -> m ByteString) -> Args a -> m (Either (FetchError a) a)
+
+instance (RequestType a, ToJSON (Args a), FromJSON a) => Fetch a where
+  type Args a = RequestArgs a
   fetch f args = decodeResponse <$> f (encodeRequest request)
     where
       request :: Request 'HTTP m a
       request = HttpRequest args ""
 
 class RequestType a where
-  type Method a :: METHOD
-  type Args a :: Type
+  type RequestMethod a :: METHOD
+  type RequestArgs a :: Type
   __name :: Proxy a -> FieldName
   __query :: Proxy a -> String
 

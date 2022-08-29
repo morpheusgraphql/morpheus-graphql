@@ -13,8 +13,7 @@ module Data.Morpheus.Client.Declare.Fetch
 where
 
 import Data.Morpheus.Client.Fetch
-  ( Fetch (..),
-    RequestType (..),
+  ( RequestType (..),
   )
 import Data.Morpheus.Client.Internal.Types
   ( FetchDefinition (..),
@@ -22,19 +21,18 @@ import Data.Morpheus.Client.Internal.Types
   )
 import Data.Morpheus.CodeGen.Internal.TH
   ( applyCons,
+    funDSimple,
     toCon,
     typeInstanceDec,
+    _',
   )
 import qualified Data.Text as T
 import Language.Haskell.TH
   ( Dec,
     Q,
     Type,
-    clause,
     cxt,
-    funD,
     instanceD,
-    normalB,
   )
 import Relude hiding (ByteString, Type)
 
@@ -46,9 +44,9 @@ declareFetch query FetchDefinition {clientArgumentsTypeName, rootTypeName} =
     typeName = typename rootTypeName
     iHead = applyCons ''RequestType [typeName]
     methods =
-      [ funD '__name [clause [] (normalB [|typeName|]) []],
-        funD '__query [clause [] (normalB [|queryString|]) []],
-        pure $ typeInstanceDec ''Args (toCon typeName) (argumentType clientArgumentsTypeName)
+      [ funDSimple '__name [_'] [|typeName|],
+        funDSimple '__query [_'] [|queryString|],
+        pure $ typeInstanceDec ''RequestArgs (toCon typeName) (argumentType clientArgumentsTypeName)
       ]
 
 argumentType :: Maybe TypeNameTH -> Type

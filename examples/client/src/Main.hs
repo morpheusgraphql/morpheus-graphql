@@ -18,7 +18,7 @@ import Client.Users
 
 main :: IO ()
 main = do
-  fetchUser (runApp app) >>= print
+  -- fetchUser (runApp app) >>= print
   fetchFilms >>= print
   putStrLn "\n"
   fetchUsers >>= print

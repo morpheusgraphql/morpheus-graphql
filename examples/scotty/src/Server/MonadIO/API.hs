@@ -135,13 +135,13 @@ type Value (o :: OperationType) (a :: k) = ResolverO o () Web a
 type Composed (o :: OperationType) f (a :: k) = ComposedResolver o () Web f a
 
 -------------------------------------------------------------------------------
-getDB :: Value o Database
+getDB :: (WithOperation o) => Value o Database
 getDB = do
   dbTVar <- lift $ asks database
   liftIO (readTVarIO dbTVar)
 
 -------------------------------------------------------------------------------
-requireAuthorized :: Value o Int
+requireAuthorized :: (WithOperation o) => Value o Int
 requireAuthorized = do
   reqHeaders <- lift $ asks reqHeaders
   case find ((== "Authorization") . fst) reqHeaders of
@@ -171,7 +171,7 @@ resolveQuery =
     }
 
 -------------------------------------------------------------------------------
-loginResolver :: LoginArgs -> Composed o Maybe Session
+loginResolver :: (WithOperation o) => LoginArgs -> Composed o Maybe Session
 loginResolver LoginArgs {username, password} = do
   users <- fmap userTable getDB
   let match user =
@@ -187,7 +187,7 @@ loginResolver LoginArgs {username, password} = do
           Session {token = pure tokenUser, user = userResolver userRow}
     Nothing -> fail "Invalid user or password"
 
-getUserResolver :: Arg "id" Int -> Composed o Maybe User
+getUserResolver :: (WithOperation o) => Arg "id" Int -> Composed o Maybe User
 getUserResolver (Arg argId) = do
   _ <- requireAuthorized
   users <- fmap userTable getDB
@@ -218,7 +218,7 @@ addDogResolver (Arg name) = do
   dogResolver dogToAdd
 
 -------------------------------------------------------------------------------
-userResolver :: UserRow -> Value o User
+userResolver :: forall o. (WithOperation o) => UserRow -> Value o User
 userResolver UserRow {userId = thisUserId, userFullName} =
   pure $
     User
@@ -248,7 +248,7 @@ userResolver UserRow {userId = thisUserId, userFullName} =
       let userFollowees = filter ((`elem` userFolloweeIds) . userId) users
       traverse userResolver userFollowees
 
-dogResolver :: DogRow -> Value o Dog
+dogResolver :: forall o. (WithOperation o) => DogRow -> Value o Dog
 dogResolver (DogRow dogId dogName ownerId) =
   pure $ Dog {id = idResolver, name = nameResolver, owner = ownerResolver}
   where
