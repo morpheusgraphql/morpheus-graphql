@@ -18,7 +18,7 @@ export const openRelease = (version: string, body: string) => {
   return ghApiREST(`repos/${GH_ORG}/${GH_REPO}/pulls`, {
     head: branchName,
     draft: true,
-    base: "master",
+    base: "main",
     owner: GH_ORG,
     repo: GH_REPO,
     title: `Publish Release ${version}`,
