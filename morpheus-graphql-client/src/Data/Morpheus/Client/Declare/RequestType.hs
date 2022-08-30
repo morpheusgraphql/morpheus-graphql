@@ -7,8 +7,8 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Client.Declare.Fetch
-  ( declareFetch,
+module Data.Morpheus.Client.Declare.RequestType
+  ( declareRequestType,
   )
 where
 
@@ -36,8 +36,8 @@ import Language.Haskell.TH
   )
 import Relude hiding (ByteString, Type)
 
-declareFetch :: Text -> FetchDefinition -> Q [Dec]
-declareFetch query FetchDefinition {clientArgumentsTypeName, rootTypeName, fetchOperationType} =
+declareRequestType :: Text -> FetchDefinition -> Q [Dec]
+declareRequestType query FetchDefinition {clientArgumentsTypeName, rootTypeName, fetchOperationType} =
   pure <$> instanceD (cxt []) iHead methods
   where
     queryString = T.unpack query

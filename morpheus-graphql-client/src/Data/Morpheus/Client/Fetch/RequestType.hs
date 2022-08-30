@@ -6,7 +6,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -52,11 +51,11 @@ fixVars x
   | x == A.emptyArray = Nothing
   | otherwise = Just x
 
-toRequest :: forall a. (RequestType a, ToJSON (RequestArgs a)) => Request a -> GQLRequest
-toRequest Request {requestArgs} =
+toRequest :: (RequestType a, ToJSON (RequestArgs a)) => Request a -> GQLRequest
+toRequest r@Request {requestArgs} =
   ( GQLRequest
-      { operationName = Just (__name (Proxy @a)),
-        query = pack (__query (Proxy @a)),
+      { operationName = Just (__name r),
+        query = pack (__query r),
         variables = fixVars (toJSON requestArgs)
       }
   )
@@ -73,8 +72,8 @@ type ClientTypeConstraint (a :: Type) = (RequestType a, ToJSON (RequestArgs a), 
 
 class RequestType a where
   type RequestArgs a :: Type
-  __name :: Proxy a -> FieldName
-  __query :: Proxy a -> String
-  __type :: Proxy a -> OperationType
+  __name :: f a -> FieldName
+  __query :: f a -> String
+  __type :: f a -> OperationType
 
 newtype Request (a :: Type) = Request {requestArgs :: RequestArgs a}

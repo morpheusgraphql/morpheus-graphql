@@ -20,6 +20,7 @@ import Data.Morpheus.Client.Fetch (Args)
 import Data.Morpheus.Client.Fetch.RequestType
   ( ClientTypeConstraint,
     Request (..),
+    RequestType (__type),
     decodeResponse,
     processResponse,
     toRequest,
@@ -27,6 +28,7 @@ import Data.Morpheus.Client.Fetch.RequestType
 import Data.Morpheus.Client.Internal.Types
 import Data.Morpheus.Client.Schema.JSON.Types (JSONResponse (..))
 import Data.Morpheus.Subscriptions.Internal (ApolloSubscription (..))
+import Data.Morpheus.Types.Internal.AST (OperationType (Subscription))
 import qualified Data.Text as T
 import Network.HTTP.Req
   ( POST (..),
@@ -78,11 +80,19 @@ handleHost :: Text -> String
 handleHost "localhost" = "127.0.0.1"
 handleHost x = T.unpack x
 
+isSubscription :: RequestType a => Request a -> Bool
+isSubscription x = __type x == Subscription
+
 requestSingle :: ClientTypeConstraint a => URI -> Request a -> IO (Either (FetchError a) a)
-requestSingle uri r = decodeResponse <$> post uri (A.encode $ toRequest r)
+requestSingle uri r
+  | isSubscription r = undefined
+  | otherwise = decodeResponse <$> post uri (A.encode $ toRequest r)
 
 requestMany :: ClientTypeConstraint a => URI -> Request a -> (ClientResult a -> IO ()) -> IO ()
-requestMany uri r f = useWS uri app
+requestMany uri r f
+  | isSubscription r =
+    undefined
+  | otherwise = useWS uri app
   where
     decodeMessage = (first FetchErrorParseFailure . A.eitherDecode) >=> processMessage
     processMessage :: ApolloSubscription (JSONResponse a) -> Either (FetchError a) a
