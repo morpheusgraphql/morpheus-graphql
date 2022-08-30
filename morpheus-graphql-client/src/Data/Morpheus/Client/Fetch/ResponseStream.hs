@@ -79,10 +79,10 @@ request uri requestArgs = do
   let _req = Request {requestArgs}
   pure ResponseStream {_req, _uri}
 
--- returns first response from the server
+-- | returns first response from the server
 single :: ResponseStream a -> IO (ClientResult a)
 single ResponseStream {_req, _uri} = requestSingle _uri _req
 
--- returns loop listening subscription events forever. if you want to run it in background use `forkIO`
+-- | returns loop listening subscription events forever. if you want to run it in background use `forkIO`
 forEach :: (ClientResult a -> IO ()) -> ResponseStream a -> IO ()
 forEach f ResponseStream {_uri, _req} = requestMany _uri _req f
