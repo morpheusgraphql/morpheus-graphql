@@ -79,6 +79,9 @@ rules:
   megaparsec:
     - 7.0.0
     - 10.0.0
+  modern-uri:
+    - 0.1.0.0
+    - 1.0.0
   mtl:
     - 2.0.0
     - 3.0.0
@@ -91,6 +94,9 @@ rules:
   relude:
     - 0.3.0
     - 2.0.0
+  req:
+    - 3.0.0
+    - 4.0.0
   scientific:
     - 0.3.6.2
     - 0.4.0
@@ -127,4 +133,7 @@ rules:
   websockets:
     - 0.11.0
     - 1.0.0
+  wuss:
+    - 1.0.0
+    - 3.0.0
 version: 0.20.1
