@@ -64,8 +64,10 @@ library
       Data.Morpheus.Client.Fetch
       Data.Morpheus.Client.Fetch.RequestType
       Data.Morpheus.Client.Fetch.ResponseStream
+      Data.Morpheus.Client.Fetch.WebSockets
       Data.Morpheus.Client.Internal.TH
       Data.Morpheus.Client.Internal.Types
+      Data.Morpheus.Client.Internal.Uri
       Data.Morpheus.Client.Internal.Utils
       Data.Morpheus.Client.QuasiQuoter
       Data.Morpheus.Client.Schema.JSON.Parse

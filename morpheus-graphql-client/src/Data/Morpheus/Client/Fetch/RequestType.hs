@@ -17,6 +17,7 @@ module Data.Morpheus.Client.Fetch.RequestType
     RequestType (..),
     processResponse,
     ClientTypeConstraint,
+    isSubscription,
   )
 where
 
@@ -77,3 +78,6 @@ class RequestType a where
   __type :: f a -> OperationType
 
 newtype Request (a :: Type) = Request {requestArgs :: RequestArgs a}
+
+isSubscription :: RequestType a => Request a -> Bool
+isSubscription x = __type x == Subscription

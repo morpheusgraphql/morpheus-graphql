@@ -15,18 +15,17 @@ where
 
 import qualified Data.Aeson as A
 import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.List.NonEmpty
 import Data.Morpheus.Client.Fetch (Args)
 import Data.Morpheus.Client.Fetch.RequestType
   ( ClientTypeConstraint,
     Request (..),
     RequestType (__type),
     decodeResponse,
-    processResponse,
+    isSubscription,
     toRequest,
   )
+import Data.Morpheus.Client.Fetch.WebSockets (decodeMessage, useWS)
 import Data.Morpheus.Client.Internal.Types
-import Data.Morpheus.Client.Schema.JSON.Types (JSONResponse (..))
 import Data.Morpheus.Subscriptions.Internal (ApolloSubscription (..))
 import Data.Morpheus.Types.Internal.AST (OperationType (Subscription))
 import qualified Data.Text as T
@@ -43,7 +42,6 @@ import Network.HTTP.Req
   )
 import qualified Network.HTTP.Req as R (Option)
 import Network.WebSockets (receiveData, sendTextData)
-import Network.WebSockets.Client (ClientApp, runClient)
 import Relude hiding (ByteString)
 import Text.URI
 
@@ -59,30 +57,6 @@ post uri body = case useURI uri of
   (Just (Left (u, o))) -> responseBody <$> runReq defaultHttpConfig (req POST u (ReqBodyLbs body) lbsResponse (o <> headers))
   (Just (Right (u, o))) -> responseBody <$> runReq defaultHttpConfig (req POST u (ReqBodyLbs body) lbsResponse (o <> headers))
 
-toPort :: Maybe Word -> Int
-toPort Nothing = 80
-toPort (Just x) = fromIntegral x
-
-getPath :: Maybe (Bool, NonEmpty (RText 'PathPiece)) -> String
-getPath (Just (_, h :| t)) = T.unpack $ T.intercalate "/" $ fmap unRText (h : t)
-getPath _ = ""
-
-useWS :: URI -> ClientApp () -> IO ()
-useWS URI {uriScheme = Just scheme, uriAuthority = Right Authority {authHost, authPort}, uriPath} app
-  | unRText scheme == "ws" = do
-    let rPath = getPath uriPath
-    let rPort = toPort authPort
-    let rHost = handleHost $ unRText authHost
-    runClient rHost rPort rPath app
-useWS uri _ = fail ("Invalid Endpoint: " <> show uri <> "!")
-
-handleHost :: Text -> String
-handleHost "localhost" = "127.0.0.1"
-handleHost x = T.unpack x
-
-isSubscription :: RequestType a => Request a -> Bool
-isSubscription x = __type x == Subscription
-
 requestSingle :: ClientTypeConstraint a => URI -> Request a -> IO (Either (FetchError a) a)
 requestSingle uri r
   | isSubscription r = undefined
@@ -94,10 +68,6 @@ requestMany uri r f
     undefined
   | otherwise = useWS uri app
   where
-    decodeMessage = (first FetchErrorParseFailure . A.eitherDecode) >=> processMessage
-    processMessage :: ApolloSubscription (JSONResponse a) -> Either (FetchError a) a
-    processMessage ApolloSubscription {apolloPayload = Just payload} = processResponse payload
-    processMessage ApolloSubscription {} = Left (FetchErrorParseFailure "empty message")
     app conn = do
       sendTextData conn (A.encode initMessage)
       -- send initial GQL Request for subscription
