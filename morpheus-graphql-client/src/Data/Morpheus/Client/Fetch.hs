@@ -19,6 +19,7 @@ module Data.Morpheus.Client.Fetch
     RequestType (..),
     Response,
     processResponse,
+    ClientTypeConstraint,
   )
 where
 
@@ -92,6 +93,8 @@ processResponse JSONResponse {responseData = result, responseErrors = (x : xs)} 
 class (RequestType a, ToJSON (Args a), FromJSON a) => Fetch a where
   type Args a :: Type
   fetch :: Monad m => (ByteString -> m ByteString) -> Args a -> m (Either (FetchError a) a)
+
+type ClientTypeConstraint (a :: Type) = (RequestType a, ToJSON (Args a), FromJSON a)
 
 instance (RequestType a, ToJSON (Args a), FromJSON a) => Fetch a where
   type Args a = RequestArgs a
