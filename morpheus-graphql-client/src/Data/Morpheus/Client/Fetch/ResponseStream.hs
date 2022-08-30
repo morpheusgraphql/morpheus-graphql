@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Fetch.ResponseStream
@@ -24,7 +25,7 @@ import Data.Morpheus.Client.Fetch.RequestType
     toRequest,
   )
 import Data.Morpheus.Client.Fetch.WebSockets
-  ( receiveResponse,
+  ( responseStream,
     sendInitialRequest,
     sendRequest,
     useWS,
@@ -44,16 +45,15 @@ requestSingle uri r
 
 requestMany :: ClientTypeConstraint a => URI -> Request a -> (ClientResult a -> IO ()) -> IO ()
 requestMany uri r f
-  | isSubscription r =
-    undefined
-  | otherwise = useWS uri app
+  | isSubscription r = useWS uri app
+  | otherwise = undefined
   where
     app conn = do
       sendInitialRequest conn
       -- send initial GQL Request for subscription
       sendRequest conn "0243134" r
       -- handle GQL subscription responses
-      forever (receiveResponse conn >>= f)
+      traverse_ (>>= f) (responseStream conn)
 
 -- PUBLIC API
 data ResponseStream a = ClientTypeConstraint a =>

@@ -7,7 +7,7 @@
 module Data.Morpheus.Client.Fetch.WebSockets
   ( useWS,
     sendInitialRequest,
-    receiveResponse,
+    responseStream,
     sendRequest,
   )
 where
@@ -20,7 +20,7 @@ import Data.Morpheus.Client.Internal.Types (ClientResult, FetchError (..))
 import Data.Morpheus.Client.Schema.JSON.Types (JSONResponse (..))
 import Data.Morpheus.Subscriptions.Internal (ApolloSubscription (..))
 import qualified Data.Text as T
-import Network.WebSockets.Client (ClientApp, runClient)
+import Network.WebSockets.Client (runClient)
 import Network.WebSockets.Connection (Connection, receiveData, sendTextData)
 import Relude hiding (ByteString)
 import Text.URI
@@ -37,7 +37,7 @@ getPath :: Maybe (Bool, NonEmpty (RText 'PathPiece)) -> String
 getPath (Just (_, h :| t)) = T.unpack $ T.intercalate "/" $ fmap unRText (h : t)
 getPath _ = ""
 
-useWS :: URI -> ClientApp () -> IO ()
+useWS :: URI -> (Connection -> IO a) -> IO a
 useWS URI {uriScheme = Just scheme, uriAuthority = Right Authority {authHost, authPort}, uriPath} app
   | unRText scheme == "ws" = do
     let rPath = getPath uriPath
@@ -72,6 +72,12 @@ receiveResponse :: A.FromJSON a => Connection -> IO (ClientResult a)
 receiveResponse conn = do
   message <- receiveData conn
   pure $ decodeMessage message
+
+-- returns infinite number of responses
+responseStream :: (A.FromJSON a) => Connection -> [IO (ClientResult a)]
+responseStream conn = getResponse : responseStream conn
+  where
+    getResponse = receiveResponse conn
 
 sendRequest :: (RequestType a, A.ToJSON (RequestArgs a)) => Connection -> Text -> Request a -> IO ()
 sendRequest conn uid r = sendTextData conn (encodeRequestMessage uid r)
