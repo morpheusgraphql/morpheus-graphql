@@ -1,23 +1,27 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Fetch.WebSockets
   ( useWS,
-    decodeMessage,
+    sendInitialRequest,
+    receiveResponse,
+    sendRequest,
   )
 where
 
 import qualified Data.Aeson as A
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.List.NonEmpty
-import Data.Morpheus.Client.Fetch.RequestType (processResponse)
+import Data.Morpheus.Client.Fetch.RequestType (Request, RequestType (..), processResponse, toRequest)
 import Data.Morpheus.Client.Internal.Types (ClientResult, FetchError (..))
 import Data.Morpheus.Client.Schema.JSON.Types (JSONResponse (..))
 import Data.Morpheus.Subscriptions.Internal (ApolloSubscription (..))
 import qualified Data.Text as T
 import Network.WebSockets.Client (ClientApp, runClient)
+import Network.WebSockets.Connection (Connection, receiveData, sendTextData)
 import Relude hiding (ByteString)
 import Text.URI
 
@@ -48,3 +52,29 @@ processMessage ApolloSubscription {} = Left (FetchErrorParseFailure "empty messa
 
 decodeMessage :: A.FromJSON a => ByteString -> ClientResult a
 decodeMessage = (first FetchErrorParseFailure . A.eitherDecode) >=> processMessage
+
+initialMessage :: ApolloSubscription ()
+initialMessage = ApolloSubscription {apolloType = "connection_init", apolloPayload = Nothing, apolloId = Nothing}
+
+encodeRequestMessage :: (RequestType a, A.ToJSON (RequestArgs a)) => Text -> Request a -> ByteString
+encodeRequestMessage uid r =
+  A.encode
+    ApolloSubscription
+      { apolloPayload = Just (toRequest r),
+        apolloType = "start",
+        apolloId = Just uid
+      }
+
+-- endMessage :: Text -> ApolloSubscription ()
+-- endMessage uid = ApolloSubscription {apolloType = "stop", apolloPayload = Nothing, apolloId = Just uid}
+
+receiveResponse :: A.FromJSON a => Connection -> IO (ClientResult a)
+receiveResponse conn = do
+  message <- receiveData conn
+  pure $ decodeMessage message
+
+sendRequest :: (RequestType a, A.ToJSON (RequestArgs a)) => Connection -> Text -> Request a -> IO ()
+sendRequest conn uid r = sendTextData conn (encodeRequestMessage uid r)
+
+sendInitialRequest :: Connection -> IO ()
+sendInitialRequest conn = sendTextData conn (A.encode initialMessage)

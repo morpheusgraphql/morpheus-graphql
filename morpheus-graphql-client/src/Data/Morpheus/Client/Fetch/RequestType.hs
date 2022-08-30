@@ -40,7 +40,7 @@ import Data.Morpheus.Types.IO
   )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
-    OperationType,
+    OperationType (Subscription),
   )
 import Data.Text
   ( pack,
