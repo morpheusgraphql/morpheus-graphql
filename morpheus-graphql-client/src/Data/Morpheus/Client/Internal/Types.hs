@@ -12,9 +12,6 @@ module Data.Morpheus.Client.Internal.Types
     SchemaSource (..),
     ExecutableSource,
     ClientResult,
-    METHOD (..),
-    HTTP,
-    WS,
   )
 where
 
@@ -24,6 +21,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldDefinition,
     FieldName,
     GQLErrors,
+    OperationType,
     TypeKind,
     TypeName,
     VALID,
@@ -52,7 +50,7 @@ data ClientTypeDefinition = ClientTypeDefinition
 data FetchDefinition = FetchDefinition
   { rootTypeName :: TypeNameTH,
     clientArgumentsTypeName :: Maybe TypeNameTH,
-    fetchMethod :: METHOD
+    fetchOperationType :: OperationType
   }
   deriving (Show)
 
@@ -70,9 +68,3 @@ data SchemaSource
 type ExecutableSource = Text
 
 type ClientResult (a :: Type) = (Either (FetchError a) a)
-
-type HTTP = 'Http
-
-type WS = 'Ws
-
-data METHOD = Http | Ws deriving (Show)

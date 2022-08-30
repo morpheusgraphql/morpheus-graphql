@@ -18,6 +18,12 @@ module Data.Morpheus.Client
     declareLocalTypes,
     declareLocalTypesInline,
     clientTypeDeclarations,
+    -- Fetch API
+    ClientResult,
+    request,
+    forEach,
+    single,
+    ResponseStream,
     -- DEPRECATED EXPORTS
     gql,
     defineByDocument,
@@ -26,12 +32,6 @@ module Data.Morpheus.Client
     defineByIntrospection,
     defineByIntrospectionFile,
     defineByIntrospectionFile',
-    Request (..),
-    ClientResult,
-    request,
-    forEach,
-    single,
-    ResponseStream,
   )
 where
 
@@ -50,7 +50,6 @@ import Data.Morpheus.Client.Declare
   )
 import Data.Morpheus.Client.Fetch
   ( Fetch (..),
-    Request (..),
   )
 import Data.Morpheus.Client.Fetch.ResponseStream
   ( ResponseStream,

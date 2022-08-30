@@ -17,7 +17,6 @@ import Data.Morpheus.Client.Internal.Types
   ( ClientConstructorDefinition (..),
     ClientTypeDefinition (..),
     FetchDefinition (..),
-    METHOD (Http, Ws),
     TypeNameTH (..),
   )
 import Data.Morpheus.Client.Transform.Core (Converter (..), compileError, deprecationWarning, getType, typeFrom)
@@ -38,7 +37,6 @@ import Data.Morpheus.Types.Internal.AST
     FieldName,
     OUT,
     Operation (..),
-    OperationType (Subscription),
     Ref (..),
     Schema (..),
     Selection (..),
@@ -95,7 +93,7 @@ genOperation op@Operation {operationName, operationSelection, operationType} = d
     ( FetchDefinition
         { clientArgumentsTypeName = fmap clientTypeName argumentsType,
           rootTypeName = clientTypeName rootType,
-          fetchMethod = if operationType == Subscription then Ws else Http
+          fetchOperationType = operationType
         },
       rootType : (localTypes <> maybeToList argumentsType)
     )

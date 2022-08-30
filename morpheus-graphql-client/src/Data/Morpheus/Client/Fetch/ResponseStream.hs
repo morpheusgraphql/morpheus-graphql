@@ -16,39 +16,39 @@ where
 import qualified Data.Aeson as A
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.List.NonEmpty
-import Data.Morpheus.Client.Fetch (Args, ClientTypeConstraint, Request (..), decodeResponse, processResponse, toRequest)
+import Data.Morpheus.Client.Fetch (Args)
+import Data.Morpheus.Client.Fetch.RequestType
+  ( ClientTypeConstraint,
+    Request (..),
+    decodeResponse,
+    processResponse,
+    toRequest,
+  )
 import Data.Morpheus.Client.Internal.Types
 import Data.Morpheus.Client.Schema.JSON.Types (JSONResponse (..))
 import Data.Morpheus.Subscriptions.Internal (ApolloSubscription (..))
 import qualified Data.Text as T
 import Network.HTTP.Req
+  ( POST (..),
+    ReqBodyLbs (ReqBodyLbs),
+    defaultHttpConfig,
+    header,
+    lbsResponse,
+    req,
+    responseBody,
+    runReq,
+    useURI,
+  )
+import qualified Network.HTTP.Req as R (Option)
 import Network.WebSockets (receiveData, sendTextData)
 import Network.WebSockets.Client (ClientApp, runClient)
 import Relude hiding (ByteString)
 import Text.URI
 
-data ResponseStream a = ClientTypeConstraint a =>
-  ResponseStream
-  { _req :: Request HTTP a,
-    _uri :: URI
-  }
-
 parseURI :: MonadFail m => String -> m URI
 parseURI url = maybe (fail ("Invalid Endpoint: " <> show url <> "!")) pure (mkURI (T.pack url))
 
-request :: ClientTypeConstraint a => String -> Args a -> IO (ResponseStream a)
-request uri requestArgs = do
-  _uri <- parseURI uri
-  let _req = Request {requestArgs}
-  pure ResponseStream {_req, _uri}
-
-forEach :: (ClientResult a -> IO ()) -> ResponseStream a -> IO ()
-forEach f ResponseStream {_uri, _req} = requestStream _uri _req f
-
-single :: ResponseStream a -> IO (ClientResult a)
-single ResponseStream {_req, _uri} = requestSingle _uri _req
-
-headers :: Network.HTTP.Req.Option scheme
+headers :: R.Option scheme
 headers = header "Content-Type" "application/json"
 
 post :: URI -> ByteString -> IO ByteString
@@ -78,11 +78,11 @@ handleHost :: Text -> String
 handleHost "localhost" = "127.0.0.1"
 handleHost x = T.unpack x
 
-requestSingle :: ClientTypeConstraint a => URI -> Request method a -> IO (Either (FetchError a) a)
+requestSingle :: ClientTypeConstraint a => URI -> Request a -> IO (Either (FetchError a) a)
 requestSingle uri r = decodeResponse <$> post uri (A.encode $ toRequest r)
 
-requestStream :: ClientTypeConstraint a => URI -> Request method a -> (ClientResult a -> IO ()) -> IO ()
-requestStream uri r f = useWS uri app
+requestMany :: ClientTypeConstraint a => URI -> Request a -> (ClientResult a -> IO ()) -> IO ()
+requestMany uri r f = useWS uri app
   where
     decodeMessage = (first FetchErrorParseFailure . A.eitherDecode) >=> processMessage
     processMessage :: ApolloSubscription (JSONResponse a) -> Either (FetchError a) a
@@ -110,3 +110,24 @@ initMessage = ApolloSubscription {apolloType = "connection_init", apolloPayload 
 
 -- endMessage :: Text -> ApolloSubscription ()
 -- endMessage uid = ApolloSubscription {apolloType = "stop", apolloPayload = Nothing, apolloId = Just uid}
+
+-- PUBLIC API
+data ResponseStream a = ClientTypeConstraint a =>
+  ResponseStream
+  { _req :: Request a,
+    _uri :: URI
+  }
+
+request :: ClientTypeConstraint a => String -> Args a -> IO (ResponseStream a)
+request uri requestArgs = do
+  _uri <- parseURI uri
+  let _req = Request {requestArgs}
+  pure ResponseStream {_req, _uri}
+
+-- returns first response from the server
+single :: ResponseStream a -> IO (ClientResult a)
+single ResponseStream {_req, _uri} = requestSingle _uri _req
+
+-- returns loop listening subscription events forever. if you want to run it in background use `forkIO`
+forEach :: (ClientResult a -> IO ()) -> ResponseStream a -> IO ()
+forEach f ResponseStream {_uri, _req} = requestMany _uri _req f

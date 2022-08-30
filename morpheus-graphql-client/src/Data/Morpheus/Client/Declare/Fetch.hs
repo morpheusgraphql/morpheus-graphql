@@ -12,15 +12,12 @@ module Data.Morpheus.Client.Declare.Fetch
   )
 where
 
-import Data.Morpheus.Client.Fetch
+import Data.Morpheus.Client.Fetch.RequestType
   ( RequestType (..),
   )
 import Data.Morpheus.Client.Internal.Types
   ( FetchDefinition (..),
-    HTTP,
-    METHOD (..),
     TypeNameTH (..),
-    WS,
   )
 import Data.Morpheus.CodeGen.Internal.TH
   ( applyCons,
@@ -32,7 +29,6 @@ import Data.Morpheus.CodeGen.Internal.TH
 import qualified Data.Text as T
 import Language.Haskell.TH
   ( Dec,
-    Name,
     Q,
     Type,
     cxt,
@@ -41,7 +37,7 @@ import Language.Haskell.TH
 import Relude hiding (ByteString, Type)
 
 declareFetch :: Text -> FetchDefinition -> Q [Dec]
-declareFetch query FetchDefinition {clientArgumentsTypeName, rootTypeName, fetchMethod} =
+declareFetch query FetchDefinition {clientArgumentsTypeName, rootTypeName, fetchOperationType} =
   pure <$> instanceD (cxt []) iHead methods
   where
     queryString = T.unpack query
@@ -50,13 +46,9 @@ declareFetch query FetchDefinition {clientArgumentsTypeName, rootTypeName, fetch
     methods =
       [ funDSimple '__name [_'] [|typeName|],
         funDSimple '__query [_'] [|queryString|],
-        pure $ typeInstanceDec ''RequestArgs (toCon typeName) (argumentType clientArgumentsTypeName),
-        pure $ typeInstanceDec ''RequestMethod (toCon typeName) (toCon $ getMethod fetchMethod)
+        funDSimple '__type [_'] [|fetchOperationType|],
+        pure $ typeInstanceDec ''RequestArgs (toCon typeName) (argumentType clientArgumentsTypeName)
       ]
-
-getMethod :: METHOD -> Name
-getMethod Ws = ''WS
-getMethod Http = ''HTTP
 
 argumentType :: Maybe TypeNameTH -> Type
 argumentType Nothing = toCon ("()" :: String)
