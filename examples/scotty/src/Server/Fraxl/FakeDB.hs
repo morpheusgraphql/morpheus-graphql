@@ -15,6 +15,7 @@ module Server.Fraxl.FakeDB
   )
 where
 
+import Data.Foldable (fold)
 import Data.Functor.Identity (Identity (..), runIdentity)
 import Data.Map (Map)
 import qualified Data.Map as M

@@ -9,6 +9,8 @@ module Data.Morpheus.Client.Fetch.WebSockets
     sendInitialRequest,
     responseStream,
     sendRequest,
+    receiveResponse,
+    endSession,
   )
 where
 
@@ -65,8 +67,11 @@ encodeRequestMessage uid r =
         apolloId = Just uid
       }
 
--- endMessage :: Text -> ApolloSubscription ()
--- endMessage uid = ApolloSubscription {apolloType = "stop", apolloPayload = Nothing, apolloId = Just uid}
+endMessage :: Text -> ApolloSubscription ()
+endMessage uid = ApolloSubscription {apolloType = "stop", apolloPayload = Nothing, apolloId = Just uid}
+
+endSession :: Connection -> Text -> IO ()
+endSession conn uid = sendTextData conn $ A.encode $ endMessage uid
 
 receiveResponse :: A.FromJSON a => Connection -> IO (ClientResult a)
 receiveResponse conn = do

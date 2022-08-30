@@ -9,6 +9,7 @@ module Server.NamedResolvers.API
 where
 
 import Data.Morpheus (App)
+import Data.Semigroup (Semigroup ((<>)))
 import Server.NamedResolvers.Authors (authorsApp)
 import Server.NamedResolvers.Pages (pagesApp)
 import Server.NamedResolvers.Posts (postsApp)

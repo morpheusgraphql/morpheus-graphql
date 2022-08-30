@@ -25,7 +25,9 @@ import Data.Morpheus.Client.Fetch.RequestType
     toRequest,
   )
 import Data.Morpheus.Client.Fetch.WebSockets
-  ( responseStream,
+  ( endSession,
+    receiveResponse,
+    responseStream,
     sendInitialRequest,
     sendRequest,
     useWS,
@@ -40,26 +42,35 @@ parseURI url = maybe (fail ("Invalid Endpoint: " <> show url <> "!")) pure (mkUR
 
 requestSingle :: ClientTypeConstraint a => URI -> Request a -> IO (Either (FetchError a) a)
 requestSingle uri r
-  | isSubscription r = undefined
+  | isSubscription r = useWS uri wsApp
   | otherwise = decodeResponse <$> post uri (A.encode $ toRequest r)
+  where
+    wsApp conn = do
+      let sid = "0243134"
+      sendInitialRequest conn
+      sendRequest conn sid r
+      x <- receiveResponse conn
+      endSession conn sid
+      pure x
 
 requestMany :: ClientTypeConstraint a => URI -> Request a -> (ClientResult a -> IO ()) -> IO ()
 requestMany uri r f
-  | isSubscription r = useWS uri app
-  | otherwise = undefined
+  | isSubscription r = useWS uri appWS
+  | otherwise = post uri (A.encode $ toRequest r) >>= f . decodeResponse
   where
-    app conn = do
+    appWS conn = do
+      let sid = "0243134"
       sendInitialRequest conn
-      -- send initial GQL Request for subscription
-      sendRequest conn "0243134" r
-      -- handle GQL subscription responses
+      sendRequest conn sid r
       traverse_ (>>= f) (responseStream conn)
+      endSession conn sid
 
 -- PUBLIC API
 data ResponseStream a = ClientTypeConstraint a =>
   ResponseStream
   { _req :: Request a,
     _uri :: URI
+    -- _wsConnection :: Connection
   }
 
 request :: ClientTypeConstraint a => String -> Args a -> IO (ResponseStream a)
