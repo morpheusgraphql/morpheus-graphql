@@ -33,19 +33,19 @@ dependencies:
   - template-haskell                >=  2.0.0    &&  <  3.0.0
   - transformers                    >=  0.3.0    &&  <  0.6.0
   - unordered-containers            >=  0.2.8    &&  <  0.3.0
+  - unliftio-core                   >=  0.0.1    &&  <  0.4.0
   - wuss                            >=  1.0.0    &&  <  3.0.0
   - websockets                      >=  0.11.0   &&  <  1.0.0
-  - unliftio-core          >=  0.0.1   &&  <  0.4.0
 library:
   source-dirs: src
   exposed-modules:
     - Data.Morpheus.Client
-  ghc-options: "-Wall"
+  ghc-options: '-Wall'
 tests:
   morpheus-graphql-client-test:
     main: Spec.hs
     source-dirs: test
-    ghc-options: "-Wall"
+    ghc-options: '-Wall'
     dependencies:
       - aeson                    >=  1.4.4  &&  <  3.0.0
       - directory                >=  1.0.0  &&  <  2.0.0
