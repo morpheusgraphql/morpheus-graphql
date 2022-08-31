@@ -14,6 +14,7 @@ module Data.Morpheus.Client.Fetch.WebSockets
   )
 where
 
+import Control.Monad.IO.Unlift
 import qualified Data.Aeson as A
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.List.NonEmpty
@@ -39,14 +40,14 @@ getPath :: Maybe (Bool, NonEmpty (RText 'PathPiece)) -> String
 getPath (Just (_, h :| t)) = T.unpack $ T.intercalate "/" $ fmap unRText (h : t)
 getPath _ = ""
 
-useWS :: URI -> (Connection -> IO a) -> IO a
+useWS :: (MonadIO m, MonadUnliftIO m) => URI -> (Connection -> m a) -> m a
 useWS URI {uriScheme = Just scheme, uriAuthority = Right Authority {authHost, authPort}, uriPath} app
   | unRText scheme == "ws" = do
     let rPath = getPath uriPath
     let rPort = toPort authPort
     let rHost = handleHost $ unRText authHost
-    runClient rHost rPort rPath app
-useWS uri _ = fail ("Invalid Endpoint: " <> show uri <> "!")
+    withRunInIO $ \runInIO -> runClient rHost rPort rPath (runInIO . app)
+useWS uri _ = liftIO $ fail ("Invalid Endpoint: " <> show uri <> "!")
 
 processMessage :: ApolloSubscription (JSONResponse a) -> GQLClientResult a
 processMessage ApolloSubscription {apolloPayload = Just payload} = processResponse payload
@@ -70,22 +71,22 @@ encodeRequestMessage uid r =
 endMessage :: Text -> ApolloSubscription ()
 endMessage uid = ApolloSubscription {apolloType = "stop", apolloPayload = Nothing, apolloId = Just uid}
 
-endSession :: Connection -> Text -> IO ()
-endSession conn uid = sendTextData conn $ A.encode $ endMessage uid
+endSession :: MonadIO m => Connection -> Text -> m ()
+endSession conn uid = liftIO $ sendTextData conn $ A.encode $ endMessage uid
 
-receiveResponse :: A.FromJSON a => Connection -> IO (GQLClientResult a)
-receiveResponse conn = do
+receiveResponse :: MonadIO m => A.FromJSON a => Connection -> m (GQLClientResult a)
+receiveResponse conn = liftIO $ do
   message <- receiveData conn
   pure $ decodeMessage message
 
 -- returns infinite number of responses
-responseStream :: (A.FromJSON a) => Connection -> [IO (GQLClientResult a)]
+responseStream :: (A.FromJSON a, MonadIO m) => Connection -> [m (GQLClientResult a)]
 responseStream conn = getResponse : responseStream conn
   where
     getResponse = receiveResponse conn
 
-sendRequest :: (RequestType a, A.ToJSON (RequestArgs a)) => Connection -> Text -> Request a -> IO ()
-sendRequest conn uid r = sendTextData conn (encodeRequestMessage uid r)
+sendRequest :: (RequestType a, A.ToJSON (RequestArgs a), MonadIO m) => Connection -> Text -> Request a -> m ()
+sendRequest conn uid r = liftIO $ sendTextData conn (encodeRequestMessage uid r)
 
-sendInitialRequest :: Connection -> IO ()
-sendInitialRequest conn = sendTextData conn (A.encode initialMessage)
+sendInitialRequest :: MonadIO m => Connection -> m ()
+sendInitialRequest conn = liftIO $ sendTextData conn (A.encode initialMessage)

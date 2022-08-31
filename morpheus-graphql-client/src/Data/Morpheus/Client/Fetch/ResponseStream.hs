@@ -16,6 +16,7 @@ module Data.Morpheus.Client.Fetch.ResponseStream
   )
 where
 
+import Control.Monad.IO.Unlift (MonadUnliftIO)
 import qualified Data.Aeson as A
 import Data.Morpheus.Client.Fetch (Args)
 import Data.Morpheus.Client.Fetch.GQLClient
@@ -56,9 +57,9 @@ requestSingle uri r
       endSession conn sid
       pure x
 
-requestMany :: MonadIO m => ClientTypeConstraint a => URI -> Request a -> (GQLClientResult a -> m ()) -> m ()
+requestMany :: (MonadIO m, MonadUnliftIO m) => ClientTypeConstraint a => URI -> Request a -> (GQLClientResult a -> m ()) -> m ()
 requestMany uri r f
-  | isSubscription r = liftIO (useWS uri appWS)
+  | isSubscription r = useWS uri appWS
   | otherwise = liftIO (post uri (A.encode $ toRequest r)) >>= f . decodeResponse
   where
     appWS conn = do
@@ -88,5 +89,5 @@ single :: MonadIO m => ResponseStream a -> m (GQLClientResult a)
 single ResponseStream {_req, _uri} = liftIO $ requestSingle _uri _req
 
 -- | returns loop listening subscription events forever. if you want to run it in background use `forkIO`
-forEach :: MonadIO m => (GQLClientResult a -> m ()) -> ResponseStream a -> m ()
+forEach :: (MonadIO m, MonadUnliftIO m) => (GQLClientResult a -> m ()) -> ResponseStream a -> m ()
 forEach f ResponseStream {_uri, _req} = requestMany _uri _req f
