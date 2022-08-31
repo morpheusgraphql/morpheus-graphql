@@ -2,11 +2,12 @@ bounds:
   - 0.20.0
   - 0.21.0
 examples:
-  - examples/scotty
-  - examples/scotty-freer-simple
-  - examples/servant
-  - examples/client
-  - examples/code-gen
+  - client
+  - code-gen
+  - scotty
+  - scotty-freer-simple
+  - servant
+  # - subscription-extpubsub TODO: fix me
 packages:
   - morpheus-graphql-tests
   - morpheus-graphql-core

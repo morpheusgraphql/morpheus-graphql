@@ -25,6 +25,7 @@ words:
   - compat
   - concat
   - cond
+  - creds
   - cronos
   - Daviti
   - deps
