@@ -79,7 +79,7 @@ toLocalDefinitions request schema = do
     runConverter $ genOperation validOperation
 
 genOperation :: Operation VALID -> Converter (FetchDefinition, [ClientTypeDefinition])
-genOperation op@Operation {operationName, operationSelection} = do
+genOperation op@Operation {operationName, operationSelection, operationType} = do
   (schema, varDefs) <- asks id
   datatype <- getOperationDataType op schema
   let argumentsType = toArgumentsType (getOperationName operationName <> "Args") varDefs
@@ -92,7 +92,8 @@ genOperation op@Operation {operationName, operationSelection} = do
   pure
     ( FetchDefinition
         { clientArgumentsTypeName = fmap clientTypeName argumentsType,
-          rootTypeName = clientTypeName rootType
+          rootTypeName = clientTypeName rootType,
+          fetchOperationType = operationType
         },
       rootType : (localTypes <> maybeToList argumentsType)
     )

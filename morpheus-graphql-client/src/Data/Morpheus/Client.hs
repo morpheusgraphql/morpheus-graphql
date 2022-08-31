@@ -1,4 +1,8 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client
@@ -14,6 +18,14 @@ module Data.Morpheus.Client
     declareLocalTypes,
     declareLocalTypesInline,
     clientTypeDeclarations,
+    -- Fetch API
+    GQLClient,
+    GQLClientResult,
+    ResponseStream,
+    withHeaders,
+    request,
+    forEach,
+    single,
     -- DEPRECATED EXPORTS
     gql,
     defineByDocument,
@@ -41,9 +53,18 @@ import Data.Morpheus.Client.Declare
 import Data.Morpheus.Client.Fetch
   ( Fetch (..),
   )
+import Data.Morpheus.Client.Fetch.ResponseStream
+  ( GQLClient,
+    ResponseStream,
+    forEach,
+    request,
+    single,
+    withHeaders,
+  )
 import Data.Morpheus.Client.Internal.Types
   ( ExecutableSource,
     FetchError (..),
+    GQLClientResult,
     SchemaSource (..),
   )
 import Data.Morpheus.Types.GQLScalar

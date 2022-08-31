@@ -12,10 +12,8 @@ module Data.Morpheus.Client.Declare
   )
 where
 
-import Data.Morpheus.Client.Declare.Client
-  ( declareTypes,
-  )
-import Data.Morpheus.Client.Declare.Fetch
+import Data.Morpheus.Client.Declare.Client (declareTypes)
+import Data.Morpheus.Client.Declare.RequestType (declareRequestType)
 import Data.Morpheus.Client.Internal.Types
   ( ExecutableSource,
     SchemaSource,
@@ -52,7 +50,7 @@ internalLegacyLocalDeclareTypes schemaSrc query = do
     )
     ( \(fetch, types) ->
         (<>)
-          <$> declareFetch query fetch
+          <$> declareRequestType query fetch
           <*> declareTypes types
     )
 

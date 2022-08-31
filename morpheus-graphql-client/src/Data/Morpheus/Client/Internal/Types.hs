@@ -1,4 +1,6 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Internal.Types
@@ -9,6 +11,7 @@ module Data.Morpheus.Client.Internal.Types
     FetchError (..),
     SchemaSource (..),
     ExecutableSource,
+    GQLClientResult,
   )
 where
 
@@ -18,6 +21,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldDefinition,
     FieldName,
     GQLErrors,
+    OperationType,
     TypeKind,
     TypeName,
     VALID,
@@ -45,7 +49,8 @@ data ClientTypeDefinition = ClientTypeDefinition
 
 data FetchDefinition = FetchDefinition
   { rootTypeName :: TypeNameTH,
-    clientArgumentsTypeName :: Maybe TypeNameTH
+    clientArgumentsTypeName :: Maybe TypeNameTH,
+    fetchOperationType :: OperationType
   }
   deriving (Show)
 
@@ -61,3 +66,5 @@ data SchemaSource
   deriving (Show, Eq)
 
 type ExecutableSource = Text
+
+type GQLClientResult (a :: Type) = (Either (FetchError a) a)

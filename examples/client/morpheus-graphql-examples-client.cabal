@@ -18,6 +18,7 @@ license:        MIT
 build-type:     Simple
 data-files:
     assets/mythology.gql
+    assets/users.gql
     assets/introspection.json
 
 source-repository head
@@ -29,7 +30,9 @@ executable morpheus-client-example
   other-modules:
       Client.DefineByIntrospection
       Client.Mythology
+      Client.NewUsers
       Client.StarWarsClient
+      Client.Users
       Paths_morpheus_graphql_examples_client
   hs-source-dirs:
       src

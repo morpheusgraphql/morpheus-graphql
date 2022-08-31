@@ -1,10 +1,17 @@
 {-# LANGUAGE ConstrainedClassMethods #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Fetch
   ( Fetch (..),
+    decodeResponse,
   )
 where
 
@@ -14,45 +21,23 @@ import Data.Aeson
     eitherDecode,
     encode,
   )
-import qualified Data.Aeson as A
-import qualified Data.Aeson.Types as A
 import Data.ByteString.Lazy (ByteString)
+import Data.Morpheus.Client.Fetch.RequestType (Request (Request), RequestType (RequestArgs), processResponse, toRequest)
 import Data.Morpheus.Client.Internal.Types
   ( FetchError (..),
   )
-import Data.Morpheus.Client.Schema.JSON.Types
-  ( JSONResponse (..),
-  )
-import Data.Morpheus.Types.IO
-  ( GQLRequest (..),
-  )
-import Data.Morpheus.Types.Internal.AST
-  ( FieldName,
-  )
-import Data.Text
-  ( pack,
-  )
 import Relude hiding (ByteString)
 
-fixVars :: A.Value -> Maybe A.Value
-fixVars x
-  | x == A.emptyArray = Nothing
-  | otherwise = Just x
+decodeResponse :: FromJSON a => ByteString -> Either (FetchError a) a
+decodeResponse = (first FetchErrorParseFailure . eitherDecode) >=> processResponse
 
-class Fetch a where
+class (RequestType a, ToJSON (Args a), FromJSON a) => Fetch a where
   type Args a :: Type
-  __fetch ::
-    (Monad m, Show a, ToJSON (Args a), FromJSON a) =>
-    String ->
-    FieldName ->
-    (ByteString -> m ByteString) ->
-    Args a ->
-    m (Either (FetchError a) a)
-  __fetch strQuery opName trans vars = ((first FetchErrorParseFailure . eitherDecode) >=> processResponse) <$> trans (encode gqlReq)
+  fetch :: Monad m => (ByteString -> m ByteString) -> Args a -> m (Either (FetchError a) a)
+
+instance (RequestType a, ToJSON (Args a), FromJSON a) => Fetch a where
+  type Args a = RequestArgs a
+  fetch f args = decodeResponse <$> f (encode $ toRequest request)
     where
-      gqlReq = GQLRequest {operationName = Just opName, query = pack strQuery, variables = fixVars (toJSON vars)}
-      -------------------------------------------------------------
-      processResponse JSONResponse {responseData = Just x, responseErrors = []} = Right x
-      processResponse JSONResponse {responseData = Nothing, responseErrors = []} = Left FetchErrorNoResult
-      processResponse JSONResponse {responseData = result, responseErrors = (x : xs)} = Left $ FetchErrorProducedErrors (x :| xs) result
-  fetch :: (Monad m, FromJSON a) => (ByteString -> m ByteString) -> Args a -> m (Either (FetchError a) a)
+      request :: Request a
+      request = Request args

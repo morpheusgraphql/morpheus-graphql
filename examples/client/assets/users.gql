@@ -1,0 +1,118 @@
+# for Input Union
+"""
+official currency of most member states of the European Union.
+https://en.wikipedia.org/wiki/Euro
+"""
+scalar Euro
+
+input Cat {
+  name: String!
+}
+
+input Dog {
+  name: String!
+}
+
+input Bird {
+  name: String
+}
+
+# Main APi
+
+"""
+id of city
+"""
+enum CityID {
+  """
+  temporary multiline Test for Enum field descripions
+  """
+  Paris
+  BLN @deprecated(reason: "some reason")
+  "temporary singleline Test for Enum field descripions"
+  HH @deprecated(reason: "just for test")
+}
+
+input Coordinates {
+  latitude: Euro! = 23423
+  "temporary singleline Test for input object field descripions"
+  longitude: [[[UniqueID!]!]]! = [[[{ id: "" }]]]
+}
+
+input UniqueID {
+  """
+  temporary multiline Test for Enum field descripions
+  """
+  type: String = "test default value"
+  id: String!
+  rec: UniqueID
+}
+
+interface Account {
+  name: String!
+}
+
+type Address {
+  """
+  temporary multiline Test for Enum field descripions
+  """
+  city: String! @deprecated(reason: "some reason")
+  street: String!
+  "temporary singleline Test for input object field descripions"
+  houseNumber: Int! @deprecated
+}
+
+type Company implements Account {
+  name: String!
+}
+
+"""
+my custom description for user
+"""
+type User implements Account {
+  name: String!
+  """
+  some email adress
+  name@email.com
+  """
+  email: String!
+  address(
+    """
+    temporary multiline Test for
+    arguments
+    descripions
+    """
+    coordinates: Coordinates!
+    "temporary singleline Test for input object field descripions"
+    comment: String = "test default value"
+  ): Address!
+  home: CityID!
+  office(zipCode: [[[ID!]]!], id: CityID!): Address
+  entity: [MyUnion!]!
+}
+
+union MyUnion = User | Address
+
+type Query {
+  user: User!
+  animal(animal: Animal): String!
+  wrapped1(type: UniqueID): AIntText!
+  wrapped2: AText!
+  set(if: Boolean! = true): SetInt!
+  someMap: MapTextInt!
+  fail1: Int!
+  fail2: Int!
+  shared: SharedType!
+  testInterface: [Account!]!
+  testInput(i1: Coordinates, i2: String = "some value"): String!
+}
+
+type Mutation {
+  createUser: User!
+  createAddress: Address!
+  setAddress: Address!
+}
+
+type Subscription {
+  newAddress(address: String = "some adress"): Address!
+  newUser: User!
+}

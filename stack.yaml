@@ -2,10 +2,11 @@ allow-newer: true
 resolver: nightly-2022-03-02
 save-hackage-creds: false
 packages:
-  - examples/scotty-freer-simple
-  - examples/servant
   - examples/client
   - examples/code-gen
+  - examples/scotty
+  - examples/scotty-freer-simple
+  - examples/servant
   - morpheus-graphql-tests
   - morpheus-graphql-core
   - morpheus-graphql-code-gen

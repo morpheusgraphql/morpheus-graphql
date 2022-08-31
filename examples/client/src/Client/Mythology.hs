@@ -14,17 +14,16 @@ module Client.Mythology
   )
 where
 
-import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Morpheus.Client
   ( DecodeScalar (..),
     EncodeScalar (..),
-    Fetch (..),
-    FetchError,
-    ID (..),
+    GQLClient,
+    ResponseStream,
     ScalarValue (..),
     declareGlobalTypes,
     declareLocalTypesInline,
     raw,
+    request,
   )
 import Data.Text (Text)
 
@@ -54,53 +53,35 @@ declareLocalTypesInline
   "assets/mythology.gql"
   [raw|
     # Query Hero with Compile time Validatio!
-    query GetHero ($god: Realm, $someID: ID!)
+    query GetHero ($name:String!, $city: City!)
       {
-        deity (mythology:$god) {
+        deity (name:$name, bornPlace:$city) {
+          name
           power
-          fullName
+          realm
+          bornAt
         }
-        character(characterID: $someID ) {
+        character  {
           ...on Creature {
             name
-            immortality
+            age
           }
           ...on Human {
-            lifetime
-            profession
+            name
+            bornAt
           }
         }
-        char2: character(characterID: $someID ) {
-          ...on Creature {
+        persons {
+          ...on Deity {
               cName: name
           }
           ...on Human {
-              lTime: lifetime
-              prof: profession
+              humenName: name
+              city: bornAt
           }
         }
       }
   |]
 
-mythologyApi :: ByteString -> IO ByteString
-mythologyApi req = do
-  print req
-  putStrLn ""
-  return
-    "{\"data\":{\"deity\":{ \"fullName\": \"name\" }, \"character\":{ \"__typename\":\"Human\", \"lifetime\": \"Lifetime\", \"profession\": \"Artist\" } ,  \"char2\":{ \"__typename\":\"Human\", \"lTime\": \"time\", \"prof\": \"Artist\" }  }}"
-
-fetchHero :: IO (Either (FetchError GetHero) GetHero)
-fetchHero =
-  fetch
-    mythologyApi
-    GetHeroArgs
-      { god =
-          Just
-            Realm
-              { owner = "Zeus",
-                age = Just 10,
-                realm = Nothing,
-                profession = Just ProfessionArtist
-              },
-        someID = ID "Hercules"
-      }
+fetchHero :: GQLClient -> IO (ResponseStream GetHero)
+fetchHero client = request client GetHeroArgs {name = "morpheus", city = CityIthaca}

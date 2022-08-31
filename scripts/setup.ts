@@ -32,7 +32,10 @@ const getStack = async (version: string) => {
     ...(version === "latest" ? { "allow-newer": true } : {}),
     resolver: current.resolver,
     "save-hackage-creds": false,
-    packages: difference([...examples, ...include, ...packages], skip),
+    packages: difference(
+      [...examples.map((e) => `examples/${e}`), ...include, ...packages],
+      skip
+    ),
     "extra-deps": Object.entries(extraDeps)
       .map(([key, val]) => `${key}-${val}`)
       .sort(),

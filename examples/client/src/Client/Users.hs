@@ -9,24 +9,21 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Client.Client
+module Client.Users
   ( fetchUser,
   )
 where
 
-import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.FileEmbed (makeRelativeToProject)
 import Data.Morpheus.Client
-  ( Fetch (..),
-    FetchError,
+  ( DecodeScalar (..),
+    EncodeScalar (..),
+    GQLClient,
+    ResponseStream,
+    ScalarValue (Int),
     declareGlobalTypes,
     declareLocalTypesInline,
     raw,
-  )
-import Data.Morpheus.Types
-  ( DecodeScalar (..),
-    EncodeScalar (..),
-    ScalarValue (..),
+    request,
   )
 import Data.Text (Text)
 import Prelude
@@ -43,10 +40,10 @@ instance DecodeScalar Euro where
 instance EncodeScalar Euro where
   encodeScalar (Euro x y) = Int (x * 101 + y)
 
-declareGlobalTypes "src/Server/Sophisticated/api.gql"
+declareGlobalTypes "assets/users.gql"
 
 declareLocalTypesInline
-  "src/Server/Sophisticated/api.gql"
+  "assets/users.gql"
   [raw|
     # Subscription Test Query
     subscription MySubscription
@@ -57,7 +54,7 @@ declareLocalTypesInline
   |]
 
 declareLocalTypesInline
-  "src/Server/Sophisticated/api.gql"
+  "assets/users.gql"
   [raw|
     # Query Hero with Compile time Validation
     query GetUser ($coordinates: Coordinates!)
@@ -79,11 +76,9 @@ declareLocalTypesInline
       }
   |]
 
-fetchUser :: (ByteString -> IO ByteString) -> IO (Either (FetchError GetUser) GetUser)
-fetchUser = flip fetch args
-  where
-    args :: Args GetUser
-    args =
+fetchUser :: GQLClient -> IO (ResponseStream GetUser)
+fetchUser =
+  ( `request`
       GetUserArgs
         { coordinates =
             Coordinates
@@ -91,3 +86,4 @@ fetchUser = flip fetch args
                 latitude = Euro 1 2
               }
         }
+  )

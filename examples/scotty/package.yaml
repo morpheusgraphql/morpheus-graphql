@@ -17,7 +17,6 @@ dependencies:
   - mtl                             >= 2.0       && <= 2.3
   - websockets                      >= 0.11.0    &&  <= 0.13
   - morpheus-graphql
-  - morpheus-graphql-client
   - morpheus-graphql-core
   - morpheus-graphql-app
   - morpheus-graphql-subscriptions

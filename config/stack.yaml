@@ -2,11 +2,11 @@ bounds:
   - 0.20.0
   - 0.21.0
 examples:
-  - examples/scotty
-  - examples/scotty-freer-simple
-  - examples/servant
-  - examples/client
-  - examples/code-gen
+  - client
+  - code-gen
+  - scotty
+  - scotty-freer-simple
+  - servant
 packages:
   - morpheus-graphql-tests
   - morpheus-graphql-core
@@ -34,11 +34,13 @@ plan:
       megaparsec: 7.0.5
       modern-uri: 0.3.0.0
       relude: 0.3.0
-      req: 2.1.0
       retry: 0.8.1.0
       time-compat: 1.9.2.2
+      websockets: 0.12.6.0
     resolver: lts-12.16
   8.6.5:
+    deps:
+      req: 3.0.0
     resolver: lts-14.14
   8.8.3:
     resolver: lts-16.2
@@ -49,8 +51,6 @@ plan:
       haxl: 2.4.0.0
       type-aligned: 0.9.6
     resolver: nightly-2022-03-02
-    skip:
-      - examples/scotty
 rules:
   aeson:
     - 1.4.4
@@ -79,6 +79,9 @@ rules:
   megaparsec:
     - 7.0.0
     - 10.0.0
+  modern-uri:
+    - 0.1.0.0
+    - 1.0.0
   mtl:
     - 2.0.0
     - 3.0.0
@@ -91,6 +94,9 @@ rules:
   relude:
     - 0.3.0
     - 2.0.0
+  req:
+    - 3.0.0
+    - 4.0.0
   scientific:
     - 0.3.6.2
     - 0.4.0
@@ -125,6 +131,9 @@ rules:
     - 0.12.0.1
     - 0.13.0
   websockets:
-    - 0.11.0
+    - 0.12.6.0
     - 1.0.0
+  wuss:
+    - 1.0.0
+    - 3.0.0
 version: 0.20.1

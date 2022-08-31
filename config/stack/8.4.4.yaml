@@ -1,11 +1,11 @@
 resolver: lts-12.16
 save-hackage-creds: false
 packages:
+  - examples/client
+  - examples/code-gen
   - examples/scotty
   - examples/scotty-freer-simple
   - examples/servant
-  - examples/client
-  - examples/code-gen
   - morpheus-graphql-tests
   - morpheus-graphql-core
   - morpheus-graphql-code-gen
@@ -25,7 +25,8 @@ extra-deps:
   - megaparsec-7.0.5
   - modern-uri-0.3.0.0
   - relude-0.3.0
-  - req-2.1.0
+  - req-3.0.0
   - retry-0.8.1.0
   - time-compat-1.9.2.2
   - type-aligned-0.9.6
+  - websockets-0.12.6.0
