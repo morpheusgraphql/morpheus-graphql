@@ -29,3 +29,4 @@ extra-deps:
   - retry-0.8.1.0
   - time-compat-1.9.2.2
   - type-aligned-0.9.6
+  - websockets-0.12.6.0
