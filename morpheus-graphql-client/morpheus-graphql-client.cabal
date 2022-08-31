@@ -102,7 +102,7 @@ library
     , transformers >=0.3.0 && <0.6.0
     , unliftio-core >=0.0.1 && <0.4.0
     , unordered-containers >=0.2.8 && <0.3.0
-    , websockets >=0.11.0 && <1.0.0
+    , websockets >=0.12.6.0 && <1.0.0
     , wuss >=1.0.0 && <3.0.0
   default-language: Haskell2010
 
@@ -145,6 +145,6 @@ test-suite morpheus-graphql-client-test
     , transformers >=0.3.0 && <0.6.0
     , unliftio-core >=0.0.1 && <0.4.0
     , unordered-containers >=0.2.8 && <0.3.0
-    , websockets >=0.11.0 && <1.0.0
+    , websockets >=0.12.6.0 && <1.0.0
     , wuss >=1.0.0 && <3.0.0
   default-language: Haskell2010
