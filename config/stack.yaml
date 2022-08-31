@@ -49,8 +49,6 @@ plan:
       haxl: 2.4.0.0
       type-aligned: 0.9.6
     resolver: nightly-2022-03-02
-    skip:
-      - examples/scotty
 rules:
   aeson:
     - 1.4.4
