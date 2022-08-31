@@ -34,12 +34,13 @@ plan:
       megaparsec: 7.0.5
       modern-uri: 0.3.0.0
       relude: 0.3.0
-      req: 3.0.0
       retry: 0.8.1.0
       time-compat: 1.9.2.2
     resolver: lts-12.16
   8.6.5:
     resolver: lts-14.14
+    deps:
+      req: 3.0.0
   8.8.3:
     resolver: lts-16.2
   latest:

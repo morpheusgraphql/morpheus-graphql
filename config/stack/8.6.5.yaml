@@ -20,4 +20,5 @@ extra-deps:
   - fraxl-0.3.0.0
   - graphql-0.11.1.0
   - haxl-2.4.0.0
+  - req-3.0.0
   - type-aligned-0.9.6
