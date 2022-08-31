@@ -19,6 +19,8 @@ module Data.Morpheus.Client
     declareLocalTypesInline,
     clientTypeDeclarations,
     -- Fetch API
+    morpheusClient,
+    MorpheusClient (..),
     ClientResult,
     request,
     forEach,
@@ -52,8 +54,10 @@ import Data.Morpheus.Client.Fetch
   ( Fetch (..),
   )
 import Data.Morpheus.Client.Fetch.ResponseStream
-  ( ResponseStream,
+  ( MorpheusClient (..),
+    ResponseStream,
     forEach,
+    morpheusClient,
     request,
     single,
   )

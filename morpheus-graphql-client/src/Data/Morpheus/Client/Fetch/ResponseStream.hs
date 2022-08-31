@@ -11,6 +11,8 @@ module Data.Morpheus.Client.Fetch.ResponseStream
     forEach,
     single,
     ResponseStream,
+    morpheusClient,
+    MorpheusClient (clientHeaders),
   )
 where
 
@@ -65,19 +67,34 @@ requestMany uri r f
       traverse_ (>>= f) (responseStream conn)
       endSession conn sid
 
+type Headers = Map String String
+
+data MorpheusClient = MorpheusClient
+  { clientHeaders :: Headers,
+    clientURI :: String
+  }
+
+morpheusClient :: String -> MorpheusClient
+morpheusClient clientURI =
+  MorpheusClient
+    { clientURI,
+      clientHeaders = fromList [("Content-Type", "application/json")]
+    }
+
 -- PUBLIC API
 data ResponseStream a = ClientTypeConstraint a =>
   ResponseStream
   { _req :: Request a,
-    _uri :: URI
+    _uri :: URI,
+    _headers :: Headers
     -- _wsConnection :: Connection
   }
 
-request :: ClientTypeConstraint a => String -> Args a -> IO (ResponseStream a)
-request uri requestArgs = do
-  _uri <- parseURI uri
+request :: ClientTypeConstraint a => MorpheusClient -> Args a -> IO (ResponseStream a)
+request MorpheusClient {clientURI, clientHeaders} requestArgs = do
+  _uri <- parseURI clientURI
   let _req = Request {requestArgs}
-  pure ResponseStream {_req, _uri}
+  pure ResponseStream {_req, _uri, _headers = clientHeaders}
 
 -- | returns first response from the server
 single :: ResponseStream a -> IO (ClientResult a)
