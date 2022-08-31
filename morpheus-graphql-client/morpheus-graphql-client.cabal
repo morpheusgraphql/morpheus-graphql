@@ -62,6 +62,7 @@ library
       Data.Morpheus.Client.Declare.RequestType
       Data.Morpheus.Client.Declare.Type
       Data.Morpheus.Client.Fetch
+      Data.Morpheus.Client.Fetch.GQLClient
       Data.Morpheus.Client.Fetch.Http
       Data.Morpheus.Client.Fetch.RequestType
       Data.Morpheus.Client.Fetch.ResponseStream

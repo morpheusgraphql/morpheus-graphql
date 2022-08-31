@@ -19,13 +19,13 @@ module Data.Morpheus.Client
     declareLocalTypesInline,
     clientTypeDeclarations,
     -- Fetch API
-    morpheusClient,
-    MorpheusClient (..),
-    ClientResult,
+    GQLClient,
+    GQLClientResult,
+    ResponseStream,
+    withHeaders,
     request,
     forEach,
     single,
-    ResponseStream,
     -- DEPRECATED EXPORTS
     gql,
     defineByDocument,
@@ -54,17 +54,17 @@ import Data.Morpheus.Client.Fetch
   ( Fetch (..),
   )
 import Data.Morpheus.Client.Fetch.ResponseStream
-  ( MorpheusClient (..),
+  ( GQLClient,
     ResponseStream,
     forEach,
-    morpheusClient,
     request,
     single,
+    withHeaders,
   )
 import Data.Morpheus.Client.Internal.Types
-  ( ClientResult,
-    ExecutableSource,
+  ( ExecutableSource,
     FetchError (..),
+    GQLClientResult,
     SchemaSource (..),
   )
 import Data.Morpheus.Types.GQLScalar

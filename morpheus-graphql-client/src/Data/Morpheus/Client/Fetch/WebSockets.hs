@@ -18,7 +18,7 @@ import qualified Data.Aeson as A
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.List.NonEmpty
 import Data.Morpheus.Client.Fetch.RequestType (Request, RequestType (..), processResponse, toRequest)
-import Data.Morpheus.Client.Internal.Types (ClientResult, FetchError (..))
+import Data.Morpheus.Client.Internal.Types (FetchError (..), GQLClientResult)
 import Data.Morpheus.Client.Schema.JSON.Types (JSONResponse (..))
 import Data.Morpheus.Subscriptions.Internal (ApolloSubscription (..))
 import qualified Data.Text as T
@@ -48,11 +48,11 @@ useWS URI {uriScheme = Just scheme, uriAuthority = Right Authority {authHost, au
     runClient rHost rPort rPath app
 useWS uri _ = fail ("Invalid Endpoint: " <> show uri <> "!")
 
-processMessage :: ApolloSubscription (JSONResponse a) -> ClientResult a
+processMessage :: ApolloSubscription (JSONResponse a) -> GQLClientResult a
 processMessage ApolloSubscription {apolloPayload = Just payload} = processResponse payload
 processMessage ApolloSubscription {} = Left (FetchErrorParseFailure "empty message")
 
-decodeMessage :: A.FromJSON a => ByteString -> ClientResult a
+decodeMessage :: A.FromJSON a => ByteString -> GQLClientResult a
 decodeMessage = (first FetchErrorParseFailure . A.eitherDecode) >=> processMessage
 
 initialMessage :: ApolloSubscription ()
@@ -73,13 +73,13 @@ endMessage uid = ApolloSubscription {apolloType = "stop", apolloPayload = Nothin
 endSession :: Connection -> Text -> IO ()
 endSession conn uid = sendTextData conn $ A.encode $ endMessage uid
 
-receiveResponse :: A.FromJSON a => Connection -> IO (ClientResult a)
+receiveResponse :: A.FromJSON a => Connection -> IO (GQLClientResult a)
 receiveResponse conn = do
   message <- receiveData conn
   pure $ decodeMessage message
 
 -- returns infinite number of responses
-responseStream :: (A.FromJSON a) => Connection -> [IO (ClientResult a)]
+responseStream :: (A.FromJSON a) => Connection -> [IO (GQLClientResult a)]
 responseStream conn = getResponse : responseStream conn
   where
     getResponse = receiveResponse conn

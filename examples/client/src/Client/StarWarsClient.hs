@@ -12,7 +12,8 @@ module Client.StarWarsClient
 where
 
 import Data.Morpheus.Client
-  ( ResponseStream,
+  ( GQLClient,
+    ResponseStream,
     declareLocalTypesInline,
     raw,
     request,
@@ -32,5 +33,5 @@ declareLocalTypesInline
     }
   |]
 
-fetchFilms :: IO (ResponseStream StarWarsFilms)
-fetchFilms = request "https://swapi.graph.cool" ()
+fetchFilms :: GQLClient -> IO (ResponseStream StarWarsFilms)
+fetchFilms = (`request` ())

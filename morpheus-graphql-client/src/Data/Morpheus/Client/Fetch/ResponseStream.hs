@@ -11,13 +11,14 @@ module Data.Morpheus.Client.Fetch.ResponseStream
     forEach,
     single,
     ResponseStream,
-    morpheusClient,
-    MorpheusClient (clientHeaders),
+    GQLClient,
+    withHeaders,
   )
 where
 
 import qualified Data.Aeson as A
 import Data.Morpheus.Client.Fetch (Args)
+import Data.Morpheus.Client.Fetch.GQLClient
 import Data.Morpheus.Client.Fetch.Http (post)
 import Data.Morpheus.Client.Fetch.RequestType
   ( ClientTypeConstraint,
@@ -55,10 +56,10 @@ requestSingle uri r
       endSession conn sid
       pure x
 
-requestMany :: ClientTypeConstraint a => URI -> Request a -> (ClientResult a -> IO ()) -> IO ()
+requestMany :: MonadIO m => ClientTypeConstraint a => URI -> Request a -> (GQLClientResult a -> m ()) -> m ()
 requestMany uri r f
-  | isSubscription r = useWS uri appWS
-  | otherwise = post uri (A.encode $ toRequest r) >>= f . decodeResponse
+  | isSubscription r = liftIO (useWS uri appWS)
+  | otherwise = liftIO (post uri (A.encode $ toRequest r)) >>= f . decodeResponse
   where
     appWS conn = do
       let sid = "0243134"
@@ -66,20 +67,6 @@ requestMany uri r f
       sendRequest conn sid r
       traverse_ (>>= f) (responseStream conn)
       endSession conn sid
-
-type Headers = Map String String
-
-data MorpheusClient = MorpheusClient
-  { clientHeaders :: Headers,
-    clientURI :: String
-  }
-
-morpheusClient :: String -> MorpheusClient
-morpheusClient clientURI =
-  MorpheusClient
-    { clientURI,
-      clientHeaders = fromList [("Content-Type", "application/json")]
-    }
 
 -- PUBLIC API
 data ResponseStream a = ClientTypeConstraint a =>
@@ -90,16 +77,16 @@ data ResponseStream a = ClientTypeConstraint a =>
     -- _wsConnection :: Connection
   }
 
-request :: ClientTypeConstraint a => MorpheusClient -> Args a -> IO (ResponseStream a)
-request MorpheusClient {clientURI, clientHeaders} requestArgs = do
+request :: ClientTypeConstraint a => GQLClient -> Args a -> IO (ResponseStream a)
+request GQLClient {clientURI, clientHeaders} requestArgs = do
   _uri <- parseURI clientURI
   let _req = Request {requestArgs}
   pure ResponseStream {_req, _uri, _headers = clientHeaders}
 
 -- | returns first response from the server
-single :: ResponseStream a -> IO (ClientResult a)
-single ResponseStream {_req, _uri} = requestSingle _uri _req
+single :: MonadIO m => ResponseStream a -> m (GQLClientResult a)
+single ResponseStream {_req, _uri} = liftIO $ requestSingle _uri _req
 
 -- | returns loop listening subscription events forever. if you want to run it in background use `forkIO`
-forEach :: (ClientResult a -> IO ()) -> ResponseStream a -> IO ()
+forEach :: MonadIO m => (GQLClientResult a -> m ()) -> ResponseStream a -> m ()
 forEach f ResponseStream {_uri, _req} = requestMany _uri _req f

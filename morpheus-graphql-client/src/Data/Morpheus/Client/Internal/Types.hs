@@ -11,7 +11,7 @@ module Data.Morpheus.Client.Internal.Types
     FetchError (..),
     SchemaSource (..),
     ExecutableSource,
-    ClientResult,
+    GQLClientResult,
   )
 where
 
@@ -67,4 +67,4 @@ data SchemaSource
 
 type ExecutableSource = Text
 
-type ClientResult (a :: Type) = (Either (FetchError a) a)
+type GQLClientResult (a :: Type) = (Either (FetchError a) a)

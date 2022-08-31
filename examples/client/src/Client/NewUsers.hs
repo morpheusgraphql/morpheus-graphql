@@ -17,6 +17,7 @@ where
 import Data.Morpheus.Client
   ( DecodeScalar (..),
     EncodeScalar (..),
+    GQLClient,
     ResponseStream,
     ScalarValue (Int),
     declareGlobalTypes,
@@ -71,5 +72,5 @@ declareLocalTypesInline
 args :: NewUsersArgs
 args = NewUsersArgs {loc = Coordinates {longitude = [], latitude = Euro 1 2}}
 
-newUsers :: IO (ResponseStream NewUsers)
-newUsers = request "ws://localhost:3000" args
+newUsers :: GQLClient -> IO (ResponseStream NewUsers)
+newUsers = (`request` args)

@@ -17,6 +17,7 @@ where
 import Data.Morpheus.Client
   ( DecodeScalar (..),
     EncodeScalar (..),
+    GQLClient,
     ResponseStream,
     ScalarValue (..),
     declareGlobalTypes,
@@ -82,5 +83,5 @@ declareLocalTypesInline
       }
   |]
 
-fetchHero :: IO (ResponseStream GetHero)
-fetchHero = request "http://localhost:3000/mythology" GetHeroArgs {name = "morpheus", city = CityIthaca}
+fetchHero :: GQLClient -> IO (ResponseStream GetHero)
+fetchHero client = request client GetHeroArgs {name = "morpheus", city = CityIthaca}
