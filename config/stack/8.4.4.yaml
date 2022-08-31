@@ -25,7 +25,7 @@ extra-deps:
   - megaparsec-7.0.5
   - modern-uri-0.3.0.0
   - relude-0.3.0
-  - req-2.1.0
+  - req-3.0.0
   - retry-0.8.1.0
   - time-compat-1.9.2.2
   - type-aligned-0.9.6
