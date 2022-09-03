@@ -8,6 +8,7 @@ module Data.Morpheus.Client.Fetch.GQLClient
   ( GQLClient (..),
     withHeaders,
     Headers,
+    Header,
   )
 where
 

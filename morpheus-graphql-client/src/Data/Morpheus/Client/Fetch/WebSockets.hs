@@ -40,14 +40,18 @@ getPath :: Maybe (Bool, NonEmpty (RText 'PathPiece)) -> String
 getPath (Just (_, h :| t)) = T.unpack $ T.intercalate "/" $ fmap unRText (h : t)
 getPath _ = ""
 
+_useWS :: URI -> (Connection -> IO a) -> IO a
+_useWS URI {uriScheme = Just scheme, uriAuthority = Right Authority {authHost, authPort}, uriPath} app
+  | rProt == "ws" || rProt == "wss" = runClient rHost rPort rPath app
+  where
+    rProt = unRText scheme
+    rPath = getPath uriPath
+    rPort = toPort authPort
+    rHost = handleHost $ unRText authHost
+_useWS uri _ = liftIO $ fail ("Invalid Endpoint: " <> show uri <> "!")
+
 useWS :: (MonadIO m, MonadUnliftIO m) => URI -> (Connection -> m a) -> m a
-useWS URI {uriScheme = Just scheme, uriAuthority = Right Authority {authHost, authPort}, uriPath} app
-  | unRText scheme == "ws" = do
-    let rPath = getPath uriPath
-    let rPort = toPort authPort
-    let rHost = handleHost $ unRText authHost
-    withRunInIO $ \runInIO -> runClient rHost rPort rPath (runInIO . app)
-useWS uri _ = liftIO $ fail ("Invalid Endpoint: " <> show uri <> "!")
+useWS uri app = withRunInIO $ \runInIO -> _useWS uri (runInIO . app)
 
 processMessage :: ApolloSubscription (JSONResponse a) -> GQLClientResult a
 processMessage ApolloSubscription {apolloPayload = Just payload} = processResponse payload
