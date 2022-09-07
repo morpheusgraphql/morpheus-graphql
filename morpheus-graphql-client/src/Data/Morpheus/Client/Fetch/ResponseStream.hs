@@ -44,7 +44,7 @@ parseURI url = maybe (fail ("Invalid Endpoint: " <> show url <> "!")) pure (mkUR
 
 requestSingle :: ResponseStream a -> IO (Either (FetchError a) a)
 requestSingle ResponseStream {..}
-  | isSubscription _req = useWS _uri wsApp
+  | isSubscription _req = useWS _uri _headers wsApp
   | otherwise = httpRequest _uri _req _headers
   where
     wsApp conn = do
@@ -55,9 +55,9 @@ requestSingle ResponseStream {..}
       endSession conn sid
       pure x
 
-requestMany :: (MonadIO m, MonadUnliftIO m) => (GQLClientResult a -> m ()) -> ResponseStream a -> m ()
+requestMany :: (MonadIO m, MonadUnliftIO m, MonadFail m) => (GQLClientResult a -> m ()) -> ResponseStream a -> m ()
 requestMany f ResponseStream {..}
-  | isSubscription _req = useWS _uri appWS
+  | isSubscription _req = useWS _uri _headers appWS
   | otherwise = liftIO (httpRequest _uri _req _headers) >>= f
   where
     appWS conn = do
@@ -87,5 +87,5 @@ single :: MonadIO m => ResponseStream a -> m (GQLClientResult a)
 single = liftIO . requestSingle
 
 -- | returns loop listening subscription events forever. if you want to run it in background use `forkIO`
-forEach :: (MonadIO m, MonadUnliftIO m) => (GQLClientResult a -> m ()) -> ResponseStream a -> m ()
+forEach :: (MonadIO m, MonadUnliftIO m, MonadFail m) => (GQLClientResult a -> m ()) -> ResponseStream a -> m ()
 forEach = requestMany

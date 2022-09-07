@@ -7,12 +7,17 @@ module Data.Morpheus.Client.Fetch.Http
   )
 where
 
-import Data.Aeson
+import Data.Aeson (FromJSON, ToJSON, encode)
 import qualified Data.ByteString.Char8 as L
 import Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.Map as M
-import Data.Morpheus.Client.Fetch.GQLClient
+import Data.Morpheus.Client.Fetch.GQLClient (Header, Headers)
 import Data.Morpheus.Client.Fetch.RequestType
+  ( Request,
+    RequestType (RequestArgs),
+    decodeResponse,
+    toRequest,
+  )
 import Data.Morpheus.Client.Internal.Types (GQLClientResult)
 import qualified Data.Text as T
 import Network.HTTP.Req
