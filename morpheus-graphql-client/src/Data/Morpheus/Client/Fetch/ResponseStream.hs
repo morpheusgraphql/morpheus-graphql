@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -17,16 +18,13 @@ module Data.Morpheus.Client.Fetch.ResponseStream
 where
 
 import Control.Monad.IO.Unlift (MonadUnliftIO)
-import qualified Data.Aeson as A
 import Data.Morpheus.Client.Fetch (Args)
 import Data.Morpheus.Client.Fetch.GQLClient
-import Data.Morpheus.Client.Fetch.Http (post)
+import Data.Morpheus.Client.Fetch.Http (httpRequest)
 import Data.Morpheus.Client.Fetch.RequestType
   ( ClientTypeConstraint,
     Request (..),
-    decodeResponse,
     isSubscription,
-    toRequest,
   )
 import Data.Morpheus.Client.Fetch.WebSockets
   ( endSession,
@@ -44,28 +42,28 @@ import Text.URI (URI, mkURI)
 parseURI :: MonadFail m => String -> m URI
 parseURI url = maybe (fail ("Invalid Endpoint: " <> show url <> "!")) pure (mkURI (T.pack url))
 
-requestSingle :: ClientTypeConstraint a => URI -> Request a -> IO (Either (FetchError a) a)
-requestSingle uri r
-  | isSubscription r = useWS uri wsApp
-  | otherwise = decodeResponse <$> post uri (A.encode $ toRequest r)
+requestSingle :: ResponseStream a -> IO (Either (FetchError a) a)
+requestSingle ResponseStream {..}
+  | isSubscription _req = useWS _uri _headers wsApp
+  | otherwise = httpRequest _uri _req _headers
   where
     wsApp conn = do
       let sid = "0243134"
       sendInitialRequest conn
-      sendRequest conn sid r
+      sendRequest conn sid _req
       x <- receiveResponse conn
       endSession conn sid
       pure x
 
-requestMany :: (MonadIO m, MonadUnliftIO m) => ClientTypeConstraint a => URI -> Request a -> (GQLClientResult a -> m ()) -> m ()
-requestMany uri r f
-  | isSubscription r = useWS uri appWS
-  | otherwise = liftIO (post uri (A.encode $ toRequest r)) >>= f . decodeResponse
+requestMany :: (MonadIO m, MonadUnliftIO m, MonadFail m) => (GQLClientResult a -> m ()) -> ResponseStream a -> m ()
+requestMany f ResponseStream {..}
+  | isSubscription _req = useWS _uri _headers appWS
+  | otherwise = liftIO (httpRequest _uri _req _headers) >>= f
   where
     appWS conn = do
       let sid = "0243134"
       sendInitialRequest conn
-      sendRequest conn sid r
+      sendRequest conn sid _req
       traverse_ (>>= f) (responseStream conn)
       endSession conn sid
 
@@ -78,7 +76,7 @@ data ResponseStream a = ClientTypeConstraint a =>
     -- _wsConnection :: Connection
   }
 
-request :: ClientTypeConstraint a => GQLClient -> Args a -> IO (ResponseStream a)
+request :: (ClientTypeConstraint a, MonadFail m) => GQLClient -> Args a -> m (ResponseStream a)
 request GQLClient {clientURI, clientHeaders} requestArgs = do
   _uri <- parseURI clientURI
   let _req = Request {requestArgs}
@@ -86,8 +84,8 @@ request GQLClient {clientURI, clientHeaders} requestArgs = do
 
 -- | returns first response from the server
 single :: MonadIO m => ResponseStream a -> m (GQLClientResult a)
-single ResponseStream {_req, _uri} = liftIO $ requestSingle _uri _req
+single = liftIO . requestSingle
 
 -- | returns loop listening subscription events forever. if you want to run it in background use `forkIO`
-forEach :: (MonadIO m, MonadUnliftIO m) => (GQLClientResult a -> m ()) -> ResponseStream a -> m ()
-forEach f ResponseStream {_uri, _req} = requestMany _uri _req f
+forEach :: (MonadIO m, MonadUnliftIO m, MonadFail m) => (GQLClientResult a -> m ()) -> ResponseStream a -> m ()
+forEach = requestMany

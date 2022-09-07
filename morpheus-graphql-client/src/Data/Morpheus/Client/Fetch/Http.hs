@@ -1,12 +1,25 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Fetch.Http
-  ( post,
+  ( httpRequest,
   )
 where
 
+import Data.Aeson (FromJSON, ToJSON, encode)
+import qualified Data.ByteString.Char8 as L
 import Data.ByteString.Lazy.Char8 (ByteString)
+import qualified Data.Map as M
+import Data.Morpheus.Client.Fetch.GQLClient (Header, Headers)
+import Data.Morpheus.Client.Fetch.RequestType
+  ( Request,
+    RequestType (RequestArgs),
+    decodeResponse,
+    toRequest,
+  )
+import Data.Morpheus.Client.Internal.Types (GQLClientResult)
+import qualified Data.Text as T
 import Network.HTTP.Req
   ( POST (..),
     ReqBodyLbs (ReqBodyLbs),
@@ -22,11 +35,17 @@ import qualified Network.HTTP.Req as R (Option)
 import Relude hiding (ByteString)
 import Text.URI (URI)
 
-headers :: R.Option scheme
-headers = header "Content-Type" "application/json"
+withHeader :: Header -> R.Option scheme
+withHeader (k, v) = header (L.pack $ T.unpack k) (L.pack $ T.unpack v)
 
-post :: URI -> ByteString -> IO ByteString
-post uri body = case useURI uri of
+setHeaders :: Headers -> R.Option scheme
+setHeaders = foldMap withHeader . M.toList
+
+post :: URI -> ByteString -> Headers -> IO ByteString
+post uri body headers = case useURI uri of
   Nothing -> fail ("Invalid Endpoint: " <> show uri <> "!")
-  (Just (Left (u, o))) -> responseBody <$> runReq defaultHttpConfig (req POST u (ReqBodyLbs body) lbsResponse (o <> headers))
-  (Just (Right (u, o))) -> responseBody <$> runReq defaultHttpConfig (req POST u (ReqBodyLbs body) lbsResponse (o <> headers))
+  (Just (Left (u, o))) -> responseBody <$> runReq defaultHttpConfig (req POST u (ReqBodyLbs body) lbsResponse (o <> setHeaders headers))
+  (Just (Right (u, o))) -> responseBody <$> runReq defaultHttpConfig (req POST u (ReqBodyLbs body) lbsResponse (o <> setHeaders headers))
+
+httpRequest :: (FromJSON a, RequestType a, ToJSON (RequestArgs a)) => URI -> Request a -> Headers -> IO (GQLClientResult a)
+httpRequest uri r h = decodeResponse <$> post uri (encode $ toRequest r) h

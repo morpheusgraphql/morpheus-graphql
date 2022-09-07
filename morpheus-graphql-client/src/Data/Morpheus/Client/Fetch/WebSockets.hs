@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Fetch.WebSockets
@@ -14,19 +15,28 @@ module Data.Morpheus.Client.Fetch.WebSockets
   )
 where
 
-import Control.Monad.IO.Unlift
+import Control.Monad.IO.Unlift (MonadUnliftIO (..))
 import qualified Data.Aeson as A
+import qualified Data.ByteString.Char8 as BS
 import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.List.NonEmpty
+import qualified Data.Map as M
+import Data.Morpheus.Client.Fetch.GQLClient (Headers)
 import Data.Morpheus.Client.Fetch.RequestType (Request, RequestType (..), processResponse, toRequest)
 import Data.Morpheus.Client.Internal.Types (FetchError (..), GQLClientResult)
 import Data.Morpheus.Client.Schema.JSON.Types (JSONResponse (..))
 import Data.Morpheus.Subscriptions.Internal (ApolloSubscription (..))
 import qualified Data.Text as T
-import Network.WebSockets.Client (runClient)
-import Network.WebSockets.Connection (Connection, receiveData, sendTextData)
+import Network.WebSockets.Client (runClientWith)
+import Network.WebSockets.Connection (Connection, defaultConnectionOptions, receiveData, sendTextData)
 import Relude hiding (ByteString)
 import Text.URI
+  ( Authority (..),
+    RText,
+    RTextLabel (..),
+    URI (..),
+    unRText,
+  )
+import Wuss (runSecureClientWith)
 
 handleHost :: Text -> String
 handleHost "localhost" = "127.0.0.1"
@@ -40,14 +50,48 @@ getPath :: Maybe (Bool, NonEmpty (RText 'PathPiece)) -> String
 getPath (Just (_, h :| t)) = T.unpack $ T.intercalate "/" $ fmap unRText (h : t)
 getPath _ = ""
 
-useWS :: (MonadIO m, MonadUnliftIO m) => URI -> (Connection -> m a) -> m a
-useWS URI {uriScheme = Just scheme, uriAuthority = Right Authority {authHost, authPort}, uriPath} app
-  | unRText scheme == "ws" = do
-    let rPath = getPath uriPath
-    let rPort = toPort authPort
-    let rHost = handleHost $ unRText authHost
-    withRunInIO $ \runInIO -> runClient rHost rPort rPath (runInIO . app)
-useWS uri _ = liftIO $ fail ("Invalid Endpoint: " <> show uri <> "!")
+data WebSocketSettings = WebSocketSettings
+  { isSecure :: Bool,
+    port :: Int,
+    host :: String,
+    path :: String,
+    headers :: Headers
+  }
+  deriving (Show)
+
+parseProtocol :: MonadFail m => Text -> m Bool
+parseProtocol "ws" = pure False
+parseProtocol "wss" = pure True
+parseProtocol p = fail $ "unsupported protocol" <> show p
+
+getWebsocketURI :: MonadFail m => URI -> Headers -> m WebSocketSettings
+getWebsocketURI URI {uriScheme = Just scheme, uriAuthority = Right Authority {authHost, authPort}, uriPath} headers = do
+  isSecure <- parseProtocol $ unRText scheme
+  pure
+    WebSocketSettings
+      { isSecure,
+        host = handleHost $ unRText authHost,
+        port = toPort authPort,
+        path = getPath uriPath,
+        headers
+      }
+getWebsocketURI uri _ = fail ("Invalid Endpoint: " <> show uri <> "!")
+
+toHeader :: IsString a => (Text, Text) -> (a, BS.ByteString)
+toHeader (x, y) = (fromString $ T.unpack x, BS.pack $ T.unpack y)
+
+_useWS :: WebSocketSettings -> (Connection -> IO a) -> IO a
+_useWS WebSocketSettings {isSecure, ..} app
+  | isSecure = runSecureClientWith host 443 path options wsHeaders app
+  | otherwise = runClientWith host port path options wsHeaders app
+  where
+    wsHeaders = map toHeader $ M.toList headers
+    options = defaultConnectionOptions
+
+useWS :: (MonadFail m, MonadIO m, MonadUnliftIO m) => URI -> Headers -> (Connection -> m a) -> m a
+useWS uri headers app = do
+  wsURI <- getWebsocketURI uri headers
+  withRunInIO $ \runInIO -> _useWS wsURI (runInIO . app)
 
 processMessage :: ApolloSubscription (JSONResponse a) -> GQLClientResult a
 processMessage ApolloSubscription {apolloPayload = Just payload} = processResponse payload
