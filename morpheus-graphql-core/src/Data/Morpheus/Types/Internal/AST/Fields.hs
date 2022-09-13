@@ -12,6 +12,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.AST.Fields
@@ -87,6 +88,7 @@ import Data.Morpheus.Types.Internal.AST.Type
   )
 import Data.Morpheus.Types.Internal.AST.TypeCategory
   ( ANY,
+    FromCategory (..),
     IN,
     OUT,
     ToCategory (..),
@@ -210,6 +212,19 @@ instance ToCategory FieldDefinition a ANY where
 instance ToCategory (FieldContent TRUE) a ANY where
   toCategory (FieldArgs x) = FieldArgs x
   toCategory (DefaultInputValue x) = DefaultInputValue x
+
+instance (FromCategory (FieldContent TRUE) ANY a) => FromCategory FieldDefinition ANY a where
+  fromCategory FieldDefinition {fieldContent, ..} = do
+    content <- traverse fromCategory fieldContent
+    pure $ FieldDefinition {fieldContent = content, ..}
+
+instance FromCategory (FieldContent TRUE) a OUT where
+  fromCategory (FieldArgs x) = pure $ FieldArgs x
+  fromCategory DefaultInputValue {} = Nothing
+
+instance FromCategory (FieldContent TRUE) a IN where
+  fromCategory (FieldArgs {}) = Nothing
+  fromCategory (DefaultInputValue x) = pure $ DefaultInputValue x
 
 unsafeFromFields :: [FieldDefinition cat s] -> FieldsDefinition cat s
 unsafeFromFields = unsafeFromList . fmap toPair

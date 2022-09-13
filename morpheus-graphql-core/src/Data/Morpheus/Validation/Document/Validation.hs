@@ -169,18 +169,20 @@ instance TypeCheck (TypeContent TRUE cat) where
   typeCheck DataUnion {unionMembers} = DataUnion <$> traverse typeCheck unionMembers
   typeCheck (DataInterface fields) = DataInterface <$> traverse typeCheck fields
 
-instance FieldDirectiveLocation cat => TypeCheck (FieldDefinition cat) where
+instance (FieldDirectiveLocation cat, FromCategory FieldDefinition ANY cat) => TypeCheck (FieldDefinition cat) where
   type TypeContext (FieldDefinition cat) = TypeEntity ON_TYPE
   typeCheck FieldDefinition {..} =
     inField
       fieldName
-      ( FieldDefinition
-          fieldDescription
-          fieldName
-          fieldType
+      $ do
+        directives <- validateDirectives (directiveLocation (Proxy @cat)) fieldDirectives
+        applyDirectives fieldVisitors directives
+          =<< FieldDefinition
+            fieldDescription
+            fieldName
+            fieldType
           <$> traverse checkFieldContent fieldContent
-          <*> validateDirectives (directiveLocation (Proxy @cat)) fieldDirectives
-      )
+          <*> pure directives
     where
       checkFieldContent :: FieldContent TRUE cat CONST -> SchemaValidator (Field ON_TYPE) (FieldContent TRUE cat VALID)
       checkFieldContent (FieldArgs args) = FieldArgs <$> traverse typeCheck args

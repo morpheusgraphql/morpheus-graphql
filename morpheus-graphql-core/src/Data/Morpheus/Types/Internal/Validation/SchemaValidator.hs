@@ -38,6 +38,7 @@ import Data.Morpheus.Types.Internal.AST
   ( ANY,
     CONST,
     Directives,
+    FieldDefinition,
     FieldName,
     FieldsDefinition,
     Name,
@@ -123,7 +124,7 @@ initialScope =
 
 data Visitors = Visitors
   { typeVisitors :: Directives VALID -> TypeDefinition ANY VALID -> GQLResult (TypeDefinition ANY VALID),
-    fieldVisitors :: Directives VALID -> TypeDefinition ANY VALID -> GQLResult (TypeDefinition ANY VALID)
+    fieldVisitors :: Directives VALID -> FieldDefinition ANY VALID -> GQLResult (FieldDefinition ANY VALID)
   }
 
 instance Show Visitors where
