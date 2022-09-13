@@ -1,6 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
@@ -24,9 +25,9 @@ import Data.Morpheus.Types.Internal.AST
     OUT,
     TRUE,
     TypeDefinition (..),
+    TypeName,
     VALID,
   )
-import Data.Text
 
 type family Allow (x :: DirectiveLocation) (xs :: [DirectiveLocation]) :: Bool where
   Allow x '[] = 'False
@@ -49,10 +50,10 @@ class GQLDirective a where
   type DIRECTIVE_LOCATION a :: [DirectiveLocation]
   visit :: a -> Visitor a TRUE -> GQLResult (Visitor a TRUE)
 
-newtype DirectivePrefix = DirectivePrefix {name :: Text}
+newtype DirectivePrefix = DirectivePrefix {prefix :: TypeName}
 
 instance GQLDirective DirectivePrefix where
-  type DIRECTIVE_LOCATION DirectivePrefix = '[ 'FIELD_DEFINITION, 'OBJECT, 'ENUM]
-  visit a (VisitObject x) = pure (VisitObject x)
-  visit a (VisitEnum x) = pure (VisitEnum x)
-  visit a (VisitFieldDefinition x) = pure (VisitFieldDefinition x)
+  type DIRECTIVE_LOCATION DirectivePrefix = '[ 'OBJECT, 'ENUM, 'INPUT_OBJECT]
+  visit DirectivePrefix {prefix} (VisitObject x) = pure (VisitObject x {typeName = prefix <> typeName x})
+  visit DirectivePrefix {prefix} (VisitEnum x) = pure (VisitEnum x {typeName = prefix <> typeName x})
+  visit DirectivePrefix {prefix} (VisitInputObject x) = pure (VisitInputObject x {typeName = prefix <> typeName x})
