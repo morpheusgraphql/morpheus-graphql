@@ -19,6 +19,7 @@ module Data.Morpheus.Server.Types.GQLType
         typeOptions,
         getDirectives,
         defaultValues,
+        directiveUsages,
         __type
       ),
     GQLTypeOptions (..),
@@ -44,6 +45,7 @@ import Data.Morpheus.Kind
   )
 import Data.Morpheus.NamedResolvers (NamedResolverT (..))
 import Data.Morpheus.Server.Deriving.Utils.Kinded (CategoryValue (..))
+import Data.Morpheus.Server.Types.Directives (DirectiveUsage)
 import Data.Morpheus.Server.Types.SchemaT
   ( TypeFingerprint (..),
   )
@@ -210,6 +212,9 @@ class GQLType a where
   -- Used for documentation in the GraphQL schema.
   description :: f a -> Maybe Text
   description _ = Nothing
+
+  directiveUsages :: f a -> [DirectiveUsage]
+  directiveUsages _ = mempty
 
   -- | A dictionary of descriptions for fields, keyed on field name.
   --

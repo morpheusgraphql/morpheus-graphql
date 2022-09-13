@@ -12,6 +12,7 @@ module Data.Morpheus.Server.Types.Directives
     Visitor (..),
     DirectivePrefix (..),
     VisitorTypeDefinition (..),
+    DirectiveUsage (..),
   )
 where
 
@@ -73,6 +74,9 @@ data Visitor a (t :: Bool) where
   -- VisitArgumentDefinition :: (ArgumentDefinition VALID) -> Visitor a (Allow 'ARGUMENT_DEFINITION (DIRECTIVE_LOCATION a))
   VisitInputFieldDefinition :: VisitorFieldDefinition -> Visitor a (Allow 'INPUT_FIELD_DEFINITION (DIRECTIVE_LOCATION a))
   VisitFieldDefinition :: VisitorFieldDefinition -> Visitor a (Allow 'FIELD_DEFINITION (DIRECTIVE_LOCATION a))
+
+data DirectiveUsage where
+  DirectiveUsage :: GQLDirective a => a -> DirectiveUsage
 
 class GQLDirective a where
   type DIRECTIVE_LOCATION a :: [DirectiveLocation]
