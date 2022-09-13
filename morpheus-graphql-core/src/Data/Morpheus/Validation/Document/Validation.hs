@@ -50,7 +50,7 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Morpheus.Types.Internal.Config (Config (..))
 import Data.Morpheus.Types.Internal.Validation
   ( InputSource (..),
-    ValidatorContext (localContext),
+    ValidatorContext (..),
     startInput,
   )
 import Data.Morpheus.Types.Internal.Validation.SchemaValidator
@@ -59,6 +59,7 @@ import Data.Morpheus.Types.Internal.Validation.SchemaValidator
     SchemaValidator,
     TypeEntity (..),
     TypeSystemContext (..),
+    Visitors (..),
     inField,
     inType,
     runSchemaValidator,
@@ -119,12 +120,15 @@ instance TypeCheck (TypeDefinition cat) where
         typeDirectives,
         typeContent
       } =
-      inType typeName $
-        TypeDefinition
-          typeDescription
-          typeName
-          <$> validateDirectives (typeDirectiveLocation typeContent) typeDirectives
-          <*> typeCheck typeContent
+      inType typeName $ do
+        directives <- validateDirectives (typeDirectiveLocation typeContent) typeDirectives
+        f <- asks (typeVisitors . visitors . localContext)
+        f directives
+          =<< TypeDefinition
+            typeDescription
+            typeName
+            directives
+          <$> typeCheck typeContent
 
 typeDirectiveLocation :: TypeContent a b c -> DirectiveLocation
 typeDirectiveLocation DataObject {} = OBJECT

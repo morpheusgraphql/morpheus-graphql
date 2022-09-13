@@ -222,6 +222,7 @@ library
       Data.Morpheus.Types.Internal.Validation.Validator
       Data.Morpheus.Validation.Document.Interface
       Data.Morpheus.Validation.Document.Validation
+      Data.Morpheus.Validation.Document.Visitors
       Data.Morpheus.Validation.Internal.Arguments
       Data.Morpheus.Validation.Internal.Directive
       Data.Morpheus.Validation.Internal.Value

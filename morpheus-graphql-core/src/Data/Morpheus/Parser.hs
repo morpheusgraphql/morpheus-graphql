@@ -44,6 +44,9 @@ import Data.Morpheus.Validation.Query.Validation
   )
 import Relude hiding (ByteString)
 
+-- visitSchema :: ASTVisitors -> Schema VALID -> GQLResult (Schema VALID)
+-- visitSchema ASTVisitors x = pure x
+
 parseSchema ::
   ByteString -> GQLResult (Schema VALID)
 parseSchema =
