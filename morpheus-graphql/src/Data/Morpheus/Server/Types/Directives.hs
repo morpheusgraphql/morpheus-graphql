@@ -11,22 +11,18 @@ module Data.Morpheus.Server.Types.Directives
   ( GQLDirective (..),
     Visitor (..),
     DirectivePrefix (..),
+    VisitorTypeDefinition (..),
   )
 where
 
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Types.Internal.AST
-  ( ArgumentDefinition,
+  ( Description,
     DirectiveLocation (..),
-    FieldDefinition (..),
-    INPUT_OBJECT,
-    LEAF,
-    OBJECT,
-    OUT,
+    FieldName,
     TRUE,
-    TypeDefinition (..),
     TypeName,
-    VALID,
+    TypeRef (..),
   )
 
 type family Allow (x :: DirectiveLocation) (xs :: [DirectiveLocation]) :: Bool where
@@ -34,17 +30,49 @@ type family Allow (x :: DirectiveLocation) (xs :: [DirectiveLocation]) :: Bool w
   Allow x (x ': xs) = 'True
   Allow x (a ': xs) = Allow x xs
 
+data VisitorTypeDefinition = VisitorTypeDefinition
+  { visitorTypeName :: TypeName,
+    visitorTypeDescription :: Maybe Description
+  }
+  deriving (Show, Eq)
+
+data VisitorFieldDefinition = FieldDefinition
+  { visitorFieldDescription :: Maybe Description,
+    visitorFieldName :: FieldName,
+    visitorFieldType :: TypeRef
+  }
+  deriving (Show, Eq)
+
+-- data VisitorObject = VisitorObject
+--   { visitorObjectName :: TypeName,
+--     visitorObjectImplements :: [TypeName],
+--     visitorObjectFields :: FieldsDefinition OUT VALID
+--   }
+
+-- data VisitorInputObject = VisitorInputObject
+--   { visitorInputObjectName :: TypeName,
+--     visitorInputObjectFields :: FieldsDefinition IN VALID
+--   }
+
+-- newtype VisitorUnion = VisitorUnion
+--   { visitorUnionMembers :: [TypeName]
+--   }
+
+-- newtype VisitorUnion = VisitorUnion
+--   { visitorEnumValues :: [DataEnumValue s]
+--   }
+
 data Visitor a (t :: Bool) where
   -- Types
-  VisitObject :: TypeDefinition OBJECT VALID -> Visitor a (Allow 'OBJECT (DIRECTIVE_LOCATION a))
-  VisitInputObject :: TypeDefinition INPUT_OBJECT VALID -> Visitor a (Allow 'INPUT_OBJECT (DIRECTIVE_LOCATION a))
-  VisitUnion :: TypeDefinition OUT VALID -> Visitor a (Allow 'UNION (DIRECTIVE_LOCATION a))
-  VisitEnum :: TypeDefinition LEAF VALID -> Visitor a (Allow 'ENUM (DIRECTIVE_LOCATION a))
-  VisitScalar :: TypeDefinition LEAF VALID -> Visitor a (Allow 'SCALAR (DIRECTIVE_LOCATION a))
+  VisitObject :: VisitorTypeDefinition -> Visitor a (Allow 'OBJECT (DIRECTIVE_LOCATION a))
+  VisitInputObject :: VisitorTypeDefinition -> Visitor a (Allow 'INPUT_OBJECT (DIRECTIVE_LOCATION a))
+  VisitUnion :: VisitorTypeDefinition -> Visitor a (Allow 'UNION (DIRECTIVE_LOCATION a))
+  VisitEnum :: VisitorTypeDefinition -> Visitor a (Allow 'ENUM (DIRECTIVE_LOCATION a))
+  VisitScalar :: VisitorTypeDefinition -> Visitor a (Allow 'SCALAR (DIRECTIVE_LOCATION a))
   -- Fields
-  VisitInputFieldDefinition :: (FieldDefinition INPUT_OBJECT VALID) -> Visitor a (Allow 'INPUT_FIELD_DEFINITION (DIRECTIVE_LOCATION a))
-  VisitFieldDefinition :: (FieldDefinition OBJECT VALID) -> Visitor a (Allow 'FIELD_DEFINITION (DIRECTIVE_LOCATION a))
-  VisitArgumentDefinition :: (ArgumentDefinition VALID) -> Visitor a (Allow 'ARGUMENT_DEFINITION (DIRECTIVE_LOCATION a))
+  -- VisitArgumentDefinition :: (ArgumentDefinition VALID) -> Visitor a (Allow 'ARGUMENT_DEFINITION (DIRECTIVE_LOCATION a))
+  VisitInputFieldDefinition :: VisitorFieldDefinition -> Visitor a (Allow 'INPUT_FIELD_DEFINITION (DIRECTIVE_LOCATION a))
+  VisitFieldDefinition :: VisitorFieldDefinition -> Visitor a (Allow 'FIELD_DEFINITION (DIRECTIVE_LOCATION a))
 
 class GQLDirective a where
   type DIRECTIVE_LOCATION a :: [DirectiveLocation]
@@ -55,8 +83,12 @@ data DirectivePrefix = DirectivePrefix
     drop :: Bool
   }
 
+prefixName :: TypeName -> VisitorTypeDefinition -> VisitorTypeDefinition
+prefixName prefix t = t {visitorTypeName = prefix <> visitorTypeName t}
+
 instance GQLDirective DirectivePrefix where
   type DIRECTIVE_LOCATION DirectivePrefix = '[ 'OBJECT, 'ENUM, 'INPUT_OBJECT]
-  visit DirectivePrefix {prefix} (VisitObject x) = pure (VisitObject x {typeName = prefix <> typeName x})
-  visit DirectivePrefix {prefix} (VisitEnum x) = pure (VisitEnum x {typeName = prefix <> typeName x})
-  visit DirectivePrefix {prefix} (VisitInputObject x) = pure (VisitInputObject x {typeName = prefix <> typeName x})
+
+  visit DirectivePrefix {prefix} (VisitEnum t) = pure $ VisitEnum $ prefixName prefix t
+  visit DirectivePrefix {prefix} (VisitInputObject t) = pure $ VisitInputObject $ prefixName prefix t
+  visit DirectivePrefix {prefix} (VisitObject t) = pure $ VisitObject $ prefixName prefix t
