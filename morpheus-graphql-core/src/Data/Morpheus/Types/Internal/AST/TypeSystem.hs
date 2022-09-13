@@ -490,6 +490,9 @@ instance
     where
       bla x = TypeDefinition {typeContent = x, ..}
 
+instance FromCategory (TypeContent TRUE) a a where
+  fromCategory = Just
+
 type CondTypeContent r a s = TypeContent (r <=? a) a s
 
 data

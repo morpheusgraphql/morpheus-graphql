@@ -1,9 +1,12 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Types.Internal.AST.TypeCategory
@@ -22,13 +25,16 @@ module Data.Morpheus.Types.Internal.AST.TypeCategory
     ToCategory (..),
     FromCategory (..),
     ToOBJECT,
+    coerceAny,
   )
 where
 
+import Control.Monad.Except (MonadError (..))
 import Data.Morpheus.Types.Internal.AST.Base
   ( FALSE,
     TRUE,
   )
+import Data.Morpheus.Types.Internal.AST.Error (GQLError, internal)
 import Data.Morpheus.Types.Internal.AST.Stage (Stage)
 import Relude
 
@@ -67,6 +73,9 @@ fromAny ::
   a ANY (s :: Stage) ->
   Maybe (a k s)
 fromAny = fromCategory
+
+coerceAny :: (MonadError GQLError m, FromCategory a ANY k) => a ANY s -> m (a k s)
+coerceAny value = maybe (throwError $ internal "Can't ERROR") pure (fromAny value)
 
 class ToCategory a (k :: TypeCategory) (k' :: TypeCategory) where
   toCategory :: a k (s :: Stage) -> a k' s

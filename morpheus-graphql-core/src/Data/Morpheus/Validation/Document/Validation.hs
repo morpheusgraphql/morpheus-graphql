@@ -11,6 +11,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Validation.Document.Validation
@@ -18,26 +19,28 @@ module Data.Morpheus.Validation.Document.Validation
   )
 where
 
-import Data.Morpheus.Ext.Result
-  ( GQLResult,
-  )
-import Data.Morpheus.Internal.Utils ((<:>))
+import Data.Morpheus.Internal.Ext
+import Data.Morpheus.Internal.Utils (throwErrors)
 import Data.Morpheus.Schema.Schema
   ( internalSchema,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( ArgumentDefinition (..),
+  ( ANY,
+    ArgumentDefinition (..),
     CONST,
     DataEnumValue (..),
     DirectiveDefinition (..),
     DirectiveLocation (..),
+    Directives,
     FieldContent (..),
     FieldDefinition (..),
     FieldName,
+    FromCategory,
     IN,
     OUT,
     Schema (..),
     TRUE,
+    ToCategory,
     TypeCategory,
     TypeContent (..),
     TypeDefinition (..),
@@ -46,7 +49,9 @@ import Data.Morpheus.Types.Internal.AST
     UnionMember (..),
     VALID,
     Value,
+    toAny,
   )
+import Data.Morpheus.Types.Internal.AST.TypeCategory (coerceAny)
 import Data.Morpheus.Types.Internal.Config (Config (..))
 import Data.Morpheus.Types.Internal.Validation
   ( InputSource (..),
@@ -112,7 +117,7 @@ instance TypeCheck Schema where
         <*> traverse typeCheck subscription
         <*> traverse typeCheck directiveDefinitions
 
-instance TypeCheck (TypeDefinition cat) where
+instance (FromCategory (TypeContent TRUE) ANY cat) => TypeCheck (TypeDefinition cat) where
   typeCheck
     TypeDefinition
       { typeName,
@@ -122,13 +127,23 @@ instance TypeCheck (TypeDefinition cat) where
       } =
       inType typeName $ do
         directives <- validateDirectives (typeDirectiveLocation typeContent) typeDirectives
-        f <- asks (typeVisitors . visitors . localContext)
-        f directives
-          =<< TypeDefinition
+        applyDirectives typeVisitors directives
+          . TypeDefinition
             typeDescription
             typeName
             directives
-          <$> typeCheck typeContent
+          =<< typeCheck typeContent
+
+applyDirectives ::
+  (ToCategory f t ANY, FromCategory f ANY t) =>
+  (Visitors -> Directives VALID -> f ANY VALID -> GQLResult (f ANY VALID)) ->
+  Directives VALID ->
+  f t VALID ->
+  SchemaValidator ctx (f t VALID)
+applyDirectives f directives a = do
+  apply <- asks (f . visitors . localContext)
+  value <- resultOr throwErrors pure $ apply directives (toAny a)
+  coerceAny value
 
 typeDirectiveLocation :: TypeContent a b c -> DirectiveLocation
 typeDirectiveLocation DataObject {} = OBJECT
