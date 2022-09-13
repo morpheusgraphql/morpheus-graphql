@@ -50,7 +50,10 @@ class GQLDirective a where
   type DIRECTIVE_LOCATION a :: [DirectiveLocation]
   visit :: a -> Visitor a TRUE -> GQLResult (Visitor a TRUE)
 
-newtype DirectivePrefix = DirectivePrefix {prefix :: TypeName}
+data DirectivePrefix = DirectivePrefix
+  { prefix :: TypeName,
+    drop :: Bool
+  }
 
 instance GQLDirective DirectivePrefix where
   type DIRECTIVE_LOCATION DirectivePrefix = '[ 'OBJECT, 'ENUM, 'INPUT_OBJECT]
