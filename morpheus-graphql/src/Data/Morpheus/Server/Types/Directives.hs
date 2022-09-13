@@ -1,5 +1,5 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -8,73 +8,53 @@
 
 module Data.Morpheus.Server.Types.Directives
   ( GQLDirective (..),
+    Visitor (..),
+    UserDirective (..),
   )
 where
 
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentDefinition,
+    DirectiveLocation (..),
     FieldDefinition (..),
     INPUT_OBJECT,
     LEAF,
     OBJECT,
     OUT,
+    TRUE,
     TypeDefinition (..),
     VALID,
   )
 import Data.Text
-import Language.Haskell.TH.Syntax (Lift)
 
-data SchemaDirectiveLocation
-  = SCALAR
-  | OBJECT
-  | FIELD_DEFINITION
-  | INPUT_FIELD_DEFINITION
-  | ARGUMENT_DEFINITION
-  | INTERFACE
-  | UNION
-  | ENUM
-  | INPUT_OBJECT
-  deriving (Show, Eq, Lift)
+type family Allow (x :: DirectiveLocation) (xs :: [DirectiveLocation]) :: Bool where
+  Allow x '[] = 'False
+  Allow x (x ': xs) = 'True
+  Allow x (a ': xs) = Allow x xs
 
-type family Elem (x :: SchemaDirectiveLocation) (xs :: [SchemaDirectiveLocation]) :: Bool where
-  Elem x '[] = 'False
-  Elem x (x ': xs) = 'True
-  Elem x (a ': xs) = Elem x xs
-
-type family If a l where
-  If a 'True = a -> GQLResult a
-  If a l = ()
-
-type family DirRes a (x :: SchemaDirectiveLocation) v where
-  DirRes a x v = If v (Elem x (DIRECTIVE_LOCATION a))
+data Visitor a (t :: Bool) where
+  -- Types
+  VisitObject :: TypeDefinition OBJECT VALID -> Visitor a (Allow 'OBJECT (DIRECTIVE_LOCATION a))
+  VisitInputObject :: TypeDefinition INPUT_OBJECT VALID -> Visitor a (Allow 'INPUT_OBJECT (DIRECTIVE_LOCATION a))
+  VisitUnion :: TypeDefinition OUT VALID -> Visitor a (Allow 'UNION (DIRECTIVE_LOCATION a))
+  VisitEnum :: TypeDefinition LEAF VALID -> Visitor a (Allow 'ENUM (DIRECTIVE_LOCATION a))
+  VisitScalar :: TypeDefinition LEAF VALID -> Visitor a (Allow 'SCALAR (DIRECTIVE_LOCATION a))
+  -- Fields
+  VisitInputFieldDefinition :: (FieldDefinition INPUT_OBJECT VALID) -> Visitor a (Allow 'INPUT_FIELD_DEFINITION (DIRECTIVE_LOCATION a))
+  VisitFieldDefinition :: (FieldDefinition OBJECT VALID) -> Visitor a (Allow 'FIELD_DEFINITION (DIRECTIVE_LOCATION a))
+  VisitArgumentDefinition :: (ArgumentDefinition VALID) -> Visitor a (Allow 'ARGUMENT_DEFINITION (DIRECTIVE_LOCATION a))
 
 class GQLDirective a where
-  type DIRECTIVE_LOCATION a :: [SchemaDirectiveLocation]
+  type DIRECTIVE_LOCATION a :: [DirectiveLocation]
+  visit :: Visitor a TRUE -> GQLResult (Visitor a TRUE)
 
-  -- types
-  visitObject :: f a -> DirRes a 'OBJECT (TypeDefinition OBJECT VALID)
-  visitInputObject :: f a -> DirRes a 'INPUT_OBJECT (TypeDefinition INPUT_OBJECT VALID)
-  visitUnion :: f a -> DirRes a 'UNION (TypeDefinition OUT VALID)
-  visitScalar :: f a -> DirRes a 'SCALAR (TypeDefinition OBJECT VALID)
-  visitEnum :: f a -> DirRes a 'SCALAR (TypeDefinition LEAF VALID)
-
-  -- elements
-  visitInputFieldDefinition :: f a -> DirRes a 'INPUT_FIELD_DEFINITION (FieldDefinition INPUT_OBJECT VALID)
-  visitFieldDefinition :: f a -> DirRes a 'FIELD_DEFINITION (FieldDefinition OBJECT VALID)
-  visitArgumentDefinition :: f a -> DirRes a 'ARGUMENT_DEFINITION (ArgumentDefinition VALID)
-
-data User = User
+newtype UserDirective = UserDirective
   { name :: Text
   }
 
-instance GQLDirective User where
-  type DIRECTIVE_LOCATION User = '[ 'FIELD_DEFINITION, 'OBJECT]
-  visitFieldDefinition _ = pure
-  visitObject _ = pure
-  visitInputObject _ = ()
-  visitUnion _ = ()
-  visitScalar _ = ()
-  visitEnum _ = ()
-  visitInputFieldDefinition _ = ()
-  visitArgumentDefinition _ = ()
+instance GQLDirective UserDirective where
+  type DIRECTIVE_LOCATION UserDirective = '[ 'FIELD_DEFINITION, 'OBJECT, 'ENUM]
+  visit (VisitObject x) = pure (VisitObject x)
+  visit (VisitEnum x) = pure (VisitEnum x)
+  visit (VisitFieldDefinition x) = pure (VisitFieldDefinition x)
