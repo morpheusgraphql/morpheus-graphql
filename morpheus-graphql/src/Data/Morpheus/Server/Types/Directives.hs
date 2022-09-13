@@ -16,6 +16,7 @@ module Data.Morpheus.Server.Types.Directives
   )
 where
 
+import Data.Kind (Type)
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Types.Internal.AST
   ( Description,
@@ -63,23 +64,26 @@ data VisitorFieldDefinition = FieldDefinition
 --   { visitorEnumValues :: [DataEnumValue s]
 --   }
 
+type VisitorOption (k :: DirectiveLocation) (a :: Type) = Visitor a (Allow k (ALLOWED_DIRECTIVE_LOCATIONS a))
+
 data Visitor a (t :: Bool) where
   -- Types
-  VisitObject :: VisitorTypeDefinition -> Visitor a (Allow 'OBJECT (DIRECTIVE_LOCATION a))
-  VisitInputObject :: VisitorTypeDefinition -> Visitor a (Allow 'INPUT_OBJECT (DIRECTIVE_LOCATION a))
-  VisitUnion :: VisitorTypeDefinition -> Visitor a (Allow 'UNION (DIRECTIVE_LOCATION a))
-  VisitEnum :: VisitorTypeDefinition -> Visitor a (Allow 'ENUM (DIRECTIVE_LOCATION a))
-  VisitScalar :: VisitorTypeDefinition -> Visitor a (Allow 'SCALAR (DIRECTIVE_LOCATION a))
+  VisitObject :: VisitorTypeDefinition -> VisitorOption 'OBJECT a
+  VisitInputObject :: VisitorTypeDefinition -> VisitorOption 'INPUT_OBJECT a
+  VisitUnion :: VisitorTypeDefinition -> VisitorOption 'UNION a
+  VisitEnum :: VisitorTypeDefinition -> VisitorOption 'ENUM a
+  VisitScalar :: VisitorTypeDefinition -> VisitorOption 'SCALAR a
   -- Fields
   -- VisitArgumentDefinition :: (ArgumentDefinition VALID) -> Visitor a (Allow 'ARGUMENT_DEFINITION (DIRECTIVE_LOCATION a))
-  VisitInputFieldDefinition :: VisitorFieldDefinition -> Visitor a (Allow 'INPUT_FIELD_DEFINITION (DIRECTIVE_LOCATION a))
-  VisitFieldDefinition :: VisitorFieldDefinition -> Visitor a (Allow 'FIELD_DEFINITION (DIRECTIVE_LOCATION a))
+  VisitInputFieldDefinition :: VisitorFieldDefinition -> VisitorOption 'INPUT_FIELD_DEFINITION a
+  VisitFieldDefinition :: VisitorFieldDefinition -> VisitorOption 'FIELD_DEFINITION a
 
 data DirectiveUsage where
   DirectiveUsage :: GQLDirective a => a -> DirectiveUsage
 
 class GQLDirective a where
-  type DIRECTIVE_LOCATION a :: [DirectiveLocation]
+  type ALLOWED_DIRECTIVE_LOCATIONS a :: [DirectiveLocation]
+
   visit :: a -> Visitor a TRUE -> GQLResult (Visitor a TRUE)
 
 data DirectivePrefix = DirectivePrefix
@@ -91,7 +95,7 @@ prefixName :: TypeName -> VisitorTypeDefinition -> VisitorTypeDefinition
 prefixName prefix t = t {visitorTypeName = prefix <> visitorTypeName t}
 
 instance GQLDirective DirectivePrefix where
-  type DIRECTIVE_LOCATION DirectivePrefix = '[ 'OBJECT, 'ENUM, 'INPUT_OBJECT]
+  type ALLOWED_DIRECTIVE_LOCATIONS DirectivePrefix = '[ 'OBJECT, 'ENUM, 'INPUT_OBJECT]
 
   visit DirectivePrefix {prefix} (VisitEnum t) = pure $ VisitEnum $ prefixName prefix t
   visit DirectivePrefix {prefix} (VisitInputObject t) = pure $ VisitInputObject $ prefixName prefix t
