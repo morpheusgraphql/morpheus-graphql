@@ -9,7 +9,7 @@
 module Data.Morpheus.Server.Types.Directives
   ( GQLDirective (..),
     Visitor (..),
-    UserDirective (..),
+    DirectivePrefix (..),
   )
 where
 
@@ -47,14 +47,12 @@ data Visitor a (t :: Bool) where
 
 class GQLDirective a where
   type DIRECTIVE_LOCATION a :: [DirectiveLocation]
-  visit :: Visitor a TRUE -> GQLResult (Visitor a TRUE)
+  visit :: a -> Visitor a TRUE -> GQLResult (Visitor a TRUE)
 
-newtype UserDirective = UserDirective
-  { name :: Text
-  }
+newtype DirectivePrefix = DirectivePrefix {name :: Text}
 
-instance GQLDirective UserDirective where
-  type DIRECTIVE_LOCATION UserDirective = '[ 'FIELD_DEFINITION, 'OBJECT, 'ENUM]
-  visit (VisitObject x) = pure (VisitObject x)
-  visit (VisitEnum x) = pure (VisitEnum x)
-  visit (VisitFieldDefinition x) = pure (VisitFieldDefinition x)
+instance GQLDirective DirectivePrefix where
+  type DIRECTIVE_LOCATION DirectivePrefix = '[ 'FIELD_DEFINITION, 'OBJECT, 'ENUM]
+  visit a (VisitObject x) = pure (VisitObject x)
+  visit a (VisitEnum x) = pure (VisitEnum x)
+  visit a (VisitFieldDefinition x) = pure (VisitFieldDefinition x)
