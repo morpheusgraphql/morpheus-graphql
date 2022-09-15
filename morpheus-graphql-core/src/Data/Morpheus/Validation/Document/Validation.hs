@@ -52,7 +52,7 @@ import Data.Morpheus.Types.Internal.AST
     toAny,
   )
 import Data.Morpheus.Types.Internal.AST.TypeCategory (coerceAny)
-import Data.Morpheus.Types.Internal.Config (Config (..))
+import Data.Morpheus.Types.Internal.Config (Config (..), SchemaVisitors (..))
 import Data.Morpheus.Types.Internal.Validation
   ( InputSource (..),
     ValidatorContext (..),
@@ -64,7 +64,6 @@ import Data.Morpheus.Types.Internal.Validation.SchemaValidator
     SchemaValidator,
     TypeEntity (..),
     TypeSystemContext (..),
-    Visitors (..),
     inField,
     inType,
     runSchemaValidator,
@@ -136,7 +135,7 @@ instance (FromCategory (TypeContent TRUE) ANY cat) => TypeCheck (TypeDefinition 
 
 applyDirectives ::
   (ToCategory f t ANY, FromCategory f ANY t) =>
-  (Visitors -> Directives VALID -> f ANY VALID -> GQLResult (f ANY VALID)) ->
+  (SchemaVisitors -> Directives VALID -> f ANY VALID -> GQLResult (f ANY VALID)) ->
   Directives VALID ->
   f t VALID ->
   SchemaValidator ctx (f t VALID)
@@ -181,8 +180,8 @@ instance (FieldDirectiveLocation cat, FromCategory FieldDefinition ANY cat) => T
             fieldDescription
             fieldName
             fieldType
-          <$> traverse checkFieldContent fieldContent
-          <*> pure directives
+            <$> traverse checkFieldContent fieldContent
+            <*> pure directives
     where
       checkFieldContent :: FieldContent TRUE cat CONST -> SchemaValidator (Field ON_TYPE) (FieldContent TRUE cat VALID)
       checkFieldContent (FieldArgs args) = FieldArgs <$> traverse typeCheck args

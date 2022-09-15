@@ -28,7 +28,6 @@ module Data.Morpheus.Types.Internal.Validation.SchemaValidator
     Field (..),
     InterfaceName (..),
     PLACE,
-    Visitors (..),
   )
 where
 
@@ -37,8 +36,6 @@ import Data.Morpheus.Ext.Result (GQLResult)
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     CONST,
-    Directives,
-    FieldDefinition,
     FieldName,
     FieldsDefinition,
     Name,
@@ -47,14 +44,13 @@ import Data.Morpheus.Types.Internal.AST
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
-    VALID,
     mkBaseType,
     msg,
     unpackName,
   )
 import Data.Morpheus.Types.Internal.AST.Type (TypeKind (KindObject))
 import Data.Morpheus.Types.Internal.AST.TypeSystem (Schema)
-import Data.Morpheus.Types.Internal.Config (Config)
+import Data.Morpheus.Types.Internal.Config (Config (schemaVisitors), SchemaVisitors)
 import Data.Morpheus.Types.Internal.Validation (Scope (..), ScopeKind (TYPE), runValidator)
 import Data.Morpheus.Types.Internal.Validation.Validator
   ( Validator (..),
@@ -63,7 +59,6 @@ import Data.Morpheus.Types.Internal.Validation.Validator
     withScope,
   )
 import Relude hiding (local)
-import Prelude (Show (show))
 
 inInterface ::
   TypeName ->
@@ -122,17 +117,9 @@ initialScope =
       path = []
     }
 
-data Visitors = Visitors
-  { typeVisitors :: Directives VALID -> TypeDefinition ANY VALID -> GQLResult (TypeDefinition ANY VALID),
-    fieldVisitors :: Directives VALID -> FieldDefinition ANY VALID -> GQLResult (FieldDefinition ANY VALID)
-  }
-
-instance Show Visitors where
-  show _ = "Visitors{}"
-
 data TypeSystemContext c = TypeSystemContext
   { local :: c,
-    visitors :: Visitors
+    visitors :: SchemaVisitors
   }
   deriving (Show)
 
@@ -156,7 +143,7 @@ runSchemaValidator value config sysSchema =
     initialScope
     TypeSystemContext
       { local = (),
-        visitors = Visitors {}
+        visitors = schemaVisitors config
       }
 
 constraintInterface ::

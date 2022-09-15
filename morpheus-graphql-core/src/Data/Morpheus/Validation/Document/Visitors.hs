@@ -13,32 +13,18 @@
 
 module Data.Morpheus.Validation.Document.Visitors
   ( ASTVisitor (..),
-    Visitors (..),
   )
 where
 
 import Data.Morpheus.Types.Internal.AST
-  ( Directives,
-    FieldDefinition (..),
-    Schema (..),
-    TRUE,
-    TypeContent (..),
-    TypeDefinition (..),
-    VALID,
+  ( VALID,
   )
-import Data.Morpheus.Types.Internal.AST.TypeCategory (ANY)
+import Data.Morpheus.Types.Internal.Config (SchemaVisitors)
 import Data.Morpheus.Types.Internal.Validation
   ( Validator,
-    ValidatorContext (localContext),
   )
-import Relude hiding (empty, local)
 
-data Visitors = Visitors
-  { typeVisitors :: Directives VALID -> TypeDefinition ANY VALID -> VisitorM (TypeDefinition ANY VALID),
-    fieldVisitors :: Directives VALID -> TypeDefinition ANY VALID -> VisitorM (TypeDefinition ANY VALID)
-  }
-
-type VisitorM = Validator VALID Visitors
+type VisitorM = Validator VALID SchemaVisitors
 
 class ASTVisitor a where
   visit :: a VALID -> VisitorM (a VALID)

@@ -34,7 +34,7 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.Internal.Config
   ( Config (..),
-    VALIDATION_MODE (..),
+    defaultConfig,
   )
 import Data.Morpheus.Validation.Document.Validation
   ( validateSchema,
@@ -51,14 +51,7 @@ parseSchema ::
   ByteString -> GQLResult (Schema VALID)
 parseSchema =
   sortErrors
-    . ( P.parseSchema
-          >=> validateSchema
-            True
-            Config
-              { debug = False,
-                validationMode = FULL_VALIDATION
-              }
-      )
+    . (P.parseSchema >=> validateSchema True defaultConfig)
 
 parseRequestWith :: Config -> Schema VALID -> GQLRequest -> GQLResult (Operation VALID)
 parseRequestWith config schema req = do
