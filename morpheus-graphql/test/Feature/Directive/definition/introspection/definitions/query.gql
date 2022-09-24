@@ -1,39 +1,13 @@
 query Get__Type {
-  city: __type(name: "City") {
-    ...FullType
-  }
-  deity: __type(name: "Deity") {
-    ...FullType
-  }
-}
-
-fragment FullType on __Type {
-  kind
-  name
-  fields(includeDeprecated: true) {
-    name
-    args {
-      ...InputValue
+  __schema {
+    directives {
+      name
+      description
+      locations
+      args {
+        ...InputValue
+      }
     }
-    type {
-      ...TypeRef
-    }
-    isDeprecated
-    deprecationReason
-  }
-  inputFields {
-    ...InputValue
-  }
-  interfaces {
-    ...TypeRef
-  }
-  enumValues(includeDeprecated: true) {
-    name
-    isDeprecated
-    deprecationReason
-  }
-  possibleTypes {
-    ...TypeRef
   }
 }
 

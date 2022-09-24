@@ -4,7 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Feature.Visitors.Object
+module Feature.Directive.Definition
   ( api,
   )
 where
