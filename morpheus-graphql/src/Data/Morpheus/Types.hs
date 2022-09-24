@@ -68,6 +68,7 @@ module Data.Morpheus.Types
     DirectivePrefix (..),
     DirectiveUsage (..),
     GQLDirective (..),
+    Visitor (..),
   )
 where
 
