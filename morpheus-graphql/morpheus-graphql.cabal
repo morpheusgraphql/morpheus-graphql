@@ -24,8 +24,7 @@ data-files:
     test/Feature/Collision/category-collision-fail/query.gql
     test/Feature/Collision/category-collision-success/query.gql
     test/Feature/Collision/name-collision/query.gql
-    test/Feature/Directive/definition/introspection/applyed-on-type/query.gql
-    test/Feature/Directive/definition/introspection/definitions/query.gql
+    test/Feature/Directive/definition/introspection/query.gql
     test/Feature/Holistic/holistic/arguments/nameConflict/query.gql
     test/Feature/Holistic/holistic/arguments/undefinedArgument/query.gql
     test/Feature/Holistic/holistic/arguments/unknownArguments/query.gql
@@ -238,8 +237,7 @@ data-files:
     test/Feature/Collision/category-collision-fail/response.json
     test/Feature/Collision/category-collision-success/response.json
     test/Feature/Collision/name-collision/response.json
-    test/Feature/Directive/definition/introspection/applyed-on-type/response.json
-    test/Feature/Directive/definition/introspection/definitions/response.json
+    test/Feature/Directive/definition/introspection/response.json
     test/Feature/Holistic/holistic/arguments/nameConflict/response.json
     test/Feature/Holistic/holistic/arguments/undefinedArgument/response.json
     test/Feature/Holistic/holistic/arguments/unknownArguments/response.json
