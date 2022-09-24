@@ -48,6 +48,27 @@ instance ToLocation 'ENUM where
 instance ToLocation 'INPUT_OBJECT where
   toLocation = const INPUT_OBJECT
 
+instance ToLocation 'UNION where
+  toLocation = const UNION
+
+instance ToLocation 'INPUT_FIELD_DEFINITION where
+  toLocation = const INPUT_FIELD_DEFINITION
+
+instance ToLocation 'ARGUMENT_DEFINITION where
+  toLocation = const ARGUMENT_DEFINITION
+
+instance ToLocation 'FIELD_DEFINITION where
+  toLocation = const FIELD_DEFINITION
+
+instance ToLocation 'SCALAR where
+  toLocation = const SCALAR
+
+instance ToLocation 'INTERFACE where
+  toLocation = const INTERFACE
+
+instance ToLocation 'ENUM_VALUE where
+  toLocation = const ENUM_VALUE
+
 class ToLocations (k :: [DirectiveLocation]) where
   toLocations :: f k -> [DirectiveLocation]
 
@@ -59,24 +80,6 @@ instance ToLocations '[] where
 
 getLocations :: forall f a. ToLocations (ALLOWED_DIRECTIVE_LOCATIONS a) => f a -> [DirectiveLocation]
 getLocations _ = toLocations (Proxy :: Proxy (ALLOWED_DIRECTIVE_LOCATIONS a))
-
--- QUERY
--- MUTATION
--- SUBSCRIPTION
--- FIELD
--- FRAGMENT_DEFINITION
--- FRAGMENT_SPREAD
--- INLINE_FRAGMENT
--- SCHEMA
--- SCALAR
--- FIELD_DEFINITION
--- ARGUMENT_DEFINITION
--- INTERFACE
--- UNION
--- ENUM
--- ENUM_VALUE
--- INPUT_OBJECT
--- INPUT_FIELD_DEFINITION
 
 data Visitor a (t :: Bool) where
   -- Types
