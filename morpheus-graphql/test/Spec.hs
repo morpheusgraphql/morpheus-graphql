@@ -26,6 +26,7 @@ import qualified Feature.Input.Objects as Objects
 import qualified Feature.Input.Scalars as Scalars
 import qualified Feature.Input.Variables as Variables
 import qualified Feature.NamedResolvers.API as NamedResolvers
+import qualified Feature.Visitors.Object as VisitorsObject
 import Relude
 import Rendering.TestSchemaRendering (testSchemaRendering)
 import Subscription.Test (testSubscriptions)
@@ -83,6 +84,10 @@ main =
           (TaggedArguments.api, "tagged-arguments"),
           (TaggedArgumentsFail.api, "tagged-arguments-fail"),
           (ObjectAndEnum.api, "object-and-enum")
+        ],
+      testFeatures
+        "Visitors"
+        [ (VisitorsObject.api, "object")
         ],
       testFeatures
         "Holistic"

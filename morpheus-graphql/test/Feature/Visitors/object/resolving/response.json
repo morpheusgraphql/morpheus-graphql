@@ -1,0 +1,12 @@
+{
+  "data": {
+    "city": {
+      "__typename": "City",
+      "name": "corinth"
+    },
+    "deity": {
+      "__typename": "Deity",
+      "name": "morpheus"
+    }
+  }
+}

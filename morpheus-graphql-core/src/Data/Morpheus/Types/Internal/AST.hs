@@ -154,6 +154,7 @@ module Data.Morpheus.Types.Internal.AST
     withPath,
     withExtensions,
     PropName (..),
+    defineDirective,
   )
 where
 

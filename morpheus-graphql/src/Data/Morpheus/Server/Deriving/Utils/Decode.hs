@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -11,13 +12,21 @@ module Data.Morpheus.Server.Deriving.Utils.Decode
     decodeFieldWith,
     withScalar,
     handleEither,
+    getFieldName,
+    DecoderT,
+    withKind,
+    Info (..),
+    Context (..),
+    Tag (..),
   )
 where
 
 import Control.Monad.Except (MonadError (throwError))
+import Data.Morpheus.App.Internal.Resolving (ResolverState)
 import Data.Morpheus.Internal.Utils
   ( selectOr,
   )
+import Data.Morpheus.Server.Types.Internal
 import Data.Morpheus.Types.GQLScalar
   ( toScalar,
   )
@@ -87,5 +96,34 @@ handleEither = either throwError pure
 typeMismatch :: GQLError -> Value s -> GQLError
 typeMismatch text jsType =
   internal $
-    "Type mismatch! expected:" <> text <> ", got: "
+    "Type mismatch! expected:"
+      <> text
+      <> ", got: "
       <> msg jsType
+
+getFieldName :: FieldName -> Int -> FieldName
+getFieldName "" index = "_" <> show index
+getFieldName label _ = label
+
+data Tag = D_CONS | D_UNION deriving (Eq, Ord)
+
+data Info = Info
+  { kind :: Tag,
+    tagName :: [TypeName]
+  }
+
+instance Semigroup Info where
+  Info D_UNION t1 <> Info _ t2 = Info D_UNION (t1 <> t2)
+  Info _ t1 <> Info D_UNION t2 = Info D_UNION (t1 <> t2)
+  Info D_CONS t1 <> Info D_CONS t2 = Info D_CONS (t1 <> t2)
+
+data Context = Context
+  { contKind :: Tag,
+    typeName :: TypeName,
+    options :: GQLTypeOptions
+  }
+
+type DecoderT = ReaderT Context ResolverState
+
+withKind :: Tag -> DecoderT a -> DecoderT a
+withKind contKind = local (\ctx -> ctx {contKind})

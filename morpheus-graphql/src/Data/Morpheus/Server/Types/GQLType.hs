@@ -1,7 +1,10 @@
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Rank2Types #-}
@@ -9,6 +12,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Types.GQLType
@@ -19,22 +23,24 @@ module Data.Morpheus.Server.Types.GQLType
         typeOptions,
         getDirectives,
         defaultValues,
-        __type
+        directiveUsages,
+        __type,
+        __isEmptyType
       ),
-    GQLTypeOptions (..),
-    defaultTypeOptions,
-    TypeData (..),
-    __isEmptyType,
     __typeData,
+    deriveTypename,
+    encodeArguments,
+    DirectiveUsage (..),
+    DeriveArguments (..),
   )
 where
 
 -- MORPHEUS
 
+import Control.Monad.Except
 import Data.Morpheus.App.Internal.Resolving
-  ( Resolver,
-    SubscriptionField,
-  )
+import Data.Morpheus.Internal.Ext
+import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Kind
   ( CUSTOM,
     DerivingKind,
@@ -43,25 +49,43 @@ import Data.Morpheus.Kind
     WRAPPER,
   )
 import Data.Morpheus.NamedResolvers (NamedResolverT (..))
-import Data.Morpheus.Server.Deriving.Utils.Kinded (CategoryValue (..))
-import Data.Morpheus.Server.Types.SchemaT
-  ( TypeFingerprint (..),
+import Data.Morpheus.Server.Deriving.Utils (ConsRep (..), DataType (..), DeriveWith, FieldRep (..))
+import Data.Morpheus.Server.Deriving.Utils.DeriveGType (DeriveValueOptions (..), deriveValue)
+import Data.Morpheus.Server.Deriving.Utils.Kinded (CategoryValue (..), KindedProxy (KindedProxy), kinded)
+import Data.Morpheus.Server.Deriving.Utils.Proxy (ContextValue (..))
+import Data.Morpheus.Server.Types.Directives (GQLDirective (ALLOWED_DIRECTIVE_LOCATIONS), ToLocations)
+import Data.Morpheus.Server.Types.Internal
+  ( GQLTypeOptions (..),
+    TypeData (..),
+    defaultTypeOptions,
+    mkTypeData,
+    prefixInputs,
   )
+import Data.Morpheus.Server.Types.SchemaT
+import Data.Morpheus.Server.Types.TypeName
 import Data.Morpheus.Server.Types.Types
   ( Arg,
     Pair,
     TypeGuard,
     Undefined (..),
   )
+import Data.Morpheus.Types.GQLScalar (EncodeScalar (..))
 import Data.Morpheus.Types.ID (ID)
 import Data.Morpheus.Types.Internal.AST
-  ( CONST,
+  ( Argument (..),
+    Arguments,
+    ArgumentsDefinition,
+    CONST,
     Description,
     Directives,
+    IN,
+    OUT,
+    ObjectEntry (..),
+    Position (..),
     TypeCategory (..),
     TypeName,
     TypeWrapper (..),
-    Value,
+    Value (..),
     mkBaseType,
     packName,
     toNullable,
@@ -69,62 +93,12 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Sequence (Seq)
 import Data.Text
-  ( intercalate,
-    pack,
+  ( pack,
     unpack,
   )
-import Data.Typeable
-  ( TyCon,
-    TypeRep,
-    splitTyConApp,
-    tyConFingerprint,
-    tyConName,
-    typeRep,
-    typeRepTyCon,
-  )
 import Data.Vector (Vector)
-import Relude hiding (Seq, Undefined, intercalate)
-
-data TypeData = TypeData
-  { gqlTypeName :: TypeName,
-    gqlWrappers :: TypeWrapper,
-    gqlFingerprint :: TypeFingerprint
-  }
-  deriving (Show)
-
--- | Options that specify how to map GraphQL field, type, and constructor names
--- to and from their Haskell equivalent.
---
--- Options can be set using record syntax on 'defaultOptions' with the fields
--- below.
-data GQLTypeOptions = GQLTypeOptions
-  { -- | Function applied to field labels.
-    -- Handy for removing common record prefixes for example.
-    fieldLabelModifier :: String -> String,
-    -- | Function applied to constructor tags.
-    constructorTagModifier :: String -> String,
-    -- | Construct a new type name depending on whether it is an input,
-    -- and being given the original type name.
-    typeNameModifier :: Bool -> String -> String
-  }
-
--- | Default encoding 'GQLTypeOptions':
---
--- @
--- 'GQLTypeOptions'
---   { 'fieldLabelModifier'      = id
---   , 'constructorTagModifier'  = id
---   , 'typeNameModifier'        = const id
---   }
--- @
-defaultTypeOptions :: GQLTypeOptions
-defaultTypeOptions =
-  GQLTypeOptions
-    { fieldLabelModifier = id,
-      constructorTagModifier = id,
-      -- default is just a pass through for the original type name
-      typeNameModifier = const id
-    }
+import GHC.Generics
+import Relude hiding (Seq, Undefined, fromList, intercalate)
 
 __typeData ::
   forall kinded (kind :: TypeCategory) (a :: Type).
@@ -133,17 +107,8 @@ __typeData ::
   TypeData
 __typeData proxy = __type proxy (categoryValue (Proxy @kind))
 
-getTypename :: Typeable a => f a -> TypeName
-getTypename = packName . intercalate "" . getTypeConstructorNames
-
-getTypeConstructorNames :: Typeable a => f a -> [Text]
-getTypeConstructorNames = fmap (pack . tyConName . replacePairCon) . getTypeConstructors
-
-getTypeConstructors :: Typeable a => f a -> [TyCon]
-getTypeConstructors = ignoreResolver . splitTyConApp . typeRep
-
-prefixInputs :: GQLTypeOptions -> GQLTypeOptions
-prefixInputs options = options {typeNameModifier = \isInput name -> if isInput then "Input" <> name else name}
+deriveTypename :: (GQLType a, CategoryValue kind) => kinded kind a -> TypeName
+deriveTypename proxy = gqlTypeName $ __typeData proxy
 
 deriveTypeData :: Typeable a => f a -> (Bool -> String -> String) -> TypeCategory -> TypeData
 deriveTypeData proxy typeNameModifier cat =
@@ -155,37 +120,14 @@ deriveTypeData proxy typeNameModifier cat =
   where
     originalTypeName = unpack . unpackName $ getTypename proxy
 
-getFingerprint :: Typeable a => TypeCategory -> f a -> TypeFingerprint
-getFingerprint category = TypeableFingerprint category . fmap tyConFingerprint . getTypeConstructors
-
-mkTypeData :: TypeName -> a -> TypeData
-mkTypeData name _ =
-  TypeData
-    { gqlTypeName = name,
-      gqlFingerprint = InternalFingerprint name,
-      gqlWrappers = mkBaseType
-    }
-
 list :: TypeWrapper -> TypeWrapper
 list = flip TypeList True
 
 wrapper :: (TypeWrapper -> TypeWrapper) -> TypeData -> TypeData
 wrapper f TypeData {..} = TypeData {gqlWrappers = f gqlWrappers, ..}
 
--- | replaces typeName (A,B) with Pair_A_B
-replacePairCon :: TyCon -> TyCon
-replacePairCon x | hsPair == x = gqlPair
-  where
-    hsPair = typeRepTyCon $ typeRep $ Proxy @(Int, Int)
-    gqlPair = typeRepTyCon $ typeRep $ Proxy @(Pair Int Int)
-replacePairCon x = x
-
--- Ignores Resolver name  from typeName
-ignoreResolver :: (TyCon, [TypeRep]) -> [TyCon]
-ignoreResolver (con, _) | con == typeRepTyCon (typeRep $ Proxy @Resolver) = []
-ignoreResolver (con, _) | con == typeRepTyCon (typeRep $ Proxy @NamedResolverT) = []
-ignoreResolver (con, args) =
-  con : concatMap (ignoreResolver . splitTyConApp) args
+data DirectiveUsage where
+  DirectiveUsage :: (GQLDirective a, GQLType a, Decode a, DeriveArguments (KIND a) a, ToLocations (ALLOWED_DIRECTIVE_LOCATIONS a)) => a -> DirectiveUsage
 
 -- | GraphQL type, every graphQL type should have an instance of 'GHC.Generics.Generic' and 'GQLType'.
 --
@@ -210,6 +152,9 @@ class GQLType a where
   -- Used for documentation in the GraphQL schema.
   description :: f a -> Maybe Text
   description _ = Nothing
+
+  directiveUsages :: f a -> [DirectiveUsage]
+  directiveUsages _ = mempty
 
   -- | A dictionary of descriptions for fields, keyed on field name.
   --
@@ -330,3 +275,84 @@ instance (GQLType a) => GQLType (Proxy a) where
 instance (GQLType a) => GQLType (NamedResolverT m a) where
   type KIND (NamedResolverT m a) = CUSTOM
   __type _ = __type (Proxy :: Proxy a)
+
+type Decode a = EncodeKind (KIND a) a
+
+encodeArguments :: forall a. Decode a => a -> GQLResult (Arguments CONST)
+encodeArguments x = encode x >>= unpackValue
+  where
+    unpackValue (Object v) = pure $ fmap toArgument v
+    unpackValue _ = fail "TODO: expected arguments!"
+    toArgument ObjectEntry {..} = Argument (Position 0 0) entryName entryValue
+
+encode :: forall a. Decode a => a -> GQLResult (Value CONST)
+encode x = encodeKind (ContextValue x :: ContextValue (KIND a) a)
+
+class EncodeKind (kind :: DerivingKind) (a :: Type) where
+  encodeKind :: ContextValue kind a -> GQLResult (Value CONST)
+
+-- instance
+--   ( EncodeWrapper f,
+--     Encode m a,
+--     Monad m
+--   ) =>
+--   EncodeKind WRAPPER m (f a)
+--   where
+--   encodeKind = encodeWrapper encode . unContextValue
+
+instance (EncodeScalar a) => EncodeKind SCALAR a where
+  encodeKind = pure . Scalar . encodeScalar . unContextValue
+
+instance (EncodeConstraint a) => EncodeKind TYPE a where
+  encodeKind = exploreResolvers . unContextValue
+
+--  Map
+-- instance (Monad m, Encode m [(k, v)]) => EncodeKind CUSTOM m (Map k v) where
+--   encodeKind = encode . M.toList . unContextValue
+
+convertNode ::
+  DataType (GQLResult (Value CONST)) ->
+  GQLResult (Value CONST)
+convertNode
+  DataType
+    { tyIsUnion,
+      tyCons = ConsRep {consFields, consName}
+    } = encodeTypeFields consFields
+    where
+      encodeTypeFields ::
+        [FieldRep (GQLResult (Value CONST))] -> GQLResult (Value CONST)
+      encodeTypeFields [] = pure $ Enum consName
+      encodeTypeFields fields | not tyIsUnion = Object <$> (traverse fromField fields >>= fromElems)
+        where
+          fromField FieldRep {fieldSelector, fieldValue} = do
+            entryValue <- fieldValue
+            pure ObjectEntry {entryName = fieldSelector, entryValue}
+      -- Type References --------------------------------------------------------------
+      encodeTypeFields _ = fail "TODO: union not supported"
+
+-- Types & Constrains -------------------------------------------------------
+class (EncodeKind (KIND a) a, GQLType a) => ExplorerConstraint a
+
+instance (EncodeKind (KIND a) a, GQLType a) => ExplorerConstraint a
+
+exploreResolvers :: forall a. EncodeConstraint a => a -> GQLResult (Value CONST)
+exploreResolvers =
+  convertNode
+    . deriveValue
+      ( DeriveValueOptions
+          { __valueApply = encode,
+            __valueTypeName = deriveTypename (KindedProxy :: KindedProxy IN a),
+            __valueGQLOptions = typeOptions (Proxy @a) defaultTypeOptions,
+            __valueGetType = __typeData . kinded (Proxy @IN)
+          } ::
+          DeriveValueOptions IN ExplorerConstraint (GQLResult (Value CONST))
+      )
+
+type EncodeConstraint a =
+  ( Generic a,
+    GQLType a,
+    DeriveWith ExplorerConstraint (GQLResult (Value CONST)) (Rep a)
+  )
+
+class DeriveArguments (k :: DerivingKind) a where
+  deriveArgumentsDefinition :: f k a -> SchemaT OUT (ArgumentsDefinition CONST)

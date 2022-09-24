@@ -21,7 +21,10 @@ import qualified Data.Map as M
 import Data.Morpheus.Kind
 import Data.Morpheus.NamedResolvers (NamedResolverT)
 import Data.Morpheus.Server.Deriving.Utils.Kinded
-import Data.Morpheus.Server.Types.GQLType (GQLType (KIND, __type), TypeData (gqlFingerprint))
+import Data.Morpheus.Server.Types.GQLType (GQLType (KIND, __type))
+import Data.Morpheus.Server.Types.Internal
+  ( TypeData (gqlFingerprint),
+  )
 import Data.Morpheus.Server.Types.SchemaT (TypeFingerprint)
 import Data.Morpheus.Types.Internal.AST
 import GHC.Generics

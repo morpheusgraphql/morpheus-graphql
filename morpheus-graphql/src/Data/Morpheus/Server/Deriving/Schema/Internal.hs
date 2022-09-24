@@ -23,7 +23,6 @@ module Data.Morpheus.Server.Deriving.Schema.Internal
     TyContentM,
     TyContent,
     fromSchema,
-    updateByContent,
     lookupDescription,
     lookupDirectives,
     lookupFieldContent,
@@ -31,24 +30,22 @@ module Data.Morpheus.Server.Deriving.Schema.Internal
 where
 
 -- MORPHEUS
+
+import Control.Monad.Except
 import qualified Data.Map as M
-import Data.Morpheus.App.Internal.Resolving
-  ( Result (..),
+import Data.Morpheus.Internal.Ext
+  ( GQLResult,
+    Result (Failure, Success, errors),
   )
-import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Internal.Utils (empty)
 import Data.Morpheus.Server.Deriving.Utils.Kinded
-  ( CategoryValue (..),
-    KindedType (..),
+  ( KindedType (..),
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
-    TypeData (..),
-    __typeData,
   )
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
-    updateSchema,
   )
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
@@ -57,8 +54,6 @@ import Data.Morpheus.Types.Internal.AST
     FieldContent (..),
     Schema (..),
     TRUE,
-    TypeContent (..),
-    TypeDefinition (..),
     VALID,
   )
 import Language.Haskell.TH (Exp, Q)
@@ -85,23 +80,3 @@ fromSchema Failure {errors} = fail (show errors)
 type TyContentM kind = SchemaT kind (TyContent kind)
 
 type TyContent kind = Maybe (FieldContent TRUE kind CONST)
-
-updateByContent ::
-  (GQLType a, CategoryValue kind) =>
-  (f kind a -> SchemaT c (TypeContent TRUE kind CONST)) ->
-  f kind a ->
-  SchemaT c ()
-updateByContent f proxy =
-  updateSchema
-    (gqlFingerprint $ __typeData proxy)
-    deriveD
-    proxy
-  where
-    deriveD =
-      fmap
-        ( TypeDefinition
-            (description proxy)
-            (gqlTypeName (__typeData proxy))
-            empty
-        )
-        . f

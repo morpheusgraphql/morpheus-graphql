@@ -45,6 +45,7 @@ import Data.Mergeable
     NameCollision (..),
     OrdMap,
   )
+import Data.Mergeable.SafeHashMap (SafeHashMap)
 import Data.Morpheus.Internal.Utils
   ( Empty (..),
     KeyOf (..),
@@ -151,7 +152,8 @@ instance KeyOf FieldName (Directive s) where
 
 instance RenderGQL (Directive s) where
   renderGQL Directive {..} =
-    "@" <> renderGQL directiveName
+    "@"
+      <> renderGQL directiveName
       <> renderArgumentValues directiveArgs
 
 type Directives s = OrdMap FieldName (Directive s)
@@ -180,7 +182,7 @@ instance NameCollision GQLError (DirectiveDefinition s) where
       <> msg directiveDefinitionName
       <> "."
 
-type DirectivesDefinition s = OrdMap FieldName (DirectiveDefinition s)
+type DirectivesDefinition s = SafeHashMap FieldName (DirectiveDefinition s)
 
 instance KeyOf FieldName (DirectiveDefinition s) where
   keyOf = directiveDefinitionName

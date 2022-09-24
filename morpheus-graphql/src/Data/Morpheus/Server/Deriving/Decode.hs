@@ -15,8 +15,8 @@
 
 module Data.Morpheus.Server.Deriving.Decode
   ( decodeArguments,
-    Decode (..),
-    DecodeConstraint,
+    Decode,
+    decode,
   )
 where
 
@@ -38,10 +38,16 @@ import Data.Morpheus.Server.Deriving.Utils
     symbolName,
   )
 import Data.Morpheus.Server.Deriving.Utils.Decode
-  ( decodeFieldWith,
+  ( Context (..),
+    DecoderT,
+    Info (..),
+    Tag (..),
+    decodeFieldWith,
+    getFieldName,
     handleEither,
     withInputObject,
     withInputUnion,
+    withKind,
     withScalar,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
@@ -52,10 +58,10 @@ import Data.Morpheus.Server.Types.GQLType
       ( KIND,
         typeOptions
       ),
-    GQLTypeOptions (..),
-    TypeData (..),
-    __typeData,
-    defaultTypeOptions,
+    deriveTypename,
+  )
+import Data.Morpheus.Server.Types.Internal
+  ( defaultTypeOptions,
   )
 import Data.Morpheus.Server.Types.Types (Arg (Arg))
 import Data.Morpheus.Types.GQLScalar
@@ -68,8 +74,6 @@ import Data.Morpheus.Types.GQLWrapper
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
     Arguments,
-    FieldName,
-    GQLError,
     IN,
     LEAF,
     Object,
@@ -86,20 +90,16 @@ import GHC.Generics
 import GHC.TypeLits (KnownSymbol)
 import Relude
 
-type DecodeConstraint a = (DecodeKind (KIND a) a)
-
 -- GENERIC
-decodeArguments :: forall a. DecodeConstraint a => Arguments VALID -> ResolverState a
-decodeArguments = decodeKind (Proxy @(KIND a)) . Object . fmap toEntry
+decodeArguments :: forall a. Decode a => Arguments VALID -> ResolverState a
+decodeArguments = decode . Object . fmap toEntry
   where
     toEntry Argument {..} = ObjectEntry argumentName argumentValue
 
--- | Decode GraphQL query arguments and input values
-class Decode a where
-  decode :: ValidValue -> ResolverState a
+type Decode a = (DecodeKind (KIND a) a)
 
-instance DecodeKind (KIND a) a => Decode a where
-  decode = decodeKind (Proxy @(KIND a))
+decode :: forall a. Decode a => ValidValue -> ResolverState a
+decode = decodeKind (Proxy @(KIND a))
 
 -- | Decode GraphQL type with Specific Kind
 class DecodeKind (kind :: DerivingKind) a where
@@ -107,7 +107,7 @@ class DecodeKind (kind :: DerivingKind) a where
 
 -- SCALAR
 instance (DecodeScalar a, GQLType a) => DecodeKind SCALAR a where
-  decodeKind _ = withScalar (gqlTypeName $ __typeData (KindedProxy :: KindedProxy LEAF a)) decodeScalar
+  decodeKind _ = withScalar (deriveTypename (KindedProxy :: KindedProxy LEAF a)) decodeScalar
 
 -- INPUT_OBJECT and  INPUT_UNION
 instance
@@ -123,7 +123,7 @@ instance
         Context
           { options = typeOptions (Proxy @a) defaultTypeOptions,
             contKind = D_CONS,
-            typeName = gqlTypeName $ __typeData (KindedProxy :: KindedProxy IN a)
+            typeName = deriveTypename (KindedProxy :: KindedProxy IN a)
           }
 
 instance (Decode a, DecodeWrapperConstraint f a, DecodeWrapper f) => DecodeKind WRAPPER (f a) where
@@ -141,33 +141,21 @@ instance (Decode a, KnownSymbol name) => DecodeKind CUSTOM (Arg name a) where
 instance (Ord k, Decode (k, v)) => DecodeKind CUSTOM (Map k v) where
   decodeKind _ v = M.fromList <$> (decode v :: ResolverState [(k, v)])
 
--- data Input  =
---    InputHuman Human  -- direct link: { __typename: Human, Human: {field: ""} }
---   | InputRecord { name :: Text, age :: Int } -- { __typename: InputRecord, InputRecord: {field: ""} }
---   | IndexedType Int Text  -- { __typename: InputRecord, _0:2 , _1:""  }
---   | Zeus                 -- { __typename: Zeus }
---     deriving (Generic, GQLType)
-
 decideUnion ::
-  ( Functor m,
-    MonadError GQLError m
-  ) =>
-  ([TypeName], value -> m (f1 a)) ->
-  ([TypeName], value -> m (f2 a)) ->
+  (DecodeRep f1, DecodeRep f2) =>
+  ([TypeName], [TypeName]) ->
   TypeName ->
-  value ->
-  m ((:+:) f1 f2 a)
-decideUnion (left, f1) (right, f2) name value
-  | name `elem` left =
-    L1 <$> f1 value
-  | name `elem` right =
-    R1 <$> f2 value
+  ValidValue ->
+  DecoderT ((:+:) f1 f2 a)
+decideUnion (left, right) name value
+  | name `elem` left = L1 <$> decodeRep value
+  | name `elem` right = R1 <$> decodeRep value
   | otherwise =
-    throwError
-      $ internal
-      $ "Constructor \""
-        <> msg name
-        <> "\" could not find in Union"
+      throwError $
+        internal $
+          "Constructor \""
+            <> msg name
+            <> "\" could not find in Union"
 
 traverseUnion ::
   (DecodeRep f, DecodeRep g) =>
@@ -176,35 +164,10 @@ traverseUnion ::
   Object VALID ->
   ValidObject ->
   DecoderT ((f :+: g) a)
-traverseUnion (l1, r1) name unions object
-  | [name] == l1 =
-    L1 <$> decodeRep (Object object)
-  | [name] == r1 =
-    R1 <$> decodeRep (Object object)
-  | otherwise = decideUnion (l1, decodeRep) (r1, decodeRep) name (Object unions)
-
-data Tag = D_CONS | D_UNION deriving (Eq, Ord)
-
-data Context = Context
-  { contKind :: Tag,
-    typeName :: TypeName,
-    options :: GQLTypeOptions
-  }
-
-data Info = Info
-  { kind :: Tag,
-    tagName :: [TypeName]
-  }
-
-instance Semigroup Info where
-  Info D_UNION t1 <> Info _ t2 = Info D_UNION (t1 <> t2)
-  Info _ t1 <> Info D_UNION t2 = Info D_UNION (t1 <> t2)
-  Info D_CONS t1 <> Info D_CONS t2 = Info D_CONS (t1 <> t2)
-
-type DecoderT = ReaderT Context ResolverState
-
-withKind :: Tag -> DecoderT a -> DecoderT a
-withKind contKind = local (\ctx -> ctx {contKind})
+traverseUnion (l, r) name unions object
+  | [name] == l = L1 <$> decodeRep (Object object)
+  | [name] == r = R1 <$> decodeRep (Object object)
+  | otherwise = decideUnion (l, r) name (Object unions)
 
 getUnionInfos ::
   forall f a b.
@@ -219,9 +182,6 @@ getUnionInfos _ =
   )
     <$> ask
 
---
--- GENERICS
---
 class DecodeRep (f :: Type -> Type) where
   tags :: Proxy f -> Context -> Info
   decodeRep :: ValidValue -> DecoderT (f a)
@@ -235,17 +195,10 @@ instance (DecodeRep a, DecodeRep b) => DecodeRep (a :+: b) where
   decodeRep (Object obj) =
     do
       (left, right) <- getUnionInfos (Proxy @(a :+: b))
-      withKind (kind (left <> right)) $
-        withInputUnion
-          (traverseUnion (tagName left, tagName right))
-          obj
+      withKind (kind (left <> right)) $ withInputUnion (traverseUnion (tagName left, tagName right)) obj
   decodeRep (Enum name) = do
     (left, right) <- getUnionInfos (Proxy @(a :+: b))
-    decideUnion
-      (tagName left, decodeRep)
-      (tagName right, decodeRep)
-      name
-      (Enum name)
+    decideUnion (tagName left, tagName right) name (Enum name)
   decodeRep _ = throwError (internal "lists and scalars are not allowed in Union")
 
 instance (Constructor c, DecodeFields a) => DecodeRep (M1 C c a) where
@@ -270,24 +223,22 @@ instance (DecodeFields f, DecodeFields g) => DecodeFields (f :*: g) where
   refType _ = Nothing
   countFields _ = countFields (Proxy @f) + countFields (Proxy @g)
   decodeFields index gql =
-    (:*:) <$> decodeFields index gql
+    (:*:)
+      <$> decodeFields index gql
       <*> decodeFields (index + countFields (Proxy @g)) gql
 
 instance (Selector s, GQLType a, Decode a) => DecodeFields (M1 S s (K1 i a)) where
   countFields _ = 1
-  refType _ = Just $ gqlTypeName $ __typeData (KindedProxy :: KindedProxy IN a)
-  decodeFields index value = M1 . K1 <$> do
-    Context {options, contKind} <- ask
-    case contKind of
-      D_UNION -> lift (decode value)
-      D_CONS ->
-        let fieldName = getFieldName (selNameProxy options (Proxy @s)) index
-            fieldDecoder = decodeFieldWith (lift . decode) fieldName
-         in withInputObject fieldDecoder value
-
-getFieldName :: FieldName -> Int -> FieldName
-getFieldName "" index = "_" <> show index
-getFieldName label _ = label
+  refType _ = Just $ deriveTypename (KindedProxy :: KindedProxy IN a)
+  decodeFields index value =
+    M1 . K1 <$> do
+      Context {options, contKind} <- ask
+      case contKind of
+        D_UNION -> lift (decode value)
+        D_CONS ->
+          let fieldName = getFieldName (selNameProxy options (Proxy @s)) index
+              fieldDecoder = decodeFieldWith (lift . decode) fieldName
+           in withInputObject fieldDecoder value
 
 instance DecodeFields U1 where
   countFields _ = 0

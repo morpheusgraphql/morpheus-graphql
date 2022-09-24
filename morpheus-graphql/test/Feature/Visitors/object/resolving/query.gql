@@ -1,0 +1,10 @@
+{
+  city {
+    cityName
+    __typename
+  }
+  deity {
+    deityName
+    __typename
+  }
+}

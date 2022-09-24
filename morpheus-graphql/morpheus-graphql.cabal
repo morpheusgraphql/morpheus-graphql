@@ -231,6 +231,8 @@ data-files:
     test/Feature/NamedResolvers/tests/realm-ext-by-id/query.gql
     test/Feature/NamedResolvers/tests/realm-simple/query.gql
     test/Feature/NamedResolvers/tests/realms/query.gql
+    test/Feature/Visitors/object/introspection/query.gql
+    test/Feature/Visitors/object/resolving/query.gql
     test/Rendering/schema.gql
     test/Subscription/schema.gql
     test/Feature/Collision/category-collision-fail/response.json
@@ -457,6 +459,8 @@ data-files:
     test/Feature/NamedResolvers/tests/realm-ext-by-id/response.json
     test/Feature/NamedResolvers/tests/realm-simple/response.json
     test/Feature/NamedResolvers/tests/realms/response.json
+    test/Feature/Visitors/object/introspection/response.json
+    test/Feature/Visitors/object/resolving/response.json
 
 source-repository head
   type: git
@@ -486,16 +490,23 @@ library
       Data.Morpheus.Server.Deriving.Schema.Union
       Data.Morpheus.Server.Deriving.Utils
       Data.Morpheus.Server.Deriving.Utils.Decode
+      Data.Morpheus.Server.Deriving.Utils.DeriveGType
       Data.Morpheus.Server.Deriving.Utils.GTraversable
       Data.Morpheus.Server.Deriving.Utils.Kinded
+      Data.Morpheus.Server.Deriving.Utils.Proxy
+      Data.Morpheus.Server.Deriving.Utils.Types
       Data.Morpheus.Server.Playground
       Data.Morpheus.Server.TH.Compile
       Data.Morpheus.Server.TH.Declare
       Data.Morpheus.Server.TH.Declare.GQLType
       Data.Morpheus.Server.TH.Declare.Type
       Data.Morpheus.Server.TH.Utils
+      Data.Morpheus.Server.Types.CustomDirectives
+      Data.Morpheus.Server.Types.Directives
       Data.Morpheus.Server.Types.GQLType
+      Data.Morpheus.Server.Types.Internal
       Data.Morpheus.Server.Types.SchemaT
+      Data.Morpheus.Server.Types.TypeName
       Data.Morpheus.Server.Types.Types
       Paths_morpheus_graphql
   hs-source-dirs:
@@ -544,6 +555,7 @@ test-suite morpheus-graphql-test
       Feature.NamedResolvers.Deities
       Feature.NamedResolvers.Entities
       Feature.NamedResolvers.Realms
+      Feature.Visitors.Object
       Rendering.Schema
       Rendering.TestSchemaRendering
       Subscription.API

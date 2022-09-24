@@ -36,8 +36,10 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
-    TypeData (..),
     __typeData,
+  )
+import Data.Morpheus.Server.Types.Internal
+  ( TypeData (..),
   )
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
@@ -84,10 +86,10 @@ buildObjectTypeContent ::
   [FieldRep (Maybe (FieldContent TRUE cat CONST))] ->
   f (TypeContent TRUE cat CONST)
 buildObjectTypeContent scope consFields =
-  pure
-    $ mkObjectTypeContent scope
-    $ unsafeFromFields
-    $ map (setGQLTypeProps scope . repToFieldDefinition) consFields
+  pure $
+    mkObjectTypeContent scope $
+      unsafeFromFields $
+        map (setGQLTypeProps scope . repToFieldDefinition) consFields
 
 repToFieldDefinition ::
   FieldRep (Maybe (FieldContent TRUE kind CONST)) ->

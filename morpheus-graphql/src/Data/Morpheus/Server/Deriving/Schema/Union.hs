@@ -23,11 +23,8 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CategoryValue,
     KindedType (..),
   )
-import Data.Morpheus.Server.Types.GQLType
-  ( GQLType,
-    TypeData (gqlTypeName),
-    __typeData,
-  )
+import Data.Morpheus.Server.Types.GQLType (GQLType, __typeData)
+import Data.Morpheus.Server.Types.Internal (TypeData (..))
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
   )

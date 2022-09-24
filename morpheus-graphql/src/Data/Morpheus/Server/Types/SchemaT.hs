@@ -6,6 +6,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections #-}
@@ -20,50 +21,63 @@ module Data.Morpheus.Server.Types.SchemaT
     toSchema,
     withInput,
     extendImplements,
+    insertDirectiveDefinition,
+    outToAny,
   )
 where
 
 import Control.Monad.Except (MonadError (..))
 import qualified Data.Map as Map
 import Data.Morpheus.Internal.Ext (GQLResult)
+import Data.Morpheus.Server.Types.Directives
+import Data.Morpheus.Server.Types.TypeName
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     CONST,
+    DirectiveDefinition,
     GQLError,
     IN,
     OBJECT,
     OUT,
-    Schema (..),
+    Schema,
     TypeCategory (..),
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
+    defineDirective,
     defineSchemaWith,
     msg,
     toAny,
   )
-import GHC.Fingerprint.Type (Fingerprint)
 import Relude hiding (empty)
 
-data TypeFingerprint
-  = TypeableFingerprint TypeCategory [Fingerprint]
-  | InternalFingerprint TypeName
-  | CustomFingerprint TypeName
-  deriving
-    ( Generic,
-      Show,
-      Eq,
-      Ord
-    )
+data SchemaState where
+  SchemaState ::
+    { typeDefinitions :: Map TypeFingerprint (TypeDefinition ANY CONST),
+      implements :: Map TypeName [TypeName],
+      directiveDefinitions ::
+        Map
+          TypeFingerprint
+          ( VisitorFunction,
+            DirectiveDefinition CONST
+          )
+    } ->
+    SchemaState
 
-type MyMap = (Map TypeFingerprint (TypeDefinition ANY CONST), Map TypeName [TypeName])
+emptyMyMap :: SchemaState
+emptyMyMap =
+  SchemaState
+    { typeDefinitions = Map.empty,
+      implements = Map.empty,
+      directiveDefinitions = Map.empty
+    }
 
 -- Helper Functions
 newtype SchemaT (cat :: TypeCategory) a = SchemaT
   { runSchemaT ::
       GQLResult
         ( a,
-          [MyMap -> GQLResult MyMap]
+          [SchemaState -> GQLResult SchemaState]
         )
   }
   deriving (Functor)
@@ -97,9 +111,10 @@ toSchema ::
   GQLResult (Schema CONST)
 toSchema (SchemaT v) = do
   ((q, m, s), typeDefs) <- v
-  (typeDefinitions, implements) <- execUpdates (Map.empty, Map.empty) typeDefs
+  SchemaState {typeDefinitions, implements, directiveDefinitions} <- execUpdates emptyMyMap typeDefs
   types <- map (insertImplements implements) <$> checkTypeCollisions (Map.toList typeDefinitions)
-  defineSchemaWith types (Just q, m, s)
+  schema <- defineSchemaWith types (Just q, m, s)
+  foldlM defineDirective schema (fmap snd directiveDefinitions)
 
 insertImplements :: Map TypeName [TypeName] -> TypeDefinition c CONST -> TypeDefinition c CONST
 insertImplements x TypeDefinition {typeContent = DataObject {..}, ..} =
@@ -118,6 +133,9 @@ insertImplements _ t = t
 
 withInput :: SchemaT IN a -> SchemaT OUT a
 withInput (SchemaT x) = SchemaT x
+
+outToAny :: SchemaT OUT a -> SchemaT k' a
+outToAny (SchemaT x) = SchemaT x
 
 checkTypeCollisions :: [(TypeFingerprint, TypeDefinition k a)] -> GQLResult [TypeDefinition k a]
 checkTypeCollisions = fmap Map.elems . foldlM collectTypes Map.empty
@@ -162,20 +180,46 @@ updateSchema InternalFingerprint {} _ _ = SchemaT $ pure ((), [])
 updateSchema fingerprint f x =
   SchemaT $ pure ((), [upLib])
   where
-    upLib :: MyMap -> GQLResult MyMap
-    upLib (lib, conn)
-      | Map.member fingerprint lib = pure (lib, conn)
+    upLib :: SchemaState -> GQLResult SchemaState
+    upLib schema
+      | Map.member fingerprint (typeDefinitions schema) = pure schema
       | otherwise = do
-        (type', updates) <- runSchemaT (f x)
-        execUpdates (lib, conn) (update type' : updates)
+          (type', updates) <- runSchemaT (f x)
+          execUpdates schema (update type' : updates)
       where
-        update t (ts, c) = pure (Map.insert fingerprint (toAny t) ts, c)
+        update t schemaState =
+          pure
+            schemaState
+              { typeDefinitions = Map.insert fingerprint (toAny t) (typeDefinitions schemaState)
+              }
+
+insertDirectiveDefinition ::
+  TypeFingerprint ->
+  (a -> SchemaT cat' (VisitorFunction, DirectiveDefinition CONST)) ->
+  a ->
+  SchemaT cat' ()
+insertDirectiveDefinition InternalFingerprint {} _ _ = SchemaT $ pure ((), [])
+insertDirectiveDefinition fingerprint f x =
+  SchemaT $ pure ((), [upLib])
+  where
+    upLib :: SchemaState -> GQLResult SchemaState
+    upLib schema
+      | Map.member fingerprint (typeDefinitions schema) = pure schema
+      | otherwise = do
+          (type', updates) <- runSchemaT (f x)
+          execUpdates schema (update type' : updates)
+      where
+        update t schemaState =
+          pure
+            schemaState
+              { directiveDefinitions = Map.insert fingerprint t (directiveDefinitions schemaState)
+              }
 
 extendImplements :: TypeName -> [TypeName] -> SchemaT cat' ()
 extendImplements interface types = SchemaT $ pure ((), [upLib])
   where
     -- TODO: what happens if interface name collides?
-    upLib :: MyMap -> GQLResult MyMap
-    upLib (lib, con) = pure (lib, foldr insertInterface con types)
+    upLib :: SchemaState -> GQLResult SchemaState
+    upLib schema = pure schema {implements = foldr insertInterface (implements schema) types}
     insertInterface :: TypeName -> Map TypeName [TypeName] -> Map TypeName [TypeName]
     insertInterface = Map.alter (Just . (interface :) . fromMaybe [])
