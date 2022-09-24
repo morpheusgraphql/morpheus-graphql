@@ -1,7 +1,4 @@
 query Get__Type {
-  city: __type(name: "City") {
-    ...FullType
-  }
   deity: __type(name: "Deity") {
     ...FullType
   }

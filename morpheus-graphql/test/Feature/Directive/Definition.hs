@@ -28,7 +28,7 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
-newtype MythologyDeity = MythologyDeity
+newtype Deity = MythologyDeity
   { deityName :: Text
   }
   deriving (Generic)
@@ -42,7 +42,7 @@ data Power = Power
 instance GQLDirective Power where
   type ALLOWED_DIRECTIVE_LOCATIONS Power = '[ 'OBJECT]
 
-instance GQLType MythologyDeity where
+instance GQLType Deity where
   directiveUsages _ =
     [ DirectiveUsage
         Power
@@ -52,7 +52,7 @@ instance GQLType MythologyDeity where
     ]
 
 newtype Query (m :: Type -> Type) = Query
-  {deity :: MythologyDeity}
+  {deity :: Deity}
   deriving (Generic, GQLType)
 
 root :: RootResolver IO () Query Undefined Undefined
