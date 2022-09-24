@@ -67,6 +67,7 @@ module Data.Morpheus.Types
     defaultRootResolver,
     DirectivePrefix (..),
     DirectiveUsage (..),
+    GQLDirective (..),
   )
 where
 
@@ -92,7 +93,8 @@ import Data.Morpheus.NamedResolvers
   ( NamedResolverT (..),
     ResolveNamed (..),
   )
-
+import Data.Morpheus.Server.Types.CustomDirectives
+import Data.Morpheus.Server.Types.Directives
 import Data.Morpheus.Server.Types.GQLType
   ( DirectiveUsage (..),
     GQLType (..),
@@ -127,7 +129,6 @@ import Data.Morpheus.Types.Internal.AST
     ScalarValue (..),
   )
 import Relude hiding (Undefined)
-import Data.Morpheus.Server.Types.CustomDirectives
 
 class FlexibleResolver (f :: Type -> Type) (a :: k) where
   type Flexible (m :: Type -> Type) a :: Type

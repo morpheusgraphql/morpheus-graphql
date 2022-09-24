@@ -15,43 +15,35 @@ import Data.Morpheus.Types
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
-newtype MythologyCity = City
-  { cityName :: Text
-  }
-  deriving (Generic)
-
-instance GQLType MythologyCity where
-  directiveUsages _ =
-    [ DirectiveUsage
-        DirectivePrefix
-          { prefix = "Mythology",
-            drop = True
-          }
-    ]
-
 newtype MythologyDeity = MythologyDeity
   { deityName :: Text
   }
   deriving (Generic)
 
-instance GQLType MythologyDeity where
-  directiveUsages _ = []
-
-data Query (m :: Type -> Type) = Query
-  { deity :: MythologyDeity,
-    city :: MythologyCity
+data Power = Power
+  { name :: Text,
+    isLimited :: Bool
   }
+  deriving (GQLType, Generic)
+
+instance GQLDirective Power where
+  ALLOWED_DIRECTIVE_LOCATIONS Power = []
+
+instance GQLType MythologyDeity where
+  directiveUsages _ =
+    [ DirectiveUsage
+        Power
+          { name = "Lightning bolts",
+            isLimited = False
+          }
+    ]
+
+newtype Query (m :: Type -> Type) = Query
+  {deity :: MythologyDeity}
   deriving (Generic, GQLType)
 
 root :: RootResolver IO () Query Undefined Undefined
-root =
-  defaultRootResolver
-    { queryResolver =
-        Query
-          { deity = MythologyDeity "morpheus",
-            city = City "corinth"
-          }
-    }
+root = defaultRootResolver {queryResolver = Query {deity = MythologyDeity "morpheus"}}
 
 api :: GQLRequest -> IO GQLResponse
 api = interpreter root
