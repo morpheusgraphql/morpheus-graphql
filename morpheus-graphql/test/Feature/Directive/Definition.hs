@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
@@ -12,6 +13,18 @@ where
 import Data.Kind (Type)
 import Data.Morpheus (interpreter)
 import Data.Morpheus.Types
+  ( DirectiveUsage (..),
+    GQLDirective (..),
+    GQLRequest,
+    GQLResponse,
+    GQLType (..),
+    RootResolver (..),
+    Undefined,
+    defaultRootResolver,
+  )
+import Data.Morpheus.Types.Internal.AST
+  ( DirectiveLocation (..),
+  )
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
@@ -27,7 +40,7 @@ data Power = Power
   deriving (GQLType, Generic)
 
 instance GQLDirective Power where
-  ALLOWED_DIRECTIVE_LOCATIONS Power = []
+  type ALLOWED_DIRECTIVE_LOCATIONS Power = '[ 'OBJECT]
 
 instance GQLType MythologyDeity where
   directiveUsages _ =
