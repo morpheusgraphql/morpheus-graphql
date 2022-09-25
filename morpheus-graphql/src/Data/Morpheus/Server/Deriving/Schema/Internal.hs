@@ -31,7 +31,6 @@ where
 
 -- MORPHEUS
 
-import Control.Monad.Except
 import qualified Data.Map as M
 import Data.Morpheus.Internal.Ext
   ( GQLResult,
