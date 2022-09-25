@@ -17,6 +17,7 @@ module Data.Morpheus.App.Internal.Visitors
     VisitorFieldDefinition (..),
     VisitorTypeDefinition (..),
     defaultSchemaVisitors,
+    VisitorDefinition (..),
   )
 where
 
@@ -56,20 +57,21 @@ data VisitorFieldDefinition = FieldDefinition
   }
   deriving (Show, Eq)
 
-data SchemaVisitors = SchemaVisitors
-  { typeVisitor :: Directives VALID -> VisitorTypeDefinition -> GQLResult VisitorTypeDefinition,
-    fieldVisitor :: Directives VALID -> VisitorFieldDefinition -> GQLResult VisitorFieldDefinition
+data VisitorDefinition
+  = VisitFieldDefinition VisitorFieldDefinition
+  | VisitTypeDefinition VisitorTypeDefinition
+
+type VisitorFunction = Directives VALID -> VisitorDefinition -> GQLResult VisitorDefinition
+
+newtype SchemaVisitors = SchemaVisitors
+  { schemaVisitors :: Map FieldName VisitorFunction
   }
 
-defaultSchemaVisitors = SchemaVisitors (const pure) (const pure)
+defaultSchemaVisitors :: SchemaVisitors
+defaultSchemaVisitors = SchemaVisitors mempty
 
 instance Stitching SchemaVisitors where
-  stitch (SchemaVisitors t1 f1) (SchemaVisitors t2 f2) =
-    pure
-      SchemaVisitors
-        { typeVisitor = \dirs -> t1 dirs >=> t2 dirs,
-          fieldVisitor = \dirs -> f1 dirs >=> f2 dirs
-        }
+  stitch (SchemaVisitors v1) (SchemaVisitors v2) = pure SchemaVisitors {schemaVisitors = v1 <> v2}
 
 class ASTVisitor a where
   visit :: SchemaVisitors -> a VALID -> GQLResult (a VALID)
@@ -93,7 +95,7 @@ instance ASTVisitor Schema where
 
 instance ASTVisitor (TypeDefinition cat) where
   visit
-    SchemaVisitors {typeVisitor}
+    SchemaVisitors {schemaVisitors}
     TypeDefinition
       { typeName,
         typeDescription,
@@ -101,7 +103,7 @@ instance ASTVisitor (TypeDefinition cat) where
         typeContent
       } = do
       content <- visitContent typeContent
-      VisitorTypeDefinition {..} <- typeVisitor typeDirectives (VisitorTypeDefinition typeDescription typeName)
+      VisitorTypeDefinition {..} <- schemaVisitors typeDirectives (VisitorTypeDefinition typeDescription typeName)
       pure $
         TypeDefinition
           visitorTypeDescription
