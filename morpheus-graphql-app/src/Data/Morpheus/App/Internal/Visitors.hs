@@ -6,6 +6,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -21,8 +22,10 @@ module Data.Morpheus.App.Internal.Visitors
   )
 where
 
+import Control.Monad.Except
 import Data.Morpheus.App.Internal.Stitching (Stitching (..))
 import Data.Morpheus.Internal.Ext
+import Data.Morpheus.Internal.Utils (selectBy)
 import Data.Morpheus.Types.Internal.AST
 import Relude
 
@@ -61,7 +64,7 @@ data VisitorDefinition
   = VisitFieldDefinition VisitorFieldDefinition
   | VisitTypeDefinition VisitorTypeDefinition
 
-type VisitorFunction = Directives VALID -> VisitorDefinition -> GQLResult VisitorDefinition
+type VisitorFunction = Directive VALID -> VisitorDefinition -> GQLResult VisitorDefinition
 
 newtype SchemaVisitors = SchemaVisitors
   { schemaVisitors :: Map FieldName VisitorFunction
@@ -95,7 +98,7 @@ instance ASTVisitor Schema where
 
 instance ASTVisitor (TypeDefinition cat) where
   visit
-    SchemaVisitors {schemaVisitors}
+    visitors
     TypeDefinition
       { typeName,
         typeDescription,
@@ -103,7 +106,9 @@ instance ASTVisitor (TypeDefinition cat) where
         typeContent
       } = do
       content <- visitContent typeContent
-      VisitorTypeDefinition {..} <- schemaVisitors typeDirectives (VisitorTypeDefinition typeDescription typeName)
+      let value = VisitTypeDefinition (VisitorTypeDefinition typeDescription typeName)
+      result <- applyVisitors value visitors typeDirectives
+      -- (VisitorTypeDefinition typeDescription typeName)
       pure $
         TypeDefinition
           visitorTypeDescription
@@ -112,6 +117,18 @@ instance ASTVisitor (TypeDefinition cat) where
           content
       where
         visitContent = pure
+
+applyVisitor ::
+  SchemaVisitors ->
+  Directive VALID ->
+  VisitorDefinition ->
+  GQLResult VisitorDefinition
+applyVisitor SchemaVisitors {schemaVisitors} dir@Directive {directiveName} = do
+  f <- selectBy (throwError (internal "TODO:")) directiveName schemaVisitors
+  f dir
+
+applyVisitors :: VisitorDefinition -> SchemaVisitors -> Directives VALID -> Result GQLError VisitorDefinition
+applyVisitors def visitors = foldlM (flip (applyVisitor visitors)) def
 
 -- instance ASTVisitor (FieldDefinition cat) where
 --   visit FieldDefinition {..} = do
