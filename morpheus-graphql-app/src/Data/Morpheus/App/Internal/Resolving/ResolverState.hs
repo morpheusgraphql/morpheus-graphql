@@ -187,7 +187,8 @@ resolverFailureMessage
       <> msg selectionName
       <> ": "
       <> err
-      <> withInternalContext ctx `at` selectionPosition
+      <> withInternalContext ctx
+      `at` selectionPosition
 
 renderInternalResolverError :: ResolverContext -> GQLError -> GQLError
 renderInternalResolverError ctx@ResolverContext {currentSelection} err =
@@ -214,7 +215,10 @@ renderContext
 
 renderSection :: RenderGQL a => GQLError -> a -> GQLError
 renderSection label content =
-  "\n\n" <> label <> ":\n" <> line
+  "\n\n"
+    <> label
+    <> ":\n"
+    <> line
     <> "\n\n"
     <> msg (render content)
     <> "\n\n"

@@ -45,17 +45,17 @@ toArgumentsType ::
 toArgumentsType cName variables
   | null variables = Nothing
   | otherwise =
-    Just
-      ClientTypeDefinition
-        { clientTypeName = TypeNameTH [] cName,
-          clientKind = KindInputObject,
-          clientCons =
-            [ ClientConstructorDefinition
-                { cName,
-                  cFields = toFieldDefinition <$> toList variables
-                }
-            ]
-        }
+      Just
+        ClientTypeDefinition
+          { clientTypeName = TypeNameTH [] cName,
+            clientKind = KindInputObject,
+            clientCons =
+              [ ClientConstructorDefinition
+                  { cName,
+                    cFields = toFieldDefinition <$> toList variables
+                  }
+              ]
+          }
 
 toFieldDefinition :: Variable RAW -> FieldDefinition ANY VALID
 toFieldDefinition Variable {variableName, variableType} =

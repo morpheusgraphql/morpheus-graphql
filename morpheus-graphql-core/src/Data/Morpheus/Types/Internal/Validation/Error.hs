@@ -57,7 +57,8 @@ instance Unused (Variable s) where
   unused
     OperationContext {operationName}
     Variable {variableName, variablePosition} =
-      ( "Variable " <> msg ("$" <> variableName)
+      ( "Variable "
+          <> msg ("$" <> variableName)
           <> " is never used in operation "
           <> msg (getOperationName operationName)
           <> "."
@@ -68,7 +69,8 @@ instance Unused (Fragment s) where
   unused
     _
     Fragment {fragmentName, fragmentPosition} =
-      ( "Fragment " <> msg fragmentName
+      ( "Fragment "
+          <> msg fragmentName
           <> " is never used."
       )
         `at` fragmentPosition

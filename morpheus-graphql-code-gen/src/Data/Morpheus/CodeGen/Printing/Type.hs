@@ -74,10 +74,10 @@ instance RenderType ServerTypeDefinition where
         pure $
           "data"
             <+> parametrizedType tName typeParameters
-            <> cons
-            <> line
-            <> indent 2 derivations
-            <> line
+              <> cons
+              <> line
+              <> indent 2 derivations
+              <> line
       renderConstructors [cons] = (" =" <+>) <$> render cons
       renderConstructors conses = nest 2 . (line <>) . vsep . prefixVariants <$> traverse render conses
       prefixVariants (x : xs) = "=" <+> x : map ("|" <+>) xs

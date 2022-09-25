@@ -157,11 +157,11 @@ instance
   merge oldC currentC
     | oldC == currentC = pure oldC
     | otherwise = do
-      path <- ask
-      throwError
-        ( msg (intercalate "." $ fmap refName path)
-            `atPositions` fmap refPosition path
-        )
+        path <- ask
+        throwError
+          ( msg (intercalate "." $ fmap refName path)
+              `atPositions` fmap refPosition path
+          )
 
 deriving instance Show (SelectionContent a)
 
@@ -297,9 +297,9 @@ mergeSelection
       mergeArguments
         | selectionArguments old == selectionArguments current = pure $ selectionArguments current
         | otherwise =
-          mergeConflict $
-            ("they have differing arguments. " <> useDifferentAliases)
-              `atPositions` [pos1, pos2]
+            mergeConflict $
+              ("they have differing arguments. " <> useDifferentAliases)
+                `atPositions` [pos1, pos2]
 mergeSelection x y = mergeConflict ("INTERNAL: can't merge. " <> msgValue x <> msgValue y <> useDifferentAliases)
 
 msgValue :: Show a => a -> GQLError
@@ -318,14 +318,14 @@ mergeName ::
 mergeName pos old current
   | selectionName old == selectionName current = pure $ selectionName current
   | otherwise =
-    mergeConflict $
-      ( msg (selectionName old)
-          <> " and "
-          <> msg (selectionName current)
-          <> " are different fields. "
-          <> useDifferentAliases
-      )
-        `atPositions` pos
+      mergeConflict $
+        ( msg (selectionName old)
+            <> " and "
+            <> msg (selectionName current)
+            <> " are different fields. "
+            <> useDifferentAliases
+        )
+          `atPositions` pos
 
 deriving instance Show (Selection a)
 

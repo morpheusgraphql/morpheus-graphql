@@ -150,7 +150,8 @@ violation ::
   GQLError
 violation kind typeName =
   internal $
-    "Type \"" <> msg typeName
+    "Type \""
+      <> msg typeName
       <> "\" must be an"
       <> msg kind
       <> "."

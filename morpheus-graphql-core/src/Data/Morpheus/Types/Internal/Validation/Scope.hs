@@ -103,7 +103,10 @@ renderScope
 
 renderSection :: RenderGQL a => GQLError -> a -> GQLError
 renderSection label content =
-  "\n\n" <> label <> ":\n" <> line
+  "\n\n"
+    <> label
+    <> ":\n"
+    <> line
     <> "\n\n"
     <> msg (render content)
     <> "\n\n"

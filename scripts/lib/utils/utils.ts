@@ -1,3 +1,5 @@
+import { execSync } from "child_process";
+
 export const getPRNumber = (msg: string) => {
   const num = / \(#(?<prNumber>[0-9]+)\)$/m.exec(msg)?.groups?.prNumber;
   return num ? parseInt(num, 10) : undefined;
@@ -27,3 +29,9 @@ export const exit = (error: unknown) => {
   console.error(error);
   process.exit(1);
 };
+
+export const exec = (command: string) =>
+  execSync(command, {
+    maxBuffer: 10 * 1024 * 1024, // 10MB
+    encoding: "utf-8",
+  })?.trimEnd();

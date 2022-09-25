@@ -128,5 +128,7 @@ withRefinedList _ _ isType = ExceptT $ pure $ Left (typeMismatch "List" isType)
 -- if value is already validated but value has different type
 typeMismatch :: GQLError -> Value s -> GQLError
 typeMismatch text jsType =
-  "Type mismatch! expected:" <> msg text <> ", got: "
+  "Type mismatch! expected:"
+    <> msg text
+    <> ", got: "
     <> msg jsType

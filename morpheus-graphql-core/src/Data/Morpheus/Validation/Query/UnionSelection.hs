@@ -96,8 +96,8 @@ exploreFragments validateFragment types selectionSet = do
               selectionContent = SelectionField,
               selectionDirectives = empty
             }
-        ) :
-        selections
+        )
+          : selections
       )
 
 -- sorts Fragment by conditional Types
@@ -141,8 +141,8 @@ joinClusters ::
 joinClusters selSet typedSelections
   | null typedSelections = pure (SelectionSet selSet)
   | otherwise =
-    traverse mkUnionTag (HM.toList typedSelections)
-      >>= fmap (UnionSelection selSet) . startHistory . fromElems
+      traverse mkUnionTag (HM.toList typedSelections)
+        >>= fmap (UnionSelection selSet) . startHistory . fromElems
   where
     mkUnionTag :: (TypeName, [SelectionSet VALID]) -> FragmentValidator s UnionTag
     mkUnionTag (typeName, fragments) = UnionTag typeName <$> startHistory (mergeConcat (selSet :| fragments))

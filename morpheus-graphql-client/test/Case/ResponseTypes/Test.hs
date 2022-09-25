@@ -141,7 +141,8 @@ errorsWithType =
     ( FetchErrorProducedErrors
         ( ("Failure" `at` Position {line = 3, column = 7})
             `withPath` ["queryTypeName"]
-            `custom` "QUERY_BAD" :| []
+            `custom` "QUERY_BAD"
+            :| []
         )
         (Just ErrorsWithType {queryTypeName = Just "TestQuery"})
     )
@@ -163,7 +164,7 @@ testErrorsQuery =
             `withPath` [ "queryTypeName",
                          PropIndex 0
                        ]
-              :| []
+            :| []
         )
         ( Just
             TestErrorsQuery

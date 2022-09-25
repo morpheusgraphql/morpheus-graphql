@@ -278,7 +278,7 @@ deriveRoot = asObjectType (deriveFields . outputType)
 deriveMaybeRoot :: DeriveTypeConstraint OUT a => f a -> SchemaT OUT (Maybe (TypeDefinition OBJECT CONST))
 deriveMaybeRoot proxy
   | __isEmptyType proxy =
-    pure Nothing
+      pure Nothing
   | otherwise = Just <$> asObjectType (deriveFields . outputType) proxy
 
 deriveFieldContent :: forall f kind a. (DeriveType kind a) => f a -> TyContentM kind

@@ -337,7 +337,8 @@ genTypeContent typeName DataInterface {interfaceFields} =
               )
         )
 genTypeContent typeName DataObject {objectFields} =
-  ConsOUT <$> genArgumentTypes objectFields
+  ConsOUT
+    <$> genArgumentTypes objectFields
     <*> ( mkObjectCons typeName
             <$> traverse mkObjectField (toList objectFields)
         )
@@ -371,30 +372,30 @@ genArgumentType
       fieldContent = Just (FieldArgs arguments)
     }
     | length arguments > 1 = do
-      tName <- (fieldName &) <$> asks toArgsTypeName
-      inType tName $ do
-        let argumentFields = argument <$> toList arguments
-        fields <- traverse toNonResolverServerField argumentFields
-        let tKind = KindInputObject
-        pure
-          [ ServerTypeDefinition
-              { tName = toHaskellTypeName tName,
-                tKind,
-                tCons = mkObjectCons tName fields,
-                derives = derivesClasses False,
-                typeParameters = [],
-                gql =
-                  Just
-                    ( GQLTypeDefinition
-                        { gqlKind = Type,
-                          gqlTypeDescription = Nothing,
-                          gqlTypeDescriptions = fromList (mapMaybe mkFieldDescription argumentFields),
-                          gqlTypeDirectives = fromList (mkFieldDirective <$> argumentFields),
-                          gqlTypeDefaultValues = fromList (mapMaybe getDefaultValue argumentFields)
-                        }
-                    )
-              }
-          ]
+        tName <- (fieldName &) <$> asks toArgsTypeName
+        inType tName $ do
+          let argumentFields = argument <$> toList arguments
+          fields <- traverse toNonResolverServerField argumentFields
+          let tKind = KindInputObject
+          pure
+            [ ServerTypeDefinition
+                { tName = toHaskellTypeName tName,
+                  tKind,
+                  tCons = mkObjectCons tName fields,
+                  derives = derivesClasses False,
+                  typeParameters = [],
+                  gql =
+                    Just
+                      ( GQLTypeDefinition
+                          { gqlKind = Type,
+                            gqlTypeDescription = Nothing,
+                            gqlTypeDescriptions = fromList (mapMaybe mkFieldDescription argumentFields),
+                            gqlTypeDirectives = fromList (mkFieldDirective <$> argumentFields),
+                            gqlTypeDefaultValues = fromList (mapMaybe getDefaultValue argumentFields)
+                          }
+                      )
+                }
+            ]
 genArgumentType _ = pure []
 
 mkFieldDescription :: FieldDefinition cat s -> Maybe (Text, Description)

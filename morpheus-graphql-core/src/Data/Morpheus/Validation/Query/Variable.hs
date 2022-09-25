@@ -166,9 +166,9 @@ lookupAndValidateValueOnBody
       checkType Nothing (Just defValue) varType = validator varType True defValue
       checkType Nothing Nothing varType
         | validationMode /= WITHOUT_VARIABLES && not (isNullable variableType) =
-          throwError $ uninitializedVariable var
+            throwError $ uninitializedVariable var
         | otherwise =
-          returnNull
+            returnNull
         where
           returnNull :: BaseValidator ValidValue
           returnNull = selectOr (pure Null) (validator varType False) variableName bodyVariables

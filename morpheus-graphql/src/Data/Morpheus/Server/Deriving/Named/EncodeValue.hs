@@ -184,11 +184,11 @@ convertNamedNode
     | null consFields = pure $ NamedEnumResolver consName
     | tyIsUnion = deriveUnion consFields
     | otherwise =
-      pure $
-        NamedObjectResolver
-          ObjectTypeResolver
-            { objectFields = HM.fromList (toFieldRes <$> consFields)
-            }
+        pure $
+          NamedObjectResolver
+            ObjectTypeResolver
+              { objectFields = HM.fromList (toFieldRes <$> consFields)
+              }
 
 deriveUnion :: (MonadError GQLError m) => [FieldRep (m (ResolverValue m))] -> m (NamedResolverResult m)
 deriveUnion [FieldRep {..}] =

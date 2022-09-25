@@ -1,11 +1,5 @@
-import { execSync } from "child_process";
 import { GH_ORG, GH_REPO, GITHUB_TOKEN } from "./gq-api";
-
-const exec = (command: string) =>
-  execSync(command, {
-    maxBuffer: 10 * 1024 * 1024, // 10MB
-    encoding: "utf-8",
-  })?.trimEnd();
+import { exec } from "./utils";
 
 const getDate = () => exec("git log -1 --format=%cd --date=short");
 const lastTag = () => exec("git describe --abbrev=0 --tags");
@@ -21,4 +15,4 @@ export const push = (name: string) => {
   );
 };
 
-export { getDate, lastTag, commitsAfter };
+export { getDate, lastTag, commitsAfter, exec };

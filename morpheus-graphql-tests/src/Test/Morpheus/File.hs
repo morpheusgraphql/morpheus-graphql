@@ -98,6 +98,7 @@ searchAppFiles = fmap (nub . mapMaybe isAppFile) . ls
   where
     isAppFile FileUrl {fileName, isDir}
       | not isDir
-          && "app-" `isPrefixOf` fileName =
-        Just $ takeWhile (/= '.') fileName
+          && "app-"
+          `isPrefixOf` fileName =
+          Just $ takeWhile (/= '.') fileName
       | otherwise = Nothing

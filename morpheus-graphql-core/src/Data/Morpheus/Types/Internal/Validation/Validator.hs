@@ -282,10 +282,11 @@ fromValidationError
     }
   err
     | isInternal err || debug config =
-      ( err <> renderContext context
-          `atPositions` position
-      )
-        `withPath` path
+        ( err
+            <> renderContext context
+            `atPositions` position
+        )
+          `withPath` path
     | otherwise = err
 
 renderContext :: ValidatorContext s ctx -> GQLError

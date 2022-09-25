@@ -41,7 +41,8 @@ data ImplementsError
 
 partialImplements :: Field ON_INTERFACE -> ImplementsError -> GQLError
 partialImplements (Field fieldName argName (TypeEntity (OnInterface interfaceName) typename)) errorType =
-  "Interface field " <> maybe "" (const "argument ") argName
+  "Interface field "
+    <> maybe "" (const "argument ") argName
     <> renderField interfaceName fieldName argName
     <> detailedMessageGen
       (renderField typename fieldName argName)

@@ -82,9 +82,9 @@ validateDirectiveLocation
   DirectiveDefinition {directiveDefinitionLocations}
     | loc `elem` directiveDefinitionLocations = pure ()
     | otherwise =
-      throwError $
-        ("Directive " <> msg directiveName <> " may not to be used on " <> msg loc)
-          `at` directivePosition
+        throwError $
+          ("Directive " <> msg directiveName <> " may not to be used on " <> msg loc)
+            `at` directivePosition
 
 directiveFulfilled ::
   Bool ->
