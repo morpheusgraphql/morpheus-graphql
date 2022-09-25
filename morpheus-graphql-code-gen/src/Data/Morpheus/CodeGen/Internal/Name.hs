@@ -12,13 +12,13 @@ import Data.Char
   ( toLower,
     toUpper,
   )
-import qualified Data.Morpheus.Types.Internal.AST as N
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     TypeName,
     packName,
     unpackName,
   )
+import qualified Data.Morpheus.Types.Internal.AST as N
 import qualified Data.Text as T
 import Relude hiding
   ( ToString (..),
@@ -35,8 +35,9 @@ capitalize = mapFstChar toUpper
 
 camelCaseTypeName :: [N.Name t] -> TypeName -> TypeName
 camelCaseTypeName list name =
-  packName $ T.concat $
-    map (capitalize . unpackName) (list <> [coerce name])
+  packName $
+    T.concat $
+      map (capitalize . unpackName) (list <> [coerce name])
 
 toHaskellTypeName :: TypeName -> Text
 toHaskellTypeName "String" = "Text"

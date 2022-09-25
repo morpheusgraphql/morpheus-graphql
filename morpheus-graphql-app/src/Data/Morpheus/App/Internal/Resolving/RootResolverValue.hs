@@ -111,9 +111,9 @@ runRootResolverValue
 runRootResolverValue
   NamedResolversValue
     { queryResolverMap
-      -- mutationResolverMap,
-      -- subscriptionResolverMap,
-      --typeResolverChannels
+    -- mutationResolverMap,
+    -- subscriptionResolverMap,
+    --typeResolverChannels
     }
   ctx@ResolverContext {operation = Operation {operationType}} =
     selectByOperation operationType

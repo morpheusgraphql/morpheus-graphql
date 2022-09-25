@@ -42,6 +42,8 @@ import qualified Data.Text as T
 import Language.Haskell.TH
 import Relude hiding (Type)
 
+{- ORMOLU_DISABLE -}
+
 declareType :: ServerTypeDefinition -> [Dec]
 declareType (ServerInterfaceDefinition name interfaceName unionName) =
   [ TySynD
@@ -70,6 +72,8 @@ declareType
 #else
       vars = map PlainTV (renderTypeVars typeParameters)
 #endif
+
+{- ORMOLU_ENABLE -}
 
 genName :: DerivingClass -> Name
 genName GENERIC = ''Generic

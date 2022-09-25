@@ -48,9 +48,9 @@ deriveNamedModel ::
   NamedResolvers m e query mut sub ->
   RootResolverValue e m
 deriveNamedModel NamedResolvers =
-  NamedResolversValue
-    $ HM.fromList
-    $ map (\x -> (resolverName x, x))
-    $ join
-    $ toList
-    $ traverseTypes deriveResolver (Proxy @(query (NamedResolverT (Resolver QUERY e m))))
+  NamedResolversValue $
+    HM.fromList $
+      map (\x -> (resolverName x, x)) $
+        join $
+          toList $
+            traverseTypes deriveResolver (Proxy @(query (NamedResolverT (Resolver QUERY e m))))

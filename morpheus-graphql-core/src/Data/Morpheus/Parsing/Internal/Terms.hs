@@ -39,7 +39,6 @@ import Data.Morpheus.Internal.Utils
   ( Empty (..),
     KeyOf,
     fromElems,
-    fromElems,
     fromLBS,
   )
 import Data.Morpheus.Parsing.Internal.Internal
@@ -52,7 +51,6 @@ import Data.Morpheus.Parsing.Internal.SourceText
     ignoredTokens1,
     parseStringBS,
   )
-import qualified Data.Morpheus.Types.Internal.AST as AST
 import Data.Morpheus.Types.Internal.AST
   ( Description,
     FieldName,
@@ -62,11 +60,11 @@ import Data.Morpheus.Types.Internal.AST
     TypeWrapper (..),
     packName,
   )
+import qualified Data.Morpheus.Types.Internal.AST as AST
 import Data.Morpheus.Types.Internal.AST.Name (Name)
 import Relude hiding (ByteString, empty, many)
 import Text.Megaparsec
-  ( (<?>),
-    between,
+  ( between,
     label,
     sepBy,
     sepBy1,
@@ -74,6 +72,7 @@ import Text.Megaparsec
     takeWhile1P,
     takeWhileP,
     try,
+    (<?>),
   )
 import Text.Megaparsec.Byte
   ( char,

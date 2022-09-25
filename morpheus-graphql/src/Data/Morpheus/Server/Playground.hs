@@ -14,8 +14,8 @@ import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Functor (fmap)
 import Data.Semigroup ((<>))
 import Prelude
-  ( (.),
-    mconcat,
+  ( mconcat,
+    (.),
   )
 
 link :: ByteString -> ByteString -> ByteString

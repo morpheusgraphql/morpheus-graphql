@@ -20,8 +20,8 @@ import Data.Aeson
   ( FromJSON (..),
     eitherDecode,
   )
-import qualified Data.ByteString.Lazy.Char8 as L
 import Data.ByteString.Lazy.Char8 (ByteString)
+import qualified Data.ByteString.Lazy.Char8 as L
 import Relude hiding (ByteString)
 import Test.Morpheus.File
 import Test.Tasty
@@ -80,12 +80,12 @@ requireEq f expected actual
 
 eqFailureMessage :: ByteString -> ByteString -> IO a3
 eqFailureMessage expected actual =
-  assertFailure
-    $ L.unpack
-    $ "expected: \n\n "
-      <> expected
-      <> " \n\n but got: \n\n "
-      <> actual
+  assertFailure $
+    L.unpack $
+      "expected: \n\n "
+        <> expected
+        <> " \n\n but got: \n\n "
+        <> actual
 
 getSchema :: (ReadSource a, Show err) => (a -> Either err b) -> FileUrl -> IO b
 getSchema f url =

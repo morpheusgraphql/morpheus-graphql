@@ -1,14 +1,14 @@
-{-# LANGUAGE DataKinds           #-}
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE GADTs               #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module DeityRepo where
 
-import           Control.Monad.Freer (Eff, Member, send)
-import           Types               (Deity, Name)
+import Control.Monad.Freer (Eff, Member, send)
+import Types (Deity, Name)
 
-data Error = DeityDoesNotExist Name | Unknown deriving Show
+data Error = DeityDoesNotExist Name | Unknown deriving (Show)
 
 data DeityRepo r where
   GetDeityByName :: Name -> DeityRepo (Either Error Deity)

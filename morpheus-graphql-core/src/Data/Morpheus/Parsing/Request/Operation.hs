@@ -40,8 +40,8 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Relude hiding (empty)
 import Text.Megaparsec
-  ( (<?>),
-    label,
+  ( label,
+    (<?>),
   )
 
 -- Variables :  https://graphql.github.io/graphql-spec/June2018/#VariableDefinition

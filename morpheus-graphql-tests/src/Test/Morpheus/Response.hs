@@ -12,8 +12,7 @@ module Test.Morpheus.Response
 where
 
 import Data.Aeson
-  ( (.=),
-    FromJSON (..),
+  ( FromJSON (..),
     Result (..),
     ToJSON (..),
     Value (..),
@@ -22,6 +21,7 @@ import Data.Aeson
     encode,
     fromJSON,
     object,
+    (.=),
   )
 import Relude hiding (ByteString)
 import Test.Morpheus.File (FileUrl (fileName), readGQL, readJSON)
@@ -71,11 +71,12 @@ getQuery url = do
 
 mkQuery :: (FromJSON a) => Value -> Maybe Value -> IO a
 mkQuery query variables =
-  runResult $ fromJSON $
-    object
-      [ "query" .= query,
-        "variables" .= variables
-      ]
+  runResult $
+    fromJSON $
+      object
+        [ "query" .= query,
+          "variables" .= variables
+        ]
 
 fromEither :: ToJSON err => Either err a -> CaseAssertion err
 fromEither (Left err) = Expected err

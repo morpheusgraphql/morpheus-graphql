@@ -124,18 +124,18 @@ destructRecord conName fields = conP (toName conName) (vars names)
 
 isTypeDeclared :: ClientTypeDefinition -> Q Bool
 isTypeDeclared clientDef = do
-    let name = mkTypeName clientDef
-    m <- lookupTypeName (show name)
-    case m of
-        Nothing -> pure False
-        _ -> pure True
+  let name = mkTypeName clientDef
+  m <- lookupTypeName (show name)
+  case m of
+    Nothing -> pure False
+    _ -> pure True
 
 hasInstance :: Name -> ClientTypeDefinition -> Q Bool
 hasInstance typeClass clientDef = do
-    isInstance typeClass [ConT (mkTypeName clientDef)]
+  isInstance typeClass [ConT (mkTypeName clientDef)]
 
 mkTypeName :: ClientTypeDefinition -> Name
-mkTypeName ClientTypeDefinition{clientTypeName = TypeNameTH namespace typeName} =
-    toType typeName
+mkTypeName ClientTypeDefinition {clientTypeName = TypeNameTH namespace typeName} =
+  toType typeName
   where
     toType = toName . camelCaseTypeName namespace

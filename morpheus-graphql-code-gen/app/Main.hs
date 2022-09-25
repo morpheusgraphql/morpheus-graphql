@@ -6,11 +6,11 @@ module Main
   )
 where
 
+import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as L
   ( readFile,
     writeFile,
   )
-import Data.ByteString.Lazy (ByteString)
 import Data.Char
 import Data.Morpheus.CodeGen
   ( CodeGenConfig (..),
@@ -48,13 +48,13 @@ import qualified Options.Applicative as OA
 import qualified Paths_morpheus_graphql_code_gen as CLI
 import Relude hiding (ByteString)
 import System.FilePath.Posix
-  ( (</>),
-    dropExtensions,
+  ( dropExtensions,
     makeRelative,
     normalise,
     replaceExtensions,
     splitDirectories,
     splitFileName,
+    (</>),
   )
 
 currentVersion :: String

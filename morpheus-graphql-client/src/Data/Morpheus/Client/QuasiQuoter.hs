@@ -21,7 +21,7 @@ notSupported things =
     things
       <> " are not supported by the GraphQL QuasiQuoter"
 
--- | QuasiQuoter to insert multiple lines of text in Haskell 
+-- | QuasiQuoter to insert multiple lines of text in Haskell
 raw :: QuasiQuoter
 raw =
   QuasiQuoter

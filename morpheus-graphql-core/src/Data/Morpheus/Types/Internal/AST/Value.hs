@@ -34,12 +34,12 @@ where
 
 -- MORPHEUS
 import qualified Data.Aeson as A
-  ( (.=),
-    FromJSON (..),
+  ( FromJSON (..),
     ToJSON (..),
     Value (..),
     object,
     pairs,
+    (.=),
   )
 import Data.Foldable (foldr')
 import Data.Mergeable

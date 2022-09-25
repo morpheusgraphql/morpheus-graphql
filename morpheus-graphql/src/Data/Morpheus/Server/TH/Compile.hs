@@ -10,8 +10,8 @@ where
 --
 --  Morpheus
 
-import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.ByteString.Lazy.Char8 (ByteString)
+import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Morpheus.CodeGen
   ( parseServerTypeDefinitions,
   )
