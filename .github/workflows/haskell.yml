@@ -51,23 +51,14 @@ jobs:
       - uses: actions/checkout@v1
       - name: lint
         run: make lint
+
   format:
-    strategy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: haskell/actions/setup@v1.2
-      - uses: actions/cache@v2
+      - uses: mrkkrp/ormolu-action@v7
         with:
-          path: ~/.stack
-          key: stack-format-with-ormolu
-      - name: Install Ormolu
-        run: |
-          cabal install ormolu
-
-      - name: format
-        run: |
-          make format
+          pattern: morpheus-graphql*/**/*.hs
 
 concurrency:
   group: ${{ github.ref }}

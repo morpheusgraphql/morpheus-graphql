@@ -17,10 +17,10 @@ lint:
 	curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s .
 
 format:
-	ormolu --mode check $(find . -name '*.hs')
+	ormolu --mode check $(find . -name 'morpheus-graphql*/**/*.hs')
 
 format-fix:
- 	ormolu --mode inplace $(git ls-files '*.hs')
+ 	ormolu --mode inplace $(git ls-files 'morpheus-graphql*/**/*.hs')
 
 samples:
 	stack clean morpheus-graphql-code-gen
