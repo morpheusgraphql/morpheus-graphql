@@ -48,9 +48,11 @@ const format = async ({ fix }: { fix: boolean }) => {
       exec(
         `${binary} --color=always --no-cabal --check-idempotence --mode=check ${files}`
       );
+      stdout.write("OK");
     }
   } catch (e) {
     stdout.write(e.message);
+    exec(`rm -rf ./formatter`);
     exit(1);
   }
 
