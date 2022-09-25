@@ -24,6 +24,7 @@ data-files:
     test/Feature/Collision/category-collision-fail/query.gql
     test/Feature/Collision/category-collision-success/query.gql
     test/Feature/Collision/name-collision/query.gql
+    test/Feature/Directive/definition/introspection/query.gql
     test/Feature/Holistic/holistic/arguments/nameConflict/query.gql
     test/Feature/Holistic/holistic/arguments/undefinedArgument/query.gql
     test/Feature/Holistic/holistic/arguments/unknownArguments/query.gql
@@ -236,6 +237,7 @@ data-files:
     test/Feature/Collision/category-collision-fail/response.json
     test/Feature/Collision/category-collision-success/response.json
     test/Feature/Collision/name-collision/response.json
+    test/Feature/Directive/definition/introspection/response.json
     test/Feature/Holistic/holistic/arguments/nameConflict/response.json
     test/Feature/Holistic/holistic/arguments/undefinedArgument/response.json
     test/Feature/Holistic/holistic/arguments/unknownArguments/response.json
@@ -486,16 +488,23 @@ library
       Data.Morpheus.Server.Deriving.Schema.Union
       Data.Morpheus.Server.Deriving.Utils
       Data.Morpheus.Server.Deriving.Utils.Decode
+      Data.Morpheus.Server.Deriving.Utils.DeriveGType
       Data.Morpheus.Server.Deriving.Utils.GTraversable
       Data.Morpheus.Server.Deriving.Utils.Kinded
+      Data.Morpheus.Server.Deriving.Utils.Proxy
+      Data.Morpheus.Server.Deriving.Utils.Types
       Data.Morpheus.Server.Playground
       Data.Morpheus.Server.TH.Compile
       Data.Morpheus.Server.TH.Declare
       Data.Morpheus.Server.TH.Declare.GQLType
       Data.Morpheus.Server.TH.Declare.Type
       Data.Morpheus.Server.TH.Utils
+      Data.Morpheus.Server.Types.CustomDirectives
+      Data.Morpheus.Server.Types.Directives
       Data.Morpheus.Server.Types.GQLType
+      Data.Morpheus.Server.Types.Internal
       Data.Morpheus.Server.Types.SchemaT
+      Data.Morpheus.Server.Types.TypeName
       Data.Morpheus.Server.Types.Types
       Paths_morpheus_graphql
   hs-source-dirs:
@@ -526,6 +535,7 @@ test-suite morpheus-graphql-test
       Feature.Collision.CategoryCollisionSuccess
       Feature.Collision.NameCollision
       Feature.Collision.NameCollisionHelper
+      Feature.Directive.Definition
       Feature.Holistic.API
       Feature.Inference.ObjectAndEnum
       Feature.Inference.TaggedArguments

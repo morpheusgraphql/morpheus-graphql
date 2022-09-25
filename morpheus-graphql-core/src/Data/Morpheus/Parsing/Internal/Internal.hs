@@ -27,7 +27,6 @@ import Text.Megaparsec
       ( ParseErrorBundle
       ),
     ParsecT,
-    SourcePos,
     SourcePos (..),
     attachSourcePos,
     bundleErrors,

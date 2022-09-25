@@ -173,9 +173,9 @@ genTypeDefinition
               gqlTypeDirectives = getDirs typeDef,
               gqlKind = derivingKind tKind,
               gqlTypeDefaultValues =
-                fromList
-                  $ mapMaybe getDefaultValue
-                  $ getInputFields typeDef
+                fromList $
+                  mapMaybe getDefaultValue $
+                    getInputFields typeDef
             }
       typeParameters
         | isResolverType tKind = ["m"]

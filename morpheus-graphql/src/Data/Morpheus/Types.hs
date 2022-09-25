@@ -11,7 +11,7 @@
 
 -- | GQL Types
 module Data.Morpheus.Types
-  ( GQLType (KIND, description, getDescriptions, typeOptions, getDirectives, defaultValues),
+  ( GQLType (KIND, description, getDescriptions, typeOptions, getDirectives, defaultValues, directiveUsages),
     EncodeScalar (..),
     EncodeWrapper (..),
     DecodeScalar (..),
@@ -65,6 +65,10 @@ module Data.Morpheus.Types
     constructorTagModifier,
     typeNameModifier,
     defaultRootResolver,
+    DirectivePrefix (..),
+    DirectiveUsage (..),
+    GQLDirective (..),
+    Visitor (..),
   )
 where
 
@@ -90,9 +94,14 @@ import Data.Morpheus.NamedResolvers
   ( NamedResolverT (..),
     ResolveNamed (..),
   )
+import Data.Morpheus.Server.Types.CustomDirectives
+import Data.Morpheus.Server.Types.Directives
 import Data.Morpheus.Server.Types.GQLType
-  ( GQLType (..),
-    GQLTypeOptions (..),
+  ( DirectiveUsage (..),
+    GQLType (..),
+  )
+import Data.Morpheus.Server.Types.Internal
+  ( GQLTypeOptions (..),
     defaultTypeOptions,
   )
 import Data.Morpheus.Server.Types.Types

@@ -23,12 +23,11 @@ module Data.Morpheus.Server.Deriving.Schema
   )
 where
 
--- MORPHEUS
-
 import Control.Monad.Except (throwError)
 import Data.Morpheus.App.Internal.Resolving
   ( Resolver,
   )
+import Data.Morpheus.CodeGen.Internal.AST
 import Data.Morpheus.Core (defaultConfig, validateSchema)
 import Data.Morpheus.Internal.Ext
 import Data.Morpheus.Internal.Utils (singleton)
@@ -43,7 +42,6 @@ import Data.Morpheus.Server.Deriving.Schema.Internal
   ( KindedType (..),
     TyContentM,
     fromSchema,
-    updateByContent,
   )
 import Data.Morpheus.Server.Deriving.Schema.Object
   ( asObjectType,
@@ -51,30 +49,37 @@ import Data.Morpheus.Server.Deriving.Schema.Object
   )
 import Data.Morpheus.Server.Deriving.Schema.TypeContent
 import Data.Morpheus.Server.Deriving.Utils
-  ( TypeConstraint (..),
-    TypeRep (..),
-    deriveTypeRef,
+  ( DeriveTypeOptions (..),
+    DeriveWith,
+    deriveTypeWith,
     symbolName,
-    toRep,
     unpackMonad,
-    withKind,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CategoryValue (..),
     KindedProxy (..),
     inputType,
+    kinded,
     outputType,
     setKind,
   )
+import Data.Morpheus.Server.Types.Directives
 import Data.Morpheus.Server.Types.GQLType
-  ( GQLType (..),
-    TypeData (..),
+  ( DeriveArguments (..),
+    DirectiveUsage (DirectiveUsage),
+    GQLType (..),
+    deriveTypename,
+    encodeArguments,
     __typeData,
   )
+import Data.Morpheus.Server.Types.Internal (TypeData (..), defaultTypeOptions)
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
     extendImplements,
+    insertDirectiveDefinition,
+    outToAny,
     toSchema,
+    updateSchema,
     withInput,
   )
 import Data.Morpheus.Server.Types.Types
@@ -86,15 +91,18 @@ import Data.Morpheus.Types.GQLScalar
     scalarValidator,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( ArgumentsDefinition,
-    CONST,
+  ( Directive (..),
+    DirectiveDefinition (..),
+    Directives,
     FieldContent (..),
+    FieldName,
     FieldsDefinition,
     IN,
     LEAF,
     MUTATION,
     OBJECT,
     OUT,
+    Position (Position),
     QUERY,
     SUBSCRIPTION,
     Schema (..),
@@ -102,12 +110,11 @@ import Data.Morpheus.Types.Internal.AST
     TypeCategory,
     TypeContent (..),
     TypeDefinition (..),
-    TypeName,
     UnionMember (memberName),
     fieldsToArguments,
     mkField,
   )
-import GHC.Generics (Rep)
+import GHC.Generics
 import GHC.TypeLits
 import Language.Haskell.TH (Exp, Q)
 import Relude
@@ -119,10 +126,8 @@ type SchemaConstraints event (m :: Type -> Type) query mutation subscription =
   )
 
 type DeriveTypeConstraintOpt kind a =
-  ( Generic a,
-    GQLType a,
-    TypeRep (DeriveType kind) (TyContentM kind) (Rep a),
-    TypeRep (DeriveType kind) (SchemaT kind ()) (Rep a)
+  ( GQLType a,
+    DeriveWith (DeriveWithConstraint kind) (TyContentM kind) (Rep a)
   )
 
 -- | normal morpheus server validates schema at runtime (after the schema derivation).
@@ -182,7 +187,6 @@ type DeriveTypeConstraint kind a =
     CategoryValue kind
   )
 
--- SCALAR
 instance (GQLType a, DeriveType cat a) => DeriveKindedType cat WRAPPER (f a) where
   deriveKindedType _ = deriveType (KindedProxy :: KindedProxy cat a)
 
@@ -198,7 +202,6 @@ instance DeriveTypeConstraint IN a => DeriveKindedType IN TYPE a where
 instance DeriveType cat a => DeriveKindedType cat CUSTOM (Resolver o e m a) where
   deriveKindedType _ = deriveType (Proxy @a)
 
--- Map
 instance DeriveType cat [(k, v)] => DeriveKindedType cat CUSTOM (Map k v) where
   deriveKindedType _ = deriveType (Proxy @[(k, v)])
 
@@ -215,14 +218,14 @@ instance
     extendImplements interfaceName unionNames
     where
       interfaceName :: TypeName
-      interfaceName = gqlTypeName (__typeData interfaceProxy)
+      interfaceName = deriveTypename interfaceProxy
       interfaceProxy :: KindedProxy OUT interface
       interfaceProxy = KindedProxy
       unionProxy :: KindedProxy OUT union
       unionProxy = KindedProxy
       getUnionNames :: TypeContent TRUE OUT CONST -> SchemaT OUT [TypeName]
       getUnionNames DataUnion {unionMembers} = pure $ toList $ memberName <$> unionMembers
-      getUnionNames DataObject {} = pure [gqlTypeName (__typeData unionProxy)]
+      getUnionNames DataObject {} = pure [deriveTypename unionProxy]
       getUnionNames _ = throwError "guarded type must be an union or object"
 
 instance
@@ -233,7 +236,7 @@ instance
   DeriveKindedType OUT CUSTOM (a -> b)
   where
   deriveKindedContent _ = do
-    a <- deriveArgumentsDefinition (withKind (Proxy @a))
+    a <- deriveArgumentsDefinition (KindedProxy :: KindedProxy (KIND a) a)
     b <- deriveKindedContent (KindedProxy :: KindedProxy (KIND b) b)
     case b of
       Just (FieldArgs x) -> Just . FieldArgs <$> (a <:> x)
@@ -246,9 +249,6 @@ deriveScalarContent = pure . DataScalar . scalarValidator
 deriveInterfaceContent :: DeriveTypeConstraint OUT a => f a -> SchemaT OUT (TypeContent TRUE OUT CONST)
 deriveInterfaceContent = fmap DataInterface . deriveFields . outputType
 
-class DeriveArguments (k :: DerivingKind) a where
-  deriveArgumentsDefinition :: f k a -> SchemaT OUT (ArgumentsDefinition CONST)
-
 instance DeriveTypeConstraint IN a => DeriveArguments TYPE a where
   deriveArgumentsDefinition = withInput . fmap fieldsToArguments . deriveFields . inputType
 
@@ -260,7 +260,8 @@ instance (KnownSymbol name, DeriveType IN a, GQLType a) => DeriveArguments CUSTO
       proxy :: KindedProxy IN a
       proxy = KindedProxy
       argName = symbolName (Proxy @name)
-      argTypeRef = deriveTypeRef proxy
+      argTypeRef = TypeRef {typeConName = gqlTypeName, typeWrappers = gqlWrappers}
+      TypeData {gqlTypeName, gqlWrappers} = __typeData proxy
 
 deriveFields :: DeriveTypeConstraint kind a => KindedType kind a -> SchemaT kind (FieldsDefinition kind CONST)
 deriveFields kindedType = deriveTypeContent kindedType >>= withObject kindedType
@@ -280,14 +281,15 @@ deriveMaybeRoot proxy
     pure Nothing
   | otherwise = Just <$> asObjectType (deriveFields . outputType) proxy
 
-fieldContentConstraint :: f kind a -> TypeConstraint (DeriveType kind) (TyContentM kind) Proxy
-fieldContentConstraint _ = TypeConstraint deriveFieldContent
-
 deriveFieldContent :: forall f kind a. (DeriveType kind a) => f a -> TyContentM kind
 deriveFieldContent _ = deriveType kindedProxy *> deriveContent kindedProxy
   where
     kindedProxy :: KindedProxy kind a
     kindedProxy = KindedProxy
+
+class (GQLType a, DeriveType k a) => DeriveWithConstraint k a
+
+instance (GQLType a, DeriveType k a) => DeriveWithConstraint k a
 
 deriveTypeContent ::
   forall kind a.
@@ -296,5 +298,84 @@ deriveTypeContent ::
   SchemaT kind (TypeContent TRUE kind CONST)
 deriveTypeContent kindedProxy =
   unpackMonad
-    (toRep (fieldContentConstraint kindedProxy) kindedProxy)
+    ( deriveTypeWith
+        ( DeriveTypeDefinitionOptions
+            { __typeGQLOptions = typeOptions (Proxy @a) defaultTypeOptions,
+              __typeGetType = __typeData . kinded (Proxy @kind),
+              __typeApply = deriveFieldContent
+            } ::
+            DeriveTypeOptions kind (DeriveWithConstraint kind) (TyContentM kind)
+        )
+        kindedProxy
+    )
     >>= buildTypeContent kindedProxy
+
+type DirectiveDefinitionConstraint a =
+  ( GQLDirective a,
+    GQLType a,
+    DeriveArguments (KIND a) a,
+    ToLocations (ALLOWED_DIRECTIVE_LOCATIONS a)
+  )
+
+deriveDirectiveDefinition ::
+  forall a b kind.
+  (DirectiveDefinitionConstraint a) =>
+  a ->
+  b ->
+  SchemaT kind (VisitorFunction, DirectiveDefinition CONST)
+deriveDirectiveDefinition _ _ = do
+  directiveDefinitionArgs <- outToAny (deriveArgumentsDefinition (KindedProxy :: KindedProxy (KIND a) a))
+  pure
+    ( VisitorFunction {},
+      DirectiveDefinition
+        { directiveDefinitionName = __directiveName (Proxy @a),
+          directiveDefinitionDescription = description (Proxy @a),
+          directiveDefinitionArgs,
+          directiveDefinitionLocations = getLocations (Proxy @a)
+        }
+    )
+
+deriveDirectives :: forall c f a. GQLType a => f a -> SchemaT c (Directives CONST)
+deriveDirectives proxy = unsafeFromList <$> traverse toDirectiveTuple (directiveUsages proxy)
+  where
+    toDirectiveTuple :: DirectiveUsage -> SchemaT c (FieldName, Directive CONST)
+    toDirectiveTuple (DirectiveUsage x) = do
+      insertDirective (deriveDirectiveDefinition x) (KindedProxy :: KindedProxy IN a)
+      let directiveName = coerce $ __directiveName (Identity x)
+      directiveArgs <- resultOr (const $ throwError "TODO: fix me") pure (encodeArguments x)
+      pure
+        ( directiveName,
+          Directive
+            { directivePosition = Position 0 0,
+              directiveName,
+              directiveArgs
+            }
+        )
+
+updateByContent ::
+  (GQLType a, CategoryValue kind) =>
+  (f kind a -> SchemaT c (TypeContent TRUE kind CONST)) ->
+  f kind a ->
+  SchemaT c ()
+updateByContent f proxy =
+  updateSchema
+    (gqlFingerprint $ __typeData proxy)
+    deriveD
+    proxy
+  where
+    deriveD x = do
+      content <- f x
+      directives <- deriveDirectives proxy
+      pure $
+        TypeDefinition
+          (description proxy)
+          (gqlTypeName (__typeData proxy))
+          directives
+          content
+
+insertDirective ::
+  (GQLType a, CategoryValue kind) =>
+  (f kind a -> SchemaT c (VisitorFunction, DirectiveDefinition CONST)) ->
+  f kind a ->
+  SchemaT c ()
+insertDirective f proxy = insertDirectiveDefinition (gqlFingerprint $ __typeData proxy) f proxy

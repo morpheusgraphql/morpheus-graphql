@@ -194,13 +194,13 @@ validateSelection typeDef Selection {..} =
               }
       pure $ singleton (keyOf selection) selection
 validateSelection typeDef (Spread dirs ref) =
-  processSelectionDirectives FRAGMENT_SPREAD dirs
-    $ const
-    $ validateSpreadSelection typeDef ref
+  processSelectionDirectives FRAGMENT_SPREAD dirs $
+    const $
+      validateSpreadSelection typeDef ref
 validateSelection typeDef (InlineFragment fragment@Fragment {fragmentDirectives}) =
-  processSelectionDirectives INLINE_FRAGMENT fragmentDirectives
-    $ const
-    $ validateInlineFragmentSelection typeDef fragment
+  processSelectionDirectives INLINE_FRAGMENT fragmentDirectives $
+    const $
+      validateInlineFragmentSelection typeDef fragment
 
 validateSpreadSelection ::
   ValidateFragmentSelection s =>
@@ -298,8 +298,8 @@ validateByTypeContent
           validateSelectionSet
           (TypeDefinition {typeContent = DataInterface {..}, ..})
       __validate _ =
-        const
-          $ throwError
-          $ hasNoSubfields
-            currentSelectionRef
-            typeDef
+        const $
+          throwError $
+            hasNoSubfields
+              currentSelectionRef
+              typeDef

@@ -29,8 +29,8 @@ import Data.Morpheus.App.Internal.Resolving.Types
     mkNull,
     mkObjectMaybe,
   )
-import qualified Data.Morpheus.Internal.Utils as U
 import Data.Morpheus.Internal.Utils (selectOr, toAssoc)
+import qualified Data.Morpheus.Internal.Utils as U
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     GQLError,

@@ -25,7 +25,6 @@ import Control.Monad.Except (MonadError (..))
 import qualified Data.List.NonEmpty as NE
 import Data.Morpheus.Types.Internal.AST.Error
   ( GQLError (..),
-    GQLError,
   )
 import Data.Text.Lazy.Builder ()
 import Relude

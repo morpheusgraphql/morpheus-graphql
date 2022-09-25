@@ -11,6 +11,7 @@ import Data.Morpheus.Types (GQLRequest (..), GQLResponse (..))
 import qualified Feature.Collision.CategoryCollisionFail as TypeCategoryCollisionFail
 import qualified Feature.Collision.CategoryCollisionSuccess as TypeCategoryCollisionSuccess
 import qualified Feature.Collision.NameCollision as NameCollision
+import qualified Feature.Directive.Definition as DirectiveDefinition
 import qualified Feature.Holistic.API as Holistic
 import qualified Feature.Inference.ObjectAndEnum as ObjectAndEnum
 import qualified Feature.Inference.TaggedArguments as TaggedArguments
@@ -83,6 +84,10 @@ main =
           (TaggedArguments.api, "tagged-arguments"),
           (TaggedArgumentsFail.api, "tagged-arguments-fail"),
           (ObjectAndEnum.api, "object-and-enum")
+        ],
+      testFeatures
+        "Directive"
+        [ (DirectiveDefinition.api, "definition")
         ],
       testFeatures
         "Holistic"

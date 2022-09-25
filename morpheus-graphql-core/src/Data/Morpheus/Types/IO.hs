@@ -14,11 +14,11 @@ module Data.Morpheus.Types.IO
 where
 
 import Data.Aeson
-  ( (.=),
-    FromJSON (..),
+  ( FromJSON (..),
     ToJSON (..),
     object,
     pairs,
+    (.=),
   )
 import qualified Data.Aeson as Aeson
   ( Value (..),
@@ -32,7 +32,6 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     GQLError (..),
-    GQLError,
     ValidValue,
   )
 import Relude hiding

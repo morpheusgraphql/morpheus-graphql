@@ -28,10 +28,9 @@ import Data.Morpheus.App.Internal.Resolving.Types
     mkUnion,
   )
 import Data.Morpheus.Error (subfieldsNotSelected)
-import Data.Morpheus.Internal.Utils ((<:>), KeyOf (keyOf), selectOr, traverseCollection)
+import Data.Morpheus.Internal.Utils (KeyOf (keyOf), selectOr, traverseCollection, (<:>))
 import Data.Morpheus.Types.Internal.AST
   ( GQLError,
-    GQLError,
     Msg (msg),
     ObjectEntry (ObjectEntry),
     ScalarValue (..),
@@ -42,8 +41,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeName,
     UnionTag (unionTagSelection),
     VALID,
-    VALID,
-    ValidValue,
     ValidValue,
     Value (..),
     internal,
@@ -137,9 +134,10 @@ resolveObject rmap drv =
   where
     resolver currentSelection = do
       t <- askFieldTypeName (selectionName currentSelection)
-      updateCurrentType t $ local (\ctx -> ctx {currentSelection}) $
-        ObjectEntry (keyOf currentSelection)
-          <$> runFieldResolver rmap currentSelection drv
+      updateCurrentType t $
+        local (\ctx -> ctx {currentSelection}) $
+          ObjectEntry (keyOf currentSelection)
+            <$> runFieldResolver rmap currentSelection drv
 
 runFieldResolver ::
   ( Monad m,

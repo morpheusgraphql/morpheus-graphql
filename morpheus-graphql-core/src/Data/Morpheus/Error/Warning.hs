@@ -21,7 +21,6 @@ import Data.Morpheus.Types.Internal.AST.Error
     GQLErrors,
     at,
     msg,
-    msg,
   )
 import Data.Morpheus.Types.Internal.AST.Name
   ( FieldName,

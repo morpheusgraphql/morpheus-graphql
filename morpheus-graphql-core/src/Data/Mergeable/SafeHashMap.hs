@@ -25,10 +25,10 @@ import Data.Mergeable
   ( Merge (..),
     NameCollision (..),
   )
-import Data.Mergeable.IsMap (IsMap)
+import Data.Mergeable.IsMap (FromList (..), IsMap)
 import Data.Morpheus.Ext.Empty (Empty)
 import Language.Haskell.TH.Syntax (Lift (..))
-import Relude
+import Relude hiding (fromList)
 
 newtype SafeHashMap k a = SafeHashMap
   { unpackSafeHashMap :: HashMap k a
@@ -57,3 +57,13 @@ instance (Lift a, Lift k, Eq k, Hashable k) => Lift (SafeHashMap k a) where
 
 instance (NameCollision e a, Monad m, Hashable k, Eq k, MonadError e m) => Merge m (SafeHashMap k a) where
   merge (SafeHashMap x) (SafeHashMap y) = SafeHashMap <$> merge x y
+
+instance
+  ( Hashable k,
+    Eq k,
+    NameCollision e a,
+    MonadError e m
+  ) =>
+  FromList m SafeHashMap k a
+  where
+  fromList xs = SafeHashMap <$> fromList xs

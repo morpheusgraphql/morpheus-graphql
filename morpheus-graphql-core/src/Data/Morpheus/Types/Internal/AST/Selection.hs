@@ -44,10 +44,10 @@ import Data.Morpheus.Error.Operation
     subscriptionIsNotDefined,
   )
 import Data.Morpheus.Internal.Utils
-  ( (<:>),
-    HistoryT,
+  ( HistoryT,
     KeyOf (..),
     addPath,
+    (<:>),
   )
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),

@@ -36,9 +36,6 @@ import Data.Morpheus.Internal.Utils
   ( empty,
     fromElems,
   )
-import qualified Data.Morpheus.Types.Internal.AST as AST
-  ( Schema,
-  )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     ArgumentDefinition (..),
@@ -65,6 +62,9 @@ import Data.Morpheus.Types.Internal.AST
     mkUnionContent,
     msg,
     toAny,
+  )
+import qualified Data.Morpheus.Types.Internal.AST as AST
+  ( Schema,
   )
 import Relude hiding
   ( ByteString,

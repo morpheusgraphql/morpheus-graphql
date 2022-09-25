@@ -302,15 +302,16 @@ setDBAddress = do
 setDBUser :: IO (Either String (User (Resolver MUTATION EVENT IO)))
 setDBUser = do
   Person {name, email} <- dbPerson
-  pure $ Right $
-    User
-      { userName = pure name,
-        userEmail = pure email,
-        userAddress = const $ lift setDBAddress,
-        userOffice = constRes Nothing,
-        userHome = pure CityIDHH,
-        userEntity = pure []
-      }
+  pure $
+    Right $
+      User
+        { userName = pure name,
+          userEmail = pure email,
+          userAddress = const $ lift setDBAddress,
+          userOffice = constRes Nothing,
+          userHome = pure CityIDHH,
+          userEntity = pure []
+        }
 
 -- DB ----------------------
 data Person = Person

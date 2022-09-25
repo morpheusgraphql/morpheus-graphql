@@ -9,7 +9,7 @@ import Data.Morpheus (App, runApp)
 import Data.Morpheus.Server (httpPlayground)
 import Data.Semigroup ((<>))
 import Web.Scotty
-import Prelude (($), (.), (=<<), IO, Monad)
+import Prelude (IO, Monad, ($), (.), (=<<))
 
 mainApp :: (Typeable m, Monad m) => App () m
 mainApp = P.app <> U.app

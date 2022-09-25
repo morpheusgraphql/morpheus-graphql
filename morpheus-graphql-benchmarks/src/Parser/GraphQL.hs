@@ -10,8 +10,8 @@ where
 import qualified Data.ByteString.Lazy as L (readFile)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Foldable (toList)
-import qualified Data.Text as T
 import Data.Text (Text)
+import qualified Data.Text as T
 import qualified Language.GraphQL.AST as GQL
 import Text.Megaparsec (runParser)
 

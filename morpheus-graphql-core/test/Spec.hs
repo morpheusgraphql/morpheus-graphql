@@ -19,7 +19,7 @@ import Data.Morpheus.Internal.Ext
   )
 import Data.Morpheus.Types.IO (GQLRequest)
 import Data.Morpheus.Types.Internal.AST (GQLError, Schema, VALID)
-import Relude ((.), Either, Functor (fmap), IO, NonEmpty, map)
+import Relude (Either, Functor (fmap), IO, NonEmpty, map, (.))
 import Test.Morpheus
   ( FileUrl,
     cd,

@@ -8,8 +8,8 @@ import Criterion.Types
 import qualified Data.ByteString.Lazy as L (readFile)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Foldable (toList)
-import qualified Data.Text as T
 import Data.Text (Text)
+import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 import Parser.GraphQL as GQL
 import Parser.Morpheus as Morpheus

@@ -18,8 +18,8 @@ module Test.Morpheus.File
   )
 where
 
-import qualified Data.ByteString.Lazy.Char8 as L
 import Data.ByteString.Lazy.Char8 (ByteString)
+import qualified Data.ByteString.Lazy.Char8 as L
 import Data.List
 import qualified Data.Text.IO as T
 import Relude hiding (ByteString)

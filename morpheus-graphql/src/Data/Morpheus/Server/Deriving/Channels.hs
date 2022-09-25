@@ -29,18 +29,22 @@ import Data.Morpheus.Internal.Utils
   ( selectBy,
   )
 import Data.Morpheus.Server.Deriving.Decode
-  ( DecodeConstraint,
+  ( Decode,
     decodeArguments,
   )
 import Data.Morpheus.Server.Deriving.Utils
   ( ConsRep (..),
     DataType (..),
     FieldRep (..),
-    TypeConstraint (..),
-    TypeRep (..),
-    toValue,
   )
-import Data.Morpheus.Server.Types.GQLType (GQLType)
+import Data.Morpheus.Server.Deriving.Utils.DeriveGType
+  ( DeriveValueOptions (..),
+    DeriveWith,
+    deriveValue,
+  )
+import Data.Morpheus.Server.Deriving.Utils.Kinded (KindedProxy (..), kinded)
+import Data.Morpheus.Server.Types.GQLType (GQLType (typeOptions), deriveTypename, __typeData)
+import Data.Morpheus.Server.Types.Internal (defaultTypeOptions)
 import Data.Morpheus.Server.Types.Types (Undefined)
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
@@ -112,7 +116,7 @@ instance GetChannel e (SubscriptionField (Resolver SUBSCRIPTION e m a)) where
   getChannel x = const $ pure $ DerivedChannel $ channel x
 
 instance
-  DecodeConstraint arg =>
+  Decode arg =>
   GetChannel e (arg -> SubscriptionField (Resolver SUBSCRIPTION e m a))
   where
   getChannel f sel@Selection {selectionArguments} =
@@ -129,14 +133,23 @@ type family IsUndefined a :: Bool where
 class ExploreChannels (t :: Bool) e a where
   exploreChannels :: f t -> a -> HashMap FieldName (ChannelRes e)
 
-instance (GQLType a, Generic a, TypeRep (GetChannel e) (ChannelRes e) (Rep a)) => ExploreChannels 'False e a where
+class (GQLType a, GetChannel e a) => ChannelConstraint e a
+
+instance (GetChannel e a, GQLType a) => ChannelConstraint e a
+
+instance (GQLType a, Generic a, DeriveWith (ChannelConstraint e) (ChannelRes e) (Rep a)) => ExploreChannels 'False e a where
   exploreChannels _ =
     HM.fromList
       . convertNode
-      . toValue
-        ( TypeConstraint (getChannel . runIdentity) :: TypeConstraint (GetChannel e) (ChannelRes e) Identity
+      . deriveValue
+        ( DeriveValueOptions
+            { __valueApply = getChannel,
+              __valueTypeName = deriveTypename (KindedProxy :: KindedProxy OUT a),
+              __valueGQLOptions = typeOptions (Proxy @a) defaultTypeOptions,
+              __valueGetType = __typeData . kinded (Proxy @OUT)
+            } ::
+            DeriveValueOptions OUT (ChannelConstraint e) (ChannelRes e)
         )
-        (Proxy @OUT)
 
 instance ExploreChannels 'True e (Undefined m) where
   exploreChannels _ = pure HM.empty

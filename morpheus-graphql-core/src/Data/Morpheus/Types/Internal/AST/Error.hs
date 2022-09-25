@@ -79,9 +79,8 @@ atPositions GQLError {..} pos = case toList pos of
   posList -> GQLError {locations = locations <> Just posList, ..}
 {-# INLINE atPositions #-}
 
-
 withExtensions :: GQLError -> Map Text Value -> GQLError
-withExtensions gqlerr ext = gqlerr { extensions = Just ext }
+withExtensions gqlerr ext = gqlerr {extensions = Just ext}
 
 withPath :: GQLError -> [PropName] -> GQLError
 withPath err [] = err

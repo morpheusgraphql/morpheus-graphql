@@ -19,6 +19,7 @@ module Data.Morpheus.Server.Deriving.Named.EncodeValue
     Encode,
     getTypeName,
     encodeResolverValue,
+    FieldConstraint,
   )
 where
 
@@ -48,7 +49,7 @@ import Data.Morpheus.NamedResolvers
     ResolveNamed (..),
   )
 import Data.Morpheus.Server.Deriving.Decode
-  ( DecodeConstraint,
+  ( Decode,
     decodeArguments,
   )
 import Data.Morpheus.Server.Deriving.Encode
@@ -58,16 +59,24 @@ import Data.Morpheus.Server.Deriving.Utils
   ( ConsRep (..),
     DataType (..),
     FieldRep (..),
-    TypeConstraint (..),
-    TypeRep (..),
     toFieldRes,
-    toValue,
   )
+import Data.Morpheus.Server.Deriving.Utils.DeriveGType
+  ( DeriveValueOptions (..),
+    DeriveWith,
+    deriveValue,
+  )
+import Data.Morpheus.Server.Deriving.Utils.Kinded
 import Data.Morpheus.Server.Types.GQLType
-  ( GQLType (__type),
+  ( GQLType (typeOptions, __type),
     KIND,
-    TypeData (gqlTypeName),
+    deriveTypename,
+    __typeData,
   )
+import Data.Morpheus.Server.Types.Internal
+  ( TypeData (gqlTypeName),
+  )
+import Data.Morpheus.Types (defaultTypeOptions)
 import Data.Morpheus.Types.GQLScalar
   ( EncodeScalar (..),
   )
@@ -91,7 +100,7 @@ encodeResolverValue = convertNamedNode . getFieldValues
 type FieldConstraint m a =
   ( GQLType a,
     Generic a,
-    TypeRep (Encode m) (m (ResolverValue m)) (Rep a)
+    DeriveWith (GValueMapConstraint m) (m (ResolverValue m)) (Rep a)
   )
 
 class Encode (m :: Type -> Type) res where
@@ -134,7 +143,7 @@ instance
       encodeRef (Refs refs) = mkList . map (ResRef . pure . NamedResolverRef name . replaceValue . toJSON) <$> refs
 
 instance
-  ( DecodeConstraint a,
+  ( Decode a,
     Generic a,
     Monad m,
     Encode (Resolver o e m) b,
@@ -147,13 +156,21 @@ instance
       >>= liftResolverState . decodeArguments
       >>= encodeField . f
 
-getFieldValues :: FieldConstraint m a => a -> DataType (m (ResolverValue m))
+class (Encode m a, GQLType a) => GValueMapConstraint m a
+
+instance (Encode m a, GQLType a) => GValueMapConstraint m a
+
+getFieldValues :: forall m a. FieldConstraint m a => a -> DataType (m (ResolverValue m))
 getFieldValues =
-  toValue
-    ( TypeConstraint (encodeField . runIdentity) ::
-        TypeConstraint (Encode m) (m (ResolverValue m)) Identity
+  deriveValue
+    ( DeriveValueOptions
+        { __valueApply = encodeField,
+          __valueTypeName = deriveTypename (KindedProxy :: KindedProxy OUT a),
+          __valueGQLOptions = typeOptions (Proxy @a) defaultTypeOptions,
+          __valueGetType = __typeData . kinded (Proxy @OUT)
+        } ::
+        DeriveValueOptions OUT (GValueMapConstraint m) (m (ResolverValue m))
     )
-    (Proxy @OUT)
 
 convertNamedNode ::
   MonadError GQLError m =>

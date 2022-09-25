@@ -51,6 +51,7 @@ module Data.Morpheus.Types.Internal.AST.TypeSystem
     isPossibleInterfaceType,
     typeDefinitions,
     lookupDataType,
+    defineDirective,
   )
 where
 
@@ -227,7 +228,8 @@ instance
       <*> mergeOperation (query s1) (query s2)
       <*> mergeOptional (mutation s1) (mutation s2)
       <*> mergeOptional (subscription s1) (subscription s2)
-      <*> directiveDefinitions s1 <:> directiveDefinitions s2
+      <*> directiveDefinitions s1
+      <:> directiveDefinitions s2
 
 mergeOptional ::
   (Monad m, MonadError GQLError m) =>
@@ -640,6 +642,17 @@ defineType ::
 defineType datatype lib = updateTypes <$> insert (toAny datatype) (types lib)
   where
     updateTypes types = lib {types}
+
+defineDirective ::
+  ( Monad m,
+    MonadError GQLError m
+  ) =>
+  Schema s ->
+  DirectiveDefinition s ->
+  m (Schema s)
+defineDirective schema directive = updateTypes <$> insert directive (directiveDefinitions schema)
+  where
+    updateTypes directiveDefinitions = schema {directiveDefinitions}
 
 lookupWith :: Eq k => (a -> k) -> k -> [a] -> Maybe a
 lookupWith f key = find ((== key) . f)

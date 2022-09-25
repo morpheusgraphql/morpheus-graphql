@@ -10,9 +10,9 @@ import Data.Morpheus.Subscriptions
   ( webSocketsApp,
   )
 import Servant
-  ( (:<|>) (..),
-    Proxy (..),
+  ( Proxy (..),
     Server,
+    (:<|>) (..),
   )
 import Server.API.Simple
   ( EVENT,

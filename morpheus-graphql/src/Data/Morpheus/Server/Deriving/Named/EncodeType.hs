@@ -23,7 +23,6 @@ import Data.Morpheus.App.Internal.Resolving
     NamedResolver (..),
     Resolver,
     ResolverState,
-    ResolverValue,
     liftResolverState,
   )
 import Data.Morpheus.Kind
@@ -35,16 +34,14 @@ import Data.Morpheus.Kind
   )
 import Data.Morpheus.NamedResolvers (NamedResolverT (..), ResolveNamed (Dep, resolveNamed))
 import Data.Morpheus.Server.Deriving.Decode
-  ( Decode (decode),
+  ( Decode,
+    decode,
   )
 import Data.Morpheus.Server.Deriving.Named.EncodeValue
-  ( Encode,
-    EncodeFieldKind,
+  ( EncodeFieldKind,
+    FieldConstraint,
     encodeResolverValue,
     getTypeName,
-  )
-import Data.Morpheus.Server.Deriving.Utils
-  ( TypeRep (..),
   )
 import Data.Morpheus.Server.Deriving.Utils.GTraversable
 import Data.Morpheus.Server.Deriving.Utils.Kinded (KindedProxy (KindedProxy))
@@ -54,9 +51,6 @@ import Data.Morpheus.Server.Types.GQLType
   )
 import Data.Morpheus.Types.Internal.AST
   ( ValidValue,
-  )
-import GHC.Generics
-  ( Generic (..),
   )
 import Relude
 
@@ -89,7 +83,7 @@ instance
     EncodeFieldKind (KIND a) (Resolver o e m) a,
     Decode (Dep a),
     ResolveNamed (Resolver o e m) a,
-    TypeRep (Encode (Resolver o e m)) (Resolver o e m (ResolverValue (Resolver o e m))) (Rep a)
+    FieldConstraint (Resolver o e m) a
   ) =>
   DeriveNamedResolver (Resolver o e m) TYPE (a :: Type)
   where

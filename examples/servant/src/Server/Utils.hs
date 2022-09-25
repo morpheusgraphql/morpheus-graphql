@@ -55,9 +55,7 @@ import Network.WebSockets
     defaultConnectionOptions,
   )
 import Servant
-  ( (:<|>) (..),
-    (:>),
-    Accept (..),
+  ( Accept (..),
     Get,
     HasServer,
     JSON,
@@ -67,6 +65,8 @@ import Servant
     ReqBody,
     Server,
     serve,
+    (:<|>) (..),
+    (:>),
   )
 import Prelude
 

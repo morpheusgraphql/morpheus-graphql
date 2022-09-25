@@ -50,9 +50,9 @@ data Indexed k a = Indexed
 
 fromListDuplicates :: (Eq k, Hashable k) => [(k, a)] -> [(k, NonEmpty a)]
 fromListDuplicates xs =
-  sortedEntries
-    $ HM.elems
-    $ clusterDuplicates (indexed xs) HM.empty
+  sortedEntries $
+    HM.elems $
+      clusterDuplicates (indexed xs) HM.empty
 
 indexed :: [(k, a)] -> [Indexed k a]
 indexed = __indexed 0
