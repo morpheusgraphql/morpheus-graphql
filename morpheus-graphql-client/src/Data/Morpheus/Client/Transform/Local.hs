@@ -76,7 +76,8 @@ toLocalDefinitions ::
 toLocalDefinitions request schema = do
   validOperation <- validateRequest clientConfig schema request
   flip runReaderT (schema, operationArguments $ operation request) $
-    runConverter $ genOperation validOperation
+    runConverter $
+      genOperation validOperation
 
 genOperation :: Operation VALID -> Converter (FetchDefinition, [ClientTypeDefinition])
 genOperation op@Operation {operationName, operationSelection, operationType} = do
@@ -161,8 +162,8 @@ subTypesBySelection path dType Selection {selectionContent = UnionSelection inte
           { clientTypeName = TypeNameTH path (typeFrom [] dType),
             clientCons,
             clientKind = KindUnion
-          } :
-        concat subTypes
+          }
+          : concat subTypes
       )
 
 getVariantType :: [FieldName] -> UnionTag -> Converter (ClientConstructorDefinition, [ClientTypeDefinition])
@@ -186,14 +187,14 @@ getFieldType
       toFieldDef :: TypeContent TRUE ANY VALID -> Converter (FieldDefinition OUT VALID)
       toFieldDef _
         | selectionName == "__typename" =
-          pure
-            FieldDefinition
-              { fieldName = "__typename",
-                fieldDescription = Nothing,
-                fieldType = mkTypeRef "String",
-                fieldDirectives = empty,
-                fieldContent = Nothing
-              }
+            pure
+              FieldDefinition
+                { fieldName = "__typename",
+                  fieldDescription = Nothing,
+                  fieldType = mkTypeRef "String",
+                  fieldDirectives = empty,
+                  fieldContent = Nothing
+                }
       toFieldDef DataObject {objectFields} = selectBy selError selectionName objectFields
       toFieldDef DataInterface {interfaceFields} = selectBy selError selectionName interfaceFields
       toFieldDef dt = throwError (compileError $ "Type should be output Object \"" <> msg (show dt))

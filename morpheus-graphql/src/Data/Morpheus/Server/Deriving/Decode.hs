@@ -151,11 +151,11 @@ decideUnion (left, right) name value
   | name `elem` left = L1 <$> decodeRep value
   | name `elem` right = R1 <$> decodeRep value
   | otherwise =
-    throwError $
-      internal $
-        "Constructor \""
-          <> msg name
-          <> "\" could not find in Union"
+      throwError $
+        internal $
+          "Constructor \""
+            <> msg name
+            <> "\" could not find in Union"
 
 traverseUnion ::
   (DecodeRep f, DecodeRep g) =>

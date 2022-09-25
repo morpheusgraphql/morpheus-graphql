@@ -37,7 +37,8 @@ unknownSelectionField :: TypeName -> Ref FieldName -> GQLError
 unknownSelectionField typeName Ref {refName, refPosition} = text `at` refPosition
   where
     text =
-      "Cannot query field " <> msg refName
+      "Cannot query field "
+        <> msg refName
         <> " on type "
         <> msg typeName
         <> "."
@@ -47,6 +48,8 @@ subfieldsNotSelected :: FieldName -> TypeName -> Position -> GQLError
 subfieldsNotSelected fieldName typeName position = text `at` position
   where
     text =
-      "Field " <> msg fieldName <> " of type "
+      "Field "
+        <> msg fieldName
+        <> " of type "
         <> msg typeName
         <> " must have a selection of subfields"

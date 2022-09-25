@@ -191,7 +191,7 @@ unionTypeDefinition typeDescription =
     unionMemberTypes =
       lift . fromElems
         =<< equal
-        *> pipe (mkUnionMember <$> parseTypeName)
+          *> pipe (mkUnionMember <$> parseTypeName)
 {-# INLINEABLE unionTypeDefinition #-}
 
 -- Enums : https://graphql.github.io/graphql-spec/June2018/#sec-Enums
@@ -257,9 +257,9 @@ parseDirectiveDefinition directiveDefinitionDescription =
               *> at
               *> parseName
           )
-        <*> pure directiveDefinitionDescription
-        <*> optionalCollection argumentsDefinition
-        <*> (optional (keyword "repeatable") *> keyword "on" *> pipe parseDirectiveLocation)
+      <*> pure directiveDefinitionDescription
+      <*> optionalCollection argumentsDefinition
+      <*> (optional (keyword "repeatable") *> keyword "on" *> pipe parseDirectiveLocation)
 {-# INLINEABLE parseDirectiveDefinition #-}
 
 -- 3.2 Schema

@@ -78,9 +78,9 @@ renderModuleDefinition
       <> "module"
       <+> pretty moduleName
       <+> "where"
-      <> line
-      <> line
-      <> vsep (map renderImport imports)
-      <> line
-      <> line
-      <> either (error . show) id (renderTypes types)
+        <> line
+        <> line
+        <> vsep (map renderImport imports)
+        <> line
+        <> line
+        <> either (error . show) id (renderTypes types)

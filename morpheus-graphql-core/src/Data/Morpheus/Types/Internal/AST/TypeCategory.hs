@@ -78,16 +78,16 @@ type (a :: TypeCategory) <=! (b :: TypeCategory) = a <=? b ~ TRUE
 
 -- <=
 type family (elem :: TypeCategory) <=? (cat :: TypeCategory) :: Bool where
--- leaf
+  -- leaf
   LEAF <=? IN = TRUE
   LEAF <=? OUT = TRUE
--- input
+  -- input
   INPUT_OBJECT <=? IN = TRUE
--- output
+  -- output
   OBJECT <=? IMPLEMENTABLE = TRUE
   OBJECT <=? OUT = TRUE
   IMPLEMENTABLE <=? OUT = TRUE
--- all other cases are false
+  -- all other cases are false
   ANY <=? a = TRUE
   a <=? ANY = TRUE
   a <=? a = TRUE

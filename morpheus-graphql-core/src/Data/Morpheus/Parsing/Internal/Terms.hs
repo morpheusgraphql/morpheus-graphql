@@ -149,8 +149,9 @@ brackets = between (symbol 91) (symbol 93)
 name :: Parser AST.Token
 name =
   label "Name" $
-    fromLBS <$> do
-      (<>) <$> takeWhile1P Nothing isStartChar <*> takeWhileP Nothing isContinueChar
+    fromLBS
+      <$> do
+        (<>) <$> takeWhile1P Nothing isStartChar <*> takeWhileP Nothing isContinueChar
       <* ignoredTokens
   where
     isStartChar x =

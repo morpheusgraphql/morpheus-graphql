@@ -97,10 +97,11 @@ onlyValidateFrag validate f@Fragment {..} =
     fragmentName
     fragmentType
     fragmentPosition
-    <$> validate f <*> validateFragmentDirectives fragmentDirectives
+    <$> validate f
+    <*> validateFragmentDirectives fragmentDirectives
 
 validateFragmentDirectives :: Directives RAW -> FragmentValidator s (Directives VALID)
-validateFragmentDirectives _ = pure empty --TODO: validate fragment directives
+validateFragmentDirectives _ = pure empty -- TODO: validate fragment directives
 
 castFragmentType ::
   Maybe FragmentName ->

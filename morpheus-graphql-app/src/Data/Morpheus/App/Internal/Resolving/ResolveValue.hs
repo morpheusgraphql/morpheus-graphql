@@ -150,8 +150,8 @@ runFieldResolver ::
   m ValidValue
 runFieldResolver rmap Selection {selectionName, selectionContent}
   | selectionName == "__typename" =
-    const (Scalar . String . unpackName <$> asks (typeName . currentType))
+      const (Scalar . String . unpackName <$> asks (typeName . currentType))
   | otherwise =
-    maybe (pure Null) (>>= \x -> resolveSelection rmap x selectionContent)
-      . HM.lookup selectionName
-      . objectFields
+      maybe (pure Null) (>>= \x -> resolveSelection rmap x selectionContent)
+        . HM.lookup selectionName
+        . objectFields

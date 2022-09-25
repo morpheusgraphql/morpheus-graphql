@@ -140,8 +140,10 @@ mkTypeRef typeConName = TypeRef {typeConName, typeWrappers = mkBaseType}
 
 instance Subtyping TypeRef where
   isSubtype t1 t2 =
-    typeConName t1 == typeConName t2
-      && typeWrappers t1 `isSubtype` typeWrappers t2
+    typeConName t1
+      == typeConName t2
+      && typeWrappers t1
+      `isSubtype` typeWrappers t2
 
 instance RenderGQL TypeRef where
   renderGQL TypeRef {typeConName, typeWrappers} = renderWrapper typeWrappers

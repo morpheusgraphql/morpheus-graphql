@@ -73,5 +73,6 @@ optional f xs = " " <> f xs
 
 renderImport :: (Text, [Text]) -> Doc ann
 renderImport (src, ls) =
-  "import" <+> pretty src
-    <> optional (tupled . map pretty) ls
+  "import"
+    <+> pretty src
+      <> optional (tupled . map pretty) ls

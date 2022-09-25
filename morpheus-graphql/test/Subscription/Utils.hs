@@ -125,7 +125,7 @@ expectedResponse :: [ByteString] -> [ByteString] -> IO ()
 expectedResponse expected value
   | expected == value = pure ()
   | otherwise =
-    assertFailure $ "expected: \n " <> show expected <> " \n but got: \n " <> show value
+      assertFailure $ "expected: \n " <> show expected <> " \n but got: \n " <> show value
 
 testResponse :: [ByteString] -> [ByteString] -> TestTree
 testResponse expected =
@@ -144,35 +144,37 @@ inputsAreConsumed =
 storeIsEmpty :: (Show ch) => Store (Event ch con) -> TestTree
 storeIsEmpty cStore
   | null (toList cStore) =
-    testCase "connectionStore: is empty" $ pure ()
+      testCase "connectionStore: is empty" $ pure ()
   | otherwise =
-    testCase "connectionStore: is empty" $
-      assertFailure $
-        " must be empty but "
-          <> show
-            cStore
+      testCase "connectionStore: is empty" $
+        assertFailure $
+          " must be empty but "
+            <> show
+              cStore
 
 storedSingle :: (Show ch) => Store (Event ch con) -> TestTree
 storedSingle cStore
   | length (toList cStore) == 1 =
-    testCase "stored single connection" $ pure ()
+      testCase "stored single connection" $ pure ()
   | otherwise =
-    testCase "stored single connection" $
-      assertFailure $
-        "connectionStore must store single connection"
-          <> show
-            cStore
+      testCase "stored single connection" $
+        assertFailure $
+          "connectionStore must store single connection"
+            <> show
+              cStore
 
 stored :: (Show ch) => Input SUB -> Store (Event ch con) -> TestTree
 stored (InitConnection uuid) cStore
   | isJust (lookup uuid (toList cStore)) =
-    testCase "stored connection" $ pure ()
+      testCase "stored connection" $ pure ()
   | otherwise =
-    testCase "stored connection" $
-      assertFailure $
-        " must store connection \"" <> show uuid <> "\" but stored: "
-          <> show
-            cStore
+      testCase "stored connection" $
+        assertFailure $
+          " must store connection \""
+            <> show uuid
+            <> "\" but stored: "
+            <> show
+              cStore
 
 storeSubscriptions ::
   (Show ch) =>
@@ -188,17 +190,21 @@ storeSubscriptions
     where
       checkSession (Just conn)
         | sort sids == sort (connectionSessionIds conn) =
-          testCase "stored subscriptions" $ pure ()
+            testCase "stored subscriptions" $ pure ()
         | otherwise =
-          testCase "stored subscriptions" $
-            assertFailure $
-              " must store subscriptions with id \"" <> show sids <> "\" but stored: "
-                <> show
-                  (connectionSessionIds conn)
+            testCase "stored subscriptions" $
+              assertFailure $
+                " must store subscriptions with id \""
+                  <> show sids
+                  <> "\" but stored: "
+                  <> show
+                    (connectionSessionIds conn)
       checkSession _ =
         testCase "stored connection" $
           assertFailure $
-            " must store connection \"" <> show uuid <> "\" but: "
+            " must store connection \""
+              <> show uuid
+              <> "\" but: "
               <> show
                 cStore
 

@@ -302,10 +302,10 @@ validateEnum ::
   InputValidator schemaS c ValidValue
 validateEnum enumValues value@(Scalar (String enumValue))
   | packName enumValue `elem` tags = do
-    isFromVariable <- isVariableValue
-    if isFromVariable
-      then pure (Enum (packName enumValue))
-      else violation Nothing value
+      isFromVariable <- isVariableValue
+      if isFromVariable
+        then pure (Enum (packName enumValue))
+        else violation Nothing value
   where
     tags = fmap enumName enumValues
 validateEnum enumValues value@(Enum enumValue)

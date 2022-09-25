@@ -97,7 +97,9 @@ instance FromJSON RequestPayload where
   parseJSON = withObject "ApolloPayload" objectParser
     where
       objectParser o =
-        RequestPayload <$> o .:? "operationName" <*> o .:? "query"
+        RequestPayload
+          <$> o .:? "operationName"
+          <*> o .:? "query"
           <*> o .:? "variables"
 
 instance ToJSON a => ToJSON (ApolloSubscription a) where

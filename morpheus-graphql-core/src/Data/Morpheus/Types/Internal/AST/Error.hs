@@ -88,7 +88,8 @@ withPath err path = err {path = Just path}
 
 manyMsg :: (Foldable t, Msg a) => t a -> GQLError
 manyMsg =
-  msg . T.intercalate ", "
+  msg
+    . T.intercalate ", "
     . fmap (message . msg)
     . toList
 

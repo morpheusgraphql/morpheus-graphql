@@ -50,7 +50,8 @@ runQueryValidationTest url = map (testQueryValidation (parseQuery, toEither . pa
 
 parseQuery :: Schema VALID -> GQLRequest -> Either (NonEmpty GQLError) ByteString
 parseQuery schema =
-  toEither . fmap render
+  toEither
+    . fmap render
     . parseRequestWith defaultConfig schema
 
 main :: IO ()

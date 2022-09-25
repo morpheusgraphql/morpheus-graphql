@@ -41,10 +41,10 @@ cycleCheckingWith graph parentNode history fail' = forM_ (lookup parentNode grap
   where
     checkNode node
       | node `elem` history =
-        fail' (node :| history)
+          fail' (node :| history)
       | otherwise =
-        cycleCheckingWith
-          graph
-          node
-          (history <> [node])
-          fail'
+          cycleCheckingWith
+            graph
+            node
+            (history <> [node])
+            fail'

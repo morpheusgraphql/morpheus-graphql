@@ -139,7 +139,7 @@ handleWSRequest ::
   Output SUB (Event ch con) m
 handleWSRequest gqlApp clientId = handle . apolloFormat
   where
-    --handle :: Applicative m => Validation ApolloAction -> Stream SUB e m
+    -- handle :: Applicative m => Validation ApolloAction -> Stream SUB e m
     handle = either (liftWS . Left) handleAction
     --------------------------------------------------
     -- handleAction :: ApolloAction -> Stream SUB e m

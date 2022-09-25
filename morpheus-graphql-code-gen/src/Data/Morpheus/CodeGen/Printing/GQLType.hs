@@ -43,8 +43,8 @@ renderGQLType ServerTypeDefinition {tName, typeParameters, tKind, gql} =
     <+> "GQLType"
     <+> typeHead
     <+> "where"
-    <> line
-    <> indent 2 (vsep (renderMethods typeHead gql <> [options]))
+      <> line
+      <> indent 2 (vsep (renderMethods typeHead gql <> [options]))
   where
     options = defineTypeOptions tName tKind
     typeHead =
