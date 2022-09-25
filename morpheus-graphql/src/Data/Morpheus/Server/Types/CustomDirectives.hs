@@ -7,13 +7,11 @@
 
 module Data.Morpheus.Server.Types.CustomDirectives (DirectivePrefix (..)) where
 
+import Data.Morpheus.App
 import Data.Morpheus.Server.Types.Directives
 import Data.Morpheus.Server.Types.GQLType
 import Data.Morpheus.Types.Internal.AST
-  ( ANY,
-    CONST,
-    DirectiveLocation (..),
-    TypeDefinition (..),
+  ( DirectiveLocation (..),
     packName,
   )
 import Data.Text
@@ -25,8 +23,8 @@ data DirectivePrefix = DirectivePrefix
   }
   deriving (Generic, GQLType)
 
-prefixName :: Text -> TypeDefinition ANY CONST -> TypeDefinition ANY CONST
-prefixName prefix t = t {typeName = packName prefix <> typeName t}
+prefixName :: Text -> VisitorTypeDefinition -> VisitorTypeDefinition
+prefixName prefix t = t {visitorTypeName = packName prefix <> visitorTypeName t}
 
 instance GQLDirective DirectivePrefix where
   type ALLOWED_DIRECTIVE_LOCATIONS DirectivePrefix = '[ 'OBJECT, 'ENUM, 'INPUT_OBJECT]

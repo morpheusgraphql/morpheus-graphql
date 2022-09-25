@@ -9,6 +9,7 @@ where
 import qualified Data.ByteString.Lazy.Char8 as LBS
 import Data.Morpheus.App
   ( App (..),
+    defaultSchemaVisitors,
     mkApp,
     runApp,
   )
@@ -143,9 +144,9 @@ getApps _ = do
   schemaRealms <- getSchema "test/named-resolvers/realms.gql"
   schemaEntities <- getSchema "test/named-resolvers/entities.gql"
   pure $
-    mkApp schemaDeities resolverDeities
-      <> mkApp schemaRealms resolverRealms
-      <> mkApp schemaEntities resolverEntities
+    mkApp schemaDeities resolverDeities defaultSchemaVisitors
+      <> mkApp schemaRealms resolverRealms defaultSchemaVisitors
+      <> mkApp schemaEntities resolverEntities defaultSchemaVisitors
 
 runNamedResolversTest :: FileUrl -> FileUrl -> TestTree
 runNamedResolversTest url = testApi api

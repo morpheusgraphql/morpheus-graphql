@@ -9,6 +9,7 @@ where
 
 import Data.Morpheus.App
   ( App (..),
+    defaultSchemaVisitors,
     eitherSchema,
     mkApp,
     runApp,
@@ -39,7 +40,7 @@ import Test.Tasty
   )
 
 getApps :: FileUrl -> IO (App e IO)
-getApps = getAppsBy (toEither . parseSchema, mkApp)
+getApps = getAppsBy (toEither . parseSchema, \x y -> mkApp x y defaultSchemaVisitors)
 
 testQuery :: FileUrl -> FileUrl -> TestTree
 testQuery url = testApi api

@@ -16,16 +16,16 @@ module Data.Morpheus.Server.Types.Directives
   )
 where
 
+import Data.Morpheus.App
+  ( VisitorFieldDefinition (..),
+    VisitorTypeDefinition (..),
+  )
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Server.Types.TypeName (getTypename)
 import Data.Morpheus.Types.Internal.AST
-  ( ANY,
-    CONST,
-    DirectiveLocation (..),
-    FieldDefinition,
+  ( DirectiveLocation (..),
     FieldName,
     TRUE,
-    TypeDefinition,
   )
 import Relude
 
@@ -83,15 +83,15 @@ getLocations _ = toLocations (Proxy :: Proxy (ALLOWED_DIRECTIVE_LOCATIONS a))
 
 data Visitor a (t :: Bool) where
   -- Types
-  VisitObject :: TypeDefinition ANY CONST -> VisitorOption 'OBJECT a
-  VisitInputObject :: TypeDefinition ANY CONST -> VisitorOption 'INPUT_OBJECT a
-  VisitUnion :: TypeDefinition ANY CONST -> VisitorOption 'UNION a
-  VisitEnum :: TypeDefinition ANY CONST -> VisitorOption 'ENUM a
-  VisitScalar :: TypeDefinition ANY CONST -> VisitorOption 'SCALAR a
+  VisitObject :: VisitorTypeDefinition -> VisitorOption 'OBJECT a
+  VisitInputObject :: VisitorTypeDefinition -> VisitorOption 'INPUT_OBJECT a
+  VisitUnion :: VisitorTypeDefinition -> VisitorOption 'UNION a
+  VisitEnum :: VisitorTypeDefinition -> VisitorOption 'ENUM a
+  VisitScalar :: VisitorTypeDefinition -> VisitorOption 'SCALAR a
   -- Fields
   -- VisitArgumentDefinition :: (ArgumentDefinition VALID) -> Visitor a (Allow 'ARGUMENT_DEFINITION (DIRECTIVE_LOCATION a))
-  VisitInputFieldDefinition :: FieldDefinition ANY CONST -> VisitorOption 'INPUT_FIELD_DEFINITION a
-  VisitFieldDefinition :: FieldDefinition ANY CONST -> VisitorOption 'FIELD_DEFINITION a
+  VisitInputFieldDefinition :: VisitorFieldDefinition -> VisitorOption 'INPUT_FIELD_DEFINITION a
+  VisitFieldDefinition :: VisitorFieldDefinition -> VisitorOption 'FIELD_DEFINITION a
 
 class Typeable a => GQLDirective a where
   type ALLOWED_DIRECTIVE_LOCATIONS a :: [DirectiveLocation]

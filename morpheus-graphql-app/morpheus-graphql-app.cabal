@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.35.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -110,6 +110,7 @@ library
       Data.Morpheus.App.Internal.Resolving.Types
       Data.Morpheus.App.Internal.Resolving.Utils
       Data.Morpheus.App.Internal.Stitching
+      Data.Morpheus.App.Internal.Visitors
       Data.Morpheus.App.MapAPI
       Data.Morpheus.App.RenderIntrospection
       Paths_morpheus_graphql_app

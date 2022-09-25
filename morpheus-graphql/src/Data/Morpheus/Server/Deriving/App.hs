@@ -17,11 +17,10 @@ where
 
 import Data.Morpheus.App
   ( App (..),
+    SchemaVisitors (..),
     mkApp,
   )
-import Data.Morpheus.App.Internal.Resolving
-  ( resultOr,
-  )
+import Data.Morpheus.Internal.Ext (GQLResult, resultOr)
 import Data.Morpheus.Server.Deriving.Encode
   ( EncodeConstraints,
     deriveModel,
@@ -63,12 +62,20 @@ class
   where
   deriveApp :: f m event qu mu su -> App event m
 
+deriveVisitors :: p -> GQLResult SchemaVisitors
+deriveVisitors _ =
+  pure
+    SchemaVisitors
+      { typeVisitor = const pure,
+        fieldVisitor = const pure
+      }
+
 instance RootResolverConstraint m e query mut sub => DeriveApp RootResolver m e query mut sub where
   deriveApp root =
-    resultOr FailApp (uncurry mkApp) $
-      (,) <$> deriveSchema (Identity root) <*> deriveModel root
+    resultOr FailApp (\(x, y, z) -> mkApp x y z) $
+      (,,) <$> deriveSchema (Identity root) <*> deriveModel root <*> deriveVisitors root
 
 instance NamedResolversConstraint m e query mut sub => DeriveApp NamedResolvers m e query mut sub where
   deriveApp root =
-    resultOr FailApp (uncurry mkApp) $
-      (,deriveNamedModel root) <$> deriveSchema (Identity root)
+    resultOr FailApp (\(x, y, z) -> mkApp x y z) $
+      (,deriveNamedModel root,) <$> deriveSchema (Identity root) <*> deriveVisitors root

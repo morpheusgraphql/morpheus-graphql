@@ -19,6 +19,12 @@ module Data.Morpheus.App
     runAppStream,
     MapAPI (..),
     eitherSchema,
+    -- visitor API
+    ASTVisitor (..),
+    SchemaVisitors (..),
+    defaultSchemaVisitors,
+    VisitorFieldDefinition (..),
+    VisitorTypeDefinition (..),
   )
 where
 
@@ -33,6 +39,7 @@ import Data.Morpheus.App.Internal.Resolving
     runRootResolverValue,
   )
 import Data.Morpheus.App.Internal.Stitching (Stitching (..))
+import Data.Morpheus.App.Internal.Visitors
 import Data.Morpheus.App.MapAPI (MapAPI (..))
 import Data.Morpheus.Core
   ( Config (..),
@@ -71,11 +78,11 @@ import Data.Morpheus.Types.Internal.AST
 import qualified Data.Morpheus.Types.Internal.AST as AST
 import Relude hiding (ByteString, empty)
 
-mkApp :: ValidateSchema s => Schema s -> RootResolverValue e m -> App e m
-mkApp appSchema appResolvers =
+mkApp :: ValidateSchema s => Schema s -> RootResolverValue e m -> SchemaVisitors -> App e m
+mkApp appSchema appResolvers visitors =
   resultOr
     FailApp
-    (App . AppData defaultConfig appResolvers)
+    (App . AppData defaultConfig appResolvers visitors)
     (validateSchema True defaultConfig appSchema)
 
 data App event (m :: Type -> Type)
@@ -95,6 +102,7 @@ instance Monad m => Semigroup (App e m) where
 data AppData event (m :: Type -> Type) s = AppData
   { appConfig :: Config,
     appResolvers :: RootResolverValue event m,
+    directiveVisitors :: SchemaVisitors,
     appSchema :: Schema s
   }
 
@@ -105,6 +113,7 @@ instance Monad m => Stitching (AppData e m s) where
   stitch x y =
     AppData (appConfig y)
       <$> prop stitch appResolvers x y
+      <*> prop stitch directiveVisitors x y
       <*> prop stitch appSchema x y
 
 runAppData ::
