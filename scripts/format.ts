@@ -6,24 +6,13 @@ import { Command } from "commander";
 
 const cli = new Command();
 
-const ormolu_version = "0.5.0.1";
-
 const config: Record<string, string> = {
-  linux:
-    "https://github.com/tweag/ormolu/releases/download/" +
-    ormolu_version +
-    "/ormolu-Linux.zip",
-  win32:
-    "https://github.com/tweag/ormolu/releases/download/" +
-    ormolu_version +
-    "/ormolu-Windows.zip",
-  darwin:
-    "https://github.com/tweag/ormolu/releases/download/" +
-    ormolu_version +
-    "/ormolu-macOS.zip",
+  linux: "/ormolu-Linux.zip",
+  win32: "/ormolu-Windows.zip",
+  darwin: "/ormolu-macOS.zip",
 };
 
-const url = config[process.platform] ?? config.linux;
+const name = config[process.platform] ?? config.linux;
 
 const binary = "./formatter/ormolu";
 
@@ -33,7 +22,9 @@ const format = async ({ fix }: { fix: boolean }) => {
   } catch {}
 
   try {
-    exec(`curl -o ./formatter/ormolu.zip -LO  ${url}`);
+    exec(
+      `curl -o ./formatter/ormolu.zip -LO  https://github.com/tweag/ormolu/releases/download/0.5.0.1/${name}`
+    );
     exec(`cd formatter && unzip ormolu.zip`);
 
     exec(`chmod +x ${binary}`);
