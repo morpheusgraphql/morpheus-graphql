@@ -34,10 +34,10 @@ const format = async ({ fix }: { fix: boolean }) => {
     );
 
     if (fix) {
-      exec(`${binary} --color=always --no-cabal --mode=inplace ${files}`);
+      exec(`${binary} --color=always --mode=inplace ${files}`);
     } else {
       exec(
-        `${binary} --color=always --no-cabal --check-idempotence --mode=check ${files}`
+        `${binary} --color=always --check-idempotence --mode=check ${files}`
       );
       stdout.write("OK");
     }

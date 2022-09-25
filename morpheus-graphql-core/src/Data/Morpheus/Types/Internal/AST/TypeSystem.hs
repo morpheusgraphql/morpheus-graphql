@@ -229,7 +229,7 @@ instance
       <*> mergeOptional (mutation s1) (mutation s2)
       <*> mergeOptional (subscription s1) (subscription s2)
       <*> directiveDefinitions s1
-      <:> directiveDefinitions s2
+        <:> directiveDefinitions s2
 
 mergeOptional ::
   (Monad m, MonadError GQLError m) =>
