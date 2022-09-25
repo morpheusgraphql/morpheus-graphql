@@ -37,8 +37,11 @@ where
 
 -- MORPHEUS
 
-import Control.Monad.Except
+import Control.Monad.Except (MonadError (throwError))
 import Data.Morpheus.App.Internal.Resolving
+  ( Resolver,
+    SubscriptionField,
+  )
 import Data.Morpheus.Internal.Ext
 import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Kind
@@ -61,8 +64,11 @@ import Data.Morpheus.Server.Types.Internal
     mkTypeData,
     prefixInputs,
   )
-import Data.Morpheus.Server.Types.SchemaT
+import Data.Morpheus.Server.Types.SchemaT (SchemaT)
 import Data.Morpheus.Server.Types.TypeName
+  ( getFingerprint,
+    getTypename,
+  )
 import Data.Morpheus.Server.Types.Types
   ( Arg,
     Pair,
@@ -86,6 +92,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeName,
     TypeWrapper (..),
     Value (..),
+    internal,
     mkBaseType,
     packName,
     toNullable,
@@ -282,7 +289,7 @@ encodeArguments :: forall a. Decode a => a -> GQLResult (Arguments CONST)
 encodeArguments x = encode x >>= unpackValue
   where
     unpackValue (Object v) = pure $ fmap toArgument v
-    unpackValue _ = fail "TODO: expected arguments!"
+    unpackValue _ = throwError (internal "TODO: expected arguments!")
     toArgument ObjectEntry {..} = Argument (Position 0 0) entryName entryValue
 
 encode :: forall a. Decode a => a -> GQLResult (Value CONST)
@@ -328,7 +335,7 @@ convertNode
             entryValue <- fieldValue
             pure ObjectEntry {entryName = fieldSelector, entryValue}
       -- Type References --------------------------------------------------------------
-      encodeTypeFields _ = fail "TODO: union not supported"
+      encodeTypeFields _ = throwError (internal "TODO: union not supported")
 
 -- Types & Constrains -------------------------------------------------------
 class (EncodeKind (KIND a) a, GQLType a) => ExplorerConstraint a
