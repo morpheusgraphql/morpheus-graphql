@@ -28,6 +28,7 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
+    DirectiveDefinition (..),
     FieldName,
     OBJECT,
     QUERY,
@@ -72,7 +73,7 @@ schemaResolver schema@Schema {query, mutation, subscription, directiveDefinition
         ("queryType", renderOperation (Just query)),
         ("mutationType", renderOperation mutation),
         ("subscriptionType", renderOperation subscription),
-        ("directives", render $ toList directiveDefinitions)
+        ("directives", render $ sortWith directiveDefinitionName $ toList directiveDefinitions)
       ]
 
 schemaAPI :: Monad m => Schema VALID -> ObjectTypeResolver (Resolver QUERY e m)

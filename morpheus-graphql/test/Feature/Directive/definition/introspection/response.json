@@ -67,9 +67,9 @@
               }
             }
           ],
-          "description": "\nDirects the executor to skip this field or fragment when the `if` argument is true.\n",
+          "description": "\nDirects the executor to include this field or fragment only when the `if` argument is true.\n",
           "locations": ["FIELD", "FRAGMENT_SPREAD", "INLINE_FRAGMENT"],
-          "name": "skip"
+          "name": "include"
         },
         {
           "args": [
@@ -87,9 +87,9 @@
               }
             }
           ],
-          "description": "\nDirects the executor to include this field or fragment only when the `if` argument is true.\n",
+          "description": "\nDirects the executor to skip this field or fragment when the `if` argument is true.\n",
           "locations": ["FIELD", "FRAGMENT_SPREAD", "INLINE_FRAGMENT"],
-          "name": "include"
+          "name": "skip"
         }
       ]
     }
