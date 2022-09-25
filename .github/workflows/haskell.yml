@@ -52,13 +52,13 @@ jobs:
       - name: lint
         run: make lint
 
-  format:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: mrkkrp/ormolu-action@v7
-        with:
-          pattern: morpheus-graphql*/**/*.hs
+  # format:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - uses: mrkkrp/ormolu-action@v7
+  #       with:
+  #         pattern: morpheus-graphql*/**/*.hs
 
 concurrency:
   group: ${{ github.ref }}
