@@ -45,10 +45,10 @@ const format = async (args: any) => {
     console.log(args.fix);
 
     if (args.fix) {
-      exec(`${binary} --color=always --mode=inplace ${files}`);
+      exec(`${binary} --color=always --no-cabal --mode=inplace ${files}`);
     } else {
       exec(
-        `${binary} --color=always --check-idempotence --mode=check ${files}`
+        `${binary} --color=always --no-cabal --check-idempotence --mode=check ${files}`
       );
     }
   } catch (e) {
