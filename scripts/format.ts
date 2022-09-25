@@ -1,5 +1,5 @@
 import glob from "glob";
-import { stdout } from "process";
+import { exit, stdout } from "process";
 import { promisify } from "util";
 import { exec } from "./lib/utils/utils";
 import { Command } from "commander";
@@ -27,7 +27,7 @@ const url = config[process.platform] ?? config.linux;
 
 const binary = "./formatter/ormolu";
 
-const format = async (args: any) => {
+const format = async ({ fix }: { fix: boolean }) => {
   try {
     exec(`mkdir formatter`);
   } catch {}
@@ -42,9 +42,7 @@ const format = async (args: any) => {
       " "
     );
 
-    console.log(args.fix);
-
-    if (args.fix) {
+    if (fix) {
       exec(`${binary} --color=always --no-cabal --mode=inplace ${files}`);
     } else {
       exec(
@@ -53,6 +51,7 @@ const format = async (args: any) => {
     }
   } catch (e) {
     stdout.write(e.message);
+    exit(1);
   }
 
   exec(`rm -rf ./formatter`);
