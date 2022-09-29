@@ -38,6 +38,7 @@ import Data.Morpheus.Kind
     TYPE,
     WRAPPER,
   )
+import Data.Morpheus.Server.Deriving.Schema.Directive (deriveTypeDirectives)
 import Data.Morpheus.Server.Deriving.Schema.Internal
   ( KindedType (..),
     TyContentM,
@@ -63,21 +64,16 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
     outputType,
     setKind,
   )
-import Data.Morpheus.Server.Types.Directives
 import Data.Morpheus.Server.Types.GQLType
   ( DeriveArguments (..),
-    DirectiveUsage (DirectiveUsage),
     GQLType (..),
     deriveTypename,
-    encodeArguments,
     __typeData,
   )
 import Data.Morpheus.Server.Types.Internal (TypeData (..), defaultTypeOptions)
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
     extendImplements,
-    insertDirectiveDefinition,
-    outToAny,
     toSchema,
     updateSchema,
     withInput,
@@ -91,18 +87,13 @@ import Data.Morpheus.Types.GQLScalar
     scalarValidator,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( Directive (..),
-    DirectiveDefinition (..),
-    Directives,
-    FieldContent (..),
-    FieldName,
+  ( FieldContent (..),
     FieldsDefinition,
     IN,
     LEAF,
     MUTATION,
     OBJECT,
     OUT,
-    Position (Position),
     QUERY,
     SUBSCRIPTION,
     Schema (..),
@@ -310,48 +301,6 @@ deriveTypeContent kindedProxy =
     )
     >>= buildTypeContent kindedProxy
 
-type DirectiveDefinitionConstraint a =
-  ( GQLDirective a,
-    GQLType a,
-    DeriveArguments (KIND a) a,
-    ToLocations (ALLOWED_DIRECTIVE_LOCATIONS a)
-  )
-
-deriveDirectiveDefinition ::
-  forall a b kind.
-  (DirectiveDefinitionConstraint a) =>
-  a ->
-  b ->
-  SchemaT kind (VisitorFunction, DirectiveDefinition CONST)
-deriveDirectiveDefinition _ _ = do
-  directiveDefinitionArgs <- outToAny (deriveArgumentsDefinition (KindedProxy :: KindedProxy (KIND a) a))
-  pure
-    ( VisitorFunction {},
-      DirectiveDefinition
-        { directiveDefinitionName = __directiveName (Proxy @a),
-          directiveDefinitionDescription = description (Proxy @a),
-          directiveDefinitionArgs,
-          directiveDefinitionLocations = getLocations (Proxy @a)
-        }
-    )
-
-deriveDirectives :: forall c f a. GQLType a => f a -> SchemaT c (Directives CONST)
-deriveDirectives proxy = unsafeFromList <$> traverse toDirectiveTuple (directiveUsages proxy)
-  where
-    toDirectiveTuple :: DirectiveUsage -> SchemaT c (FieldName, Directive CONST)
-    toDirectiveTuple (DirectiveUsage x) = do
-      insertDirective (deriveDirectiveDefinition x) (KindedProxy :: KindedProxy IN a)
-      let directiveName = coerce $ __directiveName (Identity x)
-      directiveArgs <- resultOr (const $ throwError "TODO: fix me") pure (encodeArguments x)
-      pure
-        ( directiveName,
-          Directive
-            { directivePosition = Position 0 0,
-              directiveName,
-              directiveArgs
-            }
-        )
-
 updateByContent ::
   (GQLType a, CategoryValue kind) =>
   (f kind a -> SchemaT c (TypeContent TRUE kind CONST)) ->
@@ -365,17 +314,10 @@ updateByContent f proxy =
   where
     deriveD x = do
       content <- f x
-      directives <- deriveDirectives proxy
+      dirs <- deriveTypeDirectives proxy
       pure $
         TypeDefinition
           (description proxy)
           (gqlTypeName (__typeData proxy))
-          directives
+          dirs
           content
-
-insertDirective ::
-  (GQLType a, CategoryValue kind) =>
-  (f kind a -> SchemaT c (VisitorFunction, DirectiveDefinition CONST)) ->
-  f kind a ->
-  SchemaT c ()
-insertDirective f proxy = insertDirectiveDefinition (gqlFingerprint $ __typeData proxy) f proxy

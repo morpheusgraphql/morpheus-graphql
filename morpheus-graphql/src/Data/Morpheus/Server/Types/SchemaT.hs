@@ -25,7 +25,6 @@ where
 import Control.Monad.Except (MonadError (..))
 import qualified Data.Map as Map
 import Data.Morpheus.Internal.Ext (GQLResult)
-import Data.Morpheus.Server.Types.Directives
 import Data.Morpheus.Server.Types.TypeName
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
@@ -51,12 +50,7 @@ data SchemaState where
   SchemaState ::
     { typeDefinitions :: Map TypeFingerprint (TypeDefinition ANY CONST),
       implements :: Map TypeName [TypeName],
-      directiveDefinitions ::
-        Map
-          TypeFingerprint
-          ( VisitorFunction,
-            DirectiveDefinition CONST
-          )
+      directiveDefinitions :: Map TypeFingerprint (DirectiveDefinition CONST)
     } ->
     SchemaState
 
@@ -110,7 +104,7 @@ toSchema (SchemaT v) = do
   SchemaState {typeDefinitions, implements, directiveDefinitions} <- execUpdates emptyMyMap typeDefs
   types <- map (insertImplements implements) <$> checkTypeCollisions (Map.toList typeDefinitions)
   schema <- defineSchemaWith types (Just q, m, s)
-  foldlM defineDirective schema (fmap snd directiveDefinitions)
+  foldlM defineDirective schema directiveDefinitions
 
 insertImplements :: Map TypeName [TypeName] -> TypeDefinition c CONST -> TypeDefinition c CONST
 insertImplements x TypeDefinition {typeContent = DataObject {..}, ..} =
@@ -191,7 +185,7 @@ updateSchema fingerprint f x =
 
 insertDirectiveDefinition ::
   TypeFingerprint ->
-  (a -> SchemaT cat' (VisitorFunction, DirectiveDefinition CONST)) ->
+  (a -> SchemaT cat' (DirectiveDefinition CONST)) ->
   a ->
   SchemaT cat' ()
 insertDirectiveDefinition InternalFingerprint {} _ _ = SchemaT $ pure ((), [])

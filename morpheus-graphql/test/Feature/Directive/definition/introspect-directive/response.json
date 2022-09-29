@@ -10,11 +10,7 @@
               "type": {
                 "kind": "NON_NULL",
                 "name": null,
-                "ofType": {
-                  "kind": "SCALAR",
-                  "name": "String",
-                  "ofType": null
-                }
+                "ofType": { "kind": "SCALAR", "name": "String", "ofType": null }
               }
             },
             {
@@ -39,12 +35,40 @@
           "args": [
             {
               "defaultValue": null,
-              "name": "reason",
+              "name": "addPrefix",
               "type": {
-                "kind": "SCALAR",
-                "name": "String",
-                "ofType": null
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": { "kind": "SCALAR", "name": "String", "ofType": null }
               }
+            },
+            {
+              "defaultValue": null,
+              "name": "removePrefix",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": { "kind": "SCALAR", "name": "String", "ofType": null }
+              }
+            }
+          ],
+          "description": null,
+          "locations": [
+            "OBJECT",
+            "ENUM",
+            "INPUT_OBJECT",
+            "UNION",
+            "SCALAR",
+            "INTERFACE"
+          ],
+          "name": "Prefixes"
+        },
+        {
+          "args": [
+            {
+              "defaultValue": null,
+              "name": "reason",
+              "type": { "kind": "SCALAR", "name": "String", "ofType": null }
             }
           ],
           "description": "\nMarks an element of a GraphQL schema as no longer supported.\n",

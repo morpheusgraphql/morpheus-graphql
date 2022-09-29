@@ -12,9 +12,7 @@ where
 
 -- MORPHEUS
 
-import Data.Morpheus.Server.Types.SchemaT
-  ( TypeFingerprint (..),
-  )
+import Data.Morpheus.Server.Types.TypeName (TypeFingerprint (..))
 import Data.Morpheus.Types.Internal.AST
   ( TypeName,
     TypeWrapper (..),

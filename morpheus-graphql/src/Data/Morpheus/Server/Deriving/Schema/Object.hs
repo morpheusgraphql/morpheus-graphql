@@ -19,10 +19,10 @@ import Data.Morpheus.Internal.Utils
   ( empty,
     singleton,
   )
+import Data.Morpheus.Server.Deriving.Schema.Directive (deriveFieldDirectives)
 import Data.Morpheus.Server.Deriving.Schema.Enum (defineEnumUnit)
 import Data.Morpheus.Server.Deriving.Schema.Internal
   ( lookupDescription,
-    lookupDirectives,
     lookupFieldContent,
   )
 import Data.Morpheus.Server.Deriving.Utils
@@ -35,7 +35,7 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
     outputType,
   )
 import Data.Morpheus.Server.Types.GQLType
-  ( GQLType (..),
+  ( GQLType,
     __typeData,
   )
 import Data.Morpheus.Server.Types.Internal
@@ -81,15 +81,13 @@ mkFieldUnit :: FieldDefinition cat s
 mkFieldUnit = mkField Nothing unitFieldName (mkTypeRef unitTypeName)
 
 buildObjectTypeContent ::
-  (Applicative f, GQLType a) =>
+  GQLType a =>
   KindedType cat a ->
   [FieldRep (Maybe (FieldContent TRUE cat CONST))] ->
-  f (TypeContent TRUE cat CONST)
-buildObjectTypeContent scope consFields =
-  pure $
-    mkObjectTypeContent scope $
-      unsafeFromFields $
-        map (setGQLTypeProps scope . repToFieldDefinition) consFields
+  SchemaT c (TypeContent TRUE cat CONST)
+buildObjectTypeContent scope consFields = do
+  xs <- traverse (setGQLTypeProps scope . repToFieldDefinition) consFields
+  pure $ mkObjectTypeContent scope $ unsafeFromFields xs
 
 repToFieldDefinition ::
   FieldRep (Maybe (FieldContent TRUE kind CONST)) ->
@@ -132,14 +130,16 @@ mkObjectTypeContent :: KindedType kind a -> FieldsDefinition kind CONST -> TypeC
 mkObjectTypeContent InputType = DataInputObject
 mkObjectTypeContent OutputType = DataObject []
 
-setGQLTypeProps :: GQLType a => KindedType kind a -> FieldDefinition kind CONST -> FieldDefinition kind CONST
-setGQLTypeProps proxy FieldDefinition {..} =
-  FieldDefinition
-    { fieldName,
-      fieldDescription = lookupDescription proxy key,
-      fieldDirectives = lookupDirectives proxy key,
-      fieldContent = lookupFieldContent proxy key <|> fieldContent,
-      ..
-    }
+setGQLTypeProps :: GQLType a => KindedType kind a -> FieldDefinition kind CONST -> SchemaT c (FieldDefinition kind CONST)
+setGQLTypeProps proxy FieldDefinition {..} = do
+  dirs <- deriveFieldDirectives proxy key
+  pure
+    FieldDefinition
+      { fieldName,
+        fieldDescription = lookupDescription proxy key,
+        fieldContent = lookupFieldContent proxy key <|> fieldContent,
+        fieldDirectives = dirs,
+        ..
+      }
   where
     key = unpackName fieldName
