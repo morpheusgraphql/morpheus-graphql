@@ -11,6 +11,7 @@ where
 import Data.Morpheus.CodeGen.Internal.AST
   ( GQLTypeDefinition (..),
     Kind (..),
+    ServerDirectiveUsage (..),
     ServerTypeDefinition (..),
     TypeKind,
   )
@@ -19,14 +20,6 @@ import Data.Morpheus.CodeGen.Printing.Terms
     parametrizedType,
   )
 import Prettyprinter
-  ( Doc,
-    Pretty (pretty),
-    indent,
-    line,
-    tupled,
-    vsep,
-    (<+>),
-  )
 import Relude hiding (optional, show)
 import Prelude (show)
 
@@ -59,16 +52,19 @@ renderMethods :: Doc n -> Maybe GQLTypeDefinition -> [Doc n]
 renderMethods _ Nothing = []
 renderMethods
   typeHead
-  ( Just
-      GQLTypeDefinition
-        { gqlTypeDescription,
-          gqlTypeDescriptions,
-          gqlKind
-        }
-    ) =
+  (Just GQLTypeDefinition {..}) =
     ["type KIND" <+> typeHead <+> "=" <+> renderKind gqlKind]
       <> ["description _ =" <+> pretty (show gqlTypeDescription) | not (null gqlTypeDescription)]
       <> ["getDescriptions _ =" <+> pretty (show gqlTypeDescriptions) | not (null gqlTypeDescriptions)]
+      <> ["directives _=" <+> renderDirectiveUsages gqlTypeDirectiveUses | not (null gqlTypeDirectiveUses)]
+
+renderDirectiveUsages :: [ServerDirectiveUsage] -> Doc n
+renderDirectiveUsages = vsep . punctuate " <>" . map renderDirectiveUsage
+
+renderDirectiveUsage :: ServerDirectiveUsage -> Doc n
+renderDirectiveUsage (TypeDirectiveUsage value) = "typeDirective" <+> pretty value
+renderDirectiveUsage (FieldDirectiveUsage place value) = "fieldDirective" <+> pretty (show place) <+> pretty value
+renderDirectiveUsage (EnumDirectiveUsage place value) = "enumDirective" <+> pretty (show place) <+> pretty value
 
 renderKind :: Kind -> Doc n
 renderKind Type = "TYPE"
