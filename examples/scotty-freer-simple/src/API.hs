@@ -19,11 +19,11 @@ import Data.Morpheus (interpreter)
 import Data.Morpheus.Document (importGQLDocument)
 import Data.Morpheus.Types
   ( Arg (Arg),
+    Deprecated (..),
     RootResolver (..),
     Undefined,
     defaultRootResolver,
     liftEither,
-    Deprecated(..)
   )
 import Data.Text (Text)
 import Data.Typeable (Typeable)

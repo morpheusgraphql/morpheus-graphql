@@ -230,7 +230,7 @@ instance
       <*> mergeOptional (mutation s1) (mutation s2)
       <*> mergeOptional (subscription s1) (subscription s2)
       <*> directiveDefinitions s1
-        <:> directiveDefinitions s2
+      <:> directiveDefinitions s2
 
 mergeOptional ::
   (Monad m, MonadError GQLError m) =>
@@ -709,11 +709,9 @@ instance RenderGQL (Schema s) where
 instance RenderGQL (TypeDefinition a s) where
   renderGQL TypeDefinition {..} = __render typeContent <> newline
     where
-      name =
-        space
-          <> if null typeDirectives
-            then renderGQL typeName
-            else renderGQL typeName <> space <> renderGQL typeDirectives
+      name
+        | null typeDirectives = renderGQL typeName
+        | otherwise = renderGQL typeName <> space <> renderGQL typeDirectives
 
       __render DataInterface {interfaceFields} = "interface " <> name <> renderGQL interfaceFields
       __render DataScalar {} = "scalar " <> name
