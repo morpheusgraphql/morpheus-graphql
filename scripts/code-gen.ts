@@ -16,6 +16,12 @@ const format = async () => {
 
     exec(`morpheus build ${files} --root=${root}`);
 
+    const hasChanges = exec("git status -s").trim().length > 0;
+
+    if (hasChanges) {
+      throw Error("generated files are corrupted");
+    }
+
     stdout.write("OK");
   } catch (e) {
     stdout.write(e.message);
