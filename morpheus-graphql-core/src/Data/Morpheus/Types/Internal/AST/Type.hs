@@ -86,8 +86,11 @@ instance Strictness TypeKind where
 -- TypeWrappers
 -----------------------------------------------------------------------------------
 data TypeWrapper
-  = TypeList !TypeWrapper !Bool
-  | BaseType !Bool
+  = TypeList
+      !TypeWrapper
+      !Bool -- isRequired
+  | BaseType
+      !Bool -- isRequired
   deriving (Show, Eq, Lift)
 
 mkBaseType :: TypeWrapper

@@ -3,6 +3,7 @@
 module Data.Morpheus.Parser
   ( parseSchema,
     parseTypeDefinitions,
+    parseDefinitions,
     parseRequest,
     parseRequestWith,
   )
@@ -15,7 +16,8 @@ import Data.Morpheus.Ext.Result
   )
 import Data.Morpheus.Internal.Utils ((<:>))
 import Data.Morpheus.Parsing.Document.TypeSystem
-  ( parseTypeDefinitions,
+  ( parseDefinitions,
+    parseTypeDefinitions,
   )
 import qualified Data.Morpheus.Parsing.Document.TypeSystem as P
   ( parseSchema,

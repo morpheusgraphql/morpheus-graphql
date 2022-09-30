@@ -23,21 +23,28 @@ module Data.Morpheus.Server.Types.GQLType
         typeOptions,
         getDirectives,
         defaultValues,
-        directiveUsages,
+        directives,
         __type,
         __isEmptyType
       ),
     __typeData,
     deriveTypename,
+    deriveFingerprint,
     encodeArguments,
     DirectiveUsage (..),
     DeriveArguments (..),
+    applyOnTypeName,
+    DirectiveUsages (..),
+    typeDirective,
+    fieldDirective,
+    enumDirective,
   )
 where
 
 -- MORPHEUS
 
 import Control.Monad.Except (MonadError (throwError))
+import qualified Data.HashMap.Strict as M
 import Data.Morpheus.App.Internal.Resolving
   ( Resolver,
     SubscriptionField,
@@ -46,7 +53,7 @@ import Data.Morpheus.Internal.Ext
 import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Kind
   ( CUSTOM,
-    DerivingKind,
+    DerivingKind (..),
     SCALAR,
     TYPE,
     WRAPPER,
@@ -56,7 +63,11 @@ import Data.Morpheus.Server.Deriving.Utils (ConsRep (..), DataType (..), DeriveW
 import Data.Morpheus.Server.Deriving.Utils.DeriveGType (DeriveValueOptions (..), deriveValue)
 import Data.Morpheus.Server.Deriving.Utils.Kinded (CategoryValue (..), KindedProxy (KindedProxy), kinded)
 import Data.Morpheus.Server.Deriving.Utils.Proxy (ContextValue (..))
-import Data.Morpheus.Server.Types.Directives (GQLDirective (ALLOWED_DIRECTIVE_LOCATIONS), ToLocations)
+import Data.Morpheus.Server.Types.Directives
+  ( GQLDirective (..),
+    ToLocations,
+    visitTypeName,
+  )
 import Data.Morpheus.Server.Types.Internal
   ( GQLTypeOptions (..),
     TypeData (..),
@@ -66,7 +77,8 @@ import Data.Morpheus.Server.Types.Internal
   )
 import Data.Morpheus.Server.Types.SchemaT (SchemaT)
 import Data.Morpheus.Server.Types.TypeName
-  ( getFingerprint,
+  ( TypeFingerprint,
+    getFingerprint,
     getTypename,
   )
 import Data.Morpheus.Server.Types.Types
@@ -76,6 +88,7 @@ import Data.Morpheus.Server.Types.Types
     Undefined (..),
   )
 import Data.Morpheus.Types.GQLScalar (EncodeScalar (..))
+import Data.Morpheus.Types.GQLWrapper (EncodeWrapperValue (..))
 import Data.Morpheus.Types.ID (ID)
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
@@ -84,6 +97,7 @@ import Data.Morpheus.Types.Internal.AST
     CONST,
     Description,
     Directives,
+    FieldName,
     IN,
     OUT,
     ObjectEntry (..),
@@ -117,6 +131,9 @@ __typeData proxy = __type proxy (categoryValue (Proxy @kind))
 deriveTypename :: (GQLType a, CategoryValue kind) => kinded kind a -> TypeName
 deriveTypename proxy = gqlTypeName $ __typeData proxy
 
+deriveFingerprint :: (GQLType a, CategoryValue kind) => kinded kind a -> TypeFingerprint
+deriveFingerprint proxy = gqlFingerprint $ __typeData proxy
+
 deriveTypeData :: Typeable a => f a -> (Bool -> String -> String) -> TypeCategory -> TypeData
 deriveTypeData proxy typeNameModifier cat =
   TypeData
@@ -132,9 +149,6 @@ list = flip TypeList True
 
 wrapper :: (TypeWrapper -> TypeWrapper) -> TypeData -> TypeData
 wrapper f TypeData {..} = TypeData {gqlWrappers = f gqlWrappers, ..}
-
-data DirectiveUsage where
-  DirectiveUsage :: (GQLDirective a, GQLType a, Decode a, DeriveArguments (KIND a) a, ToLocations (ALLOWED_DIRECTIVE_LOCATIONS a)) => a -> DirectiveUsage
 
 -- | GraphQL type, every graphQL type should have an instance of 'GHC.Generics.Generic' and 'GQLType'.
 --
@@ -160,8 +174,8 @@ class GQLType a where
   description :: f a -> Maybe Text
   description _ = Nothing
 
-  directiveUsages :: f a -> [DirectiveUsage]
-  directiveUsages _ = mempty
+  directives :: f a -> DirectiveUsages
+  directives _ = mempty
 
   -- | A dictionary of descriptions for fields, keyed on field name.
   --
@@ -183,8 +197,9 @@ class GQLType a where
 
   __type :: f a -> TypeCategory -> TypeData
   default __type :: Typeable a => f a -> TypeCategory -> TypeData
-  __type proxy = deriveTypeData proxy typeNameModifier
+  __type proxy category = editTypeData derivedType (directives proxy)
     where
+      derivedType = deriveTypeData proxy typeNameModifier category
       GQLTypeOptions {typeNameModifier} = typeOptions proxy defaultTypeOptions
 
 instance GQLType Int where
@@ -298,24 +313,14 @@ encode x = encodeKind (ContextValue x :: ContextValue (KIND a) a)
 class EncodeKind (kind :: DerivingKind) (a :: Type) where
   encodeKind :: ContextValue kind a -> GQLResult (Value CONST)
 
--- instance
---   ( EncodeWrapper f,
---     Encode m a,
---     Monad m
---   ) =>
---   EncodeKind WRAPPER m (f a)
---   where
---   encodeKind = encodeWrapper encode . unContextValue
+instance (EncodeWrapperValue f, Decode a) => EncodeKind WRAPPER (f a) where
+  encodeKind = encodeWrapperValue encode . unContextValue
 
 instance (EncodeScalar a) => EncodeKind SCALAR a where
   encodeKind = pure . Scalar . encodeScalar . unContextValue
 
 instance (EncodeConstraint a) => EncodeKind TYPE a where
   encodeKind = exploreResolvers . unContextValue
-
---  Map
--- instance (Monad m, Encode m [(k, v)]) => EncodeKind CUSTOM m (Map k v) where
---   encodeKind = encode . M.toList . unContextValue
 
 convertNode ::
   DataType (GQLResult (Value CONST)) ->
@@ -363,3 +368,40 @@ type EncodeConstraint a =
 
 class DeriveArguments (k :: DerivingKind) a where
   deriveArgumentsDefinition :: f k a -> SchemaT OUT (ArgumentsDefinition CONST)
+
+-- DIRECTIVES
+
+data DirectiveUsages = DirectiveUsages
+  { typeDirectives :: [DirectiveUsage],
+    fieldDirectives :: M.HashMap FieldName [DirectiveUsage],
+    enumValueDirectives :: M.HashMap TypeName [DirectiveUsage]
+  }
+
+instance Monoid DirectiveUsages where
+  mempty = DirectiveUsages mempty mempty mempty
+
+instance Semigroup DirectiveUsages where
+  DirectiveUsages td1 fd1 ed1 <> DirectiveUsages td2 fd2 ed2 = DirectiveUsages (td1 <> td2) (fd1 <> fd2) (ed1 <> ed2)
+
+type TypeDirectiveConstraint a = (GQLDirective a, GQLType a, Decode a, DeriveArguments (KIND a) a, ToLocations (DIRECTIVE_LOCATIONS a))
+
+typeDirective :: TypeDirectiveConstraint a => a -> DirectiveUsages
+typeDirective x = DirectiveUsages [DirectiveUsage x] mempty mempty
+
+fieldDirective :: TypeDirectiveConstraint a => FieldName -> a -> DirectiveUsages
+fieldDirective fieldName x = DirectiveUsages mempty (M.singleton fieldName [DirectiveUsage x]) mempty
+
+enumDirective :: TypeDirectiveConstraint a => TypeName -> a -> DirectiveUsages
+enumDirective fieldName x = DirectiveUsages mempty mempty (M.singleton fieldName [DirectiveUsage x])
+
+data DirectiveUsage where
+  DirectiveUsage :: (GQLDirective a, GQLType a, Decode a, DeriveArguments (KIND a) a, ToLocations (DIRECTIVE_LOCATIONS a)) => a -> DirectiveUsage
+
+applyOnTypeName :: DirectiveUsage -> TypeName -> TypeName
+applyOnTypeName (DirectiveUsage x) = visitTypeName x
+
+typeNameWithDirectives :: TypeName -> [DirectiveUsage] -> TypeName
+typeNameWithDirectives = foldr applyOnTypeName
+
+editTypeData :: TypeData -> DirectiveUsages -> TypeData
+editTypeData TypeData {..} DirectiveUsages {typeDirectives} = TypeData {gqlTypeName = typeNameWithDirectives gqlTypeName typeDirectives, ..}

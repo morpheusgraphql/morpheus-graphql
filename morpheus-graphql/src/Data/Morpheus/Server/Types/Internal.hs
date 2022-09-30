@@ -7,19 +7,21 @@ module Data.Morpheus.Server.Types.Internal
     TypeData (..),
     prefixInputs,
     mkTypeData,
+    dropNamespaceOptions,
   )
 where
 
 -- MORPHEUS
 
-import Data.Morpheus.Server.Types.SchemaT
-  ( TypeFingerprint (..),
-  )
+import Data.Char (toLower)
+import Data.Morpheus.Server.Types.TypeName (TypeFingerprint (..))
 import Data.Morpheus.Types.Internal.AST
-  ( TypeName,
+  ( TypeKind (..),
+    TypeName,
     TypeWrapper (..),
     mkBaseType,
   )
+import qualified Data.Text as T
 import Relude hiding (Seq, Undefined, intercalate)
 
 data TypeData = TypeData
@@ -73,3 +75,24 @@ mkTypeData name _ =
       gqlFingerprint = InternalFingerprint name,
       gqlWrappers = mkBaseType
     }
+
+dropPrefix :: Text -> String -> String
+dropPrefix name = drop (T.length name)
+
+stripConstructorNamespace :: Text -> String -> String
+stripConstructorNamespace = dropPrefix
+
+stripFieldNamespace :: Text -> String -> String
+stripFieldNamespace prefix = __uncapitalize . dropPrefix prefix
+  where
+    __uncapitalize [] = []
+    __uncapitalize (x : xs) = toLower x : xs
+
+dropNamespaceOptions :: TypeKind -> Text -> GQLTypeOptions -> GQLTypeOptions
+dropNamespaceOptions KindInterface tName opt =
+  opt
+    { typeNameModifier = const (stripConstructorNamespace "Interface"),
+      fieldLabelModifier = stripFieldNamespace tName
+    }
+dropNamespaceOptions KindEnum tName opt = opt {constructorTagModifier = stripConstructorNamespace tName}
+dropNamespaceOptions _ tName opt = opt {fieldLabelModifier = stripFieldNamespace tName}

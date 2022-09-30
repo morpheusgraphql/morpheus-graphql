@@ -12,6 +12,9 @@ import Data.Morpheus.CodeGen.Internal.AST
   ( CodeGenConfig (..),
     ServerTypeDefinition,
   )
+import Data.Morpheus.Server.TH.Declare.GQLDirective
+  ( deriveGQLDirective,
+  )
 import Data.Morpheus.Server.TH.Declare.GQLType
   ( deriveGQLType,
   )
@@ -32,4 +35,8 @@ instance Declare a => Declare [a] where
   declare = fmap concat . traverse declare
 
 instance Declare ServerTypeDefinition where
-  declare typeDef = (declareType typeDef <>) <$> deriveGQLType typeDef
+  declare typeDef = do
+    let typeDecs = declareType typeDef
+    gqlDirDecs <- deriveGQLDirective typeDef
+    gqlTypeDecs <- deriveGQLType typeDef
+    pure (typeDecs <> gqlDirDecs <> gqlTypeDecs)

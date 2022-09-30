@@ -1,5 +1,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Data.Morpheus.Server.Deriving.Schema.Enum
   ( buildEnumTypeContent,
@@ -7,9 +8,9 @@ module Data.Morpheus.Server.Deriving.Schema.Enum
   )
 where
 
+import Data.Morpheus.Server.Deriving.Schema.Directive (deriveEnumDirectives)
 import Data.Morpheus.Server.Deriving.Schema.Internal
   ( lookupDescription,
-    lookupDirectives,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( KindedType (..),
@@ -36,16 +37,18 @@ import Data.Morpheus.Types.Internal.AST
   )
 
 buildEnumTypeContent :: GQLType a => KindedType kind a -> [TypeName] -> SchemaT c (TypeContent TRUE kind CONST)
-buildEnumTypeContent p@InputType enumCons = pure $ DataEnum $ map (mkEnumValue p) enumCons
-buildEnumTypeContent p@OutputType enumCons = pure $ DataEnum $ map (mkEnumValue p) enumCons
+buildEnumTypeContent p@InputType enumCons = DataEnum <$> traverse (mkEnumValue p) enumCons
+buildEnumTypeContent p@OutputType enumCons = DataEnum <$> traverse (mkEnumValue p) enumCons
 
-mkEnumValue :: GQLType a => f a -> TypeName -> DataEnumValue CONST
-mkEnumValue proxy enumName =
-  DataEnumValue
-    { enumName,
-      enumDescription = lookupDescription proxy (unpackName enumName),
-      enumDirectives = lookupDirectives proxy (unpackName enumName)
-    }
+mkEnumValue :: GQLType a => f a -> TypeName -> SchemaT c (DataEnumValue CONST)
+mkEnumValue proxy enumName = do
+  enumDirectives <- deriveEnumDirectives proxy enumName
+  pure
+    DataEnumValue
+      { enumName,
+        enumDescription = lookupDescription proxy (unpackName enumName),
+        ..
+      }
 
 defineEnumUnit :: SchemaT cat ()
 defineEnumUnit =

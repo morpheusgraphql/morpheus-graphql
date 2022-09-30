@@ -37,6 +37,7 @@ module Data.Morpheus.Types.Internal.AST.Fields
     mkField,
     renderArgumentValues,
     renderDirectives,
+    addDirectives,
   )
 where
 
@@ -57,10 +58,13 @@ import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
     Rendering,
     intercalate,
+    newline,
+    nonNillSpace,
     renderArguments,
     renderEntry,
     renderObject,
     space,
+    unwords,
   )
 import Data.Morpheus.Types.Internal.AST.Base
   ( Description,
@@ -101,7 +105,7 @@ import Data.Morpheus.Types.Internal.AST.Value
   )
 import Instances.TH.Lift ()
 import Language.Haskell.TH.Syntax (Lift (..))
-import Relude hiding (empty, intercalate)
+import Relude hiding (empty, intercalate, unwords)
 
 -- scalar
 ------------------------------------------------------------------
@@ -156,6 +160,9 @@ instance RenderGQL (Directive s) where
       <> renderGQL directiveName
       <> renderArgumentValues directiveArgs
 
+instance RenderGQL (Directives s) where
+  renderGQL dirs = unwords (renderGQL <$> toList dirs)
+
 type Directives s = OrdMap FieldName (Directive s)
 
 renderDirectives :: Directives s -> Rendering
@@ -187,8 +194,18 @@ type DirectivesDefinition s = SafeHashMap FieldName (DirectiveDefinition s)
 instance KeyOf FieldName (DirectiveDefinition s) where
   keyOf = directiveDefinitionName
 
--- instance IsMap FieldName (ArgumentDefinition s) (DirectiveDefinition s) where
---   lookup key DirectiveDefinition {directiveDefinitionArgs} = lookup key directiveDefinitionArgs
+instance RenderGQL (DirectiveDefinition s) where
+  renderGQL DirectiveDefinition {..} =
+    "directive"
+      <> space
+      <> "@"
+      <> renderGQL directiveDefinitionName
+      <> renderGQL directiveDefinitionArgs
+      <> space
+      <> "on"
+      <> space
+      <> intercalate " | " (renderGQL <$> directiveDefinitionLocations)
+      <> newline
 
 lookupDeprecated :: Directives s -> Maybe (Directive s)
 lookupDeprecated = lookup "deprecated"
@@ -276,10 +293,13 @@ instance NameCollision GQLError (FieldDefinition cat s) where
     "There can Be only One field Named " <> msg fieldName
 
 instance RenderGQL (FieldDefinition cat s) where
-  renderGQL FieldDefinition {fieldName, fieldType, fieldContent = Just (FieldArgs args)} =
-    renderGQL fieldName <> renderGQL args <> ": " <> renderGQL fieldType
-  renderGQL FieldDefinition {fieldName, fieldType} =
-    renderEntry fieldName fieldType
+  renderGQL FieldDefinition {fieldContent = Just (FieldArgs args), ..} =
+    renderGQL fieldName <> renderGQL args <> ": " <> renderGQL fieldType <> addDirectives fieldDirectives
+  renderGQL FieldDefinition {..} =
+    renderEntry fieldName fieldType <> addDirectives fieldDirectives
+
+addDirectives :: Directives s -> Rendering
+addDirectives dirs = nonNillSpace dirs <> renderGQL dirs
 
 instance RenderGQL (FieldsDefinition cat s) where
   renderGQL = renderObject . filter fieldVisibility . toList

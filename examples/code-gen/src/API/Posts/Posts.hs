@@ -1,11 +1,13 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module API.Posts.Posts where
 
 import Data.Data (Typeable)
+import Data.Morpheus
 import Data.Morpheus.Kind (TYPE)
 import Data.Morpheus.Types
 import Data.Text (Text)
@@ -21,6 +23,10 @@ data Post m = Post
 
 instance (Typeable m) => GQLType (Post m) where
   type KIND (Post m) = TYPE
+  directives _ =
+    fieldDirective "title" Deprecated {reason = Nothing}
+      <> fieldDirective "authorID" Deprecated {reason = Nothing}
+  typeOptions _ options = options
 
 ---- GQL Query -------------------------------
 data Query m = Query
@@ -31,3 +37,4 @@ data Query m = Query
 
 instance (Typeable m) => GQLType (Query m) where
   type KIND (Query m) = TYPE
+  typeOptions _ options = options

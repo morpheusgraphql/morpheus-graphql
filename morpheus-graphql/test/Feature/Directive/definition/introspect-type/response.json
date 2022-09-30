@@ -1,0 +1,56 @@
+{
+  "data": {
+    "deity": {
+      "enumValues": null,
+      "fields": [
+        {
+          "args": [],
+          "deprecationReason": null,
+          "isDeprecated": false,
+          "name": "deityName",
+          "type": {
+            "kind": "NON_NULL",
+            "name": null,
+            "ofType": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            }
+          }
+        },
+        {
+          "args": [],
+          "deprecationReason": null,
+          "isDeprecated": true,
+          "name": "deprecatedField",
+          "type": {
+            "kind": "SCALAR",
+            "name": "String",
+            "ofType": null
+          }
+        },
+        {
+          "args": [],
+          "deprecationReason": "this should be deprecated",
+          "isDeprecated": true,
+          "name": "deprecatedFieldWithReason",
+          "type": {
+            "kind": "NON_NULL",
+            "name": null,
+            "ofType": {
+              "kind": "SCALAR",
+              "name": "Boolean",
+              "ofType": null
+            }
+          }
+        }
+      ],
+      "inputFields": null,
+      "interfaces": [],
+      "kind": "OBJECT",
+      "name": "Deity",
+      "possibleTypes": null
+    },
+    "shouldBeNull": null
+  }
+}

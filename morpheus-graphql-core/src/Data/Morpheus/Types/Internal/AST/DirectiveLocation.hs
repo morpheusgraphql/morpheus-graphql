@@ -6,6 +6,7 @@ module Data.Morpheus.Types.Internal.AST.DirectiveLocation
   )
 where
 
+import Data.Morpheus.Rendering.RenderGQL (RenderGQL (..), fromShow)
 import Data.Morpheus.Types.Internal.AST.Error (Msg (..))
 import Language.Haskell.TH.Syntax (Lift)
 import Relude hiding (Show, show)
@@ -34,3 +35,6 @@ data DirectiveLocation
 
 instance Msg DirectiveLocation where
   msg = msg . show
+
+instance RenderGQL DirectiveLocation where
+  renderGQL = fromShow

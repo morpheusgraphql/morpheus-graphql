@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.35.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -24,7 +24,9 @@ data-files:
     test/Feature/Collision/category-collision-fail/query.gql
     test/Feature/Collision/category-collision-success/query.gql
     test/Feature/Collision/name-collision/query.gql
-    test/Feature/Directive/definition/introspection/query.gql
+    test/Feature/Directive/definition/introspect-directive/query.gql
+    test/Feature/Directive/definition/introspect-enum/query.gql
+    test/Feature/Directive/definition/introspect-type/query.gql
     test/Feature/Holistic/holistic/arguments/nameConflict/query.gql
     test/Feature/Holistic/holistic/arguments/undefinedArgument/query.gql
     test/Feature/Holistic/holistic/arguments/unknownArguments/query.gql
@@ -237,7 +239,9 @@ data-files:
     test/Feature/Collision/category-collision-fail/response.json
     test/Feature/Collision/category-collision-success/response.json
     test/Feature/Collision/name-collision/response.json
-    test/Feature/Directive/definition/introspection/response.json
+    test/Feature/Directive/definition/introspect-directive/response.json
+    test/Feature/Directive/definition/introspect-enum/response.json
+    test/Feature/Directive/definition/introspect-type/response.json
     test/Feature/Holistic/holistic/arguments/nameConflict/response.json
     test/Feature/Holistic/holistic/arguments/undefinedArgument/response.json
     test/Feature/Holistic/holistic/arguments/unknownArguments/response.json
@@ -481,6 +485,7 @@ library
       Data.Morpheus.Server.Deriving.Named.EncodeType
       Data.Morpheus.Server.Deriving.Named.EncodeValue
       Data.Morpheus.Server.Deriving.Schema
+      Data.Morpheus.Server.Deriving.Schema.Directive
       Data.Morpheus.Server.Deriving.Schema.Enum
       Data.Morpheus.Server.Deriving.Schema.Internal
       Data.Morpheus.Server.Deriving.Schema.Object
@@ -496,16 +501,18 @@ library
       Data.Morpheus.Server.Playground
       Data.Morpheus.Server.TH.Compile
       Data.Morpheus.Server.TH.Declare
+      Data.Morpheus.Server.TH.Declare.GQLDirective
       Data.Morpheus.Server.TH.Declare.GQLType
       Data.Morpheus.Server.TH.Declare.Type
       Data.Morpheus.Server.TH.Utils
-      Data.Morpheus.Server.Types.CustomDirectives
+      Data.Morpheus.Server.Types.DirectiveDefinitions
       Data.Morpheus.Server.Types.Directives
       Data.Morpheus.Server.Types.GQLType
       Data.Morpheus.Server.Types.Internal
       Data.Morpheus.Server.Types.SchemaT
       Data.Morpheus.Server.Types.TypeName
       Data.Morpheus.Server.Types.Types
+      Data.Morpheus.Server.Types.Visitors
       Paths_morpheus_graphql
   hs-source-dirs:
       src
@@ -570,6 +577,7 @@ test-suite morpheus-graphql-test
     , base >=4.7.0 && <5.0.0
     , bytestring >=0.10.4 && <0.12.0
     , containers >=0.4.2.1 && <0.7.0
+    , file-embed >=0.0.10 && <1.0.0
     , morpheus-graphql
     , morpheus-graphql-app >=0.20.0 && <0.21.0
     , morpheus-graphql-code-gen >=0.20.0 && <0.21.0

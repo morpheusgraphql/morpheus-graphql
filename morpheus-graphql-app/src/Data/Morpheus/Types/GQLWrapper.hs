@@ -6,6 +6,7 @@ module Data.Morpheus.Types.GQLWrapper
   ( EncodeWrapper (..),
     DecodeWrapper (..),
     DecodeWrapperConstraint,
+    EncodeWrapperValue (..),
   )
 where
 
@@ -17,7 +18,8 @@ import Data.Morpheus.App.Internal.Resolving
     mkNull,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( GQLError,
+  ( CONST,
+    GQLError,
     ValidValue,
     Value (..),
     msg,
@@ -132,3 +134,9 @@ typeMismatch text jsType =
     <> msg text
     <> ", got: "
     <> msg jsType
+
+class EncodeWrapperValue (f :: Type -> Type) where
+  encodeWrapperValue :: (Monad m) => (a -> m (Value CONST)) -> f a -> m (Value CONST)
+
+instance EncodeWrapperValue Maybe where
+  encodeWrapperValue = maybe (pure Null)

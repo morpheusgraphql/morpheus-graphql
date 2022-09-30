@@ -24,7 +24,6 @@ module Data.Morpheus.Server.Deriving.Schema.Internal
     TyContent,
     fromSchema,
     lookupDescription,
-    lookupDirectives,
     lookupFieldContent,
   )
 where
@@ -36,7 +35,6 @@ import Data.Morpheus.Internal.Ext
   ( GQLResult,
     Result (Failure, Success, errors),
   )
-import Data.Morpheus.Internal.Utils (empty)
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( KindedType (..),
   )
@@ -49,7 +47,6 @@ import Data.Morpheus.Server.Types.SchemaT
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
     Description,
-    Directives,
     FieldContent (..),
     Schema (..),
     TRUE,
@@ -60,9 +57,6 @@ import Relude hiding (empty)
 
 lookupDescription :: GQLType a => f a -> Text -> Maybe Description
 lookupDescription proxy name = name `M.lookup` getDescriptions proxy
-
-lookupDirectives :: GQLType a => f a -> Text -> Directives CONST
-lookupDirectives proxy name = fromMaybe empty $ name `M.lookup` getDirectives proxy
 
 lookupFieldContent ::
   GQLType a =>

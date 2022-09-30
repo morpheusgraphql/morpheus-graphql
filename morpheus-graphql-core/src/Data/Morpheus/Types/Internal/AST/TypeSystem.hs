@@ -99,6 +99,7 @@ import Data.Morpheus.Types.Internal.AST.Fields
     Directives,
     DirectivesDefinition,
     FieldsDefinition,
+    addDirectives,
   )
 import Data.Morpheus.Types.Internal.AST.Name
   ( TypeName,
@@ -197,7 +198,7 @@ data DataEnumValue s = DataEnumValue
   deriving (Show, Lift, Eq)
 
 instance RenderGQL (DataEnumValue s) where
-  renderGQL DataEnumValue {enumName} = renderGQL enumName
+  renderGQL DataEnumValue {..} = renderGQL enumName <> addDirectives enumDirectives
 
 -- 3.2 Schema : https://graphql.github.io/graphql-spec/June2018/#sec-Schema
 ---------------------------------------------------------------------------
@@ -685,8 +686,9 @@ hasDefaultOperationName
 
 instance RenderGQL (Schema s) where
   renderGQL schema@Schema {..} =
-    intercalate newline (fmap renderGQL visibleTypes <> schemaDefinition)
+    intercalate newline (directives <> visibleTypes <> schemaDefinition)
     where
+      directives = renderGQL <$> toList directiveDefinitions
       schemaDefinition
         | all hasDefaultOperationName entries = []
         | otherwise = [renderSchemaDefinition entries]
@@ -697,24 +699,28 @@ instance RenderGQL (Schema s) where
             RootOperationTypeDefinition Subscription . typeName <$> subscription
           ]
       visibleTypes =
-        filter
-          (isNotSystemTypeName . typeName)
-          (sort $ toList types)
-          <> rootTypeDefinitions schema
+        renderGQL
+          <$> ( filter
+                  (isNotSystemTypeName . typeName)
+                  (sort $ toList types)
+                  <> rootTypeDefinitions schema
+              )
 
 instance RenderGQL (TypeDefinition a s) where
-  renderGQL TypeDefinition {typeName, typeContent} = __render typeContent <> newline
+  renderGQL TypeDefinition {..} = __render typeContent <> newline
     where
-      __render DataInterface {interfaceFields} = "interface " <> renderGQL typeName <> renderGQL interfaceFields
-      __render DataScalar {} = "scalar " <> renderGQL typeName
-      __render (DataEnum tags) = "enum " <> renderGQL typeName <> renderObject tags
+      name = renderGQL typeName <> addDirectives typeDirectives
+
+      __render DataInterface {interfaceFields} = "interface " <> name <> renderGQL interfaceFields
+      __render DataScalar {} = "scalar " <> name
+      __render (DataEnum tags) = "enum " <> name <> renderObject tags
       __render (DataUnion members) =
         "union "
-          <> renderGQL typeName
+          <> name
           <> " = "
           <> renderMembers members
-      __render (DataInputObject fields) = "input " <> renderGQL typeName <> renderGQL fields
-      __render (DataInputUnion members) = "input " <> renderGQL typeName <> renderGQL fields
+      __render (DataInputObject fields) = "input " <> name <> renderGQL fields
+      __render (DataInputUnion members) = "input " <> name <> renderGQL fields
         where
           fields = mkInputUnionFields members
-      __render DataObject {objectFields} = "type " <> renderGQL typeName <> renderGQL objectFields
+      __render DataObject {objectFields} = "type " <> name <> renderGQL objectFields

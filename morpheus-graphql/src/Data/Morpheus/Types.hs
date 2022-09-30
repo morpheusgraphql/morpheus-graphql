@@ -11,7 +11,15 @@
 
 -- | GQL Types
 module Data.Morpheus.Types
-  ( GQLType (KIND, description, getDescriptions, typeOptions, getDirectives, defaultValues, directiveUsages),
+  ( GQLType
+      ( KIND,
+        description,
+        getDescriptions,
+        typeOptions,
+        getDirectives,
+        defaultValues,
+        directives
+      ),
     EncodeScalar (..),
     EncodeWrapper (..),
     DecodeScalar (..),
@@ -65,10 +73,20 @@ module Data.Morpheus.Types
     constructorTagModifier,
     typeNameModifier,
     defaultRootResolver,
-    DirectivePrefix (..),
-    DirectiveUsage (..),
+
+    -- * GQL directives API
+    Prefixes (..),
+    VisitType (..),
+    VisitField (..),
+    VisitEnum (..),
+    typeDirective,
+    fieldDirective,
+    enumDirective,
+
+    -- * default GQL directives
     GQLDirective (..),
-    Visitor (..),
+    Deprecated (..),
+    dropNamespaceOptions,
   )
 where
 
@@ -94,20 +112,30 @@ import Data.Morpheus.NamedResolvers
   ( NamedResolverT (..),
     ResolveNamed (..),
   )
-import Data.Morpheus.Server.Types.CustomDirectives
+-- FIXME: TO ENABLE DECODE INSTANCE ON DIRECTIVES
+import Data.Morpheus.Server.Deriving.Decode ()
+import Data.Morpheus.Server.Types.DirectiveDefinitions
 import Data.Morpheus.Server.Types.Directives
 import Data.Morpheus.Server.Types.GQLType
-  ( DirectiveUsage (..),
-    GQLType (..),
+  ( GQLType (..),
+    enumDirective,
+    fieldDirective,
+    typeDirective,
   )
 import Data.Morpheus.Server.Types.Internal
   ( GQLTypeOptions (..),
     defaultTypeOptions,
+    dropNamespaceOptions,
   )
 import Data.Morpheus.Server.Types.Types
   ( Arg (..),
     TypeGuard (..),
     Undefined (..),
+  )
+import Data.Morpheus.Server.Types.Visitors
+  ( VisitEnum (..),
+    VisitField (..),
+    VisitType (..),
   )
 import Data.Morpheus.Types.GQLScalar
   ( DecodeScalar (..),

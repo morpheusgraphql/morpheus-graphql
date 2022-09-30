@@ -27,7 +27,7 @@ import qualified Data.Text.Lazy as LT
   ( fromStrict,
   )
 import Data.Text.Lazy.Encoding (encodeUtf8)
-import Data.Text.Prettyprint.Doc
+import Prettyprinter
   ( Doc,
     line,
     pretty,
@@ -49,6 +49,7 @@ renderDocument moduleName types =
                   [ ("Data.Data", ["Typeable"]),
                     ("Data.Morpheus.Kind", ["TYPE"]),
                     ("Data.Morpheus.Types", []),
+                    ("Data.Morpheus", []),
                     ("Data.Text", ["Text"]),
                     ("GHC.Generics", ["Generic"]),
                     ("Data.Map", ["fromList", "empty"])

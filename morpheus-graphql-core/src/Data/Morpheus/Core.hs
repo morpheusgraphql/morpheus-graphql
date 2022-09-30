@@ -23,6 +23,7 @@ module Data.Morpheus.Core
     parseTypeDefinitions,
     render,
     validateRequest,
+    parseDefinitions,
   )
 where
 
@@ -34,7 +35,8 @@ import Data.Morpheus.Ext.Result
   )
 import Data.Morpheus.Internal.Utils ((<:>))
 import Data.Morpheus.Parser
-  ( parseRequest,
+  ( parseDefinitions,
+    parseRequest,
     parseRequestWith,
     parseSchema,
     parseTypeDefinitions,

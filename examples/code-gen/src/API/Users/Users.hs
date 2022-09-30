@@ -1,11 +1,13 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module API.Users.Users where
 
 import Data.Data (Typeable)
+import Data.Morpheus
 import Data.Morpheus.Kind (TYPE)
 import Data.Morpheus.Types
 import Data.Text (Text)
@@ -20,6 +22,10 @@ data User m = User
 
 instance (Typeable m) => GQLType (User m) where
   type KIND (User m) = TYPE
+  directives _ =
+    fieldDirective "id" Deprecated {reason = Just "XYZ"}
+      <> fieldDirective "name" Deprecated {reason = Nothing}
+  typeOptions _ options = options
 
 ---- GQL Query -------------------------------
 data Query m = Query
@@ -30,3 +36,4 @@ data Query m = Query
 
 instance (Typeable m) => GQLType (Query m) where
   type KIND (Query m) = TYPE
+  typeOptions _ options = options
