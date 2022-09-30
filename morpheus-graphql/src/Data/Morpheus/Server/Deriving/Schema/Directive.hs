@@ -57,7 +57,6 @@ import Data.Morpheus.Types.Internal.AST
     FieldName,
     IN,
     Position (Position),
-    packName,
     unpackName,
   )
 import GHC.Generics ()
@@ -129,10 +128,10 @@ getDir name xs = fromMaybe empty $ name `M.lookup` xs
 getDirHM :: (Ord k, Hashable k, Empty a) => k -> HashMap k a -> a
 getDirHM name xs = fromMaybe empty $ name `HM.lookup` xs
 
-deriveFieldDirectives :: GQLType a => f a -> Text -> SchemaT c (Directives CONST)
+deriveFieldDirectives :: GQLType a => f a -> FieldName -> SchemaT c (Directives CONST)
 deriveFieldDirectives proxy name = do
-  dirs <- deriveDirectiveUsages $ getDirHM (packName name) $ fieldDirectives $ directives proxy
-  getDir name (getDirectives proxy) <:> dirs
+  dirs <- deriveDirectiveUsages $ getDirHM name $ fieldDirectives $ directives proxy
+  getDir (unpackName name) (getDirectives proxy) <:> dirs
 
 deriveEnumDirectives :: GQLType a => f a -> TypeName -> SchemaT c (Directives CONST)
 deriveEnumDirectives proxy name = do

@@ -14,16 +14,23 @@
 
 module Data.Morpheus.Server.Types.Directives
   ( GQLDirective (..),
-    getLocations,
     ToLocations (..),
+    getLocations,
+    -- visitors
     visitTypeName,
+    visitTypeDescription,
+    visitFieldName,
+    visitFieldDescription,
+    visitEnumName,
+    visitEnumDescription,
   )
 where
 
 import Data.Morpheus.Server.Types.TypeName (getTypename)
 import qualified Data.Morpheus.Server.Types.Visitors as Visitors
 import Data.Morpheus.Types.Internal.AST
-  ( DirectiveLocation (..),
+  ( Description,
+    DirectiveLocation (..),
     FALSE,
     FieldName,
     TRUE,
@@ -120,32 +127,62 @@ class
   where
   type DIRECTIVE_LOCATIONS a :: [DirectiveLocation]
 
+-- TYPE VISITORS
+
 visitTypeName :: forall a. GQLDirective a => a -> TypeName -> TypeName
 visitTypeName = __visitTypeName (Proxy :: Proxy (ALLOWED a TYPE_VISITOR_KIND))
 
+visitTypeDescription :: forall a. GQLDirective a => a -> Maybe Description -> Maybe Description
+visitTypeDescription = __visitTypeDescription (Proxy :: Proxy (ALLOWED a TYPE_VISITOR_KIND))
+
 class VISIT_TYPE a (t :: Bool) where
   __visitTypeName :: f t -> a -> TypeName -> TypeName
+  __visitTypeDescription :: f t -> a -> Maybe Description -> Maybe Description
 
 instance VISIT_TYPE a 'False where
   __visitTypeName _ _ = id
+  __visitTypeDescription _ _ = id
 
 instance Visitors.VisitType a => VISIT_TYPE a TRUE where
   __visitTypeName _ x name = packName $ Visitors.visitTypeName x (unpackName name)
+  __visitTypeDescription _ = Visitors.visitTypeDescription
+
+-- FIELD VISITORS
+
+visitFieldName :: forall a. GQLDirective a => a -> FieldName -> FieldName
+visitFieldName = __visitFieldName (Proxy :: Proxy (ALLOWED a FIELD_VISITOR_KIND))
+
+visitFieldDescription :: forall a. GQLDirective a => a -> Maybe Description -> Maybe Description
+visitFieldDescription = __visitFieldDescription (Proxy :: Proxy (ALLOWED a FIELD_VISITOR_KIND))
 
 class VISIT_FIELD a (t :: Bool) where
   __visitFieldName :: f t -> a -> FieldName -> FieldName
+  __visitFieldDescription :: f t -> a -> Maybe Description -> Maybe Description
 
 instance VISIT_FIELD a FALSE where
   __visitFieldName _ _ = id
+  __visitFieldDescription _ _ = id
 
 instance Visitors.VisitField a => VISIT_FIELD a TRUE where
   __visitFieldName _ x name = packName $ Visitors.visitFieldName x (unpackName name)
+  __visitFieldDescription _ = Visitors.visitFieldDescription
+
+-- VISIT_ENUM
+
+visitEnumName :: forall a. GQLDirective a => a -> FieldName -> FieldName
+visitEnumName = __visitEnumName (Proxy :: Proxy (ALLOWED a ENUM_VISITOR_KIND))
+
+visitEnumDescription :: forall a. GQLDirective a => a -> Maybe Description -> Maybe Description
+visitEnumDescription = __visitEnumDescription (Proxy :: Proxy (ALLOWED a ENUM_VISITOR_KIND))
 
 class VISIT_ENUM a (t :: Bool) where
   __visitEnumName :: f t -> a -> FieldName -> FieldName
+  __visitEnumDescription :: f t -> a -> Maybe Description -> Maybe Description
 
 instance VISIT_ENUM a FALSE where
   __visitEnumName _ _ = id
+  __visitEnumDescription _ _ = id
 
 instance Visitors.VisitEnum a => VISIT_ENUM a TRUE where
   __visitEnumName _ x name = packName $ Visitors.visitEnumName x (unpackName name)
+  __visitEnumDescription _ = Visitors.visitEnumDescription

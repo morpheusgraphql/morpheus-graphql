@@ -16,12 +16,15 @@ module Data.Morpheus.CodeGen.Internal.AST
     ServerConstructorDefinition (..),
     ServerFieldDefinition (..),
     Kind (..),
+    ServerDirectiveUsage (..),
+    TypeValue (..),
   )
 where
 
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
     Description,
+    DirectiveLocation (..),
     Directives,
     FieldName,
     TypeKind (..),
@@ -52,6 +55,7 @@ data FIELD_TYPE_WRAPPER
 data DerivingClass
   = SHOW
   | GENERIC
+  | GQL_TYPE
   deriving (Show)
 
 data ServerFieldDefinition = ServerFieldDefinition
@@ -63,11 +67,27 @@ data ServerFieldDefinition = ServerFieldDefinition
 
 data Kind = Scalar | Type deriving (Show)
 
+data TypeValue
+  = TypeValueObject TypeName [(FieldName, TypeValue)]
+  | TypeValueNumber Double
+  | TypeValueString Text
+  | TypeValueBool Bool
+  | TypeValueList [TypeValue]
+  | TypedValueMaybe (Maybe TypeValue)
+  deriving (Show)
+
+data ServerDirectiveUsage
+  = TypeDirectiveUsage TypeValue
+  | FieldDirectiveUsage FieldName TypeValue
+  | EnumDirectiveUsage TypeName TypeValue
+  deriving (Show)
+
 data GQLTypeDefinition = GQLTypeDefinition
   { gqlKind :: Kind,
     gqlTypeDescription :: Maybe Text,
     gqlTypeDescriptions :: Map Text Description,
     gqlTypeDirectives :: Map Text (Directives CONST),
+    gqlTypeDirectiveUses :: [ServerDirectiveUsage],
     gqlTypeDefaultValues :: Map Text (Value CONST)
   }
   deriving (Show)
@@ -86,6 +106,11 @@ data ServerTypeDefinition
         tKind :: TypeKind,
         derives :: [DerivingClass],
         gql :: Maybe GQLTypeDefinition
+      }
+  | DirectiveTypeDefinition
+      { directiveConstructor :: ServerConstructorDefinition,
+        directiveDerives :: [DerivingClass],
+        directiveLocations :: [DirectiveLocation]
       }
   | ServerInterfaceDefinition
       TypeName

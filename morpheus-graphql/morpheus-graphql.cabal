@@ -501,6 +501,7 @@ library
       Data.Morpheus.Server.Playground
       Data.Morpheus.Server.TH.Compile
       Data.Morpheus.Server.TH.Declare
+      Data.Morpheus.Server.TH.Declare.GQLDirective
       Data.Morpheus.Server.TH.Declare.GQLType
       Data.Morpheus.Server.TH.Declare.Type
       Data.Morpheus.Server.TH.Utils
@@ -576,6 +577,7 @@ test-suite morpheus-graphql-test
     , base >=4.7.0 && <5.0.0
     , bytestring >=0.10.4 && <0.12.0
     , containers >=0.4.2.1 && <0.7.0
+    , file-embed
     , morpheus-graphql
     , morpheus-graphql-app >=0.20.0 && <0.21.0
     , morpheus-graphql-code-gen >=0.20.0 && <0.21.0

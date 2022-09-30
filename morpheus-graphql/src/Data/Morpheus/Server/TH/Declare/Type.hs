@@ -2,6 +2,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -10,14 +11,7 @@ module Data.Morpheus.Server.TH.Declare.Type
   )
 where
 
-import Data.Morpheus.CodeGen.Internal.AST
-  ( DerivingClass (..),
-    FIELD_TYPE_WRAPPER (..),
-    ServerConstructorDefinition (..),
-    ServerFieldDefinition (..),
-    ServerTypeDefinition (..),
-    unpackName,
-  )
+import Data.Morpheus.CodeGen.Internal.AST (DerivingClass (..), FIELD_TYPE_WRAPPER (..), ServerConstructorDefinition (..), ServerFieldDefinition (..), ServerTypeDefinition (..), unpackName)
 import Data.Morpheus.CodeGen.Internal.TH
   ( apply,
     declareTypeRef,
@@ -32,6 +26,7 @@ import Data.Morpheus.Server.TH.Utils
   )
 import Data.Morpheus.Types
   ( Arg,
+    GQLType,
     SubscriptionField,
     TypeGuard,
   )
@@ -72,12 +67,18 @@ declareType
 #else
       vars = map PlainTV (renderTypeVars typeParameters)
 #endif
-
+declareType
+  DirectiveTypeDefinition {..} 
+    = [DataD [] name [] Nothing [declareCons directiveConstructor] [derivingClause]]
+    where
+      name = toName (constructorName directiveConstructor)
+      derivingClause = DerivClause Nothing (map (ConT . genName) directiveDerives)
 {- ORMOLU_ENABLE -}
 
 genName :: DerivingClass -> Name
 genName GENERIC = ''Generic
 genName SHOW = ''Show
+genName GQL_TYPE = ''GQLType
 
 declareCons :: ServerConstructorDefinition -> Con
 declareCons ServerConstructorDefinition {constructorName, constructorFields} =

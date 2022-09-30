@@ -132,7 +132,7 @@ mkObjectTypeContent OutputType = DataObject []
 
 setGQLTypeProps :: GQLType a => KindedType kind a -> FieldDefinition kind CONST -> SchemaT c (FieldDefinition kind CONST)
 setGQLTypeProps proxy FieldDefinition {..} = do
-  dirs <- deriveFieldDirectives proxy key
+  dirs <- deriveFieldDirectives proxy fieldName
   pure
     FieldDefinition
       { fieldName,

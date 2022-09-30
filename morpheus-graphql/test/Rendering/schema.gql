@@ -1,35 +1,37 @@
-scalar TestScalar
+directive @TestDirective(name: String!, enum: TestEnum) INPUT_OBJECT| OBJECT
 
-enum TestEnum {
+scalar  TestScalar @TestDirective(name: "SomeName")
+
+enum  TestEnum @TestDirective(name: "SomeName") {
   EnumA
   EnumB
   EnumC
 }
 
-input Coordinates {
+input  Coordinates @TestDirective(name: "SomeName") {
   latitude: TestScalar!
   longitude: Int!
 }
 
-type Address {
+type  Address {
   street: [[[[String!]!]!]]
   score: Float!
 }
 
-type User {
+type  User {
   type: String!
   address(coordinates: Coordinates!, type: String): Int!
   friend(id: ID!, cityID: TestEnum): User!
 }
 
-union TestUnion = User | Address
+union  TestUnion @TestDirective(name: "SomeName") = User | Address
 
-type MyQuery {
+type  MyQuery {
   user: User!
   testUnion: TestUnion
 }
 
-type MyMutation {
+type  MyMutation {
   newUser: User!
 }
 

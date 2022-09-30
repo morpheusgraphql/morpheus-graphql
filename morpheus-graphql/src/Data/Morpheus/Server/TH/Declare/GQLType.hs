@@ -6,7 +6,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE TemplateHaskellQuotes #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -20,10 +20,13 @@ import Data.Morpheus.CodeGen.Internal.AST
   ( CodeGenConfig (..),
     GQLTypeDefinition (..),
     Kind (..),
+    ServerDirectiveUsage (..),
     ServerTypeDefinition (..),
+    TypeValue (..),
   )
 import Data.Morpheus.CodeGen.Internal.TH
-  ( apply,
+  ( ToName (..),
+    apply,
     applyVars,
     typeInstanceDec,
   )
@@ -37,23 +40,37 @@ import Data.Morpheus.Server.TH.Utils
     mkTypeableConstraints,
     renderTypeVars,
   )
+import Data.Morpheus.Server.Types.GQLType
+  ( enumDirective,
+    fieldDirective,
+    typeDirective,
+  )
 import Data.Morpheus.Types
   ( GQLType (..),
     GQLTypeOptions (..),
   )
 import Data.Morpheus.Types.Internal.AST
-  ( TypeKind (..),
+  ( FieldName,
+    TypeKind (..),
   )
+import Data.Text (unpack)
 import qualified Data.Text as T
 import Language.Haskell.TH
   ( Dec,
     DecQ,
+    ExpQ,
+    FieldExp,
     Name,
     Q,
     Type (ConT),
+    appE,
+    conE,
     instanceD,
+    litE,
+    recConE,
+    stringL,
   )
-import Relude
+import Relude hiding (toString)
 
 dropPrefix :: Text -> String -> String
 dropPrefix name = drop (T.length name)
@@ -77,7 +94,6 @@ dropNamespaceOptions KindEnum tName opt = opt {constructorTagModifier = stripCon
 dropNamespaceOptions _ tName opt = opt {fieldLabelModifier = stripFieldNamespace tName}
 
 deriveGQLType :: ServerTypeDefinition -> ServerDec [Dec]
-deriveGQLType ServerInterfaceDefinition {} = pure []
 deriveGQLType
   ServerTypeDefinition
     { tName,
@@ -91,6 +107,7 @@ deriveGQLType
     methods <- defineMethods tName tKind typeVars gql
     gqlTypeDeclaration <- lift (instanceD constrains typeSignature methods)
     pure [gqlTypeDeclaration]
+deriveGQLType _ = pure []
 
 defineTypeOptions :: Text -> TypeKind -> ServerDec [DecQ]
 defineTypeOptions tName kind = do
@@ -114,6 +131,7 @@ defineMethods
           gqlTypeDescriptions,
           gqlTypeDirectives,
           gqlTypeDefaultValues,
+          gqlTypeDirectiveUses,
           gqlKind
         }
     ) = do
@@ -125,8 +143,10 @@ defineMethods
           [ ('description, [|gqlTypeDescription|]),
             ('getDescriptions, [|gqlTypeDescriptions|]),
             ('getDirectives, [|gqlTypeDirectives|]),
-            ('defaultValues, [|gqlTypeDefaultValues|])
+            ('defaultValues, [|gqlTypeDefaultValues|]),
+            ('directives, defineDirectiveUsages gqlTypeDirectiveUses)
           ]
+
       typeFamilies = do
         currentType <- applyVars tName typeParameters
         pure $ typeInstanceDec ''KIND currentType (ConT (kindName gqlKind))
@@ -134,3 +154,29 @@ defineMethods
 kindName :: Kind -> Name
 kindName Scalar = ''SCALAR
 kindName Type = ''TYPE
+
+defineDirectiveUsages :: [ServerDirectiveUsage] -> ExpQ
+defineDirectiveUsages =
+  foldr
+    (appE . appE [|(<>)|] . defineDirectiveUsage)
+    [|mempty|]
+
+defineDirectiveUsage :: ServerDirectiveUsage -> ExpQ
+defineDirectiveUsage (TypeDirectiveUsage x) = [|typeDirective $(defineValue x)|]
+defineDirectiveUsage (FieldDirectiveUsage field x) = [|fieldDirective field $(defineValue x)|]
+defineDirectiveUsage (EnumDirectiveUsage enum x) = [|enumDirective enum $(defineValue x)|]
+
+defineValue :: TypeValue -> ExpQ
+defineValue (TypeValueObject name xs) = recConE (toName name) (map renderField xs)
+  where
+    renderField :: (FieldName, TypeValue) -> Q FieldExp
+    renderField (fName, fValue) = do
+      v <- defineValue fValue
+      pure (toName fName, v)
+defineValue (TypeValueNumber x) = [|x|]
+defineValue (TypeValueString x) = litE (stringL (unpack x))
+defineValue (TypeValueBool _) = [|x|]
+defineValue (TypedValueMaybe (Just x)) = appE (conE 'Just) (defineValue x)
+defineValue (TypedValueMaybe Nothing) = conE 'Nothing
+-- dead codes
+defineValue (TypeValueList xs) = undefined

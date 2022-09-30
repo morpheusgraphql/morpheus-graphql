@@ -15,6 +15,8 @@ module Data.Morpheus.Rendering.RenderGQL
     fromText,
     intercalate,
     renderInputSeq,
+    unwords,
+    fromShow,
   )
 where
 
@@ -28,6 +30,7 @@ import qualified Data.Text as T
 import Relude hiding
   ( ByteString,
     intercalate,
+    unwords,
   )
 
 render :: RenderGQL a => a -> ByteString
@@ -96,6 +99,9 @@ indentionSize n = stimes (n * 2) " "
 
 indent :: Rendering -> Rendering
 indent (Rendering f) = Rendering $ f . (+ 1)
+
+unwords :: [Rendering] -> Rendering
+unwords = intercalate space
 
 intercalate :: Rendering -> [Rendering] -> Rendering
 intercalate (Rendering f) fs = Rendering $ \x -> LB.intercalate (f x) (map ((x &) . runRendering) fs)

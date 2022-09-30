@@ -84,6 +84,7 @@ import Data.Morpheus.Rendering.RenderGQL
     renderEntry,
     renderMembers,
     renderObject,
+    space,
   )
 import Data.Morpheus.Types.Internal.AST.Base
   ( Description,
@@ -229,7 +230,7 @@ instance
       <*> mergeOptional (mutation s1) (mutation s2)
       <*> mergeOptional (subscription s1) (subscription s2)
       <*> directiveDefinitions s1
-        <:> directiveDefinitions s2
+      <:> directiveDefinitions s2
 
 mergeOptional ::
   (Monad m, MonadError GQLError m) =>
@@ -685,8 +686,9 @@ hasDefaultOperationName
 
 instance RenderGQL (Schema s) where
   renderGQL schema@Schema {..} =
-    intercalate newline (fmap renderGQL visibleTypes <> schemaDefinition)
+    intercalate newline (directives <> visibleTypes <> schemaDefinition)
     where
+      directives = renderGQL <$> toList directiveDefinitions
       schemaDefinition
         | all hasDefaultOperationName entries = []
         | otherwise = [renderSchemaDefinition entries]
@@ -697,24 +699,32 @@ instance RenderGQL (Schema s) where
             RootOperationTypeDefinition Subscription . typeName <$> subscription
           ]
       visibleTypes =
-        filter
-          (isNotSystemTypeName . typeName)
-          (sort $ toList types)
-          <> rootTypeDefinitions schema
+        renderGQL
+          <$> ( filter
+                  (isNotSystemTypeName . typeName)
+                  (sort $ toList types)
+                  <> rootTypeDefinitions schema
+              )
 
 instance RenderGQL (TypeDefinition a s) where
-  renderGQL TypeDefinition {typeName, typeContent} = __render typeContent <> newline
+  renderGQL TypeDefinition {..} = __render typeContent <> newline
     where
-      __render DataInterface {interfaceFields} = "interface " <> renderGQL typeName <> renderGQL interfaceFields
-      __render DataScalar {} = "scalar " <> renderGQL typeName
-      __render (DataEnum tags) = "enum " <> renderGQL typeName <> renderObject tags
+      name =
+        space
+          <> if null typeDirectives
+            then renderGQL typeName
+            else renderGQL typeName <> space <> renderGQL typeDirectives
+
+      __render DataInterface {interfaceFields} = "interface " <> name <> renderGQL interfaceFields
+      __render DataScalar {} = "scalar " <> name
+      __render (DataEnum tags) = "enum " <> name <> renderObject tags
       __render (DataUnion members) =
         "union "
-          <> renderGQL typeName
+          <> name
           <> " = "
           <> renderMembers members
-      __render (DataInputObject fields) = "input " <> renderGQL typeName <> renderGQL fields
-      __render (DataInputUnion members) = "input " <> renderGQL typeName <> renderGQL fields
+      __render (DataInputObject fields) = "input " <> name <> renderGQL fields
+      __render (DataInputUnion members) = "input " <> name <> renderGQL fields
         where
           fields = mkInputUnionFields members
-      __render DataObject {objectFields} = "type " <> renderGQL typeName <> renderGQL objectFields
+      __render DataObject {objectFields} = "type " <> name <> renderGQL objectFields

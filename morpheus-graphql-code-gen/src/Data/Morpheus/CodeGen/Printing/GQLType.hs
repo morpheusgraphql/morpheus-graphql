@@ -17,7 +17,7 @@ import Data.Morpheus.CodeGen.Printing.Terms
   ( optional,
     parametrizedType,
   )
-import Data.Text.Prettyprint.Doc
+import Prettyprinter
   ( Doc,
     Pretty (pretty),
     indent,

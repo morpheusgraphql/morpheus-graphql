@@ -18,6 +18,9 @@ module Feature.Holistic.API
 where
 
 import Control.Monad.Fail (fail)
+import Data.FileEmbed
+  ( makeRelativeToProject,
+  )
 import Data.Morpheus (deriveApp, runApp)
 import Data.Morpheus.Document
   ( importGQLDocument,
@@ -28,6 +31,7 @@ import Data.Morpheus.Subscriptions (Event)
 import Data.Morpheus.Types
   ( Arg (..),
     DecodeScalar (..),
+    Deprecated (..),
     EncodeScalar (..),
     GQLRequest,
     GQLResponse,
@@ -59,6 +63,7 @@ import Prelude
     (+),
     (.),
     (<$>),
+    (=<<),
   )
 
 data TestScalar
@@ -82,9 +87,9 @@ data Channel
 
 type EVENT = Event Channel ()
 
-importGQLDocumentWithNamespace "test/Feature/Holistic/schema.gql"
+importGQLDocumentWithNamespace =<< makeRelativeToProject "test/Feature/Holistic/schema.gql"
 
-importGQLDocument "test/Feature/Holistic/schema-ext.gql"
+importGQLDocument =<< makeRelativeToProject "test/Feature/Holistic/schema-ext.gql"
 
 alwaysFail :: IO (Either String a)
 alwaysFail = pure $ Left "fail with Either"
@@ -95,7 +100,8 @@ root =
     { queryResolver =
         Query
           { queryUser,
-            queryTestUnion = Just . TestUnionUser <$> queryUser,
+            queryTestUnion =
+              Just . TestUnionUser <$> queryUser,
             queryPerson =
               pure
                 ( ResolveType

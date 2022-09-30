@@ -1,3 +1,5 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -15,6 +17,9 @@ module Rendering.Schema
   )
 where
 
+import Data.FileEmbed
+  ( makeRelativeToProject,
+  )
 import Data.Morpheus.Document
   ( importGQLDocumentWithNamespace,
   )
@@ -23,16 +28,19 @@ import Data.Morpheus.Types
     ID,
     RootResolver,
     Undefined,
+    VisitType,
   )
 import Relude hiding (Undefined)
 
-data TestScalar = TestScalar
-  deriving (Show)
+data TestScalar = TestScalar deriving (Show)
 
 instance DecodeScalar TestScalar where
-  decodeScalar _ = pure TestScalar
+  decodeScalar = const (pure TestScalar)
 
-importGQLDocumentWithNamespace "test/Rendering/schema.gql"
+importGQLDocumentWithNamespace
+  =<< makeRelativeToProject "test/Rendering/schema.gql"
+
+instance VisitType TestDirective
 
 type APIResolver e (m :: Type -> Type) =
   RootResolver m e MyQuery MyMutation Undefined

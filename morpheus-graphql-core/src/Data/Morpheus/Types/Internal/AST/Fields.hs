@@ -57,10 +57,12 @@ import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
     Rendering,
     intercalate,
+    newline,
     renderArguments,
     renderEntry,
     renderObject,
     space,
+    unwords,
   )
 import Data.Morpheus.Types.Internal.AST.Base
   ( Description,
@@ -101,7 +103,7 @@ import Data.Morpheus.Types.Internal.AST.Value
   )
 import Instances.TH.Lift ()
 import Language.Haskell.TH.Syntax (Lift (..))
-import Relude hiding (empty, intercalate)
+import Relude hiding (empty, intercalate, unwords)
 
 -- scalar
 ------------------------------------------------------------------
@@ -156,6 +158,9 @@ instance RenderGQL (Directive s) where
       <> renderGQL directiveName
       <> renderArgumentValues directiveArgs
 
+instance RenderGQL (Directives s) where
+  renderGQL dirs = unwords (renderGQL <$> toList dirs)
+
 type Directives s = OrdMap FieldName (Directive s)
 
 renderDirectives :: Directives s -> Rendering
@@ -187,8 +192,16 @@ type DirectivesDefinition s = SafeHashMap FieldName (DirectiveDefinition s)
 instance KeyOf FieldName (DirectiveDefinition s) where
   keyOf = directiveDefinitionName
 
--- instance IsMap FieldName (ArgumentDefinition s) (DirectiveDefinition s) where
---   lookup key DirectiveDefinition {directiveDefinitionArgs} = lookup key directiveDefinitionArgs
+instance RenderGQL (DirectiveDefinition s) where
+  renderGQL DirectiveDefinition {..} =
+    "directive"
+      <> space
+      <> "@"
+      <> renderGQL directiveDefinitionName
+      <> renderGQL directiveDefinitionArgs
+      <> space
+      <> intercalate "| " (renderGQL <$> directiveDefinitionLocations)
+      <> newline
 
 lookupDeprecated :: Directives s -> Maybe (Directive s)
 lookupDeprecated = lookup "deprecated"

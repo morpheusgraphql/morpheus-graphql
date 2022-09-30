@@ -10,6 +10,7 @@
 module Data.Morpheus.Parsing.Document.TypeSystem
   ( parseSchema,
     parseTypeDefinitions,
+    parseDefinitions,
   )
 where
 
@@ -365,10 +366,11 @@ typeSystemDefinition =
   processParser parseRawTypeDefinitions
     >=> withSchemaDefinition . typePartition
 
+parseDefinitions :: ByteString -> GQLResult [RawTypeDefinition]
+parseDefinitions = processParser parseRawTypeDefinitions
+
 parseTypeDefinitions :: ByteString -> GQLResult [TypeDefinition ANY CONST]
-parseTypeDefinitions =
-  fmap (\d -> [td | RawTypeDefinition td <- d])
-    . processParser parseRawTypeDefinitions
+parseTypeDefinitions = fmap (\d -> [td | RawTypeDefinition td <- d]) . parseDefinitions
 
 parseSchema :: ByteString -> GQLResult (Schema CONST)
 parseSchema = typeSystemDefinition >=> buildSchema

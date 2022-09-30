@@ -17,6 +17,7 @@ module Data.Morpheus.CodeGen.Interpreting.Transform
 where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
+import qualified Data.ByteString.Lazy.Char8 as BS
 import Data.Morpheus.CodeGen.Internal.AST
   ( CodeGenConfig (..),
     DerivingClass (..),
@@ -24,8 +25,10 @@ import Data.Morpheus.CodeGen.Internal.AST
     GQLTypeDefinition (..),
     Kind (..),
     ServerConstructorDefinition (..),
+    ServerDirectiveUsage (..),
     ServerFieldDefinition (..),
     ServerTypeDefinition (..),
+    TypeValue (..),
   )
 import Data.Morpheus.CodeGen.Internal.Name
   ( camelCaseFieldName,
@@ -35,17 +38,19 @@ import Data.Morpheus.CodeGen.Internal.TH
   ( ToName (toName),
     camelCaseTypeName,
   )
-import Data.Morpheus.Core
-  ( parseTypeDefinitions,
-  )
+import Data.Morpheus.Core (internalSchema, parseDefinitions, render)
 import Data.Morpheus.Error (gqlWarnings, renderGQLErrors)
 import Data.Morpheus.Internal.Ext (GQLResult, Result (..))
+import Data.Morpheus.Internal.Utils (IsMap, selectOr)
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
+    Argument (..),
     ArgumentDefinition (..),
     CONST,
     DataEnumValue (..),
     Description,
+    Directive (Directive, directiveArgs, directiveName),
+    DirectiveDefinition (..),
     Directives,
     FieldContent (..),
     FieldDefinition (..),
@@ -55,6 +60,7 @@ import Data.Morpheus.Types.Internal.AST
     IN,
     OUT,
     OperationType (Subscription),
+    RawTypeDefinition (..),
     TRUE,
     Token,
     TypeContent (..),
@@ -63,13 +69,14 @@ import Data.Morpheus.Types.Internal.AST
     TypeName,
     TypeRef (..),
     UnionMember (..),
-    Value,
     isPossibleInterfaceType,
     isResolverType,
     kindOf,
     lookupWith,
     unpackName,
   )
+import qualified Data.Morpheus.Types.Internal.AST as AST
+import qualified Data.Morpheus.Types.Internal.AST as V
 import Language.Haskell.TH
   ( Dec (..),
     Info (..),
@@ -109,39 +116,64 @@ instance CodeGenMonad GQLResult where
 
 data TypeContext s = TypeContext
   { toArgsTypeName :: FieldName -> TypeName,
-    schema :: [TypeDefinition ANY s],
-    currentTypeName :: TypeName,
-    hasNamespace :: Bool,
-    currentKind :: Maybe TypeKind
+    typeDefinitions :: [TypeDefinition ANY s],
+    directiveDefinitions :: [DirectiveDefinition s],
+    currentTypeName :: Maybe TypeName,
+    currentKind :: Maybe TypeKind,
+    hasNamespace :: Bool
   }
 
 parseServerTypeDefinitions :: CodeGenMonad m => CodeGenConfig -> ByteString -> m [ServerTypeDefinition]
 parseServerTypeDefinitions ctx txt =
-  case parseTypeDefinitions txt of
+  case parseDefinitions txt of
     Failure errors -> fail (renderGQLErrors errors)
-    Success {result = schema, warnings} -> printWarnings warnings >> toTHDefinitions (namespace ctx) schema
+    Success {result, warnings} -> printWarnings warnings >> toTHDefinitions (namespace ctx) result
 
 toTHDefinitions ::
   CodeGenMonad m =>
   Bool ->
-  [TypeDefinition ANY CONST] ->
+  [RawTypeDefinition] ->
   m [ServerTypeDefinition]
-toTHDefinitions namespace schema = concat <$> traverse generateTypes schema
+toTHDefinitions namespace defs = concat <$> traverse generateTypes defs
   where
-    generateTypes :: CodeGenMonad m => TypeDefinition ANY CONST -> m [ServerTypeDefinition]
-    generateTypes typeDef =
+    typeDefinitions = [td | RawTypeDefinition td <- defs]
+    directiveDefinitions = [td | RawDirectiveDefinition td <- defs]
+    generateTypes :: CodeGenMonad m => RawTypeDefinition -> m [ServerTypeDefinition]
+    generateTypes (RawTypeDefinition typeDef) =
       runReaderT
         (genTypeDefinition typeDef)
         TypeContext
           { toArgsTypeName = mkArgsTypeName namespace (typeName typeDef),
-            schema,
-            currentTypeName = typeName typeDef,
+            typeDefinitions,
+            directiveDefinitions,
+            currentTypeName = Just (typeName typeDef),
             currentKind = Just (kindOf typeDef),
             hasNamespace = namespace
           }
+    generateTypes (RawDirectiveDefinition DirectiveDefinition {..}) =
+      runReaderT
+        ( do
+            fields <- traverse renderDataField (argument <$> toList directiveDefinitionArgs)
+            pure
+              [ DirectiveTypeDefinition
+                  { directiveConstructor = ServerConstructorDefinition (coerce directiveDefinitionName) fields,
+                    directiveDerives = [SHOW, GENERIC, GQL_TYPE],
+                    directiveLocations = directiveDefinitionLocations
+                  }
+              ]
+        )
+        TypeContext
+          { toArgsTypeName = coerce,
+            typeDefinitions,
+            currentTypeName = Just (coerce directiveDefinitionName),
+            directiveDefinitions,
+            currentKind = Nothing,
+            hasNamespace = namespace
+          }
+    generateTypes _ = pure []
 
-inType :: MonadReader (TypeContext s) m => TypeName -> m a -> m a
-inType currentTypeName = local (\x -> x {currentTypeName, currentKind = Nothing})
+inType :: MonadReader (TypeContext s) m => Maybe TypeName -> m a -> m a
+inType name = local (\x -> x {currentTypeName = name, currentKind = Nothing})
 
 mkInterfaceName :: TypeName -> TypeName
 mkInterfaceName = ("Interface" <>)
@@ -158,32 +190,40 @@ genTypeDefinition
     { typeName = originalTypeName,
       typeContent,
       typeDescription
-    } = withType <$> genTypeContent originalTypeName typeContent
+    } = genTypeContent originalTypeName typeContent >>= withType
     where
       typeName = case typeContent of
         DataInterface {} -> mkInterfaceName originalTypeName
         _ -> originalTypeName
       tKind = kindOf typeDef
       tName = toHaskellTypeName typeName
-      gql =
-        Just
-          GQLTypeDefinition
-            { gqlTypeDescription = typeDescription,
-              gqlTypeDescriptions = getDesc typeDef,
-              gqlTypeDirectives = getDirs typeDef,
-              gqlKind = derivingKind tKind,
-              gqlTypeDefaultValues =
-                fromList $
-                  mapMaybe getDefaultValue $
-                    getInputFields typeDef
-            }
+      deriveGQL = do
+        gqlTypeDescriptions <- getDesc typeDef
+        gqlTypeDirectiveUses <- getDirs typeDef
+        pure $
+          Just
+            GQLTypeDefinition
+              { gqlTypeDescription = typeDescription,
+                gqlTypeDescriptions,
+                gqlTypeDirectives = mempty,
+                gqlTypeDirectiveUses,
+                gqlKind = derivingKind tKind,
+                gqlTypeDefaultValues =
+                  fromList $
+                    mapMaybe getDefaultValue $
+                      getInputFields typeDef
+              }
       typeParameters
         | isResolverType tKind = ["m"]
         | otherwise = []
       derives = derivesClasses (isResolverType tKind)
       -------------------------
-      withType (ConsIN tCons) = [ServerTypeDefinition {..}]
-      withType (ConsOUT others tCons) = ServerTypeDefinition {..} : others
+      withType (ConsIN tCons) = do
+        gql <- deriveGQL
+        pure [ServerTypeDefinition {..}]
+      withType (ConsOUT others tCons) = do
+        gql <- deriveGQL
+        pure (ServerTypeDefinition {..} : others)
 
 derivingKind :: TypeKind -> Kind
 derivingKind KindScalar = Scalar
@@ -226,10 +266,10 @@ mkObjectField
       fieldContent,
       fieldType = TypeRef {typeConName, typeWrappers}
     } = do
-    isParametrized <- lift . isParametrizedResolverType typeConName =<< asks schema
+    isParametrized <- lift . isParametrizedResolverType typeConName =<< asks typeDefinitions
     genName <- asks toArgsTypeName
     kind <- asks currentKind
-    fieldName <- genFieldName fName
+    fieldName <- renderFieldName fName
     pure
       ServerFieldDefinition
         { fieldType = toHaskellTypeName typeConName,
@@ -262,7 +302,7 @@ data BuildPlan
 genInterfaceUnion :: Monad m => TypeName -> ServerQ m [ServerTypeDefinition]
 genInterfaceUnion interfaceName =
   mkInterface . map typeName . mapMaybe (isPossibleInterfaceType interfaceName)
-    <$> asks schema
+    <$> asks typeDefinitions
   where
     tKind = KindUnion
     mkInterface [] = []
@@ -281,12 +321,12 @@ genInterfaceUnion interfaceName =
     mkGuardWithPossibleType = ServerInterfaceDefinition interfaceName (mkInterfaceName interfaceName)
     tName = mkPossibleTypesName interfaceName
 
-genFieldName :: Monad m => FieldName -> ServerQ m FieldName
-genFieldName fieldName = do
+renderFieldName :: Monad m => FieldName -> ServerQ m FieldName
+renderFieldName fieldName = do
   TypeContext {hasNamespace, currentTypeName} <- ask
   pure $
     if hasNamespace
-      then camelCaseFieldName currentTypeName fieldName
+      then maybe fieldName (`camelCaseFieldName` fieldName) currentTypeName
       else fieldName
 
 mkConsEnum :: Monad m => TypeName -> DataEnumValue CONST -> ServerQ m ServerConstructorDefinition
@@ -301,19 +341,12 @@ mkConsEnum name DataEnumValue {enumName} = do
         constructorFields = []
       }
 
-toNonResolverServerField :: Monad m => FieldDefinition c CONST -> ServerQ m ServerFieldDefinition
-toNonResolverServerField
-  FieldDefinition
-    { fieldType = TypeRef {typeConName, typeWrappers},
-      fieldName = fName
-    } = do
-    fieldName <- genFieldName fName
-    pure $
-      ServerFieldDefinition
-        { fieldType = toHaskellTypeName typeConName,
-          fieldName,
-          wrappers = [GQL_WRAPPER typeWrappers]
-        }
+renderDataField :: Monad m => FieldDefinition c CONST -> ServerQ m ServerFieldDefinition
+renderDataField FieldDefinition {fieldType = TypeRef {typeConName, typeWrappers}, fieldName = fName} = do
+  fieldName <- renderFieldName fName
+  let wrappers = [GQL_WRAPPER typeWrappers]
+  let fieldType = toHaskellTypeName typeConName
+  pure ServerFieldDefinition {..}
 
 genTypeContent ::
   CodeGenMonad m =>
@@ -323,7 +356,7 @@ genTypeContent ::
 genTypeContent _ DataScalar {} = pure (ConsIN [])
 genTypeContent typeName (DataEnum tags) = ConsIN <$> traverse (mkConsEnum typeName) tags
 genTypeContent typeName (DataInputObject fields) =
-  ConsIN . mkObjectCons typeName <$> traverse toNonResolverServerField (toList fields)
+  ConsIN . mkObjectCons typeName <$> traverse renderDataField (toList fields)
 genTypeContent _ DataInputUnion {} = fail "Input Unions not Supported"
 genTypeContent typeName DataInterface {interfaceFields} =
   ConsOUT
@@ -331,7 +364,7 @@ genTypeContent typeName DataInterface {interfaceFields} =
     <*> ( do
             let interfaceName = mkInterfaceName typeName
             inType
-              interfaceName
+              (Just interfaceName)
               ( mkObjectCons interfaceName
                   <$> traverse mkObjectField (toList interfaceFields)
               )
@@ -373,9 +406,9 @@ genArgumentType
     }
     | length arguments > 1 = do
         tName <- (fieldName &) <$> asks toArgsTypeName
-        inType tName $ do
+        inType (Just tName) $ do
           let argumentFields = argument <$> toList arguments
-          fields <- traverse toNonResolverServerField argumentFields
+          fields <- traverse renderDataField argumentFields
           let tKind = KindInputObject
           pure
             [ ServerTypeDefinition
@@ -391,7 +424,8 @@ genArgumentType
                             gqlTypeDescription = Nothing,
                             gqlTypeDescriptions = fromList (mapMaybe mkFieldDescription argumentFields),
                             gqlTypeDirectives = fromList (mkFieldDirective <$> argumentFields),
-                            gqlTypeDefaultValues = fromList (mapMaybe getDefaultValue argumentFields)
+                            gqlTypeDefaultValues = fromList (mapMaybe getDefaultValue argumentFields),
+                            gqlTypeDirectiveUses = []
                           }
                       )
                 }
@@ -406,18 +440,23 @@ mkFieldDirective FieldDefinition {..} = (unpackName fieldName, fieldDirectives)
 
 ---
 
-getDesc :: TypeDefinition c s -> Map Token Description
-getDesc = fromList . get
+getDesc :: MonadFail m => TypeDefinition c CONST -> ServerQ m (Map Token Description)
+getDesc = fmap fromList . get
 
-getDirs :: TypeDefinition c s -> Map Token (Directives s)
-getDirs = fromList . get
+getDirs :: MonadFail m => TypeDefinition c CONST -> ServerQ m [ServerDirectiveUsage]
+getDirs x = do
+  contentD <- map snd <$> get x
+  typeD <- traverse transform (toList $ AST.typeDirectives x)
+  pure (contentD <> typeD)
+  where
+    transform v = TypeDirectiveUsage <$> directiveTypeValue v
 
 class Meta a v where
-  get :: a -> [(Token, v)]
+  get :: MonadFail m => a -> ServerQ m [(Token, v)]
 
 instance (Meta a v) => Meta (Maybe a) v where
   get (Just x) = get x
-  get _ = []
+  get _ = pure []
 
 instance
   ( Meta (FieldsDefinition IN s) v,
@@ -438,41 +477,97 @@ instance
   get DataObject {objectFields} = get objectFields
   get DataInputObject {inputObjectFields} = get inputObjectFields
   get DataInterface {interfaceFields} = get interfaceFields
-  get DataEnum {enumMembers} = concatMap get enumMembers
-  get _ = []
+  get DataEnum {enumMembers} = concat <$> traverse get enumMembers
+  get _ = pure []
 
-instance Meta (DataEnumValue s) Description where
-  get DataEnumValue {enumName, enumDescription = Just x} = [(unpackName enumName, x)]
-  get _ = []
+instance Meta (DataEnumValue CONST) Description where
+  get DataEnumValue {enumName, enumDescription = Just x} = pure [(unpackName enumName, x)]
+  get _ = pure []
 
-instance Meta (DataEnumValue s) (Directives s) where
+instance Meta (DataEnumValue CONST) ServerDirectiveUsage where
   get DataEnumValue {enumName, enumDirectives}
-    | null enumDirectives = []
-    | otherwise = [(unpackName enumName, enumDirectives)]
+    | null enumDirectives = pure []
+    | otherwise = traverse transform (toList enumDirectives)
+    where
+      transform x = (unpackName enumName,) . EnumDirectiveUsage enumName <$> directiveTypeValue x
 
 instance
-  Meta (FieldDefinition c s) v =>
-  Meta (FieldsDefinition c s) v
+  Meta (FieldDefinition c CONST) v =>
+  Meta (FieldsDefinition c CONST) v
   where
-  get = concatMap get . toList
+  get = fmap concat . traverse get . toList
 
-instance Meta (FieldDefinition c s) Description where
-  get FieldDefinition {fieldName, fieldDescription = Just x} = [(unpackName fieldName, x)]
-  get _ = []
+instance Meta (FieldDefinition c CONST) Description where
+  get FieldDefinition {fieldName, fieldDescription = Just x} = pure [(unpackName fieldName, x)]
+  get _ = pure []
 
-instance Meta (FieldDefinition c s) (Directives s) where
+instance Meta (FieldDefinition c CONST) ServerDirectiveUsage where
   get FieldDefinition {fieldName, fieldDirectives}
-    | null fieldDirectives = []
-    | otherwise = [(unpackName fieldName, fieldDirectives)]
+    | null fieldDirectives = pure []
+    | otherwise = traverse transform (toList fieldDirectives)
+    where
+      transform x = (unpackName fieldName,) . FieldDirectiveUsage fieldName <$> directiveTypeValue x
 
 getInputFields :: TypeDefinition c s -> [FieldDefinition IN s]
 getInputFields TypeDefinition {typeContent = DataInputObject {inputObjectFields}} = toList inputObjectFields
 getInputFields _ = []
 
-getDefaultValue :: FieldDefinition c s -> Maybe (Text, Value s)
+getDefaultValue :: FieldDefinition c s -> Maybe (Text, V.Value s)
 getDefaultValue
   FieldDefinition
     { fieldName,
       fieldContent = Just DefaultInputValue {defaultInputValue}
     } = Just (unpackName fieldName, defaultInputValue)
 getDefaultValue _ = Nothing
+
+nativeDirectives :: V.DirectivesDefinition CONST
+nativeDirectives = AST.directiveDefinitions internalSchema
+
+getDirective :: (MonadReader (TypeContext CONST) m, MonadFail m) => FieldName -> m (DirectiveDefinition CONST)
+getDirective directiveName = do
+  dirs <- asks directiveDefinitions
+  case find (\DirectiveDefinition {directiveDefinitionName} -> directiveDefinitionName == directiveName) dirs of
+    Just dir -> pure dir
+    _ -> selectOr (fail $ "TODO: fix me: unknown directive" <> show directiveName) pure directiveName nativeDirectives
+
+directiveTypeValue :: MonadFail m => Directive CONST -> ServerQ m TypeValue
+directiveTypeValue Directive {..} = inType typeContext $ do
+  dirs <- getDirective directiveName
+  TypeValueObject typename <$> traverse (renderArgumentValue directiveArgs) (toList $ directiveDefinitionArgs dirs)
+  where
+    (typeContext, typename) = renderDirectiveTypeName directiveName
+
+renderDirectiveTypeName :: FieldName -> (Maybe TypeName, TypeName)
+renderDirectiveTypeName "deprecated" = (Nothing, "Deprecated")
+renderDirectiveTypeName name = (Just (coerce name), coerce name)
+
+renderArgumentValue ::
+  (IsMap FieldName c, MonadFail m) =>
+  c (Argument CONST) ->
+  ArgumentDefinition s ->
+  ReaderT (TypeContext CONST) m (FieldName, TypeValue)
+renderArgumentValue args ArgumentDefinition {..} = do
+  let dirName = AST.fieldName argument
+  gqlValue <- selectOr (pure AST.Null) (pure . argumentValue) dirName args
+  typeValue <- gqlTypeValue (AST.fieldType argument) gqlValue
+  fName <- renderFieldName dirName
+  pure (fName, typeValue)
+
+gqlTypeValue :: MonadFail m => TypeRef -> V.Value CONST -> ServerQ m TypeValue
+gqlTypeValue (TypeRef name (AST.BaseType False)) value
+  | value == V.Null = pure (TypedValueMaybe Nothing)
+  | otherwise = TypedValueMaybe . Just <$> gqlTypeValue (TypeRef name (AST.BaseType True)) value
+gqlTypeValue (TypeRef name (AST.TypeList elems False)) d = TypedValueMaybe . Just <$> gqlTypeValue (TypeRef name (AST.TypeList elems True)) d
+gqlTypeValue typeDef (V.List xs) = TypeValueList <$> traverse (gqlTypeValue typeDef) xs
+gqlTypeValue _ (V.Enum name) = pure $ TypeValueObject name []
+gqlTypeValue typeDef (V.Scalar x) = scalarTypeValue typeDef x
+gqlTypeValue _ (V.Object x) = undefined
+gqlTypeValue _ V.ResolvedVariable {} = undefined
+gqlTypeValue t V.Null = fail $ "unexpected null at " <> show (render t) <> "!"
+
+scalarTypeValue :: MonadFail m => TypeRef -> V.ScalarValue -> ServerQ m TypeValue
+scalarTypeValue _ (V.Int x) = pure $ TypeValueNumber (fromIntegral x)
+scalarTypeValue _ (V.Float x) = pure $ TypeValueNumber x
+scalarTypeValue _ (V.String x) = pure $ TypeValueString x
+scalarTypeValue _ (V.Boolean x) = pure $ TypeValueBool x
+scalarTypeValue _ (V.Value _) = fail "TODO: fix me! no Value"

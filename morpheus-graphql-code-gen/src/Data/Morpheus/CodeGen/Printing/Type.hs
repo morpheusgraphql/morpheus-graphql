@@ -31,7 +31,7 @@ import Data.Morpheus.CodeGen.Printing.Terms
     renderType,
     renderWrapped,
   )
-import Data.Text.Prettyprint.Doc
+import Prettyprinter
   ( Doc,
     comma,
     enclose,
@@ -58,6 +58,7 @@ class RenderType a where
 instance RenderType DerivingClass where
   render SHOW = pure "Show"
   render GENERIC = pure "Generic"
+  render GQL_TYPE = pure "GQLType"
 
 instance RenderType ServerTypeDefinition where
   render ServerInterfaceDefinition {} = fail "not supported"
@@ -82,6 +83,21 @@ instance RenderType ServerTypeDefinition where
       renderConstructors conses = nest 2 . (line <>) . vsep . prefixVariants <$> traverse render conses
       prefixVariants (x : xs) = "=" <+> x : map ("|" <+>) xs
       prefixVariants [] = []
+  render typeDef@DirectiveTypeDefinition {directiveConstructor, directiveDerives} = do
+    typeRendering <- renderTypeDef
+    pure $ label name <> vsep [typeRendering, renderGQLType typeDef]
+    where
+      renderTypeDef = do
+        cons <- (" =" <+>) <$> render directiveConstructor
+        derivations <- renderDeriving directiveDerives
+        pure $
+          "data"
+            <+> parametrizedType name []
+              <> cons
+              <> line
+              <> indent 2 derivations
+              <> line
+      name = unpackName (constructorName directiveConstructor)
 
 renderDeriving :: [DerivingClass] -> Result (Doc n)
 renderDeriving list = ("deriving" <+>) . tupled <$> traverse render list
