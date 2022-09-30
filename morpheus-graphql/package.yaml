@@ -40,17 +40,17 @@ library:
     - Data.Morpheus.NamedResolvers
     - Data.Morpheus.Server
     - Data.Morpheus.Types
-  ghc-options: "-Wall"
+  ghc-options: '-Wall'
 tests:
   morpheus-graphql-test:
     main: Spec.hs
     source-dirs: test
-    ghc-options: "-Wall"
+    ghc-options: '-Wall'
     dependencies:
       - aeson                           >=  1.4.4   &&  <  3.0.0
+      - file-embed                      >=  0.0.10  &&  <  1.0.0
       - morpheus-graphql
       - morpheus-graphql-tests          >=  0.20.0  &&  <  0.21.0
       - morpheus-graphql-subscriptions  >=  0.20.0  &&  <  0.21.0
       - tasty                           >=  0.1.0   &&  <  1.5.0
       - tasty-hunit                     >=  0.1.0   &&  <  1.0.0
-      - file-embed
