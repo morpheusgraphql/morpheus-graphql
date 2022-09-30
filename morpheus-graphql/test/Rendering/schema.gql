@@ -4,22 +4,22 @@ scalar  TestScalar @TestDirective(name: "SomeName")
 
 enum  TestEnum @TestDirective(name: "SomeName") {
   EnumA
-  EnumB
+  EnumB @TestDirective(name: "SomeName")
   EnumC
 }
 
 input  Coordinates @TestDirective(name: "SomeName") {
   latitude: TestScalar!
-  longitude: Int!
+  longitude: Int! @TestDirective(name: "SomeName")
 }
 
 type  Address {
   street: [[[[String!]!]!]]
-  score: Float!
+  score: Float! @TestDirective(name: "SomeName")
 }
 
 type  User {
-  type: String!
+  type: String! 
   address(coordinates: Coordinates!, type: String): Int!
   friend(id: ID!, cityID: TestEnum): User!
 }
@@ -27,7 +27,7 @@ type  User {
 union  TestUnion @TestDirective(name: "SomeName") = User | Address
 
 type  MyQuery {
-  user: User!
+  user: User! 
   testUnion: TestUnion
 }
 
