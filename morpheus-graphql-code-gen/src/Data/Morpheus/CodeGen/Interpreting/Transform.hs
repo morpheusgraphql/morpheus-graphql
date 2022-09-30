@@ -537,7 +537,7 @@ getDirective directiveName = do
   dirs <- asks directiveDefinitions
   case find (\DirectiveDefinition {directiveDefinitionName} -> directiveDefinitionName == directiveName) dirs of
     Just dir -> pure dir
-    _ -> selectOr (fail $ "TODO: fix me: unknown directive" <> show directiveName) pure directiveName nativeDirectives
+    _ -> selectOr (fail $ "unknown directive" <> show directiveName) pure directiveName nativeDirectives
 
 directiveTypeValue :: MonadFail m => Directive CONST -> ServerQ m TypeValue
 directiveTypeValue Directive {..} = inType typeContext $ do
@@ -558,32 +558,54 @@ renderArgumentValue ::
 renderArgumentValue args ArgumentDefinition {..} = do
   let dirName = AST.fieldName argument
   gqlValue <- selectOr (pure AST.Null) (pure . argumentValue) dirName args
-  let TypeRef name wrappers = AST.fieldType argument
-  typeValue <- mapWrappedValue name wrappers gqlValue
+  typeValue <- mapWrappedValue (AST.fieldType argument) gqlValue
   fName <- renderFieldName dirName
   pure (fName, typeValue)
 
-mapWrappedValue :: MonadFail m => TypeName -> AST.TypeWrapper -> V.Value CONST -> ServerQ m TypeValue
-mapWrappedValue name (AST.BaseType False) value
-  | value == V.Null = pure (TypedValueMaybe Nothing)
-  | otherwise = TypedValueMaybe . Just <$> mapValue name value
-mapWrappedValue name (AST.TypeList elems False) d = case d of
-  V.Null -> pure (TypedValueMaybe Nothing)
-  (V.List xs) -> TypedValueMaybe . Just . TypeValueList <$> traverse (mapWrappedValue name elems) xs
-  _ -> fail "TODO: fix me"
-mapWrappedValue _ _ _ = fail "TODO: fix me"
+notFound :: MonadFail m => String -> String -> m a
+notFound name at = fail $ "can't found " <> name <> "at " <> at <> "!"
+
+lookupType :: MonadFail m => TypeName -> ServerQ m (TypeDefinition ANY CONST)
+lookupType name = do
+  types <- asks typeDefinitions
+  case find (\t -> typeName t == name) types of
+    Just x -> pure x
+    Nothing -> notFound (show name) "type definitions"
+
+lookupValueFieldType :: MonadFail m => TypeName -> FieldName -> ServerQ m TypeRef
+lookupValueFieldType name fieldName = do
+  TypeDefinition {typeContent} <- lookupType name
+  case typeContent of
+    DataInputObject fields -> do
+      FieldDefinition {fieldType} <- selectOr (notFound (show fieldName) (show name)) pure fieldName fields
+      pure fieldType
+    _ -> notFound "input object" (show name)
 
 mapField :: MonadFail m => TypeName -> ObjectEntry CONST -> ServerQ m (FieldName, TypeValue)
-mapField name ObjectEntry {..} = do
-  value <- mapValue name entryValue
+mapField tName ObjectEntry {..} = do
+  t <- lookupValueFieldType tName entryName
+  value <- mapWrappedValue t entryValue
   pure (entryName, value)
+
+expected :: MonadFail m => String -> V.Value CONST -> ServerQ m TypeValue
+expected typ value = fail ("expected " <> typ <> ", found " <> show (render value) <> "!")
+
+mapWrappedValue :: MonadFail m => TypeRef -> V.Value CONST -> ServerQ m TypeValue
+mapWrappedValue (TypeRef name (AST.BaseType isRequired)) value
+  | isRequired = mapValue name value
+  | value == V.Null = pure (TypedValueMaybe Nothing)
+  | otherwise = TypedValueMaybe . Just <$> mapValue name value
+mapWrappedValue (TypeRef name (AST.TypeList elems isRequired)) d = case d of
+  V.Null | not isRequired -> pure (TypedValueMaybe Nothing)
+  (V.List xs) -> TypedValueMaybe . Just . TypeValueList <$> traverse (mapWrappedValue (TypeRef name elems)) xs
+  value -> expected "list" value
 
 mapValue :: MonadFail m => TypeName -> V.Value CONST -> ServerQ m TypeValue
 mapValue name (V.List xs) = TypeValueList <$> traverse (mapValue name) xs
 mapValue _ (V.Enum name) = pure $ TypeValueObject name []
 mapValue name (V.Object fields) = TypeValueObject name <$> traverse (mapField name) (toList fields)
 mapValue _ (V.Scalar x) = mapScalarValue x
-mapValue t v = fail $ "unexpected value " <> show (render v) <> ", when expecting " <> show (render t) <> "!"
+mapValue t v = expected (show t) v
 
 mapScalarValue :: MonadFail m => V.ScalarValue -> ServerQ m TypeValue
 mapScalarValue (V.Int x) = pure $ TypeValueNumber (fromIntegral x)
