@@ -15,8 +15,7 @@ import Data.Morpheus.CodeGen.Internal.AST
     TypeName,
   )
 import Data.Morpheus.CodeGen.Internal.TH
-  ( ToName (toName),
-    apply,
+  ( apply,
     applyVars,
     typeInstanceDec,
   )

@@ -53,8 +53,7 @@ import Data.Morpheus.Types
     GQLTypeOptions (..),
   )
 import Data.Morpheus.Types.Internal.AST
-  ( Directive (directiveName),
-    FieldName,
+  ( FieldName,
     TypeKind (..),
   )
 import Data.Text (unpack)
@@ -70,6 +69,7 @@ import Language.Haskell.TH
     appE,
     conE,
     instanceD,
+    listE,
     litE,
     recConE,
     stringL,
@@ -190,5 +190,4 @@ defineValue (TypeValueString x) = litE (stringL (unpack x))
 defineValue (TypeValueBool _) = [|x|]
 defineValue (TypedValueMaybe (Just x)) = appE (conE 'Just) (defineValue x)
 defineValue (TypedValueMaybe Nothing) = conE 'Nothing
--- dead codes
-defineValue (TypeValueList xs) = undefined
+defineValue (TypeValueList xs) = listE $ map defineValue xs

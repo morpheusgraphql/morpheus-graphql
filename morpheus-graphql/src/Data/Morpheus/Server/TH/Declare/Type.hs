@@ -26,7 +26,6 @@ import Data.Morpheus.Server.TH.Utils
   )
 import Data.Morpheus.Types
   ( Arg,
-    GQLType,
     SubscriptionField,
     TypeGuard,
   )
