@@ -7,6 +7,7 @@
 module API.Users.Users where
 
 import Data.Data (Typeable)
+import Data.Morpheus
 import Data.Morpheus.Kind (TYPE)
 import Data.Morpheus.Types
 import Data.Text (Text)
