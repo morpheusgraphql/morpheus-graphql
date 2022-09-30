@@ -56,7 +56,7 @@ import Data.Morpheus.Types
     constRes,
     liftEither,
     publish,
-    subscribe,
+    subscribe,Deprecated(..)
   )
 import Data.Set (Set)
 import qualified Data.Set as S
