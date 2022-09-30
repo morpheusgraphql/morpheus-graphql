@@ -13,7 +13,8 @@
     "release": "ts-node scripts/release.ts",
     "setup": "ts-node scripts/setup.ts",
     "format": "ts-node scripts/format.ts",
-    "format:fix": "ts-node scripts/format.ts --fix=true"
+    "format:fix": "ts-node scripts/format.ts --fix=true",
+    "code-gen": "ts-node scripts/code-gen.ts"
   },
   "devDependencies": {
     "@types/glob": "^8.0.0",
