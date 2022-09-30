@@ -52,9 +52,7 @@ import Data.Morpheus.Server.Deriving.Schema.TypeContent
 import Data.Morpheus.Server.Deriving.Utils
   ( DeriveTypeOptions (..),
     DeriveWith,
-    deriveTypeWith,
     symbolName,
-    unpackMonad,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CategoryValue (..),
@@ -286,16 +284,12 @@ deriveTypeContent ::
   DeriveTypeConstraint kind a =>
   KindedType kind a ->
   SchemaT kind (TypeContent TRUE kind CONST)
-deriveTypeContent kindedProxy =
-  unpackMonad
-    ( deriveTypeWith
-        ( DeriveTypeDefinitionOptions
-            { __typeGQLOptions = typeOptions (Proxy @a) defaultTypeOptions,
-              __typeGetType = __typeData . kinded (Proxy @kind),
-              __typeApply = deriveFieldContent
-            } ::
-            DeriveTypeOptions kind (DeriveWithConstraint kind) (TyContentM kind)
-        )
-        kindedProxy
+deriveTypeContent =
+  deriveTypeContentWith
+    ( DeriveTypeDefinitionOptions
+        { __typeGQLOptions = typeOptions (Proxy @a) defaultTypeOptions,
+          __typeGetType = __typeData . kinded (Proxy @kind),
+          __typeApply = deriveFieldContent
+        } ::
+        DeriveTypeOptions kind (DeriveWithConstraint kind) (TyContentM kind)
     )
-    >>= buildTypeContent kindedProxy

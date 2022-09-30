@@ -43,9 +43,7 @@ import Data.Morpheus.Server.Types.GQLType
     deriveFingerprint,
     deriveTypename,
     encodeArguments,
-    __typeData,
   )
-import Data.Morpheus.Server.Types.Internal (TypeData (..))
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
     insertDirectiveDefinition,

@@ -5,6 +5,7 @@
 module Data.Morpheus.Server.Deriving.Schema.TypeContent
   ( buildTypeContent,
     insertTypeContent,
+    deriveTypeContentWith,
   )
 where
 
@@ -22,7 +23,11 @@ import Data.Morpheus.Server.Deriving.Schema.Object
 import Data.Morpheus.Server.Deriving.Schema.Union (buildUnionTypeContent)
 import Data.Morpheus.Server.Deriving.Utils
   ( ConsRep (..),
+    DeriveTypeOptions,
+    DeriveWith,
+    deriveTypeWith,
     isEmptyConstraint,
+    unpackMonad,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CategoryValue (..),
@@ -37,6 +42,7 @@ import Data.Morpheus.Server.Types.SchemaT
     updateSchema,
   )
 import Data.Morpheus.Types.Internal.AST
+import GHC.Generics (Rep)
 
 buildTypeContent ::
   (GQLType a, CategoryValue kind) =>
@@ -67,3 +73,17 @@ insertTypeContent f proxy =
           (deriveTypename proxy)
           dirs
           content
+
+deriveTypeContentWith ::
+  ( CategoryValue kind,
+    DeriveWith c (SchemaT kind (TyContent kind)) (Rep a),
+    GQLType a
+  ) =>
+  DeriveTypeOptions kind c (SchemaT kind (TyContent kind)) ->
+  KindedType kind a ->
+  SchemaT kind (TypeContent TRUE kind CONST)
+deriveTypeContentWith x kindedProxy =
+  unpackMonad
+    ( deriveTypeWith x kindedProxy
+    )
+    >>= buildTypeContent kindedProxy
