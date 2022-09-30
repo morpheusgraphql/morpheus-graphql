@@ -26,7 +26,6 @@ import Data.Morpheus.Types.Internal.AST
   ( CONST,
     Description,
     DirectiveLocation (..),
-    Directives,
     FieldName,
     TypeKind (..),
     TypeName,
