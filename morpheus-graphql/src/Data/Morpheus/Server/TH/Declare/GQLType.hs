@@ -16,7 +16,6 @@ module Data.Morpheus.Server.TH.Declare.GQLType
   )
 where
 
-import Data.Char (toLower)
 import Data.Morpheus.CodeGen.Internal.AST
   ( CodeGenConfig (..),
     GQLTypeDefinition (..),
@@ -48,15 +47,16 @@ import Data.Morpheus.Server.Types.GQLType
     fieldDirective,
     typeDirective,
   )
+import Data.Morpheus.Server.Types.Internal
+  ( dropNamespaceOptions,
+  )
 import Data.Morpheus.Types
   ( GQLType (..),
-    GQLTypeOptions (..),
   )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     TypeKind (..),
   )
-import Data.Text (unpack)
 import qualified Data.Text as T
 import Language.Haskell.TH
   ( Dec,
@@ -75,27 +75,6 @@ import Language.Haskell.TH
     stringL,
   )
 import Relude hiding (toString)
-
-dropPrefix :: Text -> String -> String
-dropPrefix name = drop (T.length name)
-
-stripConstructorNamespace :: Text -> String -> String
-stripConstructorNamespace = dropPrefix
-
-stripFieldNamespace :: Text -> String -> String
-stripFieldNamespace prefix = __uncapitalize . dropPrefix prefix
-  where
-    __uncapitalize [] = []
-    __uncapitalize (x : xs) = toLower x : xs
-
-dropNamespaceOptions :: TypeKind -> Text -> GQLTypeOptions -> GQLTypeOptions
-dropNamespaceOptions KindInterface tName opt =
-  opt
-    { typeNameModifier = const (stripConstructorNamespace "Interface"),
-      fieldLabelModifier = stripFieldNamespace tName
-    }
-dropNamespaceOptions KindEnum tName opt = opt {constructorTagModifier = stripConstructorNamespace tName}
-dropNamespaceOptions _ tName opt = opt {fieldLabelModifier = stripFieldNamespace tName}
 
 deriveGQLType :: ServerTypeDefinition -> ServerDec [Dec]
 deriveGQLType
@@ -186,7 +165,7 @@ renderField (fName, fValue) = do
 renderValue :: TypeValue -> ExpQ
 renderValue (TypeValueObject name xs) = recConE (toName name) (map renderField xs)
 renderValue (TypeValueNumber x) = [|x|]
-renderValue (TypeValueString x) = litE (stringL (unpack x))
+renderValue (TypeValueString x) = litE (stringL (T.unpack x))
 renderValue (TypeValueBool _) = [|x|]
 renderValue (TypedValueMaybe (Just x)) = appE (conE 'Just) (renderValue x)
 renderValue (TypedValueMaybe Nothing) = conE 'Nothing

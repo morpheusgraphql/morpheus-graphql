@@ -86,6 +86,7 @@ module Data.Morpheus.Types
     -- * default GQL directives
     GQLDirective (..),
     Deprecated (..),
+    dropNamespaceOptions,
   )
 where
 
@@ -122,6 +123,7 @@ import Data.Morpheus.Server.Types.GQLType
 import Data.Morpheus.Server.Types.Internal
   ( GQLTypeOptions (..),
     defaultTypeOptions,
+    dropNamespaceOptions,
   )
 import Data.Morpheus.Server.Types.Types
   ( Arg (..),

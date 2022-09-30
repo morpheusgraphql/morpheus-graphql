@@ -33,9 +33,10 @@ import Prelude (show)
 renderTypeableConstraints :: [Text] -> Doc n
 renderTypeableConstraints xs = tupled (map (("Typeable" <+>) . pretty) xs) <+> "=>"
 
--- TODO: fill namespace options
-defineTypeOptions :: Text -> TypeKind -> Doc n
-defineTypeOptions tName kind = "typeOptions _ options = options"
+defineTypeOptions :: Bool -> Text -> TypeKind -> Doc n
+defineTypeOptions namespaces tName kind
+  | namespaces = "typeOptions _ = dropNamespaceOptions " <> pretty tName <> " (" <> pretty (show kind) <> ")"
+  | otherwise = "typeOptions _ = id"
 
 renderGQLType :: ServerTypeDefinition -> Doc n
 renderGQLType ServerTypeDefinition {..} =
@@ -47,7 +48,7 @@ renderGQLType ServerTypeDefinition {..} =
       <> line
       <> indent 2 (vsep (renderMethods typeHead typeGQLType <> [options]))
   where
-    options = defineTypeOptions tName tKind
+    options = defineTypeOptions False tName tKind
     typeHead =
       if null typeParameters
         then parametrizedType tName typeParameters

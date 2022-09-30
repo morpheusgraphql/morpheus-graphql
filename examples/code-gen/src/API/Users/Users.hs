@@ -23,7 +23,7 @@ data User m = User
 
 instance (Typeable m) => GQLType (User m) where
   type KIND (User m) = TYPE
-  typeOptions _ options = options
+  typeOptions _ = id
 ---- GQL Query -------------------------------
 data Query m = Query
   { users :: m [User m],
@@ -33,4 +33,4 @@ data Query m = Query
 
 instance (Typeable m) => GQLType (Query m) where
   type KIND (Query m) = TYPE
-  typeOptions _ options = options
+  typeOptions _ = id
