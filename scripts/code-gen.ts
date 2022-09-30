@@ -6,7 +6,7 @@ import glob from "glob";
 
 const cli = new Command();
 
-const root = "./examples/code-gen/src";
+const root = "examples/code-gen/src";
 
 const format = async () => {
   try {
@@ -14,7 +14,7 @@ const format = async () => {
 
     const files = (await promisify(glob)(`${root}/**/*.gql`)).join(" ");
 
-    exec(`morpheus --root ${root} build ${files}`);
+    exec(`morpheus build ${files} --root=${root}`);
 
     stdout.write("OK");
   } catch (e) {

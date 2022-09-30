@@ -6,6 +6,6 @@ type Post {
 }
 
 type Query {
-  posts: [Post!]!
+  posts: [Post!]! @deprecated
   post(id: ID!): Post
 }

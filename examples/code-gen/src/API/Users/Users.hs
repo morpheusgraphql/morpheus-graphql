@@ -1,7 +1,9 @@
-{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 
 module API.Users.Users where
 
@@ -10,6 +12,7 @@ import Data.Morpheus.Kind (TYPE)
 import Data.Morpheus.Types
 import Data.Text (Text)
 import GHC.Generics (Generic)
+import Data.Map (fromList, empty)
 
 ---- GQL User -------------------------------
 data User m = User
