@@ -120,7 +120,6 @@ defineMethods
       GQLTypeDefinition
         { gqlTypeDescription,
           gqlTypeDescriptions,
-          gqlTypeDirectives,
           gqlTypeDefaultValues,
           gqlTypeDirectiveUses,
           gqlKind
@@ -133,7 +132,6 @@ defineMethods
         funDProxy
           [ ('description, [|gqlTypeDescription|]),
             ('getDescriptions, [|gqlTypeDescriptions|]),
-            ('getDirectives, [|gqlTypeDirectives|]),
             ('defaultValues, [|gqlTypeDefaultValues|]),
             ('directives, renderDirectiveUsages gqlTypeDirectiveUses)
           ]

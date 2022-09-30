@@ -164,6 +164,8 @@ wrapper f TypeData {..} = TypeData {gqlWrappers = f gqlWrappers, ..}
 --     instance GQLType ... where
 --       description = const "your description ..."
 --  @
+{-# DEPRECATED getDirectives "use: directives" #-}
+
 class GQLType a where
   type KIND a :: DerivingKind
   type KIND a = TYPE
