@@ -23,6 +23,7 @@ import Data.Morpheus.Types
     Undefined,
     defaultRootResolver,
     liftEither,
+    Deprecated(..)
   )
 import Data.Text (Text)
 import Data.Typeable (Typeable)
