@@ -81,6 +81,7 @@ import Data.Morpheus.Rendering.RenderGQL
     Rendering,
     intercalate,
     newline,
+    nonNillSpace,
     renderEntry,
     renderMembers,
     renderObject,
@@ -709,9 +710,7 @@ instance RenderGQL (Schema s) where
 instance RenderGQL (TypeDefinition a s) where
   renderGQL TypeDefinition {..} = __render typeContent <> newline
     where
-      name
-        | null typeDirectives = renderGQL typeName
-        | otherwise = renderGQL typeName <> space <> renderGQL typeDirectives
+      name = renderGQL typeName <> nonNillSpace typeDirectives <> renderGQL typeDirectives
 
       __render DataInterface {interfaceFields} = "interface " <> name <> renderGQL interfaceFields
       __render DataScalar {} = "scalar " <> name

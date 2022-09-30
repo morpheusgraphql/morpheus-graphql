@@ -17,6 +17,7 @@ module Data.Morpheus.Rendering.RenderGQL
     renderInputSeq,
     unwords,
     fromShow,
+    nonNillSpace,
   )
 where
 
@@ -51,6 +52,11 @@ fromShow = fromString . show
 
 fromText :: Text -> Rendering
 fromText = fromString . T.unpack
+
+nonNillSpace :: Foldable t => t a -> Rendering
+nonNillSpace t
+  | null t = ""
+  | otherwise = space
 
 class RenderGQL a where
   renderGQL :: a -> Rendering

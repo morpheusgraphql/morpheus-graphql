@@ -58,6 +58,7 @@ import Data.Morpheus.Rendering.RenderGQL
     Rendering,
     intercalate,
     newline,
+    nonNillSpace,
     renderArguments,
     renderEntry,
     renderObject,
@@ -292,9 +293,12 @@ instance NameCollision GQLError (FieldDefinition cat s) where
 
 instance RenderGQL (FieldDefinition cat s) where
   renderGQL FieldDefinition {fieldContent = Just (FieldArgs args), ..} =
-    renderGQL fieldName <> renderGQL args <> ": " <> renderGQL fieldType <> space <> renderGQL fieldDirectives
+    renderGQL fieldName <> renderGQL args <> ": " <> renderGQL fieldType <> addFieldDirectives fieldDirectives
   renderGQL FieldDefinition {..} =
-    renderEntry fieldName fieldType <> space <> renderGQL fieldDirectives
+    renderEntry fieldName fieldType <> addFieldDirectives fieldDirectives
+
+addFieldDirectives :: Directives s -> Rendering
+addFieldDirectives dirs = nonNillSpace dirs <> renderGQL dirs
 
 instance RenderGQL (FieldsDefinition cat s) where
   renderGQL = renderObject . filter fieldVisibility . toList
