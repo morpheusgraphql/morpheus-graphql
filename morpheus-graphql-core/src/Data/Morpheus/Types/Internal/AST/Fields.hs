@@ -37,6 +37,7 @@ module Data.Morpheus.Types.Internal.AST.Fields
     mkField,
     renderArgumentValues,
     renderDirectives,
+    addDirectives,
   )
 where
 
@@ -293,12 +294,12 @@ instance NameCollision GQLError (FieldDefinition cat s) where
 
 instance RenderGQL (FieldDefinition cat s) where
   renderGQL FieldDefinition {fieldContent = Just (FieldArgs args), ..} =
-    renderGQL fieldName <> renderGQL args <> ": " <> renderGQL fieldType <> addFieldDirectives fieldDirectives
+    renderGQL fieldName <> renderGQL args <> ": " <> renderGQL fieldType <> addDirectives fieldDirectives
   renderGQL FieldDefinition {..} =
-    renderEntry fieldName fieldType <> addFieldDirectives fieldDirectives
+    renderEntry fieldName fieldType <> addDirectives fieldDirectives
 
-addFieldDirectives :: Directives s -> Rendering
-addFieldDirectives dirs = nonNillSpace dirs <> renderGQL dirs
+addDirectives :: Directives s -> Rendering
+addDirectives dirs = nonNillSpace dirs <> renderGQL dirs
 
 instance RenderGQL (FieldsDefinition cat s) where
   renderGQL = renderObject . filter fieldVisibility . toList

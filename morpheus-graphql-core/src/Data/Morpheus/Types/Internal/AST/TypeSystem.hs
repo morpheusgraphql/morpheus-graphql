@@ -81,11 +81,9 @@ import Data.Morpheus.Rendering.RenderGQL
     Rendering,
     intercalate,
     newline,
-    nonNillSpace,
     renderEntry,
     renderMembers,
     renderObject,
-    space,
   )
 import Data.Morpheus.Types.Internal.AST.Base
   ( Description,
@@ -101,6 +99,7 @@ import Data.Morpheus.Types.Internal.AST.Fields
     Directives,
     DirectivesDefinition,
     FieldsDefinition,
+    addDirectives,
   )
 import Data.Morpheus.Types.Internal.AST.Name
   ( TypeName,
@@ -199,7 +198,7 @@ data DataEnumValue s = DataEnumValue
   deriving (Show, Lift, Eq)
 
 instance RenderGQL (DataEnumValue s) where
-  renderGQL DataEnumValue {..} = renderGQL enumName <> space <> renderGQL enumDirectives
+  renderGQL DataEnumValue {..} = renderGQL enumName <> addDirectives enumDirectives
 
 -- 3.2 Schema : https://graphql.github.io/graphql-spec/June2018/#sec-Schema
 ---------------------------------------------------------------------------
@@ -710,7 +709,7 @@ instance RenderGQL (Schema s) where
 instance RenderGQL (TypeDefinition a s) where
   renderGQL TypeDefinition {..} = __render typeContent <> newline
     where
-      name = renderGQL typeName <> nonNillSpace typeDirectives <> renderGQL typeDirectives
+      name = renderGQL typeName <> addDirectives typeDirectives
 
       __render DataInterface {interfaceFields} = "interface " <> name <> renderGQL interfaceFields
       __render DataScalar {} = "scalar " <> name
