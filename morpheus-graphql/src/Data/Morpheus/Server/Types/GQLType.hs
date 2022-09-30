@@ -29,6 +29,7 @@ module Data.Morpheus.Server.Types.GQLType
       ),
     __typeData,
     deriveTypename,
+    deriveFingerprint,
     encodeArguments,
     DirectiveUsage (..),
     DeriveArguments (..),
@@ -76,7 +77,8 @@ import Data.Morpheus.Server.Types.Internal
   )
 import Data.Morpheus.Server.Types.SchemaT (SchemaT)
 import Data.Morpheus.Server.Types.TypeName
-  ( getFingerprint,
+  ( TypeFingerprint,
+    getFingerprint,
     getTypename,
   )
 import Data.Morpheus.Server.Types.Types
@@ -128,6 +130,9 @@ __typeData proxy = __type proxy (categoryValue (Proxy @kind))
 
 deriveTypename :: (GQLType a, CategoryValue kind) => kinded kind a -> TypeName
 deriveTypename proxy = gqlTypeName $ __typeData proxy
+
+deriveFingerprint :: (GQLType a, CategoryValue kind) => kinded kind a -> TypeFingerprint
+deriveFingerprint proxy = gqlFingerprint $ __typeData proxy
 
 deriveTypeData :: Typeable a => f a -> (Bool -> String -> String) -> TypeCategory -> TypeData
 deriveTypeData proxy typeNameModifier cat =

@@ -39,7 +39,6 @@ import Data.Morpheus.Kind
     TYPE,
     WRAPPER,
   )
-import Data.Morpheus.Server.Deriving.Schema.Directive (deriveTypeDirectives)
 import Data.Morpheus.Server.Deriving.Schema.Internal
   ( KindedType (..),
     TyContentM,
@@ -76,7 +75,6 @@ import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
     extendImplements,
     toSchema,
-    updateSchema,
     withInput,
   )
 import Data.Morpheus.Server.Types.Types
@@ -183,7 +181,7 @@ instance (GQLType a, DeriveType cat a) => DeriveKindedType cat WRAPPER (f a) whe
   deriveKindedType _ = deriveType (KindedProxy :: KindedProxy cat a)
 
 instance (GQLType a, DecodeScalar a) => DeriveKindedType cat SCALAR a where
-  deriveKindedType = updateByContent deriveScalarContent . setKind (Proxy @LEAF)
+  deriveKindedType = insertTypeContent deriveScalarContent . setKind (Proxy @LEAF)
 
 instance DeriveTypeConstraint OUT a => DeriveKindedType OUT TYPE a where
   deriveKindedType = deriveOutputType
@@ -204,7 +202,7 @@ instance
   DeriveKindedType OUT CUSTOM (TypeGuard interface union)
   where
   deriveKindedType _ = do
-    updateByContent deriveInterfaceContent interfaceProxy
+    insertTypeContent deriveInterfaceContent interfaceProxy
     content <- deriveTypeContent (OutputType :: KindedType OUT union)
     unionNames <- getUnionNames content
     extendImplements interfaceName unionNames
@@ -259,10 +257,10 @@ deriveFields :: DeriveTypeConstraint kind a => KindedType kind a -> SchemaT kind
 deriveFields kindedType = deriveTypeContent kindedType >>= withObject kindedType
 
 deriveInputType :: DeriveTypeConstraint IN a => f a -> SchemaT IN ()
-deriveInputType = updateByContent deriveTypeContent . inputType
+deriveInputType = insertTypeContent deriveTypeContent . inputType
 
 deriveOutputType :: DeriveTypeConstraint OUT a => f a -> SchemaT OUT ()
-deriveOutputType = updateByContent deriveTypeContent . outputType
+deriveOutputType = insertTypeContent deriveTypeContent . outputType
 
 deriveRoot :: DeriveTypeConstraint OUT a => f a -> SchemaT OUT (TypeDefinition OBJECT CONST)
 deriveRoot = asObjectType (deriveFields . outputType)
@@ -301,24 +299,3 @@ deriveTypeContent kindedProxy =
         kindedProxy
     )
     >>= buildTypeContent kindedProxy
-
-updateByContent ::
-  (GQLType a, CategoryValue kind) =>
-  (f kind a -> SchemaT c (TypeContent TRUE kind CONST)) ->
-  f kind a ->
-  SchemaT c ()
-updateByContent f proxy =
-  updateSchema
-    (gqlFingerprint $ __typeData proxy)
-    deriveD
-    proxy
-  where
-    deriveD x = do
-      content <- f x
-      dirs <- deriveTypeDirectives proxy
-      pure $
-        TypeDefinition
-          (description proxy)
-          (gqlTypeName (__typeData proxy))
-          dirs
-          content

@@ -40,6 +40,7 @@ import Data.Morpheus.Server.Types.GQLType
     DirectiveUsage (..),
     DirectiveUsages (..),
     GQLType (..),
+    deriveFingerprint,
     deriveTypename,
     encodeArguments,
     __typeData,
@@ -118,7 +119,7 @@ insertDirective ::
   (KindedProxy IN a -> SchemaT c (DirectiveDefinition CONST)) ->
   a ->
   SchemaT c ()
-insertDirective f _ = insertDirectiveDefinition (gqlFingerprint $ __typeData proxy) f proxy
+insertDirective f _ = insertDirectiveDefinition (deriveFingerprint proxy) f proxy
   where
     proxy = KindedProxy :: KindedProxy IN a
 

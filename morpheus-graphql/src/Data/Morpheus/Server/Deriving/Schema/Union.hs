@@ -23,8 +23,7 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CategoryValue,
     KindedType (..),
   )
-import Data.Morpheus.Server.Types.GQLType (GQLType, __typeData)
-import Data.Morpheus.Server.Types.Internal (TypeData (..))
+import Data.Morpheus.Server.Types.GQLType (GQLType, deriveTypename)
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
   )
@@ -51,7 +50,7 @@ buildUnionTypeContent ::
 buildUnionTypeContent scope cons = mkUnionType scope unionRef unionCons
   where
     unionRef = fieldTypeName <$> concatMap consFields unionRefRep
-    (unionRefRep, unionCons) = partition (isUnionRef (gqlTypeName (__typeData scope))) cons
+    (unionRefRep, unionCons) = partition (isUnionRef (deriveTypename scope)) cons
 
 mkUnionType ::
   GQLType a =>
