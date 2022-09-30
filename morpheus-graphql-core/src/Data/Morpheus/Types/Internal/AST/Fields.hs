@@ -291,10 +291,10 @@ instance NameCollision GQLError (FieldDefinition cat s) where
     "There can Be only One field Named " <> msg fieldName
 
 instance RenderGQL (FieldDefinition cat s) where
-  renderGQL FieldDefinition {fieldName, fieldType, fieldContent = Just (FieldArgs args)} =
-    renderGQL fieldName <> renderGQL args <> ": " <> renderGQL fieldType
-  renderGQL FieldDefinition {fieldName, fieldType} =
-    renderEntry fieldName fieldType
+  renderGQL FieldDefinition {fieldContent = Just (FieldArgs args), ..} =
+    renderGQL fieldName <> renderGQL args <> ": " <> renderGQL fieldType <> space <> renderGQL fieldDirectives
+  renderGQL FieldDefinition {..} =
+    renderEntry fieldName fieldType <> space <> renderGQL fieldDirectives
 
 instance RenderGQL (FieldsDefinition cat s) where
   renderGQL = renderObject . filter fieldVisibility . toList

@@ -198,7 +198,7 @@ data DataEnumValue s = DataEnumValue
   deriving (Show, Lift, Eq)
 
 instance RenderGQL (DataEnumValue s) where
-  renderGQL DataEnumValue {enumName} = renderGQL enumName
+  renderGQL DataEnumValue {..} = renderGQL enumName <> space <> renderGQL enumDirectives
 
 -- 3.2 Schema : https://graphql.github.io/graphql-spec/June2018/#sec-Schema
 ---------------------------------------------------------------------------
