@@ -112,6 +112,8 @@ import Data.Morpheus.NamedResolvers
   ( NamedResolverT (..),
     ResolveNamed (..),
   )
+-- FIXME: TO ENABLE DECODE INSTANCE ON DIRECTIVES
+import Data.Morpheus.Server.Deriving.Decode ()
 import Data.Morpheus.Server.Types.DirectiveDefinitions
 import Data.Morpheus.Server.Types.Directives
 import Data.Morpheus.Server.Types.GQLType
