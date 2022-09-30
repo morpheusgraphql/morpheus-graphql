@@ -78,7 +78,6 @@ declareType
 genName :: DerivingClass -> Name
 genName GENERIC = ''Generic
 genName SHOW = ''Show
-genName GQL_TYPE = ''GQLType
 
 declareCons :: ServerConstructorDefinition -> Con
 declareCons ServerConstructorDefinition {constructorName, constructorFields} =

@@ -6,6 +6,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -20,9 +21,11 @@ import Data.Morpheus.CodeGen.Internal.AST
   ( CodeGenConfig (..),
     GQLTypeDefinition (..),
     Kind (..),
+    ServerConstructorDefinition (constructorName),
     ServerDirectiveUsage (..),
     ServerTypeDefinition (..),
     TypeValue (..),
+    unpackName,
   )
 import Data.Morpheus.CodeGen.Internal.TH
   ( ToName (..),
@@ -50,7 +53,8 @@ import Data.Morpheus.Types
     GQLTypeOptions (..),
   )
 import Data.Morpheus.Types.Internal.AST
-  ( FieldName,
+  ( Directive (directiveName),
+    FieldName,
     TypeKind (..),
   )
 import Data.Text (unpack)
@@ -99,14 +103,22 @@ deriveGQLType
     { tName,
       tKind,
       typeParameters,
-      gql
+      typeGQLType
     } = do
     let typeVars = renderTypeVars typeParameters
     let constrains = mkTypeableConstraints typeVars
     let typeSignature = apply ''GQLType [applyVars tName typeVars]
-    methods <- defineMethods tName tKind typeVars gql
+    methods <- defineMethods tName tKind typeVars typeGQLType
     gqlTypeDeclaration <- lift (instanceD constrains typeSignature methods)
     pure [gqlTypeDeclaration]
+deriveGQLType DirectiveTypeDefinition {..} = do
+  let typeVars = [] :: [Name]
+  let tName = unpackName (constructorName directiveConstructor)
+  let constrains = mkTypeableConstraints typeVars
+  let typeSignature = apply ''GQLType [applyVars tName typeVars]
+  methods <- defineMethods tName KindInputObject typeVars (Just directiveGQLType)
+  gqlTypeDeclaration <- lift (instanceD constrains typeSignature methods)
+  pure [gqlTypeDeclaration]
 deriveGQLType _ = pure []
 
 defineTypeOptions :: Text -> TypeKind -> ServerDec [DecQ]

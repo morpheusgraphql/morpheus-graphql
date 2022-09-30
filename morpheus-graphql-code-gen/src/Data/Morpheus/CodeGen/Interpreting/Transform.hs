@@ -157,8 +157,17 @@ toTHDefinitions namespace defs = concat <$> traverse generateTypes defs
             pure
               [ DirectiveTypeDefinition
                   { directiveConstructor = ServerConstructorDefinition (coerce directiveDefinitionName) fields,
-                    directiveDerives = [SHOW, GENERIC, GQL_TYPE],
-                    directiveLocations = directiveDefinitionLocations
+                    directiveDerives = [SHOW, GENERIC],
+                    directiveLocations = directiveDefinitionLocations,
+                    directiveGQLType =
+                      GQLTypeDefinition
+                        { gqlKind = Type,
+                          gqlTypeDescription = Nothing,
+                          gqlTypeDescriptions = mempty,
+                          gqlTypeDirectives = mempty,
+                          gqlTypeDefaultValues = mempty,
+                          gqlTypeDirectiveUses = []
+                        }
                   }
               ]
         )
@@ -219,10 +228,10 @@ genTypeDefinition
       derives = derivesClasses (isResolverType tKind)
       -------------------------
       withType (ConsIN tCons) = do
-        gql <- deriveGQL
+        typeGQLType <- deriveGQL
         pure [ServerTypeDefinition {..}]
       withType (ConsOUT others tCons) = do
-        gql <- deriveGQL
+        typeGQLType <- deriveGQL
         pure (ServerTypeDefinition {..} : others)
 
 derivingKind :: TypeKind -> Kind
@@ -315,7 +324,7 @@ genInterfaceUnion interfaceName =
             tKind,
             typeParameters = ["m"],
             derives = derivesClasses True,
-            gql = Nothing
+            typeGQLType = Nothing
           }
       ]
     mkGuardWithPossibleType = ServerInterfaceDefinition interfaceName (mkInterfaceName interfaceName)
@@ -417,7 +426,7 @@ genArgumentType
                   tCons = mkObjectCons tName fields,
                   derives = derivesClasses False,
                   typeParameters = [],
-                  gql =
+                  typeGQLType =
                     Just
                       ( GQLTypeDefinition
                           { gqlKind = Type,

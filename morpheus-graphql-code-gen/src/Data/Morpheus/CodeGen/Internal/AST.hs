@@ -55,7 +55,6 @@ data FIELD_TYPE_WRAPPER
 data DerivingClass
   = SHOW
   | GENERIC
-  | GQL_TYPE
   deriving (Show)
 
 data ServerFieldDefinition = ServerFieldDefinition
@@ -105,12 +104,13 @@ data ServerTypeDefinition
         tCons :: [ServerConstructorDefinition],
         tKind :: TypeKind,
         derives :: [DerivingClass],
-        gql :: Maybe GQLTypeDefinition
+        typeGQLType :: Maybe GQLTypeDefinition
       }
   | DirectiveTypeDefinition
       { directiveConstructor :: ServerConstructorDefinition,
         directiveDerives :: [DerivingClass],
-        directiveLocations :: [DirectiveLocation]
+        directiveLocations :: [DirectiveLocation],
+        directiveGQLType :: GQLTypeDefinition
       }
   | ServerInterfaceDefinition
       TypeName

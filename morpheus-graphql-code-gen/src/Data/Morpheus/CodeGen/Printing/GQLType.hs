@@ -1,5 +1,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.CodeGen.Printing.GQLType
@@ -37,14 +38,14 @@ defineTypeOptions :: Text -> TypeKind -> Doc n
 defineTypeOptions tName kind = ""
 
 renderGQLType :: ServerTypeDefinition -> Doc n
-renderGQLType ServerTypeDefinition {tName, typeParameters, tKind, gql} =
+renderGQLType ServerTypeDefinition {..} =
   "instance"
     <> optional renderTypeableConstraints typeParameters
     <+> "GQLType"
     <+> typeHead
     <+> "where"
       <> line
-      <> indent 2 (vsep (renderMethods typeHead gql <> [options]))
+      <> indent 2 (vsep (renderMethods typeHead typeGQLType <> [options]))
   where
     options = defineTypeOptions tName tKind
     typeHead =

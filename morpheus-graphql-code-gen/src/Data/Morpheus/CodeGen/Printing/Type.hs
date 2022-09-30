@@ -58,7 +58,6 @@ class RenderType a where
 instance RenderType DerivingClass where
   render SHOW = pure "Show"
   render GENERIC = pure "Generic"
-  render GQL_TYPE = pure "GQLType"
 
 instance RenderType ServerTypeDefinition where
   render ServerInterfaceDefinition {} = fail "not supported"
