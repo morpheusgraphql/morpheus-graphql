@@ -156,7 +156,7 @@ defineMethods
             ('getDescriptions, [|gqlTypeDescriptions|]),
             ('getDirectives, [|gqlTypeDirectives|]),
             ('defaultValues, [|gqlTypeDefaultValues|]),
-            ('directives, defineDirectiveUsages gqlTypeDirectiveUses)
+            ('directives, renderDirectiveUsages gqlTypeDirectiveUses)
           ]
 
       typeFamilies = do
@@ -167,27 +167,27 @@ kindName :: Kind -> Name
 kindName Scalar = ''SCALAR
 kindName Type = ''TYPE
 
-defineDirectiveUsages :: [ServerDirectiveUsage] -> ExpQ
-defineDirectiveUsages =
+renderDirectiveUsages :: [ServerDirectiveUsage] -> ExpQ
+renderDirectiveUsages =
   foldr
-    (appE . appE [|(<>)|] . defineDirectiveUsage)
+    (appE . appE [|(<>)|] . renderDirectiveUsage)
     [|mempty|]
 
-defineDirectiveUsage :: ServerDirectiveUsage -> ExpQ
-defineDirectiveUsage (TypeDirectiveUsage x) = [|typeDirective $(defineValue x)|]
-defineDirectiveUsage (FieldDirectiveUsage field x) = [|fieldDirective field $(defineValue x)|]
-defineDirectiveUsage (EnumDirectiveUsage enum x) = [|enumDirective enum $(defineValue x)|]
+renderDirectiveUsage :: ServerDirectiveUsage -> ExpQ
+renderDirectiveUsage (TypeDirectiveUsage x) = [|typeDirective $(renderValue x)|]
+renderDirectiveUsage (FieldDirectiveUsage field x) = [|fieldDirective field $(renderValue x)|]
+renderDirectiveUsage (EnumDirectiveUsage enum x) = [|enumDirective enum $(renderValue x)|]
 
-defineValue :: TypeValue -> ExpQ
-defineValue (TypeValueObject name xs) = recConE (toName name) (map renderField xs)
-  where
-    renderField :: (FieldName, TypeValue) -> Q FieldExp
-    renderField (fName, fValue) = do
-      v <- defineValue fValue
-      pure (toName fName, v)
-defineValue (TypeValueNumber x) = [|x|]
-defineValue (TypeValueString x) = litE (stringL (unpack x))
-defineValue (TypeValueBool _) = [|x|]
-defineValue (TypedValueMaybe (Just x)) = appE (conE 'Just) (defineValue x)
-defineValue (TypedValueMaybe Nothing) = conE 'Nothing
-defineValue (TypeValueList xs) = listE $ map defineValue xs
+renderField :: (FieldName, TypeValue) -> Q FieldExp
+renderField (fName, fValue) = do
+  v <- renderValue fValue
+  pure (toName fName, v)
+
+renderValue :: TypeValue -> ExpQ
+renderValue (TypeValueObject name xs) = recConE (toName name) (map renderField xs)
+renderValue (TypeValueNumber x) = [|x|]
+renderValue (TypeValueString x) = litE (stringL (unpack x))
+renderValue (TypeValueBool _) = [|x|]
+renderValue (TypedValueMaybe (Just x)) = appE (conE 'Just) (renderValue x)
+renderValue (TypedValueMaybe Nothing) = conE 'Nothing
+renderValue (TypeValueList xs) = listE $ map renderValue xs
