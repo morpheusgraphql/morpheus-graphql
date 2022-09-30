@@ -50,7 +50,6 @@ import Data.Morpheus.Types.Internal.AST
     Description,
     Directive (Directive, directiveArgs, directiveName),
     DirectiveDefinition (..),
-    Directives,
     FieldContent (..),
     FieldDefinition (..),
     FieldName,
@@ -164,7 +163,6 @@ toTHDefinitions namespace defs = concat <$> traverse generateTypes defs
                         { gqlKind = Type,
                           gqlTypeDescription = Nothing,
                           gqlTypeDescriptions = mempty,
-                          gqlTypeDirectives = mempty,
                           gqlTypeDefaultValues = mempty,
                           gqlTypeDirectiveUses = []
                         }
@@ -214,7 +212,6 @@ genTypeDefinition
             GQLTypeDefinition
               { gqlTypeDescription = typeDescription,
                 gqlTypeDescriptions,
-                gqlTypeDirectives = mempty,
                 gqlTypeDirectiveUses,
                 gqlKind = derivingKind tKind,
                 gqlTypeDefaultValues =
@@ -432,7 +429,6 @@ genArgumentType
                           { gqlKind = Type,
                             gqlTypeDescription = Nothing,
                             gqlTypeDescriptions = fromList (mapMaybe mkFieldDescription argumentFields),
-                            gqlTypeDirectives = fromList (mkFieldDirective <$> argumentFields),
                             gqlTypeDefaultValues = fromList (mapMaybe getDefaultValue argumentFields),
                             gqlTypeDirectiveUses = []
                           }
@@ -443,9 +439,6 @@ genArgumentType _ = pure []
 
 mkFieldDescription :: FieldDefinition cat s -> Maybe (Text, Description)
 mkFieldDescription FieldDefinition {..} = (unpackName fieldName,) <$> fieldDescription
-
-mkFieldDirective :: FieldDefinition cat s -> (Text, Directives s)
-mkFieldDirective FieldDefinition {..} = (unpackName fieldName, fieldDirectives)
 
 ---
 

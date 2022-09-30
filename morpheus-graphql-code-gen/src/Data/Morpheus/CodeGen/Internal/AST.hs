@@ -26,7 +26,6 @@ import Data.Morpheus.Types.Internal.AST
   ( CONST,
     Description,
     DirectiveLocation (..),
-    Directives,
     FieldName,
     TypeKind (..),
     TypeName,
@@ -103,7 +102,6 @@ data GQLTypeDefinition = GQLTypeDefinition
   { gqlKind :: Kind,
     gqlTypeDescription :: Maybe Text,
     gqlTypeDescriptions :: Map Text Description,
-    gqlTypeDirectives :: Map Text (Directives CONST),
     gqlTypeDirectiveUses :: [ServerDirectiveUsage],
     gqlTypeDefaultValues :: Map Text (Value CONST)
   }
