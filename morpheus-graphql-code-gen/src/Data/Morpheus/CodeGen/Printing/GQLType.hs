@@ -36,7 +36,7 @@ renderTypeableConstraints xs = tupled (map (("Typeable" <+>) . pretty) xs) <+> "
 defineTypeOptions :: Bool -> Text -> TypeKind -> Doc n
 defineTypeOptions namespaces tName kind
   | namespaces = "typeOptions _ = dropNamespaceOptions " <> pretty tName <> " (" <> pretty (show kind) <> ")"
-  | otherwise = "typeOptions _ = id"
+  | otherwise = "typeOptions _ options = options"
 
 renderGQLType :: ServerTypeDefinition -> Doc n
 renderGQLType ServerTypeDefinition {..} =
