@@ -1,4 +1,3 @@
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -59,7 +58,7 @@ renderMethods
       <> ["directives _=" <+> renderDirectiveUsages gqlTypeDirectiveUses | not (null gqlTypeDirectiveUses)]
 
 renderDirectiveUsages :: [ServerDirectiveUsage] -> Doc n
-renderDirectiveUsages = vsep . punctuate " <>" . map renderDirectiveUsage
+renderDirectiveUsages = align . vsep . punctuate " <>" . map renderDirectiveUsage
 
 renderDirectiveUsage :: ServerDirectiveUsage -> Doc n
 renderDirectiveUsage (TypeDirectiveUsage value) = "typeDirective" <+> pretty value

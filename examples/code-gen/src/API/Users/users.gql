@@ -1,7 +1,7 @@
 # users.graphql
 
 type User {
-  id: ID!
+  id: ID! @deprecated(reason: "XYZ")
   name: String! @deprecated
 }
 
