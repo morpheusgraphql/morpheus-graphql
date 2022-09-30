@@ -17,7 +17,6 @@ module Data.Morpheus.CodeGen.Interpreting.Transform
 where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
-import qualified Data.ByteString.Lazy.Char8 as BS
 import Data.Morpheus.CodeGen.Internal.AST
   ( CodeGenConfig (..),
     DerivingClass (..),
@@ -59,6 +58,7 @@ import Data.Morpheus.Types.Internal.AST
     GQLError,
     IN,
     OUT,
+    ObjectEntry (..),
     OperationType (Subscription),
     RawTypeDefinition (..),
     TRUE,
@@ -558,25 +558,36 @@ renderArgumentValue ::
 renderArgumentValue args ArgumentDefinition {..} = do
   let dirName = AST.fieldName argument
   gqlValue <- selectOr (pure AST.Null) (pure . argumentValue) dirName args
-  typeValue <- gqlTypeValue (AST.fieldType argument) gqlValue
+  let TypeRef name wrappers = AST.fieldType argument
+  typeValue <- mapWrappedValue name wrappers gqlValue
   fName <- renderFieldName dirName
   pure (fName, typeValue)
 
-gqlTypeValue :: MonadFail m => TypeRef -> V.Value CONST -> ServerQ m TypeValue
-gqlTypeValue (TypeRef name (AST.BaseType False)) value
+mapWrappedValue :: MonadFail m => TypeName -> AST.TypeWrapper -> V.Value CONST -> ServerQ m TypeValue
+mapWrappedValue name (AST.BaseType False) value
   | value == V.Null = pure (TypedValueMaybe Nothing)
-  | otherwise = TypedValueMaybe . Just <$> gqlTypeValue (TypeRef name (AST.BaseType True)) value
-gqlTypeValue (TypeRef name (AST.TypeList elems False)) d = TypedValueMaybe . Just <$> gqlTypeValue (TypeRef name (AST.TypeList elems True)) d
-gqlTypeValue typeDef (V.List xs) = TypeValueList <$> traverse (gqlTypeValue typeDef) xs
-gqlTypeValue _ (V.Enum name) = pure $ TypeValueObject name []
-gqlTypeValue typeDef (V.Scalar x) = scalarTypeValue typeDef x
-gqlTypeValue _ (V.Object x) = undefined
-gqlTypeValue _ V.ResolvedVariable {} = undefined
-gqlTypeValue t V.Null = fail $ "unexpected null at " <> show (render t) <> "!"
+  | otherwise = TypedValueMaybe . Just <$> mapValue name value
+mapWrappedValue name (AST.TypeList elems False) d = case d of
+  V.Null -> pure (TypedValueMaybe Nothing)
+  (V.List xs) -> TypedValueMaybe . Just . TypeValueList <$> traverse (mapWrappedValue name elems) xs
+  _ -> fail "TODO: fix me"
+mapWrappedValue _ _ _ = fail "TODO: fix me"
 
-scalarTypeValue :: MonadFail m => TypeRef -> V.ScalarValue -> ServerQ m TypeValue
-scalarTypeValue _ (V.Int x) = pure $ TypeValueNumber (fromIntegral x)
-scalarTypeValue _ (V.Float x) = pure $ TypeValueNumber x
-scalarTypeValue _ (V.String x) = pure $ TypeValueString x
-scalarTypeValue _ (V.Boolean x) = pure $ TypeValueBool x
-scalarTypeValue _ (V.Value _) = fail "TODO: fix me! no Value"
+mapField :: MonadFail m => TypeName -> ObjectEntry CONST -> ServerQ m (FieldName, TypeValue)
+mapField name ObjectEntry {..} = do
+  value <- mapValue name entryValue
+  pure (entryName, value)
+
+mapValue :: MonadFail m => TypeName -> V.Value CONST -> ServerQ m TypeValue
+mapValue name (V.List xs) = TypeValueList <$> traverse (mapValue name) xs
+mapValue _ (V.Enum name) = pure $ TypeValueObject name []
+mapValue name (V.Object fields) = TypeValueObject name <$> traverse (mapField name) (toList fields)
+mapValue _ (V.Scalar x) = mapScalarValue x
+mapValue t v = fail $ "unexpected value " <> show (render v) <> ", when expecting " <> show (render t) <> "!"
+
+mapScalarValue :: MonadFail m => V.ScalarValue -> ServerQ m TypeValue
+mapScalarValue (V.Int x) = pure $ TypeValueNumber (fromIntegral x)
+mapScalarValue (V.Float x) = pure $ TypeValueNumber x
+mapScalarValue (V.String x) = pure $ TypeValueString x
+mapScalarValue (V.Boolean x) = pure $ TypeValueBool x
+mapScalarValue (V.Value _) = fail "JSON objects are not supported!"
