@@ -35,7 +35,7 @@ renderTypeableConstraints xs = tupled (map (("Typeable" <+>) . pretty) xs) <+> "
 
 -- TODO: fill namespace options
 defineTypeOptions :: Text -> TypeKind -> Doc n
-defineTypeOptions tName kind = ""
+defineTypeOptions tName kind = "typeOptions _ options = options"
 
 renderGQLType :: ServerTypeDefinition -> Doc n
 renderGQLType ServerTypeDefinition {..} =

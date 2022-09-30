@@ -24,7 +24,7 @@ data Post m = Post
 
 instance (Typeable m) => GQLType (Post m) where
   type KIND (Post m) = TYPE
-
+  typeOptions _ options = options
 ---- GQL Query -------------------------------
 data Query m = Query
   { posts :: m [Post m],
@@ -34,3 +34,4 @@ data Query m = Query
 
 instance (Typeable m) => GQLType (Query m) where
   type KIND (Query m) = TYPE
+  typeOptions _ options = options
