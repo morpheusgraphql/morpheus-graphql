@@ -202,7 +202,7 @@ instance RenderGQL (DirectiveDefinition s) where
       <> space
       <> "on"
       <> space
-      <> intercalate "| " (renderGQL <$> directiveDefinitionLocations)
+      <> intercalate " | " (renderGQL <$> directiveDefinitionLocations)
       <> newline
 
 lookupDeprecated :: Directives s -> Maybe (Directive s)
