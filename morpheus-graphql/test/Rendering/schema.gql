@@ -1,4 +1,4 @@
-directive @TestDirective(name: String!, enum: TestEnum) INPUT_OBJECT| OBJECT
+directive @TestDirective(name: String!, enum: TestEnum) on INPUT_OBJECT| OBJECT
 
 scalar  TestScalar @TestDirective(name: "SomeName")
 

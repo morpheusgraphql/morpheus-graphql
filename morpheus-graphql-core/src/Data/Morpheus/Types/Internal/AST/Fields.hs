@@ -200,6 +200,8 @@ instance RenderGQL (DirectiveDefinition s) where
       <> renderGQL directiveDefinitionName
       <> renderGQL directiveDefinitionArgs
       <> space
+      <> "on"
+      <> space
       <> intercalate "| " (renderGQL <$> directiveDefinitionLocations)
       <> newline
 
