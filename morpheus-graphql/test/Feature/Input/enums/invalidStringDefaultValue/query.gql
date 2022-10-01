@@ -1,3 +1,0 @@
-query ValidDecoding($x: TwoCon! = "LA") {
-  test2(level: $x)
-}

@@ -1,8 +1,0 @@
-{
-  "errors": [
-    {
-      "message": "Variable \"$x\" got invalid value. Expected type \"TwoCon!\" found \"BLA\".",
-      "locations": [{ "line": 1, "column": 21 }]
-    }
-  ]
-}

@@ -1,3 +1,0 @@
-query ValidDecoding {
-  test (level:L0)
-}

@@ -1,5 +1,0 @@
-query ValidSeq {
-  f1: testVector(value: [])
-  f2: testVector(value: [32])
-  f3: testVector(value: [32, 235, 6463, 352123])
-}

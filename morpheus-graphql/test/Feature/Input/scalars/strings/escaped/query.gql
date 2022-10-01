@@ -1,3 +1,0 @@
-query ValidDecoding {
-  testString(value: " a b  \n \\ / bla  ")
-}

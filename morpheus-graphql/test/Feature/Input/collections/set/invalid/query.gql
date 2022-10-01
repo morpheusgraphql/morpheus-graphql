@@ -1,5 +1,0 @@
-query FailSet {
-  f1: testSet(value: [2, 2])
-  f2: testSet(value: [32, 32, 32])
-  f3: testSet(value: [32, 235, 235, 6463, 352123])
-}

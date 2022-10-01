@@ -1,3 +1,0 @@
-query NullableUndefinedField {
-  input(value: { field: "value" })
-}

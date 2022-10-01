@@ -1,8 +1,0 @@
-{
-  "errors": [
-    {
-      "message": "offset=74:\nunexpected newline\n",
-      "locations": [{ "line": 5, "column": 1 }]
-    }
-  ]
-}

@@ -1,7 +1,0 @@
-query TestUsedVariable ($v1: String!) {
-  q1 {
-    ...on A {
-         a1(arg1: $v1)
-     }
-  }
-}

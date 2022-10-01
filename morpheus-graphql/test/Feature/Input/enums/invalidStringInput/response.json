@@ -1,8 +1,0 @@
-{
-  "errors": [
-    {
-      "message": "Argument \"level\" got invalid value. Expected type \"TwoCon!\" found \"LA\".",
-      "locations": [{ "line": 2, "column": 9 }]
-    }
-  ]
-}

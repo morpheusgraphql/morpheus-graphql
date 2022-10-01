@@ -1,8 +1,0 @@
-query InvalidAssoc {
-  f1: testAssoc(value: {})
-  f2: testAssoc(value: 635)
-  f3: testAssoc(value: [{ _0: "235" }])
-  f4: testAssoc(value: [{ _0: "235", _1: "235235" }])
-  f5: testAssoc(value: [{ _0: "235", _1: false }])
-  f6: testAssoc(value: [{ _0: "34", _1: 2353 }])
-}

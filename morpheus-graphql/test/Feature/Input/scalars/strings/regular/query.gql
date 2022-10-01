@@ -1,3 +1,0 @@
-query ValidDecoding {
-  testString(value: "some string bla b jasd qweq ")
-}

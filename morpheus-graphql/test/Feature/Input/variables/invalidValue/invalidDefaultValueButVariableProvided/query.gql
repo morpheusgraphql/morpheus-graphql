@@ -1,5 +1,0 @@
-query invalidListVariable($v1: [[[Int!]!]]! = [["boo"]]) {
-  q1 {
-    a2(argList: [], argNestedList: $v1)
-  }
-}

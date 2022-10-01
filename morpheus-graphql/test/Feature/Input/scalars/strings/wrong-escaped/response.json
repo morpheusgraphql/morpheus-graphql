@@ -1,8 +1,0 @@
-{
-  "errors": [
-    {
-      "message": "offset=50:\nunexpected 'k'\nexpecting '\"', '/', '\\', 'b', 'f', 'n', 'r', or 't'\n",
-      "locations": [{ "line": 2, "column": 29 }]
-    }
-  ]
-}

@@ -1,8 +1,0 @@
-{
-  "errors": [
-    {
-      "message": "Failure on Resolving Field \"testNonEmpty\": Type mismatch! expected:Expected a NonEmpty list, got: []",
-      "locations": [{ "line": 2, "column": 3 }]
-    }
-  ]
-}
