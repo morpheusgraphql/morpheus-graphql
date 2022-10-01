@@ -46,7 +46,7 @@ main =
     "Morpheus Graphql Tests"
     [ testFeatures
         "Input"
-        [ (DefaultValues.api, "default-values") ],
+        [(DefaultValues.api, "default-values")],
       testFeatures
         "Holistic"
         [ (Holistic.api, "holistic")

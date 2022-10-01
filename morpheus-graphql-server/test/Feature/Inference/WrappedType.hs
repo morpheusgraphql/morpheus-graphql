@@ -10,8 +10,9 @@ module Feature.Inference.WrappedType
 where
 
 import Data.Morpheus.Server (interpreter)
-import Data.Morpheus.Server.Resolvers 
-  (constRes)
+import Data.Morpheus.Server.Resolvers
+  ( constRes,
+  )
 import Data.Morpheus.Server.Types
   ( GQLRequest,
     GQLResponse,
