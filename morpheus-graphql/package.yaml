@@ -39,12 +39,13 @@ library:
     - Data.Morpheus.Document
     - Data.Morpheus.Kind
     - Data.Morpheus.Types
-  ghc-options: '-Wall'
+    - Data.Morpheus.NamedResolvers
+  ghc-options: "-Wall"
 tests:
   morpheus-graphql-test:
     main: Spec.hs
     source-dirs: test
-    ghc-options: '-Wall'
+    ghc-options: "-Wall"
     dependencies:
       - aeson                           >=  1.4.4   &&  <  3.0.0
       - file-embed                      >=  0.0.10  &&  <  1.0.0

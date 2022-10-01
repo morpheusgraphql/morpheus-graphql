@@ -8,6 +8,7 @@ module Data.Morpheus
     deriveApp,
     runApp,
     withDebugger,
+    httpPlayground,
   )
 where
 
@@ -15,6 +16,7 @@ import Data.Morpheus.Server
   ( App,
     debugInterpreter,
     deriveApp,
+    httpPlayground,
     interpreter,
     runApp,
     withDebugger,
