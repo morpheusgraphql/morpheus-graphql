@@ -21,7 +21,7 @@ import Data.ByteString.Lazy.Char8
   ( ByteString,
   )
 import Data.List.NonEmpty (NonEmpty ((:|)))
-import Data.Morpheus.Server
+import Data.Morpheus
   ( httpPlayground,
   )
 import Data.Morpheus.Subscriptions

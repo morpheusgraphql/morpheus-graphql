@@ -5,8 +5,7 @@ module Main where
 import qualified API.Posts.Resolver as P
 import qualified API.Users.Resolver as U
 import Data.Data (Typeable)
-import Data.Morpheus (App, runApp)
-import Data.Morpheus.Server (httpPlayground)
+import Data.Morpheus (App, httpPlayground, runApp)
 import Data.Semigroup ((<>))
 import Web.Scotty
 import Prelude (IO, Monad, ($), (.), (=<<))

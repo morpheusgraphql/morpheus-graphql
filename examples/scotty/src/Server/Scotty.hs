@@ -12,7 +12,7 @@ where
 -- examples
 
 import Data.Functor.Identity (Identity (..))
-import Data.Morpheus.Server
+import Data.Morpheus
   ( compileTimeSchemaValidation,
   )
 import Data.Morpheus.Subscriptions (webSocketsApp)

@@ -1,4 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | Build GraphQL APIs with your favorite functional language!
@@ -9,36 +8,18 @@ module Data.Morpheus
     deriveApp,
     runApp,
     withDebugger,
+    httpPlayground,
+    compileTimeSchemaValidation,
   )
 where
 
--- MORPHEUS
-import Data.Morpheus.App
+import Data.Morpheus.Server
   ( App,
-    MapAPI,
+    compileTimeSchemaValidation,
+    debugInterpreter,
+    deriveApp,
+    httpPlayground,
+    interpreter,
     runApp,
     withDebugger,
   )
-import Data.Morpheus.Server.Deriving.App
-  ( RootResolverConstraint,
-    deriveApp,
-  )
-import Data.Morpheus.Types
-  ( RootResolver (..),
-  )
-import Relude
-
--- | main query processor and resolver
-interpreter ::
-  (MapAPI a b, RootResolverConstraint m e query mut sub) =>
-  RootResolver m e query mut sub ->
-  a ->
-  m b
-interpreter = runApp . deriveApp
-
-debugInterpreter ::
-  (MapAPI a b, RootResolverConstraint m e query mut sub) =>
-  RootResolver m e query mut sub ->
-  a ->
-  m b
-debugInterpreter = runApp . withDebugger . deriveApp

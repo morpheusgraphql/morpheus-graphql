@@ -1,0 +1,359 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.35.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           morpheus-graphql-server
+version:        0.21.0
+synopsis:       Morpheus GraphQL
+description:    Build GraphQL APIs with your favourite functional language!
+category:       web, graphql
+homepage:       https://morpheusgraphql.com
+bug-reports:    https://github.com/nalchevanidze/morpheus-graphql/issues
+author:         Daviti Nalchevanidze
+maintainer:     d.nalchevanidze@gmail.com
+copyright:      (c) 2019 Daviti Nalchevanidze
+license:        MIT
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    changelog.md
+data-files:
+    test/Feature/Collision/category-collision-fail/query.gql
+    test/Feature/Collision/category-collision-success/query.gql
+    test/Feature/Collision/name-collision/query.gql
+    test/Feature/Directive/definition/introspect-directive/query.gql
+    test/Feature/Directive/definition/introspect-enum/query.gql
+    test/Feature/Directive/definition/introspect-type/query.gql
+    test/Feature/Inference/object-and-enum/introspection/query.gql
+    test/Feature/Inference/object-and-enum/resolving/query.gql
+    test/Feature/Inference/tagged-arguments-fail/introspection/query.gql
+    test/Feature/Inference/tagged-arguments-fail/resolving/query.gql
+    test/Feature/Inference/tagged-arguments/introspection/query.gql
+    test/Feature/Inference/tagged-arguments/resolving/query.gql
+    test/Feature/Inference/type-guards/introspection/interface/query.gql
+    test/Feature/Inference/type-guards/introspection/objects/query.gql
+    test/Feature/Inference/type-guards/resolving/fail/query.gql
+    test/Feature/Inference/type-guards/resolving/success/interface-fields/query.gql
+    test/Feature/Inference/type-guards/resolving/success/type-casting/query.gql
+    test/Feature/Inference/type-inference/introspection/enum/query.gql
+    test/Feature/Inference/type-inference/introspection/input-union/empty/query.gql
+    test/Feature/Inference/type-inference/introspection/input-union/input-union/query.gql
+    test/Feature/Inference/type-inference/introspection/inputObject/query.gql
+    test/Feature/Inference/type-inference/introspection/object/query.gql
+    test/Feature/Inference/type-inference/introspection/union/named-products/query.gql
+    test/Feature/Inference/type-inference/introspection/union/nullary-constructors/query.gql
+    test/Feature/Inference/type-inference/introspection/union/positional-products/query.gql
+    test/Feature/Inference/type-inference/introspection/union/scalars/query.gql
+    test/Feature/Inference/type-inference/introspection/union/union/query.gql
+    test/Feature/Inference/type-inference/resolving/complexUnion/query.gql
+    test/Feature/Inference/type-inference/resolving/input/fail/query.gql
+    test/Feature/Inference/type-inference/resolving/input/success/query.gql
+    test/Feature/Inference/type-inference/resolving/object/query.gql
+    test/Feature/Inference/union-type/cannotBeSpreadOnType/query.gql
+    test/Feature/Inference/union-type/fragmentOnAAndB/query.gql
+    test/Feature/Inference/union-type/fragmentOnlyOnA/query.gql
+    test/Feature/Inference/union-type/inlineFragment/cannotBeSpreadOnType/query.gql
+    test/Feature/Inference/union-type/inlineFragment/fragmentOnAAndB/query.gql
+    test/Feature/Inference/union-type/selectionWithoutFragmentNotAllowed/query.gql
+    test/Feature/Inference/wrapped-type/ignoreMutationResolver/query.gql
+    test/Feature/Inference/wrapped-type/ignoreQueryResolver/query.gql
+    test/Feature/Inference/wrapped-type/ignoreSubscriptionResolver/query.gql
+    test/Feature/Inference/wrapped-type/validWrappedTypes/query.gql
+    test/Feature/Input/collections/assoc/invalid/query.gql
+    test/Feature/Input/collections/assoc/ok/query.gql
+    test/Feature/Input/collections/map/invalid/query.gql
+    test/Feature/Input/collections/map/ok/query.gql
+    test/Feature/Input/collections/nonempty/invalid/query.gql
+    test/Feature/Input/collections/nonempty/ok/query.gql
+    test/Feature/Input/collections/product/invalid/query.gql
+    test/Feature/Input/collections/product/ok/query.gql
+    test/Feature/Input/collections/seq/query.gql
+    test/Feature/Input/collections/set/invalid/query.gql
+    test/Feature/Input/collections/set/ok/query.gql
+    test/Feature/Input/collections/tuple/invalid/query.gql
+    test/Feature/Input/collections/tuple/ok/query.gql
+    test/Feature/Input/collections/vector/query.gql
+    test/Feature/Input/enums/decode2Con/query.gql
+    test/Feature/Input/enums/decode3Con/query.gql
+    test/Feature/Input/enums/decodeInvalidValue/query.gql
+    test/Feature/Input/enums/decodeMany/con0/query.gql
+    test/Feature/Input/enums/decodeMany/con1/query.gql
+    test/Feature/Input/enums/decodeMany/con2/query.gql
+    test/Feature/Input/enums/decodeMany/con3/query.gql
+    test/Feature/Input/enums/decodeMany/con4/query.gql
+    test/Feature/Input/enums/decodeMany/con5/query.gql
+    test/Feature/Input/enums/decodeMany/con6/query.gql
+    test/Feature/Input/enums/invalidEnumFromJSONVariable/query.gql
+    test/Feature/Input/enums/invalidStringDefaultValue/query.gql
+    test/Feature/Input/enums/invalidStringInput/query.gql
+    test/Feature/Input/enums/validEnumFromJSONVariable/query.gql
+    test/Feature/Input/objects/nullableUndefinedField/query.gql
+    test/Feature/Input/objects/resolveObject/query.gql
+    test/Feature/Input/objects/resolveVariable/query.gql
+    test/Feature/Input/objects/undefinedField/query.gql
+    test/Feature/Input/objects/unexpectedValue/query.gql
+    test/Feature/Input/objects/unexpectedVariable/query.gql
+    test/Feature/Input/objects/unknownField/query.gql
+    test/Feature/Input/scalars/numbers/decodeFloat/query.gql
+    test/Feature/Input/scalars/numbers/decodeInt/query.gql
+    test/Feature/Input/scalars/strings/block/query.gql
+    test/Feature/Input/scalars/strings/escaped/query.gql
+    test/Feature/Input/scalars/strings/regular/query.gql
+    test/Feature/Input/scalars/strings/wrong-escaped/query.gql
+    test/Feature/Input/scalars/strings/wrong-newline/query.gql
+    test/Feature/Input/variables/incompatibleType/equalType/query.gql
+    test/Feature/Input/variables/incompatibleType/stricterType/query.gql
+    test/Feature/Input/variables/incompatibleType/weakerType1/query.gql
+    test/Feature/Input/variables/incompatibleType/weakerType2/query.gql
+    test/Feature/Input/variables/incompatibleType/weakerType3/query.gql
+    test/Feature/Input/variables/invalidValue/invalidDefaultValue/query.gql
+    test/Feature/Input/variables/invalidValue/invalidDefaultValueButVariableProvided/query.gql
+    test/Feature/Input/variables/invalidValue/invalidListVariable/query.gql
+    test/Feature/Input/variables/invalidValue/nestedListNonNullListReceivedNull/query.gql
+    test/Feature/Input/variables/nameCollision/query.gql
+    test/Feature/Input/variables/nestedListNullableListReceivedNull/query.gql
+    test/Feature/Input/variables/nonInputTypeViolation/query.gql
+    test/Feature/Input/variables/undefinedVariable/query.gql
+    test/Feature/Input/variables/unknownType/query.gql
+    test/Feature/Input/variables/unusedVariable/unusedVariables/query.gql
+    test/Feature/Input/variables/unusedVariable/variableUsedInAlias/query.gql
+    test/Feature/Input/variables/unusedVariable/variableUsedInFragment/query.gql
+    test/Feature/Input/variables/unusedVariable/variableUsedInInlineFragment/query.gql
+    test/Feature/Input/variables/validListVariable/query.gql
+    test/Feature/Input/variables/valueNotProvided/nonNullVariable/query.gql
+    test/Feature/Input/variables/valueNotProvided/nonNullVariableWithDefaultValue/query.gql
+    test/Feature/Input/variables/valueNotProvided/nullableVariable/query.gql
+    test/Feature/Collision/category-collision-fail/response.json
+    test/Feature/Collision/category-collision-success/response.json
+    test/Feature/Collision/name-collision/response.json
+    test/Feature/Directive/definition/introspect-directive/response.json
+    test/Feature/Directive/definition/introspect-enum/response.json
+    test/Feature/Directive/definition/introspect-type/response.json
+    test/Feature/Inference/object-and-enum/introspection/response.json
+    test/Feature/Inference/object-and-enum/resolving/response.json
+    test/Feature/Inference/tagged-arguments-fail/introspection/response.json
+    test/Feature/Inference/tagged-arguments-fail/resolving/response.json
+    test/Feature/Inference/tagged-arguments/introspection/response.json
+    test/Feature/Inference/tagged-arguments/resolving/response.json
+    test/Feature/Inference/type-guards/introspection/interface/response.json
+    test/Feature/Inference/type-guards/introspection/objects/response.json
+    test/Feature/Inference/type-guards/resolving/fail/response.json
+    test/Feature/Inference/type-guards/resolving/success/interface-fields/response.json
+    test/Feature/Inference/type-guards/resolving/success/type-casting/response.json
+    test/Feature/Inference/type-inference/introspection/enum/response.json
+    test/Feature/Inference/type-inference/introspection/input-union/empty/response.json
+    test/Feature/Inference/type-inference/introspection/input-union/input-union/response.json
+    test/Feature/Inference/type-inference/introspection/inputObject/response.json
+    test/Feature/Inference/type-inference/introspection/object/response.json
+    test/Feature/Inference/type-inference/introspection/union/named-products/response.json
+    test/Feature/Inference/type-inference/introspection/union/nullary-constructors/response.json
+    test/Feature/Inference/type-inference/introspection/union/positional-products/response.json
+    test/Feature/Inference/type-inference/introspection/union/scalars/response.json
+    test/Feature/Inference/type-inference/introspection/union/union/response.json
+    test/Feature/Inference/type-inference/resolving/complexUnion/response.json
+    test/Feature/Inference/type-inference/resolving/input/fail/response.json
+    test/Feature/Inference/type-inference/resolving/input/success/response.json
+    test/Feature/Inference/type-inference/resolving/object/response.json
+    test/Feature/Inference/union-type/cannotBeSpreadOnType/response.json
+    test/Feature/Inference/union-type/fragmentOnAAndB/response.json
+    test/Feature/Inference/union-type/fragmentOnlyOnA/response.json
+    test/Feature/Inference/union-type/inlineFragment/cannotBeSpreadOnType/response.json
+    test/Feature/Inference/union-type/inlineFragment/fragmentOnAAndB/response.json
+    test/Feature/Inference/union-type/selectionWithoutFragmentNotAllowed/response.json
+    test/Feature/Inference/wrapped-type/ignoreMutationResolver/response.json
+    test/Feature/Inference/wrapped-type/ignoreQueryResolver/response.json
+    test/Feature/Inference/wrapped-type/ignoreSubscriptionResolver/response.json
+    test/Feature/Inference/wrapped-type/validWrappedTypes/response.json
+    test/Feature/Input/collections/assoc/invalid/response.json
+    test/Feature/Input/collections/assoc/ok/response.json
+    test/Feature/Input/collections/map/invalid/response.json
+    test/Feature/Input/collections/map/ok/response.json
+    test/Feature/Input/collections/nonempty/invalid/response.json
+    test/Feature/Input/collections/nonempty/ok/response.json
+    test/Feature/Input/collections/product/invalid/response.json
+    test/Feature/Input/collections/product/ok/response.json
+    test/Feature/Input/collections/seq/response.json
+    test/Feature/Input/collections/set/invalid/response.json
+    test/Feature/Input/collections/set/ok/response.json
+    test/Feature/Input/collections/tuple/invalid/response.json
+    test/Feature/Input/collections/tuple/ok/response.json
+    test/Feature/Input/collections/vector/response.json
+    test/Feature/Input/enums/decode2Con/response.json
+    test/Feature/Input/enums/decode3Con/response.json
+    test/Feature/Input/enums/decodeInvalidValue/response.json
+    test/Feature/Input/enums/decodeMany/con0/response.json
+    test/Feature/Input/enums/decodeMany/con1/response.json
+    test/Feature/Input/enums/decodeMany/con2/response.json
+    test/Feature/Input/enums/decodeMany/con3/response.json
+    test/Feature/Input/enums/decodeMany/con4/response.json
+    test/Feature/Input/enums/decodeMany/con5/response.json
+    test/Feature/Input/enums/decodeMany/con6/response.json
+    test/Feature/Input/enums/invalidEnumFromJSONVariable/response.json
+    test/Feature/Input/enums/invalidEnumFromJSONVariable/variables.json
+    test/Feature/Input/enums/invalidStringDefaultValue/response.json
+    test/Feature/Input/enums/invalidStringInput/response.json
+    test/Feature/Input/enums/validEnumFromJSONVariable/response.json
+    test/Feature/Input/enums/validEnumFromJSONVariable/variables.json
+    test/Feature/Input/objects/nullableUndefinedField/response.json
+    test/Feature/Input/objects/resolveObject/response.json
+    test/Feature/Input/objects/resolveVariable/response.json
+    test/Feature/Input/objects/resolveVariable/variables.json
+    test/Feature/Input/objects/undefinedField/response.json
+    test/Feature/Input/objects/unexpectedValue/response.json
+    test/Feature/Input/objects/unexpectedVariable/response.json
+    test/Feature/Input/objects/unknownField/response.json
+    test/Feature/Input/scalars/numbers/decodeFloat/response.json
+    test/Feature/Input/scalars/numbers/decodeInt/response.json
+    test/Feature/Input/scalars/strings/block/response.json
+    test/Feature/Input/scalars/strings/escaped/response.json
+    test/Feature/Input/scalars/strings/regular/response.json
+    test/Feature/Input/scalars/strings/wrong-escaped/response.json
+    test/Feature/Input/scalars/strings/wrong-newline/response.json
+    test/Feature/Input/variables/incompatibleType/equalType/response.json
+    test/Feature/Input/variables/incompatibleType/equalType/variables.json
+    test/Feature/Input/variables/incompatibleType/stricterType/response.json
+    test/Feature/Input/variables/incompatibleType/stricterType/variables.json
+    test/Feature/Input/variables/incompatibleType/weakerType1/response.json
+    test/Feature/Input/variables/incompatibleType/weakerType1/variables.json
+    test/Feature/Input/variables/incompatibleType/weakerType2/response.json
+    test/Feature/Input/variables/incompatibleType/weakerType2/variables.json
+    test/Feature/Input/variables/incompatibleType/weakerType3/response.json
+    test/Feature/Input/variables/incompatibleType/weakerType3/variables.json
+    test/Feature/Input/variables/invalidValue/invalidDefaultValue/response.json
+    test/Feature/Input/variables/invalidValue/invalidDefaultValueButVariableProvided/response.json
+    test/Feature/Input/variables/invalidValue/invalidDefaultValueButVariableProvided/variables.json
+    test/Feature/Input/variables/invalidValue/invalidListVariable/response.json
+    test/Feature/Input/variables/invalidValue/invalidListVariable/variables.json
+    test/Feature/Input/variables/invalidValue/nestedListNonNullListReceivedNull/response.json
+    test/Feature/Input/variables/invalidValue/nestedListNonNullListReceivedNull/variables.json
+    test/Feature/Input/variables/nameCollision/response.json
+    test/Feature/Input/variables/nameCollision/variables.json
+    test/Feature/Input/variables/nestedListNullableListReceivedNull/response.json
+    test/Feature/Input/variables/nestedListNullableListReceivedNull/variables.json
+    test/Feature/Input/variables/nonInputTypeViolation/response.json
+    test/Feature/Input/variables/undefinedVariable/response.json
+    test/Feature/Input/variables/unknownType/response.json
+    test/Feature/Input/variables/unusedVariable/unusedVariables/response.json
+    test/Feature/Input/variables/unusedVariable/variableUsedInAlias/response.json
+    test/Feature/Input/variables/unusedVariable/variableUsedInAlias/variables.json
+    test/Feature/Input/variables/unusedVariable/variableUsedInFragment/response.json
+    test/Feature/Input/variables/unusedVariable/variableUsedInFragment/variables.json
+    test/Feature/Input/variables/unusedVariable/variableUsedInInlineFragment/response.json
+    test/Feature/Input/variables/unusedVariable/variableUsedInInlineFragment/variables.json
+    test/Feature/Input/variables/validListVariable/response.json
+    test/Feature/Input/variables/validListVariable/variables.json
+    test/Feature/Input/variables/valueNotProvided/nonNullVariable/response.json
+    test/Feature/Input/variables/valueNotProvided/nonNullVariableWithDefaultValue/response.json
+    test/Feature/Input/variables/valueNotProvided/nullableVariable/response.json
+
+source-repository head
+  type: git
+  location: https://github.com/nalchevanidze/morpheus-graphql
+
+library
+  exposed-modules:
+      Data.Morpheus.Server
+      Data.Morpheus.Server.Resolvers
+      Data.Morpheus.Server.Types
+  other-modules:
+      Data.Morpheus.Server.Deriving.App
+      Data.Morpheus.Server.Deriving.Channels
+      Data.Morpheus.Server.Deriving.Decode
+      Data.Morpheus.Server.Deriving.Encode
+      Data.Morpheus.Server.Deriving.Named.Encode
+      Data.Morpheus.Server.Deriving.Named.EncodeType
+      Data.Morpheus.Server.Deriving.Named.EncodeValue
+      Data.Morpheus.Server.Deriving.Schema
+      Data.Morpheus.Server.Deriving.Schema.Directive
+      Data.Morpheus.Server.Deriving.Schema.Enum
+      Data.Morpheus.Server.Deriving.Schema.Internal
+      Data.Morpheus.Server.Deriving.Schema.Object
+      Data.Morpheus.Server.Deriving.Schema.TypeContent
+      Data.Morpheus.Server.Deriving.Schema.Union
+      Data.Morpheus.Server.Deriving.Utils
+      Data.Morpheus.Server.Deriving.Utils.Decode
+      Data.Morpheus.Server.Deriving.Utils.DeriveGType
+      Data.Morpheus.Server.Deriving.Utils.GTraversable
+      Data.Morpheus.Server.Deriving.Utils.Kinded
+      Data.Morpheus.Server.Deriving.Utils.Proxy
+      Data.Morpheus.Server.Deriving.Utils.Types
+      Data.Morpheus.Server.NamedResolvers
+      Data.Morpheus.Server.Playground
+      Data.Morpheus.Server.Types.DirectiveDefinitions
+      Data.Morpheus.Server.Types.Directives
+      Data.Morpheus.Server.Types.GQLType
+      Data.Morpheus.Server.Types.Internal
+      Data.Morpheus.Server.Types.Kind
+      Data.Morpheus.Server.Types.SchemaT
+      Data.Morpheus.Server.Types.TypeName
+      Data.Morpheus.Server.Types.Types
+      Data.Morpheus.Server.Types.Visitors
+      Paths_morpheus_graphql_server
+  hs-source-dirs:
+      src
+  ghc-options: -Wall
+  build-depends:
+      aeson >=1.4.4 && <3.0.0
+    , base >=4.7.0 && <5.0.0
+    , bytestring >=0.10.4 && <0.12.0
+    , containers >=0.4.2.1 && <0.7.0
+    , morpheus-graphql-app >=0.21.0 && <0.22.0
+    , morpheus-graphql-core >=0.21.0 && <0.22.0
+    , mtl >=2.0.0 && <3.0.0
+    , relude >=0.3.0 && <2.0.0
+    , template-haskell >=2.0.0 && <3.0.0
+    , text >=1.2.3 && <1.3.0
+    , transformers >=0.3.0 && <0.6.0
+    , unordered-containers >=0.2.8 && <0.3.0
+    , vector >=0.12.0.1 && <0.13.0
+  default-language: Haskell2010
+
+test-suite morpheus-graphql-server-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Feature.Collision.CategoryCollisionFail
+      Feature.Collision.CategoryCollisionSuccess
+      Feature.Collision.NameCollision
+      Feature.Collision.NameCollisionHelper
+      Feature.Directive.Definition
+      Feature.Inference.ObjectAndEnum
+      Feature.Inference.TaggedArguments
+      Feature.Inference.TaggedArgumentsFail
+      Feature.Inference.TypeGuards
+      Feature.Inference.TypeInference
+      Feature.Inference.UnionType
+      Feature.Inference.WrappedType
+      Feature.Input.Collections
+      Feature.Input.Enums
+      Feature.Input.Objects
+      Feature.Input.Scalars
+      Feature.Input.Variables
+      Paths_morpheus_graphql_server
+  hs-source-dirs:
+      test
+  ghc-options: -Wall
+  build-depends:
+      aeson >=1.4.4 && <3.0.0
+    , base >=4.7.0 && <5.0.0
+    , bytestring >=0.10.4 && <0.12.0
+    , containers >=0.4.2.1 && <0.7.0
+    , file-embed >=0.0.10 && <1.0.0
+    , morpheus-graphql-app >=0.21.0 && <0.22.0
+    , morpheus-graphql-core >=0.21.0 && <0.22.0
+    , morpheus-graphql-server
+    , morpheus-graphql-subscriptions >=0.21.0 && <0.22.0
+    , morpheus-graphql-tests >=0.21.0 && <0.22.0
+    , mtl >=2.0.0 && <3.0.0
+    , relude >=0.3.0 && <2.0.0
+    , tasty >=0.1.0 && <1.5.0
+    , tasty-hunit >=0.1.0 && <1.0.0
+    , template-haskell >=2.0.0 && <3.0.0
+    , text >=1.2.3 && <1.3.0
+    , transformers >=0.3.0 && <0.6.0
+    , unordered-containers >=0.2.8 && <0.3.0
+    , vector >=0.12.0.1 && <0.13.0
+  default-language: Haskell2010

@@ -42,13 +42,11 @@ import Data.Morpheus.Server.TH.Utils
     mkTypeableConstraints,
     renderTypeVars,
   )
-import Data.Morpheus.Server.Types.GQLType
-  ( enumDirective,
+import Data.Morpheus.Server.Types
+  ( dropNamespaceOptions,
+    enumDirective,
     fieldDirective,
     typeDirective,
-  )
-import Data.Morpheus.Server.Types.Internal
-  ( dropNamespaceOptions,
   )
 import Data.Morpheus.Types
   ( GQLType (..),

@@ -20,10 +20,8 @@ import Data.Monoid ((<>))
 import Data.Morpheus
   ( App,
     deriveApp,
+    httpPlayground,
     runApp,
-  )
-import Data.Morpheus.Server
-  ( httpPlayground,
   )
 import Data.Morpheus.Types
   ( GQLType,

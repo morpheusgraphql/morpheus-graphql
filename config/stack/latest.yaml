@@ -13,6 +13,7 @@ packages:
   - morpheus-graphql-app
   - morpheus-graphql-client
   - morpheus-graphql-subscriptions
+  - morpheus-graphql-server
   - morpheus-graphql
 extra-deps:
   - fastsum-0.1.1.1

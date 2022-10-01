@@ -40,6 +40,7 @@ import Data.Morpheus.Subscriptions
 import Data.Morpheus.Types
   ( Arg (Arg),
     DecodeScalar (..),
+    Deprecated (..),
     EncodeScalar (..),
     GQLType (..),
     ID,
@@ -57,7 +58,6 @@ import Data.Morpheus.Types
     liftEither,
     publish,
     subscribe,
-    Deprecated(..)
   )
 import Data.Set (Set)
 import qualified Data.Set as S

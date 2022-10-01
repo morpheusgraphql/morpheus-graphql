@@ -12,6 +12,7 @@ packages:
   - morpheus-graphql-app
   - morpheus-graphql-client
   - morpheus-graphql-subscriptions
+  - morpheus-graphql-server
   - morpheus-graphql
 extra-deps:
   - dependent-map-0.2.4.0
