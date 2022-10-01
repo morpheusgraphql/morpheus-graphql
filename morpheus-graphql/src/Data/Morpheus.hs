@@ -1,4 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | Build GraphQL APIs with your favorite functional language!
@@ -12,33 +11,13 @@ module Data.Morpheus
   )
 where
 
--- MORPHEUS
-import Data.Morpheus.App
-  ( App,
-    MapAPI,
-    runApp,
-    withDebugger,
-  )
-import Data.Morpheus.Server.Deriving.App
+import Data.Morpheus.Server.App
   ( RootResolverConstraint,
     deriveApp,
+    interpreter,
+    debugInterpreter,
+    runApp,
+    App
   )
-import Data.Morpheus.Types
-  ( RootResolver (..),
-  )
-import Relude
 
--- | main query processor and resolver
-interpreter ::
-  (MapAPI a b, RootResolverConstraint m e query mut sub) =>
-  RootResolver m e query mut sub ->
-  a ->
-  m b
-interpreter = runApp . deriveApp
 
-debugInterpreter ::
-  (MapAPI a b, RootResolverConstraint m e query mut sub) =>
-  RootResolver m e query mut sub ->
-  a ->
-  m b
-debugInterpreter = runApp . withDebugger . deriveApp
