@@ -76,11 +76,6 @@ data-files:
     test/Feature/Input/collections/tuple/invalid/query.gql
     test/Feature/Input/collections/tuple/ok/query.gql
     test/Feature/Input/collections/vector/query.gql
-    test/Feature/Input/default-values/intorspection/arguments/query.gql
-    test/Feature/Input/default-values/intorspection/input-compound/query.gql
-    test/Feature/Input/default-values/intorspection/input-simple/query.gql
-    test/Feature/Input/default-values/resolving/compound/query.gql
-    test/Feature/Input/default-values/resolving/simple/query.gql
     test/Feature/Input/enums/decode2Con/query.gql
     test/Feature/Input/enums/decode3Con/query.gql
     test/Feature/Input/enums/decodeInvalidValue/query.gql
@@ -186,11 +181,6 @@ data-files:
     test/Feature/Input/collections/tuple/invalid/response.json
     test/Feature/Input/collections/tuple/ok/response.json
     test/Feature/Input/collections/vector/response.json
-    test/Feature/Input/default-values/intorspection/arguments/response.json
-    test/Feature/Input/default-values/intorspection/input-compound/response.json
-    test/Feature/Input/default-values/intorspection/input-simple/response.json
-    test/Feature/Input/default-values/resolving/compound/response.json
-    test/Feature/Input/default-values/resolving/simple/response.json
     test/Feature/Input/enums/decode2Con/response.json
     test/Feature/Input/enums/decode3Con/response.json
     test/Feature/Input/enums/decodeInvalidValue/response.json

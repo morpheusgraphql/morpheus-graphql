@@ -46,33 +46,7 @@ main =
     "Morpheus Graphql Tests"
     [ testFeatures
         "Input"
-        [ (Variables.api, "variables"),
-          (Enums.api, "enums"),
-          (Scalars.api, "scalars"),
-          (Objects.api, "objects"),
-          (DefaultValues.api, "default-values"),
-          (Collections.api, "collections")
-        ],
-      testFeatures
-        "Collision"
-        [ (TypeCategoryCollisionSuccess.api, "category-collision-success"),
-          (TypeCategoryCollisionFail.api, "category-collision-fail"),
-          (NameCollision.api, "name-collision")
-        ],
-      testFeatures
-        "Inference"
-        [ (WrappedType.api, "wrapped-type"),
-          (TypeGuards.api, "type-guards"),
-          (UnionType.api, "union-type"),
-          (TypeInference.api, "type-inference"),
-          (TaggedArguments.api, "tagged-arguments"),
-          (TaggedArgumentsFail.api, "tagged-arguments-fail"),
-          (ObjectAndEnum.api, "object-and-enum")
-        ],
-      testFeatures
-        "Directive"
-        [ (DirectiveDefinition.api, "definition")
-        ],
+        [ (DefaultValues.api, "default-values") ],
       testFeatures
         "Holistic"
         [ (Holistic.api, "holistic")
