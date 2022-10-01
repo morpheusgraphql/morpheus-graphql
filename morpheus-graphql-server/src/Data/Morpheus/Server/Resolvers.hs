@@ -20,6 +20,9 @@ module Data.Morpheus.Server.Resolvers
     ComposedResolver,
     publish,
     constRes,
+    ResolverQ,
+    ResolverM,
+    ResolverS,
   )
 where
 
@@ -79,9 +82,15 @@ instance FlexibleResolver f (a :: (Type -> Type) -> Type) where
   type Flexible m a = m (a m)
   type Composed m f a = m (f (a m))
 
+type ComposedResolver o e m f a = Composed (Resolver o e m) f a
+
 type ResolverO o e m a = Flexible (Resolver o e m) a
 
-type ComposedResolver o e m f a = Composed (Resolver o e m) f a
+type ResolverQ e m a = Flexible (Resolver QUERY e m) a
+
+type ResolverM e m a = Flexible (Resolver MUTATION e m) a
+
+type ResolverS e m a = Flexible (Resolver SUBSCRIPTION e m) a
 
 publish :: Monad m => [e] -> Resolver MUTATION e m ()
 publish = pushEvents

@@ -9,11 +9,13 @@ module Data.Morpheus
     runApp,
     withDebugger,
     httpPlayground,
+    compileTimeSchemaValidation,
   )
 where
 
 import Data.Morpheus.Server
   ( App,
+    compileTimeSchemaValidation,
     debugInterpreter,
     deriveApp,
     httpPlayground,

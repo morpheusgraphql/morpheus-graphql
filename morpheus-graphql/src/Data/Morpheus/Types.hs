@@ -84,14 +84,9 @@ where
 
 import Control.Monad.Except (MonadError (..))
 import Data.Morpheus.Server.Resolvers
-  ( NamedResolvers (..),
-    RootResolver (..),
-    defaultRootResolver,
-  )
 import Data.Morpheus.Server.Types
   ( App,
     Arg (..),
-    ComposedResolver,
     DecodeScalar (..),
     DecodeWrapper (..),
     Deprecated (..),
@@ -109,7 +104,6 @@ import Data.Morpheus.Server.Types
     RenderGQL,
     Resolver,
     ResolverContext (..),
-    ResolverO,
     SUBSCRIPTION,
     ScalarValue (..),
     SubscriptionField,
@@ -119,12 +113,10 @@ import Data.Morpheus.Server.Types
     VisitField (..),
     VisitType (..),
     WithOperation,
-    constRes,
     defaultTypeOptions,
     dropNamespaceOptions,
     enumDirective,
     fieldDirective,
-    publish,
     render,
     subscribe,
     typeDirective,
@@ -132,12 +124,6 @@ import Data.Morpheus.Server.Types
   )
 import Data.Morpheus.Types.Internal.AST (GQLError)
 import Relude hiding (Undefined)
-
-type ResolverQ e m a = ResolverO QUERY e m a
-
-type ResolverM e m a = ResolverO MUTATION e m a
-
-type ResolverS e m a = ResolverO SUBSCRIPTION e m a
 
 {-# DEPRECATED Res "use ResolverQ" #-}
 

@@ -13,12 +13,10 @@ import Control.Monad.IO.Class (liftIO)
 import Data.Morpheus
   ( App,
     deriveApp,
+    httpPlayground,
     runApp,
   )
 import Data.Morpheus.App (MapAPI)
-import Data.Morpheus.Server
-  ( httpPlayground,
-  )
 import Data.Morpheus.Types
   ( ComposedResolver,
     ID,

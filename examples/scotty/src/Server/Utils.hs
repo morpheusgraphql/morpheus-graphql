@@ -14,7 +14,7 @@ where
 -- examples
 import Control.Applicative ((<|>))
 import Control.Monad.IO.Class (liftIO)
-import Data.Morpheus.Server
+import Data.Morpheus
   ( httpPlayground,
   )
 import Data.Morpheus.Subscriptions
