@@ -83,7 +83,11 @@ module Data.Morpheus.Types
 where
 
 import Control.Monad.Except (MonadError (..))
-import Data.Morpheus.Server.Resolvers (NamedResolvers (..), RootResolver (RootResolver), defaultRootResolver)
+import Data.Morpheus.Server.Resolvers
+  ( NamedResolvers (..),
+    RootResolver (..),
+    defaultRootResolver,
+  )
 import Data.Morpheus.Server.Types
   ( App,
     Arg (..),
