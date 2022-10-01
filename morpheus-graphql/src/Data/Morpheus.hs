@@ -11,13 +11,11 @@ module Data.Morpheus
   )
 where
 
-import Data.Morpheus.Server.App
-  ( RootResolverConstraint,
+import Data.Morpheus.Server
+  ( App,
+    debugInterpreter,
     deriveApp,
     interpreter,
-    debugInterpreter,
     runApp,
-    App
+    withDebugger,
   )
-
-

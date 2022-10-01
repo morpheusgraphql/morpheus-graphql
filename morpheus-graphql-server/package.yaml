@@ -34,10 +34,11 @@ library:
   source-dirs: src
   exposed-modules:
     - Data.Morpheus.Server
+    - Data.Morpheus.Server.Resolvers
     - Data.Morpheus.Server.Types
   ghc-options: "-Wall"
 tests:
-  morpheus-graphql-test:
+  morpheus-graphql-server-test:
     main: Spec.hs
     source-dirs: test
     ghc-options: "-Wall"

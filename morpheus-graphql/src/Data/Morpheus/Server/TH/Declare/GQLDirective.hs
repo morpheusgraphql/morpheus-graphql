@@ -23,7 +23,7 @@ import Data.Morpheus.Server.TH.Utils
   ( ServerDec,
     mkTypeableConstraints,
   )
-import Data.Morpheus.Server.Types.Directives
+import Data.Morpheus.Server.Types
   ( GQLDirective (..),
   )
 import Data.Morpheus.Types.Internal.AST

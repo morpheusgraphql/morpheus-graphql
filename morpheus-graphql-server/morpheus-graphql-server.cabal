@@ -266,6 +266,7 @@ source-repository head
 library
   exposed-modules:
       Data.Morpheus.Server
+      Data.Morpheus.Server.Resolvers
       Data.Morpheus.Server.Types
   other-modules:
       Data.Morpheus.Server.Deriving.App
@@ -320,7 +321,7 @@ library
     , vector >=0.12.0.1 && <0.13.0
   default-language: Haskell2010
 
-test-suite morpheus-graphql-test
+test-suite morpheus-graphql-server-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:

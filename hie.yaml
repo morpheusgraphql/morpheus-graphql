@@ -37,7 +37,7 @@ cradle:
         component: "morpheus-graphql:test:morpheus-graphql-test"
 
       - path: "./morpheus-graphql-server/test"
-        component: "morpheus-graphql-server:test:morpheus-graphql-test"
+        component: "morpheus-graphql-server:test:morpheus-graphql-server-test"
 
       - path: "./morpheus-graphql-app/test"
         component: "morpheus-graphql-app:test:morpheus-graphql-app-test"
