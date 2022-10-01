@@ -6,7 +6,6 @@ module Main
   )
 where
 
-import Data.Morpheus.Server (runApp)
 import Data.Morpheus.Server.Types (GQLRequest (..), GQLResponse (..))
 import qualified Feature.Collision.CategoryCollisionFail as TypeCategoryCollisionFail
 import qualified Feature.Collision.CategoryCollisionSuccess as TypeCategoryCollisionSuccess
@@ -24,10 +23,7 @@ import qualified Feature.Input.Enums as Enums
 import qualified Feature.Input.Objects as Objects
 import qualified Feature.Input.Scalars as Scalars
 import qualified Feature.Input.Variables as Variables
-import qualified Feature.NamedResolvers.API as NamedResolvers
 import Relude
-import Rendering.TestSchemaRendering (testSchemaRendering)
-import Subscription.Test (testSubscriptions)
 import Test.Morpheus
   ( FileUrl,
     cd,
@@ -64,7 +60,6 @@ main =
           (Enums.api, "enums"),
           (Scalars.api, "scalars"),
           (Objects.api, "objects"),
-          (DefaultValues.api, "default-values"),
           (Collections.api, "collections")
         ],
       testFeatures
@@ -86,14 +81,5 @@ main =
       testFeatures
         "Directive"
         [ (DirectiveDefinition.api, "definition")
-        ],
-      testFeatures
-        "Holistic"
-        [ (Holistic.api, "holistic")
-        ],
-      testFeatures
-        "NamedResolvers"
-        [(runApp NamedResolvers.app, "tests")],
-      testSubscriptions,
-      pure testSchemaRendering
+        ]
     ]
