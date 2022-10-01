@@ -70,6 +70,8 @@ module Data.Morpheus.Server.Types
     TYPE,
     CUSTOM,
     WRAPPER,
+    RootResolver (..),
+    defaultRootResolver,
   )
 where
 
@@ -89,8 +91,15 @@ import Data.Morpheus.Core
     render,
   )
 import Data.Morpheus.Server.Deriving.Encode ()
+import Data.Morpheus.Server.Resolvers
+  ( RootResolver (..),
+    defaultRootResolver,
+  )
 import Data.Morpheus.Server.Types.DirectiveDefinitions
-import Data.Morpheus.Server.Types.Directives
+  ( Deprecated (..),
+    Prefixes (..),
+  )
+import Data.Morpheus.Server.Types.Directives (GQLDirective (..))
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     enumDirective,

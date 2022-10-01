@@ -10,11 +10,11 @@ where
 
 import Data.Kind (Type)
 import Data.Morpheus.Server (interpreter)
+import Data.Morpheus.Server.Resolvers (ResolverQ)
 import Data.Morpheus.Server.Types
   ( GQLRequest,
     GQLResponse,
     GQLType (..),
-    ResolverQ,
     RootResolver (..),
     Undefined,
     defaultRootResolver,

@@ -17,7 +17,7 @@ import Data.Morpheus (deriveApp)
 import Data.Morpheus.Document
   ( importGQLDocument,
   )
-import Data.Morpheus.Server.Types
+import Data.Morpheus.NamedResolvers
   ( NamedResolverT,
     ResolveNamed (..),
     resolve,
