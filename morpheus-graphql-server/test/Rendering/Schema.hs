@@ -23,7 +23,7 @@ import Data.FileEmbed
 import Data.Morpheus.Document
   ( importGQLDocumentWithNamespace,
   )
-import Data.Morpheus.Types
+import Data.Morpheus.Server.Types
   ( DecodeScalar (..),
     ID,
     RootResolver,

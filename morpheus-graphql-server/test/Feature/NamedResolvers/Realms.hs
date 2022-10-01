@@ -25,7 +25,7 @@ import Data.Morpheus.NamedResolvers
     ResolveNamed (..),
     resolve,
   )
-import Data.Morpheus.Types
+import Data.Morpheus.Server.Types
   ( App,
     Arg (..),
     ID,

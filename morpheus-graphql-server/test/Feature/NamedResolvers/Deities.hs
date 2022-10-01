@@ -13,7 +13,6 @@ module Feature.NamedResolvers.Deities
   )
 where
 
-import Data.Morpheus.Server (deriveApp)
 import Data.Morpheus.Document
   ( importGQLDocument,
   )
@@ -22,7 +21,8 @@ import Data.Morpheus.NamedResolvers
     ResolveNamed (..),
     resolve,
   )
-import Data.Morpheus.Types
+import Data.Morpheus.Server (deriveApp)
+import Data.Morpheus.Server.Types
   ( App,
     Arg (..),
     ID,

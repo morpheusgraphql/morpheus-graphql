@@ -9,7 +9,7 @@ module Feature.Inference.UnionType
 where
 
 import Data.Morpheus.Server (interpreter)
-import Data.Morpheus.Types
+import Data.Morpheus.Server.Types
   ( GQLRequest,
     GQLResponse,
     GQLType (..),

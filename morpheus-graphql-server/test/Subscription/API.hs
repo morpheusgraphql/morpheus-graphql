@@ -21,14 +21,14 @@ module Subscription.API
   )
 where
 
-import Data.Morpheus.Server (App, deriveApp)
 import Data.Morpheus.Document (importGQLDocument)
-import Data.Morpheus.Subscriptions
-  ( Event (..),
-  )
-import Data.Morpheus.Types
+import Data.Morpheus.Server (App, deriveApp)
+import Data.Morpheus.Server.Types
   ( RootResolver (..),
     subscribe,
+  )
+import Data.Morpheus.Subscriptions
+  ( Event (..),
   )
 import Relude
 import Subscription.Utils (SubM)

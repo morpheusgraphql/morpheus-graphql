@@ -11,7 +11,7 @@ where
 import Data.List.NonEmpty (NonEmpty)
 import Data.Map (Map)
 import Data.Morpheus.Server (deriveApp, runApp)
-import Data.Morpheus.Types
+import Data.Morpheus.Server.Types
   ( App,
     Arg (..),
     GQLRequest,

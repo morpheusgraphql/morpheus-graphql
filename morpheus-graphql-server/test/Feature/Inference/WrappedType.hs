@@ -10,8 +10,7 @@ module Feature.Inference.WrappedType
 where
 
 import Data.Morpheus.Server (interpreter)
-import Data.Morpheus.Subscriptions (Event)
-import Data.Morpheus.Types
+import Data.Morpheus.Server.Types
   ( GQLRequest,
     GQLResponse,
     GQLType (..),
@@ -20,6 +19,7 @@ import Data.Morpheus.Types
     constRes,
     subscribe,
   )
+import Data.Morpheus.Subscriptions (Event)
 import Relude
 
 data Wrapped a b = Wrapped
