@@ -1,9 +1,0 @@
-{
-  characters {
-    name
-    age
-    ... on Deity {
-      power
-    }
-  }
-}

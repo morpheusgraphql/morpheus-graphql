@@ -1,6 +1,0 @@
-{
-  "data": {
-    "field1": "(A {a1 = \"f1\", a2 = 2},B {b1 = \"f3\"},C {c1 = 4})",
-    "field2": "(A {a1 = \"f1\", a2 = 2},Arg {argValue = \"f3\"},Arg {argValue = 4})"
-  }
-}

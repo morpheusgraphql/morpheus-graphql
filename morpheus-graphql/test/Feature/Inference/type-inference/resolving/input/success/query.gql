@@ -1,5 +1,0 @@
-{
-  object: showMonster(monster: { Hydra: { name: "someName", age: 12 } })
-  record: showMonster(monster: { Cerberus: { name: "someName" } })
-  enum: showMonster(monster: { UnidentifiedMonster: Unit })
-}

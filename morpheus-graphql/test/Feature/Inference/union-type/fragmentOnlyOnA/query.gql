@@ -1,9 +1,0 @@
-{
-  union {
-    ...FA
-  }
-}
-
-fragment FA on A {
-  aText
-}

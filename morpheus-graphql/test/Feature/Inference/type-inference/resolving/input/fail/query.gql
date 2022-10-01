@@ -1,6 +1,0 @@
-{
-  empty: showMonster(monster: {})
-  multiple: showMonster(
-    monster: { Hydra: { name: "someName", age: 12 }, UnidentifiedMonster: Unit }
-  )
-}

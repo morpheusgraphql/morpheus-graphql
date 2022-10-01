@@ -1,7 +1,0 @@
-{
-  union {
-    ... on C {
-      aText
-    }
-  }
-}
