@@ -1,6 +1,12 @@
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Resolvers
@@ -10,10 +16,14 @@ module Data.Morpheus.Server.Resolvers
     NamedResolvers (..),
     RootResolver (..),
     defaultRootResolver,
+    ResolverO,
+    ComposedResolver,
+    publish,
+    constRes,
   )
 where
 
-import Data.Morpheus.App.Internal.Resolving (Resolver)
+import Data.Morpheus.App.Internal.Resolving (PushEvents (pushEvents), Resolver, WithOperation)
 import Data.Morpheus.Server.NamedResolvers
 import Data.Morpheus.Server.Types.Types
   ( Undefined (..),
@@ -56,3 +66,25 @@ defaultRootResolver =
       mutationResolver = Undefined False,
       subscriptionResolver = Undefined False
     }
+
+class FlexibleResolver (f :: Type -> Type) (a :: k) where
+  type Flexible (m :: Type -> Type) a :: Type
+  type Composed (m :: Type -> Type) f a :: Type
+
+instance FlexibleResolver f (a :: Type) where
+  type Flexible m a = m a
+  type Composed m f a = m (f a)
+
+instance FlexibleResolver f (a :: (Type -> Type) -> Type) where
+  type Flexible m a = m (a m)
+  type Composed m f a = m (f (a m))
+
+type ResolverO o e m a = Flexible (Resolver o e m) a
+
+type ComposedResolver o e m f a = Composed (Resolver o e m) f a
+
+publish :: Monad m => [e] -> Resolver MUTATION e m ()
+publish = pushEvents
+
+constRes :: (WithOperation o, Monad m) => b -> a -> Resolver o e m b
+constRes = const . pure

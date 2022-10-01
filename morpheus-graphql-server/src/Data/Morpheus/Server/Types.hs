@@ -28,7 +28,6 @@ module Data.Morpheus.Server.Types
     GQLResponse (..),
     ID (..),
     ScalarValue (..),
-    constRes,
     Undefined,
     Resolver,
     QUERY,
@@ -36,12 +35,9 @@ module Data.Morpheus.Server.Types
     SUBSCRIPTION,
     lift,
     WithOperation,
-    publish,
     subscribe,
     unsafeInternalContext,
     ResolverContext (..),
-    ResolverO,
-    ComposedResolver,
     SubscriptionField,
     App,
     RenderGQL,
@@ -81,12 +77,10 @@ import Data.Morpheus.App
   ( App,
   )
 import Data.Morpheus.App.Internal.Resolving
-  ( PushEvents (..),
-    Resolver,
+  ( Resolver,
     ResolverContext (..),
     SubscriptionField,
     WithOperation,
-    pushEvents,
     subscribe,
     unsafeInternalContext,
   )
@@ -145,25 +139,3 @@ import Data.Morpheus.Types.Internal.AST
     ScalarValue (..),
   )
 import Relude hiding (Undefined)
-
-class FlexibleResolver (f :: Type -> Type) (a :: k) where
-  type Flexible (m :: Type -> Type) a :: Type
-  type Composed (m :: Type -> Type) f a :: Type
-
-instance FlexibleResolver f (a :: Type) where
-  type Flexible m a = m a
-  type Composed m f a = m (f a)
-
-instance FlexibleResolver f (a :: (Type -> Type) -> Type) where
-  type Flexible m a = m (a m)
-  type Composed m f a = m (f (a m))
-
-type ResolverO o e m a = Flexible (Resolver o e m) a
-
-type ComposedResolver o e m f a = Composed (Resolver o e m) f a
-
-publish :: Monad m => [e] -> Resolver MUTATION e m ()
-publish = pushEvents
-
-constRes :: (WithOperation o, Monad m) => b -> a -> Resolver o e m b
-constRes = const . pure
