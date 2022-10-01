@@ -13,7 +13,7 @@ module Feature.NamedResolvers.Deities
   )
 where
 
-import Data.Morpheus (deriveApp)
+import Data.Morpheus.Server (deriveApp)
 import Data.Morpheus.Document
   ( importGQLDocument,
   )

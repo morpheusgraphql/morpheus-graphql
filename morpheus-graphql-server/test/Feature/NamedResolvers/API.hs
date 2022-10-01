@@ -5,7 +5,7 @@ module Feature.NamedResolvers.API
   )
 where
 
-import Data.Morpheus (App)
+import Data.Morpheus.Server (App)
 import Feature.NamedResolvers.Deities (deitiesApp)
 import Feature.NamedResolvers.Entities (entitiesApp)
 import Feature.NamedResolvers.Realms (realmsApp)

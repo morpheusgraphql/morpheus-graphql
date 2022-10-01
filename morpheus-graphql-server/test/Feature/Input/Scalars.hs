@@ -8,8 +8,8 @@ module Feature.Input.Scalars
   )
 where
 
-import Data.Morpheus (interpreter)
-import Data.Morpheus.Types
+import Data.Morpheus.Server (interpreter)
+import Data.Morpheus.Server.Types
   ( GQLRequest,
     GQLResponse,
     GQLType,

@@ -10,7 +10,7 @@ where
 
 import Data.List.NonEmpty (NonEmpty)
 import Data.Map (Map)
-import Data.Morpheus (deriveApp, runApp)
+import Data.Morpheus.Server (deriveApp, runApp)
 import Data.Morpheus.Types
   ( App,
     Arg (..),

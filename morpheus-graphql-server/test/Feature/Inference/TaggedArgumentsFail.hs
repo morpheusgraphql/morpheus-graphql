@@ -10,7 +10,7 @@ module Feature.Inference.TaggedArgumentsFail
 where
 
 import Data.Kind (Type)
-import Data.Morpheus (interpreter)
+import Data.Morpheus.Server (interpreter)
 import Data.Morpheus.Types
   ( GQLRequest,
     GQLResponse,

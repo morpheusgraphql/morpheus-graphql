@@ -11,7 +11,7 @@ module Feature.NamedResolvers.Entities
   )
 where
 
-import Data.Morpheus (deriveApp)
+import Data.Morpheus.Server (deriveApp)
 import Data.Morpheus.NamedResolvers
   ( NamedResolverT,
     ResolveNamed (..),

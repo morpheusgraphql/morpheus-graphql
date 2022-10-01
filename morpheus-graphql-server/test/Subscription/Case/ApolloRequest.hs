@@ -10,7 +10,7 @@ module Subscription.Case.ApolloRequest
 where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.Morpheus (App)
+import Data.Morpheus.Server (App)
 import Data.Morpheus.Subscriptions
   ( Event,
   )

@@ -6,8 +6,8 @@ module Main
   )
 where
 
-import Data.Morpheus (runApp)
-import Data.Morpheus.Types (GQLRequest (..), GQLResponse (..))
+import Data.Morpheus.Server (runApp)
+import Data.Morpheus.Server.Types (GQLRequest (..), GQLResponse (..))
 import qualified Feature.Collision.CategoryCollisionFail as TypeCategoryCollisionFail
 import qualified Feature.Collision.CategoryCollisionSuccess as TypeCategoryCollisionSuccess
 import qualified Feature.Collision.NameCollision as NameCollision

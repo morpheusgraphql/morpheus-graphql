@@ -21,7 +21,7 @@ module Subscription.API
   )
 where
 
-import Data.Morpheus (App, deriveApp)
+import Data.Morpheus.Server (App, deriveApp)
 import Data.Morpheus.Document (importGQLDocument)
 import Data.Morpheus.Subscriptions
   ( Event (..),

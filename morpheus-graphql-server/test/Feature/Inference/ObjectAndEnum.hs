@@ -9,8 +9,8 @@ module Feature.Inference.ObjectAndEnum
 where
 
 import Data.Kind (Type)
-import Data.Morpheus (interpreter)
-import Data.Morpheus.Types
+import Data.Morpheus.Server (interpreter)
+import Data.Morpheus.Server.Types
   ( GQLRequest,
     GQLResponse,
     GQLType (..),
