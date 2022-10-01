@@ -475,6 +475,7 @@ library
       Data.Morpheus.Kind
       Data.Morpheus.Types
   other-modules:
+      Data.Morpheus.NamedResolvers
       Data.Morpheus.Server.TH.Compile
       Data.Morpheus.Server.TH.Declare
       Data.Morpheus.Server.TH.Declare.GQLDirective
