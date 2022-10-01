@@ -21,31 +21,11 @@ module Data.Morpheus.Kind
   )
 where
 
-import Relude
+import Data.Morpheus.Server.Types
 
 {-# DEPRECATED GQL_KIND "use: DerivingKind" #-}
 
 type GQL_KIND = DerivingKind
-
-data DerivingKind
-  = SCALAR
-  | TYPE
-  | WRAPPER
-  | CUSTOM
-  deriving (Show)
-
--- | GraphQL input, type, union , enum
-type TYPE = 'TYPE
-
--- | GraphQL Scalar: Int, Float, String, Boolean or any user defined custom Scalar type
-type SCALAR = 'SCALAR
-
--- | GraphQL Arrays , Resolvers and NonNull fields
-type WRAPPER = 'WRAPPER
-
-type CUSTOM = 'CUSTOM
-
--- deprecated types
 
 {-# DEPRECATED INTERFACE "use: deriving(GQLType), will be automatically inferred" #-}
 

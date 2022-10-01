@@ -87,6 +87,11 @@ module Data.Morpheus.Server.Types
     GQLDirective (..),
     Deprecated (..),
     dropNamespaceOptions,
+    SCALAR,
+    DerivingKind (..),
+    TYPE,
+    CUSTOM,
+    WRAPPER,
   )
 where
 
@@ -126,6 +131,13 @@ import Data.Morpheus.Server.Types.Internal
   ( GQLTypeOptions (..),
     defaultTypeOptions,
     dropNamespaceOptions,
+  )
+import Data.Morpheus.Server.Types.Kind
+  ( CUSTOM,
+    DerivingKind (..),
+    SCALAR,
+    TYPE,
+    WRAPPER,
   )
 import Data.Morpheus.Server.Types.Types
   ( Arg (..),
