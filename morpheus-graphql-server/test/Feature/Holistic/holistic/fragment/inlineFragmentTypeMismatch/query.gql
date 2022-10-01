@@ -1,7 +1,0 @@
-{
-  user {
-    ... on Address {
-      name
-    }
-  }
-}

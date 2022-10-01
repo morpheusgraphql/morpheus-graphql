@@ -30,9 +30,14 @@ import Data.Morpheus.App.Internal.Resolving
 import Data.Morpheus.Core
   ( render,
   )
+import Data.Morpheus.App (
+  MapAPI, 
+  runApp,
+    withDebugger,)
 import Data.Morpheus.Server.Deriving.App
   ( RootResolverConstraint,
     deriveSchema,
+    deriveApp,
   )
 import Data.Morpheus.Server.Deriving.Schema
   ( compileTimeSchemaValidation,

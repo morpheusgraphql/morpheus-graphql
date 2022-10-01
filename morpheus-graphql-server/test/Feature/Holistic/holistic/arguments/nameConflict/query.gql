@@ -1,7 +1,0 @@
-{
-  user {
-    address(comment: "", comment: "") {
-      city
-    }
-  }
-}

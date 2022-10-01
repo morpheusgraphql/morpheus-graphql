@@ -1,9 +1,0 @@
-query {
-  user {
-    ...UserName @deprecated @include(if: false) @skip(if: true)
-  }
-}
-
-fragment UserName on User {
-  name
-}

@@ -1,9 +1,0 @@
-{
-  __type(name: "Coordinates") {
-    description
-    inputFields {
-      name
-      description
-    }
-  }
-}

@@ -1,8 +1,0 @@
-{
-  "errors": [
-    {
-      "message": "Directive \"deprecated\" may not to be used on INLINE_FRAGMENT",
-      "locations": [{ "line": 3, "column": 17 }]
-    }
-  ]
-}

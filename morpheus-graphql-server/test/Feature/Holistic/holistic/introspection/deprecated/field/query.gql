@@ -1,9 +1,0 @@
-{
-  __type(name: "Address") {
-    fields {
-      name
-      isDeprecated
-      deprecationReason
-    }
-  }
-}

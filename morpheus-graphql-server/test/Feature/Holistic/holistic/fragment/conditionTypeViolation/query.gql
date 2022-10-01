@@ -1,8 +1,0 @@
-{
-  user {
-    ...MyFragment
-  }
-}
-fragment MyFragment on Coordinates {
-  latitude
-}

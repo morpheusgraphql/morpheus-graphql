@@ -1,7 +1,0 @@
-{
-  user {
-    ... on User {
-      name
-    }
-  }
-}

@@ -1,5 +1,0 @@
-query Foo @someDirective(name: "testName") @test2 {
-  user {
-    name
-  }
-}

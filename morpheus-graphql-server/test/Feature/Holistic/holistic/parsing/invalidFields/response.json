@@ -1,8 +1,0 @@
-{
-  "errors": [
-    {
-      "message": "offset=26:\nunexpected '<'\nexpecting '}', Arguments, Directives, IgnoredTokens, Selection, or SelectionContent\n",
-      "locations": [{ "line": 1, "column": 27 }]
-    }
-  ]
-}

@@ -1,5 +1,0 @@
-mutation SomeMutation @deprecated @skip(if: true) @include(if: true) {
-  createUser(userID: "test_id") {
-    name
-  }
-}

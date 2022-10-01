@@ -1,8 +1,0 @@
-{
-  user {
-    ...UserFragment
-  }
-}
-fragment UserFragment on Address {
-  houseNumber
-}

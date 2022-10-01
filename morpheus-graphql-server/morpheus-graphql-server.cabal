@@ -27,94 +27,6 @@ data-files:
     test/Feature/Directive/definition/introspect-directive/query.gql
     test/Feature/Directive/definition/introspect-enum/query.gql
     test/Feature/Directive/definition/introspect-type/query.gql
-    test/Feature/Holistic/holistic/arguments/nameConflict/query.gql
-    test/Feature/Holistic/holistic/arguments/undefinedArgument/query.gql
-    test/Feature/Holistic/holistic/arguments/unknownArguments/query.gql
-    test/Feature/Holistic/holistic/failure/resolveFailure/query.gql
-    test/Feature/Holistic/holistic/fragment/cannotBeSpreadOnType/query.gql
-    test/Feature/Holistic/holistic/fragment/conditionTypeViolation/query.gql
-    test/Feature/Holistic/holistic/fragment/inlineFragment/query.gql
-    test/Feature/Holistic/holistic/fragment/inlineFragmentTypeMismatch/query.gql
-    test/Feature/Holistic/holistic/fragment/loopingFragment/query.gql
-    test/Feature/Holistic/holistic/fragment/nameCollision/query.gql
-    test/Feature/Holistic/holistic/fragment/unknownConditionType/query.gql
-    test/Feature/Holistic/holistic/fragment/unknownTargetType/query.gql
-    test/Feature/Holistic/holistic/fragment/unusedFragment/query.gql
-    test/Feature/Holistic/holistic/introspection/defaultTypes/Boolean/query.gql
-    test/Feature/Holistic/holistic/introspection/defaultTypes/Float/query.gql
-    test/Feature/Holistic/holistic/introspection/defaultTypes/ID/query.gql
-    test/Feature/Holistic/holistic/introspection/defaultTypes/Int/query.gql
-    test/Feature/Holistic/holistic/introspection/defaultTypes/String/query.gql
-    test/Feature/Holistic/holistic/introspection/deprecated/enumValue/query.gql
-    test/Feature/Holistic/holistic/introspection/deprecated/field/query.gql
-    test/Feature/Holistic/holistic/introspection/description/enum/query.gql
-    test/Feature/Holistic/holistic/introspection/description/inputObject/query.gql
-    test/Feature/Holistic/holistic/introspection/description/object/query.gql
-    test/Feature/Holistic/holistic/introspection/description/union/query.gql
-    test/Feature/Holistic/holistic/introspection/directives/default/query.gql
-    test/Feature/Holistic/holistic/introspection/interface/query.gql
-    test/Feature/Holistic/holistic/introspection/kinds/ENUM/query.gql
-    test/Feature/Holistic/holistic/introspection/kinds/INPUT_OBJECT/query.gql
-    test/Feature/Holistic/holistic/introspection/kinds/OBJECT/query.gql
-    test/Feature/Holistic/holistic/introspection/kinds/SCALAR/query.gql
-    test/Feature/Holistic/holistic/introspection/kinds/UNION/query.gql
-    test/Feature/Holistic/holistic/introspection/schemaTypes/__Directive/query.gql
-    test/Feature/Holistic/holistic/introspection/schemaTypes/__DirectiveLocation/query.gql
-    test/Feature/Holistic/holistic/introspection/schemaTypes/__EnumValue/query.gql
-    test/Feature/Holistic/holistic/introspection/schemaTypes/__Field/query.gql
-    test/Feature/Holistic/holistic/introspection/schemaTypes/__InputValue/query.gql
-    test/Feature/Holistic/holistic/introspection/schemaTypes/__Schema/query.gql
-    test/Feature/Holistic/holistic/introspection/schemaTypes/__Type/query.gql
-    test/Feature/Holistic/holistic/introspection/schemaTypes/__TypeKind/query.gql
-    test/Feature/Holistic/holistic/namespace/enum-fail-on-fullname/query.gql
-    test/Feature/Holistic/holistic/namespace/enum/query.gql
-    test/Feature/Holistic/holistic/parsing/AnonymousOperation/mutation/query.gql
-    test/Feature/Holistic/holistic/parsing/AnonymousOperation/query/query.gql
-    test/Feature/Holistic/holistic/parsing/AnonymousOperation/subscription/query.gql
-    test/Feature/Holistic/holistic/parsing/complex/query.gql
-    test/Feature/Holistic/holistic/parsing/directive/notOnArgument/query.gql
-    test/Feature/Holistic/holistic/parsing/directive/notOnVariable/query.gql
-    test/Feature/Holistic/holistic/parsing/directive/operation/query.gql
-    test/Feature/Holistic/holistic/parsing/directive/selection/query.gql
-    test/Feature/Holistic/holistic/parsing/duplicatedFields/query.gql
-    test/Feature/Holistic/holistic/parsing/extraCommas/query.gql
-    test/Feature/Holistic/holistic/parsing/generousSpaces/query.gql
-    test/Feature/Holistic/holistic/parsing/inputListValues/query.gql
-    test/Feature/Holistic/holistic/parsing/invalidFields/query.gql
-    test/Feature/Holistic/holistic/parsing/invalidNotNullOperator/query.gql
-    test/Feature/Holistic/holistic/parsing/missingCloseBrace/query.gql
-    test/Feature/Holistic/holistic/parsing/notNullSpacing/query.gql
-    test/Feature/Holistic/holistic/parsing/numbers/query.gql
-    test/Feature/Holistic/holistic/parsing/singleLineComments/query.gql
-    test/Feature/Holistic/holistic/reservedNames/query.gql
-    test/Feature/Holistic/holistic/selection/__typename/query.gql
-    test/Feature/Holistic/holistic/selection/AliasResolve/query.gql
-    test/Feature/Holistic/holistic/selection/AliasUnknownField/query.gql
-    test/Feature/Holistic/holistic/selection/directives/default/requiredArgument/query.gql
-    test/Feature/Holistic/holistic/selection/directives/default/resolve/query.gql
-    test/Feature/Holistic/holistic/selection/directives/default/resolve_and_merge/query.gql
-    test/Feature/Holistic/holistic/selection/directives/default/variablesOnFragment/query.gql
-    test/Feature/Holistic/holistic/selection/directives/default/withMerge/query.gql
-    test/Feature/Holistic/holistic/selection/directives/default/withVariable/query.gql
-    test/Feature/Holistic/holistic/selection/directives/default/wrongArgumentType/query.gql
-    test/Feature/Holistic/holistic/selection/directives/validation/invalidPlace/field/query.gql
-    test/Feature/Holistic/holistic/selection/directives/validation/invalidPlace/fragmentSpread/query.gql
-    test/Feature/Holistic/holistic/selection/directives/validation/invalidPlace/inlineFragment/query.gql
-    test/Feature/Holistic/holistic/selection/directives/validation/invalidPlace/mutation/query.gql
-    test/Feature/Holistic/holistic/selection/directives/validation/invalidPlace/query/query.gql
-    test/Feature/Holistic/holistic/selection/directives/validation/invalidPlace/subscription/query.gql
-    test/Feature/Holistic/holistic/selection/hasNoSubFields/query.gql
-    test/Feature/Holistic/holistic/selection/mergeConflict/alias/query.gql
-    test/Feature/Holistic/holistic/selection/mergeConflict/arguments/query.gql
-    test/Feature/Holistic/holistic/selection/mergeConflict/union/query.gql
-    test/Feature/Holistic/holistic/selection/mergeSelection/query.gql
-    test/Feature/Holistic/holistic/selection/mergeUnionSelection/query.gql
-    test/Feature/Holistic/holistic/selection/mustHaveSubFields/query.gql
-    test/Feature/Holistic/holistic/selection/subscription/singleTopLevelField/fail/query.gql
-    test/Feature/Holistic/holistic/selection/subscription/singleTopLevelField/failAnonymous/query.gql
-    test/Feature/Holistic/holistic/selection/unknownField/query.gql
-    test/Feature/Holistic/schema-ext.gql
-    test/Feature/Holistic/schema.gql
     test/Feature/Inference/object-and-enum/introspection/query.gql
     test/Feature/Inference/object-and-enum/resolving/query.gql
     test/Feature/Inference/tagged-arguments-fail/introspection/query.gql
@@ -164,7 +76,6 @@ data-files:
     test/Feature/Input/collections/tuple/invalid/query.gql
     test/Feature/Input/collections/tuple/ok/query.gql
     test/Feature/Input/collections/vector/query.gql
-    test/Feature/Input/default-values-schema.gql
     test/Feature/Input/default-values/intorspection/arguments/query.gql
     test/Feature/Input/default-values/intorspection/input-compound/query.gql
     test/Feature/Input/default-values/intorspection/input-simple/query.gql
@@ -242,94 +153,6 @@ data-files:
     test/Feature/Directive/definition/introspect-directive/response.json
     test/Feature/Directive/definition/introspect-enum/response.json
     test/Feature/Directive/definition/introspect-type/response.json
-    test/Feature/Holistic/holistic/arguments/nameConflict/response.json
-    test/Feature/Holistic/holistic/arguments/undefinedArgument/response.json
-    test/Feature/Holistic/holistic/arguments/unknownArguments/response.json
-    test/Feature/Holistic/holistic/failure/resolveFailure/response.json
-    test/Feature/Holistic/holistic/fragment/cannotBeSpreadOnType/response.json
-    test/Feature/Holistic/holistic/fragment/conditionTypeViolation/response.json
-    test/Feature/Holistic/holistic/fragment/inlineFragment/response.json
-    test/Feature/Holistic/holistic/fragment/inlineFragmentTypeMismatch/response.json
-    test/Feature/Holistic/holistic/fragment/loopingFragment/response.json
-    test/Feature/Holistic/holistic/fragment/nameCollision/response.json
-    test/Feature/Holistic/holistic/fragment/unknownConditionType/response.json
-    test/Feature/Holistic/holistic/fragment/unknownTargetType/response.json
-    test/Feature/Holistic/holistic/fragment/unusedFragment/response.json
-    test/Feature/Holistic/holistic/introspection/defaultTypes/Boolean/response.json
-    test/Feature/Holistic/holistic/introspection/defaultTypes/Float/response.json
-    test/Feature/Holistic/holistic/introspection/defaultTypes/ID/response.json
-    test/Feature/Holistic/holistic/introspection/defaultTypes/Int/response.json
-    test/Feature/Holistic/holistic/introspection/defaultTypes/String/response.json
-    test/Feature/Holistic/holistic/introspection/deprecated/enumValue/response.json
-    test/Feature/Holistic/holistic/introspection/deprecated/field/response.json
-    test/Feature/Holistic/holistic/introspection/description/enum/response.json
-    test/Feature/Holistic/holistic/introspection/description/inputObject/response.json
-    test/Feature/Holistic/holistic/introspection/description/object/response.json
-    test/Feature/Holistic/holistic/introspection/description/union/response.json
-    test/Feature/Holistic/holistic/introspection/directives/default/response.json
-    test/Feature/Holistic/holistic/introspection/interface/response.json
-    test/Feature/Holistic/holistic/introspection/kinds/ENUM/response.json
-    test/Feature/Holistic/holistic/introspection/kinds/INPUT_OBJECT/response.json
-    test/Feature/Holistic/holistic/introspection/kinds/OBJECT/response.json
-    test/Feature/Holistic/holistic/introspection/kinds/SCALAR/response.json
-    test/Feature/Holistic/holistic/introspection/kinds/UNION/response.json
-    test/Feature/Holistic/holistic/introspection/schemaTypes/__Directive/response.json
-    test/Feature/Holistic/holistic/introspection/schemaTypes/__DirectiveLocation/response.json
-    test/Feature/Holistic/holistic/introspection/schemaTypes/__EnumValue/response.json
-    test/Feature/Holistic/holistic/introspection/schemaTypes/__Field/response.json
-    test/Feature/Holistic/holistic/introspection/schemaTypes/__InputValue/response.json
-    test/Feature/Holistic/holistic/introspection/schemaTypes/__Schema/response.json
-    test/Feature/Holistic/holistic/introspection/schemaTypes/__Type/response.json
-    test/Feature/Holistic/holistic/introspection/schemaTypes/__TypeKind/response.json
-    test/Feature/Holistic/holistic/namespace/enum-fail-on-fullname/response.json
-    test/Feature/Holistic/holistic/namespace/enum/response.json
-    test/Feature/Holistic/holistic/parsing/AnonymousOperation/mutation/response.json
-    test/Feature/Holistic/holistic/parsing/AnonymousOperation/query/response.json
-    test/Feature/Holistic/holistic/parsing/AnonymousOperation/subscription/response.json
-    test/Feature/Holistic/holistic/parsing/complex/response.json
-    test/Feature/Holistic/holistic/parsing/directive/notOnArgument/response.json
-    test/Feature/Holistic/holistic/parsing/directive/notOnVariable/response.json
-    test/Feature/Holistic/holistic/parsing/directive/operation/response.json
-    test/Feature/Holistic/holistic/parsing/directive/selection/response.json
-    test/Feature/Holistic/holistic/parsing/duplicatedFields/response.json
-    test/Feature/Holistic/holistic/parsing/extraCommas/response.json
-    test/Feature/Holistic/holistic/parsing/generousSpaces/response.json
-    test/Feature/Holistic/holistic/parsing/inputListValues/response.json
-    test/Feature/Holistic/holistic/parsing/inputListValues/variables.json
-    test/Feature/Holistic/holistic/parsing/invalidFields/response.json
-    test/Feature/Holistic/holistic/parsing/invalidNotNullOperator/response.json
-    test/Feature/Holistic/holistic/parsing/missingCloseBrace/response.json
-    test/Feature/Holistic/holistic/parsing/notNullSpacing/response.json
-    test/Feature/Holistic/holistic/parsing/notNullSpacing/variables.json
-    test/Feature/Holistic/holistic/parsing/numbers/response.json
-    test/Feature/Holistic/holistic/parsing/singleLineComments/response.json
-    test/Feature/Holistic/holistic/reservedNames/response.json
-    test/Feature/Holistic/holistic/selection/__typename/response.json
-    test/Feature/Holistic/holistic/selection/AliasResolve/response.json
-    test/Feature/Holistic/holistic/selection/AliasUnknownField/response.json
-    test/Feature/Holistic/holistic/selection/directives/default/requiredArgument/response.json
-    test/Feature/Holistic/holistic/selection/directives/default/resolve/response.json
-    test/Feature/Holistic/holistic/selection/directives/default/resolve_and_merge/response.json
-    test/Feature/Holistic/holistic/selection/directives/default/variablesOnFragment/response.json
-    test/Feature/Holistic/holistic/selection/directives/default/withMerge/response.json
-    test/Feature/Holistic/holistic/selection/directives/default/withVariable/response.json
-    test/Feature/Holistic/holistic/selection/directives/default/wrongArgumentType/response.json
-    test/Feature/Holistic/holistic/selection/directives/validation/invalidPlace/field/response.json
-    test/Feature/Holistic/holistic/selection/directives/validation/invalidPlace/fragmentSpread/response.json
-    test/Feature/Holistic/holistic/selection/directives/validation/invalidPlace/inlineFragment/response.json
-    test/Feature/Holistic/holistic/selection/directives/validation/invalidPlace/mutation/response.json
-    test/Feature/Holistic/holistic/selection/directives/validation/invalidPlace/query/response.json
-    test/Feature/Holistic/holistic/selection/directives/validation/invalidPlace/subscription/response.json
-    test/Feature/Holistic/holistic/selection/hasNoSubFields/response.json
-    test/Feature/Holistic/holistic/selection/mergeConflict/alias/response.json
-    test/Feature/Holistic/holistic/selection/mergeConflict/arguments/response.json
-    test/Feature/Holistic/holistic/selection/mergeConflict/union/response.json
-    test/Feature/Holistic/holistic/selection/mergeSelection/response.json
-    test/Feature/Holistic/holistic/selection/mergeUnionSelection/response.json
-    test/Feature/Holistic/holistic/selection/mustHaveSubFields/response.json
-    test/Feature/Holistic/holistic/selection/subscription/singleTopLevelField/fail/response.json
-    test/Feature/Holistic/holistic/selection/subscription/singleTopLevelField/failAnonymous/response.json
-    test/Feature/Holistic/holistic/selection/unknownField/response.json
     test/Feature/Inference/object-and-enum/introspection/response.json
     test/Feature/Inference/object-and-enum/resolving/response.json
     test/Feature/Inference/tagged-arguments-fail/introspection/response.json
@@ -534,7 +357,6 @@ test-suite morpheus-graphql-test
       Feature.Collision.NameCollision
       Feature.Collision.NameCollisionHelper
       Feature.Directive.Definition
-      Feature.Holistic.API
       Feature.Inference.ObjectAndEnum
       Feature.Inference.TaggedArguments
       Feature.Inference.TaggedArgumentsFail
@@ -543,7 +365,6 @@ test-suite morpheus-graphql-test
       Feature.Inference.UnionType
       Feature.Inference.WrappedType
       Feature.Input.Collections
-      Feature.Input.DefaultValues
       Feature.Input.Enums
       Feature.Input.Objects
       Feature.Input.Scalars

@@ -11,8 +11,8 @@ module Feature.Directive.Definition
 where
 
 import Data.Kind (Type)
-import Data.Morpheus (interpreter)
-import Data.Morpheus.Types
+import Data.Morpheus.Server (interpreter)
+import Data.Morpheus.Server.Types
   ( Deprecated (..),
     GQLDirective (..),
     GQLRequest,

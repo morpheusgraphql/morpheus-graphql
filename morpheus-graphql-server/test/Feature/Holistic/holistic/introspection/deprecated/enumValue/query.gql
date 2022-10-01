@@ -1,9 +1,0 @@
-{
-  __type(name: "TestEnum") {
-    enumValues {
-      name
-      isDeprecated
-      deprecationReason
-    }
-  }
-}
