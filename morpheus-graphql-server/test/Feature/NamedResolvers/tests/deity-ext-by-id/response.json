@@ -1,9 +1,0 @@
-{
-  "data": {
-    "deity": {
-      "name": "Zeus",
-      "realm": { "name": "Mount Olympus" },
-      "power": ["Thunderbolt"]
-    }
-  }
-}

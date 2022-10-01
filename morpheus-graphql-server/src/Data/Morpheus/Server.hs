@@ -17,6 +17,10 @@ module Data.Morpheus.Server
     RootResolverConstraint,
     interpreter,
     debugInterpreter,
+    App,
+    deriveApp,
+    runApp,
+    withDebugger,
   )
 where
 
@@ -24,20 +28,22 @@ import Data.ByteString.Lazy.Char8
   ( ByteString,
     pack,
   )
+import Data.Morpheus.App
+  ( App (..),
+    MapAPI,
+    runApp,
+    withDebugger,
+  )
 import Data.Morpheus.App.Internal.Resolving
   ( resultOr,
   )
 import Data.Morpheus.Core
   ( render,
   )
-import Data.Morpheus.App (
-  MapAPI, 
-  runApp,
-    withDebugger,)
 import Data.Morpheus.Server.Deriving.App
   ( RootResolverConstraint,
-    deriveSchema,
     deriveApp,
+    deriveSchema,
   )
 import Data.Morpheus.Server.Deriving.Schema
   ( compileTimeSchemaValidation,

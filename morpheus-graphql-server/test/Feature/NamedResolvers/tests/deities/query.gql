@@ -1,6 +1,0 @@
-query {
-  deities {
-    name
-    power
-  }
-}
