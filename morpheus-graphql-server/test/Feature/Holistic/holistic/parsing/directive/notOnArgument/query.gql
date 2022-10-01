@@ -1,0 +1,3 @@
+query Foo {
+    someField( someArgs: { value: "" } @goo @name(name: {id:1})  )
+}

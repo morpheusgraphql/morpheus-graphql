@@ -1,0 +1,7 @@
+{
+  "data": {
+    "user": {
+      "inputs": "InputsArgs {inputCompound = InputCompound {inputField2 = \"value from argument inputCompound\", inputField3 = [Just (InputSimple {fieldWithDefault = ID {unpackID = \"value2 from inputField3\"}, simpleField = Just EnumA}),Just (InputSimple {fieldWithDefault = ID {unpackID = \"value from fieldWithDefault\"}, simpleField = Just EnumA})], inputField4 = [Just (InputSimple {fieldWithDefault = ID {unpackID = \"value from fieldWithDefault\"}, simpleField = Just EnumB})]}, input = Just (InputSimple {fieldWithDefault = ID {unpackID = \"value from fieldWithDefault\"}, simpleField = Just EnumA}), comment = Just \"test string\"}"
+    }
+  }
+}

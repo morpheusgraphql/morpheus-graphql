@@ -1,0 +1,15 @@
+{
+  "data": {
+    "user": {
+      "email2": "",
+      "name": "testName",
+      "address": {
+        "city": ""
+      },
+      "office": {
+        "houseNumber": 0,
+        "city": ""
+      }
+    }
+  }
+}

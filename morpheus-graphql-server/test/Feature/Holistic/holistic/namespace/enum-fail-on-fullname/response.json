@@ -1,0 +1,13 @@
+{
+  "errors": [
+    {
+      "message": "Argument \"enum\" got invalid value. Expected type \"CollidingEnum!\" found CollidingEnumEnumB.",
+      "locations": [
+        {
+          "line": 2,
+          "column": 12
+        }
+      ]
+    }
+  ]
+}

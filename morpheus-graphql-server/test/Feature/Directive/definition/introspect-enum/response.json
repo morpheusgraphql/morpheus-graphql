@@ -1,0 +1,39 @@
+{
+  "data": {
+    "city": {
+      "enumValues": [
+        {
+          "deprecationReason": null,
+          "isDeprecated": false,
+          "name": "Athens"
+        },
+        {
+          "deprecationReason": null,
+          "isDeprecated": true,
+          "name": "Sparta"
+        },
+        {
+          "deprecationReason": null,
+          "isDeprecated": false,
+          "name": "Corinth"
+        },
+        {
+          "deprecationReason": "oracle left the place",
+          "isDeprecated": true,
+          "name": "Delphi"
+        },
+        {
+          "deprecationReason": "for some reason",
+          "isDeprecated": true,
+          "name": "Argos"
+        }
+      ],
+      "fields": null,
+      "inputFields": null,
+      "interfaces": null,
+      "kind": "ENUM",
+      "name": "City",
+      "possibleTypes": null
+    }
+  }
+}

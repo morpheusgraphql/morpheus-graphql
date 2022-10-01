@@ -1,0 +1,60 @@
+{
+  "data": {
+    "__schema": {
+      "directives": [
+        {
+          "args": [
+            {
+              "defaultValue": null,
+              "name": "reason",
+              "type": { "kind": "SCALAR", "name": "String", "ofType": null }
+            }
+          ],
+          "description": "\nMarks an element of a GraphQL schema as no longer supported.\n",
+          "locations": ["FIELD_DEFINITION", "ENUM_VALUE"],
+          "name": "deprecated"
+        },
+        {
+          "args": [
+            {
+              "defaultValue": null,
+              "name": "if",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "Boolean",
+                  "ofType": null
+                }
+              }
+            }
+          ],
+          "description": "\nDirects the executor to include this field or fragment only when the `if` argument is true.\n",
+          "locations": ["FIELD", "FRAGMENT_SPREAD", "INLINE_FRAGMENT"],
+          "name": "include"
+        },
+        {
+          "args": [
+            {
+              "defaultValue": null,
+              "name": "if",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "SCALAR",
+                  "name": "Boolean",
+                  "ofType": null
+                }
+              }
+            }
+          ],
+          "description": "\nDirects the executor to skip this field or fragment when the `if` argument is true.\n",
+          "locations": ["FIELD", "FRAGMENT_SPREAD", "INLINE_FRAGMENT"],
+          "name": "skip"
+        }
+      ]
+    }
+  }
+}

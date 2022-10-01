@@ -1,0 +1,15 @@
+{
+  union {
+    __typename
+    ...FA
+    ...FB
+  }
+}
+
+fragment FA on A {
+  aText
+}
+
+fragment FB on B {
+  bText
+}

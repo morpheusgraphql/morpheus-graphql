@@ -1,0 +1,13 @@
+{
+  "errors": [
+    {
+      "message": "Variable \"bo\" is not defined by operation \"testUnknownType\".",
+      "locations": [
+        {
+          "line": 3,
+          "column": 15
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "errors": [
+    {
+      "message": "Directive \"deprecated\" may not to be used on FIELD",
+      "locations": [{ "line": 5, "column": 25 }]
+    },
+    {
+      "message": "Directive \"deprecated\" may not to be used on FIELD",
+      "locations": [{ "line": 9, "column": 29 }]
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "data": {
+    "__type": {
+      "kind": "OBJECT",
+      "name": "Query",
+      "fields": [
+        {
+          "name": "a1",
+          "args": [],
+          "type": {
+            "kind": "NON_NULL",
+            "name": null,
+            "ofType": {
+              "kind": "OBJECT",
+              "name": "WA",
+              "ofType": null
+            }
+          },
+          "isDeprecated": false,
+          "deprecationReason": null
+        },
+        {
+          "name": "a2",
+          "args": [],
+          "type": {
+            "kind": "OBJECT",
+            "name": "WrappedIntInt",
+            "ofType": null
+          },
+          "isDeprecated": false,
+          "deprecationReason": null
+        },
+        {
+          "name": "a3",
+          "args": [],
+          "type": {
+            "kind": "OBJECT",
+            "name": "WrappedWrappedTextIntText",
+            "ofType": null
+          },
+          "isDeprecated": false,
+          "deprecationReason": null
+        }
+      ],
+      "inputFields": null,
+      "interfaces": [],
+      "enumValues": null,
+      "possibleTypes": null
+    }
+  }
+}

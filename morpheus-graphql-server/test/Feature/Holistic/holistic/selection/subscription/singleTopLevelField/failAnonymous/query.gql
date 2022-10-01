@@ -1,0 +1,11 @@
+subscription {
+  newUser {
+    name
+  }
+  newAddress {
+    houseNumber
+  }
+  address2: newAddress {
+    houseNumber
+  }
+}

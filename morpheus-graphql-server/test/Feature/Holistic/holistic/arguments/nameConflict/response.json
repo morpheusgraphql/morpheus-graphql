@@ -1,0 +1,22 @@
+{
+  "errors": [
+    {
+      "message": "There can Be only One Argument Named \"comment\"",
+      "locations": [
+        {
+          "line": 3,
+          "column": 13
+        }
+      ]
+    },
+    {
+      "message": "There can Be only One Argument Named \"comment\"",
+      "locations": [
+        {
+          "line": 3,
+          "column": 26
+        }
+      ]
+    }
+  ]
+}

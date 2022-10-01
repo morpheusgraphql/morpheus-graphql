@@ -1,0 +1,4 @@
+query ResolveVariable($v1: String!, $v2: Int!, $v3: Int) {
+  i1: input(value: { field: $v1, nullableField: $v2 })
+  i2: input(value: { field: "", nullableField: $v3 })
+}

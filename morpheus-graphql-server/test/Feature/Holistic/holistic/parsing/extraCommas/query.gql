@@ -1,0 +1,24 @@
+{
+    user {name,,,email}
+
+    user {name, ,email}
+
+    user {name , email , }
+
+    user {
+        name,
+        email
+    }
+
+    user {
+        name,email
+    }
+
+    user {
+        name, email
+    }
+
+    user {
+        name ,email
+    }
+}

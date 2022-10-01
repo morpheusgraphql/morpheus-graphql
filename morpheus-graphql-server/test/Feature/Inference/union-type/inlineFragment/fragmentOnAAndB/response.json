@@ -1,0 +1,14 @@
+{
+  "data": {
+    "union": [
+      {
+        "__typename": "A",
+        "aText": "at"
+      },
+      {
+        "__typename": "B",
+        "bText": "bt"
+      }
+    ]
+  }
+}

@@ -1,0 +1,15 @@
+query bla($x: Boolean! = false, $y: Boolean! = true) {
+  user @skip(if: $x) {
+    case1: name
+  }
+  user @include(if: $x) {
+    case2: name
+  }
+
+  user2: user @skip(if: $y) {
+    case1: name
+  }
+  user2: user @include(if: $y) {
+    case2: name
+  }
+}

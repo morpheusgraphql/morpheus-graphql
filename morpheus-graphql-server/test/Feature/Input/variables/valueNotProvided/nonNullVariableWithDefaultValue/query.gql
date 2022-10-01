@@ -1,0 +1,5 @@
+query TestNonNullVariable($i1: String! = "hello world") {
+  q1 {
+    a1(arg1: $i1)
+  }
+}

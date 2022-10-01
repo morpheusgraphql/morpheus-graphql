@@ -1,0 +1,5 @@
+query SomeQUery @deprecated @skip(if: true) @include(if: true) {
+  user {
+    name
+  }
+}

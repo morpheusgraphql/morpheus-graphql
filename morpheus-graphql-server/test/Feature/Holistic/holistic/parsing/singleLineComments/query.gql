@@ -1,0 +1,57 @@
+# starting Comment''
+# starting Comment''
+query # starting Comment''
+# starting Comment''
+GetUsers( # starting Comment'' # starting Comment''
+  $v: [# starting Comment'' # starting Comment''
+  Int!] # starting Comment'' # starting Comment''
+) {
+  user {
+    # starting Comment''
+    # %&%(//
+    # %&%(//
+    email2: email # starting Comment'' # %&%(// # starting Comment''
+    name # starting Comment''
+    # starting Comment''
+    # starting Comment''
+    # starting Comment''
+
+    address( # starting Comment'' # %&%(//
+      coordinates: {
+        # %&%(//
+        longitude: 0 # starting Comment''
+        latitude: "" # starting Comment'' # starting Comment'' # starting Comment''
+      }
+    ) {
+      # starting Comment''
+      ...City
+    }
+    office(
+      zipCode: $v # starting Comment''
+      cityID: EnumA # starting Comment'' # starting Comment''
+    ) {
+      houseNumber # starting Comment''
+      # starting Comment''
+
+      ... on Address {
+        # starting Comment''
+
+        city # starting Comment''
+        # starting Comment''
+        # starting Comment''
+      }
+    }
+    # starting Comment''
+  }
+  # starting Comment''
+}
+# starting Comment''
+# starting Comment''
+
+fragment City on Address {
+  # starting Comment''
+  # starting Comment''
+  city # starting Comment''
+}
+# starting Comment''
+# starting Comment''

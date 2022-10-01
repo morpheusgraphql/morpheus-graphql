@@ -1,0 +1,54 @@
+{
+  "data": {
+    "__type": {
+      "kind": "ENUM",
+      "name": "__TypeKind",
+      "fields": null,
+      "inputFields": null,
+      "interfaces": null,
+      "enumValues": [
+        {
+          "name": "SCALAR",
+          "isDeprecated": false,
+          "deprecationReason": null
+        },
+        {
+          "name": "OBJECT",
+          "isDeprecated": false,
+          "deprecationReason": null
+        },
+        {
+          "name": "INTERFACE",
+          "isDeprecated": false,
+          "deprecationReason": null
+        },
+        {
+          "name": "UNION",
+          "isDeprecated": false,
+          "deprecationReason": null
+        },
+        {
+          "name": "ENUM",
+          "isDeprecated": false,
+          "deprecationReason": null
+        },
+        {
+          "name": "INPUT_OBJECT",
+          "isDeprecated": false,
+          "deprecationReason": null
+        },
+        {
+          "name": "LIST",
+          "isDeprecated": false,
+          "deprecationReason": null
+        },
+        {
+          "name": "NON_NULL",
+          "isDeprecated": false,
+          "deprecationReason": null
+        }
+      ],
+      "possibleTypes": null
+    }
+  }
+}

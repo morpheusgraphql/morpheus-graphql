@@ -1,0 +1,6 @@
+{
+  characters {
+    name
+    age
+  }
+}

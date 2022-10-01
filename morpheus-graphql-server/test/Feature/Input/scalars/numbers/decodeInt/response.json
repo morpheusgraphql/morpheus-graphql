@@ -1,0 +1,9 @@
+{
+  "data": {
+    "one": 1,
+    "negOne": -1,
+    "negNummber": -1235,
+    "expNumber": 12300000,
+    "negExpNumber": -12300000
+  }
+}

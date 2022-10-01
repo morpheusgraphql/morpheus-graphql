@@ -14,6 +14,7 @@ packages:
   - morpheus-graphql-app
   - morpheus-graphql-client
   - morpheus-graphql-subscriptions
+  - morpheus-graphql-server
   - morpheus-graphql
 plan:
   8.10.7:

@@ -1,0 +1,24 @@
+{
+  "data": {
+    "__type": {
+      "kind": "UNION",
+      "name": "TestUnion",
+      "fields": null,
+      "inputFields": null,
+      "interfaces": null,
+      "enumValues": null,
+      "possibleTypes": [
+        {
+          "kind": "OBJECT",
+          "name": "User",
+          "ofType": null
+        },
+        {
+          "kind": "OBJECT",
+          "name": "Address",
+          "ofType": null
+        }
+      ]
+    }
+  }
+}

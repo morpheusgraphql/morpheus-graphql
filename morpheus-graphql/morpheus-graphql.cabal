@@ -477,27 +477,6 @@ library
       Data.Morpheus.Server
       Data.Morpheus.Types
   other-modules:
-      Data.Morpheus.Server.Deriving.App
-      Data.Morpheus.Server.Deriving.Channels
-      Data.Morpheus.Server.Deriving.Decode
-      Data.Morpheus.Server.Deriving.Encode
-      Data.Morpheus.Server.Deriving.Named.Encode
-      Data.Morpheus.Server.Deriving.Named.EncodeType
-      Data.Morpheus.Server.Deriving.Named.EncodeValue
-      Data.Morpheus.Server.Deriving.Schema
-      Data.Morpheus.Server.Deriving.Schema.Directive
-      Data.Morpheus.Server.Deriving.Schema.Enum
-      Data.Morpheus.Server.Deriving.Schema.Internal
-      Data.Morpheus.Server.Deriving.Schema.Object
-      Data.Morpheus.Server.Deriving.Schema.TypeContent
-      Data.Morpheus.Server.Deriving.Schema.Union
-      Data.Morpheus.Server.Deriving.Utils
-      Data.Morpheus.Server.Deriving.Utils.Decode
-      Data.Morpheus.Server.Deriving.Utils.DeriveGType
-      Data.Morpheus.Server.Deriving.Utils.GTraversable
-      Data.Morpheus.Server.Deriving.Utils.Kinded
-      Data.Morpheus.Server.Deriving.Utils.Proxy
-      Data.Morpheus.Server.Deriving.Utils.Types
       Data.Morpheus.Server.Playground
       Data.Morpheus.Server.TH.Compile
       Data.Morpheus.Server.TH.Declare
@@ -505,14 +484,6 @@ library
       Data.Morpheus.Server.TH.Declare.GQLType
       Data.Morpheus.Server.TH.Declare.Type
       Data.Morpheus.Server.TH.Utils
-      Data.Morpheus.Server.Types.DirectiveDefinitions
-      Data.Morpheus.Server.Types.Directives
-      Data.Morpheus.Server.Types.GQLType
-      Data.Morpheus.Server.Types.Internal
-      Data.Morpheus.Server.Types.SchemaT
-      Data.Morpheus.Server.Types.TypeName
-      Data.Morpheus.Server.Types.Types
-      Data.Morpheus.Server.Types.Visitors
       Paths_morpheus_graphql
   hs-source-dirs:
       src
@@ -525,6 +496,7 @@ library
     , morpheus-graphql-app >=0.21.0 && <0.22.0
     , morpheus-graphql-code-gen >=0.21.0 && <0.22.0
     , morpheus-graphql-core >=0.21.0 && <0.22.0
+    , morpheus-graphql-server >=0.21.0 && <0.22.0
     , mtl >=2.0.0 && <3.0.0
     , relude >=0.3.0 && <2.0.0
     , template-haskell >=2.0.0 && <3.0.0
@@ -582,6 +554,7 @@ test-suite morpheus-graphql-test
     , morpheus-graphql-app >=0.21.0 && <0.22.0
     , morpheus-graphql-code-gen >=0.21.0 && <0.22.0
     , morpheus-graphql-core >=0.21.0 && <0.22.0
+    , morpheus-graphql-server >=0.21.0 && <0.22.0
     , morpheus-graphql-subscriptions >=0.21.0 && <0.22.0
     , morpheus-graphql-tests >=0.21.0 && <0.22.0
     , mtl >=2.0.0 && <3.0.0

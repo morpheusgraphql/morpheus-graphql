@@ -1,0 +1,10 @@
+{
+  "data": {
+    "user": {
+      "no_directives": "testName",
+      "include_true": "testName",
+      "skip_false": "testName",
+      "skip_false_include_true": "testName"
+    }
+  }
+}

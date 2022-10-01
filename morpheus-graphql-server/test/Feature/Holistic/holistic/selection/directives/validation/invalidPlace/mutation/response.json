@@ -1,0 +1,16 @@
+{
+  "errors": [
+    {
+      "message": "Directive \"deprecated\" may not to be used on MUTATION",
+      "locations": [{ "line": 1, "column": 23 }]
+    },
+    {
+      "message": "Directive \"skip\" may not to be used on MUTATION",
+      "locations": [{ "line": 1, "column": 35 }]
+    },
+    {
+      "message": "Directive \"include\" may not to be used on MUTATION",
+      "locations": [{ "line": 1, "column": 51 }]
+    }
+  ]
+}

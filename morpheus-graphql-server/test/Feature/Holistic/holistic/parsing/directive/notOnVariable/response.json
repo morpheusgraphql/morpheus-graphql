@@ -1,0 +1,8 @@
+{
+  "errors": [
+    {
+      "message": "offset=22:\nunexpected '@'\nexpecting '!', '#', ')', '=', IgnoredTokens, or VariableDefinition\n",
+      "locations": [{ "line": 1, "column": 23 }]
+    }
+  ]
+}

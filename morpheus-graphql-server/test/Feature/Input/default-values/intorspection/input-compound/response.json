@@ -1,0 +1,61 @@
+{
+  "data": {
+    "type2": {
+      "kind": "INPUT_OBJECT",
+      "name": "InputCompound",
+      "fields": null,
+      "inputFields": [
+        {
+          "name": "inputField2",
+          "type": {
+            "kind": "NON_NULL",
+            "name": null,
+            "ofType": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            }
+          },
+          "defaultValue": "\"value from inputField2\""
+        },
+        {
+          "name": "inputField3",
+          "type": {
+            "kind": "NON_NULL",
+            "name": null,
+            "ofType": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "kind": "INPUT_OBJECT",
+                "name": "InputSimple",
+                "ofType": null
+              }
+            }
+          },
+          "defaultValue": "[{ fieldWithDefault: \"value2 from inputField3\", simpleField: EnumA }, { fieldWithDefault: \"value from fieldWithDefault\", simpleField: EnumA }]"
+        },
+        {
+          "name": "inputField4",
+          "type": {
+            "kind": "NON_NULL",
+            "name": null,
+            "ofType": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "kind": "INPUT_OBJECT",
+                "name": "InputSimple",
+                "ofType": null
+              }
+            }
+          },
+          "defaultValue": "[{ fieldWithDefault: \"value from fieldWithDefault\", simpleField: EnumB }]"
+        }
+      ],
+      "interfaces": null,
+      "enumValues": null,
+      "possibleTypes": null
+    }
+  }
+}

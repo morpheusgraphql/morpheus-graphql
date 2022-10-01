@@ -1,0 +1,13 @@
+{
+  "errors": [
+    {
+      "message": "Field \"address\" argument \"coordinates\" is required but not provided.",
+      "locations": [
+        {
+          "line": 3,
+          "column": 5
+        }
+      ]
+    }
+  ]
+}

@@ -12,6 +12,7 @@ packages:
   - morpheus-graphql-app
   - morpheus-graphql-client
   - morpheus-graphql-subscriptions
+  - morpheus-graphql-server
   - morpheus-graphql
 extra-deps:
   - aeson-1.4.4.0

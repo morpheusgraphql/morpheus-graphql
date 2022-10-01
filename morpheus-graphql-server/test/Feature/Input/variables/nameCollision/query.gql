@@ -1,0 +1,5 @@
+query variableNameCollision($v1: String!, $v1: String! ) {
+  q1 {
+    a2(argList: $v1)
+  }
+}

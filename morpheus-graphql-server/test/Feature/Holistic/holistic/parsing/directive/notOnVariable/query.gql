@@ -1,0 +1,5 @@
+query Foo ($name: Int @someDir ) {
+    user {
+      name
+    }
+}

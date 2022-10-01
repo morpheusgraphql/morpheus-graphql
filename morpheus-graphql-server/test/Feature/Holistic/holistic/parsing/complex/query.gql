@@ -1,0 +1,55 @@
+query GetUsers($v: [[[ID!]]!]) {
+  bla: user {
+    name
+  }
+  user {
+    email2: email
+    name
+    address1: address(coordinates: {longitude: [null,[[], [{uid: "1"}]]] , latitude: "" }) {
+      street
+    }
+    address2: address(coordinates: {longitude: [], latitude: ""}) {
+      street: street
+      street2: street
+    }
+    office(zipCode: $v, cityID: HH) {
+      city
+      houseNumber
+      ... on Address {
+        street
+      }
+      owner {
+        name
+      }
+    }
+    home
+    un1: myUnion {
+      __typename
+      ...UInfo
+      ...AInfo
+      ...City
+    }
+    un2: myUnion {
+      __typename
+      ...UInfo
+      ...AInfo
+      ...City
+    }
+  }
+}
+
+fragment UInfo on User {
+  name
+  myUnion {
+    ...City
+    __typename
+  }
+}
+
+fragment City on Address {
+  city
+}
+
+fragment AInfo on Address {
+  street
+}

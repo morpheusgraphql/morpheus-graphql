@@ -1,0 +1,61 @@
+{
+  "data": {
+    "type2": {
+      "kind": "OBJECT",
+      "name": "User",
+      "fields": [
+        {
+          "name": "inputs",
+          "args": [
+            {
+              "name": "inputCompound",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "InputCompound",
+                  "ofType": null
+                }
+              },
+              "defaultValue": "{ inputField2: \"value from argument inputCompound\", inputField3: [{ fieldWithDefault: \"value2 from inputField3\", simpleField: EnumA }, { fieldWithDefault: \"value from fieldWithDefault\", simpleField: EnumA }], inputField4: [{ fieldWithDefault: \"value from fieldWithDefault\", simpleField: EnumB }] }"
+            },
+            {
+              "name": "input",
+              "type": {
+                "kind": "INPUT_OBJECT",
+                "name": "InputSimple",
+                "ofType": null
+              },
+              "defaultValue": null
+            },
+            {
+              "name": "comment",
+              "type": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null
+              },
+              "defaultValue": "\"test string\""
+            }
+          ],
+          "type": {
+            "kind": "NON_NULL",
+            "name": null,
+            "ofType": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
+            }
+          },
+          "isDeprecated": false,
+          "deprecationReason": null
+        }
+      ],
+      "inputFields": null,
+      "interfaces": [],
+      "enumValues": null,
+      "possibleTypes": null
+    }
+  }
+}

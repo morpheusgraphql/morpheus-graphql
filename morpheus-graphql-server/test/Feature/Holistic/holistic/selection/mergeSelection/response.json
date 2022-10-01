@@ -1,0 +1,15 @@
+{
+  "data": {
+    "user": {
+      "name": "testName",
+      "name2": "testName",
+      "bla": "",
+      "email": "",
+      "address": {
+        "city": "",
+        "houseNumber": 0,
+        "bla": 0
+      }
+    }
+  }
+}

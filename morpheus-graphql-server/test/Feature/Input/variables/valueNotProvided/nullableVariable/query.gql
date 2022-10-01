@@ -1,0 +1,5 @@
+query TestNullableVariable($i1: Int) {
+  q1 {
+    a1(arg1:"",arg2: $i1)
+  }
+}

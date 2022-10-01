@@ -1,0 +1,13 @@
+{
+  "errors": [
+    {
+      "message": "offset=51:\nunexpected '@'\nexpecting '#', ')', Argument, or IgnoredTokens\n",
+      "locations": [
+        {
+          "line": 2,
+          "column": 40
+        }
+      ]
+    }
+  ]
+}
