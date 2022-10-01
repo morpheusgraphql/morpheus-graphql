@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | GQL Types
@@ -81,17 +82,58 @@ module Data.Morpheus.Types
   )
 where
 
+import Control.Monad.Except (MonadError (..))
+import Data.Morpheus.Server.Resolvers (NamedResolvers (..), RootResolver (RootResolver), defaultRootResolver)
 import Data.Morpheus.Server.Types
+  ( App,
+    Arg (..),
+    ComposedResolver,
+    DecodeScalar (..),
+    DecodeWrapper (..),
+    Deprecated (..),
+    EncodeScalar (..),
+    EncodeWrapper (..),
+    GQLDirective (..),
+    GQLRequest (..),
+    GQLResponse (..),
+    GQLType (..),
+    GQLTypeOptions (..),
+    ID (..),
+    MUTATION,
+    Prefixes (..),
+    QUERY,
+    RenderGQL,
+    Resolver,
+    ResolverContext (..),
+    ResolverO,
+    SUBSCRIPTION,
+    ScalarValue (..),
+    SubscriptionField,
+    TypeGuard (..),
+    Undefined,
+    VisitEnum (..),
+    VisitField (..),
+    VisitType (..),
+    WithOperation,
+    constRes,
+    defaultTypeOptions,
+    dropNamespaceOptions,
+    enumDirective,
+    fieldDirective,
+    publish,
+    render,
+    subscribe,
+    typeDirective,
+    unsafeInternalContext,
+  )
+import Data.Morpheus.Types.Internal.AST (GQLError)
+import Relude hiding (Undefined)
 
-type ResolverO o e m a = Flexible (Resolver o e m) a
+type ResolverQ e m a = ResolverO QUERY e m a
 
-type ComposedResolver o e m f a = Composed (Resolver o e m) f a
+type ResolverM e m a = ResolverO MUTATION e m a
 
-type ResolverQ e m a = Flexible (Resolver QUERY e m) a
-
-type ResolverM e m a = Flexible (Resolver MUTATION e m) a
-
-type ResolverS e m a = Flexible (Resolver SUBSCRIPTION e m) a
+type ResolverS e m a = ResolverO SUBSCRIPTION e m a
 
 {-# DEPRECATED Res "use ResolverQ" #-}
 
@@ -128,12 +170,6 @@ type ResolveM e m a = ResolverM e m a
 {-# DEPRECATED ResolveS "use ResolverS" #-}
 
 type ResolveS e m a = ResolverS e m a
-
-publish :: Monad m => [e] -> Resolver MUTATION e m ()
-publish = pushEvents
-
-constRes :: (WithOperation o, Monad m) => b -> a -> Resolver o e m b
-constRes = const . pure
 
 constMutRes :: Monad m => [e] -> a -> args -> ResolverM e m a
 constMutRes events v = const $ do

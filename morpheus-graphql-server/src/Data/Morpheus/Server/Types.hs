@@ -28,17 +28,13 @@ module Data.Morpheus.Server.Types
     GQLResponse (..),
     ID (..),
     ScalarValue (..),
-    RootResolver (..),
     constRes,
-    constMutRes,
     Undefined,
     Resolver,
     QUERY,
     MUTATION,
     SUBSCRIPTION,
     lift,
-    liftEither,
-    failRes,
     WithOperation,
     publish,
     subscribe,
@@ -46,18 +42,6 @@ module Data.Morpheus.Server.Types
     ResolverContext (..),
     ResolverO,
     ComposedResolver,
-    ResolverQ,
-    ResolverM,
-    ResolverS,
-    ResolveQ,
-    ResolveM,
-    ResolveS,
-    Res,
-    MutRes,
-    SubRes,
-    IORes,
-    IOMutRes,
-    IOSubRes,
     SubscriptionField,
     App,
     RenderGQL,
@@ -71,7 +55,6 @@ module Data.Morpheus.Server.Types
     fieldLabelModifier,
     constructorTagModifier,
     typeNameModifier,
-    defaultRootResolver,
 
     -- * GQL directives API
     Prefixes (..),
@@ -94,7 +77,6 @@ module Data.Morpheus.Server.Types
   )
 where
 
-import Control.Monad.Except (MonadError (..))
 import Data.Morpheus.App
   ( App,
   )
@@ -112,12 +94,7 @@ import Data.Morpheus.Core
   ( RenderGQL,
     render,
   )
--- FIXME: TO ENABLE DECODE INSTANCE ON DIRECTIVES
-import Data.Morpheus.Server.Deriving.Decode ()
-import Data.Morpheus.Server.NamedResolvers
-  ( NamedResolverT (..),
-    ResolveNamed (..),
-  )
+import Data.Morpheus.Server.Deriving.Encode ()
 import Data.Morpheus.Server.Types.DirectiveDefinitions
 import Data.Morpheus.Server.Types.Directives
 import Data.Morpheus.Server.Types.GQLType
@@ -162,8 +139,7 @@ import Data.Morpheus.Types.IO
     GQLResponse (..),
   )
 import Data.Morpheus.Types.Internal.AST
-  ( GQLError,
-    MUTATION,
+  ( MUTATION,
     QUERY,
     SUBSCRIPTION,
     ScalarValue (..),

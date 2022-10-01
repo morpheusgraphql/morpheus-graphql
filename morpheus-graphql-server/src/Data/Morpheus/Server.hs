@@ -51,7 +51,7 @@ import Data.Morpheus.Server.Deriving.Schema
 import Data.Morpheus.Server.Playground
   ( httpPlayground,
   )
-import Data.Morpheus.Server.Types (RootResolver)
+import Data.Morpheus.Server.Resolvers (RootResolver)
 import Relude hiding (ByteString)
 
 -- | Generates schema.gql file from 'RootResolver'

@@ -1,3 +1,6 @@
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Resolvers
@@ -10,7 +13,13 @@ module Data.Morpheus.Server.Resolvers
   )
 where
 
+import Data.Morpheus.App.Internal.Resolving (Resolver)
 import Data.Morpheus.Server.NamedResolvers
+import Data.Morpheus.Server.Types.Types
+  ( Undefined (..),
+  )
+import Data.Morpheus.Types.Internal.AST
+import Relude hiding (Undefined)
 
 data
   NamedResolvers

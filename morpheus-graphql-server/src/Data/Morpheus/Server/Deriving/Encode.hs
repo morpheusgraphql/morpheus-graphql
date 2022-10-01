@@ -58,9 +58,8 @@ import Data.Morpheus.Server.Deriving.Utils.DeriveGType
     deriveValue,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded (KindedProxy (KindedProxy), kinded)
-import Data.Morpheus.Server.Types
+import Data.Morpheus.Server.Resolvers
   ( RootResolver (..),
-    defaultTypeOptions,
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (typeOptions),
@@ -69,6 +68,7 @@ import Data.Morpheus.Server.Types.GQLType
     __isEmptyType,
     __typeData,
   )
+import Data.Morpheus.Server.Types.Internal (defaultTypeOptions)
 import Data.Morpheus.Server.Types.Kind
   ( CUSTOM,
     DerivingKind,

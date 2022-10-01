@@ -29,28 +29,28 @@ type GQL_KIND = DerivingKind
 
 {-# DEPRECATED INTERFACE "use: deriving(GQLType), will be automatically inferred" #-}
 
-type INTERFACE = 'TYPE
+type INTERFACE = TYPE
 
 {-# DEPRECATED ENUM "use: deriving(GQLType), will be automatically inferred" #-}
 
-type ENUM = 'TYPE
+type ENUM = TYPE
 
 {-# DEPRECATED OUTPUT "use: deriving(GQLType), will be automatically inferred" #-}
 
-type OUTPUT = 'TYPE
+type OUTPUT = TYPE
 
 {-# DEPRECATED INPUT "use: deriving(GQLType), will be automatically inferred" #-}
 
-type INPUT = 'TYPE
+type INPUT = TYPE
 
 {-# DEPRECATED INPUT_OBJECT "use: deriving(GQLType), will be automatically inferred" #-}
 
-type INPUT_OBJECT = 'TYPE
+type INPUT_OBJECT = TYPE
 
 {-# DEPRECATED UNION "use: deriving(GQLType), IMPORTANT: only types with <type constructor name><constructor name> will sustain their form, other union constructors will be wrapped inside an new object" #-}
 
-type UNION = 'TYPE
+type UNION = TYPE
 
 {-# DEPRECATED OBJECT "use: deriving(GQLType), will be automatically inferred" #-}
 
-type OBJECT = 'TYPE
+type OBJECT = TYPE

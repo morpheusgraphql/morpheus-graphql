@@ -34,7 +34,7 @@ import Data.Morpheus.Server.Deriving.Schema
   ( SchemaConstraints,
     deriveSchema,
   )
-import Data.Morpheus.Server.Types
+import Data.Morpheus.Server.Resolvers
   ( NamedResolvers,
     RootResolver (..),
   )

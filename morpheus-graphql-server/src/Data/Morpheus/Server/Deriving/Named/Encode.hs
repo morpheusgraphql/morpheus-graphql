@@ -30,7 +30,7 @@ import Data.Morpheus.Server.Deriving.Utils.GTraversable
   ( traverseTypes,
   )
 import Data.Morpheus.Server.NamedResolvers (NamedResolverT (..))
-import Data.Morpheus.Server.Types
+import Data.Morpheus.Server.Resolvers
   ( NamedResolvers (..),
   )
 import Data.Morpheus.Types.Internal.AST
