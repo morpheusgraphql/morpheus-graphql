@@ -2,115 +2,115 @@ import SEO from "../components/seo";
 
 <SEO title="Morpheus GraphQL Client" />
 
-## Morpheus GraphQL Client with Template haskell QuasiQuotes
+## Morpheus GraphQL Client
+
+The Morpheus GQL client enables the use of GQL queries and mutations on HTTP servers
+and also the subscription of specific topics to GQL subscriptions using websockets.
+
+## GQL Query/Mutation on HTTP server
+
+Suppose we have the following GQL schema from which we want to retrieve information about the hero Poseidon.
+
+```graphql
+type Deity {
+  name: String!
+  power: String
+  realm: Realm!
+  bornAt: City
+}
+
+enum Realm {
+  Sky
+  Sea
+  Underworld
+}
+
+type Query {
+  deity(name: String!, realm: Realm): Deity!
+}
+```
+
+we should start with `declareGlobalTypes` to declare haskell type for `Realm`
 
 ```hs
-defineByDocumentFile
-    "./schema.gql"
-  [gql|
-    query GetHero ($character: Character)
+declareGlobalTypes "assets/mythology.gql"
+```
+
+now we can declare haskell type for qurey `GetHero`.
+
+```hs
+declareLocalTypesInline
+  "assets/mythology.gql"
+  [raw|
+    query GetHero ($name: String!, realm: Sea)
       {
-        deity (fatherOf:$character) {
+        deity (name:$name) {
           name
           power
-          worships {
-            deity2Name: name
-          }
         }
       }
   |]
 ```
 
-with schema:
+on last stem we should define Morpheus HTTP client with URL and custom headers.
+now we can use it to fetch Hero.
+
+```hs
+client :: GQLClient
+client = "http://localhost:3000" `withHeaders` [("custom-header", "custom-value")]
+
+fetchHero :: IO (ResponseStream GetHero)
+fetchHero = request client GetHeroArgs {name = "poseidon"}
+```
+
+## GQL Subscription with WS server
+
+Suppose we have the following GQL schema from which we want to subscribe information about the new users.
 
 ```graphql
-input Character {
+type User {
   name: String!
+  email: String!
 }
 
-type Deity {
-  name: String!
-  worships: Deity
-  power: Power!
+type Query {
+  user: User!
 }
 
-enum Power {
-  Lightning
-  Teleportation
-  Omniscience
+type Subscription {
+  newUser: User!
 }
 ```
 
-will validate query and Generate:
+as in the example above, we will start with the declaration of global and subscription types
 
-- namespaced response and variable types
-- instance for `Fetch` typeClass
+```hs
+declareGlobalTypes "assets/users.gql"
 
-```haskell
-data GetHero = GetHero {
-  deity: DeityDeity
-}
-
--- from: {user
-data DeityDeity = DeityDeity {
-  name: Text,
-  worships: Maybe DeityWorshipsDeity
-  power: Power
-}
-
--- from: {deity{worships
-data DeityWorshipsDeity = DeityWorshipsDeity {
-  name: Text,
-}
-
-data Power =
-    PowerLightning
-  | PowerTeleportation
-  | PowerOmniscience
-
-data GetHeroArgs = GetHeroArgs {
-  character: Character
-}
-
-data Character = Character {
-  name: Person
-}
+declareLocalTypesInline
+  "assets/users.gql"
+  [raw|
+    subscription NewUsers
+      {
+         newUser {
+           name
+           email
+        }
+      }
+  |]
 ```
 
-as you see, response type field name collision can be handled with GraphQL `alias`.
+as in previous example we will define client with websockets URL and use it.
+However, the result is a stream instead of a single response. To print these results every time
+we register a new user, we can use the function `forEach`.
 
-with `fetch` you can fetch well typed response `GetHero`.
+```hs
+client :: GQLClient
+client = "ws://localhost:3000"
 
-```haskell
-  fetchHero :: Args GetHero -> m (Either (FetchError GetHero) GetHero)
-  fetchHero = fetch jsonRes args
-      where
-        args = GetHeroArgs {character = Person {name = "Zeus"}}
-        jsonRes :: ByteString -> m ByteString
-        jsonRes = <GraphQL APi>
-```
+newUsers :: IO (ResponseStream NewUsers)
+newUsers = request client ()
 
-in this case, `jsonRes` resolves a request into a response in some monad `m`.
-
-A `fetch` resolver implementation against [a real API](https://swapi.graph.cool) may look like the following:
-
-```haskell
-{-# LANGUAGE OverloadedStrings #-}
-
-import Data.ByteString.Lazy (ByteString)
-import qualified Data.ByteString.Char8 as C8
-import Network.HTTP.Req
-
-resolver :: String -> ByteString -> IO ByteString
-resolver tok b = runReq defaultHttpConfig $ do
-    let headers = header "Content-Type" "application/json"
-    responseBody <$> req POST (https "swapi.graph.cool") (ReqBodyLbs b) lbsResponse headers
-```
-
-this is demonstrated in examples/src/Client/StarWarsClient.hs
-
-types can be generated from `introspection` too:
-
-```haskell
-defineByIntrospectionFile "./introspection.json"
+subscribeUSers :: IO ()
+subscribeUSers = newUsers >>= forEach print
 ```
