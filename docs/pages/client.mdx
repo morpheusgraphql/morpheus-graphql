@@ -52,8 +52,7 @@ declareLocalTypesInline
   |]
 ```
 
-on last stem we should define Morpheus HTTP client with URL and custom headers.
-now we can use it to fetch Hero.
+at the last stage can define Morpheus HTTP client with URL and custom headers which can be used to fetch Hero.
 
 ```hs
 client :: GQLClient
@@ -65,7 +64,7 @@ fetchHero = request client GetHeroArgs {name = "poseidon"}
 
 ## GQL Subscription with WS server
 
-Suppose we have the following GQL schema from which we want to subscribe information about the new users.
+Suppose we have the following GQL schema, from which we want to subscribe information about the new users.
 
 ```graphql
 type User {
@@ -101,8 +100,8 @@ declareLocalTypesInline
 ```
 
 as in previous example we will define client with websockets URL and use it.
-However, the result is a stream instead of a single response. To print these results every time
-we register a new user, we can use the function `forEach`.
+However, now it the results stream of `NewUsers` instead of the single response. To print these results each time
+we receive a new user, we can use the function `forEach`.
 
 ```hs
 client :: GQLClient
