@@ -38,7 +38,6 @@ const Header = () => (
         <Item href="/">Morpheus GraphQL</Item>
       </h1>
       <Item href="/server">Server</Item>
-      <Item href="/resolving">Resolving</Item>
       <Item href="/client">Client</Item>
       <Item href="/examples">Examples</Item>
     </div>
