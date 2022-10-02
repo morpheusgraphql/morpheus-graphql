@@ -52,7 +52,7 @@ declareLocalTypesInline
   |]
 ```
 
-at the last stage can define Morpheus HTTP client with URL and custom headers which can be used to fetch Hero.
+at the last stage, we can define Morpheus HTTP client with URL and custom headers which can be used to fetch Hero.
 
 ```hs
 client :: GQLClient
@@ -100,7 +100,7 @@ declareLocalTypesInline
 ```
 
 as in previous example we will define client with websockets URL and use it.
-However, now it the results stream of `NewUsers` instead of the single response. To print these results each time
+However, now it results stream of `NewUsers` instead of the single response. To print these results each time
 we receive a new user, we can use the function `forEach`.
 
 ```hs
