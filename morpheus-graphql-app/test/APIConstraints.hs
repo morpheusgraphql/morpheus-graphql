@@ -33,6 +33,8 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
   )
 import Data.Morpheus.Types.SelectionTree
+  ( SelectionTree (..),
+  )
 import Relude hiding (ByteString)
 import Test.Morpheus
   ( FileUrl,
@@ -61,9 +63,9 @@ getApp :: FileUrl -> IO (App e IO)
 getApp _ = (`mkApp` resolvers) <$> getSchema "test/api-constraints/schema.gql"
 
 constraint :: APIConstraint
-constraint _ operation = do
-  let forbidden = lookupChild "forbidden" (operationSelectionTree operation)
-  maybe (Right ()) (const (Left "no forbidden field!")) forbidden
+constraint _ operation
+  | memberNode "forbidden" operation = Left "no forbidden field!"
+  | otherwise = Right ()
 
 runAPIConstraints :: FileUrl -> FileUrl -> TestTree
 runAPIConstraints url = testApi api
