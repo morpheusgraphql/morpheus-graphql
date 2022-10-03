@@ -21,6 +21,9 @@ extra-source-files:
     README.md
     changelog.md
 data-files:
+    test/api-constraints/forbidden/query.gql
+    test/api-constraints/schema.gql
+    test/api-constraints/success/query.gql
     test/api/deity/interface/query.gql
     test/api/deity/schema.gql
     test/api/deity/simple/query.gql
@@ -57,6 +60,8 @@ data-files:
     test/named-resolvers/realm-simple/query.gql
     test/named-resolvers/realms.gql
     test/named-resolvers/realms/query.gql
+    test/api-constraints/forbidden/response.json
+    test/api-constraints/success/response.json
     test/api/deity/interface/response.json
     test/api/deity/resolvers.json
     test/api/deity/simple/response.json
@@ -139,6 +144,7 @@ test-suite morpheus-graphql-app-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      APIConstraints
       NamedResolvers
       Paths_morpheus_graphql_app
   hs-source-dirs:
