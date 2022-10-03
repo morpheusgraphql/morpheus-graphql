@@ -19,6 +19,7 @@ module Data.Morpheus.App
     runAppStream,
     MapAPI (..),
     eitherSchema,
+    withConstraint,
   )
 where
 
@@ -93,11 +94,11 @@ instance Monad m => Semigroup (App e m) where
   App {} <> FailApp {appErrors} = FailApp appErrors
   (App x) <> (App y) = resultOr FailApp App (stitch x y)
 
-type QueryConstraint = Schema VALID -> Operation VALID -> Either String ()
+type APIConstraint = Schema VALID -> Operation VALID -> Either String ()
 
 data AppData event (m :: Type -> Type) s = AppData
   { appConfig :: Config,
-    constraints :: [QueryConstraint],
+    constraints :: [APIConstraint],
     appResolvers :: RootResolverValue event m,
     appSchema :: Schema s
   }
@@ -113,7 +114,7 @@ instance Monad m => Stitching (AppData e m s) where
       <$> prop stitch appResolvers x y
       <*> prop stitch appSchema x y
 
-checkConstraints :: Schema VALID -> Operation VALID -> [QueryConstraint] -> GQLResult ()
+checkConstraints :: Schema VALID -> Operation VALID -> [APIConstraint] -> GQLResult ()
 checkConstraints appSchema validRequest constraints =
   either
     (throwError . fromString)
@@ -133,7 +134,7 @@ validateReq ::
   ( Monad m,
     ValidateSchema s
   ) =>
-  [QueryConstraint] ->
+  [APIConstraint] ->
   Schema s ->
   Config ->
   GQLRequest ->
@@ -186,10 +187,20 @@ runAppStream FailApp {appErrors} = const $ throwErrors appErrors
 runApp :: (MapAPI a b, Monad m) => App e m -> a -> m b
 runApp app = mapAPI (stateless . runAppStream app)
 
+mapApp :: (AppData e m VALID -> AppData e m VALID) -> App e m -> App e m
+mapApp f App {app} =
+  App {app = f app}
+mapApp _ x = x
+
 withDebugger :: App e m -> App e m
-withDebugger App {app = AppData {appConfig = Config {..}, ..}} =
-  App {app = AppData {appConfig = Config {debug = True, ..}, ..}, ..}
-withDebugger x = x
+withDebugger = mapApp f
+  where
+    f AppData {appConfig = Config {..}, ..} = AppData {appConfig = Config {debug = True, ..}, ..}
+
+withConstraint :: APIConstraint -> App e m -> App e m
+withConstraint constraint = mapApp f
+  where
+    f AppData {..} = AppData {constraints = constraint : constraints, ..}
 
 eitherSchema :: App event m -> Either [GQLError] ByteString
 eitherSchema (App AppData {appSchema}) = Right (render appSchema)
