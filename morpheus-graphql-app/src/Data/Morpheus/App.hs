@@ -118,7 +118,7 @@ instance Monad m => Stitching (AppData e m s) where
 checkConstraints :: Schema VALID -> Operation VALID -> [APIConstraint] -> GQLResult ()
 checkConstraints appSchema validRequest constraints =
   either
-    (throwError . fromString)
+    (throwError . fromString . ("API Constraint: " <>))
     (const $ pure ())
     (traverse (\f -> f appSchema validRequest) constraints)
 

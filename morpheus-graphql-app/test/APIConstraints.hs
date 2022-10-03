@@ -62,9 +62,8 @@ getApp _ = (`mkApp` resolvers) <$> getSchema "test/api-constraints/schema.gql"
 
 constraint :: APIConstraint
 constraint _ operation = do
-  let selections = map getName (getChildrenList (operationSelectionTree operation))
-
-  Right ()
+  let forbidden = lookupChild "forbidden" (operationSelectionTree operation)
+  maybe (Right ()) (const (Left "no forbidden field!")) forbidden
 
 runAPIConstraints :: FileUrl -> FileUrl -> TestTree
 runAPIConstraints url = testApi api

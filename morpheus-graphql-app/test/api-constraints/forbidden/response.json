@@ -1,5 +1,7 @@
 {
-  "data": {
-    "success": "success"
-  }
+  "errors": [
+    {
+      "message": "API Constraint: no forbidden field!"
+    }
+  ]
 }

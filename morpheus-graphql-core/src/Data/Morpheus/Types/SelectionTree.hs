@@ -50,6 +50,11 @@ class SelectionTree nodeType where
   -- | get a node's name
   getName :: IsString name => nodeType -> name
 
+  lookupChild :: String -> nodeType -> Maybe nodeType
+  lookupChild name node = do
+    let selections = getChildrenList node
+    find ((name ==) . getName) selections
+
 instance SelectionTree (Selection VALID) where
   isLeaf node = case selectionContent node of
     SelectionField -> True
