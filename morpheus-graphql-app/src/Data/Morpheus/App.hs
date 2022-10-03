@@ -19,9 +19,12 @@ module Data.Morpheus.App
     runAppStream,
     MapAPI (..),
     eitherSchema,
+    withConstraint,
+    APIConstraint,
   )
 where
 
+import Control.Monad.Except (throwError)
 import qualified Data.Aeson as A
 import Data.ByteString.Lazy (ByteString)
 import Data.Morpheus.App.Internal.Resolving
@@ -45,7 +48,7 @@ import Data.Morpheus.Core
     parseRequestWith,
     render,
   )
-import Data.Morpheus.Internal.Ext ((<:>))
+import Data.Morpheus.Internal.Ext (GQLResult, (<:>))
 import Data.Morpheus.Internal.Utils
   ( empty,
     prop,
@@ -75,7 +78,7 @@ mkApp :: ValidateSchema s => Schema s -> RootResolverValue e m -> App e m
 mkApp appSchema appResolvers =
   resultOr
     FailApp
-    (App . AppData defaultConfig appResolvers)
+    (App . AppData defaultConfig [] appResolvers)
     (validateSchema True defaultConfig appSchema)
 
 data App event (m :: Type -> Type)
@@ -92,8 +95,11 @@ instance Monad m => Semigroup (App e m) where
   App {} <> FailApp {appErrors} = FailApp appErrors
   (App x) <> (App y) = resultOr FailApp App (stitch x y)
 
+type APIConstraint = Schema VALID -> Operation VALID -> Either String ()
+
 data AppData event (m :: Type -> Type) s = AppData
   { appConfig :: Config,
+    constraints :: [APIConstraint],
     appResolvers :: RootResolverValue event m,
     appSchema :: Schema s
   }
@@ -103,33 +109,44 @@ instance RenderGQL (AppData e m s) where
 
 instance Monad m => Stitching (AppData e m s) where
   stitch x y =
-    AppData (appConfig y)
+    AppData
+      (appConfig y)
+      (constraints x <> constraints y)
       <$> prop stitch appResolvers x y
       <*> prop stitch appSchema x y
+
+checkConstraints :: Schema VALID -> Operation VALID -> [APIConstraint] -> GQLResult ()
+checkConstraints appSchema validRequest constraints =
+  either
+    (throwError . fromString . ("API Constraint: " <>))
+    (const $ pure ())
+    (traverse (\f -> f appSchema validRequest) constraints)
 
 runAppData ::
   (Monad m, ValidateSchema s) =>
   AppData event m s ->
   GQLRequest ->
   ResponseStream event m (Value VALID)
-runAppData AppData {appConfig, appSchema, appResolvers} request = do
-  validRequest <- validateReq appSchema appConfig request
+runAppData AppData {appConfig, appSchema, appResolvers, constraints} request = do
+  validRequest <- validateReq constraints appSchema appConfig request
   runRootResolverValue appResolvers validRequest
 
 validateReq ::
   ( Monad m,
     ValidateSchema s
   ) =>
+  [APIConstraint] ->
   Schema s ->
   Config ->
   GQLRequest ->
   ResponseStream event m ResolverContext
-validateReq inputSchema config request = ResultT $
+validateReq constraints inputSchema config request = ResultT $
   pure $
     do
       validSchema <- validateSchema True config inputSchema
       schema <- internalSchema <:> validSchema
       operation <- parseRequestWith config validSchema request
+      checkConstraints schema operation constraints
       pure
         ( [],
           ResolverContext
@@ -171,10 +188,20 @@ runAppStream FailApp {appErrors} = const $ throwErrors appErrors
 runApp :: (MapAPI a b, Monad m) => App e m -> a -> m b
 runApp app = mapAPI (stateless . runAppStream app)
 
+mapApp :: (AppData e m VALID -> AppData e m VALID) -> App e m -> App e m
+mapApp f App {app} =
+  App {app = f app}
+mapApp _ x = x
+
 withDebugger :: App e m -> App e m
-withDebugger App {app = AppData {appConfig = Config {..}, ..}} =
-  App {app = AppData {appConfig = Config {debug = True, ..}, ..}, ..}
-withDebugger x = x
+withDebugger = mapApp f
+  where
+    f AppData {appConfig = Config {..}, ..} = AppData {appConfig = Config {debug = True, ..}, ..}
+
+withConstraint :: APIConstraint -> App e m -> App e m
+withConstraint constraint = mapApp f
+  where
+    f AppData {..} = AppData {constraints = constraint : constraints, ..}
 
 eitherSchema :: App event m -> Either [GQLError] ByteString
 eitherSchema (App AppData {appSchema}) = Right (render appSchema)
