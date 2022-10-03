@@ -1,6 +1,8 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- |
@@ -8,16 +10,31 @@
 -- Description : A simple interface for Morpheus internal Selection Set's representation.
 module Data.Morpheus.Types.SelectionTree where
 
-import Data.Morpheus.Internal.Utils (keyOf)
+import Data.Morpheus.Internal.Utils
+  ( empty,
+    keyOf,
+  )
 import Data.Morpheus.Types.Internal.AST
-  ( Selection (..),
+  ( Operation (..),
+    Selection (..),
     SelectionContent (..),
     UnionTag (..),
     VALID,
     unpackName,
   )
 import Data.Text (unpack)
-import Relude
+import Relude hiding (empty)
+
+operationSelectionTree :: Operation s -> Selection s
+operationSelectionTree Operation {..} =
+  Selection
+    { selectionName = fromMaybe "Root" operationName,
+      selectionArguments = empty,
+      selectionPosition = operationPosition,
+      selectionAlias = Nothing,
+      selectionContent = SelectionSet operationSelection,
+      selectionDirectives = empty
+    }
 
 -- | The 'SelectionTree' instance is a simple interface for interacting
 -- with morpheus's internal AST while keeping the ability to safely change the concrete

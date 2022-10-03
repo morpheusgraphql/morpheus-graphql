@@ -20,6 +20,7 @@ module Data.Morpheus.App
     MapAPI (..),
     eitherSchema,
     withConstraint,
+    APIConstraint,
   )
 where
 

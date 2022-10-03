@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -8,9 +9,11 @@ where
 
 import qualified Data.ByteString.Lazy.Char8 as LBS
 import Data.Morpheus.App
-  ( App (..),
+  ( APIConstraint,
+    App,
     mkApp,
     runApp,
+    withConstraint,
   )
 import Data.Morpheus.App.Internal.Resolving (resultOr)
 import Data.Morpheus.App.NamedResolvers
@@ -29,6 +32,7 @@ import Data.Morpheus.Types.Internal.AST
   ( Schema,
     VALID,
   )
+import Data.Morpheus.Types.SelectionTree
 import Relude hiding (ByteString)
 import Test.Morpheus
   ( FileUrl,
@@ -53,11 +57,19 @@ resolvers =
 getSchema :: String -> IO (Schema VALID)
 getSchema url = LBS.readFile url >>= resultOr (fail . show) pure . parseSchema
 
-getApps :: FileUrl -> IO (App e IO)
-getApps _ = (`mkApp` resolvers) <$> getSchema "test/api-constraints/schema.gql"
+getApp :: FileUrl -> IO (App e IO)
+getApp _ = (`mkApp` resolvers) <$> getSchema "test/api-constraints/schema.gql"
+
+constraint :: APIConstraint
+constraint _ operation = do
+  let selections = map getName (getChildrenList (operationSelectionTree operation))
+
+  Right ()
 
 runAPIConstraints :: FileUrl -> FileUrl -> TestTree
 runAPIConstraints url = testApi api
   where
     api :: GQLRequest -> IO GQLResponse
-    api req = getApps url >>= (`runApp` req)
+    api req = do
+      app <- withConstraint constraint <$> getApp url
+      runApp app req
