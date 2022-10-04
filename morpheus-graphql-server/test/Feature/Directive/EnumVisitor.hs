@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -36,7 +37,8 @@ newtype Rename = Rename {name :: Text}
 instance GQLDirective Rename where
   type DIRECTIVE_LOCATIONS Rename = '[ 'ENUM_VALUE]
 
-instance VisitEnum Rename
+instance VisitEnum Rename where
+  visitEnumName Rename {name} _ = name
 
 data City
   = Athens
