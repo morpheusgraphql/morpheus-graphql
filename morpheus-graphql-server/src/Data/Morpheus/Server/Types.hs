@@ -64,6 +64,7 @@ module Data.Morpheus.Server.Types
     -- * default GQL directives
     GQLDirective (..),
     Deprecated (..),
+    Describe (..),
     dropNamespaceOptions,
     SCALAR,
     DerivingKind (..),
@@ -97,6 +98,7 @@ import Data.Morpheus.Server.Resolvers
   )
 import Data.Morpheus.Server.Types.DirectiveDefinitions
   ( Deprecated (..),
+    Describe (..),
     Prefixes (..),
   )
 import Data.Morpheus.Server.Types.Directives (GQLDirective (..))

@@ -2,7 +2,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -14,7 +13,8 @@ where
 import Data.Kind (Type)
 import Data.Morpheus.Server (interpreter)
 import Data.Morpheus.Server.Types
-  ( GQLDirective (..),
+  ( Describe (..),
+    GQLDirective (..),
     GQLRequest,
     GQLResponse,
     GQLType (..),
@@ -27,18 +27,6 @@ import Data.Morpheus.Server.Types
 import Data.Morpheus.Types.Internal.AST (DirectiveLocation (..))
 import Data.Text (Text)
 import GHC.Generics (Generic)
-
-newtype Describe = Describe {text :: Text}
-  deriving
-    ( GQLType,
-      Generic
-    )
-
-instance GQLDirective Describe where
-  type DIRECTIVE_LOCATIONS Describe = '[ 'ENUM_VALUE]
-
-instance VisitEnum Describe where
-  visitEnumDescription Describe {text} _ = Just text
 
 data City
   = Athens
