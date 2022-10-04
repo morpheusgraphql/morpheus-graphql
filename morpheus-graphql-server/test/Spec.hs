@@ -13,6 +13,7 @@ import qualified Feature.Collision.NameCollision as NameCollision
 import qualified Feature.Directive.Definition as DirectiveDefinition
 import qualified Feature.Directive.EnumVisitor as EnumVisitor
 import qualified Feature.Directive.FieldVisitor as FieldVisitor
+import qualified Feature.Directive.TypeVisitor as TypeVisitor
 import qualified Feature.Inference.ObjectAndEnum as ObjectAndEnum
 import qualified Feature.Inference.TaggedArguments as TaggedArguments
 import qualified Feature.Inference.TaggedArgumentsFail as TaggedArgumentsFail
@@ -84,6 +85,7 @@ main =
         "Directive"
         [ (DirectiveDefinition.api, "definition"),
           (EnumVisitor.api, "enum-visitor"),
-          (FieldVisitor.api, "field-visitor")
+          (FieldVisitor.api, "field-visitor"),
+          (TypeVisitor.api, "type-visitor")
         ]
     ]

@@ -79,10 +79,13 @@ newtype Describe = Describe {text :: Text}
     )
 
 instance GQLDirective Describe where
-  type DIRECTIVE_LOCATIONS Describe = '[ 'ENUM_VALUE, 'FIELD_DEFINITION]
+  type DIRECTIVE_LOCATIONS Describe = '[ 'ENUM_VALUE, 'FIELD_DEFINITION, 'OBJECT]
 
 instance VisitEnum Describe where
   visitEnumDescription Describe {text} _ = Just text
 
 instance VisitField Describe where
   visitFieldDescription Describe {text} _ = Just text
+
+instance VisitType Describe where
+  visitTypeDescription Describe {text} _ = Just text

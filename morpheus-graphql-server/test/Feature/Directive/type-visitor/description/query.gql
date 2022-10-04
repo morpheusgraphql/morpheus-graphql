@@ -1,0 +1,7 @@
+query Get__Type {
+  city: __type(name: "Deity") {
+    kind
+    name
+    description
+  }
+}
