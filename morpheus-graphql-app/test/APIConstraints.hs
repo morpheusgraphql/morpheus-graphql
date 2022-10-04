@@ -52,7 +52,7 @@ resolvers =
           object
             [ ("success", pure "success"),
               ("forbidden", pure "forbidden!"),
-              ("limited", pure "is less then 5")
+              ("limited", pure "num <= 5")
             ]
       )
     ]
@@ -69,10 +69,9 @@ forbidden _ query
   | otherwise = Right ()
 
 max5 :: APIConstraint
-max5 _ query = do
-  let value = getChild ("limited" :: String) query >>= getArgument ("num" :: String)
-  case value of
-    Just (Number num) | num >= 5 -> Left ("no num should be less then 5! but found " <> show num)
+max5 _ query =
+  case getChild ("limited" :: Text) query >>= getArgument ("num" :: Text) of
+    Just (Number n) | n > 5 -> Left ("num " <> show n <> " is greater then 5! but found ")
     _ -> pure ()
 
 runAPIConstraints :: FileUrl -> FileUrl -> TestTree
