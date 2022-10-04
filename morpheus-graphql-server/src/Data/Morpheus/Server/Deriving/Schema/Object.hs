@@ -36,10 +36,7 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType,
-    __typeData,
-  )
-import Data.Morpheus.Server.Types.Internal
-  ( TypeData (..),
+    deriveTypename,
   )
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
@@ -112,7 +109,7 @@ asObjectType ::
   SchemaT kind (TypeDefinition OBJECT CONST)
 asObjectType f proxy =
   mkType
-    (gqlTypeName (__typeData (outputType proxy)))
+    (deriveTypename (outputType proxy))
     . DataObject []
     <$> f proxy
 
@@ -122,9 +119,7 @@ withObject OutputType DataObject {objectFields} = pure objectFields
 withObject x _ = failureOnlyObject x
 
 failureOnlyObject :: forall (c :: TypeCategory) a b. (GQLType a, CategoryValue c) => KindedType c a -> SchemaT c b
-failureOnlyObject proxy =
-  throwError $
-    msg (gqlTypeName $ __typeData proxy) <> " should have only one nonempty constructor"
+failureOnlyObject proxy = throwError $ msg (deriveTypename proxy) <> " should have only one nonempty constructor"
 
 mkObjectTypeContent :: KindedType kind a -> FieldsDefinition kind CONST -> TypeContent TRUE kind CONST
 mkObjectTypeContent InputType = DataInputObject

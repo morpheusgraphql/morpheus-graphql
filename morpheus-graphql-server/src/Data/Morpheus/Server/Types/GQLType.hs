@@ -110,6 +110,7 @@ import Data.Morpheus.Types.Internal.AST
     mkBaseType,
     packName,
     toNullable,
+    unitTypeName,
     unpackName,
   )
 import Data.Sequence (Seq)
@@ -229,7 +230,8 @@ instance GQLType ID where
   __type _ = mkTypeData "ID"
 
 -- WRAPPERS
-instance GQLType ()
+instance GQLType () where
+  __type _ = mkTypeData unitTypeName
 
 instance GQLType a => GQLType (Maybe a) where
   type KIND (Maybe a) = WRAPPER

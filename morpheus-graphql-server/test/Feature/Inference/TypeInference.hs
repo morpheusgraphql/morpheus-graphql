@@ -86,7 +86,8 @@ newtype MonsterArgs = MonsterArgs
 data Query (m :: Type -> Type) = Query
   { deity :: Deity m,
     character :: [Character m],
-    showMonster :: MonsterArgs -> m Text
+    showMonster :: MonsterArgs -> m Text,
+    unitType :: m ()
   }
   deriving (Generic, GQLType)
 
@@ -97,7 +98,8 @@ rootResolver =
         Query
           { deity = deityRes,
             character = resolveCharacter,
-            showMonster
+            showMonster,
+            unitType = pure ()
           }
     }
   where

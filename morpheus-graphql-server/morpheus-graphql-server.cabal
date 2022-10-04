@@ -48,6 +48,7 @@ data-files:
     test/Feature/Inference/type-inference/introspection/union/positional-products/query.gql
     test/Feature/Inference/type-inference/introspection/union/scalars/query.gql
     test/Feature/Inference/type-inference/introspection/union/union/query.gql
+    test/Feature/Inference/type-inference/introspection/unit/query.gql
     test/Feature/Inference/type-inference/resolving/complexUnion/query.gql
     test/Feature/Inference/type-inference/resolving/input/fail/query.gql
     test/Feature/Inference/type-inference/resolving/input/success/query.gql
@@ -153,6 +154,7 @@ data-files:
     test/Feature/Inference/type-inference/introspection/union/positional-products/response.json
     test/Feature/Inference/type-inference/introspection/union/scalars/response.json
     test/Feature/Inference/type-inference/introspection/union/union/response.json
+    test/Feature/Inference/type-inference/introspection/unit/response.json
     test/Feature/Inference/type-inference/resolving/complexUnion/response.json
     test/Feature/Inference/type-inference/resolving/input/fail/response.json
     test/Feature/Inference/type-inference/resolving/input/success/response.json
