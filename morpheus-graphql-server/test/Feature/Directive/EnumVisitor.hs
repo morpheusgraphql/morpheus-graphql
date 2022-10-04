@@ -14,18 +14,14 @@ import Data.Kind (Type)
 import Data.Morpheus.Server (interpreter)
 import Data.Morpheus.Server.Types
   ( Describe (..),
-    GQLDirective (..),
     GQLRequest,
     GQLResponse,
     GQLType (..),
     RootResolver (..),
     Undefined,
-    VisitEnum (..),
     defaultRootResolver,
     enumDirective,
   )
-import Data.Morpheus.Types.Internal.AST (DirectiveLocation (..))
-import Data.Text (Text)
 import GHC.Generics (Generic)
 
 data City

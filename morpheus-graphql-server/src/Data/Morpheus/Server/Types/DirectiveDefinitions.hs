@@ -19,7 +19,7 @@ import Data.Morpheus.Server.Types.GQLType (GQLType (__type))
 import Data.Morpheus.Server.Types.Internal (mkTypeData)
 import Data.Morpheus.Server.Types.Visitors
   ( VisitEnum (..),
-    VisitField,
+    VisitField (..),
     VisitType (..),
   )
 import Data.Morpheus.Types.Internal.AST
@@ -79,7 +79,10 @@ newtype Describe = Describe {text :: Text}
     )
 
 instance GQLDirective Describe where
-  type DIRECTIVE_LOCATIONS Describe = '[ 'ENUM_VALUE]
+  type DIRECTIVE_LOCATIONS Describe = '[ 'ENUM_VALUE, 'FIELD_DEFINITION]
 
 instance VisitEnum Describe where
   visitEnumDescription Describe {text} _ = Just text
+
+instance VisitField Describe where
+  visitFieldDescription Describe {text} _ = Just text
