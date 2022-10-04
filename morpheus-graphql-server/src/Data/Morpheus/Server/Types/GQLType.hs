@@ -33,11 +33,12 @@ module Data.Morpheus.Server.Types.GQLType
     encodeArguments,
     DirectiveUsage (..),
     DeriveArguments (..),
-    applyOnTypeName,
     DirectiveUsages (..),
     typeDirective,
     fieldDirective,
     enumDirective,
+    applyOnTypeName,
+    applyOnEnumValueName,
   )
 where
 
@@ -59,6 +60,7 @@ import Data.Morpheus.Server.NamedResolvers (NamedResolverT (..))
 import Data.Morpheus.Server.Types.Directives
   ( GQLDirective (..),
     ToLocations,
+    visitEnumName,
     visitTypeName,
   )
 import Data.Morpheus.Server.Types.Internal
@@ -406,6 +408,9 @@ applyOnTypeName (DirectiveUsage x) = visitTypeName x
 
 typeNameWithDirectives :: TypeName -> [DirectiveUsage] -> TypeName
 typeNameWithDirectives = foldr applyOnTypeName
+
+applyOnEnumValueName :: DirectiveUsage -> TypeName -> TypeName
+applyOnEnumValueName (DirectiveUsage x) = visitEnumName x
 
 editTypeData :: TypeData -> DirectiveUsages -> TypeData
 editTypeData TypeData {..} DirectiveUsages {typeDirectives} = TypeData {gqlTypeName = typeNameWithDirectives gqlTypeName typeDirectives, ..}
