@@ -40,6 +40,7 @@ module Data.Morpheus.Server.Types.GQLType
     applyOnTypeName,
     applyEnumDescription,
     applyFieldDescription,
+    applyTypeDescription,
   )
 where
 
@@ -63,6 +64,7 @@ import Data.Morpheus.Server.Types.Directives
     ToLocations,
     visitEnumDescription,
     visitFieldDescription,
+    visitTypeDescription,
     visitTypeName,
   )
 import Data.Morpheus.Server.Types.Internal
@@ -416,6 +418,9 @@ applyEnumDescription (DirectiveUsage x) = visitEnumDescription x
 
 applyFieldDescription :: DirectiveUsage -> Maybe Description -> Maybe Description
 applyFieldDescription (DirectiveUsage x) = visitFieldDescription x
+
+applyTypeDescription :: DirectiveUsage -> Maybe Description -> Maybe Description
+applyTypeDescription (DirectiveUsage x) = visitTypeDescription x
 
 editTypeData :: TypeData -> DirectiveUsages -> TypeData
 editTypeData TypeData {..} DirectiveUsages {typeDirectives} = TypeData {gqlTypeName = typeNameWithDirectives gqlTypeName typeDirectives, ..}

@@ -20,6 +20,7 @@ module Data.Morpheus.Server.Deriving.Schema.Directive
     deriveEnumDirectives,
     visitEnumValueDescription,
     visitFieldDescription,
+    visitTypeDescription,
   )
 where
 
@@ -42,6 +43,7 @@ import Data.Morpheus.Server.Types.GQLType
     GQLType (..),
     applyEnumDescription,
     applyFieldDescription,
+    applyTypeDescription,
     deriveFingerprint,
     deriveTypename,
     encodeArguments,
@@ -145,3 +147,6 @@ visitEnumValueDescription proxy name desc = foldr applyEnumDescription desc (get
 
 visitFieldDescription :: GQLType a => f a -> FieldName -> Maybe Description -> Maybe Description
 visitFieldDescription proxy name desc = foldr applyFieldDescription desc (getFieldDirectiveUsages name proxy)
+
+visitTypeDescription :: GQLType a => f a -> Maybe Description -> Maybe Description
+visitTypeDescription proxy desc = foldr applyTypeDescription desc (typeDirectives $ directives proxy)

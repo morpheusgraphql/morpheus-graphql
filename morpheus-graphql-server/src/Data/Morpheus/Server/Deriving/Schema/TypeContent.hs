@@ -9,7 +9,7 @@ module Data.Morpheus.Server.Deriving.Schema.TypeContent
   )
 where
 
-import Data.Morpheus.Server.Deriving.Schema.Directive (deriveTypeDirectives)
+import Data.Morpheus.Server.Deriving.Schema.Directive (deriveTypeDirectives, visitTypeDescription)
 import Data.Morpheus.Server.Deriving.Schema.Enum
   ( buildEnumTypeContent,
   )
@@ -69,7 +69,7 @@ insertTypeContent f proxy =
       dirs <- deriveTypeDirectives proxy
       pure $
         TypeDefinition
-          (description proxy)
+          (visitTypeDescription proxy $ description proxy)
           (deriveTypename proxy)
           dirs
           content
