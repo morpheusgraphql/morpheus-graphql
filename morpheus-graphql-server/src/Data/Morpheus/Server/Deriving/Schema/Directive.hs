@@ -23,9 +23,8 @@ where
 
 import Control.Monad.Except (throwError)
 import qualified Data.HashMap.Lazy as HM
-import qualified Data.Map as M
 import Data.Morpheus.Internal.Ext (resultOr, unsafeFromList)
-import Data.Morpheus.Internal.Utils (Empty (..), (<:>))
+import Data.Morpheus.Internal.Utils (Empty (..))
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( KindedProxy (..),
   )
@@ -57,7 +56,6 @@ import Data.Morpheus.Types.Internal.AST
     IN,
     Position (Position),
     TypeName,
-    unpackName,
   )
 import GHC.Generics ()
 import GHC.TypeLits ()
@@ -122,18 +120,11 @@ insertDirective f _ = insertDirectiveDefinition (deriveFingerprint proxy) f prox
   where
     proxy = KindedProxy :: KindedProxy IN a
 
-getDir :: (Ord k, Empty a) => k -> Map k a -> a
-getDir name xs = fromMaybe empty $ name `M.lookup` xs
-
 getDirHM :: (Ord k, Hashable k, Empty a) => k -> HashMap k a -> a
 getDirHM name xs = fromMaybe empty $ name `HM.lookup` xs
 
 deriveFieldDirectives :: GQLType a => f a -> FieldName -> SchemaT c (Directives CONST)
-deriveFieldDirectives proxy name = do
-  dirs <- deriveDirectiveUsages $ getDirHM name $ fieldDirectives $ directives proxy
-  getDir (unpackName name) (getDirectives proxy) <:> dirs
+deriveFieldDirectives proxy name = deriveDirectiveUsages $ getDirHM name $ fieldDirectives $ directives proxy
 
 deriveEnumDirectives :: GQLType a => f a -> TypeName -> SchemaT c (Directives CONST)
-deriveEnumDirectives proxy name = do
-  dirs <- deriveDirectiveUsages $ getDirHM name $ enumValueDirectives $ directives proxy
-  getDir (unpackName name) (getDirectives proxy) <:> dirs
+deriveEnumDirectives proxy name = deriveDirectiveUsages $ getDirHM name $ enumValueDirectives $ directives proxy
