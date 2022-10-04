@@ -173,6 +173,10 @@ wrapper f TypeData {..} = TypeData {gqlWrappers = f gqlWrappers, ..}
 --  @
 {-# DEPRECATED getDirectives "use: directives" #-}
 
+{-# DEPRECATED description "use: directive Describe { text } with typeDirective" #-}
+
+{-# DEPRECATED getDescriptions "use: directive Describe { text } with fieldDirective" #-}
+
 class GQLType a where
   type KIND a :: DerivingKind
   type KIND a = TYPE
