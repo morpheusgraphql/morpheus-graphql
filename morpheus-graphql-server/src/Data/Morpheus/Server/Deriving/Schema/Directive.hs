@@ -19,6 +19,7 @@ module Data.Morpheus.Server.Deriving.Schema.Directive
     deriveTypeDirectives,
     deriveEnumDirectives,
     visitEnumValueDescription,
+    visitFieldDescription,
   )
 where
 
@@ -40,6 +41,7 @@ import Data.Morpheus.Server.Types.GQLType
     DirectiveUsages (..),
     GQLType (..),
     applyEnumDescription,
+    applyFieldDescription,
     deriveFingerprint,
     deriveTypename,
     encodeArguments,
@@ -127,13 +129,19 @@ getDirHM :: (Ord k, Hashable k, Empty a) => k -> HashMap k a -> a
 getDirHM name xs = fromMaybe empty $ name `HM.lookup` xs
 
 deriveFieldDirectives :: GQLType a => f a -> FieldName -> SchemaT c (Directives CONST)
-deriveFieldDirectives proxy name = deriveDirectiveUsages $ getDirHM name $ fieldDirectives $ directives proxy
+deriveFieldDirectives proxy name = deriveDirectiveUsages $ getFieldDirectiveUsages name proxy
 
 getEnumValueDirectiveUsages :: GQLType a => f a -> TypeName -> [DirectiveUsage]
 getEnumValueDirectiveUsages proxy name = getDirHM name $ enumValueDirectives $ directives proxy
+
+getFieldDirectiveUsages :: GQLType a => FieldName -> f a -> [DirectiveUsage]
+getFieldDirectiveUsages name proxy = getDirHM name $ fieldDirectives $ directives proxy
 
 deriveEnumDirectives :: GQLType a => f a -> TypeName -> SchemaT c (Directives CONST)
 deriveEnumDirectives proxy name = deriveDirectiveUsages $ getEnumValueDirectiveUsages proxy name
 
 visitEnumValueDescription :: GQLType a => f a -> TypeName -> Maybe Description -> Maybe Description
 visitEnumValueDescription proxy name desc = foldr applyEnumDescription desc (getEnumValueDirectiveUsages proxy name)
+
+visitFieldDescription :: GQLType a => f a -> FieldName -> Maybe Description -> Maybe Description
+visitFieldDescription proxy name desc = foldr applyFieldDescription desc (getFieldDirectiveUsages name proxy)
