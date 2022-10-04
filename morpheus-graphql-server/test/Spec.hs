@@ -12,6 +12,7 @@ import qualified Feature.Collision.CategoryCollisionSuccess as TypeCategoryColli
 import qualified Feature.Collision.NameCollision as NameCollision
 import qualified Feature.Directive.Definition as DirectiveDefinition
 import qualified Feature.Directive.EnumVisitor as EnumVisitor
+import qualified Feature.Directive.FieldVisitor as FieldVisitor
 import qualified Feature.Inference.ObjectAndEnum as ObjectAndEnum
 import qualified Feature.Inference.TaggedArguments as TaggedArguments
 import qualified Feature.Inference.TaggedArgumentsFail as TaggedArgumentsFail
@@ -82,6 +83,7 @@ main =
       testFeatures
         "Directive"
         [ (DirectiveDefinition.api, "definition"),
-          (EnumVisitor.api, "enum-visitor")
+          (EnumVisitor.api, "enum-visitor"),
+          (FieldVisitor.api, "field-visitor")
         ]
     ]
