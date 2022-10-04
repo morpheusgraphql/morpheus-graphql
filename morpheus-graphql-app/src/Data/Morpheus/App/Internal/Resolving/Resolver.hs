@@ -175,6 +175,7 @@ instance (LiftOperation o, Monad m) => MonadReader ResolverContext (Resolver o e
 -- Using the 'ResolverContext' itself is unsafe because it exposes internal structures
 -- of the AST, but you can use the "Data.Morpheus.Types.SelectionTree" typeClass to manipulate
 -- the internal AST with a safe interface.
+{-# DEPRECATED unsafeInternalContext "use asks" #-}
 unsafeInternalContext :: (Monad m, LiftOperation o) => Resolver o e m ResolverContext
 unsafeInternalContext = ask
 
