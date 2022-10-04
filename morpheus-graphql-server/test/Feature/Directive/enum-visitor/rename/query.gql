@@ -1,0 +1,9 @@
+query Get__Type {
+  city: __type(name: "City") {
+    kind
+    name
+    enumValues(includeDeprecated: true) {
+      name
+    }
+  }
+}

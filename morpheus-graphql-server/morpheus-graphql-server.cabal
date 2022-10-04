@@ -27,6 +27,7 @@ data-files:
     test/Feature/Directive/definition/introspect-directive/query.gql
     test/Feature/Directive/definition/introspect-enum/query.gql
     test/Feature/Directive/definition/introspect-type/query.gql
+    test/Feature/Directive/enum-visitor/rename/query.gql
     test/Feature/Inference/object-and-enum/introspection/query.gql
     test/Feature/Inference/object-and-enum/resolving/query.gql
     test/Feature/Inference/tagged-arguments-fail/introspection/query.gql
@@ -133,6 +134,7 @@ data-files:
     test/Feature/Directive/definition/introspect-directive/response.json
     test/Feature/Directive/definition/introspect-enum/response.json
     test/Feature/Directive/definition/introspect-type/response.json
+    test/Feature/Directive/enum-visitor/rename/response.json
     test/Feature/Inference/object-and-enum/introspection/response.json
     test/Feature/Inference/object-and-enum/resolving/response.json
     test/Feature/Inference/tagged-arguments-fail/introspection/response.json
@@ -322,6 +324,7 @@ test-suite morpheus-graphql-server-test
       Feature.Collision.NameCollision
       Feature.Collision.NameCollisionHelper
       Feature.Directive.Definition
+      Feature.Directive.EnumVisitor
       Feature.Inference.ObjectAndEnum
       Feature.Inference.TaggedArguments
       Feature.Inference.TaggedArgumentsFail
