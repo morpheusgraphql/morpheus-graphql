@@ -1,8 +1,8 @@
 query Get__Type {
-  city: __type(name: "City") {
+  city: __type(name: "Deity") {
     kind
     name
-    enumValues(includeDeprecated: true) {
+    fields {
       name
       description
     }
