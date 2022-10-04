@@ -15,7 +15,7 @@ where
 
 import Data.Morpheus.Server.Types.Directives (GQLDirective (..))
 import Data.Morpheus.Server.Types.GQLType (GQLType (__type))
-import Data.Morpheus.Server.Types.Internal
+import Data.Morpheus.Server.Types.Internal (mkTypeData)
 import Data.Morpheus.Server.Types.Visitors (VisitEnum, VisitField, VisitType (..))
 import Data.Morpheus.Types.Internal.AST
   ( DirectiveLocation (..),
