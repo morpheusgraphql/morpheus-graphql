@@ -10,7 +10,7 @@ where
 
 import Data.Morpheus.Server.Deriving.Schema.Directive
   ( deriveEnumDirectives,
-    visitEnumValueName,
+    visitEnumValueDescription,
   )
 import Data.Morpheus.Server.Deriving.Schema.Internal
   ( lookupDescription,
@@ -46,11 +46,11 @@ buildEnumTypeContent p@OutputType enumCons = DataEnum <$> traverse (mkEnumValue 
 mkEnumValue :: GQLType a => f a -> TypeName -> SchemaT c (DataEnumValue CONST)
 mkEnumValue proxy enumName = do
   enumDirectives <- deriveEnumDirectives proxy enumName
-  let name = visitEnumValueName proxy enumName
+  let desc = lookupDescription proxy (unpackName enumName)
   pure
     DataEnumValue
-      { enumName = name,
-        enumDescription = lookupDescription proxy (unpackName enumName),
+      { enumName,
+        enumDescription = visitEnumValueDescription proxy enumName desc,
         ..
       }
 

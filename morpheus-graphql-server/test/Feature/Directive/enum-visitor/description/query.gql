@@ -4,6 +4,7 @@ query Get__Type {
     name
     enumValues(includeDeprecated: true) {
       name
+      description
     }
   }
 }

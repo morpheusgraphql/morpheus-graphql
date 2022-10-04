@@ -28,17 +28,17 @@ import Data.Morpheus.Types.Internal.AST (DirectiveLocation (..))
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
-newtype Rename = Rename {name :: Text}
+newtype Describe = Describe {text :: Text}
   deriving
     ( GQLType,
       Generic
     )
 
-instance GQLDirective Rename where
-  type DIRECTIVE_LOCATIONS Rename = '[ 'ENUM_VALUE]
+instance GQLDirective Describe where
+  type DIRECTIVE_LOCATIONS Describe = '[ 'ENUM_VALUE]
 
-instance VisitEnum Rename where
-  visitEnumName Rename {name} _ = name
+instance VisitEnum Describe where
+  visitEnumDescription Describe {text} _ = Just text
 
 data City
   = Athens
@@ -51,9 +51,9 @@ data City
 
 instance GQLType City where
   directives _ =
-    enumDirective "Sparta" Rename {name = "sparta"}
-      <> enumDirective "Delphi" Rename {name = "delphi"}
-      <> enumDirective "Argos" Rename {name = "argos"}
+    enumDirective "Sparta" Describe {text = "city of warriors"}
+      <> enumDirective "Delphi" Describe {text = "city of oracle"}
+      <> enumDirective "Argos" Describe {text = "city of argonauts"}
 
 newtype Query (m :: Type -> Type) = Query {city :: City}
   deriving (Generic, GQLType)
