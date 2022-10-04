@@ -22,8 +22,10 @@ extra-source-files:
     changelog.md
 data-files:
     test/api-constraints/forbidden/query.gql
+    test/api-constraints/over-limit/query.gql
     test/api-constraints/schema.gql
     test/api-constraints/success/query.gql
+    test/api-constraints/under-limit/query.gql
     test/api/deity/interface/query.gql
     test/api/deity/schema.gql
     test/api/deity/simple/query.gql
@@ -61,7 +63,9 @@ data-files:
     test/named-resolvers/realms.gql
     test/named-resolvers/realms/query.gql
     test/api-constraints/forbidden/response.json
+    test/api-constraints/over-limit/response.json
     test/api-constraints/success/response.json
+    test/api-constraints/under-limit/response.json
     test/api/deity/interface/response.json
     test/api/deity/resolvers.json
     test/api/deity/simple/response.json
