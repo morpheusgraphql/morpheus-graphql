@@ -169,14 +169,14 @@ instance Visitors.VisitField a => VISIT_FIELD a TRUE where
 
 -- VISIT_ENUM
 
-visitEnumName :: forall a. GQLDirective a => a -> FieldName -> FieldName
+visitEnumName :: forall a. GQLDirective a => a -> TypeName -> TypeName
 visitEnumName = __visitEnumName (Proxy :: Proxy (ALLOWED a ENUM_VISITOR_KIND))
 
 visitEnumDescription :: forall a. GQLDirective a => a -> Maybe Description -> Maybe Description
 visitEnumDescription = __visitEnumDescription (Proxy :: Proxy (ALLOWED a ENUM_VISITOR_KIND))
 
 class VISIT_ENUM a (t :: Bool) where
-  __visitEnumName :: f t -> a -> FieldName -> FieldName
+  __visitEnumName :: f t -> a -> TypeName -> TypeName
   __visitEnumDescription :: f t -> a -> Maybe Description -> Maybe Description
 
 instance VISIT_ENUM a FALSE where

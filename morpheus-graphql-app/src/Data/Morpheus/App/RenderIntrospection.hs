@@ -19,7 +19,6 @@ import Control.Monad.Except (MonadError (throwError))
 import Data.Morpheus.App.Internal.Resolving.Resolver
   ( Resolver,
     ResolverContext (..),
-    unsafeInternalContext,
   )
 import Data.Morpheus.App.Internal.Resolving.Types
   ( ResolverValue,
@@ -86,7 +85,7 @@ class
   getSchema :: m (Schema VALID)
 
 instance Monad m => WithSchema (Resolver QUERY e m) where
-  getSchema = schema <$> unsafeInternalContext
+  getSchema = schema <$> ask
 
 selectType ::
   WithSchema m =>

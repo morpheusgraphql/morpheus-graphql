@@ -6,6 +6,7 @@ module APIConstraints
   )
 where
 
+import Data.Aeson (Value (..))
 import qualified Data.ByteString.Lazy.Char8 as LBS
 import Data.Morpheus.App
   ( APIConstraint,
@@ -24,7 +25,7 @@ import Data.Morpheus.Core
   ( parseSchema,
   )
 import Data.Morpheus.Types.IO
-  ( GQLRequest (..),
+  ( GQLRequest,
     GQLResponse,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -50,7 +51,8 @@ resolvers =
         const $
           object
             [ ("success", pure "success"),
-              ("forbidden", pure "forbidden!")
+              ("forbidden", pure "forbidden!"),
+              ("limited", pure "num <= 5")
             ]
       )
     ]
@@ -61,15 +63,21 @@ getSchema url = LBS.readFile url >>= resultOr (fail . show) pure . parseSchema
 getApp :: FileUrl -> IO (App e IO)
 getApp _ = (`mkApp` resolvers) <$> getSchema "test/api-constraints/schema.gql"
 
-constraint :: APIConstraint
-constraint _ operation
-  | memberNode "forbidden" operation = Left "no forbidden field!"
+forbidden :: APIConstraint
+forbidden _ query
+  | hasChild ("forbidden" :: String) query = Left "no forbidden field!"
   | otherwise = Right ()
+
+max5 :: APIConstraint
+max5 _ query =
+  case getChild ("limited" :: Text) query >>= getArgument ("num" :: Text) of
+    Just (Number n) | n > 5 -> Left ("num " <> show n <> " is greater then 5! but found ")
+    _ -> pure ()
 
 runAPIConstraints :: FileUrl -> FileUrl -> TestTree
 runAPIConstraints url = testApi api
   where
     api :: GQLRequest -> IO GQLResponse
     api req = do
-      app <- withConstraint constraint <$> getApp url
+      app <- withConstraint max5 . withConstraint forbidden <$> getApp url
       runApp app req

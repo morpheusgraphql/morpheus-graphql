@@ -22,6 +22,7 @@ module Data.Morpheus.Types.Internal.AST.Name
     intercalate,
     NAME (..),
     FragmentName,
+    isValidName,
   )
 where
 
@@ -63,6 +64,7 @@ import Language.Haskell.TH.Syntax
     unsafeTExpCoerce,
   )
 #endif
+import Data.Char (isLetter, isNumber)
 import Relude hiding
   ( ByteString,
     decodeUtf8,
@@ -91,6 +93,13 @@ newtype Name (t :: NAME) = Name {_unpackName :: Text}
 
 instance Msg (Name t) where
   msg name = msg $ "\"" <> _unpackName name <> "\""
+
+isValidName :: Name t -> Bool
+isValidName n = T.all isStart (T.take 1 name) && T.all isContinue (T.drop 1 name)
+  where
+    name = unpackName n
+    isStart c = c == '_' || isLetter c
+    isContinue c = isStart c || isNumber c
 
 class NamePacking a where
   packName :: a -> Name t

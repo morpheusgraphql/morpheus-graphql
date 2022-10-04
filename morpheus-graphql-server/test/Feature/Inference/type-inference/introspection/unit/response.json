@@ -1,0 +1,103 @@
+{
+  "data": {
+    "unitField": {
+      "enumValues": null,
+      "fields": [
+        {
+          "args": [],
+          "deprecationReason": null,
+          "isDeprecated": false,
+          "name": "deity",
+          "type": {
+            "kind": "NON_NULL",
+            "name": null,
+            "ofType": {
+              "kind": "OBJECT",
+              "name": "Deity",
+              "ofType": null
+            }
+          }
+        },
+        {
+          "args": [],
+          "deprecationReason": null,
+          "isDeprecated": false,
+          "name": "character",
+          "type": {
+            "kind": "NON_NULL",
+            "name": null,
+            "ofType": {
+              "kind": "LIST",
+              "name": null,
+              "ofType": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "UNION",
+                  "name": "Character",
+                  "ofType": null
+                }
+              }
+            }
+          }
+        },
+        {
+          "args": [
+            {
+              "defaultValue": null,
+              "name": "monster",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": {
+                  "kind": "INPUT_OBJECT",
+                  "name": "Monster",
+                  "ofType": null
+                }
+              }
+            }
+          ],
+          "deprecationReason": null,
+          "isDeprecated": false,
+          "name": "showMonster",
+          "type": {
+            "kind": "NON_NULL",
+            "name": null,
+            "ofType": { "kind": "SCALAR", "name": "String", "ofType": null }
+          }
+        },
+        {
+          "args": [],
+          "deprecationReason": null,
+          "isDeprecated": false,
+          "name": "unitType",
+          "type": {
+            "kind": "NON_NULL",
+            "name": null,
+            "ofType": { "kind": "ENUM", "name": "Unit", "ofType": null }
+          }
+        }
+      ],
+      "inputFields": null,
+      "interfaces": [],
+      "kind": "OBJECT",
+      "name": "Query",
+      "possibleTypes": null
+    },
+    "unitType": {
+      "enumValues": [
+        {
+          "deprecationReason": null,
+          "isDeprecated": false,
+          "name": "Unit"
+        }
+      ],
+      "fields": null,
+      "inputFields": null,
+      "interfaces": null,
+      "kind": "ENUM",
+      "name": "Unit",
+      "possibleTypes": null
+    }
+  }
+}

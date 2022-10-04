@@ -1,5 +1,5 @@
-
 type Query {
   success: String
   forbidden: String
+  limited(num: Int): String
 }

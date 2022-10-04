@@ -10,13 +10,18 @@
 module Data.Morpheus.Server.Types.DirectiveDefinitions
   ( Prefixes (..),
     Deprecated (..),
+    Describe (..),
   )
 where
 
 import Data.Morpheus.Server.Types.Directives (GQLDirective (..))
 import Data.Morpheus.Server.Types.GQLType (GQLType (__type))
-import Data.Morpheus.Server.Types.Internal
-import Data.Morpheus.Server.Types.Visitors (VisitEnum, VisitField, VisitType (..))
+import Data.Morpheus.Server.Types.Internal (mkTypeData)
+import Data.Morpheus.Server.Types.Visitors
+  ( VisitEnum (..),
+    VisitField (..),
+    VisitType (..),
+  )
 import Data.Morpheus.Types.Internal.AST
   ( DirectiveLocation (..),
   )
@@ -66,3 +71,31 @@ instance GQLDirective Deprecated where
       '[ 'FIELD_DEFINITION,
          'ENUM_VALUE
        ]
+
+newtype Describe = Describe {text :: Text}
+  deriving
+    ( GQLType,
+      Generic
+    )
+
+instance GQLDirective Describe where
+  type
+    DIRECTIVE_LOCATIONS Describe =
+      '[ 'ENUM_VALUE,
+         'FIELD_DEFINITION,
+         'OBJECT,
+         'ENUM,
+         'INPUT_OBJECT,
+         'UNION,
+         'SCALAR,
+         'INTERFACE
+       ]
+
+instance VisitEnum Describe where
+  visitEnumDescription Describe {text} _ = Just text
+
+instance VisitField Describe where
+  visitFieldDescription Describe {text} _ = Just text
+
+instance VisitType Describe where
+  visitTypeDescription Describe {text} _ = Just text

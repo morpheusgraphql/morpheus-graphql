@@ -33,11 +33,14 @@ module Data.Morpheus.Server.Types.GQLType
     encodeArguments,
     DirectiveUsage (..),
     DeriveArguments (..),
-    applyOnTypeName,
     DirectiveUsages (..),
     typeDirective,
     fieldDirective,
     enumDirective,
+    applyOnTypeName,
+    applyEnumDescription,
+    applyFieldDescription,
+    applyTypeDescription,
   )
 where
 
@@ -59,6 +62,9 @@ import Data.Morpheus.Server.NamedResolvers (NamedResolverT (..))
 import Data.Morpheus.Server.Types.Directives
   ( GQLDirective (..),
     ToLocations,
+    visitEnumDescription,
+    visitFieldDescription,
+    visitTypeDescription,
     visitTypeName,
   )
 import Data.Morpheus.Server.Types.Internal
@@ -110,6 +116,7 @@ import Data.Morpheus.Types.Internal.AST
     mkBaseType,
     packName,
     toNullable,
+    unitTypeName,
     unpackName,
   )
 import Data.Sequence (Seq)
@@ -165,6 +172,10 @@ wrapper f TypeData {..} = TypeData {gqlWrappers = f gqlWrappers, ..}
 --       description = const "your description ..."
 --  @
 {-# DEPRECATED getDirectives "use: directives" #-}
+
+{-# DEPRECATED description "use: directive Describe { text } with typeDirective" #-}
+
+{-# DEPRECATED getDescriptions "use: directive Describe { text } with fieldDirective" #-}
 
 class GQLType a where
   type KIND a :: DerivingKind
@@ -229,7 +240,8 @@ instance GQLType ID where
   __type _ = mkTypeData "ID"
 
 -- WRAPPERS
-instance GQLType ()
+instance GQLType () where
+  __type _ = mkTypeData unitTypeName
 
 instance GQLType a => GQLType (Maybe a) where
   type KIND (Maybe a) = WRAPPER
@@ -404,6 +416,15 @@ applyOnTypeName (DirectiveUsage x) = visitTypeName x
 
 typeNameWithDirectives :: TypeName -> [DirectiveUsage] -> TypeName
 typeNameWithDirectives = foldr applyOnTypeName
+
+applyEnumDescription :: DirectiveUsage -> Maybe Description -> Maybe Description
+applyEnumDescription (DirectiveUsage x) = visitEnumDescription x
+
+applyFieldDescription :: DirectiveUsage -> Maybe Description -> Maybe Description
+applyFieldDescription (DirectiveUsage x) = visitFieldDescription x
+
+applyTypeDescription :: DirectiveUsage -> Maybe Description -> Maybe Description
+applyTypeDescription (DirectiveUsage x) = visitTypeDescription x
 
 editTypeData :: TypeData -> DirectiveUsages -> TypeData
 editTypeData TypeData {..} DirectiveUsages {typeDirectives} = TypeData {gqlTypeName = typeNameWithDirectives gqlTypeName typeDirectives, ..}
