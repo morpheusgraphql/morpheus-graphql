@@ -18,6 +18,7 @@ module Data.Morpheus.Validation.Document.Validation
   )
 where
 
+import Control.Monad.Except (MonadError (..))
 import Data.Morpheus.Ext.Result
   ( GQLResult,
   )
@@ -35,6 +36,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldDefinition (..),
     FieldName,
     IN,
+    Msg (..),
     OUT,
     Schema (..),
     TRUE,
@@ -47,6 +49,8 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
     Value,
   )
+import Data.Morpheus.Types.Internal.AST.Error (GQLError)
+import Data.Morpheus.Types.Internal.AST.Name (Name, isValidName)
 import Data.Morpheus.Types.Internal.Config (Config (..))
 import Data.Morpheus.Types.Internal.Validation
   ( InputSource (..),
@@ -122,9 +126,14 @@ instance TypeCheck (TypeDefinition cat) where
       inType typeName $
         TypeDefinition
           typeDescription
-          typeName
-          <$> validateDirectives (typeDirectiveLocation typeContent) typeDirectives
+          <$> checkName typeName
+          <*> validateDirectives (typeDirectiveLocation typeContent) typeDirectives
           <*> typeCheck typeContent
+
+checkName :: MonadError GQLError f => Name t -> f (Name t)
+checkName name
+  | isValidName name = pure name
+  | otherwise = throwError ("Invalid Name:" <> msg name)
 
 typeDirectiveLocation :: TypeContent a b c -> DirectiveLocation
 typeDirectiveLocation DataObject {} = OBJECT
