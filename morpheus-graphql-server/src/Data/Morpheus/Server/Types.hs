@@ -60,6 +60,8 @@ module Data.Morpheus.Server.Types
     typeDirective,
     fieldDirective,
     enumDirective,
+    fieldDirective',
+    enumDirective',
 
     -- * default GQL directives
     GQLDirective (..),
@@ -107,7 +109,9 @@ import Data.Morpheus.Server.Types.Directives (GQLDirective (..))
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     enumDirective,
+    enumDirective',
     fieldDirective,
+    fieldDirective',
     typeDirective,
   )
 import Data.Morpheus.Server.Types.Internal

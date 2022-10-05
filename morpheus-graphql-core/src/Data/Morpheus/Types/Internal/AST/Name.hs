@@ -65,6 +65,8 @@ import Language.Haskell.TH.Syntax
   )
 #endif
 import Data.Char (isLetter, isNumber)
+import qualified Data.List as L
+import qualified Language.Haskell.TH.Syntax as TH
 import Relude hiding
   ( ByteString,
     decodeUtf8,
@@ -104,6 +106,13 @@ isValidName n = T.all isStart (T.take 1 name) && T.all isContinue (T.drop 1 name
 class NamePacking a where
   packName :: a -> Name t
   unpackName :: Name t -> a
+
+instance NamePacking TH.Name where
+  packName (TH.Name name _) = Name $ T.pack (occName name)
+    where
+      occName (TH.OccName n) = takeWhile (/= ':') (removeSelector n)
+      removeSelector x = fromMaybe x (L.stripPrefix "$sel:" x)
+  unpackName = TH.mkName . toString . _unpackName
 
 instance NamePacking Text where
   packName = Name
