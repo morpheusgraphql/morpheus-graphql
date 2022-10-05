@@ -24,8 +24,8 @@ import Data.Morpheus.Server.Types
     Undefined,
     VisitType (..),
     defaultRootResolver,
-    enumDirective,
-    fieldDirective,
+    enumDirective',
+    fieldDirective',
     typeDirective,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -57,8 +57,8 @@ instance GQLType MythologyDeity where
   directives _ =
     typeDirective Power {name = "Lightning bolts", isLimited = False}
       <> typeDirective Prefixes {addPrefix = "", removePrefix = "Mythology"}
-      <> fieldDirective 'deprecatedField Deprecated {reason = Nothing}
-      <> fieldDirective 'deprecatedFieldWithReason Deprecated {reason = Just "this should be deprecated"}
+      <> fieldDirective' 'deprecatedField Deprecated {reason = Nothing}
+      <> fieldDirective' 'deprecatedFieldWithReason Deprecated {reason = Just "this should be deprecated"}
 
 data City
   = Athens
@@ -71,9 +71,9 @@ data City
 
 instance GQLType City where
   directives _ =
-    enumDirective 'Sparta Deprecated {reason = Nothing}
-      <> enumDirective 'Delphi Deprecated {reason = Just "oracle left the place"}
-      <> enumDirective 'Argos Deprecated {reason = Just "for some reason"}
+    enumDirective' 'Sparta Deprecated {reason = Nothing}
+      <> enumDirective' 'Delphi Deprecated {reason = Just "oracle left the place"}
+      <> enumDirective' 'Argos Deprecated {reason = Just "for some reason"}
 
 data Query (m :: Type -> Type) = Query
   { deity :: MythologyDeity,

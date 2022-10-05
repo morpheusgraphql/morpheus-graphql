@@ -36,7 +36,9 @@ module Data.Morpheus.Server.Types.GQLType
     DirectiveUsages (..),
     typeDirective,
     fieldDirective,
+    fieldDirective',
     enumDirective,
+    enumDirective',
     applyTypeName,
     applyTypeDescription,
     applyEnumName,
@@ -417,11 +419,17 @@ type TypeDirectiveConstraint a = (GQLDirective a, GQLType a, Decode a, DeriveArg
 typeDirective :: TypeDirectiveConstraint a => a -> DirectiveUsages
 typeDirective x = DirectiveUsages [DirectiveUsage x] mempty mempty
 
-fieldDirective :: TypeDirectiveConstraint a => TH.Name -> a -> DirectiveUsages
-fieldDirective name x = DirectiveUsages mempty (M.singleton (packName name) [DirectiveUsage x]) mempty
+fieldDirective :: TypeDirectiveConstraint a => FieldName -> a -> DirectiveUsages
+fieldDirective name x = DirectiveUsages mempty (M.singleton name [DirectiveUsage x]) mempty
 
-enumDirective :: TypeDirectiveConstraint a => TH.Name -> a -> DirectiveUsages
-enumDirective name x = DirectiveUsages mempty mempty (M.singleton (packName name) [DirectiveUsage x])
+enumDirective :: TypeDirectiveConstraint a => TypeName -> a -> DirectiveUsages
+enumDirective name x = DirectiveUsages mempty mempty (M.singleton name [DirectiveUsage x])
+
+fieldDirective' :: TypeDirectiveConstraint a => TH.Name -> a -> DirectiveUsages
+fieldDirective' name = fieldDirective (packName name)
+
+enumDirective' :: TypeDirectiveConstraint a => TH.Name -> a -> DirectiveUsages
+enumDirective' name x = DirectiveUsages mempty mempty (M.singleton (packName name) [DirectiveUsage x])
 
 data DirectiveUsage where
   DirectiveUsage :: (GQLDirective a, GQLType a, Decode a, DeriveArguments (KIND a) a, ToLocations (DIRECTIVE_LOCATIONS a)) => a -> DirectiveUsage

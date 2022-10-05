@@ -21,7 +21,7 @@ import Data.Morpheus.Server.Types
     RootResolver (..),
     Undefined,
     defaultRootResolver,
-    fieldDirective,
+    fieldDirective',
   )
 import Data.Text (Text)
 import GHC.Generics (Generic)
@@ -34,8 +34,8 @@ data Deity = Deity
 
 instance GQLType Deity where
   directives _ =
-    fieldDirective 'name Describe {text = "name of the deity"}
-      <> fieldDirective 'power Describe {text = "extraterrestrial ability"}
+    fieldDirective' 'name Describe {text = "name of the deity"}
+      <> fieldDirective' 'power Describe {text = "extraterrestrial ability"}
 
 newtype Query (m :: Type -> Type) = Query {deity :: Deity}
   deriving (Generic, GQLType)

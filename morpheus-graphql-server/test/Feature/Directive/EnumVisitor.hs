@@ -23,7 +23,7 @@ import Data.Morpheus.Server.Types
     RootResolver (..),
     Undefined,
     defaultRootResolver,
-    enumDirective,
+    enumDirective',
   )
 import Data.Text (Text, pack)
 import GHC.Generics (Generic)
@@ -39,14 +39,14 @@ data City
 
 instance GQLType City where
   directives _ =
-    enumDirective 'Sparta Describe {text = "city of warriors"}
-      <> enumDirective 'Delphi Describe {text = "city of oracle"}
-      <> enumDirective 'ARgos Describe {text = "city of argonauts"}
-      <> enumDirective 'Sparta Rename {name = "sparta"}
-      <> enumDirective 'Delphi Rename {name = "delphi"}
-      <> enumDirective 'Athens Rename {name = "_athens"}
-      <> enumDirective 'CORINTH__UGLY_ENUM_NAME Rename {name = "corinth"}
-      <> enumDirective 'ARgos Rename {name = "argos"}
+    enumDirective' 'Sparta Describe {text = "city of warriors"}
+      <> enumDirective' 'Delphi Describe {text = "city of oracle"}
+      <> enumDirective' 'ARgos Describe {text = "city of argonauts"}
+      <> enumDirective' 'Sparta Rename {name = "sparta"}
+      <> enumDirective' 'Delphi Rename {name = "delphi"}
+      <> enumDirective' 'Athens Rename {name = "_athens"}
+      <> enumDirective' 'CORINTH__UGLY_ENUM_NAME Rename {name = "corinth"}
+      <> enumDirective' 'ARgos Rename {name = "argos"}
 
 data Query (m :: Type -> Type) = Query
   { cities :: [City],
