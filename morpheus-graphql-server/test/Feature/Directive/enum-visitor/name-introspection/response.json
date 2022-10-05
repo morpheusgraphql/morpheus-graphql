@@ -1,0 +1,14 @@
+{
+  "data": {
+    "city": {
+      "enumValues": [
+        { "name": "_athens" },
+        { "name": "sparta" },
+        { "name": "corinth" },
+        { "name": "delphi" },
+        { "name": "argos" }
+      ],
+      "name": "City"
+    }
+  }
+}

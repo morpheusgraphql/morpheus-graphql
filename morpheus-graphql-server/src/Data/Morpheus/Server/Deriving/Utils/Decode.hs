@@ -1,8 +1,12 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.Utils.Decode
@@ -14,10 +18,11 @@ module Data.Morpheus.Server.Deriving.Utils.Decode
     handleEither,
     getFieldName,
     DecoderT,
-    withKind,
-    Info (..),
+    setVariantRef,
     Context (..),
-    Tag (..),
+    getUnionInfos,
+    DescribeCons,
+    DescribeFields (countFields),
   )
 where
 
@@ -26,6 +31,12 @@ import Data.Morpheus.App.Internal.Resolving (ResolverState)
 import Data.Morpheus.Internal.Utils
   ( selectOr,
   )
+import Data.Morpheus.Server.Deriving.Utils (conNameProxy)
+import Data.Morpheus.Server.Deriving.Utils.Kinded (KindedProxy (..))
+import Data.Morpheus.Server.Types.GQLType
+  ( GQLType,
+    deriveTypename,
+  )
 import Data.Morpheus.Server.Types.Internal
 import Data.Morpheus.Types.GQLScalar
   ( toScalar,
@@ -33,6 +44,7 @@ import Data.Morpheus.Types.GQLScalar
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     GQLError,
+    IN,
     Msg (msg),
     ObjectEntry (..),
     ScalarValue,
@@ -45,6 +57,7 @@ import Data.Morpheus.Types.Internal.AST
     getInputUnionValue,
     internal,
   )
+import GHC.Generics
 import Relude
 
 withInputObject ::
@@ -105,25 +118,75 @@ getFieldName :: FieldName -> Int -> FieldName
 getFieldName "" index = "_" <> show index
 getFieldName label _ = label
 
-data Tag = D_CONS | D_UNION deriving (Eq, Ord)
+data VariantKind = InlineVariant | VariantRef deriving (Eq, Ord)
 
 data Info = Info
-  { kind :: Tag,
+  { kind :: VariantKind,
     tagName :: [TypeName]
   }
 
 instance Semigroup Info where
-  Info D_UNION t1 <> Info _ t2 = Info D_UNION (t1 <> t2)
-  Info _ t1 <> Info D_UNION t2 = Info D_UNION (t1 <> t2)
-  Info D_CONS t1 <> Info D_CONS t2 = Info D_CONS (t1 <> t2)
+  Info VariantRef t1 <> Info _ t2 = Info VariantRef (t1 <> t2)
+  Info _ t1 <> Info VariantRef t2 = Info VariantRef (t1 <> t2)
+  Info InlineVariant t1 <> Info InlineVariant t2 = Info InlineVariant (t1 <> t2)
 
 data Context = Context
-  { contKind :: Tag,
+  { isVariantRef :: Bool,
     typeName :: TypeName,
-    options :: GQLTypeOptions
+    options :: GQLTypeOptions,
+    enumVisitor :: TypeName -> TypeName
   }
 
 type DecoderT = ReaderT Context ResolverState
 
-withKind :: Tag -> DecoderT a -> DecoderT a
-withKind contKind = local (\ctx -> ctx {contKind})
+setVariantRef :: Bool -> DecoderT a -> DecoderT a
+setVariantRef isVariantRef = local (\ctx -> ctx {isVariantRef})
+
+class DescribeCons (f :: Type -> Type) where
+  tags :: Proxy f -> Context -> Info
+
+instance (Datatype d, DescribeCons f) => DescribeCons (M1 D d f) where
+  tags _ = tags (Proxy @f)
+
+instance (DescribeCons a, DescribeCons b) => DescribeCons (a :+: b) where
+  tags _ = tags (Proxy @a) <> tags (Proxy @b)
+
+instance (Constructor c, DescribeFields a) => DescribeCons (M1 C c a) where
+  tags _ Context {typeName, options} = getTag (refType (Proxy @a))
+    where
+      getTag (Just memberRef)
+        | isUnionRef memberRef = Info {kind = VariantRef, tagName = [memberRef]}
+        | otherwise = Info {kind = InlineVariant, tagName = [consName]}
+      getTag Nothing = Info {kind = InlineVariant, tagName = [consName]}
+      --------
+      consName = conNameProxy options (Proxy @c)
+      ----------
+      isUnionRef x = typeName <> x == consName
+
+getUnionInfos ::
+  forall f a b.
+  (DescribeCons a, DescribeCons b) =>
+  f (a :+: b) ->
+  DecoderT (Bool, ([TypeName], [TypeName]))
+getUnionInfos _ = do
+  context <- ask
+  let l = tags (Proxy @a) context
+  let r = tags (Proxy @b) context
+  let k = kind (l <> r)
+  pure (k == VariantRef, (tagName l, tagName r))
+
+class DescribeFields (f :: Type -> Type) where
+  refType :: Proxy f -> Maybe TypeName
+  countFields :: Proxy f -> Int
+
+instance (DescribeFields f, DescribeFields g) => DescribeFields (f :*: g) where
+  refType _ = Nothing
+  countFields _ = countFields (Proxy @f) + countFields (Proxy @g)
+
+instance (Selector s, GQLType a) => DescribeFields (M1 S s (K1 i a)) where
+  refType _ = Just $ deriveTypename (KindedProxy :: KindedProxy IN a)
+  countFields _ = 1
+
+instance DescribeFields U1 where
+  refType _ = Nothing
+  countFields _ = 0

@@ -37,10 +37,12 @@ module Data.Morpheus.Server.Types.GQLType
     typeDirective,
     fieldDirective,
     enumDirective,
-    applyOnTypeName,
-    applyEnumDescription,
-    applyFieldDescription,
+    applyTypeName,
     applyTypeDescription,
+    applyEnumName,
+    applyEnumDescription,
+    applyFieldName,
+    applyFieldDescription,
   )
 where
 
@@ -63,7 +65,9 @@ import Data.Morpheus.Server.Types.Directives
   ( GQLDirective (..),
     ToLocations,
     visitEnumDescription,
+    visitEnumName,
     visitFieldDescription,
+    visitFieldName,
     visitTypeDescription,
     visitTypeName,
   )
@@ -394,8 +398,18 @@ data DirectiveUsages = DirectiveUsages
 instance Monoid DirectiveUsages where
   mempty = DirectiveUsages mempty mempty mempty
 
+mergeDirs :: (Eq k, Hashable k, Semigroup v) => HashMap k v -> HashMap k v -> HashMap k v
+mergeDirs a b = update a (M.toList b)
+  where
+    update m [] = m
+    update m (x : xs) = update (upsert x m) xs
+
+upsert :: (Eq k, Hashable k, Semigroup v) => (k, v) -> HashMap k v -> HashMap k v
+upsert (k, v) = M.alter (Just . maybe v (v <>)) k
+
 instance Semigroup DirectiveUsages where
-  DirectiveUsages td1 fd1 ed1 <> DirectiveUsages td2 fd2 ed2 = DirectiveUsages (td1 <> td2) (fd1 <> fd2) (ed1 <> ed2)
+  DirectiveUsages td1 fd1 ed1 <> DirectiveUsages td2 fd2 ed2 =
+    DirectiveUsages (td1 <> td2) (mergeDirs fd1 fd2) (mergeDirs ed1 ed2)
 
 type TypeDirectiveConstraint a = (GQLDirective a, GQLType a, Decode a, DeriveArguments (KIND a) a, ToLocations (DIRECTIVE_LOCATIONS a))
 
@@ -411,17 +425,23 @@ enumDirective fieldName x = DirectiveUsages mempty mempty (M.singleton fieldName
 data DirectiveUsage where
   DirectiveUsage :: (GQLDirective a, GQLType a, Decode a, DeriveArguments (KIND a) a, ToLocations (DIRECTIVE_LOCATIONS a)) => a -> DirectiveUsage
 
-applyOnTypeName :: DirectiveUsage -> TypeName -> TypeName
-applyOnTypeName (DirectiveUsage x) = visitTypeName x
+applyTypeName :: DirectiveUsage -> TypeName -> TypeName
+applyTypeName (DirectiveUsage x) = visitTypeName x
 
 typeNameWithDirectives :: TypeName -> [DirectiveUsage] -> TypeName
-typeNameWithDirectives = foldr applyOnTypeName
+typeNameWithDirectives = foldr applyTypeName
 
 applyEnumDescription :: DirectiveUsage -> Maybe Description -> Maybe Description
 applyEnumDescription (DirectiveUsage x) = visitEnumDescription x
 
+applyEnumName :: DirectiveUsage -> TypeName -> TypeName
+applyEnumName (DirectiveUsage x) = visitEnumName x
+
 applyFieldDescription :: DirectiveUsage -> Maybe Description -> Maybe Description
 applyFieldDescription (DirectiveUsage x) = visitFieldDescription x
+
+applyFieldName :: DirectiveUsage -> FieldName -> FieldName
+applyFieldName (DirectiveUsage x) = visitFieldName x
 
 applyTypeDescription :: DirectiveUsage -> Maybe Description -> Maybe Description
 applyTypeDescription (DirectiveUsage x) = visitTypeDescription x

@@ -45,6 +45,7 @@ import Data.Morpheus.Server.Deriving.Decode
   ( Decode,
     decodeArguments,
   )
+import Data.Morpheus.Server.Deriving.Schema.Directive (visitEnumName)
 import Data.Morpheus.Server.Deriving.Utils
   ( ConsRep (..),
     DataType (..),
@@ -168,11 +169,13 @@ instance
   encodeKind (ContextValue value) = value >>= encode
 
 convertNode ::
-  forall m.
-  MonadError GQLError m =>
+  forall m f a.
+  (MonadError GQLError m, GQLType a) =>
+  f a ->
   DataType (m (ResolverValue m)) ->
   ResolverValue m
 convertNode
+  proxy
   DataType
     { dataTypeName,
       tyIsUnion,
@@ -183,7 +186,7 @@ convertNode
       encodeTypeFields ::
         [FieldRep (m (ResolverValue m))] ->
         ResolverValue m
-      encodeTypeFields [] = mkEnum consName
+      encodeTypeFields [] = mkEnum (visitEnumName proxy consName)
       encodeTypeFields fields
         | not tyIsUnion = mkObject dataTypeName (toFieldRes <$> fields)
       -- Type References --------------------------------------------------------------
@@ -205,7 +208,7 @@ exploreResolvers ::
   a ->
   ResolverValue m
 exploreResolvers =
-  convertNode
+  convertNode (Proxy @a)
     . deriveValue
       ( DeriveValueOptions
           { __valueApply = encode,
