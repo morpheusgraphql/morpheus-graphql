@@ -1,0 +1,3 @@
+query Get__Type {
+  printCities(cities: [_athens, sparta, corinth, delphi, argos])
+}

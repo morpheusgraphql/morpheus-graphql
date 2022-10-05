@@ -1,8 +1,8 @@
 query Get__Type {
   city: __type(name: "City") {
     name
-    enumValues{
-      description
+    enumValues {
+      name
     }
   }
 }

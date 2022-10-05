@@ -11,6 +11,7 @@ module Data.Morpheus.Server.Types.DirectiveDefinitions
   ( Prefixes (..),
     Deprecated (..),
     Describe (..),
+    Rename (..),
   )
 where
 
@@ -72,6 +73,8 @@ instance GQLDirective Deprecated where
          'ENUM_VALUE
        ]
 
+-- description
+
 newtype Describe = Describe {text :: Text}
   deriving
     ( GQLType,
@@ -99,3 +102,30 @@ instance VisitField Describe where
 
 instance VisitType Describe where
   visitTypeDescription Describe {text} _ = Just text
+
+-- | a custom GraphQL directive for adding or removing
+-- of prefixes
+newtype Rename = Rename {name :: Text} deriving (Generic, GQLType)
+
+instance GQLDirective Rename where
+  type
+    DIRECTIVE_LOCATIONS Rename =
+      '[ 'OBJECT,
+         'ENUM,
+         'INPUT_OBJECT,
+         'UNION,
+         'SCALAR,
+         'INTERFACE,
+         'ENUM_VALUE,
+         'FIELD_DEFINITION
+       ]
+
+instance VisitType Rename where
+  visitTypeName Rename {name} _ = name
+  visitTypeDescription _ = id
+
+instance VisitEnum Rename where
+  visitEnumName Rename {name} _ = name
+
+instance VisitField Rename where
+  visitFieldName Rename {name} _ = name

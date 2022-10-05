@@ -1,5 +1,4 @@
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
 
 module Data.Morpheus.Server.Deriving.Schema.Enum
@@ -10,6 +9,7 @@ where
 
 import Data.Morpheus.Server.Deriving.Schema.Directive
   ( deriveEnumDirectives,
+    visitEnumName,
     visitEnumValueDescription,
   )
 import Data.Morpheus.Server.Deriving.Schema.Internal
@@ -49,7 +49,7 @@ mkEnumValue proxy enumName = do
   let desc = lookupDescription proxy (unpackName enumName)
   pure
     DataEnumValue
-      { enumName,
+      { enumName = visitEnumName proxy enumName,
         enumDescription = visitEnumValueDescription proxy enumName desc,
         ..
       }

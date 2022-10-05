@@ -73,6 +73,7 @@ module Data.Morpheus.Server.Types
     WRAPPER,
     RootResolver (..),
     defaultRootResolver,
+    Rename (..),
   )
 where
 
@@ -100,6 +101,7 @@ import Data.Morpheus.Server.Types.DirectiveDefinitions
   ( Deprecated (..),
     Describe (..),
     Prefixes (..),
+    Rename (..),
   )
 import Data.Morpheus.Server.Types.Directives (GQLDirective (..))
 import Data.Morpheus.Server.Types.GQLType

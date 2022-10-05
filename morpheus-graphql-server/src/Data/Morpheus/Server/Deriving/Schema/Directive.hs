@@ -21,6 +21,8 @@ module Data.Morpheus.Server.Deriving.Schema.Directive
     visitEnumValueDescription,
     visitFieldDescription,
     visitTypeDescription,
+    visitEnumName,
+    visitFieldName,
   )
 where
 
@@ -42,7 +44,9 @@ import Data.Morpheus.Server.Types.GQLType
     DirectiveUsages (..),
     GQLType (..),
     applyEnumDescription,
+    applyEnumName,
     applyFieldDescription,
+    applyFieldName,
     applyTypeDescription,
     deriveFingerprint,
     deriveTypename,
@@ -133,20 +137,26 @@ getDirHM name xs = fromMaybe empty $ name `HM.lookup` xs
 deriveFieldDirectives :: GQLType a => f a -> FieldName -> SchemaT c (Directives CONST)
 deriveFieldDirectives proxy name = deriveDirectiveUsages $ getFieldDirectiveUsages name proxy
 
-getEnumValueDirectiveUsages :: GQLType a => f a -> TypeName -> [DirectiveUsage]
-getEnumValueDirectiveUsages proxy name = getDirHM name $ enumValueDirectives $ directives proxy
+getEnumDirectiveUsages :: GQLType a => f a -> TypeName -> [DirectiveUsage]
+getEnumDirectiveUsages proxy name = getDirHM name $ enumValueDirectives $ directives proxy
 
 getFieldDirectiveUsages :: GQLType a => FieldName -> f a -> [DirectiveUsage]
 getFieldDirectiveUsages name proxy = getDirHM name $ fieldDirectives $ directives proxy
 
 deriveEnumDirectives :: GQLType a => f a -> TypeName -> SchemaT c (Directives CONST)
-deriveEnumDirectives proxy name = deriveDirectiveUsages $ getEnumValueDirectiveUsages proxy name
+deriveEnumDirectives proxy name = deriveDirectiveUsages $ getEnumDirectiveUsages proxy name
 
 visitEnumValueDescription :: GQLType a => f a -> TypeName -> Maybe Description -> Maybe Description
-visitEnumValueDescription proxy name desc = foldr applyEnumDescription desc (getEnumValueDirectiveUsages proxy name)
+visitEnumValueDescription proxy name desc = foldr applyEnumDescription desc (getEnumDirectiveUsages proxy name)
+
+visitEnumName :: GQLType a => f a -> TypeName -> TypeName
+visitEnumName proxy name = foldr applyEnumName name (getEnumDirectiveUsages proxy name)
 
 visitFieldDescription :: GQLType a => f a -> FieldName -> Maybe Description -> Maybe Description
 visitFieldDescription proxy name desc = foldr applyFieldDescription desc (getFieldDirectiveUsages name proxy)
+
+visitFieldName :: GQLType a => f a -> FieldName -> FieldName
+visitFieldName proxy name = foldr applyFieldName name (getFieldDirectiveUsages name proxy)
 
 visitTypeDescription :: GQLType a => f a -> Maybe Description -> Maybe Description
 visitTypeDescription proxy desc = foldr applyTypeDescription desc (typeDirectives $ directives proxy)

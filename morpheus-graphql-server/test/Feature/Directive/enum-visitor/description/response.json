@@ -2,28 +2,12 @@
   "data": {
     "city": {
       "enumValues": [
-        {
-          "description": null,
-          "name": "Athens"
-        },
-        {
-          "description": "city of warriors",
-          "name": "Sparta"
-        },
-        {
-          "description": null,
-          "name": "Corinth"
-        },
-        {
-          "description": "city of oracle",
-          "name": "Delphi"
-        },
-        {
-          "description": "city of argonauts",
-          "name": "Argos"
-        }
+        { "description": null },
+        { "description": "city of warriors" },
+        { "description": null },
+        { "description": "city of oracle" },
+        { "description": "city of argonauts" }
       ],
-      "kind": "ENUM",
       "name": "City"
     }
   }
