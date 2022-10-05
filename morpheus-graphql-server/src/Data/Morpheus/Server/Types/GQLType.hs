@@ -421,7 +421,7 @@ fieldDirective :: TypeDirectiveConstraint a => TH.Name -> a -> DirectiveUsages
 fieldDirective name x = DirectiveUsages mempty (M.singleton (packName name) [DirectiveUsage x]) mempty
 
 enumDirective :: TypeDirectiveConstraint a => TH.Name -> a -> DirectiveUsages
-enumDirective name x = DirectiveUsages mempty mempty (M.singleton ((packName name)) [DirectiveUsage x])
+enumDirective name x = DirectiveUsages mempty mempty (M.singleton (packName name) [DirectiveUsage x])
 
 data DirectiveUsage where
   DirectiveUsage :: (GQLDirective a, GQLType a, Decode a, DeriveArguments (KIND a) a, ToLocations (DIRECTIVE_LOCATIONS a)) => a -> DirectiveUsage
