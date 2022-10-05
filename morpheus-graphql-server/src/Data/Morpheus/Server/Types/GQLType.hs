@@ -130,6 +130,7 @@ import Data.Text
   )
 import Data.Vector (Vector)
 import GHC.Generics
+import qualified Language.Haskell.TH.Syntax as TH
 import Relude hiding (Seq, Undefined, fromList, intercalate)
 
 __typeData ::
@@ -416,11 +417,11 @@ type TypeDirectiveConstraint a = (GQLDirective a, GQLType a, Decode a, DeriveArg
 typeDirective :: TypeDirectiveConstraint a => a -> DirectiveUsages
 typeDirective x = DirectiveUsages [DirectiveUsage x] mempty mempty
 
-fieldDirective :: TypeDirectiveConstraint a => FieldName -> a -> DirectiveUsages
-fieldDirective fieldName x = DirectiveUsages mempty (M.singleton fieldName [DirectiveUsage x]) mempty
+fieldDirective :: TypeDirectiveConstraint a => TH.Name -> a -> DirectiveUsages
+fieldDirective name x = DirectiveUsages mempty (M.singleton (packName name) [DirectiveUsage x]) mempty
 
-enumDirective :: TypeDirectiveConstraint a => TypeName -> a -> DirectiveUsages
-enumDirective fieldName x = DirectiveUsages mempty mempty (M.singleton fieldName [DirectiveUsage x])
+enumDirective :: TypeDirectiveConstraint a => TH.Name -> a -> DirectiveUsages
+enumDirective name x = DirectiveUsages mempty mempty (M.singleton ((packName name)) [DirectiveUsage x])
 
 data DirectiveUsage where
   DirectiveUsage :: (GQLDirective a, GQLType a, Decode a, DeriveArguments (KIND a) a, ToLocations (DIRECTIVE_LOCATIONS a)) => a -> DirectiveUsage

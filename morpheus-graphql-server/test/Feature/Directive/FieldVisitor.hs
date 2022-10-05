@@ -3,6 +3,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Feature.Directive.FieldVisitor
@@ -33,8 +34,8 @@ data Deity = Deity
 
 instance GQLType Deity where
   directives _ =
-    fieldDirective "name" Describe {text = "name of the deity"}
-      <> fieldDirective "power" Describe {text = "extraterrestrial ability"}
+    fieldDirective 'name Describe {text = "name of the deity"}
+      <> fieldDirective 'power Describe {text = "extraterrestrial ability"}
 
 newtype Query (m :: Type -> Type) = Query {deity :: Deity}
   deriving (Generic, GQLType)
