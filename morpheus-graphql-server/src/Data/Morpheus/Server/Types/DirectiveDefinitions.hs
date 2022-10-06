@@ -86,12 +86,14 @@ instance GQLDirective Describe where
     DIRECTIVE_LOCATIONS Describe =
       '[ 'ENUM_VALUE,
          'FIELD_DEFINITION,
+         'INPUT_FIELD_DEFINITION,
          'OBJECT,
          'ENUM,
          'INPUT_OBJECT,
          'UNION,
          'SCALAR,
-         'INTERFACE
+         'INTERFACE,
+         'ARGUMENT_DEFINITION
        ]
 
 instance VisitEnum Describe where
@@ -117,7 +119,8 @@ instance GQLDirective Rename where
          'SCALAR,
          'INTERFACE,
          'ENUM_VALUE,
-         'FIELD_DEFINITION
+         'FIELD_DEFINITION,
+         'INPUT_FIELD_DEFINITION
        ]
 
 instance VisitType Rename where

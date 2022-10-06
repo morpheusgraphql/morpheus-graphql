@@ -31,7 +31,8 @@ import Data.Morpheus.Internal.Utils
     prop,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( Directives,
+  ( DirectiveDefinition,
+    Directives,
     DirectivesDefinition,
     FieldDefinition,
     FieldsDefinition,
@@ -74,7 +75,7 @@ instance Stitching (TypeDefinitions s) where
   stitch x y = runResolutionT (mergeT x y) unsafeFromList (resolveWith stitch)
 
 instance Stitching (DirectivesDefinition s) where
-  stitch = merge
+  stitch x y = runResolutionT (mergeT x y) unsafeFromList (resolveWith stitch)
 
 instance Stitching (Directives s) where
   stitch = merge
@@ -95,6 +96,11 @@ stitchOperation x y =
     <*> prop fstM typeName x y
     <*> prop stitch typeDirectives x y
     <*> prop stitch typeContent x y
+
+instance Stitching (DirectiveDefinition s) where
+  stitch x y
+    | x == y = pure x
+    | otherwise = throwError "only directives with same structure can be merged"
 
 instance Stitching (TypeDefinition cat s) where
   stitch x y =

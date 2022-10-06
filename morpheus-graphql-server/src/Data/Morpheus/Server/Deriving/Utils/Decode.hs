@@ -134,7 +134,8 @@ data Context = Context
   { isVariantRef :: Bool,
     typeName :: TypeName,
     options :: GQLTypeOptions,
-    enumVisitor :: TypeName -> TypeName
+    enumVisitor :: TypeName -> TypeName,
+    fieldVisitor :: FieldName -> FieldName
   }
 
 type DecoderT = ReaderT Context ResolverState

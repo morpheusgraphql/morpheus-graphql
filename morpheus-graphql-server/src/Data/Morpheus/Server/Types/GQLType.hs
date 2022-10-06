@@ -24,8 +24,7 @@ module Data.Morpheus.Server.Types.GQLType
         getDirectives,
         defaultValues,
         directives,
-        __type,
-        __isEmptyType
+        __type
       ),
     __typeData,
     deriveTypename,
@@ -45,6 +44,7 @@ module Data.Morpheus.Server.Types.GQLType
     applyEnumDescription,
     applyFieldName,
     applyFieldDescription,
+    __isEmptyType,
   )
 where
 
@@ -88,16 +88,13 @@ import Data.Morpheus.Server.Types.Kind
     WRAPPER,
   )
 import Data.Morpheus.Server.Types.SchemaT (SchemaT)
-import Data.Morpheus.Server.Types.TypeName
-  ( TypeFingerprint,
-    getFingerprint,
-    getTypename,
-  )
+import Data.Morpheus.Server.Types.TypeName (TypeFingerprint (..), getFingerprint, getTypename)
 import Data.Morpheus.Server.Types.Types
   ( Arg,
     Pair,
     TypeGuard,
     Undefined (..),
+    __typenameUndefined,
   )
 import Data.Morpheus.Types.GQLScalar (EncodeScalar (..))
 import Data.Morpheus.Types.GQLWrapper (EncodeWrapperValue (..))
@@ -134,6 +131,9 @@ import Data.Vector (Vector)
 import GHC.Generics
 import qualified Language.Haskell.TH.Syntax as TH
 import Relude hiding (Seq, Undefined, fromList, intercalate)
+
+__isEmptyType :: forall f a. GQLType a => f a -> Bool
+__isEmptyType _ = deriveFingerprint (KindedProxy :: KindedProxy OUT a) == InternalFingerprint __typenameUndefined
 
 __typeData ::
   forall kinded (kind :: TypeCategory) (a :: Type).
@@ -212,9 +212,6 @@ class GQLType a where
   defaultValues :: f a -> Map Text (Value CONST)
   defaultValues _ = mempty
 
-  __isEmptyType :: f a -> Bool
-  __isEmptyType _ = False
-
   __type :: f a -> TypeCategory -> TypeData
   default __type :: Typeable a => f a -> TypeCategory -> TypeData
   __type proxy category = editTypeData derivedType (directives proxy)
@@ -250,6 +247,10 @@ instance GQLType ID where
 instance GQLType () where
   __type _ = mkTypeData unitTypeName
 
+instance Typeable m => GQLType (Undefined m) where
+  type KIND (Undefined m) = CUSTOM
+  __type _ = mkTypeData __typenameUndefined
+
 instance GQLType a => GQLType (Maybe a) where
   type KIND (Maybe a) = WRAPPER
   __type _ = wrapper toNullable . __type (Proxy @a)
@@ -282,10 +283,6 @@ instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (Pair a b) wh
   typeOptions _ = prefixInputs
 
 -- Manual
-
-instance Typeable m => GQLType (Undefined m) where
-  type KIND (Undefined m) = CUSTOM
-  __isEmptyType _ = True
 
 instance GQLType b => GQLType (a -> b) where
   type KIND (a -> b) = CUSTOM

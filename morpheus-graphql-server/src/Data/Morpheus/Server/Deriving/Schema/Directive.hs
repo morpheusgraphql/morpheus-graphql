@@ -8,6 +8,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -23,6 +24,7 @@ module Data.Morpheus.Server.Deriving.Schema.Directive
     visitTypeDescription,
     visitEnumName,
     visitFieldName,
+    toFieldRes,
   )
 where
 
@@ -33,6 +35,7 @@ import Data.Morpheus.Internal.Utils (Empty (..))
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( KindedProxy (..),
   )
+import Data.Morpheus.Server.Deriving.Utils.Types (FieldRep (..))
 import Data.Morpheus.Server.Types.Directives
   ( GQLDirective (..),
     ToLocations,
@@ -160,3 +163,6 @@ visitFieldName proxy name = foldr applyFieldName name (getFieldDirectiveUsages n
 
 visitTypeDescription :: GQLType a => f a -> Maybe Description -> Maybe Description
 visitTypeDescription proxy desc = foldr applyTypeDescription desc (typeDirectives $ directives proxy)
+
+toFieldRes :: GQLType a => f a -> FieldRep (m v) -> (FieldName, m v)
+toFieldRes proxy FieldRep {..} = (visitFieldName proxy fieldSelector, fieldValue)

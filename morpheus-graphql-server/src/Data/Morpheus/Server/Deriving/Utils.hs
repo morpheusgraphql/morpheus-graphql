@@ -11,7 +11,6 @@ module Data.Morpheus.Server.Deriving.Utils
     fieldTypeName,
     unpackMonad,
     symbolName,
-    toFieldRes,
     DataType (..),
     DeriveWith (..),
     DeriveTypeOptions (..),
@@ -20,5 +19,22 @@ module Data.Morpheus.Server.Deriving.Utils
 where
 
 import Data.Morpheus.Server.Deriving.Utils.DeriveGType
+  ( DeriveTypeOptions (..),
+    DeriveWith (..),
+    deriveTypeWith,
+  )
 import Data.Morpheus.Server.Deriving.Utils.Proxy
+  ( conNameProxy,
+    isRecordProxy,
+    selNameProxy,
+    symbolName,
+  )
 import Data.Morpheus.Server.Deriving.Utils.Types
+  ( ConsRep (..),
+    DataType (..),
+    FieldRep (..),
+    fieldTypeName,
+    isEmptyConstraint,
+    isUnionRef,
+    unpackMonad,
+  )
