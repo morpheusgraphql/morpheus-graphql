@@ -33,7 +33,9 @@ import Data.ByteString.Lazy.Char8
 import Data.Morpheus.Ext.Result
   ( GQLResult,
   )
-import Data.Morpheus.Internal.Utils ((<:>))
+import Data.Morpheus.Internal.Utils
+  ( (<:>),
+  )
 import Data.Morpheus.Parser
   ( parseDefinitions,
     parseRequest,
@@ -41,8 +43,13 @@ import Data.Morpheus.Parser
     parseSchema,
     parseTypeDefinitions,
   )
-import Data.Morpheus.Rendering.RenderGQL (RenderGQL (..), render)
-import Data.Morpheus.Schema.Schema (internalSchema)
+import Data.Morpheus.Rendering.RenderGQL
+  ( RenderGQL (..),
+    render,
+  )
+import Data.Morpheus.Schema.Schema
+  ( internalSchema,
+  )
 import Data.Morpheus.Types.Internal.AST
   ( Schema,
     VALID,
@@ -53,8 +60,12 @@ import Data.Morpheus.Types.Internal.Config
     debugConfig,
     defaultConfig,
   )
-import Data.Morpheus.Types.SelectionTree (SelectionTree (..))
-import Data.Morpheus.Validation.Document.Validation (ValidateSchema (..))
+import Data.Morpheus.Types.SelectionTree
+  ( SelectionTree (..),
+  )
+import Data.Morpheus.Validation.Document.Validation
+  ( ValidateSchema (..),
+  )
 import Data.Morpheus.Validation.Query.Validation
   ( validateRequest,
   )

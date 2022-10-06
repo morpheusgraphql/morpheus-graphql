@@ -2,13 +2,10 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
-{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.CodeGen.Interpreting.Transform
@@ -61,7 +58,6 @@ import Data.Morpheus.Types.Internal.AST
     OperationType (Subscription),
     RawTypeDefinition (..),
     TRUE,
-    Token,
     TypeContent (..),
     TypeDefinition (..),
     TypeKind (..),
@@ -161,8 +157,6 @@ toTHDefinitions namespace defs = concat <$> traverse generateTypes defs
                     directiveGQLType =
                       GQLTypeDefinition
                         { gqlKind = Type,
-                          gqlTypeDescription = Nothing,
-                          gqlTypeDescriptions = mempty,
                           gqlTypeDefaultValues = mempty,
                           gqlTypeDirectiveUses = []
                         }
@@ -193,11 +187,8 @@ genTypeDefinition ::
   TypeDefinition ANY CONST ->
   ServerQ m [ServerTypeDefinition]
 genTypeDefinition
-  typeDef@TypeDefinition
-    { typeName = originalTypeName,
-      typeContent,
-      typeDescription
-    } = genTypeContent originalTypeName typeContent >>= withType
+  typeDef@TypeDefinition {typeName = originalTypeName, typeContent} =
+    genTypeContent originalTypeName typeContent >>= withType
     where
       typeName = case typeContent of
         DataInterface {} -> mkInterfaceName originalTypeName
@@ -205,14 +196,11 @@ genTypeDefinition
       tKind = kindOf typeDef
       tName = toHaskellTypeName typeName
       deriveGQL = do
-        gqlTypeDescriptions <- getDesc typeDef
         gqlTypeDirectiveUses <- getDirs typeDef
         pure $
           Just
             GQLTypeDefinition
-              { gqlTypeDescription = typeDescription,
-                gqlTypeDescriptions,
-                gqlTypeDirectiveUses,
+              { gqlTypeDirectiveUses,
                 gqlKind = derivingKind tKind,
                 gqlTypeDefaultValues =
                   fromList $
@@ -401,10 +389,10 @@ mkUnionFieldDefinition typeName memberName =
   where
     constructorName = camelCaseTypeName [typeName] memberName
 
-genArgumentTypes :: Monad m => FieldsDefinition OUT CONST -> ServerQ m [ServerTypeDefinition]
+genArgumentTypes :: MonadFail m => FieldsDefinition OUT CONST -> ServerQ m [ServerTypeDefinition]
 genArgumentTypes = fmap concat . traverse genArgumentType . toList
 
-genArgumentType :: Monad m => FieldDefinition OUT CONST -> ServerQ m [ServerTypeDefinition]
+genArgumentType :: MonadFail m => FieldDefinition OUT CONST -> ServerQ m [ServerTypeDefinition]
 genArgumentType
   FieldDefinition
     { fieldName,
@@ -416,6 +404,7 @@ genArgumentType
           let argumentFields = argument <$> toList arguments
           fields <- traverse renderDataField argumentFields
           let tKind = KindInputObject
+          gqlTypeDirectiveUses <- concat <$> traverse getDirs argumentFields
           pure
             [ ServerTypeDefinition
                 { tName = toHaskellTypeName tName,
@@ -427,88 +416,58 @@ genArgumentType
                     Just
                       ( GQLTypeDefinition
                           { gqlKind = Type,
-                            gqlTypeDescription = Nothing,
-                            gqlTypeDescriptions = fromList (mapMaybe mkFieldDescription argumentFields),
                             gqlTypeDefaultValues = fromList (mapMaybe getDefaultValue argumentFields),
-                            gqlTypeDirectiveUses = []
+                            gqlTypeDirectiveUses
                           }
                       )
                 }
             ]
 genArgumentType _ = pure []
 
-mkFieldDescription :: FieldDefinition cat s -> Maybe (Text, Description)
-mkFieldDescription FieldDefinition {..} = (unpackName fieldName,) <$> fieldDescription
+-- mkFieldDescription :: FieldDefinition cat s -> Maybe (Text, Description)
+-- mkFieldDescription FieldDefinition {..} = (unpackName fieldName,) <$> fieldDescription
 
 ---
 
-getDesc :: MonadFail m => TypeDefinition c CONST -> ServerQ m (Map Token Description)
-getDesc = fmap fromList . get
+class Meta a where
+  getDirs :: MonadFail m => a -> ServerQ m [ServerDirectiveUsage]
 
-getDirs :: MonadFail m => TypeDefinition c CONST -> ServerQ m [ServerDirectiveUsage]
-getDirs x = do
-  contentD <- map snd <$> get x
-  typeD <- traverse transform (toList $ AST.typeDirectives x)
-  pure (contentD <> typeD)
+instance (Meta a) => Meta (Maybe a) where
+  getDirs (Just x) = getDirs x
+  getDirs _ = pure []
+
+descDirective :: Maybe Description -> [TypeValue]
+descDirective desc = map describe (maybeToList desc)
   where
-    transform v = TypeDirectiveUsage <$> directiveTypeValue v
+    describe x = TypeValueObject "Describe" [("text", TypeValueString x)]
 
-class Meta a v where
-  get :: MonadFail m => a -> ServerQ m [(Token, v)]
-
-instance (Meta a v) => Meta (Maybe a) v where
-  get (Just x) = get x
-  get _ = pure []
-
-instance
-  ( Meta (FieldsDefinition IN s) v,
-    Meta (FieldsDefinition OUT s) v,
-    Meta (DataEnumValue s) v
-  ) =>
-  Meta (TypeDefinition c s) v
-  where
-  get TypeDefinition {typeContent} = get typeContent
-
-instance
-  ( Meta (FieldsDefinition IN s) v,
-    Meta (FieldsDefinition OUT s) v,
-    Meta (DataEnumValue s) v
-  ) =>
-  Meta (TypeContent a c s) v
-  where
-  get DataObject {objectFields} = get objectFields
-  get DataInputObject {inputObjectFields} = get inputObjectFields
-  get DataInterface {interfaceFields} = get interfaceFields
-  get DataEnum {enumMembers} = concat <$> traverse get enumMembers
-  get _ = pure []
-
-instance Meta (DataEnumValue CONST) Description where
-  get DataEnumValue {enumName, enumDescription = Just x} = pure [(unpackName enumName, x)]
-  get _ = pure []
-
-instance Meta (DataEnumValue CONST) ServerDirectiveUsage where
-  get DataEnumValue {enumName, enumDirectives}
-    | null enumDirectives = pure []
-    | otherwise = traverse transform (toList enumDirectives)
+instance Meta (TypeDefinition c CONST) where
+  getDirs TypeDefinition {typeContent, typeDirectives, typeDescription} = do
+    contentD <- getDirs typeContent
+    typeD <- traverse transform (toList typeDirectives)
+    pure (contentD <> typeD <> map TypeDirectiveUsage (descDirective typeDescription))
     where
-      transform x = (unpackName enumName,) . EnumDirectiveUsage enumName <$> directiveTypeValue x
+      transform v = TypeDirectiveUsage <$> directiveTypeValue v
 
-instance
-  Meta (FieldDefinition c CONST) v =>
-  Meta (FieldsDefinition c CONST) v
-  where
-  get = fmap concat . traverse get . toList
+instance Meta (TypeContent a c CONST) where
+  getDirs DataObject {objectFields} = getDirs objectFields
+  getDirs DataInputObject {inputObjectFields} = getDirs inputObjectFields
+  getDirs DataInterface {interfaceFields} = getDirs interfaceFields
+  getDirs DataEnum {enumMembers} = concat <$> traverse getDirs enumMembers
+  getDirs _ = pure []
 
-instance Meta (FieldDefinition c CONST) Description where
-  get FieldDefinition {fieldName, fieldDescription = Just x} = pure [(unpackName fieldName, x)]
-  get _ = pure []
+instance Meta (DataEnumValue CONST) where
+  getDirs DataEnumValue {enumName, enumDirectives, enumDescription} = do
+    dirs <- traverse directiveTypeValue (toList enumDirectives)
+    pure $ map (EnumDirectiveUsage enumName) (dirs <> descDirective enumDescription)
 
-instance Meta (FieldDefinition c CONST) ServerDirectiveUsage where
-  get FieldDefinition {fieldName, fieldDirectives}
-    | null fieldDirectives = pure []
-    | otherwise = traverse transform (toList fieldDirectives)
-    where
-      transform x = (unpackName fieldName,) . FieldDirectiveUsage fieldName <$> directiveTypeValue x
+instance Meta (FieldsDefinition c CONST) where
+  getDirs = fmap concat . traverse getDirs . toList
+
+instance Meta (FieldDefinition c CONST) where
+  getDirs FieldDefinition {fieldName, fieldDirectives, fieldDescription} = do
+    dirs <- traverse directiveTypeValue (toList fieldDirectives)
+    pure $ map (FieldDirectiveUsage fieldName) (dirs <> descDirective fieldDescription)
 
 getInputFields :: TypeDefinition c s -> [FieldDefinition IN s]
 getInputFields TypeDefinition {typeContent = DataInputObject {inputObjectFields}} = toList inputObjectFields

@@ -53,8 +53,6 @@ renderMethods
   typeHead
   (Just GQLTypeDefinition {..}) =
     ["type KIND" <+> typeHead <+> "=" <+> renderKind gqlKind]
-      <> ["description _ =" <+> pretty (show gqlTypeDescription) | not (null gqlTypeDescription)]
-      <> ["getDescriptions _ =" <+> pretty (show gqlTypeDescriptions) | not (null gqlTypeDescriptions)]
       <> ["directives _=" <+> renderDirectiveUsages gqlTypeDirectiveUses | not (null gqlTypeDirectiveUses)]
 
 renderDirectiveUsages :: [ServerDirectiveUsage] -> Doc n
