@@ -3,12 +3,10 @@
     "city": {
       "fields": [
         {
-          "description": "name of the deity",
-          "name": "name"
+          "description": "name of the deity"
         },
         {
-          "description": "extraterrestrial ability",
-          "name": "power"
+          "description": "extraterrestrial ability"
         }
       ],
       "kind": "OBJECT",

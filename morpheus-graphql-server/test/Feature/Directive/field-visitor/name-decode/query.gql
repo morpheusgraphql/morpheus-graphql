@@ -1,0 +1,3 @@
+query Get__Type {
+  printDeity(deity: { name: "Zeus", power: "Shapeshifting" })
+}
