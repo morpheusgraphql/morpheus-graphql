@@ -41,6 +41,7 @@ import Data.Morpheus.Types
   ( Arg (Arg),
     DecodeScalar (..),
     Deprecated (..),
+    Describe (..),
     EncodeScalar (..),
     GQLType (..),
     ID,

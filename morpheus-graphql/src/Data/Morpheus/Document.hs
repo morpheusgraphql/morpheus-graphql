@@ -14,6 +14,7 @@ import Data.ByteString.Lazy.Char8
   ( ByteString,
     readFile,
   )
+import Data.FileEmbed (makeRelativeToProject)
 import Data.Morpheus.CodeGen.Internal.AST
   ( CodeGenConfig (..),
   )
@@ -31,8 +32,6 @@ import Language.Haskell.TH.Syntax
   ( qAddDependentFile,
   )
 import Relude hiding (ByteString, readFile)
-import Data.FileEmbed (makeRelativeToProject)
-
 
 importDeclarations :: CodeGenConfig -> FilePath -> Q [Dec]
 importDeclarations ctx rawSrc = do
@@ -42,7 +41,7 @@ importDeclarations ctx rawSrc = do
     >>= compileDocument ctx
 
 importGQLDocument :: FilePath -> Q [Dec]
-importGQLDocument =importDeclarations CodeGenConfig {namespace = False}
+importGQLDocument = importDeclarations CodeGenConfig {namespace = False}
 
 importGQLDocumentWithNamespace :: FilePath -> Q [Dec]
 importGQLDocumentWithNamespace = importDeclarations CodeGenConfig {namespace = True}
