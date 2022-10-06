@@ -1,0 +1,16 @@
+{
+  "data": {
+    "city": {
+      "fields": [
+        {
+          "name": "name"
+        },
+        {
+          "name": "power"
+        }
+      ],
+      "kind": "OBJECT",
+      "name": "Deity"
+    }
+  }
+}

@@ -6,6 +6,33 @@
           "args": [
             {
               "defaultValue": null,
+              "name": "text",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": { "kind": "SCALAR", "name": "String", "ofType": null }
+              }
+            }
+          ],
+          "description": null,
+          "locations": [
+            "ENUM_VALUE",
+            "FIELD_DEFINITION",
+            "INPUT_FIELD_DEFINITION",
+            "OBJECT",
+            "ENUM",
+            "INPUT_OBJECT",
+            "UNION",
+            "SCALAR",
+            "INTERFACE",
+            "ARGUMENT_DEFINITION"
+          ],
+          "name": "Describe"
+        },
+        {
+          "args": [
+            {
+              "defaultValue": null,
               "name": "reason",
               "type": { "kind": "SCALAR", "name": "String", "ofType": null }
             }
