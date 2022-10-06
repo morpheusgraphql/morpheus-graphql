@@ -3,7 +3,7 @@ query Get__Type {
     kind
     name
     fields {
-      description
+      name
     }
   }
 }

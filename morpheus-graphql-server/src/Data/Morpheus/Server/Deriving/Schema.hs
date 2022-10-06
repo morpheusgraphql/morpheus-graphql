@@ -58,6 +58,7 @@ import Data.Morpheus.Server.Types.GQLType
   ( DeriveArguments (..),
     GQLType (..),
     deriveTypename,
+    __isEmptyType,
     __typeData,
   )
 import Data.Morpheus.Server.Types.Internal (TypeData (..), defaultTypeOptions)
@@ -267,8 +268,7 @@ deriveRoot = asObjectType (deriveFields . outputType)
 
 deriveMaybeRoot :: DeriveTypeConstraint OUT a => f a -> SchemaT OUT (Maybe (TypeDefinition OBJECT CONST))
 deriveMaybeRoot proxy
-  | __isEmptyType proxy =
-      pure Nothing
+  | __isEmptyType proxy = pure Nothing
   | otherwise = Just <$> asObjectType (deriveFields . outputType) proxy
 
 deriveFieldContent :: forall f kind a. (DeriveType kind a) => f a -> TyContentM kind

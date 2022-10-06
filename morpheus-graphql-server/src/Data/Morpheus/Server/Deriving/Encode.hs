@@ -45,13 +45,12 @@ import Data.Morpheus.Server.Deriving.Decode
   ( Decode,
     decodeArguments,
   )
-import Data.Morpheus.Server.Deriving.Schema.Directive (visitEnumName)
+import Data.Morpheus.Server.Deriving.Schema.Directive (toFieldRes, visitEnumName)
 import Data.Morpheus.Server.Deriving.Utils
   ( ConsRep (..),
     DataType (..),
     FieldRep (..),
     isUnionRef,
-    toFieldRes,
   )
 import Data.Morpheus.Server.Deriving.Utils.DeriveGType
   ( DeriveValueOptions (..),
@@ -188,12 +187,12 @@ convertNode
         ResolverValue m
       encodeTypeFields [] = mkEnum (visitEnumName proxy consName)
       encodeTypeFields fields
-        | not tyIsUnion = mkObject dataTypeName (toFieldRes <$> fields)
+        | not tyIsUnion = mkObject dataTypeName (toFieldRes proxy <$> fields)
       -- Type References --------------------------------------------------------------
       encodeTypeFields [FieldRep {fieldTypeRef, fieldValue}]
         | isUnionRef dataTypeName cons = ResLazy (ResObject (Just (typeConName fieldTypeRef)) <$> (fieldValue >>= requireObject))
       -- Inline Union Types ----------------------------------------------------------------------------
-      encodeTypeFields fields = mkUnion consName (toFieldRes <$> fields)
+      encodeTypeFields fields = mkUnion consName (toFieldRes proxy <$> fields)
 
 -- Types & Constrains -------------------------------------------------------
 class (Encode m a, GQLType a) => ExplorerConstraint m a

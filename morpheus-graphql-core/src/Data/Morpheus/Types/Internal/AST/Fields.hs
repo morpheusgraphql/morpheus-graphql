@@ -181,7 +181,7 @@ data DirectiveDefinition s = DirectiveDefinition
     directiveDefinitionArgs :: ArgumentsDefinition s,
     directiveDefinitionLocations :: [DirectiveLocation]
   }
-  deriving (Show, Lift)
+  deriving (Show, Eq, Lift)
 
 instance NameCollision GQLError (DirectiveDefinition s) where
   nameCollision DirectiveDefinition {directiveDefinitionName} =

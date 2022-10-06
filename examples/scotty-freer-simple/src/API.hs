@@ -20,6 +20,7 @@ import Data.Morpheus.Document (importGQLDocument)
 import Data.Morpheus.Types
   ( Arg (Arg),
     Deprecated (..),
+    Describe (..),
     RootResolver (..),
     Undefined,
     defaultRootResolver,

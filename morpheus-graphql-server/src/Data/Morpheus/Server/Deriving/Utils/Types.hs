@@ -14,7 +14,6 @@ module Data.Morpheus.Server.Deriving.Utils.Types
     isEmptyConstraint,
     fieldTypeName,
     isUnionRef,
-    toFieldRes,
     unpackMonad,
   )
 where
@@ -60,9 +59,6 @@ isUnionRef :: TypeName -> ConsRep k -> Bool
 isUnionRef baseName ConsRep {consName, consFields = [fieldRep]} =
   consName == baseName <> fieldTypeName fieldRep
 isUnionRef _ _ = False
-
-toFieldRes :: FieldRep (m a) -> (FieldName, m a)
-toFieldRes FieldRep {fieldSelector, fieldValue} = (fieldSelector, fieldValue)
 
 unpackMonad :: Monad m => [ConsRep (m a)] -> m [ConsRep a]
 unpackMonad = traverse unpackMonadFromCons

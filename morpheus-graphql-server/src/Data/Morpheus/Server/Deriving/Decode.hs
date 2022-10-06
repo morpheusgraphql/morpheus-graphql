@@ -25,7 +25,7 @@ import qualified Data.Map as M
 import Data.Morpheus.App.Internal.Resolving
   ( ResolverState,
   )
-import Data.Morpheus.Server.Deriving.Schema.Directive (visitEnumName)
+import Data.Morpheus.Server.Deriving.Schema.Directive (visitEnumName, visitFieldName)
 import Data.Morpheus.Server.Deriving.Utils
   ( selNameProxy,
     symbolName,
@@ -125,7 +125,8 @@ instance
           { options = typeOptions proxy defaultTypeOptions,
             isVariantRef = False,
             typeName = deriveTypename (KindedProxy :: KindedProxy IN a),
-            enumVisitor = visitEnumName proxy
+            enumVisitor = visitEnumName proxy,
+            fieldVisitor = visitFieldName proxy
           }
         where
           proxy = Proxy @a
@@ -205,11 +206,11 @@ instance (DecodeFields f, DecodeFields g, DescribeFields g) => DecodeFields (f :
 instance (Selector s, GQLType a, Decode a) => DecodeFields (M1 S s (K1 i a)) where
   decodeFields index value =
     M1 . K1 <$> do
-      Context {options, isVariantRef} <- ask
+      Context {options, isVariantRef, fieldVisitor} <- ask
       if isVariantRef
         then lift (decode value)
         else
-          let fieldName = getFieldName (selNameProxy options (Proxy @s)) index
+          let fieldName = fieldVisitor $ getFieldName (selNameProxy options (Proxy @s)) index
               fieldDecoder = decodeFieldWith (lift . decode) fieldName
            in withInputObject fieldDecoder value
 

@@ -116,9 +116,7 @@ defineMethods
   typeParameters
   ( Just
       GQLTypeDefinition
-        { gqlTypeDescription,
-          gqlTypeDescriptions,
-          gqlTypeDefaultValues,
+        { gqlTypeDefaultValues,
           gqlTypeDirectiveUses,
           gqlKind
         }
@@ -128,9 +126,7 @@ defineMethods
     where
       functions =
         funDProxy
-          [ ('description, [|gqlTypeDescription|]),
-            ('getDescriptions, [|gqlTypeDescriptions|]),
-            ('defaultValues, [|gqlTypeDefaultValues|]),
+          [ ('defaultValues, [|gqlTypeDefaultValues|]),
             ('directives, renderDirectiveUsages gqlTypeDirectiveUses)
           ]
 

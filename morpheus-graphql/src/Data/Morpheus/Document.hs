@@ -14,6 +14,7 @@ import Data.ByteString.Lazy.Char8
   ( ByteString,
     readFile,
   )
+import Data.FileEmbed (makeRelativeToProject)
 import Data.Morpheus.CodeGen.Internal.AST
   ( CodeGenConfig (..),
   )
@@ -33,18 +34,17 @@ import Language.Haskell.TH.Syntax
 import Relude hiding (ByteString, readFile)
 
 importDeclarations :: CodeGenConfig -> FilePath -> Q [Dec]
-importDeclarations ctx src = do
+importDeclarations ctx rawSrc = do
+  src <- makeRelativeToProject rawSrc
   qAddDependentFile src
   runIO (readFile src)
     >>= compileDocument ctx
 
 importGQLDocument :: FilePath -> Q [Dec]
-importGQLDocument =
-  importDeclarations CodeGenConfig {namespace = False}
+importGQLDocument = importDeclarations CodeGenConfig {namespace = False}
 
 importGQLDocumentWithNamespace :: FilePath -> Q [Dec]
-importGQLDocumentWithNamespace =
-  importDeclarations CodeGenConfig {namespace = True}
+importGQLDocumentWithNamespace = importDeclarations CodeGenConfig {namespace = True}
 
 {-# DEPRECATED toGraphQLDocument "use Data.Morpheus.Server.printSchema" #-}
 toGraphQLDocument ::

@@ -14,30 +14,40 @@ where
 import Data.Kind (Type)
 import Data.Morpheus.Server (interpreter)
 import Data.Morpheus.Server.Types
-  ( Describe (..),
+  ( Arg (..),
+    Describe (..),
     GQLRequest,
     GQLResponse,
     GQLType (..),
+    GQLTypeOptions (..),
+    Rename (..),
     RootResolver (..),
     Undefined,
     defaultRootResolver,
     fieldDirective',
   )
-import Data.Text (Text)
+import Data.Text (Text, pack)
 import GHC.Generics (Generic)
 
 data Deity = Deity
-  { name :: Text,
-    power :: Maybe Text
+  { __name :: Text,
+    __power :: Maybe Text
   }
-  deriving (Generic)
+  deriving (Generic, Show)
 
 instance GQLType Deity where
-  directives _ =
-    fieldDirective' 'name Describe {text = "name of the deity"}
-      <> fieldDirective' 'power Describe {text = "extraterrestrial ability"}
+  typeOptions _ options = options {typeNameModifier = \isInput n -> if isInput then "Input" <> n else n}
 
-newtype Query (m :: Type -> Type) = Query {deity :: Deity}
+  directives _ =
+    fieldDirective' '__name Describe {text = "name of the deity"}
+      <> fieldDirective' '__power Describe {text = "extraterrestrial ability"}
+      <> fieldDirective' '__name Rename {name = "name"}
+      <> fieldDirective' '__power Rename {name = "power"}
+
+data Query (m :: Type -> Type) = Query
+  { deity :: Deity,
+    printDeity :: Arg "deity" Deity -> m Text
+  }
   deriving (Generic, GQLType)
 
 root :: RootResolver IO () Query Undefined Undefined
@@ -47,9 +57,10 @@ root =
         Query
           { deity =
               Deity
-                { name = "morpheus",
-                  power = Nothing
-                }
+                { __name = "Morpheus",
+                  __power = Just "Shapeshifting"
+                },
+            printDeity = pure . pack . show . argValue
           }
     }
 

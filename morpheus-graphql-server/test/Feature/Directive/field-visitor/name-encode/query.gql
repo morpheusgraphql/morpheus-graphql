@@ -1,0 +1,6 @@
+query Get__Type {
+  deity {
+    name
+    power
+  }
+}
