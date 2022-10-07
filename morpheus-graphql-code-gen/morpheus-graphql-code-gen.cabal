@@ -49,6 +49,7 @@ library
       base >=4.7.0 && <5.0.0
     , bytestring >=0.10.4 && <0.12.0
     , containers >=0.4.2.1 && <0.7.0
+    , file-embed >=0.0.10 && <1.0.0
     , morpheus-graphql-code-gen-utils >=0.21.0 && <0.22.0
     , morpheus-graphql-core >=0.21.0 && <0.22.0
     , morpheus-graphql-server >=0.21.0 && <0.22.0
@@ -70,6 +71,7 @@ executable morpheus
       base >=4.7.0 && <5.0.0
     , bytestring >=0.10.4 && <0.12.0
     , containers >=0.4.2.1 && <0.7.0
+    , file-embed >=0.0.10 && <1.0.0
     , filepath >=1.1.0 && <1.5.0
     , morpheus-graphql-code-gen
     , morpheus-graphql-code-gen-utils >=0.21.0 && <0.22.0

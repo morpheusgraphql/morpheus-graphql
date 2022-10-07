@@ -17,9 +17,6 @@ module Rendering.Schema
   )
 where
 
-import Data.FileEmbed
-  ( makeRelativeToProject,
-  )
 import Data.Morpheus.Document
   ( importGQLDocumentWithNamespace,
   )
@@ -37,8 +34,7 @@ data TestScalar = TestScalar deriving (Show)
 instance DecodeScalar TestScalar where
   decodeScalar = const (pure TestScalar)
 
-importGQLDocumentWithNamespace
-  =<< makeRelativeToProject "test/Rendering/schema.gql"
+importGQLDocumentWithNamespace "test/Rendering/schema.gql"
 
 instance VisitType TestDirective
 
