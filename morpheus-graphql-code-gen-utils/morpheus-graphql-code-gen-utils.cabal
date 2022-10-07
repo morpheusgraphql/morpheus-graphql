@@ -33,7 +33,6 @@ library
       Data.Morpheus.CodeGen.Printer
   other-modules:
       Data.Morpheus.CodeGen.Internal.Name
-      Data.Morpheus.CodeGen.Printing.Terms
       Paths_morpheus_graphql_code_gen_utils
   hs-source-dirs:
       src

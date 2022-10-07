@@ -7,16 +7,16 @@ module Data.Morpheus.CodeGen.Server.Printing.GQLType
   )
 where
 
+import Data.Morpheus.CodeGen.Printer
+  ( optional,
+    parametrizedType,
+  )
 import Data.Morpheus.CodeGen.Server.Internal.AST
   ( GQLTypeDefinition (..),
     Kind (..),
     ServerDirectiveUsage (..),
     ServerTypeDefinition (..),
     TypeKind,
-  )
-import Data.Morpheus.CodeGen.Utils
-  ( optional,
-    parametrizedType,
   )
 import Prettyprinter
 import Relude hiding (optional, show)

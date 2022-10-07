@@ -14,6 +14,8 @@ import Data.Morpheus.CodeGen.Printer
     Printer (..),
     apply,
     infix',
+    label,
+    parametrizedType,
     print',
     renderDeriving,
     unpack,
@@ -30,10 +32,6 @@ import Data.Morpheus.CodeGen.Server.Internal.AST
   )
 import Data.Morpheus.CodeGen.Server.Printing.GQLType
   ( renderGQLType,
-  )
-import Data.Morpheus.CodeGen.Utils
-  ( label,
-    parametrizedType,
   )
 import Prettyprinter
   ( Doc,

@@ -13,6 +13,10 @@ module Data.Morpheus.CodeGen.Printer
     unpack,
     wrapped,
     (.<>),
+    optional,
+    parametrizedType,
+    renderExtension,
+    renderImport,
   )
 where
 
@@ -29,12 +33,13 @@ import qualified Data.Text as T
 import Prettyprinter
   ( Doc,
     Pretty (..),
+    hsep,
     list,
     pretty,
     tupled,
     (<+>),
   )
-import Relude hiding (print, show)
+import Relude hiding (optional, print, show)
 
 renderDeriving :: [DerivingClass] -> Doc n
 renderDeriving = ("deriving" <+>) . tupled . map pretty
@@ -90,3 +95,20 @@ instance Printer Text where
 
 instance Printer String where
   print = pack . pretty
+
+optional :: ([a] -> Doc n) -> [a] -> Doc n
+optional _ [] = ""
+optional f xs = " " <> f xs
+
+parametrizedType :: Text -> [Text] -> Doc ann
+parametrizedType tName typeParameters = hsep $ map pretty $ tName : typeParameters
+
+renderExtension :: Text -> Doc ann
+renderExtension name = "{-#" <+> "LANGUAGE" <+> pretty name <+> "#-}"
+
+renderImport :: (Text, [Text]) -> Doc ann
+renderImport (src, ls) = "import" <+> pretty src <> renderImportList ls
+
+renderImportList :: [Text] -> Doc ann
+renderImportList ["*"] = ""
+renderImportList xs = tupled (map pretty xs)
