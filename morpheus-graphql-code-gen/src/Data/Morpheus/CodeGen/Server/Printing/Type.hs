@@ -14,9 +14,9 @@ import Data.Morpheus.CodeGen.Printer
     Printer (..),
     apply,
     infix',
-    printDoc,
+    print',
     renderDeriving,
-    unpackHSDoc,
+    unpack,
     wrapped,
     (.<>),
   )
@@ -99,10 +99,10 @@ instance RenderType ServerTypeDefinition where
 
 instance RenderType ServerConstructorDefinition where
   render ServerConstructorDefinition {constructorName, constructorFields = []} =
-    pure $ printDoc constructorName
+    pure $ print' constructorName
   render ServerConstructorDefinition {constructorName, constructorFields} = do
     fields <- traverse render constructorFields
-    pure $ printDoc constructorName <> renderSet fields
+    pure $ print' constructorName <> renderSet fields
     where
       renderSet = nest 2 . enclose "\n{ " "\n}" . nest 2 . vsep . punctuate comma
 
@@ -113,7 +113,7 @@ instance RenderType ServerFieldDefinition where
         wrappers,
         fieldType
       } =
-      pure $ unpackHSDoc $ infix' (print fieldName) "::" (foldr renderWrapper (print fieldType) wrappers)
+      pure $ unpack $ infix' (print fieldName) "::" (foldr renderWrapper (print fieldType) wrappers)
 
 renderWrapper :: FIELD_TYPE_WRAPPER -> HSDoc n -> HSDoc n
 renderWrapper PARAMETRIZED = (.<> "m")

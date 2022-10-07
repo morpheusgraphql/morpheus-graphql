@@ -8,9 +8,9 @@ module Data.Morpheus.CodeGen.Printer
     Printer (..),
     apply,
     infix',
-    printDoc,
+    print',
     renderDeriving,
-    unpackHSDoc,
+    unpack,
     wrapped,
     (.<>),
   )
@@ -40,29 +40,29 @@ renderDeriving :: [DerivingClass] -> Doc n
 renderDeriving = ("deriving" <+>) . tupled . map pretty
 
 infix' :: HSDoc n -> HSDoc n -> HSDoc n -> HSDoc n
-infix' a op b = liftDoc $ rawDocument a <+> rawDocument op <+> rawDocument b
+infix' a op b = pack $ rawDocument a <+> rawDocument op <+> rawDocument b
 
 (.<>) :: HSDoc n -> HSDoc n -> HSDoc n
-(.<>) a b = HSDoc True $ unpackHSDoc a <+> unpackHSDoc b
+(.<>) a b = HSDoc True $ unpack a <+> unpack b
 
 apply :: Name t -> [HSDoc n] -> HSDoc n
-apply name xs = HSDoc True (foldl' (\b a -> b <+> unpackHSDoc a) (printDoc name) xs)
+apply name xs = HSDoc True (foldl' (\b a -> b <+> unpack a) (print' name) xs)
 
 renderMaybe :: Bool -> HSDoc n -> HSDoc n
 renderMaybe True = id
 renderMaybe False = (.<>) "Maybe"
 
 renderList :: HSDoc n -> HSDoc n
-renderList = liftDoc . list . pure . rawDocument
+renderList = pack . list . pure . rawDocument
 
-liftDoc :: Doc n -> HSDoc n
-liftDoc = HSDoc False
+print' :: Printer a => a -> Doc n
+print' = unpack . print
 
-printDoc :: Printer a => a -> Doc n
-printDoc = unpackHSDoc . print
+pack :: Doc n -> HSDoc n
+pack = HSDoc False
 
-unpackHSDoc :: HSDoc n -> Doc n
-unpackHSDoc HSDoc {..} = if isComplex then tupled [rawDocument] else rawDocument
+unpack :: HSDoc n -> Doc n
+unpack HSDoc {..} = if isComplex then tupled [rawDocument] else rawDocument
 
 data HSDoc n = HSDoc
   { isComplex :: Bool,
@@ -73,7 +73,7 @@ class Printer a where
   print :: a -> HSDoc ann
 
 instance IsString (HSDoc n) where
-  fromString = liftDoc . pretty
+  fromString = pack . pretty
 
 instance Printer TypeRef where
   print TypeRef {..} = wrapped typeWrappers (print typeConName)
@@ -83,10 +83,10 @@ wrapped (TypeList wrapper notNull) = renderMaybe notNull . renderList . wrapped 
 wrapped (BaseType notNull) = renderMaybe notNull
 
 instance Printer (Name t) where
-  print = liftDoc . pretty . T.unpack . unpackName
+  print = pack . pretty . T.unpack . unpackName
 
 instance Printer Text where
-  print = liftDoc . pretty
+  print = pack . pretty
 
 instance Printer String where
-  print = liftDoc . pretty
+  print = pack . pretty
