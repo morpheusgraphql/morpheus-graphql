@@ -13,7 +13,6 @@ import Data.Morpheus.Types
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
----- GQL User -------------------------------
 data User m = User
   { id :: m ID,
     name :: m Text
@@ -26,7 +25,6 @@ instance (Typeable m) => GQLType (User m) where
     fieldDirective "id" Deprecated {reason = Just "XYZ"}
       <> fieldDirective "name" Deprecated {reason = Nothing}
 
----- GQL Query -------------------------------
 data Query m = Query
   { users :: m [User m],
     user :: Arg "id" ID -> m (Maybe (User m))

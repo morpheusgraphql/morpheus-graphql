@@ -13,7 +13,6 @@ import Data.Morpheus.Types
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
----- GQL Query -------------------------------
 data Query m = Query
   { deity :: DeityArgs -> m (Deity m),
     character :: CharacterArgs -> m (Character m)
@@ -24,7 +23,6 @@ instance (Typeable m) => GQLType (Query m) where
   type KIND (Query m) = TYPE
   directives _ = typeDirective Describe {text = "\nmy interface description\n"}
 
----- GQL DeityArgs -------------------------------
 data DeityArgs = DeityArgs
   { name :: Maybe [Maybe [Maybe [[Maybe [Text]]]]],
     id :: ID
@@ -34,7 +32,6 @@ data DeityArgs = DeityArgs
 instance GQLType DeityArgs where
   type KIND DeityArgs = TYPE
 
----- GQL CharacterArgs -------------------------------
 data CharacterArgs = CharacterArgs
   { characterID :: Text,
     age :: Maybe Int
@@ -44,7 +41,6 @@ data CharacterArgs = CharacterArgs
 instance GQLType CharacterArgs where
   type KIND CharacterArgs = TYPE
 
----- GQL Character -------------------------------
 data Character m
   = CharacterCreature
       { unCharacterCreature :: Creature m
@@ -57,7 +53,6 @@ data Character m
 instance (Typeable m) => GQLType (Character m) where
   type KIND (Character m) = TYPE
 
----- GQL Deity -------------------------------
 data Deity m = Deity
   { fullName :: m Text,
     power :: m (Maybe Power)
@@ -68,7 +63,6 @@ instance (Typeable m) => GQLType (Deity m) where
   type KIND (Deity m) = TYPE
   directives _ = fieldDirective "fullName" Describe {text = "\n  simple field description\n  "}
 
----- GQL Creature -------------------------------
 data Creature m = Creature
   { creatureName :: m Text,
     realm :: m City,
@@ -79,7 +73,6 @@ data Creature m = Creature
 instance (Typeable m) => GQLType (Creature m) where
   type KIND (Creature m) = TYPE
 
----- GQL City -------------------------------
 data City
   = Athens
   | Ithaca
@@ -90,5 +83,4 @@ data City
 instance GQLType City where
   type KIND City = TYPE
 
----- GQL Power -------------------------------
 type Power = Int

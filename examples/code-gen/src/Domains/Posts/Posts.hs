@@ -13,7 +13,6 @@ import Data.Morpheus.Types
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
----- GQL Post -------------------------------
 data Post m = Post
   { id :: m ID,
     title :: m Text,
@@ -27,7 +26,6 @@ instance (Typeable m) => GQLType (Post m) where
     fieldDirective "title" Deprecated {reason = Nothing}
       <> fieldDirective "authorID" Deprecated {reason = Nothing}
 
----- GQL Query -------------------------------
 data Query m = Query
   { posts :: m [Post m],
     post :: Arg "id" ID -> m (Maybe (Post m))

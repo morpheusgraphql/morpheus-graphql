@@ -13,7 +13,6 @@ import Data.Morpheus.Types
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
----- GQL Query -------------------------------
 data Query m = Query
   { deity :: DeityArgs -> m (Deity m),
     character :: CharacterArgs -> m (Character m),
@@ -24,7 +23,6 @@ data Query m = Query
 instance (Typeable m) => GQLType (Query m) where
   type KIND (Query m) = TYPE
 
----- GQL DeityArgs -------------------------------
 data DeityArgs = DeityArgs
   { name :: Maybe [Maybe [Maybe [[Maybe [Text]]]]],
     mythology :: Maybe Text
@@ -34,7 +32,6 @@ data DeityArgs = DeityArgs
 instance GQLType DeityArgs where
   type KIND DeityArgs = TYPE
 
----- GQL CharacterArgs -------------------------------
 data CharacterArgs = CharacterArgs
   { characterID :: Text,
     age :: Maybe Int
@@ -44,7 +41,6 @@ data CharacterArgs = CharacterArgs
 instance GQLType CharacterArgs where
   type KIND CharacterArgs = TYPE
 
----- GQL Mutation -------------------------------
 data Mutation m = Mutation
   { createDeity :: CreateDeityArgs -> m (Deity m),
     createCharacter :: CreateCharacterArgs -> m (Character m)
@@ -54,7 +50,6 @@ data Mutation m = Mutation
 instance (Typeable m) => GQLType (Mutation m) where
   type KIND (Mutation m) = TYPE
 
----- GQL CreateDeityArgs -------------------------------
 data CreateDeityArgs = CreateDeityArgs
   { deityName :: Maybe [Maybe [Maybe [[Maybe [Text]]]]],
     deityMythology :: Maybe Text
@@ -64,7 +59,6 @@ data CreateDeityArgs = CreateDeityArgs
 instance GQLType CreateDeityArgs where
   type KIND CreateDeityArgs = TYPE
 
----- GQL CreateCharacterArgs -------------------------------
 data CreateCharacterArgs = CreateCharacterArgs
   { charRealm :: Realm,
     charMutID :: Text
@@ -74,7 +68,6 @@ data CreateCharacterArgs = CreateCharacterArgs
 instance GQLType CreateCharacterArgs where
   type KIND CreateCharacterArgs = TYPE
 
----- GQL Character -------------------------------
 data Character m
   = CharacterCreature
       { unCharacterCreature :: Creature m
@@ -90,7 +83,6 @@ data Character m
 instance (Typeable m) => GQLType (Character m) where
   type KIND (Character m) = TYPE
 
----- GQL Deity -------------------------------
 data Deity m = Deity
   { fullName :: m Text,
     power :: m Power
@@ -101,7 +93,6 @@ instance (Typeable m) => GQLType (Deity m) where
   type KIND (Deity m) = TYPE
   directives _ = fieldDirective "fullName" Describe {text = "\n  simple field description\n  "}
 
----- GQL Creature -------------------------------
 data Creature m = Creature
   { creatureName :: m Text,
     realm :: m City
@@ -111,7 +102,6 @@ data Creature m = Creature
 instance (Typeable m) => GQLType (Creature m) where
   type KIND (Creature m) = TYPE
 
----- GQL Human -------------------------------
 data Human m = Human
   { humanName :: m Text,
     profession :: m (Maybe Text)
@@ -121,7 +111,6 @@ data Human m = Human
 instance (Typeable m) => GQLType (Human m) where
   type KIND (Human m) = TYPE
 
----- GQL Realm -------------------------------
 data Realm = Realm
   { owner :: Text,
     place :: Maybe Int
@@ -131,7 +120,6 @@ data Realm = Realm
 instance GQLType Realm where
   type KIND Realm = TYPE
 
----- GQL City -------------------------------
 data City
   = Athens
   | Ithaca
@@ -143,5 +131,4 @@ instance GQLType City where
   type KIND City = TYPE
   directives _ = enumDirective "Troy" Deprecated {reason = Just "some reason"}
 
----- GQL Power -------------------------------
 type Power = Int
