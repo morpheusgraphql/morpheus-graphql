@@ -15,16 +15,14 @@ import Data.ByteString.Lazy.Char8
     readFile,
   )
 import Data.FileEmbed (makeRelativeToProject)
-import Data.Morpheus.CodeGen.Internal.AST
+import Data.Morpheus.CodeGen.Server
   ( CodeGenConfig (..),
+    compileDocument,
+    gqlDocument,
   )
 import Data.Morpheus.Server
   ( RootResolverConstraint,
     printSchema,
-  )
-import Data.Morpheus.Server.TH.Compile
-  ( compileDocument,
-    gqlDocument,
   )
 import Data.Morpheus.Types (RootResolver)
 import Language.Haskell.TH

@@ -33,13 +33,3 @@ library:
     - Data.Morpheus.Subscriptions
     - Data.Morpheus.Subscriptions.Internal
   ghc-options: '-Wall'
-tests:
-  morpheus-subscription-test:
-    main: Spec.hs
-    source-dirs: test
-    ghc-options: '-Wall'
-    dependencies:
-      - aeson        >=  1.4.4  &&  <  3.0.0
-      - directory    >=  1.0.0  &&  <  2.0.0
-      - tasty        >=  0.1.0  &&  <  1.5.0
-      - tasty-hunit  >=  0.1.0  &&  <  1.0.0

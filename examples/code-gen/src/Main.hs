@@ -2,11 +2,14 @@
 
 module Main where
 
-import qualified API.Posts.Resolver as P
-import qualified API.Users.Resolver as U
 import Data.Data (Typeable)
 import Data.Morpheus (App, httpPlayground, runApp)
 import Data.Semigroup ((<>))
+import qualified Domains.Posts.Resolver as P
+import qualified Domains.Users.Resolver as U
+import qualified Operation.Mutation as M
+import qualified Operation.Query as Q
+import qualified Operation.Subscription as S
 import Web.Scotty
 import Prelude (IO, Monad, ($), (.), (=<<))
 

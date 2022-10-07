@@ -246,15 +246,9 @@ library
       Data.Morpheus
       Data.Morpheus.Document
       Data.Morpheus.Kind
-      Data.Morpheus.Types
       Data.Morpheus.NamedResolvers
+      Data.Morpheus.Types
   other-modules:
-      Data.Morpheus.Server.TH.Compile
-      Data.Morpheus.Server.TH.Declare
-      Data.Morpheus.Server.TH.Declare.GQLDirective
-      Data.Morpheus.Server.TH.Declare.GQLType
-      Data.Morpheus.Server.TH.Declare.Type
-      Data.Morpheus.Server.TH.Utils
       Paths_morpheus_graphql
   hs-source-dirs:
       src

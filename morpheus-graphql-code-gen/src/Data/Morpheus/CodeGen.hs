@@ -8,13 +8,13 @@ module Data.Morpheus.CodeGen
   )
 where
 
-import Data.Morpheus.CodeGen.Internal.AST
-  ( CodeGenConfig (..),
-  )
-import Data.Morpheus.CodeGen.Interpreting.Transform
-  ( parseServerTypeDefinitions,
-  )
 import Data.Morpheus.CodeGen.Server
   ( PrinterConfig (..),
     printServerTypeDefinitions,
+  )
+import Data.Morpheus.CodeGen.Server.Internal.AST
+  ( CodeGenConfig (..),
+  )
+import Data.Morpheus.CodeGen.Server.Interpreting.Transform
+  ( parseServerTypeDefinitions,
   )

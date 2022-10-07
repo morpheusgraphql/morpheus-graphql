@@ -11,6 +11,7 @@ packages:
   - morpheus-graphql-tests
   - morpheus-graphql-core
   - morpheus-graphql-code-gen
+  - morpheus-graphql-code-gen-utils
   - morpheus-graphql-app
   - morpheus-graphql-client
   - morpheus-graphql-subscriptions

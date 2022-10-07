@@ -14,6 +14,13 @@ jobs:
     name: GHC ${{ matrix.ghc}} (${{ matrix.os }})
     steps:
       - uses: actions/checkout@v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+
+      - name: Install Node
+        run: npm i
+
       - name: setup stack config
         run: cp config/stack/${{ matrix.ghc }}.yaml  stack.yaml
 
@@ -44,6 +51,10 @@ jobs:
       - name: Test
         run: |
           stack test --fast
+
+      - name: Test Code Gen
+        run: |
+          npm run code-gen
 
   hlint:
     runs-on: ubuntu-latest
