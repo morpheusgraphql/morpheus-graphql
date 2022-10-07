@@ -28,7 +28,7 @@ source-repository head
 library
   exposed-modules:
       Data.Morpheus.CodeGen.Internal.AST
-      Data.Morpheus.CodeGen.Internal.TH
+      Data.Morpheus.CodeGen.TH
       Data.Morpheus.CodeGen.Utils
       Data.Morpheus.CodeGen.Printer
   other-modules:

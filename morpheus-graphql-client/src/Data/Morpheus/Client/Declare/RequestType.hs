@@ -19,7 +19,7 @@ import Data.Morpheus.Client.Internal.Types
   ( FetchDefinition (..),
     TypeNameTH (..),
   )
-import Data.Morpheus.CodeGen.Internal.TH
+import Data.Morpheus.CodeGen.TH
   ( applyCons,
     funDSimple,
     toCon,

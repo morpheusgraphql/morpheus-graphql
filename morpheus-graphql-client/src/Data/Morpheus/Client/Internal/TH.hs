@@ -24,7 +24,7 @@ where
 
 import Data.Foldable (foldr1)
 import Data.Morpheus.Client.Internal.Types (ClientTypeDefinition (..), TypeNameTH (..))
-import Data.Morpheus.CodeGen.Internal.TH
+import Data.Morpheus.CodeGen.TH
   ( camelCaseFieldName,
     camelCaseTypeName,
     toCon,

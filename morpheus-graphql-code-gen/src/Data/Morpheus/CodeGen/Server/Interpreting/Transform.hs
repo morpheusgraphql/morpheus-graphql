@@ -14,10 +14,6 @@ module Data.Morpheus.CodeGen.Server.Interpreting.Transform
 where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.Morpheus.CodeGen.Internal.TH
-  ( ToName (toName),
-    camelCaseTypeName,
-  )
 import Data.Morpheus.CodeGen.Server.Internal.AST
   ( CodeGenConfig (..),
     DerivingClass (..),
@@ -30,8 +26,12 @@ import Data.Morpheus.CodeGen.Server.Internal.AST
     ServerTypeDefinition (..),
     TypeValue (..),
   )
+import Data.Morpheus.CodeGen.TH
+  ( ToName (toName),
+  )
 import Data.Morpheus.CodeGen.Utils
   ( camelCaseFieldName,
+    camelCaseTypeName,
     toHaskellTypeName,
   )
 import Data.Morpheus.Core (internalSchema, parseDefinitions, render)

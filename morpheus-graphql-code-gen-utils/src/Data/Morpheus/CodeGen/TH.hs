@@ -11,15 +11,13 @@
 {-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.CodeGen.Internal.TH
+module Data.Morpheus.CodeGen.TH
   ( _',
     apply,
     applyCons,
     applyVars,
     declareTypeRef,
     funDSimple,
-    camelCaseFieldName,
-    camelCaseTypeName,
     toCon,
     toVar,
     ToName (..),
@@ -31,10 +29,8 @@ module Data.Morpheus.CodeGen.Internal.TH
   )
 where
 
-import Data.Morpheus.CodeGen.Internal.Name
-  ( camelCaseFieldName,
-    camelCaseTypeName,
-    toHaskellName,
+import Data.Morpheus.CodeGen.Utils
+  ( toHaskellName,
     toHaskellTypeName,
   )
 import Data.Morpheus.Types.Internal.AST
