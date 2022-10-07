@@ -19,12 +19,12 @@ import Data.Morpheus.Client.Internal.Types
 import Data.Morpheus.Client.Internal.Utils
   ( isEnum,
   )
-import Data.Morpheus.CodeGen.Internal.TH
-  ( camelCaseTypeName,
-    declareTypeRef,
+import Data.Morpheus.CodeGen.TH
+  ( declareTypeRef,
     toCon,
     toName,
   )
+import Data.Morpheus.CodeGen.Utils
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     FieldDefinition (..),

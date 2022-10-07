@@ -17,14 +17,14 @@ module Data.Morpheus.CodeGen.Server.TH.Utils
   )
 where
 
-import Data.Morpheus.CodeGen.Internal.TH
+import Data.Morpheus.CodeGen.Server.Internal.AST
+  ( CodeGenConfig,
+  )
+import Data.Morpheus.CodeGen.TH
   ( apply,
     funDSimple,
     vars,
     _',
-  )
-import Data.Morpheus.CodeGen.Server.Internal.AST
-  ( CodeGenConfig,
   )
 import Data.Morpheus.Types.Internal.AST
   ( TypeName,

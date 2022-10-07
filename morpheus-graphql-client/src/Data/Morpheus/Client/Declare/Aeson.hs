@@ -31,9 +31,8 @@ import Data.Morpheus.Client.Internal.Types
     ClientTypeDefinition (..),
     TypeNameTH (..),
   )
-import Data.Morpheus.CodeGen.Internal.TH
+import Data.Morpheus.CodeGen.TH
   ( applyCons,
-    camelCaseTypeName,
     funDSimple,
     toCon,
     toName,
@@ -41,6 +40,7 @@ import Data.Morpheus.CodeGen.Internal.TH
     v',
     _',
   )
+import Data.Morpheus.CodeGen.Utils
 import Data.Morpheus.Internal.Utils (IsMap (lookup))
 import Data.Morpheus.Types.GQLScalar
   ( scalarFromJSON,

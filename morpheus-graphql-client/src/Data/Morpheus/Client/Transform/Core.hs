@@ -17,9 +17,7 @@ module Data.Morpheus.Client.Transform.Core
 where
 
 import Control.Monad.Except (MonadError)
-import Data.Morpheus.CodeGen.Internal.TH
-  ( camelCaseTypeName,
-  )
+import Data.Morpheus.CodeGen.Utils (camelCaseTypeName)
 import Data.Morpheus.Error
   ( deprecatedField,
   )

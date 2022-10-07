@@ -11,13 +11,6 @@ module Data.Morpheus.CodeGen.Server.TH.Type
   )
 where
 
-import Data.Morpheus.CodeGen.Internal.TH
-  ( apply,
-    declareTypeRef,
-    toCon,
-    toName,
-    wrappedType,
-  )
 import Data.Morpheus.CodeGen.Server.Internal.AST
   ( DerivingClass (..),
     FIELD_TYPE_WRAPPER (..),
@@ -30,6 +23,13 @@ import Data.Morpheus.CodeGen.Server.TH.Utils
   ( m',
     m_,
     renderTypeVars,
+  )
+import Data.Morpheus.CodeGen.TH
+  ( apply,
+    declareTypeRef,
+    toCon,
+    toName,
+    wrappedType,
   )
 import Data.Morpheus.Server.Types
   ( Arg,

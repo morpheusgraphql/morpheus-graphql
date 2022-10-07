@@ -25,14 +25,16 @@ where
 import Data.Foldable (foldr1)
 import Data.Morpheus.Client.Internal.Types (ClientTypeDefinition (..), TypeNameTH (..))
 import Data.Morpheus.CodeGen.TH
-  ( camelCaseFieldName,
-    camelCaseTypeName,
-    toCon,
+  ( toCon,
     toName,
     toString,
     toVar,
     v',
     vars,
+  )
+import Data.Morpheus.CodeGen.Utils
+  ( camelCaseFieldName,
+    camelCaseTypeName,
   )
 import Data.Morpheus.Types.Internal.AST
   ( FieldDefinition (..),

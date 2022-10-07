@@ -9,11 +9,6 @@ module Data.Morpheus.CodeGen.Server.TH.GQLDirective
   )
 where
 
-import Data.Morpheus.CodeGen.Internal.TH
-  ( apply,
-    applyVars,
-    typeInstanceDec,
-  )
 import Data.Morpheus.CodeGen.Server.Internal.AST
   ( ServerConstructorDefinition (..),
     ServerTypeDefinition (..),
@@ -22,6 +17,11 @@ import Data.Morpheus.CodeGen.Server.Internal.AST
 import Data.Morpheus.CodeGen.Server.TH.Utils
   ( ServerDec,
     mkTypeableConstraints,
+  )
+import Data.Morpheus.CodeGen.TH
+  ( apply,
+    applyVars,
+    typeInstanceDec,
   )
 import Data.Morpheus.Server.Types
   ( GQLDirective (..),

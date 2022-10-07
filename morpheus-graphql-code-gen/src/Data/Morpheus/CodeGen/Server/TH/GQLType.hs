@@ -16,12 +16,6 @@ module Data.Morpheus.CodeGen.Server.TH.GQLType
   )
 where
 
-import Data.Morpheus.CodeGen.Internal.TH
-  ( ToName (..),
-    apply,
-    applyVars,
-    typeInstanceDec,
-  )
 import Data.Morpheus.CodeGen.Server.Internal.AST
   ( CodeGenConfig (..),
     GQLTypeDefinition (..),
@@ -37,6 +31,12 @@ import Data.Morpheus.CodeGen.Server.TH.Utils
     funDProxy,
     mkTypeableConstraints,
     renderTypeVars,
+  )
+import Data.Morpheus.CodeGen.TH
+  ( ToName (..),
+    apply,
+    applyVars,
+    typeInstanceDec,
   )
 import Data.Morpheus.Server.Types
   ( GQLType (..),
