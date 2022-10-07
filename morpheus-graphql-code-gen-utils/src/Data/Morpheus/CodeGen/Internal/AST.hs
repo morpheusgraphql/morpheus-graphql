@@ -4,7 +4,6 @@
 module Data.Morpheus.CodeGen.Internal.AST
   ( DerivingClass (..),
     TypeValue (..),
-    TypeName,
   )
 where
 

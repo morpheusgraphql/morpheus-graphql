@@ -25,9 +25,9 @@ import Data.Morpheus.Client.Transform
   ( toGlobalDefinitions,
     toLocalDefinitions,
   )
-import Data.Morpheus.CodeGen.Internal.AST
 import Data.Morpheus.Core (parseRequest)
 import Data.Morpheus.Types.IO (GQLRequest (..))
+import Data.Morpheus.Types.Internal.AST (TypeName)
 import Data.Set
 import qualified Data.Set as S
 import Language.Haskell.TH (Dec, Q, runIO)

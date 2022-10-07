@@ -28,4 +28,5 @@ library:
     - Data.Morpheus.CodeGen.Internal.AST
     - Data.Morpheus.CodeGen.Internal.TH
     - Data.Morpheus.CodeGen.Utils
-  ghc-options: '-Wall'
+    - Data.Morpheus.CodeGen.Printer
+  ghc-options: "-Wall"

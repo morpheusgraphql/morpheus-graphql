@@ -9,6 +9,17 @@ module Data.Morpheus.CodeGen.Server.Printing.Type
   )
 where
 
+import Data.Morpheus.CodeGen.Printer
+  ( HSDoc,
+    Printer (..),
+    apply,
+    infix',
+    printDoc,
+    renderDeriving,
+    unpackHSDoc,
+    wrapped,
+    (.<>),
+  )
 import Data.Morpheus.CodeGen.Server.Internal.AST
   ( FIELD_TYPE_WRAPPER (..),
     ServerConstructorDefinition (..),
@@ -21,15 +32,8 @@ import Data.Morpheus.CodeGen.Server.Printing.GQLType
   ( renderGQLType,
   )
 import Data.Morpheus.CodeGen.Utils
-  ( TypeDoc (TypeDoc, unDoc),
-    appendType,
-    label,
+  ( label,
     parametrizedType,
-    renderDeriving,
-    renderName,
-    renderType,
-    renderTypeRef,
-    renderWrapped,
   )
 import Prettyprinter
   ( Doc,
@@ -43,7 +47,7 @@ import Prettyprinter
     vsep,
     (<+>),
   )
-import Relude hiding (show)
+import Relude hiding (print, show)
 import Prelude (show)
 
 type Result = Either Text
@@ -95,10 +99,10 @@ instance RenderType ServerTypeDefinition where
 
 instance RenderType ServerConstructorDefinition where
   render ServerConstructorDefinition {constructorName, constructorFields = []} =
-    pure $ renderName constructorName
+    pure $ printDoc constructorName
   render ServerConstructorDefinition {constructorName, constructorFields} = do
     fields <- traverse render constructorFields
-    pure $ renderName constructorName <> renderSet fields
+    pure $ printDoc constructorName <> renderSet fields
     where
       renderSet = nest 2 . enclose "\n{ " "\n}" . nest 2 . vsep . punctuate comma
 
@@ -109,24 +113,12 @@ instance RenderType ServerFieldDefinition where
         wrappers,
         fieldType
       } =
-      pure $
-        pretty (unpackName fieldName :: Text)
-          <+> "::"
-          <+> unDoc (foldr renderWrapper (TypeDoc False $ pretty fieldType) wrappers)
+      pure $ unpackHSDoc $ infix' (print fieldName) "::" (foldr renderWrapper (print fieldType) wrappers)
 
-renderWrapper :: FIELD_TYPE_WRAPPER -> TypeDoc n -> TypeDoc n
-renderWrapper PARAMETRIZED = \x -> TypeDoc True (unDoc x <+> "m")
-renderWrapper MONAD = appendType "m"
+renderWrapper :: FIELD_TYPE_WRAPPER -> HSDoc n -> HSDoc n
+renderWrapper PARAMETRIZED = (.<> "m")
+renderWrapper MONAD = ("m" .<>)
 renderWrapper SUBSCRIPTION = id
-renderWrapper (GQL_WRAPPER typeWrappers) = renderWrapped typeWrappers
-renderWrapper (ARG name) = TypeDoc True . ((renderName name <+> "->") <+>) . unDoc
-renderWrapper (TAGGED_ARG name typeRef) =
-  TypeDoc True
-    . ( ( "Arg"
-            <+> pretty (show name)
-            <+> renderType (renderTypeRef typeRef)
-            <+> "->"
-        )
-          <+>
-      )
-    . unDoc
+renderWrapper (GQL_WRAPPER typeWrappers) = wrapped typeWrappers
+renderWrapper (ARG name) = infix' (print name) "->"
+renderWrapper (TAGGED_ARG name typeRef) = infix' (apply "Arg" [print (show name), print typeRef]) "->"

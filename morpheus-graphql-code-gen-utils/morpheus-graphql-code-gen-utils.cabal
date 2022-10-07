@@ -30,10 +30,10 @@ library
       Data.Morpheus.CodeGen.Internal.AST
       Data.Morpheus.CodeGen.Internal.TH
       Data.Morpheus.CodeGen.Utils
+      Data.Morpheus.CodeGen.Printer
   other-modules:
       Data.Morpheus.CodeGen.Internal.Name
       Data.Morpheus.CodeGen.Printing.Terms
-      Data.Morpheus.CodeGen.Printing.Type
       Paths_morpheus_graphql_code_gen_utils
   hs-source-dirs:
       src
