@@ -17,10 +17,11 @@ export const codeGen = async () => {
       "ts-node scripts/local.ts format --fix=true --path=examples/code-gen/**/*hs"
     );
 
-    const hasChanges = exec("git status -s").trim().length > 0;
+    const changes = exec("git status -s").trim();
+    const hasChanges = changes.length > 0;
 
     if (hasChanges) {
-      throw Error("generated files are corrupted");
+      throw Error(`generated files are corrupted. ${changes}`);
     }
 
     stdout.write("OK");
