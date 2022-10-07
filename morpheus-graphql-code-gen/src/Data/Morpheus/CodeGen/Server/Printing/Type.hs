@@ -14,7 +14,6 @@ import Data.Morpheus.CodeGen.Printer
     Printer (..),
     apply,
     infix',
-    label,
     parametrizedType,
     print',
     renderDeriving,
@@ -60,10 +59,10 @@ instance RenderType ServerTypeDefinition where
   render ServerInterfaceDefinition {} = fail "not supported"
   -- TODO: on scalar we should render user provided type
   render ServerTypeDefinition {tKind = KindScalar, tName} =
-    pure $ label tName <> "type" <+> pretty tName <+> "= Int"
+    pure $ "type" <+> pretty tName <+> "= Int"
   render typeDef@ServerTypeDefinition {tName, tCons, typeParameters, derives} = do
     typeRendering <- renderTypeDef
-    pure $ label tName <> vsep [typeRendering, renderGQLType typeDef]
+    pure $ vsep [typeRendering, renderGQLType typeDef]
     where
       renderTypeDef = do
         cons <- renderConstructors tCons
@@ -81,7 +80,7 @@ instance RenderType ServerTypeDefinition where
       prefixVariants [] = []
   render typeDef@DirectiveTypeDefinition {directiveConstructor, directiveDerives} = do
     typeRendering <- renderTypeDef
-    pure $ label name <> vsep [typeRendering, renderGQLType typeDef]
+    pure $ vsep [typeRendering, renderGQLType typeDef]
     where
       renderTypeDef = do
         cons <- (" =" <+>) <$> render directiveConstructor

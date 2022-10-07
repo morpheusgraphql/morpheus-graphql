@@ -9,16 +9,16 @@ module Data.Morpheus.CodeGen.Server.Printing.Render
 where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
+import Data.Morpheus.CodeGen.Printer
+  ( renderExtension,
+    renderImport,
+  )
 import Data.Morpheus.CodeGen.Server.Internal.AST
   ( ModuleDefinition (..),
     ServerTypeDefinition (..),
   )
 import Data.Morpheus.CodeGen.Server.Printing.Type
   ( renderTypes,
-  )
-import Data.Morpheus.CodeGen.Utils
-  ( renderExtension,
-    renderImport,
   )
 import Data.Text
   ( pack,
