@@ -1,4 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Main
@@ -64,25 +65,21 @@ main :: IO ()
 main = defaultParser >>= runApp
 
 runApp :: App -> IO ()
-runApp
-  App
-    { operations,
-      options = Options {version, root}
-    }
-    | version = putStrLn currentVersion
-    | otherwise = runOperation operations
-    where
-      runOperation About =
-        putStrLn $ "Morpheus GraphQL CLI, version " <> currentVersion
-      runOperation Build {source} = traverse_ (processFile root) source
+runApp App {..}
+  | version options = putStrLn currentVersion
+  | otherwise = runOperation operations
+  where
+    runOperation About =
+      putStrLn $ "Morpheus GraphQL CLI, version " <> currentVersion
+    runOperation Build {source} = traverse_ (processFile options) source
 
-processFile :: FilePath -> FilePath -> IO ()
-processFile root path =
+processFile :: Options -> FilePath -> IO ()
+processFile Options {root, namespaces} path =
   print (path, hsPath)
     >> L.readFile path
     >>= saveDocument hsPath
       . fmap (printServerTypeDefinitions PrinterConfig {moduleName})
-      . parseServerTypeDefinitions CodeGenConfig {namespace = False}
+      . parseServerTypeDefinitions CodeGenConfig {namespace = namespaces}
   where
     hsPath = processFileName path
     moduleName = intercalate "." $ splitDirectories $ dropExtensions $ makeRelative root hsPath
@@ -111,7 +108,8 @@ data App = App
 
 data Options = Options
   { version :: Bool,
-    root :: String
+    root :: String,
+    namespaces :: Bool
   }
   deriving (Show)
 
@@ -129,6 +127,7 @@ parseOptions =
   Options
     <$> switch (long "version" <> short 'v' <> help "show Version number")
     <*> option readOutput (long "root" <> short 'r' <> help "Root directory of the Haskell project")
+    <*> switch (long "namespaces" <> short 'n' <> help "namespaces type fields to avoid name conflicts")
 
 readOutput :: ReadM String
 readOutput = eitherReader Right
