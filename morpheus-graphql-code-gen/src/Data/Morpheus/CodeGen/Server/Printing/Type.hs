@@ -11,21 +11,15 @@ module Data.Morpheus.CodeGen.Server.Printing.Type
 where
 
 import Data.Morpheus.CodeGen.Printer
-  ( HSDoc,
-    Printer (..),
-    apply,
-    infix',
+  ( Printer (..),
     parametrizedType,
+    print,
     print',
     renderDeriving,
     unpack,
-    wrapped,
-    (.<>),
   )
 import Data.Morpheus.CodeGen.Server.Internal.AST
-  ( FIELD_TYPE_WRAPPER (..),
-    ServerConstructorDefinition (..),
-    ServerFieldDefinition (..),
+  ( ServerConstructorDefinition (..),
     ServerTypeDefinition (..),
     TypeKind (..),
     unpackName,
@@ -46,7 +40,6 @@ import Prettyprinter
     (<+>),
   )
 import Relude hiding (print, show)
-import Prelude (show)
 
 type Result = Either Text
 
@@ -99,18 +92,7 @@ instance RenderType ServerConstructorDefinition where
   render ServerConstructorDefinition {constructorName, constructorFields = []} =
     pure $ print' constructorName
   render ServerConstructorDefinition {constructorName, constructorFields} = do
-    fields <- traverse render constructorFields
+    let fields = map (unpack . print) constructorFields
     pure $ print' constructorName <> renderSet fields
     where
       renderSet = nest 2 . enclose "\n{ " "\n}" . nest 2 . vsep . punctuate comma
-
-instance RenderType ServerFieldDefinition where
-  render ServerFieldDefinition {..} = pure $ unpack $ infix' (print fieldName) "::" (foldr renderWrapper (print fieldType) wrappers)
-
-renderWrapper :: FIELD_TYPE_WRAPPER -> HSDoc n -> HSDoc n
-renderWrapper PARAMETRIZED = (.<> "m")
-renderWrapper MONAD = ("m" .<>)
-renderWrapper SUBSCRIPTION = id
-renderWrapper (GQL_WRAPPER typeWrappers) = wrapped typeWrappers
-renderWrapper (ARG name) = infix' (print name) "->"
-renderWrapper (TAGGED_ARG name typeRef) = infix' (apply "Arg" [print (show name), print typeRef]) "->"

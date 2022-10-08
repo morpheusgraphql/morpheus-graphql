@@ -15,38 +15,30 @@ where
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Morpheus.CodeGen.Server.Internal.AST
   ( CodeGenConfig (..),
-    FIELD_TYPE_WRAPPER (..),
     ServerConstructorDefinition (..),
-    ServerFieldDefinition (..),
     ServerTypeDefinition (..),
-    unpackName,
   )
 import Data.Morpheus.CodeGen.Server.Interpreting.Transform (parseServerTypeDefinitions)
 import Data.Morpheus.CodeGen.Server.TH.GQLDirective (deriveGQLDirective)
 import Data.Morpheus.CodeGen.Server.TH.GQLType (deriveGQLType)
 import Data.Morpheus.CodeGen.Server.TH.Utils
-  ( m',
-    m_,
-    renderTypeVars,
+  ( renderTypeVars,
   )
 import Data.Morpheus.CodeGen.TH
   ( apply,
-    declareTypeRef,
+    m',
+    m_,
     printDerivClause,
-    toCon,
+    printField,
     toName,
     toTypeVars,
-    wrappedType,
   )
 import Data.Morpheus.Server.Types
-  ( Arg,
-    SubscriptionField,
-    TypeGuard,
+  ( TypeGuard,
   )
 import Data.Morpheus.Types.Internal.AST
   ( TypeKind (..),
   )
-import qualified Data.Text as T
 import Language.Haskell.TH
 import Language.Haskell.TH.Quote (QuasiQuoter (..))
 import Relude hiding (ByteString, Type)
@@ -107,34 +99,4 @@ declareCons :: ServerConstructorDefinition -> Con
 declareCons ServerConstructorDefinition {constructorName, constructorFields} =
   RecC
     (toName constructorName)
-    (map declareField constructorFields)
-
-declareField :: ServerFieldDefinition -> (Name, Bang, Type)
-declareField
-  ServerFieldDefinition
-    { fieldName,
-      fieldType,
-      wrappers
-    } =
-    ( toName fieldName,
-      Bang NoSourceUnpackedness NoSourceStrictness,
-      foldr applyWrapper (toCon fieldType) wrappers
-    )
-
-applyWrapper :: FIELD_TYPE_WRAPPER -> Type -> Type
-applyWrapper PARAMETRIZED = (`AppT` m')
-applyWrapper MONAD = AppT m'
-applyWrapper SUBSCRIPTION = AppT (ConT ''SubscriptionField)
-applyWrapper (ARG typeName) = InfixT (ConT (toName typeName)) ''Function
-applyWrapper (GQL_WRAPPER wrappers) = wrappedType wrappers
-applyWrapper (TAGGED_ARG fieldName typeRef) = InfixT arg ''Function
-  where
-    arg =
-      AppT
-        ( AppT
-            (ConT ''Arg)
-            (LitT $ StrTyLit $ T.unpack $ unpackName fieldName)
-        )
-        (declareTypeRef toCon typeRef)
-
-type Function = (->)
+    (map printField constructorFields)

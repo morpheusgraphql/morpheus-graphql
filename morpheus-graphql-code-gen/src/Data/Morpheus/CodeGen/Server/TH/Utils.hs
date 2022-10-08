@@ -7,8 +7,6 @@
 
 module Data.Morpheus.CodeGen.Server.TH.Utils
   ( mkTypeableConstraints,
-    m',
-    m_,
     renderTypeVars,
   )
 where
@@ -27,12 +25,6 @@ import Language.Haskell.TH
     mkName,
   )
 import Relude hiding (Type)
-
-m_ :: Name
-m_ = mkName "m"
-
-m' :: Type
-m' = VarT m_
 
 renderTypeVars :: [Text] -> [Name]
 renderTypeVars = map (mkName . T.unpack)

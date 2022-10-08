@@ -4,14 +4,20 @@
 module Data.Morpheus.CodeGen.Internal.AST
   ( DerivingClass (..),
     TypeValue (..),
+    CodeGenField (..),
+    FIELD_TYPE_WRAPPER (..),
   )
 where
 
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
+    Name,
     TypeName,
+    TypeRef,
+    TypeWrapper,
     unpackName,
   )
+import qualified Language.Haskell.TH.Syntax as TH
 import Prettyprinter
   ( Doc,
     Pretty (..),
@@ -56,3 +62,19 @@ instance Pretty TypeValue where
   pretty (TypedValueMaybe (Just x)) = "Just" <+> pretty x
   pretty (TypedValueMaybe Nothing) = "Nothing"
   pretty (TypeValueList xs) = prettyList xs
+
+data CodeGenField = CodeGenField
+  { fieldType :: Text,
+    fieldName :: FieldName,
+    wrappers :: [FIELD_TYPE_WRAPPER]
+  }
+  deriving (Show)
+
+data FIELD_TYPE_WRAPPER
+  = MONAD
+  | SUBSCRIPTION TH.Name
+  | PARAMETRIZED
+  | ARG TypeName
+  | TAGGED_ARG TH.Name FieldName TypeRef
+  | GQL_WRAPPER TypeWrapper
+  deriving (Show)

@@ -21,7 +21,9 @@ module Data.Morpheus.CodeGen.Printer
 where
 
 import Data.Morpheus.CodeGen.Internal.AST
-  ( DerivingClass (..),
+  ( CodeGenField (..),
+    DerivingClass (..),
+    FIELD_TYPE_WRAPPER (..),
   )
 import Data.Morpheus.Types.Internal.AST
   ( Name,
@@ -40,6 +42,7 @@ import Prettyprinter
     (<+>),
   )
 import Relude hiding (optional, print, show)
+import Prelude (show)
 
 renderDeriving :: [DerivingClass] -> Doc n
 renderDeriving = ("deriving" <+>) . tupled . map pretty
@@ -112,3 +115,14 @@ renderImport (src, ls) = "import" <+> pretty src <> renderImportList ls
 renderImportList :: [Text] -> Doc ann
 renderImportList ["*"] = ""
 renderImportList xs = tupled (map pretty xs)
+
+renderWrapper :: FIELD_TYPE_WRAPPER -> HSDoc n -> HSDoc n
+renderWrapper PARAMETRIZED = (.<> "m")
+renderWrapper MONAD = ("m" .<>)
+renderWrapper SUBSCRIPTION {} = id
+renderWrapper (GQL_WRAPPER typeWrappers) = wrapped typeWrappers
+renderWrapper (ARG name) = infix' (print name) "->"
+renderWrapper (TAGGED_ARG _ name typeRef) = infix' (apply "Arg" [print (show name), print typeRef]) "->"
+
+instance Printer CodeGenField where
+  print CodeGenField {..} = infix' (print fieldName) "::" (foldr renderWrapper (print fieldType) wrappers)

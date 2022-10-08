@@ -7,6 +7,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -31,11 +32,16 @@ module Data.Morpheus.CodeGen.TH
     PrintType (..),
     toTypeVars,
     printDerivClause,
+    printField,
+    m',
+    m_,
   )
 where
 
 import Data.Morpheus.CodeGen.Internal.AST
-  ( DerivingClass (..),
+  ( CodeGenField (..),
+    DerivingClass (..),
+    FIELD_TYPE_WRAPPER (..),
     TypeValue (..),
   )
 import Data.Morpheus.CodeGen.Utils
@@ -235,3 +241,34 @@ genName CLASS_EQ = ''Eq
 
 printDerivClause :: [DerivingClass] -> DerivClause
 printDerivClause derives = DerivClause Nothing (map (ConT . genName) derives)
+
+printField :: CodeGenField -> (Name, Bang, Type)
+printField CodeGenField {..} =
+  ( toName fieldName,
+    Bang NoSourceUnpackedness NoSourceStrictness,
+    foldr applyWrapper (toCon fieldType) wrappers
+  )
+
+applyWrapper :: FIELD_TYPE_WRAPPER -> Type -> Type
+applyWrapper PARAMETRIZED = (`AppT` m')
+applyWrapper MONAD = AppT m'
+applyWrapper (SUBSCRIPTION name) = AppT (ConT name)
+applyWrapper (ARG typeName) = InfixT (ConT (toName typeName)) ''Function
+applyWrapper (GQL_WRAPPER wrappers) = wrappedType wrappers
+applyWrapper (TAGGED_ARG argName fieldName typeRef) = InfixT arg ''Function
+  where
+    arg =
+      AppT
+        ( AppT
+            (ConT argName)
+            (LitT $ StrTyLit $ T.unpack $ unpackName fieldName)
+        )
+        (declareTypeRef toCon typeRef)
+
+type Function = (->)
+
+m_ :: Name
+m_ = mkName "m"
+
+m' :: Type
+m' = VarT m_

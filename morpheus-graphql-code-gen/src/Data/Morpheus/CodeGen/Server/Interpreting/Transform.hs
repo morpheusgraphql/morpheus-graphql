@@ -6,6 +6,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.CodeGen.Server.Interpreting.Transform
@@ -14,6 +15,7 @@ module Data.Morpheus.CodeGen.Server.Interpreting.Transform
 where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
+import Data.Morpheus.CodeGen.Internal.AST (CodeGenField (..))
 import Data.Morpheus.CodeGen.Server.Internal.AST
   ( CodeGenConfig (..),
     DerivingClass (..),
@@ -22,7 +24,6 @@ import Data.Morpheus.CodeGen.Server.Internal.AST
     Kind (..),
     ServerConstructorDefinition (..),
     ServerDirectiveUsage (..),
-    ServerFieldDefinition (..),
     ServerTypeDefinition (..),
     TypeValue (..),
   )
@@ -38,6 +39,10 @@ import Data.Morpheus.Core (internalSchema, parseDefinitions, render)
 import Data.Morpheus.Error (gqlWarnings, renderGQLErrors)
 import Data.Morpheus.Internal.Ext (GQLResult, Result (..))
 import Data.Morpheus.Internal.Utils (IsMap, selectOr)
+import Data.Morpheus.Server.Types
+  ( Arg,
+    SubscriptionField,
+  )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     Argument (..),
@@ -236,7 +241,7 @@ derivingKind _ = Type
 derivesClasses :: Bool -> [DerivingClass]
 derivesClasses isResolver = GENERIC : [SHOW | not isResolver]
 
-mkObjectCons :: TypeName -> [ServerFieldDefinition] -> [ServerConstructorDefinition]
+mkObjectCons :: TypeName -> [CodeGenField] -> [ServerConstructorDefinition]
 mkObjectCons name = pure . ServerConstructorDefinition name
 
 mkArgsTypeName :: Bool -> TypeName -> FieldName -> TypeName
@@ -263,7 +268,7 @@ isSubscription _ = False
 mkObjectField ::
   CodeGenMonad m =>
   FieldDefinition OUT CONST ->
-  ServerQ m ServerFieldDefinition
+  ServerQ m CodeGenField
 mkObjectField
   FieldDefinition
     { fieldName = fName,
@@ -275,11 +280,11 @@ mkObjectField
     kind <- asks currentKind
     fieldName <- renderFieldName fName
     pure
-      ServerFieldDefinition
+      CodeGenField
         { fieldType = toHaskellTypeName typeConName,
           wrappers =
             mkFieldArguments fName genName (toArgList fieldContent)
-              <> [SUBSCRIPTION | fmap isSubscription kind == Just True]
+              <> [SUBSCRIPTION ''SubscriptionField | fmap isSubscription kind == Just True]
               <> [MONAD]
               <> [GQL_WRAPPER typeWrappers]
               <> [PARAMETRIZED | isParametrized],
@@ -292,7 +297,7 @@ mkFieldArguments
   _
   _
   [ ArgumentDefinition FieldDefinition {fieldName, fieldType}
-    ] = [TAGGED_ARG fieldName fieldType]
+    ] = [TAGGED_ARG ''Arg fieldName fieldType]
 mkFieldArguments fName genName _ = [ARG (genName fName)]
 
 toArgList :: Maybe (FieldContent bool cat s) -> [ArgumentDefinition s]
@@ -345,12 +350,12 @@ mkConsEnum name DataEnumValue {enumName} = do
         constructorFields = []
       }
 
-renderDataField :: Monad m => FieldDefinition c CONST -> ServerQ m ServerFieldDefinition
+renderDataField :: Monad m => FieldDefinition c CONST -> ServerQ m CodeGenField
 renderDataField FieldDefinition {fieldType = TypeRef {typeConName, typeWrappers}, fieldName = fName} = do
   fieldName <- renderFieldName fName
   let wrappers = [GQL_WRAPPER typeWrappers]
   let fieldType = toHaskellTypeName typeConName
-  pure ServerFieldDefinition {..}
+  pure CodeGenField {..}
 
 genTypeContent ::
   CodeGenMonad m =>
@@ -389,7 +394,7 @@ mkUnionFieldDefinition typeName memberName =
   ServerConstructorDefinition
     { constructorName,
       constructorFields =
-        [ ServerFieldDefinition
+        [ CodeGenField
             { fieldName = coerce ("un" <> constructorName),
               fieldType = toHaskellTypeName memberName,
               wrappers = [PARAMETRIZED]

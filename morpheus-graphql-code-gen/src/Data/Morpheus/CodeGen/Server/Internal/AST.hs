@@ -16,7 +16,6 @@ module Data.Morpheus.CodeGen.Server.Internal.AST
     DerivingClass (..),
     FIELD_TYPE_WRAPPER (..),
     ServerConstructorDefinition (..),
-    ServerFieldDefinition (..),
     Kind (..),
     ServerDirectiveUsage (..),
     TypeValue (..),
@@ -24,7 +23,9 @@ module Data.Morpheus.CodeGen.Server.Internal.AST
 where
 
 import Data.Morpheus.CodeGen.Internal.AST
-  ( DerivingClass (..),
+  ( CodeGenField (..),
+    DerivingClass (..),
+    FIELD_TYPE_WRAPPER (..),
     TypeValue (..),
   )
 import Data.Morpheus.CodeGen.TH
@@ -60,22 +61,6 @@ data ModuleDefinition = ModuleDefinition
     types :: [ServerTypeDefinition]
   }
 
-data FIELD_TYPE_WRAPPER
-  = MONAD
-  | SUBSCRIPTION
-  | PARAMETRIZED
-  | ARG TypeName
-  | TAGGED_ARG FieldName TypeRef
-  | GQL_WRAPPER TypeWrapper
-  deriving (Show)
-
-data ServerFieldDefinition = ServerFieldDefinition
-  { fieldType :: Text,
-    fieldName :: FieldName,
-    wrappers :: [FIELD_TYPE_WRAPPER]
-  }
-  deriving (Show)
-
 data Kind = Scalar | Type deriving (Show)
 
 instance Pretty Kind where
@@ -107,7 +92,7 @@ data GQLTypeDefinition = GQLTypeDefinition
 
 data ServerConstructorDefinition = ServerConstructorDefinition
   { constructorName :: TypeName,
-    constructorFields :: [ServerFieldDefinition]
+    constructorFields :: [CodeGenField]
   }
   deriving (Show)
 
