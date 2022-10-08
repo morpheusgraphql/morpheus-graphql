@@ -36,6 +36,7 @@ import Data.Morpheus.CodeGen.TH
     declareTypeRef,
     toCon,
     toName,
+    toTypeVars,
     wrappedType,
   )
 import Data.Morpheus.Server.Types
@@ -85,44 +86,25 @@ instance Declare ServerTypeDefinition where
     gqlTypeDecs <- deriveGQLType typeDef
     pure (typeDecs <> gqlDirDecs <> gqlTypeDecs)
 
-{- ORMOLU_DISABLE -}
-
 declareType :: ServerTypeDefinition -> [Dec]
 declareType (ServerInterfaceDefinition name interfaceName unionName) =
   [ TySynD
       (toName name)
-#if MIN_VERSION_template_haskell(2,17,0)
-      [PlainTV m_ ()]
-#else
-      [PlainTV m_]
-#endif
+      (toTypeVars [m_])
       (apply ''TypeGuard [apply interfaceName [m'], apply unionName [m']])
   ]
 declareType ServerTypeDefinition {tKind = KindScalar} = []
+declareType ServerTypeDefinition {..} = [DataD [] (toName tName) vars Nothing cons [derivingClause]]
+  where
+    derivingClause = DerivClause Nothing (map (ConT . genName) derives)
+    cons = map declareCons tCons
+    vars = toTypeVars (renderTypeVars typeParameters)
 declareType
-  ServerTypeDefinition
-    { tName,
-      tCons,
-      derives,
-      typeParameters
-    } = [DataD [] (toName tName) vars Nothing cons [derivingClause]]
-    where
-      derivingClause = DerivClause Nothing (map (ConT . genName) derives)
-      cons = map declareCons tCons
-
-#if MIN_VERSION_template_haskell(2,17,0)
-      vars = map (flip PlainTV ()) (renderTypeVars typeParameters)
-#else
-      vars = map PlainTV (renderTypeVars typeParameters)
-#endif
-declareType
-  DirectiveTypeDefinition {..} 
-    = [DataD [] name [] Nothing [declareCons directiveConstructor] [derivingClause]]
+  DirectiveTypeDefinition {..} =
+    [DataD [] name [] Nothing [declareCons directiveConstructor] [derivingClause]]
     where
       name = toName (constructorName directiveConstructor)
       derivingClause = DerivClause Nothing (map (ConT . genName) directiveDerives)
-
-{- ORMOLU_ENABLE -}
 
 genName :: DerivingClass -> Name
 genName GENERIC = ''Generic

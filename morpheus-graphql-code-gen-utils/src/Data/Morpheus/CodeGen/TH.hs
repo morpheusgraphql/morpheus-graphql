@@ -27,6 +27,7 @@ module Data.Morpheus.CodeGen.TH
     vars,
     wrappedType,
     PrintExp (..),
+    toTypeVars,
   )
 where
 
@@ -188,6 +189,14 @@ typeInstanceDec :: Name -> Type -> Type -> Dec
 typeInstanceDec typeFamily arg res = TySynInstD typeFamily (TySynEqn [arg] res)
 #endif
 
+{- ORMOLU_DISABLE -}
+toTypeVars :: [Name] -> [TyVarBndr ()]
+#if MIN_VERSION_template_haskell(2,17,0)
+toTypeVars = map (flip PlainTV ())
+#else
+toTypeVars map PlainTV
+#endif
+{- ORMOLU_ENABLE -}
 class PrintExp a where
   printExp :: a -> ExpQ
 
