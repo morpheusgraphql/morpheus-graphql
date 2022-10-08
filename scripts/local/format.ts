@@ -19,7 +19,7 @@ export const format = async ({ fix, path }: { fix: boolean; path: string }) => {
   } catch {}
 
   try {
-    log("setup ormolu\n");
+    log("setup ormolu ... \n");
 
     exec(
       `curl -o ./formatter/ormolu.zip -LO  https://github.com/tweag/ormolu/releases/download/0.5.0.1/${name}`,
@@ -31,7 +31,7 @@ export const format = async ({ fix, path }: { fix: boolean; path: string }) => {
 
     const files = await promisify(glob)(path);
 
-    log(`start formatting: ${path} (${files.length} files)\n\n`);
+    log(`formatting(${files.length} files): ${path} \n\n`);
 
     if (fix) {
       exec(`${binary} --color=always --mode=inplace ${files.join(" ")}`);
@@ -41,9 +41,9 @@ export const format = async ({ fix, path }: { fix: boolean; path: string }) => {
           " "
         )}`
       );
-
-      log("OK\n", "success");
     }
+
+    log("OK\n", "success");
   } catch (e) {
     log(e.message + "\n", "error");
     exec(`rm -rf ./formatter`);
