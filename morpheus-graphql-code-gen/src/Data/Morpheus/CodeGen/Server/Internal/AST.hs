@@ -100,7 +100,8 @@ instance PrintExp ServerDirectiveUsage where
 data GQLTypeDefinition = GQLTypeDefinition
   { gqlKind :: Kind,
     gqlTypeDirectiveUses :: [ServerDirectiveUsage],
-    gqlTypeDefaultValues :: Map Text (Value CONST)
+    gqlTypeDefaultValues :: Map Text (Value CONST),
+    dropNamespace :: Maybe (TypeKind, Text)
   }
   deriving (Show)
 

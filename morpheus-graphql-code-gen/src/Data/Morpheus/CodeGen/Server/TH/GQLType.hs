@@ -17,8 +17,7 @@ module Data.Morpheus.CodeGen.Server.TH.GQLType
 where
 
 import Data.Morpheus.CodeGen.Server.Internal.AST
-  ( CodeGenConfig (..),
-    GQLTypeDefinition (..),
+  ( GQLTypeDefinition (..),
     ServerConstructorDefinition (constructorName),
     ServerDirectiveUsage (..),
     ServerTypeDefinition (..),
@@ -56,54 +55,37 @@ import Language.Haskell.TH
 import Relude hiding (toString)
 
 deriveGQLType :: ServerTypeDefinition -> ServerDec [Dec]
-deriveGQLType
-  ServerTypeDefinition
-    { tName,
-      tKind,
-      typeParameters,
-      typeGQLType
-    } = do
-    let typeVars = renderTypeVars typeParameters
-    let constrains = mkTypeableConstraints typeVars
-    let typeSignature = apply ''GQLType [applyVars tName typeVars]
-    methods <- defineMethods tName tKind typeVars typeGQLType
-    gqlTypeDeclaration <- lift (instanceD constrains typeSignature methods)
-    pure [gqlTypeDeclaration]
+deriveGQLType ServerTypeDefinition {..} = do
+  let typeVars = renderTypeVars typeParameters
+  let constrains = mkTypeableConstraints typeVars
+  let typeSignature = apply ''GQLType [applyVars tName typeVars]
+  let methods = defineMethods tName typeVars typeGQLType
+  gqlTypeDeclaration <- lift (instanceD constrains typeSignature methods)
+  pure [gqlTypeDeclaration]
 deriveGQLType DirectiveTypeDefinition {..} = do
   let typeVars = [] :: [Name]
   let tName = unpackName (constructorName directiveConstructor)
   let constrains = mkTypeableConstraints typeVars
   let typeSignature = apply ''GQLType [applyVars tName typeVars]
-  methods <- defineMethods tName KindInputObject typeVars (Just directiveGQLType)
+  let methods = defineMethods tName typeVars (Just directiveGQLType)
   gqlTypeDeclaration <- lift (instanceD constrains typeSignature methods)
   pure [gqlTypeDeclaration]
 deriveGQLType _ = pure []
 
-defineTypeOptions :: Text -> TypeKind -> ServerDec [DecQ]
-defineTypeOptions tName kind = do
-  CodeGenConfig {namespace} <- ask
-  pure $ funDProxy [('typeOptions, [|dropNamespaceOptions kind tName|]) | namespace]
+defineTypeOptions :: (TypeKind, Text) -> [DecQ]
+defineTypeOptions (kind, tName) = funDProxy [('typeOptions, [|dropNamespaceOptions kind tName|])]
 
 defineMethods ::
   Text ->
-  TypeKind ->
   [Name] ->
   Maybe GQLTypeDefinition ->
-  ServerDec [Q Dec]
-defineMethods tName kind _ Nothing = defineTypeOptions tName kind
+  [Q Dec]
+defineMethods _ _ Nothing = []
 defineMethods
   tName
-  kind
   typeParameters
-  ( Just
-      GQLTypeDefinition
-        { gqlTypeDefaultValues,
-          gqlTypeDirectiveUses,
-          gqlKind
-        }
-    ) = do
-    options <- defineTypeOptions tName kind
-    pure (typeFamilies : functions <> options)
+  (Just GQLTypeDefinition {..}) = do
+    typeFamilies : functions <> concatMap defineTypeOptions (maybeToList dropNamespace)
     where
       functions =
         funDProxy

@@ -149,16 +149,19 @@ toTHDefinitions namespace defs = concat <$> traverse generateTypes defs
       runReaderT
         ( do
             fields <- traverse renderDataField (argument <$> toList directiveDefinitionArgs)
+            let typename = coerce directiveDefinitionName
+            dropNamespace <- defineTypeOptions KindInputObject (unpackName typename)
             pure
               [ DirectiveTypeDefinition
-                  { directiveConstructor = ServerConstructorDefinition (coerce directiveDefinitionName) fields,
+                  { directiveConstructor = ServerConstructorDefinition typename fields,
                     directiveDerives = [SHOW, GENERIC],
                     directiveLocations = directiveDefinitionLocations,
                     directiveGQLType =
                       GQLTypeDefinition
                         { gqlKind = Type,
                           gqlTypeDefaultValues = mempty,
-                          gqlTypeDirectiveUses = []
+                          gqlTypeDirectiveUses = [],
+                          dropNamespace
                         }
                   }
               ]
@@ -172,6 +175,11 @@ toTHDefinitions namespace defs = concat <$> traverse generateTypes defs
             hasNamespace = namespace
           }
     generateTypes _ = pure []
+
+defineTypeOptions :: MonadReader (TypeContext s) m => TypeKind -> Text -> m (Maybe (TypeKind, Text))
+defineTypeOptions kind tName = do
+  namespaces <- asks hasNamespace
+  pure $ if namespaces then Just (kind, tName) else Nothing
 
 inType :: MonadReader (TypeContext s) m => Maybe TypeName -> m a -> m a
 inType name = local (\x -> x {currentTypeName = name, currentKind = Nothing})
@@ -197,6 +205,7 @@ genTypeDefinition
       tName = toHaskellTypeName typeName
       deriveGQL = do
         gqlTypeDirectiveUses <- getDirs typeDef
+        dropNamespace <- defineTypeOptions tKind (unpackName typeName)
         pure $
           Just
             GQLTypeDefinition
@@ -205,7 +214,8 @@ genTypeDefinition
                 gqlTypeDefaultValues =
                   fromList $
                     mapMaybe getDefaultValue $
-                      getInputFields typeDef
+                      getInputFields typeDef,
+                dropNamespace
               }
       typeParameters
         | isResolverType tKind = ["m"]
@@ -404,10 +414,12 @@ genArgumentType
           let argumentFields = argument <$> toList arguments
           fields <- traverse renderDataField argumentFields
           let tKind = KindInputObject
+          let typename = toHaskellTypeName tName
           gqlTypeDirectiveUses <- concat <$> traverse getDirs argumentFields
+          dropNamespace <- defineTypeOptions tKind typename
           pure
             [ ServerTypeDefinition
-                { tName = toHaskellTypeName tName,
+                { tName = typename,
                   tKind,
                   tCons = mkObjectCons tName fields,
                   derives = derivesClasses False,
@@ -417,7 +429,8 @@ genArgumentType
                       ( GQLTypeDefinition
                           { gqlKind = Type,
                             gqlTypeDefaultValues = fromList (mapMaybe getDefaultValue argumentFields),
-                            gqlTypeDirectiveUses
+                            gqlTypeDirectiveUses,
+                            dropNamespace
                           }
                       )
                 }
