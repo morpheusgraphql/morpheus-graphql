@@ -13,7 +13,6 @@ import Data.Morpheus.CodeGen.Printer
   )
 import Data.Morpheus.CodeGen.Server.Internal.AST
   ( GQLTypeDefinition (..),
-    Kind (..),
     ServerDirectiveUsage (..),
     ServerTypeDefinition (..),
     TypeKind,
@@ -52,7 +51,7 @@ renderMethods _ Nothing = []
 renderMethods
   typeHead
   (Just GQLTypeDefinition {..}) =
-    ["type KIND" <+> typeHead <+> "=" <+> renderKind gqlKind]
+    ["type KIND" <+> typeHead <+> "=" <+> pretty gqlKind]
       <> ["directives _=" <+> renderDirectiveUsages gqlTypeDirectiveUses | not (null gqlTypeDirectiveUses)]
 
 renderDirectiveUsages :: [ServerDirectiveUsage] -> Doc n
@@ -62,7 +61,3 @@ renderDirectiveUsage :: ServerDirectiveUsage -> Doc n
 renderDirectiveUsage (TypeDirectiveUsage value) = "typeDirective" <+> pretty value
 renderDirectiveUsage (FieldDirectiveUsage place value) = "fieldDirective" <+> pretty (show place) <+> pretty value
 renderDirectiveUsage (EnumDirectiveUsage place value) = "enumDirective" <+> pretty (show place) <+> pretty value
-
-renderKind :: Kind -> Doc n
-renderKind Type = "TYPE"
-renderKind Scalar = "SCALAR"

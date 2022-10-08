@@ -57,6 +57,7 @@ import Language.Haskell.TH
     appE,
     instanceD,
   )
+import qualified Language.Haskell.TH as TH
 import Relude hiding (toString)
 
 deriveGQLType :: ServerTypeDefinition -> ServerDec [Dec]
@@ -117,11 +118,11 @@ defineMethods
 
       typeFamilies = do
         currentType <- applyVars tName typeParameters
-        pure $ typeInstanceDec ''KIND currentType (ConT (kindName gqlKind))
+        pure $ typeInstanceDec ''KIND currentType (printKind gqlKind)
 
-kindName :: Kind -> Name
-kindName Scalar = ''SCALAR
-kindName Type = ''TYPE
+printKind :: Kind -> TH.Type
+printKind Scalar = ConT ''SCALAR
+printKind Type = ConT ''TYPE
 
 renderDirectiveUsages :: [ServerDirectiveUsage] -> ExpQ
 renderDirectiveUsages = foldr (appE . appE [|(<>)|] . printExp) [|mempty|]

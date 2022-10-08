@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -43,6 +44,7 @@ import Data.Morpheus.Types.Internal.AST
     Value,
     unpackName,
   )
+import Prettyprinter (Pretty (..))
 import Relude
 
 data ModuleDefinition = ModuleDefinition
@@ -69,6 +71,10 @@ data ServerFieldDefinition = ServerFieldDefinition
   deriving (Show)
 
 data Kind = Scalar | Type deriving (Show)
+
+instance Pretty Kind where
+  pretty Type = "TYPE"
+  pretty Scalar = "SCALAR"
 
 data ServerDirectiveUsage
   = TypeDirectiveUsage TypeValue
