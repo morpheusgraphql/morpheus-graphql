@@ -91,7 +91,7 @@ library
     , containers >=0.4.2.1 && <0.7.0
     , file-embed >=0.0.10 && <1.0.0
     , modern-uri >=0.1.0.0 && <1.0.0
-    , morpheus-graphql-code-gen-utils >=0.21.0 && <0.22.0
+    , morpheus-graphql-code-gen-utils
     , morpheus-graphql-core >=0.21.0 && <0.22.0
     , morpheus-graphql-subscriptions
     , mtl >=2.0.0 && <3.0.0
@@ -132,7 +132,7 @@ test-suite morpheus-graphql-client-test
     , file-embed >=0.0.10 && <1.0.0
     , modern-uri >=0.1.0.0 && <1.0.0
     , morpheus-graphql-client
-    , morpheus-graphql-code-gen-utils >=0.21.0 && <0.22.0
+    , morpheus-graphql-code-gen-utils
     , morpheus-graphql-core >=0.21.0 && <0.22.0
     , morpheus-graphql-subscriptions
     , mtl >=2.0.0 && <3.0.0
