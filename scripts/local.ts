@@ -10,7 +10,7 @@ cli.name("local").version("0.0.0");
 cli
   .command("setup")
   .description("setup stack config")
-  .argument("<string>", "version number")
+  .argument("[string]", "version number", "latest")
   .action(setup);
 
 cli
