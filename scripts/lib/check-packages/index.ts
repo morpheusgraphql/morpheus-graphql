@@ -13,7 +13,7 @@ const checkPackage = (config: Config) => async (name: string) => {
 
   await writeYAML(url, fixedPackage);
 
-  return ` - ${pkg.name}\n`;
+  return `  - ${pkg.name}\n`;
 };
 
 const updateConfig = async ({
@@ -43,6 +43,6 @@ export const checkPackages = async (change?: VersionUpdate) => {
   const versions = await Promise.all(config.packages.map(checkPackage(config)));
   await writeConfig(config);
 
-  log(`generated package.yaml with version(${config.version}):\n`, "success");
-  log(versions.join(""));
+  log(` - package.yaml (v${config.version})\n`, "success");
+  log(versions.join(""), "success");
 };

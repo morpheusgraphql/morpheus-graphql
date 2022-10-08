@@ -1,6 +1,5 @@
 import { difference } from "ramda";
 import { checkPackages } from "../lib/check-packages";
-import { StackPlan } from "../lib/check-packages/types";
 import { getConfig, writeYAML } from "../lib/utils/file";
 import { log } from "../lib/utils/utils";
 import { compareVersion } from "../lib/utils/version";
@@ -43,34 +42,24 @@ const getStack = async (version: string) => {
   };
 };
 
-const checkStackConfig = async (
-  plan: Record<string, StackPlan>,
-  version: string
-) => {
-  const plans = Object.keys(plan);
-
-  await Promise.all(
-    plans.map((v) =>
-      getStack(v).then((con) => writeYAML(`./config/stack/${v}.yaml`, con))
-    )
-  );
-
-  log(`generated stack.yaml:\n`, "success");
-  log(` - ${plans.join("\n - ")}\n\n`);
-
-  writeYAML("stack.yaml", await getStack(version));
-};
+const ok = (msg: string) => log(` - ${msg}\n`, "success");
 
 export const setup = async (version: string) => {
-  const { plan, packages, examples } = await getConfig();
+  const { packages, examples } = await getConfig();
 
-  checkStackConfig(plan, version);
+  log("generating:\n");
+
+  writeYAML("stack.yaml", await getStack(version));
+
+  ok(`stack.yaml (ghc ${version})`);
 
   hie([
     ...packages,
     ...examples.map((key) => `examples/${key}`),
     "morpheus-graphql-benchmarks",
   ]);
+
+  ok("hie.yaml");
 
   checkPackages();
 };
