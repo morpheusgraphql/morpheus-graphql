@@ -16,7 +16,7 @@ cli
 cli
   .command("code-gen")
   .description("generates Morpheus code based on samples")
-  .action(codeGen);
+  .action(() => codeGen());
 
 cli
   .command("format")

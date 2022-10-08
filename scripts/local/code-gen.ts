@@ -3,9 +3,13 @@ import { exec, log } from "../lib/utils/utils";
 import { promisify } from "util";
 import glob from "glob";
 
-const root = "examples/code-gen/src";
+type Options = {
+  root?: string;
+};
 
-export const codeGen = async () => {
+export const codeGen = async ({
+  root = "examples/code-gen/src",
+}: Options = {}) => {
   try {
     log("installing code-gen\n");
 
