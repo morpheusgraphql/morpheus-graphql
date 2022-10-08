@@ -25,7 +25,7 @@ renderTypeableConstraints :: [Text] -> Doc n
 renderTypeableConstraints xs = tupled (map (("Typeable" <+>) . pretty) xs) <+> "=>"
 
 defineTypeOptions :: Maybe (TypeKind, Text) -> [Doc n]
-defineTypeOptions (Just (kind, tName)) = ["typeOptions _ = dropNamespaceOptions " <> pretty tName <> " (" <> pretty (show kind) <> ")"]
+defineTypeOptions (Just (kind, tName)) = ["typeOptions _ = dropNamespaceOptions" <+> "(" <> pretty (show kind) <> ")" <+> pretty (show tName)]
 defineTypeOptions _ = []
 
 renderGQLType :: ServerTypeDefinition -> Doc n

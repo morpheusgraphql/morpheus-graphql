@@ -22,7 +22,7 @@ export const codeGen = async ({ src = root }: Options = {}) => {
 
     log(`generating code(${files.length} files): ${gqlPath} \n`);
 
-    exec(`morpheus build ${files.join(" ")} --root=${src}`);
+    exec(`morpheus build ${files.join(" ")} --root=${src} `);
 
     log(`formatting(${files.length} files): ${hsPath} \n\n`);
 
@@ -31,7 +31,8 @@ export const codeGen = async ({ src = root }: Options = {}) => {
     const changes = exec("git status -s")
       .trim()
       .split("\n")
-      .map((file) => file.trim())
+      .flatMap((file) => file.split(" "))
+      .map((x) => x.trim())
       .filter((x) => x.includes(".hs"));
 
     if (changes.length > 0) {
