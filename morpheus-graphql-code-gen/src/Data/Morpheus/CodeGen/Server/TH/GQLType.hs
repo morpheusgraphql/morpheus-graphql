@@ -34,7 +34,7 @@ import Data.Morpheus.CodeGen.TH
   ( PrintExp (..),
     apply,
     applyVars,
-    funDSimple,
+    funDProxy,
     typeInstanceDec,
     _',
   )
@@ -125,8 +125,3 @@ kindName Type = ''TYPE
 
 renderDirectiveUsages :: [ServerDirectiveUsage] -> ExpQ
 renderDirectiveUsages = foldr (appE . appE [|(<>)|] . printExp) [|mempty|]
-
-funDProxy :: [(Name, ExpQ)] -> [DecQ]
-funDProxy = map fun
-  where
-    fun (name, body) = funDSimple name [_'] body

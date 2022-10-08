@@ -18,6 +18,7 @@ module Data.Morpheus.CodeGen.TH
     applyVars,
     declareTypeRef,
     funDSimple,
+    funDProxy,
     toCon,
     toVar,
     ToName (..),
@@ -182,6 +183,11 @@ applyCons name li = apply name (cons li)
 
 funDSimple :: Name -> [PatQ] -> ExpQ -> DecQ
 funDSimple name args body = funD name [clause args (normalB body) []]
+
+funDProxy :: [(Name, ExpQ)] -> [DecQ]
+funDProxy = map fun
+  where
+    fun (name, body) = funDSimple name [_'] body
 
 #if MIN_VERSION_template_haskell(2,15,0)
 -- fix breaking changes
