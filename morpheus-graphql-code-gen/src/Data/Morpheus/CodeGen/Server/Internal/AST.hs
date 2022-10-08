@@ -31,6 +31,7 @@ import Data.Morpheus.CodeGen.Internal.AST
 import Data.Morpheus.CodeGen.TH
   ( PrintExp (..),
     PrintType (..),
+    apply,
   )
 import Data.Morpheus.Server.Types
   ( SCALAR,
@@ -50,7 +51,7 @@ import Data.Morpheus.Types.Internal.AST
     Value,
     unpackName,
   )
-import Language.Haskell.TH.Lib (conT)
+import Language.Haskell.TH.Lib (appE, conT, varE)
 import Prettyprinter (Pretty (..))
 import Relude
 
@@ -78,9 +79,9 @@ data ServerDirectiveUsage
   deriving (Show)
 
 instance PrintExp ServerDirectiveUsage where
-  printExp (TypeDirectiveUsage x) = [|typeDirective $(printExp x)|]
-  printExp (FieldDirectiveUsage field x) = [|fieldDirective field $(printExp x)|]
-  printExp (EnumDirectiveUsage enum x) = [|enumDirective enum $(printExp x)|]
+  printExp (TypeDirectiveUsage x) = appE (varE 'typeDirective) (printExp x)
+  printExp (FieldDirectiveUsage field x) = appE (appE (varE 'fieldDirective) [|field|]) (printExp x)
+  printExp (EnumDirectiveUsage enum x) = appE (appE (varE 'enumDirective) [|enum|]) (printExp x)
 
 data GQLTypeDefinition = GQLTypeDefinition
   { gqlKind :: Kind,

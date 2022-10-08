@@ -207,11 +207,12 @@ typeInstanceDec typeFamily arg res = TySynInstD typeFamily (TySynEqn [arg] res)
 #endif
 
 {- ORMOLU_DISABLE -}
-toTypeVars :: [Name] -> [TyVarBndr ()]
 #if MIN_VERSION_template_haskell(2,17,0)
+toTypeVars :: [Name] -> [TyVarBndr ()]
 toTypeVars = map (flip PlainTV ())
 #else
-toTypeVars map PlainTV
+toTypeVars :: [Name] -> [TyVarBndr]
+toTypeVars = map PlainTV
 #endif
 {- ORMOLU_ENABLE -}
 class PrintExp a where

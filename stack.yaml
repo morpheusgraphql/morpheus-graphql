@@ -1,5 +1,4 @@
-allow-newer: true
-resolver: nightly-2022-03-02
+resolver: lts-12.16
 save-hackage-creds: false
 packages:
   - examples/client
@@ -9,15 +8,28 @@ packages:
   - examples/servant
   - morpheus-graphql-tests
   - morpheus-graphql-core
-  - morpheus-graphql-code-gen
   - morpheus-graphql-code-gen-utils
+  - morpheus-graphql-code-gen
   - morpheus-graphql-app
   - morpheus-graphql-client
   - morpheus-graphql-subscriptions
   - morpheus-graphql-server
   - morpheus-graphql
 extra-deps:
-  - fastsum-0.1.1.1
+  - aeson-1.4.4.0
+  - base-orphans-0.8.1
+  - dependent-map-0.2.4.0
+  - dependent-sum-0.4
+  - fastsum-0.1.0.0
   - fraxl-0.3.0.0
+  - graphql-0.11.1.0
   - haxl-2.4.0.0
+  - megaparsec-7.0.5
+  - modern-uri-0.3.0.0
+  - prettyprinter-1.7.0
+  - relude-0.3.0
+  - req-3.0.0
+  - retry-0.8.1.0
+  - time-compat-1.9.2.2
   - type-aligned-0.9.6
+  - websockets-0.12.6.0

@@ -6,10 +6,10 @@ cradle:
         component: morpheus-graphql-tests:lib
       - path: ./morpheus-graphql-core/src
         component: morpheus-graphql-core:lib
-      - path: ./morpheus-graphql-code-gen/src
-        component: morpheus-graphql-code-gen:lib
       - path: ./morpheus-graphql-code-gen-utils/src
         component: morpheus-graphql-code-gen-utils:lib
+      - path: ./morpheus-graphql-code-gen/src
+        component: morpheus-graphql-code-gen:lib
       - path: ./morpheus-graphql-app/src
         component: morpheus-graphql-app:lib
       - path: ./morpheus-graphql-client/src

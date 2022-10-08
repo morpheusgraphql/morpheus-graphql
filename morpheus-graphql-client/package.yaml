@@ -22,7 +22,7 @@ dependencies:
   - bytestring                       >=  0.10.4    &&  <  0.12.0
   - containers                       >=  0.4.2.1   &&  <  0.7.0
   - file-embed                       >=  0.0.10    &&  <  1.0.0
-  - morpheus-graphql-code-gen-utils  >=  0.21.0    &&  <  0.22.0
+  - morpheus-graphql-code-gen-utils
   - morpheus-graphql-core            >=  0.21.0    &&  <  0.22.0
   - mtl                              >=  2.0.0     &&  <  3.0.0
   - modern-uri                       >=  0.1.0.0   &&  <  1.0.0
@@ -40,12 +40,12 @@ library:
   source-dirs: src
   exposed-modules:
     - Data.Morpheus.Client
-  ghc-options: '-Wall'
+  ghc-options: "-Wall"
 tests:
   morpheus-graphql-client-test:
     main: Spec.hs
     source-dirs: test
-    ghc-options: '-Wall'
+    ghc-options: "-Wall"
     dependencies:
       - aeson                    >=  1.4.4  &&  <  3.0.0
       - directory                >=  1.0.0  &&  <  2.0.0
