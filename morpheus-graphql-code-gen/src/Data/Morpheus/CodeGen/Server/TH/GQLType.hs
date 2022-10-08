@@ -19,7 +19,6 @@ where
 import Data.Morpheus.CodeGen.Server.Internal.AST
   ( CodeGenConfig (..),
     GQLTypeDefinition (..),
-    Kind (..),
     ServerConstructorDefinition (constructorName),
     ServerDirectiveUsage (..),
     ServerTypeDefinition (..),
@@ -32,16 +31,14 @@ import Data.Morpheus.CodeGen.Server.TH.Utils
   )
 import Data.Morpheus.CodeGen.TH
   ( PrintExp (..),
+    PrintType (printType),
     apply,
     applyVars,
     funDProxy,
     typeInstanceDec,
-    _',
   )
 import Data.Morpheus.Server.Types
   ( GQLType (..),
-    SCALAR,
-    TYPE,
     dropNamespaceOptions,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -53,11 +50,9 @@ import Language.Haskell.TH
     ExpQ,
     Name,
     Q,
-    Type (ConT),
     appE,
     instanceD,
   )
-import qualified Language.Haskell.TH as TH
 import Relude hiding (toString)
 
 deriveGQLType :: ServerTypeDefinition -> ServerDec [Dec]
@@ -118,11 +113,7 @@ defineMethods
 
       typeFamilies = do
         currentType <- applyVars tName typeParameters
-        pure $ typeInstanceDec ''KIND currentType (printKind gqlKind)
-
-printKind :: Kind -> TH.Type
-printKind Scalar = ConT ''SCALAR
-printKind Type = ConT ''TYPE
+        typeInstanceDec ''KIND currentType <$> printType gqlKind
 
 renderDirectiveUsages :: [ServerDirectiveUsage] -> ExpQ
 renderDirectiveUsages = foldr (appE . appE [|(<>)|] . printExp) [|mempty|]

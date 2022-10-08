@@ -27,9 +27,14 @@ import Data.Morpheus.CodeGen.Internal.AST
   ( DerivingClass (..),
     TypeValue (..),
   )
-import Data.Morpheus.CodeGen.TH (PrintExp (..))
+import Data.Morpheus.CodeGen.TH
+  ( PrintExp (..),
+    PrintType (..),
+  )
 import Data.Morpheus.Server.Types
-  ( enumDirective,
+  ( SCALAR,
+    TYPE,
+    enumDirective,
     fieldDirective,
     typeDirective,
   )
@@ -44,6 +49,7 @@ import Data.Morpheus.Types.Internal.AST
     Value,
     unpackName,
   )
+import Language.Haskell.TH.Lib (conT)
 import Prettyprinter (Pretty (..))
 import Relude
 
@@ -75,6 +81,10 @@ data Kind = Scalar | Type deriving (Show)
 instance Pretty Kind where
   pretty Type = "TYPE"
   pretty Scalar = "SCALAR"
+
+instance PrintType Kind where
+  printType Scalar = conT ''SCALAR
+  printType Type = conT ''TYPE
 
 data ServerDirectiveUsage
   = TypeDirectiveUsage TypeValue

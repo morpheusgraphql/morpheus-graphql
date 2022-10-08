@@ -28,6 +28,7 @@ module Data.Morpheus.CodeGen.TH
     vars,
     wrappedType,
     PrintExp (..),
+    PrintType (..),
     toTypeVars,
     printDerivClause,
   )
@@ -209,6 +210,9 @@ toTypeVars map PlainTV
 {- ORMOLU_ENABLE -}
 class PrintExp a where
   printExp :: a -> ExpQ
+
+class PrintType a where
+  printType :: a -> TypeQ
 
 printFieldExp :: (FieldName, TypeValue) -> Q FieldExp
 printFieldExp (fName, fValue) = do
