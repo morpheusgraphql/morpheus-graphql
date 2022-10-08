@@ -2,6 +2,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.CodeGen.Server.Printing.Type
@@ -104,13 +105,7 @@ instance RenderType ServerConstructorDefinition where
       renderSet = nest 2 . enclose "\n{ " "\n}" . nest 2 . vsep . punctuate comma
 
 instance RenderType ServerFieldDefinition where
-  render
-    ServerFieldDefinition
-      { fieldName,
-        wrappers,
-        fieldType
-      } =
-      pure $ unpack $ infix' (print fieldName) "::" (foldr renderWrapper (print fieldType) wrappers)
+  render ServerFieldDefinition {..} = pure $ unpack $ infix' (print fieldName) "::" (foldr renderWrapper (print fieldType) wrappers)
 
 renderWrapper :: FIELD_TYPE_WRAPPER -> HSDoc n -> HSDoc n
 renderWrapper PARAMETRIZED = (.<> "m")

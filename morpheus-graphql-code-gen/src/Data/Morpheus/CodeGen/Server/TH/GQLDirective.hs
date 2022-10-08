@@ -21,9 +21,7 @@ import Data.Morpheus.CodeGen.Server.TH.Utils
 import Data.Morpheus.CodeGen.TH
   ( apply,
     applyVars,
-    funDSimple,
     typeInstanceDec,
-    _',
   )
 import Data.Morpheus.Server.Types
   ( GQLDirective (..),
@@ -31,8 +29,7 @@ import Data.Morpheus.Server.Types
 import Data.Morpheus.Types.Internal.AST
   ( DirectiveLocation (..),
   )
-import Language.Haskell.TH (Dec, ExpQ, Name, Q, Type (..), instanceD)
-import Language.Haskell.TH.Lib (DecQ)
+import Language.Haskell.TH (Dec, Name, Q, Type (..), instanceD)
 import Relude hiding (Type, toString)
 
 noVars :: [Name]
