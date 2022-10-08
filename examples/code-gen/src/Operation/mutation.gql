@@ -16,6 +16,9 @@ type Deity {
   simple field description
   """
   fullName: String!
+  """
+  simple power description
+  """
   power: Power!
 }
 

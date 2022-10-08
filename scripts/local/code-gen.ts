@@ -1,5 +1,5 @@
-import { exit, stdout } from "process";
-import { exec } from "../lib/utils/utils";
+import { exit } from "process";
+import { exec, log } from "../lib/utils/utils";
 import { promisify } from "util";
 import glob from "glob";
 
@@ -7,28 +7,36 @@ const root = "examples/code-gen/src";
 
 export const codeGen = async () => {
   try {
-    exec("stack install --fast --test morpheus-graphql-code-gen");
+    log("installing code-gen\n");
 
-    const files = (await promisify(glob)(`${root}/**/*.gql`)).join(" ");
+    exec("stack install --fast --test morpheus-graphql-code-gen", "pipe");
 
-    exec(`morpheus build ${files} --root=${root}`);
+    const gqlPath = `${root}/**/*.gql`;
+    const hsPath = `${root}/**/*hs`;
 
-    exec(
-      "ts-node scripts/local.ts format --fix=true --path=examples/code-gen/**/*hs"
-    );
+    const files = await promisify(glob)(gqlPath);
+
+    log(`generating code(${files.length} files): ${gqlPath} \n`);
+
+    exec(`morpheus build ${files.join(" ")} --root=${root}`);
+
+    log(`formatting(${files.length} files): ${hsPath} \n\n`);
+
+    exec(`ts-node scripts/local.ts format --fix=true --path=${hsPath}`);
 
     const changes = exec("git status -s")
       .trim()
       .split("\n")
-      .filter((x) => x.includes(".hs"))
-      .map((x) => x.trim());
+      .map((file) => file.trim())
+      .filter((x) => x.includes(".hs"));
 
     if (changes.length > 0) {
-      throw Error(["Generated files are corrupted!", ...changes].join("\n  "));
+      throw Error(["generated files are corrupted!", ...changes].join("\n  "));
     }
-    stdout.write("OK");
+
+    log("OK\n", "success");
   } catch (e) {
-    stdout.write(e.message);
+    log(e.message + "\n", "error");
     exit(1);
   }
 };

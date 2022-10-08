@@ -91,7 +91,9 @@ data Deity m = Deity
 
 instance (Typeable m) => GQLType (Deity m) where
   type KIND (Deity m) = TYPE
-  directives _ = fieldDirective "fullName" Describe {text = "\n  simple field description\n  "}
+  directives _ =
+    fieldDirective "fullName" Describe {text = "\n  simple field description\n  "}
+      <> fieldDirective "power" Describe {text = "\n  simple power description\n  "}
 
 data Creature m = Creature
   { creatureName :: m Text,
