@@ -27,6 +27,11 @@ import Data.Morpheus.CodeGen.Internal.AST
     TypeValue (..),
   )
 import Data.Morpheus.CodeGen.TH (PrintExp (..))
+import Data.Morpheus.Server.Types
+  ( enumDirective,
+    fieldDirective,
+    typeDirective,
+  )
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
     DirectiveLocation (..),

@@ -6,25 +6,30 @@
 {-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.CodeGen.Server.TH.Declare
+module Data.Morpheus.CodeGen.Server.TH.Type
   ( compileDocument,
     gqlDocument,
   )
 where
 
+import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Morpheus.CodeGen.Server.Internal.AST
-  ( DerivingClass (..),
+  ( CodeGenConfig (..),
+    DerivingClass (..),
     FIELD_TYPE_WRAPPER (..),
     ServerConstructorDefinition (..),
     ServerFieldDefinition (..),
     ServerTypeDefinition (..),
-    unpackName, CodeGenConfig(..),
+    unpackName,
   )
+import Data.Morpheus.CodeGen.Server.Interpreting.Transform (parseServerTypeDefinitions)
+import Data.Morpheus.CodeGen.Server.TH.GQLDirective (deriveGQLDirective)
+import Data.Morpheus.CodeGen.Server.TH.GQLType (deriveGQLType)
 import Data.Morpheus.CodeGen.Server.TH.Utils
-  ( m',
+  ( ServerDec,
+    m',
     m_,
     renderTypeVars,
-    ServerDec
   )
 import Data.Morpheus.CodeGen.TH
   ( apply,
@@ -42,13 +47,9 @@ import Data.Morpheus.Types.Internal.AST
   ( TypeKind (..),
   )
 import qualified Data.Text as T
-import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.Morpheus.CodeGen.Server.Interpreting.Transform (parseServerTypeDefinitions)
-import Data.Morpheus.CodeGen.Server.TH.GQLDirective (deriveGQLDirective)
-import Data.Morpheus.CodeGen.Server.TH.GQLType ( deriveGQLType)
 import Language.Haskell.TH
 import Language.Haskell.TH.Quote (QuasiQuoter (..))
-import Relude hiding (ByteString,Type)
+import Relude hiding (ByteString, Type)
 
 gqlDocument :: QuasiQuoter
 gqlDocument = mkQuasiQuoter CodeGenConfig {namespace = False}
@@ -84,6 +85,7 @@ instance Declare ServerTypeDefinition where
     gqlTypeDecs <- deriveGQLType typeDef
     pure (typeDecs <> gqlDirDecs <> gqlTypeDecs)
 
+{- ORMOLU_DISABLE -}
 
 declareType :: ServerTypeDefinition -> [Dec]
 declareType (ServerInterfaceDefinition name interfaceName unionName) =
@@ -119,6 +121,7 @@ declareType
     where
       name = toName (constructorName directiveConstructor)
       derivingClause = DerivClause Nothing (map (ConT . genName) directiveDerives)
+
 {- ORMOLU_ENABLE -}
 
 genName :: DerivingClass -> Name

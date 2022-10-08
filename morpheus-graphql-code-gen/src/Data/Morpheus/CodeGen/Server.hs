@@ -22,7 +22,7 @@ import Data.Morpheus.CodeGen.Server.Internal.AST
 import Data.Morpheus.CodeGen.Server.Printing.Render
   ( renderDocument,
   )
-import Data.Morpheus.CodeGen.Server.TH.Declare
+import Data.Morpheus.CodeGen.Server.TH.Type
   ( compileDocument,
     gqlDocument,
   )

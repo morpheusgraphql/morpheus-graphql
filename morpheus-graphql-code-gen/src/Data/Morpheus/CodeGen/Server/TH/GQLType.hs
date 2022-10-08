@@ -7,7 +7,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -27,7 +27,6 @@ import Data.Morpheus.CodeGen.Server.Internal.AST
   )
 import Data.Morpheus.CodeGen.Server.TH.Utils
   ( ServerDec,
-    funDProxy,
     mkTypeableConstraints,
     renderTypeVars,
   )
@@ -35,7 +34,9 @@ import Data.Morpheus.CodeGen.TH
   ( PrintExp (..),
     apply,
     applyVars,
+    funDSimple,
     typeInstanceDec,
+    _',
   )
 import Data.Morpheus.Server.Types
   ( GQLType (..),
@@ -124,3 +125,8 @@ kindName Type = ''TYPE
 
 renderDirectiveUsages :: [ServerDirectiveUsage] -> ExpQ
 renderDirectiveUsages = foldr (appE . appE [|(<>)|] . printExp) [|mempty|]
+
+funDProxy :: [(Name, ExpQ)] -> [DecQ]
+funDProxy = map fun
+  where
+    fun (name, body) = funDSimple name [_'] body
