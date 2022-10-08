@@ -23,7 +23,6 @@ import Data.Morpheus.CodeGen.Server.Internal.AST
     ServerConstructorDefinition (constructorName),
     ServerDirectiveUsage (..),
     ServerTypeDefinition (..),
-    TypeValue (..),
     unpackName,
   )
 import Data.Morpheus.CodeGen.Server.TH.Utils
@@ -33,7 +32,7 @@ import Data.Morpheus.CodeGen.Server.TH.Utils
     renderTypeVars,
   )
 import Data.Morpheus.CodeGen.TH
-  ( ToName (..),
+  ( PrintExp (..),
     apply,
     applyVars,
     typeInstanceDec,
@@ -43,30 +42,19 @@ import Data.Morpheus.Server.Types
     SCALAR,
     TYPE,
     dropNamespaceOptions,
-    enumDirective,
-    fieldDirective,
-    typeDirective,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( FieldName,
-    TypeKind (..),
+  ( TypeKind (..),
   )
-import qualified Data.Text as T
 import Language.Haskell.TH
   ( Dec,
     DecQ,
     ExpQ,
-    FieldExp,
     Name,
     Q,
     Type (ConT),
     appE,
-    conE,
     instanceD,
-    listE,
-    litE,
-    recConE,
-    stringL,
   )
 import Relude hiding (toString)
 
@@ -135,26 +123,4 @@ kindName Scalar = ''SCALAR
 kindName Type = ''TYPE
 
 renderDirectiveUsages :: [ServerDirectiveUsage] -> ExpQ
-renderDirectiveUsages =
-  foldr
-    (appE . appE [|(<>)|] . renderDirectiveUsage)
-    [|mempty|]
-
-renderDirectiveUsage :: ServerDirectiveUsage -> ExpQ
-renderDirectiveUsage (TypeDirectiveUsage x) = [|typeDirective $(renderValue x)|]
-renderDirectiveUsage (FieldDirectiveUsage field x) = [|fieldDirective field $(renderValue x)|]
-renderDirectiveUsage (EnumDirectiveUsage enum x) = [|enumDirective enum $(renderValue x)|]
-
-renderField :: (FieldName, TypeValue) -> Q FieldExp
-renderField (fName, fValue) = do
-  v <- renderValue fValue
-  pure (toName fName, v)
-
-renderValue :: TypeValue -> ExpQ
-renderValue (TypeValueObject name xs) = recConE (toName name) (map renderField xs)
-renderValue (TypeValueNumber x) = [|x|]
-renderValue (TypeValueString x) = litE (stringL (T.unpack x))
-renderValue (TypeValueBool _) = [|x|]
-renderValue (TypedValueMaybe (Just x)) = appE (conE 'Just) (renderValue x)
-renderValue (TypedValueMaybe Nothing) = conE 'Nothing
-renderValue (TypeValueList xs) = listE $ map renderValue xs
+renderDirectiveUsages = foldr (appE . appE [|(<>)|] . printExp) [|mempty|]

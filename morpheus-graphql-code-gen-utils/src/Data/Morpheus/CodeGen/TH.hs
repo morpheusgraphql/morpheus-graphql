@@ -26,9 +26,11 @@ module Data.Morpheus.CodeGen.TH
     v',
     vars,
     wrappedType,
+    PrintExp (..),
   )
 where
 
+import Data.Morpheus.CodeGen.Internal.AST (TypeValue (..))
 import Data.Morpheus.CodeGen.Utils
   ( toHaskellName,
     toHaskellTypeName,
@@ -185,3 +187,20 @@ typeInstanceDec typeFamily arg res = TySynInstD (TySynEqn Nothing (AppT (ConT ty
 typeInstanceDec :: Name -> Type -> Type -> Dec
 typeInstanceDec typeFamily arg res = TySynInstD typeFamily (TySynEqn [arg] res)
 #endif
+
+class PrintExp a where
+  printExp :: a -> ExpQ
+
+printFieldExp :: (FieldName, TypeValue) -> Q FieldExp
+printFieldExp (fName, fValue) = do
+  v <- printExp fValue
+  pure (toName fName, v)
+
+instance PrintExp TypeValue where
+  printExp (TypeValueObject name xs) = recConE (toName name) (map printFieldExp xs)
+  printExp (TypeValueNumber x) = [|x|]
+  printExp (TypeValueString x) = litE (stringL (T.unpack x))
+  printExp (TypeValueBool _) = [|x|]
+  printExp (TypedValueMaybe (Just x)) = appE (conE 'Just) (printExp x)
+  printExp (TypedValueMaybe Nothing) = conE 'Nothing
+  printExp (TypeValueList xs) = listE $ map printExp xs

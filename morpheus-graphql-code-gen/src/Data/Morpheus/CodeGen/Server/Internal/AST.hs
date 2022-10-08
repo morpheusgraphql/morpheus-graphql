@@ -1,3 +1,4 @@
+{-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.CodeGen.Server.Internal.AST
@@ -25,6 +26,7 @@ import Data.Morpheus.CodeGen.Internal.AST
   ( DerivingClass (..),
     TypeValue (..),
   )
+import Data.Morpheus.CodeGen.TH (PrintExp (..))
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
     DirectiveLocation (..),
@@ -68,6 +70,11 @@ data ServerDirectiveUsage
   | FieldDirectiveUsage FieldName TypeValue
   | EnumDirectiveUsage TypeName TypeValue
   deriving (Show)
+
+instance PrintExp ServerDirectiveUsage where
+  printExp (TypeDirectiveUsage x) = [|typeDirective $(printExp x)|]
+  printExp (FieldDirectiveUsage field x) = [|fieldDirective field $(printExp x)|]
+  printExp (EnumDirectiveUsage enum x) = [|enumDirective enum $(printExp x)|]
 
 data GQLTypeDefinition = GQLTypeDefinition
   { gqlKind :: Kind,
