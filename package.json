@@ -13,7 +13,8 @@
     "setup": "ts-node scripts/local.ts setup",
     "format": "ts-node scripts/local.ts format",
     "format:fix": "ts-node scripts/local.ts  format --fix=true",
-    "code-gen": "ts-node scripts/local.ts code-gen"
+    "code-gen": "ts-node scripts/local.ts code-gen",
+    "lint": "curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s ."
   },
   "devDependencies": {
     "@types/glob": "^8.0.0",
