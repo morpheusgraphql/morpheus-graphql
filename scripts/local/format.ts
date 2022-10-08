@@ -1,7 +1,7 @@
 import glob from "glob";
-import { exit, stdout } from "process";
+import { exit } from "process";
 import { promisify } from "util";
-import { exec } from "../lib/utils/utils";
+import { exec, log } from "../lib/utils/utils";
 
 const config: Record<string, string> = {
   linux: "/ormolu-Linux.zip",
@@ -19,25 +19,33 @@ export const format = async ({ fix, path }: { fix: boolean; path: string }) => {
   } catch {}
 
   try {
+    log("setup ormolu\n");
+
     exec(
-      `curl -o ./formatter/ormolu.zip -LO  https://github.com/tweag/ormolu/releases/download/0.5.0.1/${name}`
+      `curl -o ./formatter/ormolu.zip -LO  https://github.com/tweag/ormolu/releases/download/0.5.0.1/${name}`,
+      "pipe"
     );
-    exec(`cd formatter && unzip ormolu.zip`);
+    exec(`cd formatter && unzip ormolu.zip`, "pipe");
 
-    exec(`chmod +x ${binary}`);
+    exec(`chmod +x ${binary}`, "pipe");
 
-    const files = (await promisify(glob)(path)).join(" ");
+    const files = await promisify(glob)(path);
+
+    log(`start formatting: ${path} (${files.length} files)\n\n`);
 
     if (fix) {
-      exec(`${binary} --color=always --mode=inplace ${files}`);
+      exec(`${binary} --color=always --mode=inplace ${files.join(" ")}`);
     } else {
       exec(
-        `${binary} --color=always --check-idempotence --mode=check ${files}`
+        `${binary} --color=always --check-idempotence --mode=check ${files.join(
+          " "
+        )}`
       );
-      stdout.write("OK");
+
+      log("OK\n", "success");
     }
   } catch (e) {
-    stdout.write(e.message);
+    log(e.message + "\n", "error");
     exec(`rm -rf ./formatter`);
     exit(1);
   }

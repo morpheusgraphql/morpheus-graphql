@@ -1,6 +1,7 @@
 import { join } from "path";
 import { StackPackage } from "../lib/check-packages/types";
 import { readYAML, writeYAML } from "../lib/utils/file";
+import { log } from "../lib/utils/utils";
 
 type Pkg = { path: string } & StackPackage;
 
@@ -54,4 +55,6 @@ export const hie = async (sources: string[]) => {
       },
     },
   });
+
+  log("generated hie.yaml\n\n", "success");
 };

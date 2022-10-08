@@ -2,6 +2,7 @@ import { difference } from "ramda";
 import { checkPackages } from "../lib/check-packages";
 import { StackPlan } from "../lib/check-packages/types";
 import { getConfig, writeYAML } from "../lib/utils/file";
+import { log } from "../lib/utils/utils";
 import { compareVersion } from "../lib/utils/version";
 import { hie } from "./hie";
 
@@ -54,16 +55,22 @@ const checkStackConfig = async (
     )
   );
 
+  log(`generated stack.yaml:\n`, "success");
+  log(` - ${plans.join("\n - ")}\n\n`);
+
   writeYAML("stack.yaml", await getStack(version));
 };
 
 export const setup = async (version: string) => {
   const { plan, packages, examples } = await getConfig();
+
   checkStackConfig(plan, version);
+
   hie([
     ...packages,
     ...examples.map((key) => `examples/${key}`),
     "morpheus-graphql-benchmarks",
   ]);
+
   checkPackages();
 };
