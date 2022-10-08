@@ -1,8 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Declare.Type
@@ -19,8 +17,10 @@ import Data.Morpheus.Client.Internal.Types
 import Data.Morpheus.Client.Internal.Utils
   ( isEnum,
   )
+import Data.Morpheus.CodeGen.Internal.AST (DerivingClass (..))
 import Data.Morpheus.CodeGen.TH
   ( declareTypeRef,
+    printDerivClause,
     toCon,
     toName,
   )
@@ -56,9 +56,7 @@ declareType
       []
       Nothing
       (declareCons thName clientCons)
-      (map derive [''Generic, ''Show, ''Eq])
-    where
-      derive className = DerivClause Nothing [ConT className]
+      [printDerivClause [GENERIC, SHOW, CLASS_EQ]]
 
 declareCons :: TypeNameTH -> [ClientConstructorDefinition] -> [Con]
 declareCons TypeNameTH {namespace, typename} clientCons

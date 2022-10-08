@@ -15,7 +15,6 @@ where
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Morpheus.CodeGen.Server.Internal.AST
   ( CodeGenConfig (..),
-    DerivingClass (..),
     FIELD_TYPE_WRAPPER (..),
     ServerConstructorDefinition (..),
     ServerFieldDefinition (..),
@@ -34,6 +33,7 @@ import Data.Morpheus.CodeGen.Server.TH.Utils
 import Data.Morpheus.CodeGen.TH
   ( apply,
     declareTypeRef,
+    printDerivClause,
     toCon,
     toName,
     toTypeVars,
@@ -94,21 +94,15 @@ declareType (ServerInterfaceDefinition name interfaceName unionName) =
       (apply ''TypeGuard [apply interfaceName [m'], apply unionName [m']])
   ]
 declareType ServerTypeDefinition {tKind = KindScalar} = []
-declareType ServerTypeDefinition {..} = [DataD [] (toName tName) vars Nothing cons [derivingClause]]
+declareType ServerTypeDefinition {..} = [DataD [] (toName tName) vars Nothing cons [printDerivClause derives]]
   where
-    derivingClause = DerivClause Nothing (map (ConT . genName) derives)
     cons = map declareCons tCons
     vars = toTypeVars (renderTypeVars typeParameters)
 declareType
   DirectiveTypeDefinition {..} =
-    [DataD [] name [] Nothing [declareCons directiveConstructor] [derivingClause]]
+    [DataD [] name [] Nothing [declareCons directiveConstructor] [printDerivClause directiveDerives]]
     where
       name = toName (constructorName directiveConstructor)
-      derivingClause = DerivClause Nothing (map (ConT . genName) directiveDerives)
-
-genName :: DerivingClass -> Name
-genName GENERIC = ''Generic
-genName SHOW = ''Show
 
 declareCons :: ServerConstructorDefinition -> Con
 declareCons ServerConstructorDefinition {constructorName, constructorFields} =

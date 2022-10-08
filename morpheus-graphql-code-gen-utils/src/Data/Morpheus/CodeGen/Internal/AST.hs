@@ -24,11 +24,13 @@ import Relude
 data DerivingClass
   = SHOW
   | GENERIC
+  | CLASS_EQ
   deriving (Show)
 
 instance Pretty DerivingClass where
   pretty SHOW = "Show"
   pretty GENERIC = "Generic"
+  pretty CLASS_EQ = "Eq"
 
 data TypeValue
   = TypeValueObject TypeName [(FieldName, TypeValue)]

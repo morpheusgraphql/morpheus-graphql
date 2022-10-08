@@ -28,10 +28,14 @@ module Data.Morpheus.CodeGen.TH
     wrappedType,
     PrintExp (..),
     toTypeVars,
+    printDerivClause,
   )
 where
 
-import Data.Morpheus.CodeGen.Internal.AST (TypeValue (..))
+import Data.Morpheus.CodeGen.Internal.AST
+  ( DerivingClass (..),
+    TypeValue (..),
+  )
 import Data.Morpheus.CodeGen.Utils
   ( toHaskellName,
     toHaskellTypeName,
@@ -213,3 +217,11 @@ instance PrintExp TypeValue where
   printExp (TypedValueMaybe (Just x)) = appE (conE 'Just) (printExp x)
   printExp (TypedValueMaybe Nothing) = conE 'Nothing
   printExp (TypeValueList xs) = listE $ map printExp xs
+
+genName :: DerivingClass -> Name
+genName GENERIC = ''Generic
+genName SHOW = ''Show
+genName CLASS_EQ = ''Eq
+
+printDerivClause :: [DerivingClass] -> DerivClause
+printDerivClause derives = DerivClause Nothing (map (ConT . genName) derives)
