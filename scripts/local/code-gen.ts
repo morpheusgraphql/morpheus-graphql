@@ -19,12 +19,12 @@ export const codeGen = async () => {
 
     const changes = exec("git status -s")
       .trim()
-      .split(" ")
-      .filter((x) => x.includes(".hs"));
+      .split("\n")
+      .filter((x) => x.includes(".hs"))
+      .map((x) => x.trim());
 
     if (changes.length > 0) {
-      throw Error(`generated files are corrupted. \n${changes}
-      `);
+      throw Error(["Generated files are corrupted!", ...changes].join("\n  "));
     }
     stdout.write("OK");
   } catch (e) {
