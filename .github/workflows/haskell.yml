@@ -61,7 +61,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: lint
-        run: make lint
+        run: curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s .
 
   format:
     runs-on: ubuntu-latest
