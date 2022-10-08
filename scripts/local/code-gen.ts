@@ -4,25 +4,25 @@ import { promisify } from "util";
 import glob from "glob";
 
 type Options = {
-  root?: string;
+  src?: string;
 };
 
-export const codeGen = async ({
-  root = "examples/code-gen/src",
-}: Options = {}) => {
+const root = "examples/code-gen/src";
+
+export const codeGen = async ({ src = root }: Options = {}) => {
   try {
     log("installing code-gen\n");
 
     exec("stack install --fast --test morpheus-graphql-code-gen", "pipe");
 
-    const gqlPath = `${root}/**/*.gql`;
-    const hsPath = `${root}/**/*hs`;
+    const gqlPath = `${src}/**/*.gql`;
+    const hsPath = `${src}/**/*hs`;
 
     const files = await promisify(glob)(gqlPath);
 
     log(`generating code(${files.length} files): ${gqlPath} \n`);
 
-    exec(`morpheus build ${files.join(" ")} --root=${root}`);
+    exec(`morpheus build ${files.join(" ")} --root=${src}`);
 
     log(`formatting(${files.length} files): ${hsPath} \n\n`);
 
