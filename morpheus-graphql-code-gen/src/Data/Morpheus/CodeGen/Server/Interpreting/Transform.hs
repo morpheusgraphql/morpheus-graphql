@@ -69,10 +69,12 @@ import Data.Morpheus.Types.Internal.AST
     TypeName,
     TypeRef (..),
     UnionMember (..),
+    isNullable,
     isPossibleInterfaceType,
     isResolverType,
     kindOf,
     lookupWith,
+    packName,
     unpackName,
   )
 import qualified Data.Morpheus.Types.Internal.AST as AST
@@ -281,7 +283,8 @@ mkObjectField
     fieldName <- renderFieldName fName
     pure
       CodeGenField
-        { fieldType = toHaskellTypeName typeConName,
+        { fieldType = packName (toHaskellTypeName typeConName),
+          fieldIsNullable = isNullable typeWrappers,
           wrappers =
             mkFieldArguments fName genName (toArgList fieldContent)
               <> [SUBSCRIPTION ''SubscriptionField | fmap isSubscription kind == Just True]
@@ -354,7 +357,8 @@ renderDataField :: Monad m => FieldDefinition c CONST -> ServerQ m CodeGenField
 renderDataField FieldDefinition {fieldType = TypeRef {typeConName, typeWrappers}, fieldName = fName} = do
   fieldName <- renderFieldName fName
   let wrappers = [GQL_WRAPPER typeWrappers]
-  let fieldType = toHaskellTypeName typeConName
+  let fieldType = packName (toHaskellTypeName typeConName)
+  let fieldIsNullable = isNullable typeWrappers
   pure CodeGenField {..}
 
 genTypeContent ::
@@ -396,8 +400,9 @@ mkUnionFieldDefinition typeName memberName =
       constructorFields =
         [ CodeGenField
             { fieldName = coerce ("un" <> constructorName),
-              fieldType = toHaskellTypeName memberName,
-              wrappers = [PARAMETRIZED]
+              fieldType = packName (toHaskellTypeName memberName),
+              wrappers = [PARAMETRIZED],
+              fieldIsNullable = False
             }
         ]
     }

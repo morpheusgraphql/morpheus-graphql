@@ -11,7 +11,6 @@ where
 
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
-    Name,
     TypeName,
     TypeRef,
     TypeWrapper,
@@ -64,9 +63,10 @@ instance Pretty TypeValue where
   pretty (TypeValueList xs) = prettyList xs
 
 data CodeGenField = CodeGenField
-  { fieldType :: Text,
-    fieldName :: FieldName,
-    wrappers :: [FIELD_TYPE_WRAPPER]
+  { fieldName :: FieldName,
+    fieldType :: TypeName,
+    wrappers :: [FIELD_TYPE_WRAPPER],
+    fieldIsNullable :: Bool
   }
   deriving (Show)
 

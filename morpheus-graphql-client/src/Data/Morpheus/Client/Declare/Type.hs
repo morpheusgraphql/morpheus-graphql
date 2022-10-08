@@ -19,19 +19,15 @@ import Data.Morpheus.Client.Internal.Utils
   )
 import Data.Morpheus.CodeGen.Internal.AST (DerivingClass (..))
 import Data.Morpheus.CodeGen.TH
-  ( declareTypeRef,
-    printDerivClause,
-    toCon,
+  ( printDerivClause,
+    printField,
     toName,
   )
 import Data.Morpheus.CodeGen.Utils
 import Data.Morpheus.Types.Internal.AST
-  ( ANY,
-    FieldDefinition (..),
-    FieldName,
+  ( FieldName,
     TypeKind (..),
     TypeName,
-    VALID,
   )
 import Language.Haskell.TH
 import Relude hiding (Type)
@@ -64,17 +60,7 @@ declareCons TypeNameTH {namespace, typename} clientCons
   | otherwise = map consR clientCons
   where
     consE ClientConstructorDefinition {cName} = NormalC (mkTypeName namespace typename cName) []
-    consR ClientConstructorDefinition {cName, cFields} =
-      RecC
-        (mkConName namespace cName)
-        (map declareField cFields)
-
-declareField :: FieldDefinition ANY VALID -> (Name, Bang, Type)
-declareField FieldDefinition {fieldName, fieldType} =
-  ( toName fieldName,
-    Bang NoSourceUnpackedness NoSourceStrictness,
-    declareTypeRef toCon fieldType
-  )
+    consR ClientConstructorDefinition {cName, cFields} = RecC (mkConName namespace cName) (map printField cFields)
 
 mkTypeName :: [FieldName] -> TypeName -> TypeName -> Name
 mkTypeName namespace typename = mkConName namespace . camelCaseTypeName [typename]

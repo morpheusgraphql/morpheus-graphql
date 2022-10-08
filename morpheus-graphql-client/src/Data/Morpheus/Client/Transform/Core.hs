@@ -4,6 +4,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -13,10 +14,15 @@ module Data.Morpheus.Client.Transform.Core
     getType,
     typeFrom,
     deprecationWarning,
+    toCodeGenField,
   )
 where
 
 import Control.Monad.Except (MonadError)
+import Data.Morpheus.CodeGen.Internal.AST
+  ( CodeGenField (..),
+    FIELD_TYPE_WRAPPER (..),
+  )
 import Data.Morpheus.CodeGen.Utils (camelCaseTypeName)
 import Data.Morpheus.Error
   ( deprecatedField,
@@ -31,6 +37,7 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     Directives,
+    FieldDefinition (..),
     FieldName,
     GQLError,
     RAW,
@@ -39,9 +46,11 @@ import Data.Morpheus.Types.Internal.AST
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
+    TypeRef (..),
     VALID,
     VariableDefinitions,
     internal,
+    isNullable,
     lookupDeprecated,
     lookupDeprecatedReason,
     msg,
@@ -93,3 +102,12 @@ deprecationWarning dirs (typename, ref) = case lookupDeprecated dirs of
             (lookupDeprecatedReason deprecation)
         ]
   Nothing -> pure ()
+
+toCodeGenField :: FieldDefinition a b -> CodeGenField
+toCodeGenField FieldDefinition {fieldType = field@TypeRef {..}, ..} =
+  CodeGenField
+    { fieldName,
+      fieldType = typeConName,
+      wrappers = [GQL_WRAPPER typeWrappers],
+      fieldIsNullable = isNullable field
+    }

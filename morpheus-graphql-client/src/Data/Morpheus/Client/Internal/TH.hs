@@ -7,6 +7,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -24,6 +25,7 @@ where
 
 import Data.Foldable (foldr1)
 import Data.Morpheus.Client.Internal.Types (ClientTypeDefinition (..), TypeNameTH (..))
+import Data.Morpheus.CodeGen.Internal.AST (CodeGenField (..))
 import Data.Morpheus.CodeGen.TH
   ( toCon,
     toName,
@@ -37,8 +39,7 @@ import Data.Morpheus.CodeGen.Utils
     camelCaseTypeName,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( FieldDefinition (..),
-    TypeName,
+  ( TypeName,
     isNullable,
   )
 import Language.Haskell.TH
@@ -67,7 +68,7 @@ failExp =
         (stringE " is Not Valid Union Constructor")
     )
 
-decodeObjectE :: (Bool -> Name) -> TypeName -> [FieldDefinition cat s] -> ExpQ
+decodeObjectE :: (Bool -> Name) -> TypeName -> [CodeGenField] -> ExpQ
 decodeObjectE _ conName [] = appE [|pure|] (toCon conName)
 decodeObjectE funName conName fields =
   uInfixE
@@ -78,8 +79,8 @@ decodeObjectE funName conName fields =
 withApplicative :: ExpQ -> ExpQ -> ExpQ
 withApplicative x = uInfixE x [|(<*>)|]
 
-defField :: (Bool -> Name) -> FieldDefinition cat s -> ExpQ
-defField f field@FieldDefinition {fieldName} = uInfixE v' (varE $ f (isNullable field)) (toString fieldName)
+defField :: (Bool -> Name) -> CodeGenField -> ExpQ
+defField f CodeGenField {..} = uInfixE v' (varE $ f fieldIsNullable) (toString fieldName)
 
 -- | 'mkFieldsE'
 --
@@ -94,7 +95,7 @@ defField f field@FieldDefinition {fieldName} = uInfixE v' (varE $ f (isNullable 
 --    ..
 --    ]
 -- >>>
-mkFieldsE :: TypeName -> Name -> [FieldDefinition cat s] -> Exp
+mkFieldsE :: TypeName -> Name -> [CodeGenField] -> Exp
 mkFieldsE conName name = ListE . map (mkEntryWith conName name)
 
 --  input : mkFieldWith 'mkValue (FieldDefinition { fieldName = "field1", ..})
@@ -102,9 +103,9 @@ mkFieldsE conName name = ListE . map (mkEntryWith conName name)
 mkEntryWith ::
   TypeName ->
   Name ->
-  FieldDefinition cat s ->
+  CodeGenField ->
   Exp
-mkEntryWith conName f FieldDefinition {fieldName} =
+mkEntryWith conName f CodeGenField {fieldName} =
   AppE
     (AppE (VarE f) (toString fieldName))
     (toVar $ camelCaseFieldName conName fieldName)
@@ -119,7 +120,7 @@ mkEntryWith conName f FieldDefinition {fieldName} =
 -- >>>
 -- WAS WAS (User name id)
 -- >>>
-destructRecord :: TypeName -> [FieldDefinition cat s] -> PatQ
+destructRecord :: TypeName -> [CodeGenField] -> PatQ
 destructRecord conName fields = conP (toName conName) (vars names)
   where
     names = map (camelCaseFieldName conName . fieldName) fields
