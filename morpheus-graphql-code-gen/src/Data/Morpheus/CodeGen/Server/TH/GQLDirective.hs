@@ -82,3 +82,8 @@ promotedList =
   foldr
     (AppT . AppT PromotedConsT . PromotedT . locationName)
     PromotedNilT
+
+funDProxy :: [(Name, ExpQ)] -> [DecQ]
+funDProxy = map fun
+  where
+    fun (name, body) = funDSimple name [_'] body
