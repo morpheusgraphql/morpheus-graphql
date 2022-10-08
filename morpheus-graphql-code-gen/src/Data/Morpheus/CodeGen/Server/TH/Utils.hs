@@ -9,14 +9,10 @@ module Data.Morpheus.CodeGen.Server.TH.Utils
   ( mkTypeableConstraints,
     m',
     m_,
-    ServerDec,
     renderTypeVars,
   )
 where
 
-import Data.Morpheus.CodeGen.Server.Internal.AST
-  ( CodeGenConfig,
-  )
 import Data.Morpheus.CodeGen.TH
   ( apply,
     vars,
@@ -31,8 +27,6 @@ import Language.Haskell.TH
     mkName,
   )
 import Relude hiding (Type)
-
-type ServerDec = ReaderT CodeGenConfig Q
 
 m_ :: Name
 m_ = mkName "m"

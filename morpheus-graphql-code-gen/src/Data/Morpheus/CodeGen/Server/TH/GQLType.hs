@@ -24,8 +24,7 @@ import Data.Morpheus.CodeGen.Server.Internal.AST
     unpackName,
   )
 import Data.Morpheus.CodeGen.Server.TH.Utils
-  ( ServerDec,
-    mkTypeableConstraints,
+  ( mkTypeableConstraints,
     renderTypeVars,
   )
 import Data.Morpheus.CodeGen.TH
@@ -54,13 +53,13 @@ import Language.Haskell.TH
   )
 import Relude hiding (toString)
 
-deriveGQLType :: ServerTypeDefinition -> ServerDec [Dec]
+deriveGQLType :: ServerTypeDefinition -> Q [Dec]
 deriveGQLType ServerTypeDefinition {..} = do
   let typeVars = renderTypeVars typeParameters
   let constrains = mkTypeableConstraints typeVars
   let typeSignature = apply ''GQLType [applyVars tName typeVars]
   let methods = defineMethods tName typeVars typeGQLType
-  gqlTypeDeclaration <- lift (instanceD constrains typeSignature methods)
+  gqlTypeDeclaration <- instanceD constrains typeSignature methods
   pure [gqlTypeDeclaration]
 deriveGQLType DirectiveTypeDefinition {..} = do
   let typeVars = [] :: [Name]
@@ -68,7 +67,7 @@ deriveGQLType DirectiveTypeDefinition {..} = do
   let constrains = mkTypeableConstraints typeVars
   let typeSignature = apply ''GQLType [applyVars tName typeVars]
   let methods = defineMethods tName typeVars (Just directiveGQLType)
-  gqlTypeDeclaration <- lift (instanceD constrains typeSignature methods)
+  gqlTypeDeclaration <- instanceD constrains typeSignature methods
   pure [gqlTypeDeclaration]
 deriveGQLType _ = pure []
 

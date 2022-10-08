@@ -15,8 +15,7 @@ import Data.Morpheus.CodeGen.Server.Internal.AST
     TypeName,
   )
 import Data.Morpheus.CodeGen.Server.TH.Utils
-  ( ServerDec,
-    mkTypeableConstraints,
+  ( mkTypeableConstraints,
   )
 import Data.Morpheus.CodeGen.TH
   ( apply,
@@ -35,21 +34,21 @@ import Relude hiding (Type, toString)
 noVars :: [Name]
 noVars = []
 
-deriveGQLDirective :: ServerTypeDefinition -> ServerDec [Dec]
+deriveGQLDirective :: ServerTypeDefinition -> Q [Dec]
 deriveGQLDirective DirectiveTypeDefinition {..} = do
   let constrains = mkTypeableConstraints noVars
   let tName = constructorName directiveConstructor
   let typeSignature = apply ''GQLDirective [applyVars tName noVars]
-  methods <- defineMethods (constructorName directiveConstructor) directiveLocations
-  gqlTypeDeclaration <- lift (instanceD constrains typeSignature methods)
+  let methods = defineMethods (constructorName directiveConstructor) directiveLocations
+  gqlTypeDeclaration <- instanceD constrains typeSignature methods
   pure [gqlTypeDeclaration]
 deriveGQLDirective _ = pure []
 
-defineMethods :: TypeName -> [DirectiveLocation] -> ServerDec [Q Dec]
-defineMethods tName locations = do
+defineMethods :: TypeName -> [DirectiveLocation] -> [Q Dec]
+defineMethods tName locations =
   let currentType = applyVars tName noVars
-  let inst = typeInstanceDec ''DIRECTIVE_LOCATIONS currentType (promotedList locations)
-  pure [pure inst]
+      inst = typeInstanceDec ''DIRECTIVE_LOCATIONS currentType (promotedList locations)
+   in [pure inst]
 
 locationName :: DirectiveLocation -> Name
 locationName QUERY = 'QUERY

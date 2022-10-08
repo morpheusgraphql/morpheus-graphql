@@ -25,8 +25,7 @@ import Data.Morpheus.CodeGen.Server.Interpreting.Transform (parseServerTypeDefin
 import Data.Morpheus.CodeGen.Server.TH.GQLDirective (deriveGQLDirective)
 import Data.Morpheus.CodeGen.Server.TH.GQLType (deriveGQLType)
 import Data.Morpheus.CodeGen.Server.TH.Utils
-  ( ServerDec,
-    m',
+  ( m',
     m_,
     renderTypeVars,
   )
@@ -71,10 +70,10 @@ compileDocument :: CodeGenConfig -> LB.ByteString -> Q [Dec]
 compileDocument ctx = parseServerTypeDefinitions ctx >=> runDeclare ctx
 
 runDeclare :: Declare a => CodeGenConfig -> a -> Q [Dec]
-runDeclare ctx a = runReaderT (declare a) ctx
+runDeclare _ = declare
 
 class Declare a where
-  declare :: a -> ServerDec [Dec]
+  declare :: a -> Q [Dec]
 
 instance Declare a => Declare [a] where
   declare = fmap concat . traverse declare
