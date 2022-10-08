@@ -26,7 +26,7 @@ library:
   source-dirs: src
   exposed-modules:
     - Data.Morpheus.CodeGen.Internal.AST
+    - Data.Morpheus.CodeGen.Printer
     - Data.Morpheus.CodeGen.TH
     - Data.Morpheus.CodeGen.Utils
-    - Data.Morpheus.CodeGen.Printer
-  ghc-options: "-Wall"
+  ghc-options: '-Wall'
