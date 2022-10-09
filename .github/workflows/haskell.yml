@@ -14,8 +14,15 @@ jobs:
     name: GHC ${{ matrix.ghc}} (${{ matrix.os }})
     steps:
       - uses: actions/checkout@v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+
+      - name: Install Node
+        run: npm i
+
       - name: setup stack config
-        run: cp config/stack/${{ matrix.ghc }}.yaml  stack.yaml
+        run: npm run setup ${{ matrix.ghc }}
 
       - name: Setup Haskell
         uses: haskell/actions/setup@v1.2
@@ -39,18 +46,22 @@ jobs:
 
       - name: Build
         run: |
-          stack build --fast --test --bench --no-run-tests --no-run-benchmarks --haddock --no-haddock-deps
+          stack build --fast --bench --no-run-benchmarks --haddock --no-haddock-deps
 
       - name: Test
         run: |
           stack test --fast
+
+      - name: Test Code Gen
+        run: |
+          npm run code-gen
 
   hlint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
       - name: lint
-        run: make lint
+        run: curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s .
 
   format:
     runs-on: ubuntu-latest

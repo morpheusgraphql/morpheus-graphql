@@ -32,22 +32,20 @@ dependencies:
   - template-haskell           >=  2.0.0     &&  <  3.0.0
   - unordered-containers       >=  0.2.8     &&  <  0.3.0
   - vector                     >=  0.12.0.1  &&  <  0.13.0
-  - file-embed                 >=  0.0.10    &&  <  1.0.0
-
 library:
   source-dirs: src
   exposed-modules:
     - Data.Morpheus
     - Data.Morpheus.Document
     - Data.Morpheus.Kind
-    - Data.Morpheus.Types
     - Data.Morpheus.NamedResolvers
-  ghc-options: "-Wall"
+    - Data.Morpheus.Types
+  ghc-options: '-Wall'
 tests:
   morpheus-graphql-test:
     main: Spec.hs
     source-dirs: test
-    ghc-options: "-Wall"
+    ghc-options: '-Wall'
     dependencies:
       - aeson                           >=  1.4.4   &&  <  3.0.0
       - morpheus-graphql

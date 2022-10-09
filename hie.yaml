@@ -1,68 +1,46 @@
 cradle:
   stack:
-    stackYaml: "./stack.yaml"
+    stackYaml: ./stack.yaml
     components:
-      - path: "./morpheus-graphql-core/src"
-        component: "morpheus-graphql-core:lib"
-
-      - path: "./morpheus-graphql-app/src"
-        component: "morpheus-graphql-app:lib"
-
-      - path: "./morpheus-graphql/src"
-        component: "morpheus-graphql:lib"
-
-      - path: "./morpheus-graphql-server/src"
-        component: "morpheus-graphql-server:lib"
-
-      - path: "./morpheus-graphql-client/src"
-        component: "morpheus-graphql-client:lib"
-
-      - path: "./morpheus-graphql-subscriptions/src"
-        component: "morpheus-graphql-subscriptions:lib"
-
-      - path: "./morpheus-graphql-code-gen/src"
-        component: "morpheus-graphql-code-gen:lib"
-
-      - path: "./morpheus-graphql-code-gen/app"
-        component: "morpheus-graphql-code-gen:exe:morpheus"
-
-      ## test
-      - path: "./morpheus-graphql-tests/src"
-        component: "morpheus-graphql-tests:lib"
-
-      - path: "./morpheus-graphql-core/test"
-        component: "morpheus-graphql-core:test:morpheus-graphql-core-test"
-
-      - path: "./morpheus-graphql/test"
-        component: "morpheus-graphql:test:morpheus-graphql-test"
-
-      - path: "./morpheus-graphql-server/test"
-        component: "morpheus-graphql-server:test:morpheus-graphql-server-test"
-
-      - path: "./morpheus-graphql-app/test"
-        component: "morpheus-graphql-app:test:morpheus-graphql-app-test"
-
-      - path: "./morpheus-graphql-client/test"
-        component: "morpheus-graphql-client:test:morpheus-graphql-client-test"
-
-      ## benchmarks
-
-      - path: "./morpheus-graphql-benchmarks"
-        component: "morpheus-graphql-benchmarks:bench:morpheus-graphql-bench"
-
-      ## exe
-
-      - path: "./examples/client"
-        component: "morpheus-graphql-examples-client:exe:morpheus-client-example"
-
-      - path: "./examples/scotty"
-        component: "morpheus-graphql-examples-scotty:exe:scotty-server"
-
-      - path: "./examples/servant"
-        component: "morpheus-graphql-examples-servant:exe:servant-server"
-
-      - path: "./examples/code-gen"
-        component: "morpheus-graphql-examples-code-gen:exe:generated-server"
-
-      - path: "./examples/scotty-freer-simple"
-        component: "morpheus-graphql-examples-scotty-freer-simple:exe:scotty-freer-simple-server"
+      - path: ./morpheus-graphql-tests/src
+        component: morpheus-graphql-tests:lib
+      - path: ./morpheus-graphql-core/src
+        component: morpheus-graphql-core:lib
+      - path: ./morpheus-graphql-code-gen-utils/src
+        component: morpheus-graphql-code-gen-utils:lib
+      - path: ./morpheus-graphql-code-gen/src
+        component: morpheus-graphql-code-gen:lib
+      - path: ./morpheus-graphql-app/src
+        component: morpheus-graphql-app:lib
+      - path: ./morpheus-graphql-client/src
+        component: morpheus-graphql-client:lib
+      - path: ./morpheus-graphql-subscriptions/src
+        component: morpheus-graphql-subscriptions:lib
+      - path: ./morpheus-graphql-server/src
+        component: morpheus-graphql-server:lib
+      - path: ./morpheus-graphql/src
+        component: morpheus-graphql:lib
+      - path: ./morpheus-graphql-core/test
+        component: morpheus-graphql-core:test:morpheus-graphql-core-test
+      - path: ./morpheus-graphql-app/test
+        component: morpheus-graphql-app:test:morpheus-graphql-app-test
+      - path: ./morpheus-graphql-client/test
+        component: morpheus-graphql-client:test:morpheus-graphql-client-test
+      - path: ./morpheus-graphql-server/test
+        component: morpheus-graphql-server:test:morpheus-graphql-server-test
+      - path: ./morpheus-graphql/test
+        component: morpheus-graphql:test:morpheus-graphql-test
+      - path: ./morpheus-graphql-code-gen/app
+        component: morpheus-graphql-code-gen:exe:morpheus
+      - path: ./examples/client/src
+        component: morpheus-graphql-examples-client:exe:morpheus-client-example
+      - path: ./examples/code-gen/src
+        component: morpheus-graphql-examples-code-gen:exe:generated-server
+      - path: ./examples/scotty/src
+        component: morpheus-graphql-examples-scotty:exe:scotty-server
+      - path: ./examples/scotty-freer-simple/src
+        component: morpheus-graphql-examples-scotty-freer:exe:scotty-freer-server
+      - path: ./examples/servant/src
+        component: morpheus-graphql-examples-servant:exe:servant-server
+      - path: ./morpheus-graphql-benchmarks/src
+        component: morpheus-graphql-benchmarks:bench:morpheus-graphql-bench

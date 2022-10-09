@@ -15,6 +15,7 @@ import Data.Morpheus.Client.Internal.Types
     ClientTypeDefinition (..),
     TypeNameTH (..),
   )
+import Data.Morpheus.Client.Transform.Core (toCodeGenField)
 import Data.Morpheus.Internal.Utils
   ( empty,
   )
@@ -52,7 +53,7 @@ toArgumentsType cName variables
             clientCons =
               [ ClientConstructorDefinition
                   { cName,
-                    cFields = toFieldDefinition <$> toList variables
+                    cFields = toCodeGenField . toFieldDefinition <$> toList variables
                   }
               ]
           }
@@ -93,7 +94,7 @@ generateGlobalType TypeDefinition {typeName, typeContent} = do
         ( KindInputObject,
           [ ClientConstructorDefinition
               { cName = typeName,
-                cFields = toAny <$> toList inputFields
+                cFields = toCodeGenField <$> toList inputFields
               }
           ]
         )

@@ -16,15 +16,13 @@ module Data.Morpheus.Client.Internal.Types
 where
 
 import Data.ByteString.Lazy (ByteString)
+import Data.Morpheus.CodeGen.Internal.AST (CodeGenField (..))
 import Data.Morpheus.Types.Internal.AST
-  ( ANY,
-    FieldDefinition,
-    FieldName,
+  ( FieldName,
     GQLErrors,
     OperationType,
     TypeKind,
     TypeName,
-    VALID,
   )
 import Relude hiding (ByteString)
 
@@ -36,7 +34,7 @@ data TypeNameTH = TypeNameTH
 
 data ClientConstructorDefinition = ClientConstructorDefinition
   { cName :: TypeName,
-    cFields :: [FieldDefinition ANY VALID]
+    cFields :: [CodeGenField]
   }
   deriving (Show)
 

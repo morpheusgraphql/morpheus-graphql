@@ -3,8 +3,9 @@ import { Bounds, Config, StackPackage } from "./types";
 import { updateDeps } from "./dependencies";
 import { getConfig, readYAML, writeConfig, writeYAML } from "../utils/file";
 import { genVersion, parseVersion, VersionUpdate } from "../utils/version";
+import { log } from "../utils/utils";
 
-export const checkPackage = (config: Config) => async (name: string) => {
+const checkPackage = (config: Config) => async (name: string) => {
   const url = path.join(name, "package.yaml");
   const pkg = await readYAML<StackPackage>(url);
 
@@ -12,7 +13,7 @@ export const checkPackage = (config: Config) => async (name: string) => {
 
   await writeYAML(url, fixedPackage);
 
-  console.info(`Checked:\n  ${pkg.name}: ${pkg.version}`);
+  return `  - ${pkg.name}\n`;
 };
 
 const updateConfig = async ({
@@ -39,6 +40,9 @@ const updateConfig = async ({
 export const checkPackages = async (change?: VersionUpdate) => {
   const config = await (change ? updateConfig(change) : getConfig());
 
-  await Promise.all(config.packages.map(checkPackage(config)));
+  const versions = await Promise.all(config.packages.map(checkPackage(config)));
   await writeConfig(config);
+
+  log(` - package.yaml (v${config.version})\n`, "success");
+  log(versions.join(""), "success");
 };

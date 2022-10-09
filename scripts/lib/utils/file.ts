@@ -37,4 +37,7 @@ export const getConfig = async (): Promise<Config> => {
 };
 
 export const writeConfig = (config: Config) =>
-  write(STACK_CONFIG_URL, dump(config, { sortKeys: true }));
+  write(
+    STACK_CONFIG_URL,
+    dump(config, { sortKeys: true, lineWidth: 240, condenseFlow: true })
+  );

@@ -24,8 +24,16 @@ export type Config = {
 
 export type Table = string[][];
 
+type Src = {
+  "source-dirs": string;
+};
+
 export type StackPackage = {
   name: string;
   version: string;
   dependencies: string[];
+  library: Src;
+  tests: Record<string, Src>;
+  executables: Record<string, Src>;
+  benchmarks: Record<string, Src>;
 };

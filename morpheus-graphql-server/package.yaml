@@ -36,12 +36,12 @@ library:
     - Data.Morpheus.Server
     - Data.Morpheus.Server.Resolvers
     - Data.Morpheus.Server.Types
-  ghc-options: "-Wall"
+  ghc-options: '-Wall'
 tests:
   morpheus-graphql-server-test:
     main: Spec.hs
     source-dirs: test
-    ghc-options: "-Wall"
+    ghc-options: '-Wall'
     dependencies:
       - aeson                           >=  1.4.4   &&  <  3.0.0
       - file-embed                      >=  0.0.10  &&  <  1.0.0

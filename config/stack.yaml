@@ -10,6 +10,7 @@ examples:
 packages:
   - morpheus-graphql-tests
   - morpheus-graphql-core
+  - morpheus-graphql-code-gen-utils
   - morpheus-graphql-code-gen
   - morpheus-graphql-app
   - morpheus-graphql-client

@@ -19,12 +19,11 @@ import Data.Morpheus.Client.Internal.Types
   ( FetchDefinition (..),
     TypeNameTH (..),
   )
-import Data.Morpheus.CodeGen.Internal.TH
+import Data.Morpheus.CodeGen.TH
   ( applyCons,
-    funDSimple,
+    funDProxy,
     toCon,
     typeInstanceDec,
-    _',
   )
 import qualified Data.Text as T
 import Language.Haskell.TH
@@ -44,11 +43,12 @@ declareRequestType query FetchDefinition {clientArgumentsTypeName, rootTypeName,
     typeName = typename rootTypeName
     iHead = applyCons ''RequestType [typeName]
     methods =
-      [ funDSimple '__name [_'] [|typeName|],
-        funDSimple '__query [_'] [|queryString|],
-        funDSimple '__type [_'] [|fetchOperationType|],
-        pure $ typeInstanceDec ''RequestArgs (toCon typeName) (argumentType clientArgumentsTypeName)
-      ]
+      funDProxy
+        [ ('__name, [|typeName|]),
+          ('__query, [|queryString|]),
+          ('__type, [|fetchOperationType|])
+        ]
+        <> [pure $ typeInstanceDec ''RequestArgs (toCon typeName) (argumentType clientArgumentsTypeName)]
 
 argumentType :: Maybe TypeNameTH -> Type
 argumentType Nothing = toCon ("()" :: String)

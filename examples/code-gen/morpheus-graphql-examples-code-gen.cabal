@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.35.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -24,10 +24,13 @@ source-repository head
 executable generated-server
   main-is: Main.hs
   other-modules:
-      API.Posts.Posts
-      API.Posts.Resolver
-      API.Users.Resolver
-      API.Users.Users
+      Domains.Posts.Posts
+      Domains.Posts.Resolver
+      Domains.Users.Resolver
+      Domains.Users.Users
+      Operation.Mutation
+      Operation.Query
+      Operation.Subscription
       Paths_morpheus_graphql_examples_code_gen
   hs-source-dirs:
       src

@@ -19,7 +19,7 @@ import Data.Morpheus.Client.Internal.Types
     FetchDefinition (..),
     TypeNameTH (..),
   )
-import Data.Morpheus.Client.Transform.Core (Converter (..), compileError, deprecationWarning, getType, typeFrom)
+import Data.Morpheus.Client.Transform.Core (Converter (..), compileError, deprecationWarning, getType, toCodeGenField, typeFrom)
 import Data.Morpheus.Client.Transform.Global (toArgumentsType)
 import Data.Morpheus.Core (Config (..), VALIDATION_MODE (WITHOUT_VARIABLES), validateRequest)
 import Data.Morpheus.Internal.Ext
@@ -124,8 +124,8 @@ toConstructorDefinition ::
   SelectionSet VALID ->
   Converter (ClientConstructorDefinition, [ClientTypeDefinition])
 toConstructorDefinition path cName datatype selSet = do
-  (cFields, subTypes) <- unzip <$> traverse genField (toList selSet)
-  pure (ClientConstructorDefinition {cName, cFields}, concat subTypes)
+  (fields, subTypes) <- unzip <$> traverse genField (toList selSet)
+  pure (ClientConstructorDefinition {cName, cFields = map toCodeGenField fields}, concat subTypes)
   where
     genField :: Selection VALID -> Converter (FieldDefinition ANY VALID, [ClientTypeDefinition])
     genField sel = do
