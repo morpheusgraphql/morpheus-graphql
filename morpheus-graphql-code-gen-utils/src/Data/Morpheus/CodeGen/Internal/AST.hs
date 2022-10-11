@@ -3,21 +3,20 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.CodeGen.Internal.AST
-  ( DerivingClass (..),
-    TypeValue (..),
+  ( CodeGenConstructor (..),
     CodeGenField (..),
-    FIELD_TYPE_WRAPPER (..),
-    prefixTypeName,
-    CodeGenTypeName (..),
-    CodeGenConstructor (..),
     CodeGenType (..),
-    getFullName,
+    CodeGenTypeName (..),
+    DerivingClass (..),
+    FIELD_TYPE_WRAPPER (..),
+    TypeValue (..),
     fromTypeName,
-    CGName (..),
+    getFullName,
   )
 where
 
 import Data.Morpheus.CodeGen.Internal.Name (camelCaseTypeName)
+import Data.Morpheus.CodeGen.Printer
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     TypeName,
@@ -29,11 +28,19 @@ import qualified Language.Haskell.TH.Syntax as TH
 import Prettyprinter
   ( Doc,
     Pretty (..),
+    comma,
+    enclose,
+    hsep,
+    indent,
+    line,
+    nest,
+    pretty,
     punctuate,
+    tupled,
     vsep,
     (<+>),
   )
-import Relude
+import Relude hiding (print)
 
 data DerivingClass
   = SHOW
@@ -78,17 +85,37 @@ data CodeGenType = CodeGenType
   }
   deriving (Show)
 
+instance Pretty CodeGenType where
+  pretty CodeGenType {..} =
+    "data"
+      <+> ignore (print cgTypeName)
+        <> renderConstructors cgConstructors
+        <> line
+        <> indent 2 (renderDeriving cgDerivations)
+        <> line
+    where
+      renderConstructors [cons] = (" =" <+>) $ print' cons
+      renderConstructors conses = nest 2 . (line <>) . vsep . prefixVariants $ map print' conses
+      prefixVariants (x : xs) = "=" <+> x : map ("|" <+>) xs
+      prefixVariants [] = []
+
+renderDeriving :: [DerivingClass] -> Doc n
+renderDeriving = ("deriving" <+>) . tupled . map pretty
+
 data CodeGenConstructor = CodeGenConstructor
   { constructorName :: CodeGenTypeName,
     constructorFields :: [CodeGenField]
   }
   deriving (Show)
 
-data CGName = CGName
-  { cgnNamespaces :: [Text],
-    cgnName :: Text
-  }
-  deriving (Show)
+instance Printer CodeGenConstructor where
+  print CodeGenConstructor {constructorFields = [], ..} =
+    print constructorName
+  print CodeGenConstructor {..} = do
+    let fields = map (unpack . print) constructorFields
+    pack (print' constructorName <> renderSet fields)
+    where
+      renderSet = nest 2 . enclose "\n{ " "\n}" . nest 2 . vsep . punctuate comma
 
 data CodeGenField = CodeGenField
   { fieldName :: FieldName,
@@ -97,6 +124,9 @@ data CodeGenField = CodeGenField
     fieldIsNullable :: Bool
   }
   deriving (Show)
+
+instance Printer CodeGenField where
+  print CodeGenField {..} = infix' (print fieldName) "::" (foldr renderWrapper (print fieldType) wrappers)
 
 data FIELD_TYPE_WRAPPER
   = MONAD
@@ -107,6 +137,14 @@ data FIELD_TYPE_WRAPPER
   | GQL_WRAPPER TypeWrapper
   deriving (Show)
 
+renderWrapper :: FIELD_TYPE_WRAPPER -> HSDoc n -> HSDoc n
+renderWrapper PARAMETRIZED = (.<> "m")
+renderWrapper MONAD = ("m" .<>)
+renderWrapper SUBSCRIPTION {} = id
+renderWrapper (GQL_WRAPPER typeWrappers) = wrapped typeWrappers
+renderWrapper (ARG name) = infix' (print name) "->"
+renderWrapper (TAGGED_ARG _ name typeRef) = infix' (apply "Arg" [print (show name :: String), print typeRef]) "->"
+
 data CodeGenTypeName = CodeGenTypeName
   { namespace :: [FieldName],
     typeParameters :: [Text],
@@ -114,11 +152,18 @@ data CodeGenTypeName = CodeGenTypeName
   }
   deriving (Show)
 
-prefixTypeName :: CodeGenTypeName -> TypeName -> CodeGenTypeName
-prefixTypeName CodeGenTypeName {..} = CodeGenTypeName namespace [] . camelCaseTypeName [typename]
-
 getFullName :: CodeGenTypeName -> TypeName
 getFullName CodeGenTypeName {..} = camelCaseTypeName namespace typename
 
 fromTypeName :: TypeName -> CodeGenTypeName
 fromTypeName = CodeGenTypeName [] []
+
+instance Printer CodeGenTypeName where
+  print cgName =
+    HSDoc (not $ null (typeParameters cgName)) $
+      parametrizedType
+        (unpackName (getFullName cgName))
+        (typeParameters cgName)
+
+parametrizedType :: Text -> [Text] -> Doc ann
+parametrizedType tName typeParameters = hsep $ map pretty $ tName : typeParameters

@@ -1,16 +1,14 @@
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.CodeGen.Printer
-  ( HSDoc,
+  ( HSDoc (..),
     Printer (..),
     apply,
     infix',
     print',
-    renderDeriving,
     unpack,
     wrapped,
     (.<>),
@@ -18,18 +16,10 @@ module Data.Morpheus.CodeGen.Printer
     renderExtension,
     renderImport,
     ignore,
+    pack,
   )
 where
 
-import Data.Morpheus.CodeGen.Internal.AST
-  ( CodeGenConstructor (..),
-    CodeGenField (..),
-    CodeGenType (..),
-    CodeGenTypeName (..),
-    DerivingClass (..),
-    FIELD_TYPE_WRAPPER (..),
-    getFullName,
-  )
 import Data.Morpheus.Types.Internal.AST
   ( Name,
     TypeRef (..),
@@ -37,12 +27,8 @@ import Data.Morpheus.Types.Internal.AST
     unpackName,
   )
 import qualified Data.Text as T
-import Prettyprinter (Doc, Pretty (..), comma, enclose, hsep, indent, line, list, nest, pretty, punctuate, tupled, vsep, (<+>))
+import Prettyprinter (Doc, Pretty (..), list, pretty, tupled, (<+>))
 import Relude hiding (optional, print, show)
-import Prelude (show)
-
-renderDeriving :: [DerivingClass] -> Doc n
-renderDeriving = ("deriving" <+>) . tupled . map pretty
 
 infix' :: HSDoc n -> HSDoc n -> HSDoc n -> HSDoc n
 infix' a op b = pack $ rawDocument a <+> rawDocument op <+> rawDocument b
@@ -112,47 +98,3 @@ renderImport (src, ls) = "import" <+> pretty src <> renderImportList ls
 renderImportList :: [Text] -> Doc ann
 renderImportList ["*"] = ""
 renderImportList xs = tupled (map pretty xs)
-
-renderWrapper :: FIELD_TYPE_WRAPPER -> HSDoc n -> HSDoc n
-renderWrapper PARAMETRIZED = (.<> "m")
-renderWrapper MONAD = ("m" .<>)
-renderWrapper SUBSCRIPTION {} = id
-renderWrapper (GQL_WRAPPER typeWrappers) = wrapped typeWrappers
-renderWrapper (ARG name) = infix' (print name) "->"
-renderWrapper (TAGGED_ARG _ name typeRef) = infix' (apply "Arg" [print (show name), print typeRef]) "->"
-
-instance Printer CodeGenField where
-  print CodeGenField {..} = infix' (print fieldName) "::" (foldr renderWrapper (print fieldType) wrappers)
-
-instance Printer CodeGenConstructor where
-  print CodeGenConstructor {constructorName, constructorFields = []} =
-    print constructorName
-  print CodeGenConstructor {constructorName, constructorFields} = do
-    let fields = map (unpack . print) constructorFields
-    pack (print' constructorName <> renderSet fields)
-    where
-      renderSet = nest 2 . enclose "\n{ " "\n}" . nest 2 . vsep . punctuate comma
-
-instance Printer CodeGenTypeName where
-  print cgName =
-    HSDoc (not $ null (typeParameters cgName)) $
-      parametrizedType
-        (unpackName (getFullName cgName))
-        (typeParameters cgName)
-
-parametrizedType :: Text -> [Text] -> Doc ann
-parametrizedType tName typeParameters = hsep $ map pretty $ tName : typeParameters
-
-instance Pretty CodeGenType where
-  pretty CodeGenType {..} =
-    "data"
-      <+> ignore (print cgTypeName)
-        <> renderConstructors cgConstructors
-        <> line
-        <> indent 2 (renderDeriving cgDerivations)
-        <> line
-    where
-      renderConstructors [cons] = (" =" <+>) $ print' cons
-      renderConstructors conses = nest 2 . (line <>) . vsep . prefixVariants $ map print' conses
-      prefixVariants (x : xs) = "=" <+> x : map ("|" <+>) xs
-      prefixVariants [] = []
