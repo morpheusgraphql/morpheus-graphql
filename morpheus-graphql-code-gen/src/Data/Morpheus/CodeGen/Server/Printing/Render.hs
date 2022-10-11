@@ -15,7 +15,7 @@ import Data.Morpheus.CodeGen.Printer
   )
 import Data.Morpheus.CodeGen.Server.Internal.AST
   ( ModuleDefinition (..),
-    ServerTypeDefinition (..),
+    ServerDeclaration (..),
   )
 import Data.Morpheus.CodeGen.Server.Printing.Type
   ( renderTypes,
@@ -36,7 +36,7 @@ import Prettyprinter
   )
 import Relude hiding (ByteString, encodeUtf8)
 
-renderDocument :: String -> [ServerTypeDefinition] -> ByteString
+renderDocument :: String -> [ServerDeclaration] -> ByteString
 renderDocument moduleName types =
   encodeUtf8 $
     LT.fromStrict $

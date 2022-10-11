@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.CodeGen.Internal.AST
@@ -6,9 +7,17 @@ module Data.Morpheus.CodeGen.Internal.AST
     TypeValue (..),
     CodeGenField (..),
     FIELD_TYPE_WRAPPER (..),
+    prefixTypeName,
+    CodeGenTypeName (..),
+    CodeGenConstructor (..),
+    CodeGenType (..),
+    getFullName,
+    fromTypeName,
+    CGName (..),
   )
 where
 
+import Data.Morpheus.CodeGen.Internal.Name (camelCaseTypeName)
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     TypeName,
@@ -62,6 +71,25 @@ instance Pretty TypeValue where
   pretty (TypedValueMaybe Nothing) = "Nothing"
   pretty (TypeValueList xs) = prettyList xs
 
+data CodeGenType = CodeGenType
+  { cgTypeName :: CodeGenTypeName,
+    cgConstructors :: [CodeGenConstructor],
+    cgDerivations :: [DerivingClass]
+  }
+  deriving (Show)
+
+data CodeGenConstructor = CodeGenConstructor
+  { constructorName :: CodeGenTypeName,
+    constructorFields :: [CodeGenField]
+  }
+  deriving (Show)
+
+data CGName = CGName
+  { cgnNamespaces :: [Text],
+    cgnName :: Text
+  }
+  deriving (Show)
+
 data CodeGenField = CodeGenField
   { fieldName :: FieldName,
     fieldType :: TypeName,
@@ -78,3 +106,19 @@ data FIELD_TYPE_WRAPPER
   | TAGGED_ARG TH.Name FieldName TypeRef
   | GQL_WRAPPER TypeWrapper
   deriving (Show)
+
+data CodeGenTypeName = CodeGenTypeName
+  { namespace :: [FieldName],
+    typeParameters :: [Text],
+    typename :: TypeName
+  }
+  deriving (Show)
+
+prefixTypeName :: CodeGenTypeName -> TypeName -> CodeGenTypeName
+prefixTypeName CodeGenTypeName {..} = CodeGenTypeName namespace [] . camelCaseTypeName [typename]
+
+getFullName :: CodeGenTypeName -> TypeName
+getFullName CodeGenTypeName {..} = camelCaseTypeName namespace typename
+
+fromTypeName :: TypeName -> CodeGenTypeName
+fromTypeName = CodeGenTypeName [] []

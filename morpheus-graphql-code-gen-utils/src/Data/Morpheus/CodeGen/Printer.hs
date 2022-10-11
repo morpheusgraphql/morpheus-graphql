@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -14,16 +15,20 @@ module Data.Morpheus.CodeGen.Printer
     wrapped,
     (.<>),
     optional,
-    parametrizedType,
     renderExtension,
     renderImport,
+    ignore,
   )
 where
 
 import Data.Morpheus.CodeGen.Internal.AST
-  ( CodeGenField (..),
+  ( CodeGenConstructor (..),
+    CodeGenField (..),
+    CodeGenType (..),
+    CodeGenTypeName (..),
     DerivingClass (..),
     FIELD_TYPE_WRAPPER (..),
+    getFullName,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Name,
@@ -32,15 +37,7 @@ import Data.Morpheus.Types.Internal.AST
     unpackName,
   )
 import qualified Data.Text as T
-import Prettyprinter
-  ( Doc,
-    Pretty (..),
-    hsep,
-    list,
-    pretty,
-    tupled,
-    (<+>),
-  )
+import Prettyprinter (Doc, Pretty (..), comma, enclose, hsep, indent, line, list, nest, pretty, punctuate, tupled, vsep, (<+>))
 import Relude hiding (optional, print, show)
 import Prelude (show)
 
@@ -71,6 +68,9 @@ pack = HSDoc False
 
 unpack :: HSDoc n -> Doc n
 unpack HSDoc {..} = if isComplex then tupled [rawDocument] else rawDocument
+
+ignore :: HSDoc n -> Doc n
+ignore HSDoc {..} = rawDocument
 
 data HSDoc n = HSDoc
   { isComplex :: Bool,
@@ -103,9 +103,6 @@ optional :: ([a] -> Doc n) -> [a] -> Doc n
 optional _ [] = ""
 optional f xs = " " <> f xs
 
-parametrizedType :: Text -> [Text] -> Doc ann
-parametrizedType tName typeParameters = hsep $ map pretty $ tName : typeParameters
-
 renderExtension :: Text -> Doc ann
 renderExtension name = "{-#" <+> "LANGUAGE" <+> pretty name <+> "#-}"
 
@@ -126,3 +123,36 @@ renderWrapper (TAGGED_ARG _ name typeRef) = infix' (apply "Arg" [print (show nam
 
 instance Printer CodeGenField where
   print CodeGenField {..} = infix' (print fieldName) "::" (foldr renderWrapper (print fieldType) wrappers)
+
+instance Printer CodeGenConstructor where
+  print CodeGenConstructor {constructorName, constructorFields = []} =
+    print constructorName
+  print CodeGenConstructor {constructorName, constructorFields} = do
+    let fields = map (unpack . print) constructorFields
+    pack (print' constructorName <> renderSet fields)
+    where
+      renderSet = nest 2 . enclose "\n{ " "\n}" . nest 2 . vsep . punctuate comma
+
+instance Printer CodeGenTypeName where
+  print cgName =
+    HSDoc (not $ null (typeParameters cgName)) $
+      parametrizedType
+        (unpackName (getFullName cgName))
+        (typeParameters cgName)
+
+parametrizedType :: Text -> [Text] -> Doc ann
+parametrizedType tName typeParameters = hsep $ map pretty $ tName : typeParameters
+
+instance Pretty CodeGenType where
+  pretty CodeGenType {..} =
+    "data"
+      <+> ignore (print cgTypeName)
+        <> renderConstructors cgConstructors
+        <> line
+        <> indent 2 (renderDeriving cgDerivations)
+        <> line
+    where
+      renderConstructors [cons] = (" =" <+>) $ print' cons
+      renderConstructors conses = nest 2 . (line <>) . vsep . prefixVariants $ map print' conses
+      prefixVariants (x : xs) = "=" <+> x : map ("|" <+>) xs
+      prefixVariants [] = []

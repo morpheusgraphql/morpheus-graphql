@@ -35,10 +35,7 @@ library
       Data.Morpheus.CodeGen.Server.Printing.GQLType
       Data.Morpheus.CodeGen.Server.Printing.Render
       Data.Morpheus.CodeGen.Server.Printing.Type
-      Data.Morpheus.CodeGen.Server.TH.GQLDirective
-      Data.Morpheus.CodeGen.Server.TH.GQLType
       Data.Morpheus.CodeGen.Server.TH.Type
-      Data.Morpheus.CodeGen.Server.TH.Utils
       Paths_morpheus_graphql_code_gen
   hs-source-dirs:
       src

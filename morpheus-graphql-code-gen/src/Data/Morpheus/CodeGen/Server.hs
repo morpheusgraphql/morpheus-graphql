@@ -17,7 +17,7 @@ import Data.ByteString.Lazy.Char8
 import Data.FileEmbed (makeRelativeToProject)
 import Data.Morpheus.CodeGen.Server.Internal.AST
   ( CodeGenConfig (..),
-    ServerTypeDefinition,
+    ServerDeclaration,
   )
 import Data.Morpheus.CodeGen.Server.Printing.Render
   ( renderDocument,
@@ -36,7 +36,7 @@ newtype PrinterConfig = PrinterConfig
   { moduleName :: String
   }
 
-printServerTypeDefinitions :: PrinterConfig -> [ServerTypeDefinition] -> ByteString
+printServerTypeDefinitions :: PrinterConfig -> [ServerDeclaration] -> ByteString
 printServerTypeDefinitions PrinterConfig {moduleName} = renderDocument moduleName
 
 importServerTypeDefinitions :: CodeGenConfig -> FilePath -> Q [Dec]

@@ -11,11 +11,15 @@ module Data.Morpheus.Client.Transform.Global
 where
 
 import Data.Morpheus.Client.Internal.Types
-  ( ClientConstructorDefinition (..),
+  ( ClientDeclaration,
     ClientTypeDefinition (..),
-    TypeNameTH (..),
   )
-import Data.Morpheus.Client.Transform.Core (toCodeGenField)
+import Data.Morpheus.Client.Transform.Core (toClientDeclarations, toCodeGenField)
+import Data.Morpheus.CodeGen.Internal.AST
+  ( CodeGenConstructor (..),
+    CodeGenTypeName (..),
+    fromTypeName,
+  )
 import Data.Morpheus.Internal.Utils
   ( empty,
   )
@@ -35,25 +39,24 @@ import Data.Morpheus.Types.Internal.AST
     VariableDefinitions,
     isNotSystemTypeName,
     isResolverType,
-    toAny,
   )
 import Relude hiding (empty)
 
 toArgumentsType ::
-  TypeName ->
+  CodeGenTypeName ->
   VariableDefinitions RAW ->
   Maybe ClientTypeDefinition
-toArgumentsType cName variables
+toArgumentsType clientTypeName variables
   | null variables = Nothing
   | otherwise =
       Just
         ClientTypeDefinition
-          { clientTypeName = TypeNameTH [] cName,
+          { clientTypeName,
             clientKind = KindInputObject,
             clientCons =
-              [ ClientConstructorDefinition
-                  { cName,
-                    cFields = toCodeGenField . toFieldDefinition <$> toList variables
+              [ CodeGenConstructor
+                  { constructorName = clientTypeName,
+                    constructorFields = toCodeGenField . toFieldDefinition <$> toList variables
                   }
               ]
           }
@@ -68,10 +71,11 @@ toFieldDefinition Variable {variableName, variableType} =
       fieldDirectives = empty
     }
 
-toGlobalDefinitions :: (TypeName -> Bool) -> Schema VALID -> [ClientTypeDefinition]
+toGlobalDefinitions :: (TypeName -> Bool) -> Schema VALID -> [ClientDeclaration]
 toGlobalDefinitions f Schema {types} =
-  mapMaybe generateGlobalType $
-    filter shouldInclude (toList types)
+  concatMap toClientDeclarations $
+    mapMaybe generateGlobalType $
+      filter shouldInclude (toList types)
   where
     shouldInclude t =
       not (isResolverType t)
@@ -83,24 +87,25 @@ generateGlobalType TypeDefinition {typeName, typeContent} = do
   (clientKind, clientCons) <- genContent typeContent
   pure
     ClientTypeDefinition
-      { clientTypeName = TypeNameTH [] typeName,
+      { clientTypeName = fromTypeName typeName,
         clientKind,
         clientCons
       }
   where
-    genContent :: TypeContent TRUE ANY VALID -> Maybe (TypeKind, [ClientConstructorDefinition])
-    genContent (DataInputObject inputFields) = do
+    genContent :: TypeContent TRUE ANY VALID -> Maybe (TypeKind, [CodeGenConstructor])
+    genContent (DataInputObject inputFields) =
       pure
         ( KindInputObject,
-          [ ClientConstructorDefinition
-              { cName = typeName,
-                cFields = toCodeGenField <$> toList inputFields
+          [ CodeGenConstructor
+              { constructorName = fromTypeName typeName,
+                constructorFields = toCodeGenField <$> toList inputFields
               }
           ]
         )
-    genContent (DataEnum enumTags) = pure (KindEnum, mkConsEnum <$> enumTags)
+    genContent (DataEnum enumTags) = pure (KindEnum, mkConsEnum typeName <$> enumTags)
     genContent DataScalar {} = pure (KindScalar, [])
     genContent _ = Nothing
 
-mkConsEnum :: DataEnumValue s -> ClientConstructorDefinition
-mkConsEnum DataEnumValue {enumName} = ClientConstructorDefinition enumName []
+mkConsEnum :: TypeName -> DataEnumValue s -> CodeGenConstructor
+mkConsEnum typename DataEnumValue {enumName} =
+  CodeGenConstructor (CodeGenTypeName [coerce typename] [] enumName) []

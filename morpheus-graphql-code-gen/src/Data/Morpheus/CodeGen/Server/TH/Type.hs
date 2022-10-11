@@ -4,6 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.CodeGen.Server.TH.Type
@@ -13,32 +14,39 @@ module Data.Morpheus.CodeGen.Server.TH.Type
 where
 
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.Morpheus.CodeGen.Internal.AST (CodeGenTypeName (..))
 import Data.Morpheus.CodeGen.Server.Internal.AST
   ( CodeGenConfig (..),
-    ServerConstructorDefinition (..),
-    ServerTypeDefinition (..),
+    GQLDirectiveTypeClass (..),
+    GQLTypeDefinition (..),
+    InterfaceDefinition (..),
+    ServerDeclaration (..),
+    ServerDirectiveUsage,
+    TypeKind,
   )
-import Data.Morpheus.CodeGen.Server.Interpreting.Transform (parseServerTypeDefinitions)
-import Data.Morpheus.CodeGen.Server.TH.GQLDirective (deriveGQLDirective)
-import Data.Morpheus.CodeGen.Server.TH.GQLType (deriveGQLType)
-import Data.Morpheus.CodeGen.Server.TH.Utils
-  ( renderTypeVars,
+import Data.Morpheus.CodeGen.Server.Interpreting.Transform
+  ( parseServerTypeDefinitions,
   )
 import Data.Morpheus.CodeGen.TH
-  ( apply,
+  ( PrintExp (..),
+    PrintType (..),
+    ToName (..),
+    apply,
     m',
     m_,
-    printDerivClause,
-    printField,
-    toName,
-    toTypeVars,
+    printDec,
+    printTypeClass,
+    printTypeSynonym,
+    toCon,
+    _',
   )
 import Data.Morpheus.Server.Types
-  ( TypeGuard,
+  ( GQLDirective (..),
+    GQLType (..),
+    TypeGuard (..),
+    dropNamespaceOptions,
   )
-import Data.Morpheus.Types.Internal.AST
-  ( TypeKind (..),
-  )
+import Data.Morpheus.Types.Internal.AST (DirectiveLocation)
 import Language.Haskell.TH
 import Language.Haskell.TH.Quote (QuasiQuoter (..))
 import Relude hiding (ByteString, Type)
@@ -59,44 +67,52 @@ mkQuasiQuoter ctx =
       error $ things <> " are not supported by the GraphQL QuasiQuoter"
 
 compileDocument :: CodeGenConfig -> LB.ByteString -> Q [Dec]
-compileDocument ctx = parseServerTypeDefinitions ctx >=> runDeclare ctx
+compileDocument ctx = parseServerTypeDefinitions ctx >=> printDecQ
 
-runDeclare :: Declare a => CodeGenConfig -> a -> Q [Dec]
-runDeclare _ = declare
+class PrintDecQ a where
+  printDecQ :: a -> Q [Dec]
 
-class Declare a where
-  declare :: a -> Q [Dec]
+instance PrintDecQ a => PrintDecQ [a] where
+  printDecQ = fmap concat . traverse printDecQ
 
-instance Declare a => Declare [a] where
-  declare = fmap concat . traverse declare
+instance PrintDecQ InterfaceDefinition where
+  printDecQ InterfaceDefinition {..} =
+    pure [printTypeSynonym aliasName [m_] (apply ''TypeGuard [apply interfaceName [m'], apply unionName [m']])]
 
-instance Declare ServerTypeDefinition where
-  declare typeDef = do
-    let typeDecs = declareType typeDef
-    gqlDirDecs <- deriveGQLDirective typeDef
-    gqlTypeDecs <- deriveGQLType typeDef
-    pure (typeDecs <> gqlDirDecs <> gqlTypeDecs)
-
-declareType :: ServerTypeDefinition -> [Dec]
-declareType (ServerInterfaceDefinition name interfaceName unionName) =
-  [ TySynD
-      (toName name)
-      (toTypeVars [m_])
-      (apply ''TypeGuard [apply interfaceName [m'], apply unionName [m']])
-  ]
-declareType ServerTypeDefinition {tKind = KindScalar} = []
-declareType ServerTypeDefinition {..} = [DataD [] (toName tName) vars Nothing cons [printDerivClause derives]]
-  where
-    cons = map declareCons tCons
-    vars = toTypeVars (renderTypeVars typeParameters)
-declareType
-  DirectiveTypeDefinition {..} =
-    [DataD [] name [] Nothing [declareCons directiveConstructor] [printDerivClause directiveDerives]]
+instance PrintDecQ GQLTypeDefinition where
+  printDecQ GQLTypeDefinition {..} = do
+    let params = map toName (typeParameters gqlTarget)
+    associatedTypes <- fmap (pure . (''KIND,)) (printType gqlKind)
+    pure <$> printTypeClass (map (''Typeable,) params) ''GQLType (printType gqlTarget) associatedTypes methods
     where
-      name = toName (constructorName directiveConstructor)
+      methods =
+        [ ('defaultValues, [_'], [|gqlTypeDefaultValues|]),
+          ('directives, [_'], printDirectiveUsages gqlTypeDirectiveUses)
+        ]
+          <> map printTypeOptions (maybeToList dropNamespace)
 
-declareCons :: ServerConstructorDefinition -> Con
-declareCons ServerConstructorDefinition {constructorName, constructorFields} =
-  RecC
-    (toName constructorName)
-    (map printField constructorFields)
+instance PrintDecQ ServerDeclaration where
+  printDecQ (InterfaceType interface) = printDecQ interface
+  printDecQ ScalarType {} = pure []
+  printDecQ (DataType dataType) = pure [printDec dataType]
+  printDecQ (GQLTypeInstance gql) = printDecQ gql
+  printDecQ (GQLDirectiveInstance dir) = printDecQ dir
+
+instance PrintDecQ GQLDirectiveTypeClass where
+  printDecQ GQLDirectiveTypeClass {..} =
+    pure
+      <$> printTypeClass
+        []
+        ''GQLDirective
+        (toCon directiveTypeName)
+        [(''DIRECTIVE_LOCATIONS, promotedList directiveLocations)]
+        []
+
+promotedList :: [DirectiveLocation] -> Type
+promotedList = foldr (AppT . AppT PromotedConsT . PromotedT . toName) PromotedNilT
+
+printTypeOptions :: (TypeKind, Text) -> (Name, [PatQ], ExpQ)
+printTypeOptions (kind, tName) = ('typeOptions, [_'], [|dropNamespaceOptions kind tName|])
+
+printDirectiveUsages :: [ServerDirectiveUsage] -> ExpQ
+printDirectiveUsages = foldr (appE . appE [|(<>)|] . printExp) [|mempty|]

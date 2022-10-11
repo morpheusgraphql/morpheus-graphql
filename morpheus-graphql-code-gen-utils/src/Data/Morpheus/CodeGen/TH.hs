@@ -15,35 +15,35 @@
 module Data.Morpheus.CodeGen.TH
   ( _',
     apply,
-    applyCons,
     applyVars,
-    declareTypeRef,
-    funDSimple,
-    funDProxy,
     toCon,
-    toVar,
+    ToVar (..),
     ToName (..),
-    toString,
-    typeInstanceDec,
+    ToString (..),
     v',
-    vars,
-    wrappedType,
     PrintExp (..),
     PrintType (..),
-    toTypeVars,
-    printDerivClause,
-    printField,
+    PrintDec (..),
     m',
     m_,
+    printTypeClass,
+    printSimpleTypeClass,
+    printTypeSynonym,
+    destructConstructor,
   )
 where
 
 import Data.Morpheus.CodeGen.Internal.AST
-  ( CodeGenField (..),
+  ( CodeGenConstructor (..),
+    CodeGenField (..),
+    CodeGenType (..),
+    CodeGenTypeName (..),
     DerivingClass (..),
     FIELD_TYPE_WRAPPER (..),
     TypeValue (..),
+    getFullName,
   )
+import Data.Morpheus.CodeGen.Internal.Name (camelCaseFieldName)
 import Data.Morpheus.CodeGen.Utils
   ( toHaskellName,
     toHaskellTypeName,
@@ -55,6 +55,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeWrapper (..),
     unpackName,
   )
+import qualified Data.Morpheus.Types.Internal.AST as AST
 import qualified Data.Text as T
 import Language.Haskell.TH
 import Relude hiding
@@ -85,12 +86,6 @@ withNonNull :: Bool -> Type -> Type
 withNonNull True = id
 withNonNull False = AppT (ConT ''Maybe)
 {-# INLINE withNonNull #-}
-
-cons :: ToCon a b => [a] -> [b]
-cons = map toCon
-
-vars :: ToVar a b => [a] -> [b]
-vars = map toVar
 
 class ToName a where
   toName :: a -> Name
@@ -143,6 +138,9 @@ instance (ToName a) => ToCon a Type where
 instance (ToName a) => ToCon a Exp where
   toCon = ConE . toName
 
+instance (ToName a) => ToCon a Pat where
+  toCon name = ConP (toName name) []
+
 class ToVar a b where
   toVar :: a -> b
 
@@ -183,18 +181,7 @@ applyVars ::
   con ->
   [var] ->
   res
-applyVars name li = apply name (vars li)
-
-applyCons :: (ToName con, ToName cons) => con -> [cons] -> Q Type
-applyCons name li = apply name (cons li)
-
-funDSimple :: Name -> [PatQ] -> ExpQ -> DecQ
-funDSimple name args body = funD name [clause args (normalB body) []]
-
-funDProxy :: [(Name, ExpQ)] -> [DecQ]
-funDProxy = map fun
-  where
-    fun (name, body) = funDSimple name [_'] body
+applyVars name li = apply name (map toVar li)
 
 #if MIN_VERSION_template_haskell(2,15,0)
 -- fix breaking changes
@@ -220,6 +207,9 @@ class PrintExp a where
 
 class PrintType a where
   printType :: a -> TypeQ
+
+class PrintDec a where
+  printDec :: a -> Dec
 
 printFieldExp :: (FieldName, TypeValue) -> Q FieldExp
 printFieldExp (fName, fValue) = do
@@ -273,3 +263,85 @@ m_ = mkName "m"
 
 m' :: Type
 m' = VarT m_
+
+constraint :: (Name, Name) -> Q Type
+constraint (con, name) = pure $ apply con [toVar name]
+
+printConstraints :: [(Name, Name)] -> Q Cxt
+printConstraints = cxt . map constraint
+
+printSimpleTypeClass :: Name -> Q Type -> [(Name, [PatQ], ExpQ)] -> Q Dec
+printSimpleTypeClass name target = printTypeClass [] name target []
+
+printTypeClass :: [(Name, Name)] -> Name -> Q Type -> [(Name, Type)] -> [(Name, [PatQ], ExpQ)] -> Q Dec
+printTypeClass cts name target assoc methods =
+  instanceD
+    (printConstraints cts)
+    headType
+    (map assocTypes assoc <> map printFun methods)
+  where
+    printFun (funName, args, body) = funD funName [clause args (normalB body) []]
+    assocTypes (assocName, type') = flip (typeInstanceDec assocName) type' <$> target
+    headType = apply name [target]
+
+printConstructor :: CodeGenConstructor -> Con
+printConstructor CodeGenConstructor {..}
+  | null constructorFields = NormalC (toName constructorName) []
+  | otherwise = RecC (toName constructorName) (map printField constructorFields)
+
+printTypeSynonym :: ToName a => a -> [Name] -> Type -> Dec
+printTypeSynonym name params = TySynD (toName name) (toTypeVars params)
+
+instance ToName CodeGenTypeName where
+  toName = toName . getFullName
+
+instance PrintType CodeGenTypeName where
+  printType name = applyVars (toName name) (map toName $ typeParameters name)
+
+instance ToName AST.DirectiveLocation where
+  toName AST.QUERY = 'AST.QUERY
+  toName AST.MUTATION = 'AST.MUTATION
+  toName AST.SUBSCRIPTION = 'AST.SUBSCRIPTION
+  toName AST.FIELD = 'AST.FIELD
+  toName AST.FRAGMENT_DEFINITION = 'AST.FRAGMENT_DEFINITION
+  toName AST.FRAGMENT_SPREAD = 'AST.FRAGMENT_SPREAD
+  toName AST.INLINE_FRAGMENT = 'AST.INLINE_FRAGMENT
+  toName AST.SCHEMA = 'AST.SCHEMA
+  toName AST.SCALAR = 'AST.SCALAR
+  toName AST.OBJECT = 'AST.OBJECT
+  toName AST.FIELD_DEFINITION = 'AST.FIELD_DEFINITION
+  toName AST.ARGUMENT_DEFINITION = 'AST.ARGUMENT_DEFINITION
+  toName AST.INTERFACE = 'AST.INTERFACE
+  toName AST.UNION = 'AST.UNION
+  toName AST.ENUM = 'AST.ENUM
+  toName AST.ENUM_VALUE = 'AST.ENUM_VALUE
+  toName AST.INPUT_OBJECT = 'AST.INPUT_OBJECT
+  toName AST.INPUT_FIELD_DEFINITION = 'AST.INPUT_FIELD_DEFINITION
+
+instance PrintDec CodeGenType where
+  printDec CodeGenType {..} =
+    DataD
+      []
+      (toName cgTypeName)
+      (toTypeVars $ map toName $ typeParameters cgTypeName)
+      Nothing
+      (map printConstructor cgConstructors)
+      [printDerivClause cgDerivations]
+
+-- |
+-- input:
+-- >>>
+-- WAS WAS destructRecord "User" ["name","id"]
+-- >>>
+--
+-- expression:
+-- >>>
+-- WAS WAS (User name id)
+-- >>>
+destructConstructor :: CodeGenConstructor -> PatQ
+destructConstructor (CodeGenConstructor conName fields) = conP (toName conName) names
+  where
+    names = map (typeField conName . fieldName) fields
+
+typeField :: ToVar FieldName c => CodeGenTypeName -> FieldName -> c
+typeField conName = toVar . camelCaseFieldName (getFullName conName)

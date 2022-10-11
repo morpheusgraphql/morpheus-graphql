@@ -7,18 +7,21 @@ module Data.Morpheus.CodeGen.Server.Printing.GQLType
   )
 where
 
+import Data.Morpheus.CodeGen.Internal.AST
+  ( CodeGenTypeName (..),
+  )
 import Data.Morpheus.CodeGen.Printer
-  ( optional,
-    parametrizedType,
+  ( Printer (print),
+    optional,
+    unpack,
   )
 import Data.Morpheus.CodeGen.Server.Internal.AST
   ( GQLTypeDefinition (..),
     ServerDirectiveUsage (..),
-    ServerTypeDefinition (..),
     TypeKind,
   )
 import Prettyprinter
-import Relude hiding (optional, show)
+import Relude hiding (optional, print, show)
 import Prelude (show)
 
 renderTypeableConstraints :: [Text] -> Doc n
@@ -28,31 +31,22 @@ defineTypeOptions :: Maybe (TypeKind, Text) -> [Doc n]
 defineTypeOptions (Just (kind, tName)) = ["typeOptions _ = dropNamespaceOptions" <+> "(" <> pretty (show kind) <> ")" <+> pretty (show tName)]
 defineTypeOptions _ = []
 
-renderGQLType :: ServerTypeDefinition -> Doc n
-renderGQLType ServerTypeDefinition {..} =
+renderGQLType :: GQLTypeDefinition -> Doc ann
+renderGQLType gql@GQLTypeDefinition {..} =
   "instance"
-    <> optional renderTypeableConstraints typeParameters
+    <> optional renderTypeableConstraints (typeParameters gqlTarget)
     <+> "GQLType"
     <+> typeHead
     <+> "where"
       <> line
-      <> indent 2 (vsep (methods <> options))
+      <> indent 2 (vsep (renderMethods typeHead gql <> defineTypeOptions dropNamespace))
   where
-    methods = renderMethods typeHead typeGQLType
-    options = defineTypeOptions (typeGQLType >>= dropNamespace)
-    typeHead =
-      if null typeParameters
-        then parametrizedType tName typeParameters
-        else tupled (pure $ parametrizedType tName typeParameters)
-renderGQLType _ = ""
+    typeHead = unpack (print gqlTarget)
 
-renderMethods :: Doc n -> Maybe GQLTypeDefinition -> [Doc n]
-renderMethods _ Nothing = []
-renderMethods
-  typeHead
-  (Just GQLTypeDefinition {..}) =
-    ["type KIND" <+> typeHead <+> "=" <+> pretty gqlKind]
-      <> ["directives _=" <+> renderDirectiveUsages gqlTypeDirectiveUses | not (null gqlTypeDirectiveUses)]
+renderMethods :: Doc n -> GQLTypeDefinition -> [Doc n]
+renderMethods typeHead GQLTypeDefinition {..} =
+  ["type KIND" <+> typeHead <+> "=" <+> pretty gqlKind]
+    <> ["directives _=" <+> renderDirectiveUsages gqlTypeDirectiveUses | not (null gqlTypeDirectiveUses)]
 
 renderDirectiveUsages :: [ServerDirectiveUsage] -> Doc n
 renderDirectiveUsages = align . vsep . punctuate " <>" . map renderDirectiveUsage
