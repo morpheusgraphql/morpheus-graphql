@@ -57,10 +57,6 @@ library
       Data.Morpheus.Client
   other-modules:
       Data.Morpheus.Client.Declare
-      Data.Morpheus.Client.Declare.Aeson
-      Data.Morpheus.Client.Declare.Client
-      Data.Morpheus.Client.Declare.RequestType
-      Data.Morpheus.Client.Declare.Type
       Data.Morpheus.Client.Fetch
       Data.Morpheus.Client.Fetch.GQLClient
       Data.Morpheus.Client.Fetch.Http
@@ -70,6 +66,7 @@ library
       Data.Morpheus.Client.Internal.TH
       Data.Morpheus.Client.Internal.Types
       Data.Morpheus.Client.Internal.Utils
+      Data.Morpheus.Client.Printing.TH
       Data.Morpheus.Client.QuasiQuoter
       Data.Morpheus.Client.Schema.JSON.Parse
       Data.Morpheus.Client.Schema.JSON.TypeKind

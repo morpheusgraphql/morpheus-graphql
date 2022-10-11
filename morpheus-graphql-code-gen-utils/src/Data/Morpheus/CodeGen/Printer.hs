@@ -4,27 +4,22 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.CodeGen.Printer
-  ( HSDoc,
+  ( HSDoc (..),
     Printer (..),
     apply,
     infix',
     print',
-    renderDeriving,
     unpack,
     wrapped,
     (.<>),
     optional,
-    parametrizedType,
     renderExtension,
     renderImport,
+    ignore,
+    pack,
   )
 where
 
-import Data.Morpheus.CodeGen.Internal.AST
-  ( CodeGenField (..),
-    DerivingClass (..),
-    FIELD_TYPE_WRAPPER (..),
-  )
 import Data.Morpheus.Types.Internal.AST
   ( Name,
     TypeRef (..),
@@ -32,20 +27,8 @@ import Data.Morpheus.Types.Internal.AST
     unpackName,
   )
 import qualified Data.Text as T
-import Prettyprinter
-  ( Doc,
-    Pretty (..),
-    hsep,
-    list,
-    pretty,
-    tupled,
-    (<+>),
-  )
+import Prettyprinter (Doc, Pretty (..), list, pretty, tupled, (<+>))
 import Relude hiding (optional, print, show)
-import Prelude (show)
-
-renderDeriving :: [DerivingClass] -> Doc n
-renderDeriving = ("deriving" <+>) . tupled . map pretty
 
 infix' :: HSDoc n -> HSDoc n -> HSDoc n -> HSDoc n
 infix' a op b = pack $ rawDocument a <+> rawDocument op <+> rawDocument b
@@ -71,6 +54,9 @@ pack = HSDoc False
 
 unpack :: HSDoc n -> Doc n
 unpack HSDoc {..} = if isComplex then tupled [rawDocument] else rawDocument
+
+ignore :: HSDoc n -> Doc n
+ignore HSDoc {..} = rawDocument
 
 data HSDoc n = HSDoc
   { isComplex :: Bool,
@@ -103,9 +89,6 @@ optional :: ([a] -> Doc n) -> [a] -> Doc n
 optional _ [] = ""
 optional f xs = " " <> f xs
 
-parametrizedType :: Text -> [Text] -> Doc ann
-parametrizedType tName typeParameters = hsep $ map pretty $ tName : typeParameters
-
 renderExtension :: Text -> Doc ann
 renderExtension name = "{-#" <+> "LANGUAGE" <+> pretty name <+> "#-}"
 
@@ -115,14 +98,3 @@ renderImport (src, ls) = "import" <+> pretty src <> renderImportList ls
 renderImportList :: [Text] -> Doc ann
 renderImportList ["*"] = ""
 renderImportList xs = tupled (map pretty xs)
-
-renderWrapper :: FIELD_TYPE_WRAPPER -> HSDoc n -> HSDoc n
-renderWrapper PARAMETRIZED = (.<> "m")
-renderWrapper MONAD = ("m" .<>)
-renderWrapper SUBSCRIPTION {} = id
-renderWrapper (GQL_WRAPPER typeWrappers) = wrapped typeWrappers
-renderWrapper (ARG name) = infix' (print name) "->"
-renderWrapper (TAGGED_ARG _ name typeRef) = infix' (apply "Arg" [print (show name), print typeRef]) "->"
-
-instance Printer CodeGenField where
-  print CodeGenField {..} = infix' (print fieldName) "::" (foldr renderWrapper (print fieldType) wrappers)

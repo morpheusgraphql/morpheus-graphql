@@ -16,31 +16,31 @@ module Data.Morpheus.Client.Internal.TH
   ( matchWith,
     decodeObjectE,
     mkFieldsE,
-    destructRecord,
     failExp,
-    isTypeDeclared,
-    hasInstance,
+    deriveIfNotDefined,
+    declareIfNotDeclared,
   )
 where
 
+import Data.Aeson ((.:))
+import Data.Aeson.Types ((.:?))
 import Data.Foldable (foldr1)
-import Data.Morpheus.Client.Internal.Types (ClientTypeDefinition (..), TypeNameTH (..))
-import Data.Morpheus.CodeGen.Internal.AST (CodeGenField (..))
+import Data.Morpheus.CodeGen.Internal.AST
+  ( CodeGenConstructor (..),
+    CodeGenField (..),
+    CodeGenType (cgTypeName),
+    CodeGenTypeName (..),
+    getFullName,
+  )
 import Data.Morpheus.CodeGen.TH
   ( toCon,
     toName,
     toString,
     toVar,
     v',
-    vars,
   )
 import Data.Morpheus.CodeGen.Utils
   ( camelCaseFieldName,
-    camelCaseTypeName,
-  )
-import Data.Morpheus.Types.Internal.AST
-  ( TypeName,
-    isNullable,
   )
 import Language.Haskell.TH
 import Relude hiding (toString)
@@ -68,19 +68,25 @@ failExp =
         (stringE " is Not Valid Union Constructor")
     )
 
-decodeObjectE :: (Bool -> Name) -> TypeName -> [CodeGenField] -> ExpQ
-decodeObjectE _ conName [] = appE [|pure|] (toCon conName)
-decodeObjectE funName conName fields =
-  uInfixE
-    (toCon conName)
-    [|(<$>)|]
-    (foldr1 withApplicative $ map (defField funName) fields)
+decodeObjectE :: CodeGenConstructor -> ExpQ
+decodeObjectE CodeGenConstructor {..}
+  | null constructorFields = appE [|pure|] (toCon constructorName)
+  | otherwise =
+      uInfixE
+        (toCon constructorName)
+        [|(<$>)|]
+        (foldr1 withApplicative $ map defField constructorFields)
+
+defField :: CodeGenField -> ExpQ
+defField CodeGenField {..} = uInfixE v' (varE $ bindField fieldIsNullable) (toString fieldName)
+
+bindField :: Bool -> Name
+bindField nullable
+  | nullable = '(.:?)
+  | otherwise = '(.:)
 
 withApplicative :: ExpQ -> ExpQ -> ExpQ
 withApplicative x = uInfixE x [|(<*>)|]
-
-defField :: (Bool -> Name) -> CodeGenField -> ExpQ
-defField f CodeGenField {..} = uInfixE v' (varE $ f fieldIsNullable) (toString fieldName)
 
 -- | 'mkFieldsE'
 --
@@ -95,50 +101,49 @@ defField f CodeGenField {..} = uInfixE v' (varE $ f fieldIsNullable) (toString f
 --    ..
 --    ]
 -- >>>
-mkFieldsE :: TypeName -> Name -> [CodeGenField] -> Exp
+mkFieldsE :: CodeGenTypeName -> Name -> [CodeGenField] -> Exp
 mkFieldsE conName name = ListE . map (mkEntryWith conName name)
 
 --  input : mkFieldWith 'mkValue (FieldDefinition { fieldName = "field1", ..})
 --  expression: mkValue "field1"  field1
 mkEntryWith ::
-  TypeName ->
+  CodeGenTypeName ->
   Name ->
   CodeGenField ->
   Exp
 mkEntryWith conName f CodeGenField {fieldName} =
   AppE
     (AppE (VarE f) (toString fieldName))
-    (toVar $ camelCaseFieldName conName fieldName)
+    (toVar $ camelCaseFieldName (getFullName conName) fieldName)
 
--- |
--- input:
--- >>>
--- WAS WAS destructRecord "User" ["name","id"]
--- >>>
---
--- expression:
--- >>>
--- WAS WAS (User name id)
--- >>>
-destructRecord :: TypeName -> [CodeGenField] -> PatQ
-destructRecord conName fields = conP (toName conName) (vars names)
-  where
-    names = map (camelCaseFieldName conName . fieldName) fields
-
-isTypeDeclared :: ClientTypeDefinition -> Q Bool
-isTypeDeclared clientDef = do
-  let name = mkTypeName clientDef
+isTypeDeclared :: CodeGenTypeName -> Q Bool
+isTypeDeclared clientTypeName = do
+  let name = toName clientTypeName
   m <- lookupTypeName (show name)
   case m of
     Nothing -> pure False
     _ -> pure True
 
-hasInstance :: Name -> ClientTypeDefinition -> Q Bool
-hasInstance typeClass clientDef = do
-  isInstance typeClass [ConT (mkTypeName clientDef)]
+hasInstance :: Name -> CodeGenType -> Q Bool
+hasInstance typeClass clientDef = isInstance typeClass [ConT (toName (cgTypeName clientDef))]
 
-mkTypeName :: ClientTypeDefinition -> Name
-mkTypeName ClientTypeDefinition {clientTypeName = TypeNameTH namespace typeName} =
-  toType typeName
+deriveIfNotDefined :: (CodeGenType -> Q Dec) -> Name -> CodeGenType -> Q [Dec]
+deriveIfNotDefined derivation typeClass clientDef = do
+  exists <- isTypeDeclared (cgTypeName clientDef)
+  if exists
+    then do
+      has <- hasInstance typeClass clientDef
+      if has
+        then pure []
+        else mkDerivation
+    else mkDerivation
   where
-    toType = toName . camelCaseTypeName namespace
+    mkDerivation :: Q [Dec]
+    mkDerivation = pure <$> derivation clientDef
+
+declareIfNotDeclared :: (CodeGenType -> a) -> CodeGenType -> Q [a]
+declareIfNotDeclared f c = do
+  exists <- isTypeDeclared (cgTypeName c)
+  if exists
+    then pure []
+    else pure [f c]

@@ -12,13 +12,14 @@ module Data.Morpheus.Client.Declare
   )
 where
 
-import Data.Morpheus.Client.Declare.Client (declareTypes)
-import Data.Morpheus.Client.Declare.RequestType (declareRequestType)
 import Data.Morpheus.Client.Internal.Types
   ( ExecutableSource,
     SchemaSource,
   )
 import Data.Morpheus.Client.Internal.Utils (getFile, getSource, handleResult)
+import Data.Morpheus.Client.Printing.TH
+  ( printDeclarations,
+  )
 import Data.Morpheus.Client.QuasiQuoter (raw)
 import Data.Morpheus.Client.Schema.Parse (parseSchema)
 import Data.Morpheus.Client.Transform
@@ -28,7 +29,6 @@ import Data.Morpheus.Client.Transform
 import Data.Morpheus.Core (parseRequest)
 import Data.Morpheus.Types.IO (GQLRequest (..))
 import Data.Morpheus.Types.Internal.AST (TypeName)
-import Data.Set
 import qualified Data.Set as S
 import Language.Haskell.TH (Dec, Q, runIO)
 import Relude
@@ -46,16 +46,12 @@ internalLegacyLocalDeclareTypes schemaSrc query = do
     ( do
         schemaDoc <- parseSchema schemaText
         executableDoc <- parseRequest request
-        toLocalDefinitions executableDoc schemaDoc
+        toLocalDefinitions (query, executableDoc) schemaDoc
     )
-    ( \(fetch, types) ->
-        (<>)
-          <$> declareRequestType query fetch
-          <*> declareTypes types
-    )
+    printDeclarations
 
 globalTypeDeclarations :: SchemaSource -> (TypeName -> Bool) -> Q [Dec]
-globalTypeDeclarations src f = handleResult (toGlobalDefinitions f <$> parseSchema src) declareTypes
+globalTypeDeclarations src f = handleResult (toGlobalDefinitions f <$> parseSchema src) printDeclarations
 
 -- | declares global or local types, depending
 -- on whether the second argument is specified or not
@@ -93,7 +89,7 @@ declareGlobalTypes = flip declareClientTypes Nothing
 declareGlobalTypesByName :: FilePath -> [TypeName] -> Q [Dec]
 declareGlobalTypesByName path names = do
   schema <- getSource path
-  globalTypeDeclarations schema (`member` S.fromList names)
+  globalTypeDeclarations schema (`S.member` S.fromList names)
 
 {- ORMOLU_DISABLE -}
 -- | declares object, interface and union types for

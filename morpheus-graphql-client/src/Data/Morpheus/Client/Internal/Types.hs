@@ -5,50 +5,50 @@
 
 module Data.Morpheus.Client.Internal.Types
   ( ClientTypeDefinition (..),
-    TypeNameTH (..),
-    FetchDefinition (..),
-    ClientConstructorDefinition (..),
+    RequestTypeDefinition (..),
     FetchError (..),
     SchemaSource (..),
     ExecutableSource,
     GQLClientResult,
+    ClientDeclaration (..),
+    DERIVING_MODE (..),
   )
 where
 
 import Data.ByteString.Lazy (ByteString)
-import Data.Morpheus.CodeGen.Internal.AST (CodeGenField (..))
+import Data.Morpheus.CodeGen.Internal.AST
+  ( CodeGenConstructor (..),
+    CodeGenType,
+    CodeGenTypeName,
+  )
 import Data.Morpheus.Types.Internal.AST
-  ( FieldName,
-    GQLErrors,
+  ( GQLErrors,
     OperationType,
     TypeKind,
     TypeName,
   )
 import Relude hiding (ByteString)
 
-data TypeNameTH = TypeNameTH
-  { namespace :: [FieldName],
-    typename :: TypeName
-  }
-  deriving (Show)
+data DERIVING_MODE = SCALAR_MODE | ENUM_MODE | TYPE_MODE
 
-data ClientConstructorDefinition = ClientConstructorDefinition
-  { cName :: TypeName,
-    cFields :: [CodeGenField]
-  }
-  deriving (Show)
+data ClientDeclaration
+  = ToJSONClass DERIVING_MODE CodeGenType
+  | FromJSONClass DERIVING_MODE CodeGenType
+  | RequestTypeClass RequestTypeDefinition
+  | ClientType CodeGenType
 
 data ClientTypeDefinition = ClientTypeDefinition
-  { clientTypeName :: TypeNameTH,
-    clientCons :: [ClientConstructorDefinition],
+  { clientTypeName :: CodeGenTypeName,
+    clientCons :: [CodeGenConstructor],
     clientKind :: TypeKind
   }
   deriving (Show)
 
-data FetchDefinition = FetchDefinition
-  { rootTypeName :: TypeNameTH,
-    clientArgumentsTypeName :: Maybe TypeNameTH,
-    fetchOperationType :: OperationType
+data RequestTypeDefinition = RequestTypeDefinition
+  { requestName :: TypeName,
+    requestArgs :: TypeName,
+    requestType :: OperationType,
+    requestQuery :: String
   }
   deriving (Show)
 

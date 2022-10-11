@@ -14,13 +14,13 @@ where
 
 import Control.Monad.Except (MonadError (throwError))
 import Data.Morpheus.Client.Internal.Types
-  ( ClientConstructorDefinition (..),
+  ( ClientDeclaration (..),
     ClientTypeDefinition (..),
-    FetchDefinition (..),
-    TypeNameTH (..),
+    RequestTypeDefinition (..),
   )
-import Data.Morpheus.Client.Transform.Core (Converter (..), compileError, deprecationWarning, getType, toCodeGenField, typeFrom)
+import Data.Morpheus.Client.Transform.Core (Converter (..), compileError, deprecationWarning, getType, toClientDeclarations, toCodeGenField, typeFrom)
 import Data.Morpheus.Client.Transform.Global (toArgumentsType)
+import Data.Morpheus.CodeGen.Internal.AST (CodeGenConstructor (..), CodeGenTypeName (..), fromTypeName)
 import Data.Morpheus.Core (Config (..), VALIDATION_MODE (WITHOUT_VARIABLES), validateRequest)
 import Data.Morpheus.Internal.Ext
   ( GQLResult,
@@ -56,6 +56,7 @@ import Data.Morpheus.Types.Internal.AST
     msg,
     toAny,
   )
+import qualified Data.Text as T
 import Relude hiding (empty, show)
 import Prelude (show)
 
@@ -66,24 +67,16 @@ clientConfig =
       validationMode = WITHOUT_VARIABLES
     }
 
-toLocalDefinitions ::
-  ExecutableDocument ->
-  Schema VALID ->
-  GQLResult
-    ( FetchDefinition,
-      [ClientTypeDefinition]
-    )
-toLocalDefinitions request schema = do
+toLocalDefinitions :: (Text, ExecutableDocument) -> Schema VALID -> GQLResult [ClientDeclaration]
+toLocalDefinitions (query, request) schema = do
   validOperation <- validateRequest clientConfig schema request
-  flip runReaderT (schema, operationArguments $ operation request) $
-    runConverter $
-      genOperation validOperation
+  flip runReaderT (schema, operationArguments $ operation request) $ runConverter $ genLocalDeclarations query validOperation
 
-genOperation :: Operation VALID -> Converter (FetchDefinition, [ClientTypeDefinition])
-genOperation op@Operation {operationName, operationSelection, operationType} = do
+genLocalDeclarations :: Text -> Operation VALID -> Converter [ClientDeclaration]
+genLocalDeclarations query op@Operation {operationName, operationSelection, operationType} = do
   (schema, varDefs) <- asks id
   datatype <- getOperationDataType op schema
-  let argumentsType = toArgumentsType (getOperationName operationName <> "Args") varDefs
+  let argumentsType = toArgumentsType (fromTypeName $ getOperationName operationName <> "Args") varDefs
   (rootType :| localTypes) <-
     genLocalTypes
       []
@@ -91,12 +84,14 @@ genOperation op@Operation {operationName, operationSelection, operationType} = d
       (toAny datatype)
       operationSelection
   pure
-    ( FetchDefinition
-        { clientArgumentsTypeName = fmap clientTypeName argumentsType,
-          rootTypeName = clientTypeName rootType,
-          fetchOperationType = operationType
-        },
-      rootType : (localTypes <> maybeToList argumentsType)
+    ( RequestTypeClass
+        RequestTypeDefinition
+          { requestArgs = maybe "()" (typename . clientTypeName) argumentsType,
+            requestName = typename (clientTypeName rootType),
+            requestType = operationType,
+            requestQuery = T.unpack query
+          }
+        : concatMap toClientDeclarations (rootType : (localTypes <> maybeToList argumentsType))
     )
 
 -------------------------------------------------------------------------
@@ -107,11 +102,12 @@ genLocalTypes ::
   TypeDefinition ANY VALID ->
   SelectionSet VALID ->
   Converter (NonEmpty ClientTypeDefinition)
-genLocalTypes path tName dataType recordSelSet = do
-  (con, subTypes) <- toConstructorDefinition (if null path then [coerce tName] else path) tName dataType recordSelSet
+genLocalTypes namespace tName dataType recordSelSet = do
+  let clientTypeName = CodeGenTypeName {namespace, typeParameters = [], typename = tName}
+  (con, subTypes) <- toConstructorDefinition (if null namespace then [coerce tName] else namespace) clientTypeName dataType recordSelSet
   pure $
     ClientTypeDefinition
-      { clientTypeName = TypeNameTH path tName,
+      { clientTypeName,
         clientCons = [con],
         clientKind = KindObject Nothing
       }
@@ -119,13 +115,13 @@ genLocalTypes path tName dataType recordSelSet = do
 
 toConstructorDefinition ::
   [FieldName] ->
-  TypeName ->
+  CodeGenTypeName ->
   TypeDefinition ANY VALID ->
   SelectionSet VALID ->
-  Converter (ClientConstructorDefinition, [ClientTypeDefinition])
-toConstructorDefinition path cName datatype selSet = do
+  Converter (CodeGenConstructor, [ClientTypeDefinition])
+toConstructorDefinition path name datatype selSet = do
   (fields, subTypes) <- unzip <$> traverse genField (toList selSet)
-  pure (ClientConstructorDefinition {cName, cFields = map toCodeGenField fields}, concat subTypes)
+  pure (CodeGenConstructor {constructorName = name, constructorFields = map toCodeGenField fields}, concat subTypes)
   where
     genField :: Selection VALID -> Converter (FieldDefinition ANY VALID, [ClientTypeDefinition])
     genField sel = do
@@ -151,25 +147,25 @@ subTypesBySelection ::
   Selection VALID ->
   Converter [ClientTypeDefinition]
 subTypesBySelection _ _ Selection {selectionContent = SelectionField} = pure []
-subTypesBySelection path dType Selection {selectionContent = SelectionSet selectionSet} = do
+subTypesBySelection path dType Selection {selectionContent = SelectionSet selectionSet} =
   toList <$> genLocalTypes path (typeFrom [] dType) dType selectionSet
-subTypesBySelection path dType Selection {selectionContent = UnionSelection interface unionSelections} =
+subTypesBySelection namespace dType Selection {selectionContent = UnionSelection interface unionSelections} =
   do
     let variants = UnionTag (typeName dType) interface : toList unionSelections
-    (clientCons, subTypes) <- unzip <$> traverse (getVariantType path) variants
+    (clientCons, subTypes) <- unzip <$> traverse (getVariantType namespace) variants
     pure
       ( ClientTypeDefinition
-          { clientTypeName = TypeNameTH path (typeFrom [] dType),
+          { clientTypeName = CodeGenTypeName {namespace, typeParameters = [], typename = typeFrom [] dType},
             clientCons,
             clientKind = KindUnion
           }
           : concat subTypes
       )
 
-getVariantType :: [FieldName] -> UnionTag -> Converter (ClientConstructorDefinition, [ClientTypeDefinition])
+getVariantType :: [FieldName] -> UnionTag -> Converter (CodeGenConstructor, [ClientTypeDefinition])
 getVariantType path (UnionTag selectedTyName selectionVariant) = do
   conDatatype <- getType selectedTyName
-  toConstructorDefinition path selectedTyName conDatatype selectionVariant
+  toConstructorDefinition path (CodeGenTypeName path [] selectedTyName) conDatatype selectionVariant
 
 getFieldType ::
   [FieldName] ->
