@@ -49,7 +49,6 @@ import Data.Morpheus.CodeGen.TH
   ( PrintDec (printDec),
     ToString (..),
     destructConstructor,
-    printSimpleTypeClass,
     printTypeClass,
     toCon,
     toName,
@@ -94,11 +93,12 @@ typeDeclarations (RequestTypeClass RequestTypeDefinition {..}) =
       ]
 
 -- UTILS
+
 mkFromJSON :: CodeGenTypeName -> ExpQ -> DecQ
-mkFromJSON name expr = printSimpleTypeClass ''FromJSON (toCon (toName name)) [('parseJSON, [], expr)]
+mkFromJSON name expr = printTypeClass [] ''FromJSON (toCon (toName name)) [] [('parseJSON, [], expr)]
 
 mkToJSON :: CodeGenTypeName -> [PatQ] -> ExpQ -> DecQ
-mkToJSON name args expr = printSimpleTypeClass ''ToJSON (toCon $ toName name) [('toJSON, args, expr)]
+mkToJSON name args expr = printTypeClass [] ''ToJSON (toCon $ toName name) [] [('toJSON, args, expr)]
 
 originalLit :: ToString TypeName a => CodeGenTypeName -> Q a
 originalLit = toString . typename

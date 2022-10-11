@@ -27,7 +27,6 @@ module Data.Morpheus.CodeGen.TH
     m',
     m_,
     printTypeClass,
-    printSimpleTypeClass,
     printTypeSynonym,
     destructConstructor,
   )
@@ -269,9 +268,6 @@ constraint (con, name) = pure $ apply con [toVar name]
 
 printConstraints :: [(Name, Name)] -> Q Cxt
 printConstraints = cxt . map constraint
-
-printSimpleTypeClass :: Name -> Q Type -> [(Name, [PatQ], ExpQ)] -> Q Dec
-printSimpleTypeClass name target = printTypeClass [] name target []
 
 printTypeClass :: [(Name, Name)] -> Name -> Q Type -> [(Name, Type)] -> [(Name, [PatQ], ExpQ)] -> Q Dec
 printTypeClass cts name target assoc methods =
