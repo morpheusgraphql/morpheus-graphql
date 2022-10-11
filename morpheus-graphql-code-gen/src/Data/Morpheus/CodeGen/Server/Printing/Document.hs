@@ -36,7 +36,6 @@ import qualified Data.Text.Lazy as LT
 import Data.Text.Lazy.Encoding (encodeUtf8)
 import Prettyprinter
   ( Doc,
-    Pretty,
     align,
     indent,
     line,
