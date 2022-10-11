@@ -53,7 +53,7 @@ import Data.Morpheus.Types.Internal.AST
     unpackName,
   )
 import Language.Haskell.TH.Lib (appE, conT, varE)
-import Prettyprinter (Pretty (..))
+import Prettyprinter (Pretty (..), (<+>))
 import Relude
 
 data ModuleDefinition = ModuleDefinition
@@ -86,6 +86,11 @@ instance PrintExp ServerDirectiveUsage where
   printExp (TypeDirectiveUsage x) = appE (varE 'typeDirective) (printExp x)
   printExp (FieldDirectiveUsage field x) = appE (appE (varE 'fieldDirective) [|field|]) (printExp x)
   printExp (EnumDirectiveUsage enum x) = appE (appE (varE 'enumDirective) [|enum|]) (printExp x)
+
+instance Pretty ServerDirectiveUsage where
+  pretty (TypeDirectiveUsage value) = "typeDirective" <+> pretty value
+  pretty (FieldDirectiveUsage place value) = "fieldDirective" <+> pretty (show place :: String) <+> pretty value
+  pretty (EnumDirectiveUsage place value) = "enumDirective" <+> pretty (show place :: String) <+> pretty value
 
 data GQLTypeDefinition = GQLTypeDefinition
   { gqlTarget :: CodeGenTypeName,

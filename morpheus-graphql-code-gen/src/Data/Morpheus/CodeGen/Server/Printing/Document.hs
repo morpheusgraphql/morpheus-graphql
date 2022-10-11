@@ -36,6 +36,7 @@ import qualified Data.Text.Lazy as LT
 import Data.Text.Lazy.Encoding (encodeUtf8)
 import Prettyprinter
   ( Doc,
+    Pretty,
     align,
     indent,
     line,
@@ -139,9 +140,4 @@ renderMethods typeHead GQLTypeDefinition {..} =
     <> ["directives _=" <+> renderDirectiveUsages gqlTypeDirectiveUses | not (null gqlTypeDirectiveUses)]
 
 renderDirectiveUsages :: [ServerDirectiveUsage] -> Doc n
-renderDirectiveUsages = align . vsep . punctuate " <>" . map renderDirectiveUsage
-
-renderDirectiveUsage :: ServerDirectiveUsage -> Doc n
-renderDirectiveUsage (TypeDirectiveUsage value) = "typeDirective" <+> pretty value
-renderDirectiveUsage (FieldDirectiveUsage place value) = "fieldDirective" <+> pretty (show place :: String) <+> pretty value
-renderDirectiveUsage (EnumDirectiveUsage place value) = "enumDirective" <+> pretty (show place :: String) <+> pretty value
+renderDirectiveUsages = align . vsep . punctuate " <>" . map pretty
