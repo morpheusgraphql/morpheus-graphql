@@ -7,7 +7,7 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.CodeGen.Server.TH.Type
+module Data.Morpheus.CodeGen.Server.Printing.TH
   ( compileDocument,
     gqlDocument,
   )

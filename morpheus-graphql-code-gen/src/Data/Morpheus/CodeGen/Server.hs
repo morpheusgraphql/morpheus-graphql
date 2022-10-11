@@ -19,10 +19,10 @@ import Data.Morpheus.CodeGen.Server.Internal.AST
   ( CodeGenConfig (..),
     ServerDeclaration,
   )
-import Data.Morpheus.CodeGen.Server.Printing.Render
+import Data.Morpheus.CodeGen.Server.Printing.Document
   ( renderDocument,
   )
-import Data.Morpheus.CodeGen.Server.TH.Type
+import Data.Morpheus.CodeGen.Server.Printing.TH
   ( compileDocument,
     gqlDocument,
   )

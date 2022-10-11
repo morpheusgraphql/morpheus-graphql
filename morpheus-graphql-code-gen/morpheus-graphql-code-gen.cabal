@@ -32,10 +32,8 @@ library
   other-modules:
       Data.Morpheus.CodeGen.Server.Internal.AST
       Data.Morpheus.CodeGen.Server.Interpreting.Transform
-      Data.Morpheus.CodeGen.Server.Printing.GQLType
-      Data.Morpheus.CodeGen.Server.Printing.Render
-      Data.Morpheus.CodeGen.Server.Printing.Type
-      Data.Morpheus.CodeGen.Server.TH.Type
+      Data.Morpheus.CodeGen.Server.Printing.Document
+      Data.Morpheus.CodeGen.Server.Printing.TH
       Paths_morpheus_graphql_code_gen
   hs-source-dirs:
       src
