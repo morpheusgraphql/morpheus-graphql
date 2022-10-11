@@ -1,6 +1,6 @@
 bounds:
-  - 0.21.0
   - 0.22.0
+  - 0.23.0
 examples:
   - client
   - code-gen
@@ -140,4 +140,4 @@ rules:
   wuss:
     - 1.0.0
     - 3.0.0
-version: 0.21.0
+version: 0.22.0
