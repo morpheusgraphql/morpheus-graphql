@@ -63,7 +63,10 @@ data ModuleDefinition = ModuleDefinition
     types :: [ServerDeclaration]
   }
 
-data Kind = Scalar | Type deriving (Show)
+data Kind
+  = Scalar
+  | Type
+  deriving (Show, Eq)
 
 instance Pretty Kind where
   pretty Type = "TYPE"

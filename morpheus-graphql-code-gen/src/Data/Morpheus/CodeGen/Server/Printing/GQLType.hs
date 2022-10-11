@@ -17,6 +17,7 @@ import Data.Morpheus.CodeGen.Printer
   )
 import Data.Morpheus.CodeGen.Server.Internal.AST
   ( GQLTypeDefinition (..),
+    Kind (Scalar),
     ServerDirectiveUsage (..),
     TypeKind,
   )
@@ -32,14 +33,16 @@ defineTypeOptions (Just (kind, tName)) = ["typeOptions _ = dropNamespaceOptions"
 defineTypeOptions _ = []
 
 renderGQLType :: GQLTypeDefinition -> Doc ann
-renderGQLType gql@GQLTypeDefinition {..} =
-  "instance"
-    <> optional renderTypeableConstraints (typeParameters gqlTarget)
-    <+> "GQLType"
-    <+> typeHead
-    <+> "where"
-      <> line
-      <> indent 2 (vsep (renderMethods typeHead gql <> defineTypeOptions dropNamespace))
+renderGQLType gql@GQLTypeDefinition {..}
+  | gqlKind == Scalar = ""
+  | otherwise =
+      "instance"
+        <> optional renderTypeableConstraints (typeParameters gqlTarget)
+        <+> "GQLType"
+        <+> typeHead
+        <+> "where"
+          <> line
+          <> indent 2 (vsep (renderMethods typeHead gql <> defineTypeOptions dropNamespace))
   where
     typeHead = unpack (print gqlTarget)
 
