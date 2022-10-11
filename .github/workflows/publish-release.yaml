@@ -16,6 +16,7 @@ jobs:
           stack sdist
           stack upload morpheus-graphql-tests
           stack upload morpheus-graphql-core
+          stack upload morpheus-graphql-code-gen-utils
           stack upload morpheus-graphql-code-gen
           stack upload morpheus-graphql-app
           stack upload morpheus-graphql-client
