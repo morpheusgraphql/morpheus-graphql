@@ -5,7 +5,7 @@ import { getChangelog } from "./lib/changelog";
 const main = async () => {
   const { body } = await getChangelog();
 
-  await write("/dist/changelog.md", body);
+  await write("/changelog.md", body);
   process.stdout.write(body);
 };
 

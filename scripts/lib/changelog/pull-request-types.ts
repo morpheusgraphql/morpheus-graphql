@@ -7,6 +7,7 @@ const config = {
     core: "morpheus-graphql-core",
     subsriptions: "morpheus-graphql-subscriptions",
     tests: "morpheus-graphql-tests",
+    app: "morpheus-graphql-app",
   },
   pr: {
     breaking: "Breaking Change",
