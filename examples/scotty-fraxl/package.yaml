@@ -1,0 +1,24 @@
+name: morpheus-graphql-examples-scotty-fraxl
+version: 0.1.0
+github: "nalchevanidze/morpheus-graphql"
+license: MIT
+author: "Daviti Nalchevanidze"
+category: web, graphql
+synopsis: examples
+copyright: "(c) 2019 Daviti Nalchevanidze"
+description: Fraxl example of GraphQL APIs
+
+dependencies:
+  - base                            >= 4.7       && <  5
+  - mtl                             >= 2.0       && <= 2.3
+  - text                            >= 1.2.3.0   && <  1.3
+  - containers                      >= 0.4.2.1   && <  0.7
+  - morpheus-graphql
+  - scotty
+  - fraxl
+
+executables:
+  scotty-server-fraxl:
+    main: Main.hs
+    source-dirs: src
+    ghc-options: -Wall

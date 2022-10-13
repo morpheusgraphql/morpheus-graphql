@@ -15,7 +15,6 @@ module Server.TH.Simple
   )
 where
 
-import Data.FileEmbed (makeRelativeToProject)
 import Data.Morpheus (App, deriveApp)
 import Data.Morpheus.Document (importGQLDocument)
 import Data.Morpheus.Types
@@ -26,7 +25,7 @@ import Data.Morpheus.Types
   )
 import Data.Text (Text)
 
-importGQLDocument =<< makeRelativeToProject "src/Server/TH/simple.gql"
+importGQLDocument "src/Server/TH/simple.gql"
 
 rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =

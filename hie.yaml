@@ -38,6 +38,10 @@ cradle:
         component: morpheus-graphql-examples-code-gen:exe:generated-server
       - path: ./examples/scotty/src
         component: morpheus-graphql-examples-scotty:exe:scotty-server
+      - path: ./examples/scotty-fraxl/src
+        component: morpheus-graphql-examples-scotty-fraxl:exe:scotty-server-fraxl
+      - path: ./examples/scotty-haxl/src
+        component: morpheus-graphql-examples-scotty-haxl:exe:scotty-server-haxl
       - path: ./examples/scotty-freer-simple/src
         component: morpheus-graphql-examples-scotty-freer:exe:scotty-freer-server
       - path: ./examples/servant/src

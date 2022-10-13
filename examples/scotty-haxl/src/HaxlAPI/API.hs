@@ -1,10 +1,10 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 
-module Server.Haxl.API
-  ( app,
-    httpEndpoint,
+module HaxlAPI.API
+  ( httpEndpoint,
   )
 where
 
@@ -31,22 +31,23 @@ import Data.Morpheus.Types
   )
 import Data.Text (Text)
 import Haxl.Core (dataFetch, initEnv, runHaxl, stateEmpty, stateSet)
-import Server.Haxl.DataSource
+import HaxlAPI.DataSource
   ( DeityReq (..),
     Haxl,
     State (DeityState),
   )
-import Server.Haxl.Schema
+import HaxlAPI.Schema
   ( Deity (..),
     DeityArgs (..),
     Query (..),
   )
-import Server.Utils (isSchema)
 import Web.Scotty
-  ( RoutePattern,
+  ( ActionM,
+    RoutePattern,
     ScottyM,
     body,
     get,
+    param,
     post,
     raw,
   )
@@ -91,13 +92,13 @@ rootResolver = defaultRootResolver {queryResolver = resolveQuery}
 app :: App () Haxl
 app = deriveApp rootResolver
 
-httpEndpoint ::
-  RoutePattern ->
-  App () Haxl ->
-  ScottyM ()
-httpEndpoint route app' = do
+isSchema :: ActionM String
+isSchema = param "schema"
+
+httpEndpoint :: RoutePattern -> ScottyM ()
+httpEndpoint route = do
   get route $ (isSchema *> raw (render app)) <|> raw httpPlayground
-  post route $ raw =<< (liftIO . runHaxlApp app' =<< body)
+  post route $ raw =<< (liftIO . runHaxlApp (deriveApp rootResolver) =<< body)
 
 runHaxlApp :: MapAPI a b => App e Haxl -> a -> IO b
 runHaxlApp haxlApp input = do
