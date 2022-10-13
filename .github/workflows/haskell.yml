@@ -7,7 +7,7 @@ jobs:
     strategy:
       matrix:
         # "8.2.2"  TODO: fix: ByteCodeLink.lookupCE
-        ghc: ["8.4.4", "8.6.5", "8.8.3", "8.10.7", "latest"]
+        ghc: ["8.4.4", "8.6.5", "8.8.3", "8.10.7", "9.0.2", "latest"]
         os: [ubuntu-latest]
       fail-fast: true
     runs-on: ${{ matrix.os }}
