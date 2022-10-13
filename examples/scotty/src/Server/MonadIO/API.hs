@@ -27,7 +27,6 @@ import Control.Monad.Reader (MonadReader, asks, runReaderT)
 import Control.Monad.Trans (MonadIO, liftIO)
 import Control.Monad.Trans.Reader (ReaderT)
 import qualified Data.ByteString.Lazy.Char8 as B
-import Data.FileEmbed (makeRelativeToProject)
 import Data.List (find)
 import Data.Maybe (fromJust)
 import Data.Morpheus (interpreter)
@@ -42,7 +41,7 @@ import Network.HTTP.Types (Status (..))
 import Web.Scotty
 import Prelude hiding (id)
 
-importGQLDocument =<< makeRelativeToProject "src/Server/MonadIO/schema.graphql"
+importGQLDocument "src/Server/MonadIO/schema.graphql"
 
 -------------------------------------------------------------------------------
 data DogRow = DogRow

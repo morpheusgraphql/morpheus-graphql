@@ -138,7 +138,11 @@ instance (ToName a) => ToCon a Exp where
   toCon = ConE . toName
 
 instance (ToName a) => ToCon a Pat where
-  toCon name = ConP (toName name) []
+#if MIN_VERSION_template_haskell(2,18,0)
+  toCon name = ConP (toName name) [] []
+#else
+  toCon name = ConP (toName name) [] 
+#endif
 
 class ToVar a b where
   toVar :: a -> b

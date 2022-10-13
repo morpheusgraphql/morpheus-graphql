@@ -5,6 +5,8 @@ examples:
   - client
   - code-gen
   - scotty
+  - scotty-fraxl
+  - scotty-haxl
   - scotty-freer-simple
   - servant
 packages:
@@ -20,11 +22,8 @@ packages:
 plan:
   8.10.7:
     deps:
-      dependent-map: 0.2.4.0
-      dependent-sum: 0.4
+      fastsum: 0.1.1.1
       graphql: 0.11.1.0
-    include:
-      - morpheus-graphql-benchmarks
     resolver: lts-18.10
   8.2.2:
     resolver: lts-11.10
@@ -48,13 +47,24 @@ plan:
     deps:
       prettyprinter: 1.7.0
     resolver: lts-16.2
+  9.0.2:
+    deps:
+      dependent-map: 0.2.4.0
+      dependent-sum: 0.4
+      graphql: 0.11.1.0
+    include:
+      - morpheus-graphql-benchmarks
+    resolver: lts-19.28
+    skip:
+      - examples/scotty-fraxl
   latest:
     deps:
-      fastsum: 0.1.1.1
       fraxl: 0.3.0.0
       haxl: 2.4.0.0
       type-aligned: 0.9.6
-    resolver: nightly-2022-03-02
+    resolver: nightly-2022-10-10
+    skip:
+      - examples/scotty-fraxl
 rules:
   aeson:
     - 1.4.4

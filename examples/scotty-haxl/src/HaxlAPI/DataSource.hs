@@ -7,7 +7,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Server.Haxl.DataSource
+module HaxlAPI.DataSource
   ( Deity (..),
     State (DeityState),
     Haxl,
@@ -34,7 +34,7 @@ import Haxl.Core
     StateKey (..),
     putSuccess,
   )
-import Server.Haxl.Schema
+import HaxlAPI.Schema
   ( Deity (..),
   )
 

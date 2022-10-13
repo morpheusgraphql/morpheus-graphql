@@ -2,7 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 
-module Server.Haxl.Schema
+module HaxlAPI.Schema
   ( Deity (..),
     Query (..),
     DeityArgs (..),

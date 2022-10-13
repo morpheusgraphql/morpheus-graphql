@@ -3,8 +3,9 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 
-module Server.Fraxl.API
+module Fraxl.API
   ( httpEndpoint,
   )
 where
@@ -32,14 +33,15 @@ import Data.Morpheus.Types
   )
 import Data.Set (Set, singleton)
 import Data.Text (Text)
+import qualified Fraxl.FakeDB as DB
 import GHC.Generics (Generic)
-import qualified Server.Fraxl.FakeDB as DB
-import Server.Utils (isSchema)
 import Web.Scotty
-  ( RoutePattern,
+  ( ActionM,
+    RoutePattern,
     ScottyM,
     body,
     get,
+    param,
     post,
     raw,
   )
@@ -215,9 +217,10 @@ app = deriveApp rootResolver
 
 -- Finally, we can `runFraxl` with our `fetchSource` fetcher.
 
-httpEndpoint ::
-  RoutePattern ->
-  ScottyM ()
+isSchema :: ActionM String
+isSchema = param "schema"
+
+httpEndpoint :: RoutePattern -> ScottyM ()
 httpEndpoint route = do
   get route $
     (isSchema *> raw (render app))

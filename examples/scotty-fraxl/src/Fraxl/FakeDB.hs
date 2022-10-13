@@ -2,7 +2,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Server.Fraxl.FakeDB
+module Fraxl.FakeDB
   ( Band (..),
     Member (..),
     Instrument (..),
