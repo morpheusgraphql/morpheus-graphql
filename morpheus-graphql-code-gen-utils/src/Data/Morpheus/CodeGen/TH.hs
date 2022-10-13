@@ -54,8 +54,8 @@ import Data.Morpheus.Types.Internal.AST
     TypeWrapper (..),
     unpackName,
   )
-import qualified Data.Morpheus.Types.Internal.AST as AST
-import qualified Data.Text as T
+import Data.Morpheus.Types.Internal.AST qualified as AST
+import Data.Text qualified as T
 import Language.Haskell.TH
 import Relude hiding
   ( ToString (..),
@@ -137,12 +137,14 @@ instance (ToName a) => ToCon a Type where
 instance (ToName a) => ToCon a Exp where
   toCon = ConE . toName
 
+{- ORMOLU_DISABLE -}
 instance (ToName a) => ToCon a Pat where
 #if MIN_VERSION_template_haskell(2,18,0)
   toCon name = ConP (toName name) [] []
 #else
   toCon name = ConP (toName name) [] 
 #endif
+{- ORMOLU_ENABLE -}
 
 class ToVar a b where
   toVar :: a -> b
