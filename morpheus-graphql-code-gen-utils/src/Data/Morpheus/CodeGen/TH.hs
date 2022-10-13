@@ -54,8 +54,8 @@ import Data.Morpheus.Types.Internal.AST
     TypeWrapper (..),
     unpackName,
   )
-import Data.Morpheus.Types.Internal.AST qualified as AST
-import Data.Text qualified as T
+import qualified Data.Morpheus.Types.Internal.AST as AST
+import qualified Data.Text as T
 import Language.Haskell.TH
 import Relude hiding
   ( ToString (..),
