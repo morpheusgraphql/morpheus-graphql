@@ -45,6 +45,7 @@ import Data.Morpheus.Types
     GQLType (..),
     ID,
     MUTATION,
+    Rename (..),
     Resolver,
     ResolverM,
     ResolverQ,

@@ -112,7 +112,11 @@ instance VisitType Describe where
 
 -- | a custom GraphQL directive for adding or removing
 -- of prefixes
-newtype Rename = Rename {name :: Text} deriving (Generic, GQLType)
+newtype Rename = Rename {newName :: Text}
+  deriving
+    ( Generic,
+      GQLType
+    )
 
 instance GQLDirective Rename where
   type
@@ -129,14 +133,14 @@ instance GQLDirective Rename where
        ]
 
 instance VisitType Rename where
-  visitTypeName Rename {name} _ _ = name
+  visitTypeName Rename {newName} _ _ = newName
   visitTypeDescription _ = id
 
 instance VisitEnum Rename where
-  visitEnumName Rename {name} _ = name
+  visitEnumName Rename {newName} _ = newName
 
 instance VisitField Rename where
-  visitFieldName Rename {name} _ = name
+  visitFieldName Rename {newName} _ = newName
 
 -- DropTypeNamespace
 newtype DropNamespace = DropNamespace {dropNamespace :: Text}

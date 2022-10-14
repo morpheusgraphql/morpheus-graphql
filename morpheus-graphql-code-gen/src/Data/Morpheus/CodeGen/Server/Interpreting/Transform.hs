@@ -401,7 +401,7 @@ dirDropNamespace :: Text -> TypeValue
 dirDropNamespace name = TypeValueObject "DropNamespace" [("dropNamespace", TypeValueString name)]
 
 dirRename :: Text -> TypeValue
-dirRename name = TypeValueObject "Rename" [("name", TypeValueString name)]
+dirRename name = TypeValueObject "Rename" [("newName", TypeValueString name)]
 
 instance Meta (TypeDefinition c CONST) where
   getDirs TypeDefinition {typeContent, typeDirectives, typeDescription} = do

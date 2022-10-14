@@ -41,8 +41,8 @@ instance GQLType Deity where
     typeDirective (InputTypeNamespace "Input")
       <> fieldDirective' '__name Describe {text = "name of the deity"}
       <> fieldDirective' '__power Describe {text = "extraterrestrial ability"}
-      <> fieldDirective' '__name Rename {name = "name"}
-      <> fieldDirective' '__power Rename {name = "power"}
+      <> fieldDirective' '__name Rename {newName = "name"}
+      <> fieldDirective' '__power Rename {newName = "power"}
 
 data Query (m :: Type -> Type) = Query
   { deity :: Deity,
