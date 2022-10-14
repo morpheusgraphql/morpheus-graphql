@@ -483,7 +483,7 @@ newtype InputTypeNamespace = InputTypeNamespace {inputTypeNamespace :: Text}
     )
 
 instance GQLDirective InputTypeNamespace where
-  isHiddenDirective _ = True
+  excludeFromSchema _ = True
   type
     DIRECTIVE_LOCATIONS InputTypeNamespace =
       '[ 'OBJECT,

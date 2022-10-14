@@ -119,6 +119,7 @@ newtype Rename = Rename {newName :: Text}
     )
 
 instance GQLDirective Rename where
+  excludeFromSchema _ = True
   type
     DIRECTIVE_LOCATIONS Rename =
       '[ 'OBJECT,
@@ -161,7 +162,7 @@ instance GQLDirective DropNamespace where
          'SCALAR,
          'INTERFACE
        ]
-  isHiddenDirective _ = True
+  excludeFromSchema _ = True
 
 instance VisitType DropNamespace where
   visitFieldNames DropNamespace {dropNamespace} = pack . stripFieldNamespace dropNamespace . unpack

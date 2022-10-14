@@ -129,8 +129,8 @@ class
   GQLDirective a
   where
   type DIRECTIVE_LOCATIONS a :: [DirectiveLocation]
-  isHiddenDirective :: f a -> Bool
-  isHiddenDirective _ = False
+  excludeFromSchema :: f a -> Bool
+  excludeFromSchema _ = False
 
 -- TYPE VISITORS
 
