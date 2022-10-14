@@ -33,10 +33,9 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.stack
-          key: ${{ runner.os }}-${{ matrix.ghc }}-stack-${{ hashFiles('stack.yaml') }}-packages-${{ hashFiles('**/package.yaml') }}
+          key: ${{ runner.os }}-${{ matrix.ghc }}-stack-${{ hashFiles('stack.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.ghc }}-stack-${{ hashFiles('stack.yaml') }}
-            ${{ runner.os }}-${{ matrix.ghc }}-stack-
+            ${{ runner.os }}-${{ matrix.ghc }}-stack
 
       # Install & Build & Test
 
