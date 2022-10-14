@@ -31,7 +31,7 @@ import Data.Morpheus.CodeGen.Server.Internal.AST
 import Data.Text
   ( pack,
   )
-import Data.Text.Lazy
+import qualified Data.Text.Lazy as LT
   ( fromStrict,
   )
 import Data.Text.Lazy.Encoding (encodeUtf8)
@@ -50,8 +50,8 @@ import Relude hiding (ByteString, encodeUtf8, optional, print)
 
 renderDocument :: String -> [ServerDeclaration] -> ByteString
 renderDocument moduleName types =
-  encodeUtf8 $ 
-    fromStrict $
+  encodeUtf8 $
+    LT.fromStrict $
       pack $
         show $
           renderModuleDefinition
@@ -129,13 +129,13 @@ renderGQLType :: GQLTypeDefinition -> Doc ann
 renderGQLType gql@GQLTypeDefinition {..}
   | gqlKind == Scalar = ""
   | otherwise =
-      "instance"
-        <> optional renderTypeableConstraints (typeParameters gqlTarget)
-        <+> "GQLType"
-        <+> typeHead
-        <+> "where"
-          <> line
-          <> indent 2 (vsep (renderMethods typeHead gql))
+    "instance"
+      <> optional renderTypeableConstraints (typeParameters gqlTarget)
+      <+> "GQLType"
+      <+> typeHead
+      <+> "where"
+        <> line
+        <> indent 2 (vsep (renderMethods typeHead gql))
   where
     typeHead = unpack (print gqlTarget)
 
