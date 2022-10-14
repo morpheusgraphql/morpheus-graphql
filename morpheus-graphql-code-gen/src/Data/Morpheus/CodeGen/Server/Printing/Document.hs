@@ -19,9 +19,11 @@ import Data.Morpheus.CodeGen.Printer
     renderExtension,
     renderImport,
     unpack,
+    (.<>),
   )
 import Data.Morpheus.CodeGen.Server.Internal.AST
   ( GQLTypeDefinition (..),
+    InterfaceDefinition (..),
     Kind (..),
     ModuleDefinition (..),
     ServerDeclaration (..),
@@ -104,7 +106,14 @@ class RenderType a where
   render :: a -> Result (Doc ann)
 
 instance RenderType ServerDeclaration where
-  render InterfaceType {} = fail "not supported"
+  render (InterfaceType InterfaceDefinition {..}) =
+    pure $
+      "type"
+        <+> ignore (print aliasName)
+        <+> "="
+        <+> "TypeGuard"
+        <+> unpack (print interfaceName .<> "m")
+        <+> unpack (print unionName .<> "m")
   -- TODO: on scalar we should render user provided type
   render ScalarType {scalarTypeName} =
     pure $ "type" <+> ignore (print scalarTypeName) <+> "= Int"

@@ -30,6 +30,7 @@ executable generated-server
       Domains.Users.Users
       Namespaces.Mutation
       Namespaces.Query
+      Namespaces.Sophisticated
       Namespaces.Subscription
       Operation.Mutation
       Operation.Query
