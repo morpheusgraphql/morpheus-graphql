@@ -172,7 +172,7 @@ visitEnumName :: GQLType a => f a -> TypeName -> TypeName
 visitEnumName proxy name = foldr applyEnumName (withTypeDirectives $ withOptions name) (getEnumDirectiveUsages proxy name)
   where
     withOptions = fromString . constructorTagModifier (getOptions proxy) . toString
-    withTypeDirectives name = foldr applyTypeEnumNames name (typeDirectives $ directives proxy)
+    withTypeDirectives dirName = foldr applyTypeEnumNames dirName (typeDirectives $ directives proxy)
 
 visitFieldDescription :: GQLType a => f a -> FieldName -> Maybe Description -> Maybe Description
 visitFieldDescription proxy name desc = foldr applyFieldDescription desc (getFieldDirectiveUsages name proxy)
