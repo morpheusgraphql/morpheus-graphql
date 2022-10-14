@@ -22,6 +22,7 @@ import Data.Morpheus.Document
   )
 import Data.Morpheus.Types
   ( DecodeScalar (..),
+    DropNamespace (..),
     ID,
     RootResolver,
     Undefined,

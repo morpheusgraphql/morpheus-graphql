@@ -19,11 +19,23 @@ where
 import Relude
 
 class VisitType a where
-  visitTypeName :: a -> Text -> Text
-  visitTypeName _ = id
+  -- | Construct a new type name depending on whether it is an input,
+  -- and being given the original type name.
+  visitTypeName :: a -> Bool -> Text -> Text
+  visitTypeName _ _ = id
 
   visitTypeDescription :: a -> Maybe Text -> Maybe Text
   visitTypeDescription = const id
+
+  -- | Function applied to field labels.
+  -- Handy for removing common record prefixes for example.
+  visitFieldNames :: a -> Text -> Text
+  visitFieldNames _ = id
+
+  -- | Function applied to enum values
+  -- Handy for removing common enum prefixes for example.
+  visitEnumNames :: a -> Text -> Text
+  visitEnumNames _ = id
 
 class VisitField a where
   visitFieldName :: a -> Text -> Text

@@ -61,7 +61,7 @@ import Data.Morpheus.Server.Types.GQLType
     __isEmptyType,
     __typeData,
   )
-import Data.Morpheus.Server.Types.Internal (TypeData (..), defaultTypeOptions)
+import Data.Morpheus.Server.Types.Internal (TypeData (..))
 import Data.Morpheus.Server.Types.Kind
   ( CUSTOM,
     DerivingKind,
@@ -289,8 +289,7 @@ deriveTypeContent ::
 deriveTypeContent =
   deriveTypeContentWith
     ( DeriveTypeDefinitionOptions
-        { __typeGQLOptions = typeOptions (Proxy @a) defaultTypeOptions,
-          __typeGetType = __typeData . kinded (Proxy @kind),
+        { __typeGetType = __typeData . kinded (Proxy @kind),
           __typeApply = deriveFieldContent
         } ::
         DeriveTypeOptions kind (DeriveWithConstraint kind) (TyContentM kind)

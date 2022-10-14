@@ -19,12 +19,13 @@ import Data.Morpheus.Server.Types
     GQLRequest,
     GQLResponse,
     GQLType (..),
-    GQLTypeOptions (..),
+    InputTypeNamespace (..),
     Rename (..),
     RootResolver (..),
     Undefined,
     defaultRootResolver,
     fieldDirective',
+    typeDirective,
   )
 import Data.Text (Text, pack)
 import GHC.Generics (Generic)
@@ -36,13 +37,12 @@ data Deity = Deity
   deriving (Generic, Show)
 
 instance GQLType Deity where
-  typeOptions _ options = options {typeNameModifier = \isInput n -> if isInput then "Input" <> n else n}
-
   directives _ =
-    fieldDirective' '__name Describe {text = "name of the deity"}
+    typeDirective (InputTypeNamespace "Input")
+      <> fieldDirective' '__name Describe {text = "name of the deity"}
       <> fieldDirective' '__power Describe {text = "extraterrestrial ability"}
-      <> fieldDirective' '__name Rename {name = "name"}
-      <> fieldDirective' '__power Rename {name = "power"}
+      <> fieldDirective' '__name Rename {newName = "name"}
+      <> fieldDirective' '__power Rename {newName = "power"}
 
 data Query (m :: Type -> Type) = Query
   { deity :: Deity,

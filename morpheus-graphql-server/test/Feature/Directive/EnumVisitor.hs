@@ -42,11 +42,11 @@ instance GQLType City where
     enumDirective' 'Sparta Describe {text = "city of warriors"}
       <> enumDirective' 'Delphi Describe {text = "city of oracle"}
       <> enumDirective' 'ARgos Describe {text = "city of argonauts"}
-      <> enumDirective' 'Sparta Rename {name = "sparta"}
-      <> enumDirective' 'Delphi Rename {name = "delphi"}
-      <> enumDirective' 'Athens Rename {name = "_athens"}
-      <> enumDirective' 'CORINTH__UGLY_ENUM_NAME Rename {name = "corinth"}
-      <> enumDirective' 'ARgos Rename {name = "argos"}
+      <> enumDirective' 'Sparta Rename {newName = "sparta"}
+      <> enumDirective' 'Delphi Rename {newName = "delphi"}
+      <> enumDirective' 'Athens Rename {newName = "_athens"}
+      <> enumDirective' 'CORINTH__UGLY_ENUM_NAME Rename {newName = "corinth"}
+      <> enumDirective' 'ARgos Rename {newName = "argos"}
 
 data Query (m :: Type -> Type) = Query
   { cities :: [City],

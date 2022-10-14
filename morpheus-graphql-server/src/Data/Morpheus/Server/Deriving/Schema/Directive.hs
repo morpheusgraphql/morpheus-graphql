@@ -31,7 +31,7 @@ where
 import Control.Monad.Except (throwError)
 import qualified Data.HashMap.Lazy as HM
 import Data.Morpheus.Internal.Ext (resultOr, unsafeFromList)
-import Data.Morpheus.Internal.Utils (Empty (..))
+import Data.Morpheus.Internal.Utils (Empty (..), fromElems)
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( KindedProxy (..),
   )
@@ -51,17 +51,21 @@ import Data.Morpheus.Server.Types.GQLType
     applyFieldDescription,
     applyFieldName,
     applyTypeDescription,
+    applyTypeEnumNames,
+    applyTypeFieldNames,
     deriveFingerprint,
     deriveTypename,
     encodeArguments,
   )
+import Data.Morpheus.Server.Types.Internal
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
     insertDirectiveDefinition,
     outToAny,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( CONST,
+  ( Argument (..),
+    CONST,
     Description,
     Directive (..),
     DirectiveDefinition (..),
@@ -101,9 +105,6 @@ deriveDirectiveDefinition _ _ = do
   where
     proxy = Proxy @a
 
-deriveTypeDirectives :: forall c f a. GQLType a => f a -> SchemaT c (Directives CONST)
-deriveTypeDirectives proxy = deriveDirectiveUsages (typeDirectives $ directives proxy)
-
 deriveDirectiveUsages :: [DirectiveUsage] -> SchemaT c (Directives CONST)
 deriveDirectiveUsages = fmap unsafeFromList . traverse toDirectiveTuple
 
@@ -114,7 +115,8 @@ toDirectiveTuple :: DirectiveUsage -> SchemaT c (FieldName, Directive CONST)
 toDirectiveTuple (DirectiveUsage x) = do
   insertDirective (deriveDirectiveDefinition x) x
   let directiveName = deriveDirectiveName (Identity x)
-  directiveArgs <- resultOr (const $ throwError "TODO: fix me") pure (encodeArguments x)
+  args <- toList <$> resultOr (const $ throwError "TODO: fix me") pure (encodeArguments x)
+  directiveArgs <- fromElems (map editArg args)
   pure
     ( directiveName,
       Directive
@@ -123,6 +125,8 @@ toDirectiveTuple (DirectiveUsage x) = do
           directiveArgs
         }
     )
+  where
+    editArg Argument {..} = Argument {argumentName = applyGQLFieldOptions (Identity x) argumentName, ..}
 
 insertDirective ::
   forall a c.
@@ -137,8 +141,8 @@ insertDirective f _ = insertDirectiveDefinition (deriveFingerprint proxy) f prox
 getDirHM :: (Ord k, Hashable k, Empty a) => k -> HashMap k a -> a
 getDirHM name xs = fromMaybe empty $ name `HM.lookup` xs
 
-deriveFieldDirectives :: GQLType a => f a -> FieldName -> SchemaT c (Directives CONST)
-deriveFieldDirectives proxy name = deriveDirectiveUsages $ getFieldDirectiveUsages name proxy
+isIncluded :: DirectiveUsage -> Bool
+isIncluded (DirectiveUsage x) = not $ excludeFromSchema (Identity x)
 
 getEnumDirectiveUsages :: GQLType a => f a -> TypeName -> [DirectiveUsage]
 getEnumDirectiveUsages proxy name = getDirHM name $ enumValueDirectives $ directives proxy
@@ -146,23 +150,43 @@ getEnumDirectiveUsages proxy name = getDirHM name $ enumValueDirectives $ direct
 getFieldDirectiveUsages :: GQLType a => FieldName -> f a -> [DirectiveUsage]
 getFieldDirectiveUsages name proxy = getDirHM name $ fieldDirectives $ directives proxy
 
-deriveEnumDirectives :: GQLType a => f a -> TypeName -> SchemaT c (Directives CONST)
-deriveEnumDirectives proxy name = deriveDirectiveUsages $ getEnumDirectiveUsages proxy name
+getOptions :: GQLType a => f a -> GQLTypeOptions
+getOptions proxy = typeOptions proxy defaultTypeOptions
 
+-- derive directives
+deriveEnumDirectives :: GQLType a => f a -> TypeName -> SchemaT c (Directives CONST)
+deriveEnumDirectives proxy name = deriveDirectiveUsages $ filter isIncluded $ getEnumDirectiveUsages proxy name
+
+deriveFieldDirectives :: GQLType a => f a -> FieldName -> SchemaT c (Directives CONST)
+deriveFieldDirectives proxy name = deriveDirectiveUsages $ filter isIncluded $ getFieldDirectiveUsages name proxy
+
+deriveTypeDirectives :: forall c f a. GQLType a => f a -> SchemaT c (Directives CONST)
+deriveTypeDirectives proxy = deriveDirectiveUsages $ filter isIncluded $ typeDirectives $ directives proxy
+
+-- visit
 visitEnumValueDescription :: GQLType a => f a -> TypeName -> Maybe Description -> Maybe Description
 visitEnumValueDescription proxy name desc = foldr applyEnumDescription desc (getEnumDirectiveUsages proxy name)
 
 visitEnumName :: GQLType a => f a -> TypeName -> TypeName
-visitEnumName proxy name = foldr applyEnumName name (getEnumDirectiveUsages proxy name)
+visitEnumName proxy name = foldr applyEnumName (withTypeDirectives $ withOptions name) (getEnumDirectiveUsages proxy name)
+  where
+    withOptions = fromString . constructorTagModifier (getOptions proxy) . toString
+    withTypeDirectives dirName = foldr applyTypeEnumNames dirName (typeDirectives $ directives proxy)
 
 visitFieldDescription :: GQLType a => f a -> FieldName -> Maybe Description -> Maybe Description
 visitFieldDescription proxy name desc = foldr applyFieldDescription desc (getFieldDirectiveUsages name proxy)
 
+applyGQLFieldOptions :: (GQLType a) => f a -> FieldName -> FieldName
+applyGQLFieldOptions proxy = withTypeDirectives . withOptions
+  where
+    withOptions = fromString . fieldLabelModifier (getOptions proxy) . toString
+    withTypeDirectives name = foldr applyTypeFieldNames name (typeDirectives $ directives proxy)
+
 visitFieldName :: GQLType a => f a -> FieldName -> FieldName
-visitFieldName proxy name = foldr applyFieldName name (getFieldDirectiveUsages name proxy)
+visitFieldName proxy name = foldr applyFieldName (applyGQLFieldOptions proxy name) (getFieldDirectiveUsages name proxy)
 
 visitTypeDescription :: GQLType a => f a -> Maybe Description -> Maybe Description
 visitTypeDescription proxy desc = foldr applyTypeDescription desc (typeDirectives $ directives proxy)
 
-toFieldRes :: GQLType a => f a -> FieldRep (m v) -> (FieldName, m v)
+toFieldRes :: GQLType a => f a -> FieldRep v -> (FieldName, v)
 toFieldRes proxy FieldRep {..} = (visitFieldName proxy fieldSelector, fieldValue)

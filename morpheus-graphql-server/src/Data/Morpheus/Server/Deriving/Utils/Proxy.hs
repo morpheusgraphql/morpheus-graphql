@@ -17,17 +17,11 @@ module Data.Morpheus.Server.Deriving.Utils.Proxy
   )
 where
 
-import Data.Morpheus.Server.Types.Internal
-  ( GQLTypeOptions (..),
-  )
 import Data.Morpheus.Server.Types.Kind (DerivingKind)
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     TypeName,
     packName,
-  )
-import Data.Text
-  ( pack,
   )
 import qualified Data.Text as T
 import GHC.Generics
@@ -46,15 +40,11 @@ import GHC.TypeLits
 import Relude hiding (undefined)
 import Prelude (undefined)
 
-conNameProxy :: forall f (c :: Meta). Constructor c => GQLTypeOptions -> f c -> TypeName
-conNameProxy options _ =
-  packName $ pack $ constructorTagModifier options $ conName (undefined :: M1 C c U1 a)
+conNameProxy :: forall f (c :: Meta). Constructor c => f c -> TypeName
+conNameProxy _ = fromString $ conName (undefined :: M1 C c U1 a)
 
-selNameProxy :: forall f (s :: Meta). Selector s => GQLTypeOptions -> f s -> FieldName
-selNameProxy options _ =
-  fromHaskellName $
-    fieldLabelModifier options $
-      selName (undefined :: M1 S s f a)
+selNameProxy :: forall f (s :: Meta). Selector s => f s -> FieldName
+selNameProxy _ = fromHaskellName $ selName (undefined :: M1 S s f a)
 
 fromHaskellName :: String -> FieldName
 fromHaskellName hsName

@@ -8,6 +8,8 @@ module Data.Morpheus.Server.Types.Internal
     prefixInputs,
     mkTypeData,
     dropNamespaceOptions,
+    stripConstructorNamespace,
+    stripFieldNamespace,
   )
 where
 
@@ -21,8 +23,8 @@ import Data.Morpheus.Types.Internal.AST
     TypeWrapper (..),
     mkBaseType,
   )
-import qualified Data.Text as T
-import Relude hiding (Seq, Undefined, intercalate)
+import Data.Text (length)
+import Relude hiding (Seq, Undefined, intercalate, length)
 
 data TypeData = TypeData
   { gqlTypeName :: TypeName,
@@ -30,6 +32,8 @@ data TypeData = TypeData
     gqlFingerprint :: TypeFingerprint
   }
   deriving (Show)
+
+{-# DEPRECATED GQLTypeOptions "use: custom directives with 'VisitType'" #-}
 
 -- | Options that specify how to map GraphQL field, type, and constructor names
 -- to and from their Haskell equivalent.
@@ -46,6 +50,8 @@ data GQLTypeOptions = GQLTypeOptions
     -- and being given the original type name.
     typeNameModifier :: Bool -> String -> String
   }
+
+{-# DEPRECATED defaultTypeOptions "use: custom directives with 'VisitType'" #-}
 
 -- | Default encoding 'GQLTypeOptions':
 --
@@ -65,6 +71,7 @@ defaultTypeOptions =
       typeNameModifier = const id
     }
 
+{-# DEPRECATED prefixInputs "use: custom directives" #-}
 prefixInputs :: GQLTypeOptions -> GQLTypeOptions
 prefixInputs options = options {typeNameModifier = \isInput name -> if isInput then "Input" <> name else name}
 
@@ -77,7 +84,7 @@ mkTypeData name _ =
     }
 
 dropPrefix :: Text -> String -> String
-dropPrefix name = drop (T.length name)
+dropPrefix name = drop (length name)
 
 stripConstructorNamespace :: Text -> String -> String
 stripConstructorNamespace = dropPrefix
@@ -88,6 +95,7 @@ stripFieldNamespace prefix = __uncapitalize . dropPrefix prefix
     __uncapitalize [] = []
     __uncapitalize (x : xs) = toLower x : xs
 
+{-# DEPRECATED dropNamespaceOptions "use: custom directives" #-}
 dropNamespaceOptions :: TypeKind -> Text -> GQLTypeOptions -> GQLTypeOptions
 dropNamespaceOptions KindInterface tName opt =
   opt

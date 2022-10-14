@@ -60,9 +60,8 @@ import Data.Morpheus.Server.NamedResolvers
   ( NamedResolverT (..),
     ResolveNamed (..),
   )
-import Data.Morpheus.Server.Types (defaultTypeOptions)
 import Data.Morpheus.Server.Types.GQLType
-  ( GQLType (typeOptions, __type),
+  ( GQLType (__type),
     KIND,
     deriveTypename,
     __typeData,
@@ -166,7 +165,6 @@ getFieldValues =
     ( DeriveValueOptions
         { __valueApply = encodeField,
           __valueTypeName = deriveTypename (KindedProxy :: KindedProxy OUT a),
-          __valueGQLOptions = typeOptions (Proxy @a) defaultTypeOptions,
           __valueGetType = __typeData . kinded (Proxy @OUT)
         } ::
         DeriveValueOptions OUT (GValueMapConstraint m) (m (ResolverValue m))

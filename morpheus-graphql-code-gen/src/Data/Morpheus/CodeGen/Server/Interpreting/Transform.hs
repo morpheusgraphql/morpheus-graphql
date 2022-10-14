@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
@@ -35,17 +34,14 @@ import Data.Morpheus.CodeGen.Server.Internal.AST
     ServerDirectiveUsage (..),
     TypeValue (..),
   )
-import Data.Morpheus.CodeGen.TH
-  ( ToName (toName),
-  )
+import Data.Morpheus.CodeGen.Server.Interpreting.Utils (CodeGenMonad (printWarnings), CodeGenT, TypeContext (..), getEnumName, getFieldName, isParamResolverType, isSubscription, lookupFieldType)
 import Data.Morpheus.CodeGen.Utils
-  ( camelCaseFieldName,
-    camelCaseTypeName,
+  ( camelCaseTypeName,
     toHaskellTypeName,
   )
 import Data.Morpheus.Core (internalSchema, parseDefinitions, render)
-import Data.Morpheus.Error (gqlWarnings, renderGQLErrors)
-import Data.Morpheus.Internal.Ext (GQLResult, Result (..))
+import Data.Morpheus.Error (renderGQLErrors)
+import Data.Morpheus.Internal.Ext (Result (..))
 import Data.Morpheus.Internal.Utils (IsMap, selectOr)
 import Data.Morpheus.Server.Types (Arg, SubscriptionField)
 import Data.Morpheus.Types.Internal.AST
@@ -61,11 +57,9 @@ import Data.Morpheus.Types.Internal.AST
     FieldDefinition (..),
     FieldName,
     FieldsDefinition,
-    GQLError,
     IN,
     OUT,
     ObjectEntry (..),
-    OperationType (Subscription),
     RawTypeDefinition (..),
     TRUE,
     TypeContent (..),
@@ -78,57 +72,11 @@ import Data.Morpheus.Types.Internal.AST
     isPossibleInterfaceType,
     isResolverType,
     kindOf,
-    lookupWith,
     packName,
     unpackName,
   )
 import qualified Data.Morpheus.Types.Internal.AST as AST
-import qualified Data.Morpheus.Types.Internal.AST as V
-import Language.Haskell.TH
-  ( Dec (..),
-    Info (..),
-    Q,
-    TyVarBndr,
-    reify,
-  )
 import Relude hiding (ByteString, get)
-
-type ServerQ m = ReaderT (TypeContext CONST) m
-
-class (Monad m, MonadFail m) => CodeGenMonad m where
-  isParametrizedType :: TypeName -> m Bool
-  printWarnings :: [GQLError] -> m ()
-
-isParametrizedHaskellType :: Info -> Bool
-isParametrizedHaskellType (TyConI x) = not $ null $ getTypeVariables x
-isParametrizedHaskellType _ = False
-
-#if MIN_VERSION_template_haskell(2,17,0)
-getTypeVariables :: Dec -> [TyVarBndr ()]
-#else
-getTypeVariables :: Dec -> [TyVarBndr]
-#endif
-getTypeVariables (DataD _ _ args _ _ _) = args
-getTypeVariables (NewtypeD _ _ args _ _ _) = args
-getTypeVariables (TySynD _ args _) = args
-getTypeVariables _ = []
-
-instance CodeGenMonad Q where
-  isParametrizedType name = isParametrizedHaskellType <$> reify (toName name)
-  printWarnings = gqlWarnings
-
-instance CodeGenMonad GQLResult where
-  isParametrizedType _ = pure False
-  printWarnings _ = pure ()
-
-data TypeContext s = TypeContext
-  { toArgsTypeName :: FieldName -> TypeName,
-    typeDefinitions :: [TypeDefinition ANY s],
-    directiveDefinitions :: [DirectiveDefinition s],
-    currentTypeName :: Maybe TypeName,
-    currentKind :: Maybe TypeKind,
-    hasNamespace :: Bool
-  }
 
 parseServerTypeDefinitions :: CodeGenMonad m => CodeGenConfig -> ByteString -> m [ServerDeclaration]
 parseServerTypeDefinitions ctx txt =
@@ -162,7 +110,7 @@ toTHDefinitions namespace defs = concat <$> traverse generateTypes defs
         ( do
             fields <- traverse renderDataField (argument <$> toList directiveDefinitionArgs)
             let typename = coerce directiveDefinitionName
-            dropNamespace <- defineTypeOptions KindInputObject (unpackName typename)
+            namespaceDirs <- getNamespaceDirs (unpackName typename)
             let cgTypeName = fromTypeName typename
             pure
               [ DataType
@@ -181,8 +129,7 @@ toTHDefinitions namespace defs = concat <$> traverse generateTypes defs
                     { gqlTarget = cgTypeName,
                       gqlKind = Type,
                       gqlTypeDefaultValues = mempty,
-                      gqlTypeDirectiveUses = [],
-                      dropNamespace
+                      gqlTypeDirectiveUses = namespaceDirs
                     }
               ]
         )
@@ -196,10 +143,10 @@ toTHDefinitions namespace defs = concat <$> traverse generateTypes defs
           }
     generateTypes _ = pure []
 
-defineTypeOptions :: MonadReader (TypeContext s) m => TypeKind -> Text -> m (Maybe (TypeKind, Text))
-defineTypeOptions kind tName = do
+getNamespaceDirs :: MonadReader (TypeContext s) m => Text -> m [ServerDirectiveUsage]
+getNamespaceDirs genTypeName = do
   namespaces <- asks hasNamespace
-  pure $ if namespaces then Just (kind, tName) else Nothing
+  pure [TypeDirectiveUsage (dirDropNamespace genTypeName) | namespaces]
 
 inType :: MonadReader (TypeContext s) m => Maybe TypeName -> m a -> m a
 inType name = local (\x -> x {currentTypeName = name, currentKind = Nothing})
@@ -213,37 +160,35 @@ mkPossibleTypesName = ("PossibleTypes" <>)
 genTypeDefinition ::
   CodeGenMonad m =>
   TypeDefinition ANY CONST ->
-  ServerQ m [ServerDeclaration]
+  CodeGenT m [ServerDeclaration]
 genTypeDefinition
   typeDef@TypeDefinition {typeName = originalTypeName, typeContent} =
     case tKind of
       KindScalar -> do
         scalarGQLType <- deriveGQL
-        pure
-          [ ScalarType (toHaskellTypeName typeName),
-            scalarGQLType
-          ]
+        pure [ScalarType (toHaskellTypeName typeName), scalarGQLType]
       _ -> genTypeContent originalTypeName typeContent >>= withType
     where
-      typeName = case typeContent of
-        DataInterface {} -> mkInterfaceName originalTypeName
-        _ -> originalTypeName
+      typeName
+        | tKind == KindInterface = mkInterfaceName originalTypeName
+        | otherwise = originalTypeName
       tKind = kindOf typeDef
       cgTypeName = CodeGenTypeName [] ["m" | isResolverType tKind] (packName $ toHaskellTypeName typeName)
+      renameDir = [TypeDirectiveUsage (dirRename (unpackName originalTypeName)) | tKind == KindInterface]
       deriveGQL = do
-        gqlTypeDirectiveUses <- getDirs typeDef
-        dropNamespace <- defineTypeOptions tKind (unpackName typeName)
+        namespaceDirs <- getNamespaceDirs (unpackName typeName)
+        dirs <- getDirs typeDef
+        -- TODO: here
         pure $
           GQLTypeInstance $
             GQLTypeDefinition
               { gqlTarget = cgTypeName,
-                gqlTypeDirectiveUses,
+                gqlTypeDirectiveUses = renameDir <> namespaceDirs <> dirs,
                 gqlKind = derivingKind tKind,
                 gqlTypeDefaultValues =
                   fromList $
                     mapMaybe getDefaultValue $
-                      getInputFields typeDef,
-                dropNamespace
+                      getInputFields typeDef
               }
       cgDerivations = derivesClasses (isResolverType tKind)
       -------------------------
@@ -271,34 +216,20 @@ mkArgsTypeName namespace typeName fieldName
   where
     argTName = camelCaseTypeName [fieldName] "Args"
 
-isParametrizedResolverType :: CodeGenMonad m => TypeName -> [TypeDefinition ANY s] -> m Bool
-isParametrizedResolverType "__TypeKind" _ = pure False
-isParametrizedResolverType "Boolean" _ = pure False
-isParametrizedResolverType "String" _ = pure False
-isParametrizedResolverType "Int" _ = pure False
-isParametrizedResolverType "Float" _ = pure False
-isParametrizedResolverType name lib = case lookupWith typeName name lib of
-  Just x -> pure (isResolverType x)
-  Nothing -> isParametrizedType name
-
-isSubscription :: TypeKind -> Bool
-isSubscription (KindObject (Just Subscription)) = True
-isSubscription _ = False
-
 mkObjectField ::
   CodeGenMonad m =>
   FieldDefinition OUT CONST ->
-  ServerQ m CodeGenField
+  CodeGenT m CodeGenField
 mkObjectField
   FieldDefinition
     { fieldName = fName,
       fieldContent,
       fieldType = TypeRef {typeConName, typeWrappers}
     } = do
-    isParametrized <- lift . isParametrizedResolverType typeConName =<< asks typeDefinitions
+    isParametrized <- isParamResolverType typeConName
     genName <- asks toArgsTypeName
     kind <- asks currentKind
-    fieldName <- renderFieldName fName
+    fieldName <- getFieldName fName
     pure
       CodeGenField
         { fieldType = packName (toHaskellTypeName typeConName),
@@ -329,7 +260,7 @@ data BuildPlan
   = ConsIN [CodeGenConstructor]
   | ConsOUT [ServerDeclaration] [CodeGenConstructor]
 
-genInterfaceUnion :: Monad m => TypeName -> ServerQ m [ServerDeclaration]
+genInterfaceUnion :: Monad m => TypeName -> CodeGenT m [ServerDeclaration]
 genInterfaceUnion interfaceName =
   mkInterface . map typeName . mapMaybe (isPossibleInterfaceType interfaceName)
     <$> asks typeDefinitions
@@ -349,8 +280,7 @@ genInterfaceUnion interfaceName =
             { gqlTarget = possTypeName,
               gqlKind = Type,
               gqlTypeDirectiveUses = empty,
-              gqlTypeDefaultValues = mempty,
-              dropNamespace = Nothing
+              gqlTypeDefaultValues = mempty
             }
       ]
       where
@@ -358,29 +288,14 @@ genInterfaceUnion interfaceName =
     mkGuardWithPossibleType = InterfaceType . InterfaceDefinition interfaceName (mkInterfaceName interfaceName)
     tName = mkPossibleTypesName interfaceName
 
-renderFieldName :: Monad m => FieldName -> ServerQ m FieldName
-renderFieldName fieldName = do
-  TypeContext {hasNamespace, currentTypeName} <- ask
-  pure $
-    if hasNamespace
-      then maybe fieldName (`camelCaseFieldName` fieldName) currentTypeName
-      else fieldName
+mkConsEnum :: Monad m => DataEnumValue CONST -> CodeGenT m CodeGenConstructor
+mkConsEnum DataEnumValue {enumName} = do
+  constructorName <- getEnumName enumName
+  pure CodeGenConstructor {constructorName, constructorFields = []}
 
-mkConsEnum :: Monad m => TypeName -> DataEnumValue CONST -> ServerQ m CodeGenConstructor
-mkConsEnum name DataEnumValue {enumName} = do
-  namespace <- asks hasNamespace
-  pure
-    CodeGenConstructor
-      { constructorName =
-          if namespace
-            then CodeGenTypeName [coerce name] [] enumName
-            else fromTypeName enumName,
-        constructorFields = []
-      }
-
-renderDataField :: Monad m => FieldDefinition c CONST -> ServerQ m CodeGenField
+renderDataField :: Monad m => FieldDefinition c CONST -> CodeGenT m CodeGenField
 renderDataField FieldDefinition {fieldType = TypeRef {typeConName, typeWrappers}, fieldName = fName} = do
-  fieldName <- renderFieldName fName
+  fieldName <- getFieldName fName
   let wrappers = [GQL_WRAPPER typeWrappers]
   let fieldType = packName (toHaskellTypeName typeConName)
   let fieldIsNullable = isNullable typeWrappers
@@ -390,9 +305,9 @@ genTypeContent ::
   CodeGenMonad m =>
   TypeName ->
   TypeContent TRUE ANY CONST ->
-  ServerQ m BuildPlan
+  CodeGenT m BuildPlan
 genTypeContent _ DataScalar {} = pure (ConsIN [])
-genTypeContent typeName (DataEnum tags) = ConsIN <$> traverse (mkConsEnum typeName) tags
+genTypeContent _ (DataEnum tags) = ConsIN <$> traverse mkConsEnum tags
 genTypeContent typeName (DataInputObject fields) =
   ConsIN . mkObjectCons typeName <$> traverse renderDataField (toList fields)
 genTypeContent _ DataInputUnion {} = fail "Input Unions not Supported"
@@ -434,10 +349,10 @@ mkUnionFieldDefinition typeName memberName =
   where
     constructorName = CodeGenTypeName [coerce typeName] [] memberName
 
-genArgumentTypes :: MonadFail m => FieldsDefinition OUT CONST -> ServerQ m [ServerDeclaration]
+genArgumentTypes :: MonadFail m => FieldsDefinition OUT CONST -> CodeGenT m [ServerDeclaration]
 genArgumentTypes = fmap concat . traverse genArgumentType . toList
 
-genArgumentType :: MonadFail m => FieldDefinition OUT CONST -> ServerQ m [ServerDeclaration]
+genArgumentType :: MonadFail m => FieldDefinition OUT CONST -> CodeGenT m [ServerDeclaration]
 genArgumentType
   FieldDefinition
     { fieldName,
@@ -449,8 +364,8 @@ genArgumentType
           let argumentFields = argument <$> toList arguments
           fields <- traverse renderDataField argumentFields
           let typename = toHaskellTypeName tName
-          gqlTypeDirectiveUses <- concat <$> traverse getDirs argumentFields
-          dropNamespace <- defineTypeOptions KindInputObject typename
+          namespaceDirs <- getNamespaceDirs typename
+          dirs <- concat <$> traverse getDirs argumentFields
           let cgTypeName = fromTypeName (packName typename)
           pure
             [ DataType
@@ -464,19 +379,13 @@ genArgumentType
                   { gqlTarget = cgTypeName,
                     gqlKind = Type,
                     gqlTypeDefaultValues = fromList (mapMaybe getDefaultValue argumentFields),
-                    gqlTypeDirectiveUses,
-                    dropNamespace
+                    gqlTypeDirectiveUses = namespaceDirs <> dirs
                   }
             ]
 genArgumentType _ = pure []
 
--- mkFieldDescription :: FieldDefinition cat s -> Maybe (Text, Description)
--- mkFieldDescription FieldDefinition {..} = (unpackName fieldName,) <$> fieldDescription
-
----
-
 class Meta a where
-  getDirs :: MonadFail m => a -> ServerQ m [ServerDirectiveUsage]
+  getDirs :: MonadFail m => a -> CodeGenT m [ServerDirectiveUsage]
 
 instance (Meta a) => Meta (Maybe a) where
   getDirs (Just x) = getDirs x
@@ -486,6 +395,12 @@ descDirective :: Maybe Description -> [TypeValue]
 descDirective desc = map describe (maybeToList desc)
   where
     describe x = TypeValueObject "Describe" [("text", TypeValueString x)]
+
+dirDropNamespace :: Text -> TypeValue
+dirDropNamespace name = TypeValueObject "DropNamespace" [("dropNamespace", TypeValueString name)]
+
+dirRename :: Text -> TypeValue
+dirRename name = TypeValueObject "Rename" [("newName", TypeValueString name)]
 
 instance Meta (TypeDefinition c CONST) where
   getDirs TypeDefinition {typeContent, typeDirectives, typeDescription} = do
@@ -505,7 +420,8 @@ instance Meta (TypeContent a c CONST) where
 instance Meta (DataEnumValue CONST) where
   getDirs DataEnumValue {enumName, enumDirectives, enumDescription} = do
     dirs <- traverse directiveTypeValue (toList enumDirectives)
-    pure $ map (EnumDirectiveUsage enumName) (dirs <> descDirective enumDescription)
+    name <- getFullName <$> getEnumName enumName
+    pure $ map (EnumDirectiveUsage name) (dirs <> descDirective enumDescription)
 
 instance Meta (FieldsDefinition c CONST) where
   getDirs = fmap concat . traverse getDirs . toList
@@ -513,13 +429,14 @@ instance Meta (FieldsDefinition c CONST) where
 instance Meta (FieldDefinition c CONST) where
   getDirs FieldDefinition {fieldName, fieldDirectives, fieldDescription} = do
     dirs <- traverse directiveTypeValue (toList fieldDirectives)
-    pure $ map (FieldDirectiveUsage fieldName) (dirs <> descDirective fieldDescription)
+    name <- getFieldName fieldName
+    pure $ map (FieldDirectiveUsage name) (dirs <> descDirective fieldDescription)
 
 getInputFields :: TypeDefinition c s -> [FieldDefinition IN s]
 getInputFields TypeDefinition {typeContent = DataInputObject {inputObjectFields}} = toList inputObjectFields
 getInputFields _ = []
 
-getDefaultValue :: FieldDefinition c s -> Maybe (Text, V.Value s)
+getDefaultValue :: FieldDefinition c s -> Maybe (Text, AST.Value s)
 getDefaultValue
   FieldDefinition
     { fieldName,
@@ -527,7 +444,7 @@ getDefaultValue
     } = Just (unpackName fieldName, defaultInputValue)
 getDefaultValue _ = Nothing
 
-nativeDirectives :: V.DirectivesDefinition CONST
+nativeDirectives :: AST.DirectivesDefinition CONST
 nativeDirectives = AST.directiveDefinitions internalSchema
 
 getDirective :: (MonadReader (TypeContext CONST) m, MonadFail m) => FieldName -> m (DirectiveDefinition CONST)
@@ -537,7 +454,7 @@ getDirective directiveName = do
     Just dir -> pure dir
     _ -> selectOr (fail $ "unknown directive" <> show directiveName) pure directiveName nativeDirectives
 
-directiveTypeValue :: MonadFail m => Directive CONST -> ServerQ m TypeValue
+directiveTypeValue :: MonadFail m => Directive CONST -> CodeGenT m TypeValue
 directiveTypeValue Directive {..} = inType typeContext $ do
   dirs <- getDirective directiveName
   TypeValueObject typename <$> traverse (renderArgumentValue directiveArgs) (toList $ directiveDefinitionArgs dirs)
@@ -557,57 +474,40 @@ renderArgumentValue args ArgumentDefinition {..} = do
   let dirName = AST.fieldName argument
   gqlValue <- selectOr (pure AST.Null) (pure . argumentValue) dirName args
   typeValue <- mapWrappedValue (AST.fieldType argument) gqlValue
-  fName <- renderFieldName dirName
+  fName <- getFieldName dirName
   pure (fName, typeValue)
 
-notFound :: MonadFail m => String -> String -> m a
-notFound name at = fail $ "can't found " <> name <> "at " <> at <> "!"
-
-lookupType :: MonadFail m => TypeName -> ServerQ m (TypeDefinition ANY CONST)
-lookupType name = do
-  types <- asks typeDefinitions
-  case find (\t -> typeName t == name) types of
-    Just x -> pure x
-    Nothing -> notFound (show name) "type definitions"
-
-lookupValueFieldType :: MonadFail m => TypeName -> FieldName -> ServerQ m TypeRef
-lookupValueFieldType name fieldName = do
-  TypeDefinition {typeContent} <- lookupType name
-  case typeContent of
-    DataInputObject fields -> do
-      FieldDefinition {fieldType} <- selectOr (notFound (show fieldName) (show name)) pure fieldName fields
-      pure fieldType
-    _ -> notFound "input object" (show name)
-
-mapField :: MonadFail m => TypeName -> ObjectEntry CONST -> ServerQ m (FieldName, TypeValue)
+mapField :: MonadFail m => TypeName -> ObjectEntry CONST -> CodeGenT m (FieldName, TypeValue)
 mapField tName ObjectEntry {..} = do
-  t <- lookupValueFieldType tName entryName
+  t <- lookupFieldType tName entryName
   value <- mapWrappedValue t entryValue
   pure (entryName, value)
 
-expected :: MonadFail m => String -> V.Value CONST -> ServerQ m TypeValue
+expected :: MonadFail m => String -> AST.Value CONST -> CodeGenT m TypeValue
 expected typ value = fail ("expected " <> typ <> ", found " <> show (render value) <> "!")
 
-mapWrappedValue :: MonadFail m => TypeRef -> V.Value CONST -> ServerQ m TypeValue
+mapWrappedValue :: MonadFail m => TypeRef -> AST.Value CONST -> CodeGenT m TypeValue
 mapWrappedValue (TypeRef name (AST.BaseType isRequired)) value
   | isRequired = mapValue name value
-  | value == V.Null = pure (TypedValueMaybe Nothing)
+  | value == AST.Null = pure (TypedValueMaybe Nothing)
   | otherwise = TypedValueMaybe . Just <$> mapValue name value
 mapWrappedValue (TypeRef name (AST.TypeList elems isRequired)) d = case d of
-  V.Null | not isRequired -> pure (TypedValueMaybe Nothing)
-  (V.List xs) -> TypedValueMaybe . Just . TypeValueList <$> traverse (mapWrappedValue (TypeRef name elems)) xs
+  AST.Null | not isRequired -> pure (TypedValueMaybe Nothing)
+  (AST.List xs) -> TypedValueMaybe . Just . TypeValueList <$> traverse (mapWrappedValue (TypeRef name elems)) xs
   value -> expected "list" value
 
-mapValue :: MonadFail m => TypeName -> V.Value CONST -> ServerQ m TypeValue
-mapValue name (V.List xs) = TypeValueList <$> traverse (mapValue name) xs
-mapValue _ (V.Enum name) = pure $ TypeValueObject name []
-mapValue name (V.Object fields) = TypeValueObject name <$> traverse (mapField name) (toList fields)
-mapValue _ (V.Scalar x) = mapScalarValue x
+mapValue :: MonadFail m => TypeName -> AST.Value CONST -> CodeGenT m TypeValue
+mapValue name (AST.List xs) = TypeValueList <$> traverse (mapValue name) xs
+mapValue _ (AST.Enum name) = pure $ TypeValueObject name []
+mapValue name (AST.Object fields) = TypeValueObject name <$> traverse (mapField name) (toList fields)
+mapValue _ (AST.Scalar x) = mapScalarValue x
 mapValue t v = expected (show t) v
 
-mapScalarValue :: MonadFail m => V.ScalarValue -> ServerQ m TypeValue
-mapScalarValue (V.Int x) = pure $ TypeValueNumber (fromIntegral x)
-mapScalarValue (V.Float x) = pure $ TypeValueNumber x
-mapScalarValue (V.String x) = pure $ TypeValueString x
-mapScalarValue (V.Boolean x) = pure $ TypeValueBool x
-mapScalarValue (V.Value _) = fail "JSON objects are not supported!"
+mapScalarValue :: MonadFail m => AST.ScalarValue -> CodeGenT m TypeValue
+mapScalarValue (AST.Int x) = pure $ TypeValueNumber (fromIntegral x)
+mapScalarValue (AST.Float x) = pure $ TypeValueNumber x
+mapScalarValue (AST.String x) = pure $ TypeValueString x
+mapScalarValue (AST.Boolean x) = pure $ TypeValueBool x
+mapScalarValue (AST.Value _) = fail "JSON objects are not supported!"
+
+-- UTILS

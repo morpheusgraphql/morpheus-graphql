@@ -32,10 +32,10 @@ import Data.Morpheus.Server.Deriving.Decode
   ( Decode,
     decodeArguments,
   )
+import Data.Morpheus.Server.Deriving.Schema.Directive (toFieldRes)
 import Data.Morpheus.Server.Deriving.Utils
   ( ConsRep (..),
     DataType (..),
-    FieldRep (..),
   )
 import Data.Morpheus.Server.Deriving.Utils.DeriveGType
   ( DeriveValueOptions (..),
@@ -43,8 +43,7 @@ import Data.Morpheus.Server.Deriving.Utils.DeriveGType
     deriveValue,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded (KindedProxy (..), kinded)
-import Data.Morpheus.Server.Types.GQLType (GQLType (typeOptions), deriveTypename, __typeData)
-import Data.Morpheus.Server.Types.Internal (defaultTypeOptions)
+import Data.Morpheus.Server.Types.GQLType (GQLType, deriveTypename, __typeData)
 import Data.Morpheus.Server.Types.Types (Undefined)
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
@@ -140,12 +139,13 @@ instance (GetChannel e a, GQLType a) => ChannelConstraint e a
 instance (GQLType a, Generic a, DeriveWith (ChannelConstraint e) (ChannelRes e) (Rep a)) => ExploreChannels 'False e a where
   exploreChannels _ =
     HM.fromList
-      . convertNode
+      . map (toFieldRes (Proxy @a))
+      . consFields
+      . tyCons
       . deriveValue
         ( DeriveValueOptions
             { __valueApply = getChannel,
               __valueTypeName = deriveTypename (KindedProxy :: KindedProxy OUT a),
-              __valueGQLOptions = typeOptions (Proxy @a) defaultTypeOptions,
               __valueGetType = __typeData . kinded (Proxy @OUT)
             } ::
             DeriveValueOptions OUT (ChannelConstraint e) (ChannelRes e)
@@ -153,8 +153,3 @@ instance (GQLType a, Generic a, DeriveWith (ChannelConstraint e) (ChannelRes e) 
 
 instance ExploreChannels 'True e (Undefined m) where
   exploreChannels _ = pure HM.empty
-
-convertNode :: DataType (ChannelRes e) -> [(FieldName, ChannelRes e)]
-convertNode DataType {tyCons = ConsRep {consFields}} = map toChannels consFields
-  where
-    toChannels FieldRep {fieldSelector, fieldValue} = (fieldSelector, fieldValue)

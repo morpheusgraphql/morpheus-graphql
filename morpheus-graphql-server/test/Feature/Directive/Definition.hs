@@ -51,7 +51,7 @@ instance GQLDirective Power where
   type DIRECTIVE_LOCATIONS Power = '[ 'OBJECT]
 
 instance VisitType Power where
-  visitTypeName _ = id
+  visitTypeName _ _ = id
 
 instance GQLType MythologyDeity where
   directives _ =

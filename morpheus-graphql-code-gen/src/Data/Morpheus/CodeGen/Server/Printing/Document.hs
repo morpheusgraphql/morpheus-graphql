@@ -18,14 +18,15 @@ import Data.Morpheus.CodeGen.Printer
     renderExtension,
     renderImport,
     unpack,
+    (.<>),
   )
 import Data.Morpheus.CodeGen.Server.Internal.AST
   ( GQLTypeDefinition (..),
+    InterfaceDefinition (..),
     Kind (..),
     ModuleDefinition (..),
     ServerDeclaration (..),
     ServerDirectiveUsage (..),
-    TypeKind,
   )
 import Data.Text
   ( pack,
@@ -62,7 +63,8 @@ renderDocument moduleName types =
                     ("Data.Morpheus.Types", ["*"]),
                     ("Data.Morpheus", []),
                     ("Data.Text", ["Text"]),
-                    ("GHC.Generics", ["Generic"])
+                    ("GHC.Generics", ["Generic"]),
+                    ("Globals.GQLScalars", ["*"])
                   ],
                 extensions =
                   [ "DeriveGeneric",
@@ -104,7 +106,15 @@ class RenderType a where
   render :: a -> Result (Doc ann)
 
 instance RenderType ServerDeclaration where
-  render InterfaceType {} = fail "not supported"
+  render (InterfaceType InterfaceDefinition {..}) =
+    pure $
+      "type"
+        <+> ignore (print aliasName)
+        <+> "m"
+        <+> "="
+        <+> "TypeGuard"
+        <+> unpack (print interfaceName .<> "m")
+        <+> unpack (print unionName .<> "m")
   -- TODO: on scalar we should render user provided type
   render ScalarType {scalarTypeName} =
     pure $ "type" <+> ignore (print scalarTypeName) <+> "= Int"
@@ -114,10 +124,6 @@ instance RenderType ServerDeclaration where
 
 renderTypeableConstraints :: [Text] -> Doc n
 renderTypeableConstraints xs = tupled (map (("Typeable" <+>) . pretty) xs) <+> "=>"
-
-defineTypeOptions :: Maybe (TypeKind, Text) -> [Doc n]
-defineTypeOptions (Just (kind, tName)) = ["typeOptions _ = dropNamespaceOptions" <+> "(" <> pretty (show kind :: String) <> ")" <+> pretty (show tName :: String)]
-defineTypeOptions _ = []
 
 renderGQLType :: GQLTypeDefinition -> Doc ann
 renderGQLType gql@GQLTypeDefinition {..}
@@ -129,7 +135,7 @@ renderGQLType gql@GQLTypeDefinition {..}
         <+> typeHead
         <+> "where"
           <> line
-          <> indent 2 (vsep (renderMethods typeHead gql <> defineTypeOptions dropNamespace))
+          <> indent 2 (vsep (renderMethods typeHead gql))
   where
     typeHead = unpack (print gqlTarget)
 

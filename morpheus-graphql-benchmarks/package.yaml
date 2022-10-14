@@ -12,7 +12,6 @@ license-file: LICENSE
 description: Build GraphQL APIs with your favorite functional language!
 
 extra-source-files:
-  - changelog.md
   - README.md
 
 data-files:

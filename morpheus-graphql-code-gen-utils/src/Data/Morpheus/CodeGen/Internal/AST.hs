@@ -85,9 +85,13 @@ data CodeGenType = CodeGenType
   }
   deriving (Show)
 
+isNewType :: CodeGenType -> Bool
+isNewType CodeGenType {cgConstructors = [CodeGenConstructor {constructorFields = [_]}]} = True
+isNewType _ = False
+
 instance Pretty CodeGenType where
-  pretty CodeGenType {..} =
-    "data"
+  pretty t@CodeGenType {..} =
+    (if isNewType t then "newtype" else "data")
       <+> ignore (print cgTypeName)
         <> renderConstructors cgConstructors
         <> line

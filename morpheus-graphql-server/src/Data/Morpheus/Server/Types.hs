@@ -76,6 +76,8 @@ module Data.Morpheus.Server.Types
     RootResolver (..),
     defaultRootResolver,
     Rename (..),
+    InputTypeNamespace (..),
+    DropNamespace (..),
   )
 where
 
@@ -102,12 +104,14 @@ import Data.Morpheus.Server.Resolvers
 import Data.Morpheus.Server.Types.DirectiveDefinitions
   ( Deprecated (..),
     Describe (..),
+    DropNamespace (..),
     Prefixes (..),
     Rename (..),
   )
 import Data.Morpheus.Server.Types.Directives (GQLDirective (..))
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
+    InputTypeNamespace (..),
     enumDirective,
     enumDirective',
     fieldDirective,

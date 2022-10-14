@@ -32,8 +32,7 @@ import Data.Morpheus.Server.Deriving.Utils.Proxy
   )
 import Data.Morpheus.Server.Deriving.Utils.Types
 import Data.Morpheus.Server.Types.Internal
-  ( GQLTypeOptions (..),
-    TypeData (..),
+  ( TypeData (..),
   )
 import Data.Morpheus.Types.Internal.AST
   ( TypeName,
@@ -59,14 +58,12 @@ import Relude hiding (undefined)
 
 data DeriveValueOptions kind c v = DeriveValueOptions
   { __valueTypeName :: TypeName,
-    __valueGQLOptions :: GQLTypeOptions,
     __valueApply :: forall a. c a => a -> v,
     __valueGetType :: forall f a. c a => f a -> TypeData
   }
 
 data DeriveTypeOptions kind c v = DeriveTypeDefinitionOptions
-  { __typeGQLOptions :: GQLTypeOptions,
-    __typeApply :: forall f a. c a => f a -> v,
+  { __typeApply :: forall f a. c a => f a -> v,
     __typeGetType :: forall f a. c a => f a -> TypeData
   }
 
@@ -105,22 +102,18 @@ instance (DeriveFieldRep con v f, Constructor c) => DeriveWith con v (M1 C c f) 
     DataType
       { dataTypeName = "",
         tyIsUnion = False,
-        tyCons = deriveConsRep (__valueGQLOptions options) (Proxy @c) (toFieldRep options src)
+        tyCons = deriveConsRep (Proxy @c) (toFieldRep options src)
       }
-  deriveTypeDefinition options _ = [deriveConsRep (__typeGQLOptions options) (Proxy @c) (conRep options (Proxy @f))]
+  deriveTypeDefinition options _ = [deriveConsRep (Proxy @c) (conRep options (Proxy @f))]
 
 deriveConsRep ::
   Constructor (c :: Meta) =>
-  GQLTypeOptions ->
   f c ->
   [FieldRep v] ->
   ConsRep v
-deriveConsRep opt proxy fields =
-  ConsRep
-    { consName = conNameProxy opt proxy,
-      consFields
-    }
+deriveConsRep proxy fields = ConsRep {..}
   where
+    consName = conNameProxy proxy
     consFields
       | isRecordProxy proxy = fields
       | otherwise = enumerate fields
@@ -136,7 +129,7 @@ instance (DeriveFieldRep c v a, DeriveFieldRep c v b) => DeriveFieldRep c v (a :
 instance (Selector s, c a) => DeriveFieldRep c v (M1 S s (Rec0 a)) where
   toFieldRep DeriveValueOptions {..} (M1 (K1 src)) =
     [ FieldRep
-        { fieldSelector = selNameProxy __valueGQLOptions (Proxy @s),
+        { fieldSelector = selNameProxy (Proxy @s),
           fieldTypeRef = TypeRef gqlTypeName gqlWrappers,
           fieldValue = __valueApply src
         }
@@ -145,7 +138,7 @@ instance (Selector s, c a) => DeriveFieldRep c v (M1 S s (Rec0 a)) where
       TypeData {gqlTypeName, gqlWrappers} = __valueGetType (Proxy @a)
   conRep DeriveTypeDefinitionOptions {..} _ =
     [ FieldRep
-        { fieldSelector = selNameProxy __typeGQLOptions (Proxy @s),
+        { fieldSelector = selNameProxy (Proxy @s),
           fieldTypeRef = TypeRef gqlTypeName gqlWrappers,
           fieldValue = __typeApply (Proxy @a)
         }
