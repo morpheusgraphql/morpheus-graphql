@@ -7,7 +7,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -58,7 +57,7 @@ where
 -- MORPHEUS
 
 import Control.Monad.Except (MonadError (throwError))
-import Data.HashMap.Strict qualified as M
+import qualified Data.HashMap.Strict as M
 import Data.Morpheus.App.Internal.Resolving
   ( Resolver,
     SubscriptionField,
@@ -139,7 +138,7 @@ import Data.Text
   )
 import Data.Vector (Vector)
 import GHC.Generics
-import Language.Haskell.TH.Syntax qualified as TH
+import qualified Language.Haskell.TH.Syntax as TH
 import Relude hiding (Seq, Undefined, fromList, intercalate)
 
 __isEmptyType :: forall f a. GQLType a => f a -> Bool

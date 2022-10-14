@@ -3,7 +3,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -88,7 +87,7 @@ import Data.Morpheus.Types.Internal.AST
     internal,
     replaceValue,
   )
-import GHC.Exts qualified as HM
+import qualified GHC.Exts as HM
 import GHC.Generics
   ( Generic (..),
   )
@@ -185,11 +184,11 @@ convertNamedNode
     | null consFields = pure $ NamedEnumResolver consName
     | tyIsUnion = deriveUnion consFields
     | otherwise =
-        pure $
-          NamedObjectResolver
-            ObjectTypeResolver
-              { objectFields = HM.fromList (toFieldRes proxy <$> consFields)
-              }
+      pure $
+        NamedObjectResolver
+          ObjectTypeResolver
+            { objectFields = HM.fromList (toFieldRes proxy <$> consFields)
+            }
 
 deriveUnion :: (MonadError GQLError m) => [FieldRep (m (ResolverValue m))] -> m (NamedResolverResult m)
 deriveUnion [FieldRep {..}] =

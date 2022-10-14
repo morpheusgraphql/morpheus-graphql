@@ -2,7 +2,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -22,7 +21,7 @@ module Data.Morpheus.Server.Deriving.Decode
 where
 
 import Control.Monad.Except (MonadError (throwError))
-import Data.Map qualified as M
+import qualified Data.Map as M
 import Data.Morpheus.App.Internal.Resolving
   ( ResolverState,
   )
@@ -152,11 +151,11 @@ decideEither (left, right) name value
   | name `elem` left = L1 <$> decodeRep value
   | name `elem` right = R1 <$> decodeRep value
   | otherwise =
-      throwError $
-        internal $
-          "Constructor \""
-            <> msg name
-            <> "\" could not find in Union"
+    throwError $
+      internal $
+        "Constructor \""
+          <> msg name
+          <> "\" could not find in Union"
 
 decodeInputUnionObject ::
   (DecodeRep f, DecodeRep g) =>

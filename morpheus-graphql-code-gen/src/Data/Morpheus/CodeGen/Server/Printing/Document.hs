@@ -1,5 +1,4 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -32,7 +31,7 @@ import Data.Morpheus.CodeGen.Server.Internal.AST
 import Data.Text
   ( pack,
   )
-import Data.Text.Lazy qualified as LT
+import Data.Text.Lazy
   ( fromStrict,
   )
 import Data.Text.Lazy.Encoding (encodeUtf8)
@@ -51,8 +50,8 @@ import Relude hiding (ByteString, encodeUtf8, optional, print)
 
 renderDocument :: String -> [ServerDeclaration] -> ByteString
 renderDocument moduleName types =
-  encodeUtf8 $
-    LT.fromStrict $
+  encodeUtf8 $ 
+    fromStrict $
       pack $
         show $
           renderModuleDefinition

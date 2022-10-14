@@ -2,7 +2,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
@@ -24,7 +23,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeName,
     packName,
   )
-import Data.Text qualified as T
+import qualified Data.Text as T
 import GHC.Generics
   ( C,
     Constructor,

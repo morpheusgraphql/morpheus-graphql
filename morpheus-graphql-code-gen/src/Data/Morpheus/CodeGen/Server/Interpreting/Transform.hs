@@ -1,7 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -76,7 +75,7 @@ import Data.Morpheus.Types.Internal.AST
     packName,
     unpackName,
   )
-import Data.Morpheus.Types.Internal.AST qualified as AST
+import qualified Data.Morpheus.Types.Internal.AST as AST
 import Relude hiding (ByteString, get)
 
 parseServerTypeDefinitions :: CodeGenMonad m => CodeGenConfig -> ByteString -> m [ServerDeclaration]

@@ -3,7 +3,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PolyKinds #-}
@@ -22,7 +21,7 @@ module Data.Morpheus.Server.Deriving.Encode
 where
 
 import Control.Monad.Except (MonadError)
-import Data.Map qualified as M
+import qualified Data.Map as M
 import Data.Morpheus.App.Internal.Resolving
   ( LiftOperation,
     ObjectTypeResolver,

@@ -3,7 +3,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -30,7 +29,7 @@ module Data.Morpheus.Server.Deriving.Schema.Directive
 where
 
 import Control.Monad.Except (throwError)
-import Data.HashMap.Lazy qualified as HM
+import qualified Data.HashMap.Lazy as HM
 import Data.Morpheus.Internal.Ext (resultOr, unsafeFromList)
 import Data.Morpheus.Internal.Utils (Empty (..), fromElems)
 import Data.Morpheus.Server.Deriving.Utils.Kinded

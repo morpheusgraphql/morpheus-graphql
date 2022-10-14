@@ -3,7 +3,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -30,7 +29,7 @@ module Data.Morpheus.Server.Types.Directives
 where
 
 import Data.Morpheus.Server.Types.TypeName (getTypename)
-import Data.Morpheus.Server.Types.Visitors qualified as Visitors
+import qualified Data.Morpheus.Server.Types.Visitors as Visitors
 import Data.Morpheus.Types.Internal.AST
   ( Description,
     DirectiveLocation (..),

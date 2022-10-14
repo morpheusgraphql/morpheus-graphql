@@ -3,7 +3,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -19,7 +18,7 @@ module Data.Morpheus.Server.Deriving.Channels
 where
 
 import Control.Monad.Except (throwError)
-import Data.HashMap.Lazy qualified as HM
+import qualified Data.HashMap.Lazy as HM
 import Data.Morpheus.App.Internal.Resolving
   ( Channel,
     Resolver,
