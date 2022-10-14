@@ -12,6 +12,7 @@ import Data.Morpheus.Kind (TYPE)
 import Data.Morpheus.Types
 import Data.Text (Text)
 import GHC.Generics (Generic)
+import Globals.GQLScalars
 
 data TestEnum
   = TestEnumEnumA
@@ -44,7 +45,7 @@ instance GQLType CollidingEnum where
       <> enumDirective "CollidingEnumEnumC" Deprecated {reason = Nothing}
       <> enumDirective "CollidingEnumEnumC" Describe {text = "\n  enumValue Description: EnumC\n  "}
 
-data NestedInputObject = NestedInputObject
+newtype NestedInputObject = NestedInputObject
   { nestedInputObjectFieldTestID :: ID
   }
   deriving (Generic, Show)
@@ -120,7 +121,7 @@ instance (Typeable m) => GQLType (TestUnion m) where
     typeDirective DropNamespace {dropNamespace = "TestUnion"}
       <> typeDirective Describe {text = "\ntype Description: TestUnion\n\nsome random text for union type\n"}
 
-data InterfacePerson m = InterfacePerson
+newtype InterfacePerson m = InterfacePerson
   { interfacePersonName :: m (Maybe Text)
   }
   deriving (Generic)
@@ -131,7 +132,7 @@ instance (Typeable m) => GQLType (InterfacePerson m) where
     typeDirective Rename {newName = "Person"}
       <> typeDirective DropNamespace {dropNamespace = "InterfacePerson"}
 
-type Person = TypeGuard (InterfacePerson m) (User m)
+type Person m = TypeGuard (InterfacePerson m) (User m)
 
 data User m = User
   { userName :: m Text,
@@ -182,7 +183,7 @@ instance (Typeable m) => GQLType (Query m) where
   type KIND (Query m) = TYPE
   directives _ = typeDirective DropNamespace {dropNamespace = "Query"}
 
-data Mutation m = Mutation
+newtype Mutation m = Mutation
   { mutationCreateUser :: MutationCreateUserArgs -> m (User m)
   }
   deriving (Generic)

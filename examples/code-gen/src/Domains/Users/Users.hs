@@ -12,6 +12,7 @@ import Data.Morpheus.Kind (TYPE)
 import Data.Morpheus.Types
 import Data.Text (Text)
 import GHC.Generics (Generic)
+import Globals.GQLScalars
 
 data User m = User
   { id :: m ID,

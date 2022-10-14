@@ -64,7 +64,8 @@ renderDocument moduleName types =
                     ("Data.Morpheus.Types", ["*"]),
                     ("Data.Morpheus", []),
                     ("Data.Text", ["Text"]),
-                    ("GHC.Generics", ["Generic"])
+                    ("GHC.Generics", ["Generic"]),
+                    ("Globals.GQLScalars", ["*"])
                   ],
                 extensions =
                   [ "DeriveGeneric",
@@ -110,6 +111,7 @@ instance RenderType ServerDeclaration where
     pure $
       "type"
         <+> ignore (print aliasName)
+        <+> "m"
         <+> "="
         <+> "TypeGuard"
         <+> unpack (print interfaceName .<> "m")

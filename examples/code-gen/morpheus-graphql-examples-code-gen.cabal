@@ -28,6 +28,7 @@ executable generated-server
       Domains.Posts.Resolver
       Domains.Users.Resolver
       Domains.Users.Users
+      Globals.GQLScalars
       Namespaces.Mutation
       Namespaces.Query
       Namespaces.Sophisticated
