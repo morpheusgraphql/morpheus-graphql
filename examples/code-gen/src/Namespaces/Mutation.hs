@@ -1,0 +1,149 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies #-}
+
+module Namespaces.Mutation where
+
+import Data.Data (Typeable)
+import Data.Morpheus ()
+import Data.Morpheus.Kind (TYPE)
+import Data.Morpheus.Types
+import Data.Text (Text)
+import GHC.Generics (Generic)
+
+data Query m = Query
+  { queryDeity :: QueryDeityArgs -> m (Deity m),
+    queryCharacter :: QueryCharacterArgs -> m (Character m),
+    queryHero :: m (Human m)
+  }
+  deriving (Generic)
+
+instance (Typeable m) => GQLType (Query m) where
+  type KIND (Query m) = TYPE
+  directives _ = typeDirective DropNamespace {dropNamespace = "Query"}
+
+data QueryDeityArgs = QueryDeityArgs
+  { queryDeityArgsName :: Maybe [Maybe [Maybe [[Maybe [Text]]]]],
+    queryDeityArgsMythology :: Maybe Text
+  }
+  deriving (Generic, Show)
+
+instance GQLType QueryDeityArgs where
+  type KIND QueryDeityArgs = TYPE
+  directives _ = typeDirective DropNamespace {dropNamespace = "QueryDeityArgs"}
+
+data QueryCharacterArgs = QueryCharacterArgs
+  { queryCharacterArgsCharacterID :: Text,
+    queryCharacterArgsAge :: Maybe Int
+  }
+  deriving (Generic, Show)
+
+instance GQLType QueryCharacterArgs where
+  type KIND QueryCharacterArgs = TYPE
+  directives _ = typeDirective DropNamespace {dropNamespace = "QueryCharacterArgs"}
+
+data Mutation m = Mutation
+  { mutationCreateDeity :: MutationCreateDeityArgs -> m (Deity m),
+    mutationCreateCharacter :: MutationCreateCharacterArgs -> m (Character m)
+  }
+  deriving (Generic)
+
+instance (Typeable m) => GQLType (Mutation m) where
+  type KIND (Mutation m) = TYPE
+  directives _ = typeDirective DropNamespace {dropNamespace = "Mutation"}
+
+data MutationCreateDeityArgs = MutationCreateDeityArgs
+  { mutationCreateDeityArgsDeityName :: Maybe [Maybe [Maybe [[Maybe [Text]]]]],
+    mutationCreateDeityArgsDeityMythology :: Maybe Text
+  }
+  deriving (Generic, Show)
+
+instance GQLType MutationCreateDeityArgs where
+  type KIND MutationCreateDeityArgs = TYPE
+  directives _ = typeDirective DropNamespace {dropNamespace = "MutationCreateDeityArgs"}
+
+data MutationCreateCharacterArgs = MutationCreateCharacterArgs
+  { mutationCreateCharacterArgsCharRealm :: Realm,
+    mutationCreateCharacterArgsCharMutID :: Text
+  }
+  deriving (Generic, Show)
+
+instance GQLType MutationCreateCharacterArgs where
+  type KIND MutationCreateCharacterArgs = TYPE
+  directives _ = typeDirective DropNamespace {dropNamespace = "MutationCreateCharacterArgs"}
+
+data Character m
+  = CharacterCreature
+      { unCharacterCreature :: Creature m
+      }
+  | CharacterDeity
+      { unCharacterDeity :: Deity m
+      }
+  | CharacterHuman
+      { unCharacterHuman :: Human m
+      }
+  deriving (Generic)
+
+instance (Typeable m) => GQLType (Character m) where
+  type KIND (Character m) = TYPE
+  directives _ = typeDirective DropNamespace {dropNamespace = "Character"}
+
+data Deity m = Deity
+  { deityFullName :: m Text,
+    deityPower :: m Power
+  }
+  deriving (Generic)
+
+instance (Typeable m) => GQLType (Deity m) where
+  type KIND (Deity m) = TYPE
+  directives _ =
+    typeDirective DropNamespace {dropNamespace = "Deity"}
+      <> fieldDirective "deityFullName" Describe {text = "\n  simple field description\n  "}
+      <> fieldDirective "deityPower" Describe {text = "\n  simple power description\n  "}
+
+data Creature m = Creature
+  { creatureCreatureName :: m Text,
+    creatureRealm :: m City
+  }
+  deriving (Generic)
+
+instance (Typeable m) => GQLType (Creature m) where
+  type KIND (Creature m) = TYPE
+  directives _ = typeDirective DropNamespace {dropNamespace = "Creature"}
+
+data Human m = Human
+  { humanHumanName :: m Text,
+    humanProfession :: m (Maybe Text)
+  }
+  deriving (Generic)
+
+instance (Typeable m) => GQLType (Human m) where
+  type KIND (Human m) = TYPE
+  directives _ = typeDirective DropNamespace {dropNamespace = "Human"}
+
+data Realm = Realm
+  { realmOwner :: Text,
+    realmPlace :: Maybe Int
+  }
+  deriving (Generic, Show)
+
+instance GQLType Realm where
+  type KIND Realm = TYPE
+  directives _ = typeDirective DropNamespace {dropNamespace = "Realm"}
+
+data City
+  = CityAthens
+  | CityIthaca
+  | CitySparta
+  | CityTroy
+  deriving (Generic, Show)
+
+instance GQLType City where
+  type KIND City = TYPE
+  directives _ =
+    typeDirective DropNamespace {dropNamespace = "City"}
+      <> enumDirective "CityTroy" Deprecated {reason = Just "some reason"}
+
+type Power = Int

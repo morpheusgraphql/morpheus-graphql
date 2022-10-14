@@ -22,9 +22,13 @@ export const codeGen = async ({ src = root }: Options = {}) => {
 
     log(`generating code(${files.length} files): ${gqlPath} \n`);
 
-    exec(`morpheus build ${files.join(" ")} --root=${src} `);
-
     log(`formatting(${files.length} files): ${hsPath} \n\n`);
+
+    files.forEach((file) => {
+      const namespace = file.toLowerCase().includes("namespace") ? "-n" : "";
+
+      exec(`morpheus ${namespace} build ${file} --root=${src} `);
+    });
 
     exec(`ts-node scripts/local.ts format --fix=true --path=${hsPath}`);
 
