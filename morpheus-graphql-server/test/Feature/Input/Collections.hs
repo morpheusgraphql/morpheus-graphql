@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Feature.Input.Collections
@@ -17,10 +18,11 @@ import Data.Morpheus.Server.Types
     GQLRequest,
     GQLResponse,
     GQLType (..),
-    GQLTypeOptions (..),
+    InputTypeNamespace (..),
     RootResolver (..),
     Undefined,
     defaultRootResolver,
+    typeDirective,
   )
 import Data.Sequence (Seq)
 import Data.Set (Set)
@@ -38,10 +40,7 @@ data Product = Product Text Int Bool (Maybe Double)
   deriving (Generic)
 
 instance GQLType Product where
-  typeOptions _ options =
-    options
-      { typeNameModifier = \isInput name -> if isInput then "Input" <> name else name
-      }
+  directives _ = typeDirective (InputTypeNamespace "Input")
 
 -- resolver
 data Query m = Query

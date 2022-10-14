@@ -12,12 +12,17 @@ module Data.Morpheus.Server.Types.DirectiveDefinitions
     Deprecated (..),
     Describe (..),
     Rename (..),
+    DropNamespace (..),
   )
 where
 
 import Data.Morpheus.Server.Types.Directives (GQLDirective (..))
 import Data.Morpheus.Server.Types.GQLType (GQLType (__type))
-import Data.Morpheus.Server.Types.Internal (mkTypeData)
+import Data.Morpheus.Server.Types.Internal
+  ( mkTypeData,
+    stripConstructorNamespace,
+    stripFieldNamespace,
+  )
 import Data.Morpheus.Server.Types.Visitors
   ( VisitEnum (..),
     VisitField (..),
@@ -26,8 +31,8 @@ import Data.Morpheus.Server.Types.Visitors
 import Data.Morpheus.Types.Internal.AST
   ( DirectiveLocation (..),
   )
-import qualified Data.Text as T
-import Relude
+import Data.Text (drop, length, pack, unpack)
+import Relude hiding (drop, length)
 
 -- | a custom GraphQL directive for adding or removing
 -- of prefixes
@@ -49,7 +54,7 @@ instance GQLDirective Prefixes where
        ]
 
 instance VisitType Prefixes where
-  visitTypeName Prefixes {addPrefix, removePrefix} name = addPrefix <> T.drop (T.length removePrefix) name
+  visitTypeName Prefixes {addPrefix, removePrefix} _ name = addPrefix <> drop (length removePrefix) name
   visitTypeDescription _ = id
 
 -- native GraphQL directive @deprecated
@@ -124,7 +129,7 @@ instance GQLDirective Rename where
        ]
 
 instance VisitType Rename where
-  visitTypeName Rename {name} _ = name
+  visitTypeName Rename {name} _ _ = name
   visitTypeDescription _ = id
 
 instance VisitEnum Rename where
@@ -132,3 +137,25 @@ instance VisitEnum Rename where
 
 instance VisitField Rename where
   visitFieldName Rename {name} _ = name
+
+-- DropTypeNamespace
+newtype DropNamespace = DropNamespace {dropNamespace :: Text}
+  deriving
+    ( Generic,
+      GQLType
+    )
+
+instance GQLDirective DropNamespace where
+  type
+    DIRECTIVE_LOCATIONS DropNamespace =
+      '[ 'OBJECT,
+         'ENUM,
+         'INPUT_OBJECT,
+         'UNION,
+         'SCALAR,
+         'INTERFACE
+       ]
+
+instance VisitType DropNamespace where
+  visitFieldNames DropNamespace {dropNamespace} = pack . stripFieldNamespace dropNamespace . unpack
+  visitEnumNames DropNamespace {dropNamespace} = pack . stripConstructorNamespace dropNamespace . unpack

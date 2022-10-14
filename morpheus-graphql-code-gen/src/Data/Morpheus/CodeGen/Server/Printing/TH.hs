@@ -13,7 +13,7 @@ module Data.Morpheus.CodeGen.Server.Printing.TH
   )
 where
 
-import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.ByteString.Lazy.Char8 (ByteString, pack)
 import Data.Morpheus.CodeGen.Internal.AST (CodeGenTypeName (..))
 import Data.Morpheus.CodeGen.Server.Internal.AST
   ( CodeGenConfig (..),
@@ -22,7 +22,6 @@ import Data.Morpheus.CodeGen.Server.Internal.AST
     InterfaceDefinition (..),
     ServerDeclaration (..),
     ServerDirectiveUsage,
-    TypeKind,
   )
 import Data.Morpheus.CodeGen.Server.Interpreting.Transform
   ( parseServerTypeDefinitions,
@@ -44,7 +43,6 @@ import Data.Morpheus.Server.Types
   ( GQLDirective (..),
     GQLType (..),
     TypeGuard (..),
-    dropNamespaceOptions,
   )
 import Data.Morpheus.Types.Internal.AST (DirectiveLocation)
 import Language.Haskell.TH
@@ -60,13 +58,13 @@ mkQuasiQuoter ctx =
     { quoteExp = notHandled "Expressions",
       quotePat = notHandled "Patterns",
       quoteType = notHandled "Types",
-      quoteDec = compileDocument ctx . LB.pack
+      quoteDec = compileDocument ctx . pack
     }
   where
     notHandled things =
       error $ things <> " are not supported by the GraphQL QuasiQuoter"
 
-compileDocument :: CodeGenConfig -> LB.ByteString -> Q [Dec]
+compileDocument :: CodeGenConfig -> ByteString -> Q [Dec]
 compileDocument ctx = parseServerTypeDefinitions ctx >=> printDecQ
 
 class PrintDecQ a where
@@ -89,7 +87,6 @@ instance PrintDecQ GQLTypeDefinition where
         [ ('defaultValues, [_'], [|gqlTypeDefaultValues|]),
           ('directives, [_'], printDirectiveUsages gqlTypeDirectiveUses)
         ]
-          <> map printTypeOptions (maybeToList dropNamespace)
 
 instance PrintDecQ ServerDeclaration where
   printDecQ (InterfaceType interface) = printDecQ interface
@@ -110,9 +107,6 @@ instance PrintDecQ GQLDirectiveTypeClass where
 
 promotedList :: [DirectiveLocation] -> Type
 promotedList = foldr (AppT . AppT PromotedConsT . PromotedT . toName) PromotedNilT
-
-printTypeOptions :: (TypeKind, Text) -> (Name, [PatQ], ExpQ)
-printTypeOptions (kind, tName) = ('typeOptions, [_'], [|dropNamespaceOptions kind tName|])
 
 printDirectiveUsages :: [ServerDirectiveUsage] -> ExpQ
 printDirectiveUsages = foldr (appE . appE [|(<>)|] . printExp) [|mempty|]

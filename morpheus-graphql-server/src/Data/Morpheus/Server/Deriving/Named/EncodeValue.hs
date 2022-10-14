@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -60,9 +61,8 @@ import Data.Morpheus.Server.NamedResolvers
   ( NamedResolverT (..),
     ResolveNamed (..),
   )
-import Data.Morpheus.Server.Types (defaultTypeOptions)
 import Data.Morpheus.Server.Types.GQLType
-  ( GQLType (typeOptions, __type),
+  ( GQLType (__type),
     KIND,
     deriveTypename,
     __typeData,
@@ -88,7 +88,7 @@ import Data.Morpheus.Types.Internal.AST
     internal,
     replaceValue,
   )
-import qualified GHC.Exts as HM
+import GHC.Exts qualified as HM
 import GHC.Generics
   ( Generic (..),
   )
@@ -166,7 +166,6 @@ getFieldValues =
     ( DeriveValueOptions
         { __valueApply = encodeField,
           __valueTypeName = deriveTypename (KindedProxy :: KindedProxy OUT a),
-          __valueGQLOptions = typeOptions (Proxy @a) defaultTypeOptions,
           __valueGetType = __typeData . kinded (Proxy @OUT)
         } ::
         DeriveValueOptions OUT (GValueMapConstraint m) (m (ResolverValue m))

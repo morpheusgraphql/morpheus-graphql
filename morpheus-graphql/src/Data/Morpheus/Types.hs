@@ -80,6 +80,8 @@ module Data.Morpheus.Types
     GQLDirective (..),
     Deprecated (..),
     dropNamespaceOptions,
+    DropNamespace (..),
+    Rename (..),
   )
 where
 
@@ -92,6 +94,7 @@ import Data.Morpheus.Server.Types
     DecodeWrapper (..),
     Deprecated (..),
     Describe (..),
+    DropNamespace (..),
     EncodeScalar (..),
     EncodeWrapper (..),
     GQLDirective (..),
@@ -103,6 +106,7 @@ import Data.Morpheus.Server.Types
     MUTATION,
     Prefixes (..),
     QUERY,
+    Rename (..),
     RenderGQL,
     Resolver,
     ResolverContext (..),

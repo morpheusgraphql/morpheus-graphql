@@ -2,6 +2,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -21,7 +22,7 @@ module Data.Morpheus.Server.Deriving.Decode
 where
 
 import Control.Monad.Except (MonadError (throwError))
-import qualified Data.Map as M
+import Data.Map qualified as M
 import Data.Morpheus.App.Internal.Resolving
   ( ResolverState,
   )
@@ -49,13 +50,9 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType
-      ( KIND,
-        typeOptions
+      ( KIND
       ),
     deriveTypename,
-  )
-import Data.Morpheus.Server.Types.Internal
-  ( defaultTypeOptions,
   )
 import Data.Morpheus.Server.Types.Kind
   ( CUSTOM,
@@ -122,8 +119,7 @@ instance
     where
       context =
         Context
-          { options = typeOptions proxy defaultTypeOptions,
-            isVariantRef = False,
+          { isVariantRef = False,
             typeName = deriveTypename (KindedProxy :: KindedProxy IN a),
             enumVisitor = visitEnumName proxy,
             fieldVisitor = visitFieldName proxy
@@ -206,11 +202,11 @@ instance (DecodeFields f, DecodeFields g, DescribeFields g) => DecodeFields (f :
 instance (Selector s, GQLType a, Decode a) => DecodeFields (M1 S s (K1 i a)) where
   decodeFields index value =
     M1 . K1 <$> do
-      Context {options, isVariantRef, fieldVisitor} <- ask
+      Context {isVariantRef, fieldVisitor} <- ask
       if isVariantRef
         then lift (decode value)
         else
-          let fieldName = fieldVisitor $ getFieldName (selNameProxy options (Proxy @s)) index
+          let fieldName = fieldVisitor $ getFieldName (selNameProxy (Proxy @s)) index
               fieldDecoder = decodeFieldWith (lift . decode) fieldName
            in withInputObject fieldDecoder value
 

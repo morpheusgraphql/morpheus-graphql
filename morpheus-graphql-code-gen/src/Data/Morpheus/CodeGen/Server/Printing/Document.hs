@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -25,12 +26,11 @@ import Data.Morpheus.CodeGen.Server.Internal.AST
     ModuleDefinition (..),
     ServerDeclaration (..),
     ServerDirectiveUsage (..),
-    TypeKind,
   )
 import Data.Text
   ( pack,
   )
-import qualified Data.Text.Lazy as LT
+import Data.Text.Lazy qualified as LT
   ( fromStrict,
   )
 import Data.Text.Lazy.Encoding (encodeUtf8)
@@ -115,10 +115,6 @@ instance RenderType ServerDeclaration where
 renderTypeableConstraints :: [Text] -> Doc n
 renderTypeableConstraints xs = tupled (map (("Typeable" <+>) . pretty) xs) <+> "=>"
 
-defineTypeOptions :: Maybe (TypeKind, Text) -> [Doc n]
-defineTypeOptions (Just (kind, tName)) = ["typeOptions _ = dropNamespaceOptions" <+> "(" <> pretty (show kind :: String) <> ")" <+> pretty (show tName :: String)]
-defineTypeOptions _ = []
-
 renderGQLType :: GQLTypeDefinition -> Doc ann
 renderGQLType gql@GQLTypeDefinition {..}
   | gqlKind == Scalar = ""
@@ -129,7 +125,7 @@ renderGQLType gql@GQLTypeDefinition {..}
         <+> typeHead
         <+> "where"
           <> line
-          <> indent 2 (vsep (renderMethods typeHead gql <> defineTypeOptions dropNamespace))
+          <> indent 2 (vsep (renderMethods typeHead gql))
   where
     typeHead = unpack (print gqlTarget)
 

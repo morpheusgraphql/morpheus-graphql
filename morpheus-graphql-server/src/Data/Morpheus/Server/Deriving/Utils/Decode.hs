@@ -37,7 +37,6 @@ import Data.Morpheus.Server.Types.GQLType
   ( GQLType,
     deriveTypename,
   )
-import Data.Morpheus.Server.Types.Internal
 import Data.Morpheus.Types.GQLScalar
   ( toScalar,
   )
@@ -133,7 +132,6 @@ instance Semigroup Info where
 data Context = Context
   { isVariantRef :: Bool,
     typeName :: TypeName,
-    options :: GQLTypeOptions,
     enumVisitor :: TypeName -> TypeName,
     fieldVisitor :: FieldName -> FieldName
   }
@@ -153,14 +151,14 @@ instance (DescribeCons a, DescribeCons b) => DescribeCons (a :+: b) where
   tags _ = tags (Proxy @a) <> tags (Proxy @b)
 
 instance (Constructor c, DescribeFields a) => DescribeCons (M1 C c a) where
-  tags _ Context {typeName, options} = getTag (refType (Proxy @a))
+  tags _ Context {typeName} = getTag (refType (Proxy @a))
     where
       getTag (Just memberRef)
         | isUnionRef memberRef = Info {kind = VariantRef, tagName = [memberRef]}
         | otherwise = Info {kind = InlineVariant, tagName = [consName]}
       getTag Nothing = Info {kind = InlineVariant, tagName = [consName]}
       --------
-      consName = conNameProxy options (Proxy @c)
+      consName = conNameProxy (Proxy @c)
       ----------
       isUnionRef x = typeName <> x == consName
 

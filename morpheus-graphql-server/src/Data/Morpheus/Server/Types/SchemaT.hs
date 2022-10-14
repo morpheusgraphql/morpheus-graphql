@@ -146,7 +146,7 @@ failureRequirePrefix typename =
       <> msg typename
       <> " was used as both input and output type, which is not allowed by GraphQL specifications."
       <> "\n\n "
-      <> "If you supply \"typeNameModifier\" in \"GQLType.typeOptions\", "
+      <> "If you use \"InputTypeNamespace\" directive, "
       <> "you can override the default type names for "
       <> msg typename
       <> " to solve this problem."

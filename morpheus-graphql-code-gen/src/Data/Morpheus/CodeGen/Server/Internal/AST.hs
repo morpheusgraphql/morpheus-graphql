@@ -96,8 +96,7 @@ data GQLTypeDefinition = GQLTypeDefinition
   { gqlTarget :: CodeGenTypeName,
     gqlKind :: Kind,
     gqlTypeDirectiveUses :: [ServerDirectiveUsage],
-    gqlTypeDefaultValues :: Map Text (Value CONST),
-    dropNamespace :: Maybe (TypeKind, Text)
+    gqlTypeDefaultValues :: Map Text (Value CONST)
   }
   deriving (Show)
 

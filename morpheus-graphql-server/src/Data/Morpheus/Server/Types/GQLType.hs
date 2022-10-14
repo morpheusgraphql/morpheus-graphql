@@ -1,9 +1,13 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -44,14 +48,17 @@ module Data.Morpheus.Server.Types.GQLType
     applyEnumDescription,
     applyFieldName,
     applyFieldDescription,
+    applyTypeFieldNames,
+    applyTypeEnumNames,
     __isEmptyType,
+    InputTypeNamespace (..),
   )
 where
 
 -- MORPHEUS
 
 import Control.Monad.Except (MonadError (throwError))
-import qualified Data.HashMap.Strict as M
+import Data.HashMap.Strict qualified as M
 import Data.Morpheus.App.Internal.Resolving
   ( Resolver,
     SubscriptionField,
@@ -66,23 +73,24 @@ import Data.Morpheus.Server.NamedResolvers (NamedResolverT (..))
 import Data.Morpheus.Server.Types.Directives
   ( GQLDirective (..),
     ToLocations,
-    visitEnumDescription,
-    visitEnumName,
-    visitFieldDescription,
-    visitFieldName,
-    visitTypeDescription,
-    visitTypeName,
+    visitEnumDescription',
+    visitEnumName',
+    visitEnumNames',
+    visitFieldDescription',
+    visitFieldName',
+    visitFieldNames',
+    visitTypeDescription',
+    visitTypeName',
   )
 import Data.Morpheus.Server.Types.Internal
   ( GQLTypeOptions (..),
     TypeData (..),
     defaultTypeOptions,
     mkTypeData,
-    prefixInputs,
   )
 import Data.Morpheus.Server.Types.Kind
   ( CUSTOM,
-    DerivingKind (..),
+    DerivingKind,
     SCALAR,
     TYPE,
     WRAPPER,
@@ -96,6 +104,7 @@ import Data.Morpheus.Server.Types.Types
     Undefined (..),
     __typenameUndefined,
   )
+import Data.Morpheus.Server.Types.Visitors (VisitType (..))
 import Data.Morpheus.Types.GQLScalar (EncodeScalar (..))
 import Data.Morpheus.Types.GQLWrapper (EncodeWrapperValue (..))
 import Data.Morpheus.Types.ID (ID)
@@ -105,6 +114,7 @@ import Data.Morpheus.Types.Internal.AST
     ArgumentsDefinition,
     CONST,
     Description,
+    DirectiveLocation (..),
     Directives,
     FieldName,
     IN,
@@ -129,7 +139,7 @@ import Data.Text
   )
 import Data.Vector (Vector)
 import GHC.Generics
-import qualified Language.Haskell.TH.Syntax as TH
+import Language.Haskell.TH.Syntax qualified as TH
 import Relude hiding (Seq, Undefined, fromList, intercalate)
 
 __isEmptyType :: forall f a. GQLType a => f a -> Bool
@@ -148,15 +158,23 @@ deriveTypename proxy = gqlTypeName $ __typeData proxy
 deriveFingerprint :: (GQLType a, CategoryValue kind) => kinded kind a -> TypeFingerprint
 deriveFingerprint proxy = gqlFingerprint $ __typeData proxy
 
-deriveTypeData :: Typeable a => f a -> (Bool -> String -> String) -> TypeCategory -> TypeData
-deriveTypeData proxy typeNameModifier cat =
+deriveTypeData ::
+  Typeable a =>
+  f a ->
+  DirectiveUsages ->
+  (Bool -> String -> String) ->
+  TypeCategory ->
   TypeData
-    { gqlTypeName = packName . pack $ typeNameModifier (cat == IN) originalTypeName,
+deriveTypeData proxy DirectiveUsages {typeDirectives} typeNameModifier cat =
+  TypeData
+    { gqlTypeName = modifyName . packName . pack $ typeNameModifier isInput originalTypeName,
       gqlWrappers = mkBaseType,
       gqlFingerprint = getFingerprint cat proxy
     }
   where
+    isInput = cat == IN
     originalTypeName = unpack . unpackName $ getTypename proxy
+    modifyName name = typeNameWithDirectives isInput name typeDirectives
 
 list :: TypeWrapper -> TypeWrapper
 list = flip TypeList True
@@ -183,6 +201,8 @@ wrapper f TypeData {..} = TypeData {gqlWrappers = f gqlWrappers, ..}
 {-# DEPRECATED description "use: directive Describe { text } with typeDirective" #-}
 
 {-# DEPRECATED getDescriptions "use: directive Describe { text } with fieldDirective" #-}
+
+{-# DEPRECATED typeOptions "use: custom directives with 'VisitType'" #-}
 
 class GQLType a where
   type KIND a :: DerivingKind
@@ -214,9 +234,8 @@ class GQLType a where
 
   __type :: f a -> TypeCategory -> TypeData
   default __type :: Typeable a => f a -> TypeCategory -> TypeData
-  __type proxy category = editTypeData derivedType (directives proxy)
+  __type proxy = deriveTypeData proxy (directives proxy) typeNameModifier
     where
-      derivedType = deriveTypeData proxy typeNameModifier category
       GQLTypeOptions {typeNameModifier} = typeOptions proxy defaultTypeOptions
 
 instance GQLType Int where
@@ -279,8 +298,8 @@ instance GQLType a => GQLType (SubscriptionField a) where
   type KIND (SubscriptionField a) = WRAPPER
   __type _ = __type $ Proxy @a
 
-instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (Pair a b) where
-  typeOptions _ = prefixInputs
+instance (Typeable a, Typeable b, GQLType a, GQLType b, DeriveArguments TYPE InputTypeNamespace) => GQLType (Pair a b) where
+  directives _ = typeDirective InputTypeNamespace {inputTypeNamespace = "Input"}
 
 -- Manual
 
@@ -288,7 +307,7 @@ instance GQLType b => GQLType (a -> b) where
   type KIND (a -> b) = CUSTOM
   __type _ = __type $ Proxy @b
 
-instance (GQLType k, GQLType v, Typeable k, Typeable v) => GQLType (Map k v) where
+instance (GQLType k, GQLType v, Typeable k, Typeable v, DeriveArguments TYPE InputTypeNamespace) => GQLType (Map k v) where
   type KIND (Map k v) = CUSTOM
   __type _ = __type $ Proxy @[Pair k v]
 
@@ -296,9 +315,9 @@ instance GQLType a => GQLType (Resolver o e m a) where
   type KIND (Resolver o e m a) = CUSTOM
   __type _ = __type $ Proxy @a
 
-instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (a, b) where
+instance (Typeable a, Typeable b, GQLType a, GQLType b, DeriveArguments TYPE InputTypeNamespace) => GQLType (a, b) where
   __type _ = __type $ Proxy @(Pair a b)
-  typeOptions _ = prefixInputs
+  directives _ = typeDirective InputTypeNamespace {inputTypeNamespace = "Input"}
 
 instance (GQLType value) => GQLType (Arg name value) where
   type KIND (Arg name value) = CUSTOM
@@ -372,7 +391,6 @@ exploreResolvers =
       ( DeriveValueOptions
           { __valueApply = encode,
             __valueTypeName = deriveTypename (KindedProxy :: KindedProxy IN a),
-            __valueGQLOptions = typeOptions (Proxy @a) defaultTypeOptions,
             __valueGetType = __typeData . kinded (Proxy @IN)
           } ::
           DeriveValueOptions IN ExplorerConstraint (GQLResult (Value CONST))
@@ -431,26 +449,48 @@ enumDirective' name = enumDirective (packName name)
 data DirectiveUsage where
   DirectiveUsage :: (GQLDirective a, GQLType a, Decode a, DeriveArguments (KIND a) a, ToLocations (DIRECTIVE_LOCATIONS a)) => a -> DirectiveUsage
 
-applyTypeName :: DirectiveUsage -> TypeName -> TypeName
-applyTypeName (DirectiveUsage x) = visitTypeName x
+applyTypeName :: DirectiveUsage -> Bool -> TypeName -> TypeName
+applyTypeName (DirectiveUsage x) = visitTypeName' x
 
-typeNameWithDirectives :: TypeName -> [DirectiveUsage] -> TypeName
-typeNameWithDirectives = foldr applyTypeName
+typeNameWithDirectives :: Bool -> TypeName -> [DirectiveUsage] -> TypeName
+typeNameWithDirectives x = foldr (`applyTypeName` x)
+
+applyTypeFieldNames :: DirectiveUsage -> FieldName -> FieldName
+applyTypeFieldNames (DirectiveUsage x) = visitFieldNames' x
+
+applyTypeEnumNames :: DirectiveUsage -> TypeName -> TypeName
+applyTypeEnumNames (DirectiveUsage x) = visitEnumNames' x
 
 applyEnumDescription :: DirectiveUsage -> Maybe Description -> Maybe Description
-applyEnumDescription (DirectiveUsage x) = visitEnumDescription x
+applyEnumDescription (DirectiveUsage x) = visitEnumDescription' x
 
 applyEnumName :: DirectiveUsage -> TypeName -> TypeName
-applyEnumName (DirectiveUsage x) = visitEnumName x
+applyEnumName (DirectiveUsage x) = visitEnumName' x
 
 applyFieldDescription :: DirectiveUsage -> Maybe Description -> Maybe Description
-applyFieldDescription (DirectiveUsage x) = visitFieldDescription x
+applyFieldDescription (DirectiveUsage x) = visitFieldDescription' x
 
 applyFieldName :: DirectiveUsage -> FieldName -> FieldName
-applyFieldName (DirectiveUsage x) = visitFieldName x
+applyFieldName (DirectiveUsage x) = visitFieldName' x
 
 applyTypeDescription :: DirectiveUsage -> Maybe Description -> Maybe Description
-applyTypeDescription (DirectiveUsage x) = visitTypeDescription x
+applyTypeDescription (DirectiveUsage x) = visitTypeDescription' x
 
-editTypeData :: TypeData -> DirectiveUsages -> TypeData
-editTypeData TypeData {..} DirectiveUsages {typeDirectives} = TypeData {gqlTypeName = typeNameWithDirectives gqlTypeName typeDirectives, ..}
+newtype InputTypeNamespace = InputTypeNamespace {inputTypeNamespace :: Text}
+  deriving (Generic, GQLType)
+
+instance GQLDirective InputTypeNamespace where
+  type
+    DIRECTIVE_LOCATIONS InputTypeNamespace =
+      '[ 'OBJECT,
+         'ENUM,
+         'INPUT_OBJECT,
+         'UNION,
+         'SCALAR,
+         'INTERFACE
+       ]
+
+instance VisitType InputTypeNamespace where
+  visitTypeName InputTypeNamespace {inputTypeNamespace} isInput name
+    | isInput = inputTypeNamespace <> name
+    | otherwise = name

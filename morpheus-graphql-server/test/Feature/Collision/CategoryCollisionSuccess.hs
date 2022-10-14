@@ -15,10 +15,11 @@ import Data.Morpheus.Server.Types
   ( GQLRequest,
     GQLResponse,
     GQLType (..),
-    GQLTypeOptions (..),
+    InputTypeNamespace (..),
     RootResolver (..),
     Undefined,
     defaultRootResolver,
+    typeDirective,
   )
 import Data.Text
   ( Text,
@@ -31,22 +32,26 @@ data Deity = Deity
   }
   deriving (Show, Generic)
 
-nonClashingTypeNameModifier :: Bool -> String -> String
-nonClashingTypeNameModifier True original = "Input" ++ original
-nonClashingTypeNameModifier False original = original
-
 instance GQLType Deity where
-  typeOptions _ opt = opt {typeNameModifier = nonClashingTypeNameModifier}
+  directives _ =
+    typeDirective InputTypeNamespace {inputTypeNamespace = "Input"}
 
 newtype DeityArgs = DeityArgs
   { input :: Deity
   }
-  deriving (Show, Generic, GQLType)
+  deriving
+    ( Show,
+      Generic,
+      GQLType
+    )
 
 newtype Query (m :: Type -> Type) = Query
   { deity :: DeityArgs -> m Deity
   }
-  deriving (Generic, GQLType)
+  deriving
+    ( Generic,
+      GQLType
+    )
 
 rootResolver :: RootResolver IO () Query Undefined Undefined
 rootResolver =
