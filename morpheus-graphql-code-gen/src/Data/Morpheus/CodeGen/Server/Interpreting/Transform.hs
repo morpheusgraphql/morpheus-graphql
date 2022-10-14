@@ -77,7 +77,6 @@ import Data.Morpheus.Types.Internal.AST
     unpackName,
   )
 import Data.Morpheus.Types.Internal.AST qualified as AST
-import Data.Morpheus.Types.Internal.AST qualified as V
 import Relude hiding (ByteString, get)
 
 parseServerTypeDefinitions :: CodeGenMonad m => CodeGenConfig -> ByteString -> m [ServerDeclaration]
@@ -438,7 +437,7 @@ getInputFields :: TypeDefinition c s -> [FieldDefinition IN s]
 getInputFields TypeDefinition {typeContent = DataInputObject {inputObjectFields}} = toList inputObjectFields
 getInputFields _ = []
 
-getDefaultValue :: FieldDefinition c s -> Maybe (Text, V.Value s)
+getDefaultValue :: FieldDefinition c s -> Maybe (Text, AST.Value s)
 getDefaultValue
   FieldDefinition
     { fieldName,
@@ -446,7 +445,7 @@ getDefaultValue
     } = Just (unpackName fieldName, defaultInputValue)
 getDefaultValue _ = Nothing
 
-nativeDirectives :: V.DirectivesDefinition CONST
+nativeDirectives :: AST.DirectivesDefinition CONST
 nativeDirectives = AST.directiveDefinitions internalSchema
 
 getDirective :: (MonadReader (TypeContext CONST) m, MonadFail m) => FieldName -> m (DirectiveDefinition CONST)
@@ -485,31 +484,31 @@ mapField tName ObjectEntry {..} = do
   value <- mapWrappedValue t entryValue
   pure (entryName, value)
 
-expected :: MonadFail m => String -> V.Value CONST -> CodeGenT m TypeValue
+expected :: MonadFail m => String -> AST.Value CONST -> CodeGenT m TypeValue
 expected typ value = fail ("expected " <> typ <> ", found " <> show (render value) <> "!")
 
-mapWrappedValue :: MonadFail m => TypeRef -> V.Value CONST -> CodeGenT m TypeValue
+mapWrappedValue :: MonadFail m => TypeRef -> AST.Value CONST -> CodeGenT m TypeValue
 mapWrappedValue (TypeRef name (AST.BaseType isRequired)) value
   | isRequired = mapValue name value
-  | value == V.Null = pure (TypedValueMaybe Nothing)
+  | value == AST.Null = pure (TypedValueMaybe Nothing)
   | otherwise = TypedValueMaybe . Just <$> mapValue name value
 mapWrappedValue (TypeRef name (AST.TypeList elems isRequired)) d = case d of
-  V.Null | not isRequired -> pure (TypedValueMaybe Nothing)
-  (V.List xs) -> TypedValueMaybe . Just . TypeValueList <$> traverse (mapWrappedValue (TypeRef name elems)) xs
+  AST.Null | not isRequired -> pure (TypedValueMaybe Nothing)
+  (AST.List xs) -> TypedValueMaybe . Just . TypeValueList <$> traverse (mapWrappedValue (TypeRef name elems)) xs
   value -> expected "list" value
 
-mapValue :: MonadFail m => TypeName -> V.Value CONST -> CodeGenT m TypeValue
-mapValue name (V.List xs) = TypeValueList <$> traverse (mapValue name) xs
-mapValue _ (V.Enum name) = pure $ TypeValueObject name []
-mapValue name (V.Object fields) = TypeValueObject name <$> traverse (mapField name) (toList fields)
-mapValue _ (V.Scalar x) = mapScalarValue x
+mapValue :: MonadFail m => TypeName -> AST.Value CONST -> CodeGenT m TypeValue
+mapValue name (AST.List xs) = TypeValueList <$> traverse (mapValue name) xs
+mapValue _ (AST.Enum name) = pure $ TypeValueObject name []
+mapValue name (AST.Object fields) = TypeValueObject name <$> traverse (mapField name) (toList fields)
+mapValue _ (AST.Scalar x) = mapScalarValue x
 mapValue t v = expected (show t) v
 
-mapScalarValue :: MonadFail m => V.ScalarValue -> CodeGenT m TypeValue
-mapScalarValue (V.Int x) = pure $ TypeValueNumber (fromIntegral x)
-mapScalarValue (V.Float x) = pure $ TypeValueNumber x
-mapScalarValue (V.String x) = pure $ TypeValueString x
-mapScalarValue (V.Boolean x) = pure $ TypeValueBool x
-mapScalarValue (V.Value _) = fail "JSON objects are not supported!"
+mapScalarValue :: MonadFail m => AST.ScalarValue -> CodeGenT m TypeValue
+mapScalarValue (AST.Int x) = pure $ TypeValueNumber (fromIntegral x)
+mapScalarValue (AST.Float x) = pure $ TypeValueNumber x
+mapScalarValue (AST.String x) = pure $ TypeValueString x
+mapScalarValue (AST.Boolean x) = pure $ TypeValueBool x
+mapScalarValue (AST.Value _) = fail "JSON objects are not supported!"
 
 -- UTILS
