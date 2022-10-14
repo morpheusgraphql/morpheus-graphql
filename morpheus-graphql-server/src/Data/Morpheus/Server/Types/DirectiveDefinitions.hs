@@ -143,7 +143,9 @@ instance VisitField Rename where
   visitFieldName Rename {newName} _ = newName
 
 -- DropTypeNamespace
-newtype DropNamespace = DropNamespace {dropNamespace :: Text}
+newtype DropNamespace = DropNamespace
+  { dropNamespace :: Text
+  }
   deriving
     ( Generic,
       GQLType
@@ -159,6 +161,7 @@ instance GQLDirective DropNamespace where
          'SCALAR,
          'INTERFACE
        ]
+  isHiddenDirective _ = True
 
 instance VisitType DropNamespace where
   visitFieldNames DropNamespace {dropNamespace} = pack . stripFieldNamespace dropNamespace . unpack

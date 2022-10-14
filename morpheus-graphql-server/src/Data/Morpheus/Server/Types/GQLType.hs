@@ -477,9 +477,13 @@ applyTypeDescription :: DirectiveUsage -> Maybe Description -> Maybe Description
 applyTypeDescription (DirectiveUsage x) = visitTypeDescription' x
 
 newtype InputTypeNamespace = InputTypeNamespace {inputTypeNamespace :: Text}
-  deriving (Generic, GQLType)
+  deriving
+    ( Generic,
+      GQLType
+    )
 
 instance GQLDirective InputTypeNamespace where
+  isHiddenDirective _ = True
   type
     DIRECTIVE_LOCATIONS InputTypeNamespace =
       '[ 'OBJECT,
