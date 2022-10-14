@@ -9,6 +9,7 @@ import qualified Domains.Posts.Resolver as P
 import qualified Domains.Users.Resolver as U
 import qualified Namespaces.Mutation as NM
 import qualified Namespaces.Query as NQ
+import qualified Namespaces.Sophisticated as Sophisticated
 import qualified Namespaces.Subscription as NS
 import qualified Operation.Mutation as M
 import qualified Operation.Query as Q
