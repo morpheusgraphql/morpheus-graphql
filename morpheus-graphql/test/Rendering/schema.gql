@@ -8,7 +8,9 @@ enum TestEnum @TestDirective(name: "SomeName") {
   EnumC
 }
 
-enum _TestUnderscoredType { _TestUnderscoredType }
+enum _TestUnderscoredType {
+  _TestUnderscoredType
+}
 
 enum testCharCases {
   lowerCaseA
