@@ -151,14 +151,15 @@ validateWrapped wrappers _ Null
   | isNullable wrappers = pure Null
   | otherwise = violation Nothing Null
 -- Validate LIST
+
 validateWrapped (TypeList wrappers _) tyCont (List list) =
   List <$> traverse (validateInputByType wrappers tyCont) list
+validateWrapped (TypeList wrappers _) tyCont singleElem =
+  List . pure <$> validateInputByType wrappers tyCont singleElem
 {-- 2. VALIDATE TYPES, all wrappers are already Processed --}
 {-- VALIDATE OBJECT--}
 validateWrapped BaseType {} TypeDefinition {typeContent} entryValue =
   validateUnwrapped typeContent entryValue
-{-- 3. THROW ERROR: on invalid values --}
-validateWrapped _ _ entryValue = violation Nothing entryValue
 
 validateUnwrapped ::
   ValidateWithDefault ctx schemaS valueS =>
@@ -302,10 +303,10 @@ validateEnum ::
   InputValidator schemaS c ValidValue
 validateEnum enumValues value@(Scalar (String enumValue))
   | packName enumValue `elem` tags = do
-      isFromVariable <- isVariableValue
-      if isFromVariable
-        then pure (Enum (packName enumValue))
-        else violation Nothing value
+    isFromVariable <- isVariableValue
+    if isFromVariable
+      then pure (Enum (packName enumValue))
+      else violation Nothing value
   where
     tags = fmap enumName enumValues
 validateEnum enumValues value@(Enum enumValue)
