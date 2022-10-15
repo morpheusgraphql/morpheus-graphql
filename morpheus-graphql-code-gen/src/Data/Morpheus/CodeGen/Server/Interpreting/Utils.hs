@@ -15,6 +15,7 @@ module Data.Morpheus.CodeGen.Server.Interpreting.Utils
     isParamResolverType,
     lookupFieldType,
     isSubscription,
+    inType,
   )
 where
 
@@ -147,3 +148,6 @@ lookupFieldType name fieldName = do
 isSubscription :: TypeKind -> Bool
 isSubscription (KindObject (Just Subscription)) = True
 isSubscription _ = False
+
+inType :: MonadReader (TypeContext s) m => Maybe TypeName -> m a -> m a
+inType name = local (\x -> x {currentTypeName = name, currentKind = Nothing})

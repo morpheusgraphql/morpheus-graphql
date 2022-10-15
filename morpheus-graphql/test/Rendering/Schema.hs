@@ -24,6 +24,7 @@ import Data.Morpheus.Types
   ( DecodeScalar (..),
     DropNamespace (..),
     ID,
+    Rename (..),
     RootResolver,
     Undefined,
     VisitType,
@@ -33,7 +34,7 @@ import Relude hiding (Undefined)
 data TestScalar = TestScalar deriving (Show)
 
 instance DecodeScalar TestScalar where
-  decodeScalar = const (pure TestScalar)
+  decodeScalar _ = pure TestScalar
 
 importGQLDocumentWithNamespace "test/Rendering/schema.gql"
 

@@ -1,0 +1,21 @@
+enum _TestUnderscoredType { _TestUnderscoredType }
+
+enum testCharCases {
+  lowerCaseA
+  UpperCaseB
+  _underscoredC
+}
+
+type User {
+  type: String!
+  CharCases: testCharCases
+  _underscored: _TestUnderscoredType
+}
+
+type MyQuery {
+  user: User!
+}
+
+schema {
+  query: MyQuery
+}

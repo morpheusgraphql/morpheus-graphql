@@ -84,7 +84,12 @@ renderModuleDefinition
       imports,
       types
     } =
-    vsep (map renderExtension extensions)
+    vsep
+      (map renderExtension extensions)
+      <> "{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}"
+      <> line
+      <> line
+      <> "{-# HLINT ignore \"Use camelCase\" #-}"
       <> line
       <> line
       <> "module"
