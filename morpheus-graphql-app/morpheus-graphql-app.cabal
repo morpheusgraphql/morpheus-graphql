@@ -38,7 +38,8 @@ data-files:
     test/api/validation/fragment/on-type/query.gql
     test/api/validation/fragment/on-union-type/query.gql
     test/api/validation/fragment/schema.gql
-    test/api/validation/input-coercion/list/list/query.gql
+    test/api/validation/input-coercion/list/list-many/query.gql
+    test/api/validation/input-coercion/list/list-single/query.gql
     test/api/validation/input-coercion/list/schema.gql
     test/api/validation/input-coercion/list/signle-value/query.gql
     test/merge/schema/query-subscription-mutation/app-1.gql
@@ -81,7 +82,8 @@ data-files:
     test/api/validation/fragment/on-type/response.json
     test/api/validation/fragment/on-union-type/response.json
     test/api/validation/fragment/resolvers.json
-    test/api/validation/input-coercion/list/list/response.json
+    test/api/validation/input-coercion/list/list-many/response.json
+    test/api/validation/input-coercion/list/list-single/response.json
     test/api/validation/input-coercion/list/resolvers.json
     test/api/validation/input-coercion/list/signle-value/response.json
     test/merge/schema/query-subscription-mutation/app-1.json
