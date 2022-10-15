@@ -1,0 +1,5 @@
+{
+  "query": {
+    "foo": "@SELF::ARG.bar"
+  }
+}
