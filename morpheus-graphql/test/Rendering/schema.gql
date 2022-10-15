@@ -2,7 +2,7 @@ directive @TestDirective(name: String!, enum: TestEnum) on INPUT_OBJECT | OBJECT
 
 scalar TestScalar @TestDirective(name: "SomeName")
 
-scalar _TestUnderscoredType
+enum _TestUnderscoredType { _TestUnderscoredType }
 
 enum TestEnum @TestDirective(name: "SomeName") {
   EnumA

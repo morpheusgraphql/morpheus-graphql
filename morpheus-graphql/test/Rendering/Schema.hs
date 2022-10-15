@@ -23,10 +23,9 @@ import Data.Morpheus.Document
 import Data.Morpheus.Types
   ( DecodeScalar (..),
     DropNamespace (..),
-    EncodeScalar (..),
     ID,
+    Rename (..),
     RootResolver,
-    ScalarValue (String),
     Undefined,
     VisitType,
   )
@@ -36,14 +35,6 @@ data TestScalar = TestScalar deriving (Show)
 
 instance DecodeScalar TestScalar where
   decodeScalar = const (pure TestScalar)
-
-data TestUnderscoredType = TestUnderscoredType deriving (Show)
-
-instance DecodeScalar TestUnderscoredType where
-  decodeScalar = const (pure TestUnderscoredType)
-
-instance EncodeScalar TestUnderscoredType where
-  encodeScalar = const $ String "TestUnderscoredType"
 
 importGQLDocumentWithNamespace "test/Rendering/schema.gql"
 
