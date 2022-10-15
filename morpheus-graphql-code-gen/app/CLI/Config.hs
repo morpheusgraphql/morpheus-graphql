@@ -4,8 +4,8 @@ import Data.Text (Text)
 
 data App = App
   { name :: Text,
+    includes :: Text,
     root :: Text,
-    path :: Text,
     options :: Text
   }
 
