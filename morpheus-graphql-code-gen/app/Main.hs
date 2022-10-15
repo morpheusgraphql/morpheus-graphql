@@ -50,8 +50,9 @@ scan options path = do
   traverse_ (handleService path options) server
 
 handleService :: FilePath -> Options -> Service -> IO ()
-handleService root options Service {name, source, includes} = do
-  let patterns = map (normalise . ((root </> unpack source) </>) . unpack) includes
+handleService target options Service {name, source, includes} = do
+  let root = normalise (target </> unpack source)
+  let patterns = map (normalise . (root </>) . unpack) includes
   files <- concat <$> traverse glob patterns
   putStrLn ("\n\n" <> unpack name <> "\n")
-  traverse_ (build options) files
+  traverse_ (build options {root}) files

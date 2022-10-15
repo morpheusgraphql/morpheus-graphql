@@ -24,11 +24,13 @@ export const codeGen = async ({ src = root }: Options = {}) => {
 
     log(`formatting(${files.length} files): ${hsPath} \n\n`);
 
-    files.forEach((file) => {
-      const namespace = file.toLowerCase().includes("namespace") ? "-n" : "";
+    // files.forEach((file) => {
+    //   const namespace = file.toLowerCase().includes("namespace") ? "-n" : "";
 
-      exec(`morpheus ${namespace} build ${file} --root=${src} `);
-    });
+    //   exec(`morpheus ${namespace} build ${file} --root=${src} `);
+    // });
+
+    exec('morpheus scan examples/code-gen/ -r=""');
 
     exec(`ts-node scripts/local.ts format --fix=true --path=${hsPath}`);
 
