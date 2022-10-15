@@ -7,6 +7,7 @@ module Main
   )
 where
 
+import CLI.Commands
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as L
   ( readFile,
@@ -94,24 +95,6 @@ capitalize (x : xs) = toUpper x : xs
 saveDocument :: FilePath -> GQLResult ByteString -> IO ()
 saveDocument _ (Failure errors) = print errors
 saveDocument output Success {result} = L.writeFile output result
-
-data Operation
-  = Build {source :: [FilePath]}
-  | About
-  deriving (Show)
-
-data App = App
-  { operations :: Operation,
-    options :: Options
-  }
-  deriving (Show)
-
-data Options = Options
-  { version :: Bool,
-    root :: String,
-    namespaces :: Bool
-  }
-  deriving (Show)
 
 defaultParser :: IO App
 defaultParser =

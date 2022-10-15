@@ -58,6 +58,8 @@ library
 executable morpheus
   main-is: Main.hs
   other-modules:
+      CLI.Commands
+      CLI.Config
       Paths_morpheus_graphql_code_gen
   hs-source-dirs:
       app
@@ -78,4 +80,5 @@ executable morpheus
     , template-haskell >=2.0.0 && <3.0.0
     , text >=1.2.3 && <1.3.0
     , unordered-containers >=0.2.8 && <0.3.0
+    , yaml
   default-language: Haskell2010

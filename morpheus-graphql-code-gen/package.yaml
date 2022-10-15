@@ -30,13 +30,14 @@ library:
   exposed-modules:
     - Data.Morpheus.CodeGen
     - Data.Morpheus.CodeGen.Server
-  ghc-options: '-Wall'
+  ghc-options: "-Wall"
 executables:
   morpheus:
     main: Main.hs
     source-dirs: app
-    ghc-options: '-Wall'
+    ghc-options: "-Wall"
     dependencies:
       - filepath                   >=  1.1.0   &&  <  1.5.0
       - morpheus-graphql-code-gen
       - optparse-applicative       >=  0.12.0  &&  <  0.18.0
+      - yaml
