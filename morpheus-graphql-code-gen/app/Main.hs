@@ -43,8 +43,9 @@ runApp App {..}
 
 scan :: FilePath -> IO ()
 scan path = do
-  Config {server} <- readConfig path
-  traverse_ (handleService path) server
+  Config {server, client} <- readConfig path
+  traverse_ (handleService path) (maybeToList server)
+  traverse_ (handleService path) (maybeToList client)
 
 handleService :: FilePath -> Service -> IO ()
 handleService target Service {name, source, includes, options} = do

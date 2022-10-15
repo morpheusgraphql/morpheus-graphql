@@ -13,9 +13,11 @@ module Data.Morpheus.Client.Declare
   )
 where
 
-import Data.Morpheus.Client.Internal.Types
+import Data.Morpheus.Client.Internal.AST
   ( ClientDeclaration,
-    ExecutableSource,
+  )
+import Data.Morpheus.Client.Internal.Types
+  ( ExecutableSource,
     SchemaSource,
   )
 import Data.Morpheus.Client.Internal.Utils (getFile, getSource, handleResult)

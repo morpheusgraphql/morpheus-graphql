@@ -10,7 +10,7 @@ module Data.Morpheus.Client.Transform.Global
   )
 where
 
-import Data.Morpheus.Client.Internal.Types
+import Data.Morpheus.Client.Internal.AST
   ( ClientDeclaration,
     ClientTypeDefinition (..),
   )

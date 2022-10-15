@@ -20,7 +20,7 @@ module Data.Morpheus.Client.Transform.Core
 where
 
 import Control.Monad.Except (MonadError)
-import Data.Morpheus.Client.Internal.Types
+import Data.Morpheus.Client.Internal.AST
   ( ClientDeclaration (..),
     ClientTypeDefinition (..),
     DERIVING_MODE (..),
