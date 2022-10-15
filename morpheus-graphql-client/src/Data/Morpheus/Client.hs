@@ -35,6 +35,7 @@ module Data.Morpheus.Client
     defineByIntrospectionFile,
     defineByIntrospectionFile',
     parseClientTypeDeclarations,
+    printClientTypeDeclarations,
   )
 where
 
