@@ -38,6 +38,7 @@ runApp App {..}
 
 build :: Options -> FilePath -> IO ()
 build options path = do
+  putStr ("build: " <> path <> "\n")
   file <- L.readFile path
   saveDocument hsPath (processDocument options hsPath file)
   where
@@ -49,7 +50,8 @@ scan options path = do
   traverse_ (handleService path options) server
 
 handleService :: FilePath -> Options -> Service -> IO ()
-handleService root _ Service {name, source, includes} = do
+handleService root options Service {name, source, includes} = do
   let patterns = map (normalise . ((root </> unpack source) </>) . unpack) includes
   files <- concat <$> traverse glob patterns
-  print (name, files)
+  putStrLn (unpack name <> "\n")
+  traverse_ (build options) files
