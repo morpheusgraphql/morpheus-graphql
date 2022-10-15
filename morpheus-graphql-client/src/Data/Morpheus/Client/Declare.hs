@@ -9,11 +9,13 @@ module Data.Morpheus.Client.Declare
     internalLegacyLocalDeclareTypes,
     clientTypeDeclarations,
     raw,
+    parseClientTypeDeclarations,
   )
 where
 
 import Data.Morpheus.Client.Internal.Types
-  ( ExecutableSource,
+  ( ClientDeclaration,
+    ExecutableSource,
     SchemaSource,
   )
 import Data.Morpheus.Client.Internal.Utils (getFile, getSource, handleResult)
@@ -27,6 +29,7 @@ import Data.Morpheus.Client.Transform
     toLocalDefinitions,
   )
 import Data.Morpheus.Core (parseRequest)
+import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Types.IO (GQLRequest (..))
 import Data.Morpheus.Types.Internal.AST (TypeName)
 import qualified Data.Set as S
@@ -36,22 +39,23 @@ import Relude
 internalLegacyLocalDeclareTypes :: IO SchemaSource -> ExecutableSource -> Q [Dec]
 internalLegacyLocalDeclareTypes schemaSrc query = do
   schemaText <- runIO schemaSrc
-  let request =
-        GQLRequest
-          { query,
-            operationName = Nothing,
-            variables = Nothing
-          }
-  handleResult
-    ( do
-        schemaDoc <- parseSchema schemaText
-        executableDoc <- parseRequest request
-        toLocalDefinitions (query, executableDoc) schemaDoc
-    )
-    printDeclarations
+  clientTypeDeclarations schemaText (Just query)
 
 globalTypeDeclarations :: SchemaSource -> (TypeName -> Bool) -> Q [Dec]
 globalTypeDeclarations src f = handleResult (toGlobalDefinitions f <$> parseSchema src) printDeclarations
+
+parseClientTypeDeclarations :: SchemaSource -> Maybe Text -> GQLResult [ClientDeclaration]
+parseClientTypeDeclarations schemaText (Just query) = do
+  schemaDoc <- parseSchema schemaText
+  executableDoc <-
+    parseRequest
+      GQLRequest
+        { query,
+          operationName = Nothing,
+          variables = Nothing
+        }
+  toLocalDefinitions (query, executableDoc) schemaDoc
+parseClientTypeDeclarations src Nothing = toGlobalDefinitions (const True) <$> parseSchema src
 
 -- | declares global or local types, depending
 -- on whether the second argument is specified or not
@@ -59,8 +63,7 @@ clientTypeDeclarations ::
   SchemaSource ->
   Maybe ExecutableSource ->
   Q [Dec]
-clientTypeDeclarations src (Just doc) = internalLegacyLocalDeclareTypes (pure src) doc
-clientTypeDeclarations src Nothing = globalTypeDeclarations src (const True)
+clientTypeDeclarations src x = handleResult (parseClientTypeDeclarations src x) printDeclarations
 
 {- ORMOLU_DISABLE -}
 -- | declares input, enum and scalar types for specified schema

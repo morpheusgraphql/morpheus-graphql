@@ -34,6 +34,8 @@ module Data.Morpheus.Client
     defineByIntrospection,
     defineByIntrospectionFile,
     defineByIntrospectionFile',
+    parseClientTypeDeclarations,
+    printClientTypeDeclarations,
   )
 where
 
@@ -48,6 +50,7 @@ import Data.Morpheus.Client.Declare
     declareLocalTypes,
     declareLocalTypesInline,
     internalLegacyLocalDeclareTypes,
+    parseClientTypeDeclarations,
     raw,
   )
 import Data.Morpheus.Client.Fetch
@@ -67,6 +70,7 @@ import Data.Morpheus.Client.Internal.Types
     GQLClientResult,
     SchemaSource (..),
   )
+import Data.Morpheus.Client.Printing.Document (printClientTypeDeclarations)
 import Data.Morpheus.Types.GQLScalar
   ( DecodeScalar (..),
     EncodeScalar (..),

@@ -66,6 +66,7 @@ library
       Data.Morpheus.Client.Internal.TH
       Data.Morpheus.Client.Internal.Types
       Data.Morpheus.Client.Internal.Utils
+      Data.Morpheus.Client.Printing.Document
       Data.Morpheus.Client.Printing.TH
       Data.Morpheus.Client.QuasiQuoter
       Data.Morpheus.Client.Schema.JSON.Parse
