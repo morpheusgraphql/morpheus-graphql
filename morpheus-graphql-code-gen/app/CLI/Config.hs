@@ -18,10 +18,20 @@ import System.FilePath.Posix
   ( (</>),
   )
 
+newtype ServiceOptions = ServiceOptions
+  { namespace :: Bool
+  }
+  deriving
+    ( Generic,
+      FromJSON,
+      Show
+    )
+
 data Service = Service
   { name :: Text,
     includes :: [Text],
-    source :: Text
+    source :: Text,
+    options :: Maybe ServiceOptions
   }
   deriving
     ( Generic,
