@@ -21,7 +21,7 @@ import System.FilePath.Posix
 data Service = Service
   { name :: Text,
     includes :: [Text],
-    root :: Text
+    source :: Text
   }
   deriving
     ( Generic,

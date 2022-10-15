@@ -1,20 +1,19 @@
 server:
   - name: Server API
-    root: ./src
+    source: ./src
     includes:
-      - Domains/*
-      - Operations/*
+      - Domains/**/*.gql
+      - Operation/**/*.gql
 
   - name: Server API with Namespaces
-    root: ./src
+    source: ./src
     includes:
-      - Domains/*
-      - Operations/*
+      - Namespaces/**/*.gql
     options:
       namespace: true
 
 client:
   - name: Client API
-    root: ./src
+    source: ./src
     includes:
-      - /*
+      - /**/*/gql

@@ -14,9 +14,12 @@ import CLI.Generator
 import qualified Data.ByteString.Lazy as L
   ( readFile,
   )
+import Data.Text (unpack)
 import Data.Version (showVersion)
 import qualified Paths_morpheus_graphql_code_gen as CLI
 import Relude hiding (ByteString)
+import System.FilePath (normalise, (</>))
+import System.FilePath.Glob (glob)
 
 currentVersion :: String
 currentVersion = showVersion CLI.version
@@ -43,7 +46,10 @@ build options path = do
 scan :: Options -> FilePath -> IO ()
 scan options path = do
   Config {server} <- readConfig path
-  traverse_ (handleService options) server
+  traverse_ (handleService path options) server
 
-handleService :: Options -> Service -> IO ()
-handleService _ Service {name} = print name
+handleService :: FilePath -> Options -> Service -> IO ()
+handleService root _ Service {name, source, includes} = do
+  let patterns = map (normalise . ((root </> unpack source) </>) . unpack) includes
+  files <- concat <$> traverse glob patterns
+  print (name, files)
