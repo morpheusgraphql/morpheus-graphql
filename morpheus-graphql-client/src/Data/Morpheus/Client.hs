@@ -70,6 +70,9 @@ import Data.Morpheus.Client.Internal.Types
     GQLClientResult,
     SchemaSource (..),
   )
+import Data.Morpheus.Client.Printing.Document
+  ( printClientTypeDeclarations,
+  )
 import Data.Morpheus.Types.GQLScalar
   ( DecodeScalar (..),
     EncodeScalar (..),
