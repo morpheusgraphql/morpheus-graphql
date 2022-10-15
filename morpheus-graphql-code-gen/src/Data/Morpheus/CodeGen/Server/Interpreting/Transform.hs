@@ -173,8 +173,9 @@ genTypeDefinition
         | tKind == KindInterface = mkInterfaceName originalTypeName
         | otherwise = originalTypeName
       tKind = kindOf typeDef
-      cgTypeName = CodeGenTypeName [] ["m" | isResolverType tKind] (packName $ toHaskellTypeName typeName)
-      renameDir = [TypeDirectiveUsage (dirRename (unpackName originalTypeName)) | tKind == KindInterface]
+      hsTypeName = packName $ toHaskellTypeName typeName
+      cgTypeName = CodeGenTypeName [] ["m" | isResolverType tKind] hsTypeName
+      renameDir = [TypeDirectiveUsage (dirRename (unpackName originalTypeName)) | originalTypeName /= hsTypeName]
       deriveGQL = do
         namespaceDirs <- getNamespaceDirs (unpackName typeName)
         dirs <- getDirs typeDef
@@ -359,29 +360,29 @@ genArgumentType
       fieldContent = Just (FieldArgs arguments)
     }
     | length arguments > 1 = do
-        tName <- (fieldName &) <$> asks toArgsTypeName
-        inType (Just tName) $ do
-          let argumentFields = argument <$> toList arguments
-          fields <- traverse renderDataField argumentFields
-          let typename = toHaskellTypeName tName
-          namespaceDirs <- getNamespaceDirs typename
-          dirs <- concat <$> traverse getDirs argumentFields
-          let cgTypeName = fromTypeName (packName typename)
-          pure
-            [ DataType
-                CodeGenType
-                  { cgTypeName,
-                    cgConstructors = mkObjectCons tName fields,
-                    cgDerivations = derivesClasses False
-                  },
-              GQLTypeInstance
-                GQLTypeDefinition
-                  { gqlTarget = cgTypeName,
-                    gqlKind = Type,
-                    gqlTypeDefaultValues = fromList (mapMaybe getDefaultValue argumentFields),
-                    gqlTypeDirectiveUses = namespaceDirs <> dirs
-                  }
-            ]
+      tName <- (fieldName &) <$> asks toArgsTypeName
+      inType (Just tName) $ do
+        let argumentFields = argument <$> toList arguments
+        fields <- traverse renderDataField argumentFields
+        let typename = toHaskellTypeName tName
+        namespaceDirs <- getNamespaceDirs typename
+        dirs <- concat <$> traverse getDirs argumentFields
+        let cgTypeName = fromTypeName (packName typename)
+        pure
+          [ DataType
+              CodeGenType
+                { cgTypeName,
+                  cgConstructors = mkObjectCons tName fields,
+                  cgDerivations = derivesClasses False
+                },
+            GQLTypeInstance
+              GQLTypeDefinition
+                { gqlTarget = cgTypeName,
+                  gqlKind = Type,
+                  gqlTypeDefaultValues = fromList (mapMaybe getDefaultValue argumentFields),
+                  gqlTypeDirectiveUses = namespaceDirs <> dirs
+                }
+          ]
 genArgumentType _ = pure []
 
 class Meta a where

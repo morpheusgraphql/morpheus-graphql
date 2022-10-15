@@ -24,7 +24,9 @@ data TestCharCases
 
 instance GQLType TestCharCases where
   type KIND TestCharCases = TYPE
-  directives _ = typeDirective DropNamespace {dropNamespace = "testCharCases"}
+  directives _ =
+    typeDirective Rename {newName = "testCharCases"}
+      <> typeDirective DropNamespace {dropNamespace = "testCharCases"}
 
 data User m = User
   { userType :: m Text,
