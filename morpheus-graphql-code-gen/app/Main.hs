@@ -8,17 +8,7 @@ module Main
 where
 
 import CLI.Commands
-import CLI.File
 import CLI.Generator
-import qualified Data.ByteString.Lazy as L
-  ( readFile,
-  )
-import Data.Morpheus.CodeGen
-  ( CodeGenConfig (..),
-    PrinterConfig (..),
-    parseServerTypeDefinitions,
-    printServerTypeDefinitions,
-  )
 import Data.Version (showVersion)
 import qualified Paths_morpheus_graphql_code_gen as CLI
 import Relude hiding (ByteString)

@@ -4,30 +4,39 @@
 module CLI.Generator (processFile) where
 
 import CLI.Commands
+  ( Options (..),
+  )
 import CLI.File
+  ( getModuleNameByPath,
+    processFileName,
+    saveDocument,
+  )
 import qualified Data.ByteString.Lazy as L
   ( readFile,
   )
+import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Morpheus.CodeGen
   ( CodeGenConfig (..),
     PrinterConfig (..),
     parseServerTypeDefinitions,
     printServerTypeDefinitions,
   )
-import Data.Version (showVersion)
+import Data.Morpheus.Internal.Ext (GQLResult)
 import Relude hiding (ByteString)
 
+process :: Options -> FilePath -> ByteString -> GQLResult ByteString
+process Options {root, namespaces} hsPath =
+  fmap
+    ( printServerTypeDefinitions
+        PrinterConfig
+          { moduleName = getModuleNameByPath root hsPath
+          }
+    )
+    . parseServerTypeDefinitions CodeGenConfig {namespace = namespaces}
+
 processFile :: Options -> FilePath -> IO ()
-processFile Options {root, namespaces} path =
-  print (path, hsPath)
-    >> L.readFile path
-    >>= saveDocument hsPath
-      . fmap
-        ( printServerTypeDefinitions
-            PrinterConfig
-              { moduleName = getModuleNameByPath root hsPath
-              }
-        )
-      . parseServerTypeDefinitions CodeGenConfig {namespace = namespaces}
+processFile options@Options {root, namespaces} path = do
+  file <- L.readFile path
+  saveDocument hsPath (process options hsPath file)
   where
     hsPath = processFileName path

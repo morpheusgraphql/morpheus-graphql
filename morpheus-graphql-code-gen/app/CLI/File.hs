@@ -5,22 +5,13 @@ module CLI.File where
 
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as L
-  ( readFile,
-    writeFile,
+  ( writeFile,
   )
 import Data.Char
-import Data.Morpheus.CodeGen
-  ( CodeGenConfig (..),
-    PrinterConfig (..),
-    parseServerTypeDefinitions,
-    printServerTypeDefinitions,
-  )
 import Data.Morpheus.Internal.Ext
   ( GQLResult,
     Result (..),
   )
-import Data.Version (showVersion)
-import qualified Paths_morpheus_graphql_code_gen as CLI
 import Relude hiding (ByteString)
 import System.FilePath.Posix
   ( dropExtensions,
