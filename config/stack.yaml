@@ -65,6 +65,9 @@ plan:
     skip:
       - examples/scotty-fraxl
 rules:
+  Glob:
+    - 0.7.0
+    - 1.0.0
   aeson:
     - 1.4.4
     - 3.0.0
@@ -149,4 +152,7 @@ rules:
   wuss:
     - 1.0.0
     - 3.0.0
+  yaml:
+    - 0.9.0
+    - 1.0.0
 version: 0.22.1
