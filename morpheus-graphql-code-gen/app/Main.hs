@@ -38,7 +38,7 @@ runApp App {..}
 
 build :: Options -> FilePath -> IO ()
 build options path = do
-  putStr ("build: " <> path <> "\n")
+  putStr ("  - " <> path <> "\n")
   file <- L.readFile path
   saveDocument hsPath (processDocument options hsPath file)
   where
@@ -55,5 +55,5 @@ handleService target ops Service {name, source, includes, options} = do
   let namespaces = maybe False namespace options
   let patterns = map (normalise . (root </>) . unpack) includes
   files <- concat <$> traverse glob patterns
-  putStrLn ("\n\n" <> unpack name <> "\n")
+  putStrLn ("\nbuild:" <> unpack name)
   traverse_ (build ops {root, namespaces}) files

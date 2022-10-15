@@ -5,7 +5,7 @@ server:
       - Domains/**/*.gql
       - Operation/**/*.gql
 
-  - name: Server API with Namespaces
+  - name: Server API (Namespaces)
     source: ./src
     includes:
       - Namespaces/**/*.gql
