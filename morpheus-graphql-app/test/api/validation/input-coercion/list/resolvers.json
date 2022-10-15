@@ -1,5 +1,5 @@
 {
   "query": {
-    "foo": "@self::arg.bar"
+    "foo": "@SELF::ARG.bar"
   }
 }

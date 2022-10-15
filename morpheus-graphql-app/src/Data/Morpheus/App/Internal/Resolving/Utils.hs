@@ -42,9 +42,10 @@ import Data.Morpheus.Types.Internal.AST
     packName,
     unpackName,
   )
-import Data.Text (breakOn)
+import Data.Morpheus.Types.SelectionTree (SelectionTree (..))
+import Data.Text (breakOnEnd, splitOn)
 import qualified Data.Vector as V
-import Relude
+import Relude hiding (break)
 
 lookupResJSON ::
   ( MonadError GQLError f,
@@ -78,18 +79,23 @@ mkValue (A.Object v) = pure $ mkObjectMaybe typename fields
 mkValue (A.Array ls) = mkList <$> traverse mkValue (V.toList ls)
 mkValue A.Null = pure mkNull
 mkValue (A.Number x) = pure $ ResScalar (decodeScientific x)
-mkValue (A.String x) = maybe simple f (withSelf x)
-  where
-    simple = pure $ ResScalar (String x)
-    f _ = do
-      sel <- asks currentSelection
-      pure $ ResScalar (String (show sel))
+mkValue (A.String txt) = case withSelf txt of
+  ARG name -> do
+    sel <- asks currentSelection
+    mkValue (fromMaybe A.Null (getArgument name sel))
+  NoAPI v -> pure $ ResScalar (String v)
 mkValue (A.Bool x) = pure $ ResScalar (Boolean x)
 
-withSelf :: Text -> Maybe Text
-withSelf txt = case breakOn "::" txt of
-  ("@self", field) -> Just field
-  _ -> Nothing
+data SelfAPI
+  = ARG Text
+  | NoAPI Text
+
+withSelf :: Text -> SelfAPI
+withSelf txt = case breakOnEnd "::" txt of
+  ("@SELF::", field) -> case splitOn "." field of
+    ["ARG", name] -> ARG name
+    _ -> NoAPI txt
+  _ -> NoAPI txt
 
 requireObject :: MonadError GQLError f => ResolverValue m -> f (ObjectTypeResolver m)
 requireObject (ResObject _ x) = pure x
