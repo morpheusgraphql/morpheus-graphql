@@ -8,6 +8,11 @@ module Main
 where
 
 import CLI.Commands
+  ( App (..),
+    Operation (..),
+    Options (..),
+    parseCLI,
+  )
 import CLI.Config
 import CLI.File (processFileName, saveDocument)
 import CLI.Generator
@@ -25,7 +30,7 @@ currentVersion :: String
 currentVersion = showVersion CLI.version
 
 main :: IO ()
-main = defaultParser >>= runApp
+main = parseCLI >>= runApp
 
 runApp :: App -> IO ()
 runApp App {..}
@@ -33,8 +38,7 @@ runApp App {..}
   | otherwise = runOperation operations
   where
     runOperation About = putStrLn $ "Morpheus GraphQL CLI, version " <> currentVersion
-    runOperation Build {source} = traverse_ (build options) source
-    runOperation (Scan path) = scan options path
+    runOperation Build {source} = traverse_ (scan options) source
 
 build :: Options -> FilePath -> IO ()
 build options path = do
@@ -55,5 +59,5 @@ handleService target ops Service {name, source, includes, options} = do
   let namespaces = maybe False namespace options
   let patterns = map (normalise . (root </>) . unpack) includes
   files <- concat <$> traverse glob patterns
-  putStrLn ("\nbuild:" <> unpack name)
+  putStrLn ("\n build:" <> unpack name)
   traverse_ (build ops {root, namespaces}) files

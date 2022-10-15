@@ -7,7 +7,7 @@ type Options = {
   src?: string;
 };
 
-const root = "examples/code-gen/src";
+const root = "examples/code-gen";
 
 export const codeGen = async ({ src = root }: Options = {}) => {
   try {
@@ -15,22 +15,9 @@ export const codeGen = async ({ src = root }: Options = {}) => {
 
     exec("stack install --fast --test morpheus-graphql-code-gen", "pipe");
 
-    // const gqlPath = `${src}/**/*.gql`;
+    exec(`morpheus build ${src} -r=""`, "inherit");
+
     const hsPath = `${src}/**/*hs`;
-
-    // const files = await promisify(glob)(gqlPath);
-
-    // log(`generating code(${files.length} files): ${gqlPath} \n`);
-
-    // log(`formatting(${files.length} files): ${hsPath} \n\n`);
-
-    // files.forEach((file) => {
-    //   const namespace = file.toLowerCase().includes("namespace") ? "-n" : "";
-
-    //   exec(`morpheus ${namespace} build ${file} --root=${src} `);
-    // });
-
-    exec('morpheus scan examples/code-gen/ -r=""', "inherit");
 
     exec(`ts-node scripts/local.ts format --fix=true --path=${hsPath}`);
 
