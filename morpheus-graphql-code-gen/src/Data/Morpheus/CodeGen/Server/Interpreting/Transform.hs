@@ -96,7 +96,7 @@ toTHDefinitions namespace defs = concat <$> traverse generateTypes defs
           { toArgsTypeName = mkArgsTypeName namespace (typeName typeDef),
             typeDefinitions,
             directiveDefinitions,
-            currentTypeName = Just (typeName typeDef),
+            currentTypeName = Just (packName $ toHaskellTypeName $ typeName typeDef),
             currentKind = Just (kindOf typeDef),
             hasNamespace = namespace
           }
@@ -162,9 +162,9 @@ genTypeDefinition
       tKind = kindOf typeDef
       hsTypeName = packName $ toHaskellTypeName typeName
       cgTypeName = CodeGenTypeName [] ["m" | isResolverType tKind] hsTypeName
-      renameDir = [TypeDirectiveUsage (dirRename (unpackName originalTypeName)) | originalTypeName /= hsTypeName]
+      renameDir = [TypeDirectiveUsage (dirRename originalTypeName) | originalTypeName /= hsTypeName]
       deriveGQL = do
-        namespaceDirs <- getNamespaceDirs (unpackName typeName)
+        namespaceDirs <- getNamespaceDirs (unpackName hsTypeName)
         dirs <- getDirs typeDef
         -- TODO: here
         pure $

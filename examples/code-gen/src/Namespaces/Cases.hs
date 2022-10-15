@@ -14,7 +14,14 @@ import Data.Text (Text)
 import GHC.Generics (Generic)
 import Globals.GQLScalars
 
-type TestUnderscoredType = Int
+data TestUnderscoredType = TestUnderscoredType_TestUnderscoredType
+  deriving (Generic, Show)
+
+instance GQLType TestUnderscoredType where
+  type KIND TestUnderscoredType = TYPE
+  directives _ =
+    typeDirective Rename {newName = "_TestUnderscoredType"}
+      <> typeDirective DropNamespace {dropNamespace = "TestUnderscoredType"}
 
 data TestCharCases
   = TestCharCasesLowerCaseA
@@ -26,7 +33,7 @@ instance GQLType TestCharCases where
   type KIND TestCharCases = TYPE
   directives _ =
     typeDirective Rename {newName = "testCharCases"}
-      <> typeDirective DropNamespace {dropNamespace = "testCharCases"}
+      <> typeDirective DropNamespace {dropNamespace = "TestCharCases"}
 
 data User m = User
   { userType :: m Text,
@@ -37,7 +44,9 @@ data User m = User
 
 instance (Typeable m) => GQLType (User m) where
   type KIND (User m) = TYPE
-  directives _ = typeDirective DropNamespace {dropNamespace = "User"}
+  directives _ =
+    typeDirective DropNamespace {dropNamespace = "User"}
+      <> fieldDirective "userCharCases" Rename {newName = "CharCases"}
 
 newtype MyQuery m = MyQuery
   { myQueryUser :: m (User m)

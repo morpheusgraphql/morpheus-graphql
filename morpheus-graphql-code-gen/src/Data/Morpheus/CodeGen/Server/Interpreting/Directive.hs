@@ -13,13 +13,11 @@ module Data.Morpheus.CodeGen.Server.Interpreting.Directive
   )
 where
 
+import Data.Char (isUpper)
 import Data.Morpheus.CodeGen.Internal.AST
   ( getFullName,
   )
-import Data.Morpheus.CodeGen.Server.Internal.AST
-  ( ServerDirectiveUsage (..),
-    TypeValue (..),
-  )
+import Data.Morpheus.CodeGen.Server.Internal.AST (ServerDirectiveUsage (..), TypeValue (..), unpackName)
 import Data.Morpheus.CodeGen.Server.Interpreting.Utils
   ( CodeGenT,
     TypeContext (..),
@@ -41,6 +39,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldDefinition (..),
     FieldName,
     FieldsDefinition,
+    Name,
     ObjectEntry (..),
     TypeContent (..),
     TypeDefinition (..),
@@ -48,7 +47,8 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef (..),
   )
 import qualified Data.Morpheus.Types.Internal.AST as AST
-import Relude hiding (ByteString, get)
+import Data.Text (head)
+import Relude hiding (ByteString, get, head)
 
 getNamespaceDirs :: MonadReader (TypeContext s) m => Text -> m [ServerDirectiveUsage]
 getNamespaceDirs genTypeName = do
@@ -63,8 +63,8 @@ descDirective desc = map describe (maybeToList desc)
 dirDropNamespace :: Text -> TypeValue
 dirDropNamespace name = TypeValueObject "DropNamespace" [("dropNamespace", TypeValueString name)]
 
-dirRename :: Text -> TypeValue
-dirRename name = TypeValueObject "Rename" [("newName", TypeValueString name)]
+dirRename :: Name t -> TypeValue
+dirRename name = TypeValueObject "Rename" [("newName", TypeValueString (unpackName name))]
 
 class Meta a where
   getDirs :: MonadFail m => a -> CodeGenT m [ServerDirectiveUsage]
@@ -101,7 +101,8 @@ instance Meta (FieldDefinition c CONST) where
   getDirs FieldDefinition {fieldName, fieldDirectives, fieldDescription} = do
     dirs <- traverse directiveTypeValue (toList fieldDirectives)
     name <- getFieldName fieldName
-    pure $ map (FieldDirectiveUsage name) (dirs <> descDirective fieldDescription)
+    let renameField = [FieldDirectiveUsage name (dirRename fieldName) | isUpperCase fieldName]
+    pure $ renameField <> map (FieldDirectiveUsage name) (dirs <> descDirective fieldDescription)
 
 directiveTypeValue :: MonadFail m => Directive CONST -> CodeGenT m TypeValue
 directiveTypeValue Directive {..} = inType typeContext $ do
@@ -112,6 +113,9 @@ directiveTypeValue Directive {..} = inType typeContext $ do
 
 nativeDirectives :: AST.DirectivesDefinition CONST
 nativeDirectives = AST.directiveDefinitions internalSchema
+
+isUpperCase :: FieldName -> Bool
+isUpperCase = isUpper . head . unpackName
 
 getDirective :: (MonadReader (TypeContext CONST) m, MonadFail m) => FieldName -> m (DirectiveDefinition CONST)
 getDirective directiveName = do
