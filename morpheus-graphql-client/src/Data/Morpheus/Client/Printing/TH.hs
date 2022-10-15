@@ -21,6 +21,11 @@ import Data.Aeson
 import Data.Morpheus.Client.Fetch.RequestType
   ( RequestType (..),
   )
+import Data.Morpheus.Client.Internal.AST
+  ( ClientDeclaration (..),
+    DERIVING_MODE (..),
+    RequestTypeDefinition (..),
+  )
 import Data.Morpheus.Client.Internal.TH
   ( declareIfNotDeclared,
     decodeObjectE,
@@ -28,11 +33,6 @@ import Data.Morpheus.Client.Internal.TH
     failExp,
     matchWith,
     mkFieldsE,
-  )
-import Data.Morpheus.Client.Internal.Types
-  ( ClientDeclaration (..),
-    DERIVING_MODE (..),
-    RequestTypeDefinition (..),
   )
 import Data.Morpheus.Client.Internal.Utils
   ( emptyTypeError,
