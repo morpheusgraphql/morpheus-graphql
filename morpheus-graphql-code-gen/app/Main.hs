@@ -9,8 +9,9 @@ where
 
 import CLI.Commands
   ( App (..),
+    BuildOptions (..),
+    GlobalOptions (..),
     Operation (..),
-    Options (..),
     parseCLI,
   )
 import CLI.Config
@@ -38,26 +39,26 @@ runApp App {..}
   | otherwise = runOperation operations
   where
     runOperation About = putStrLn $ "Morpheus GraphQL CLI, version " <> currentVersion
-    runOperation Build {source} = traverse_ (scan options) source
+    runOperation Build {source} = traverse_ scan source
 
-build :: Options -> FilePath -> IO ()
-build options path = do
-  putStr ("  - " <> path <> "\n")
-  file <- L.readFile path
-  saveDocument hsPath (processDocument options hsPath file)
-  where
-    hsPath = processFileName path
-
-scan :: Options -> FilePath -> IO ()
-scan options path = do
+scan :: FilePath -> IO ()
+scan path = do
   Config {server} <- readConfig path
-  traverse_ (handleService path options) server
+  traverse_ (handleService path) server
 
-handleService :: FilePath -> Options -> Service -> IO ()
-handleService target ops Service {name, source, includes, options} = do
+handleService :: FilePath -> Service -> IO ()
+handleService target Service {name, source, includes, options} = do
   let root = normalise (target </> unpack source)
   let namespaces = maybe False namespace options
   let patterns = map (normalise . (root </>) . unpack) includes
   files <- concat <$> traverse glob patterns
   putStrLn ("\n build:" <> unpack name)
-  traverse_ (build ops {root, namespaces}) files
+  traverse_ (buildFile (BuildOptions {..}) {root, namespaces}) files
+
+buildFile :: BuildOptions -> FilePath -> IO ()
+buildFile options path = do
+  putStr ("  - " <> path <> "\n")
+  file <- L.readFile path
+  saveDocument hsPath (processDocument options hsPath file)
+  where
+    hsPath = processFileName path

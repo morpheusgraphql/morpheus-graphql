@@ -1,7 +1,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module CLI.Commands
-  ( Options (..),
+  ( BuildOptions (..),
+    GlobalOptions (..),
     App (..),
     Operation (..),
     parseCLI,
@@ -10,17 +11,14 @@ where
 
 import Options.Applicative
   ( Parser,
-    ReadM,
     command,
     customExecParser,
-    eitherReader,
     fullDesc,
     help,
     helper,
     info,
     long,
     metavar,
-    option,
     prefs,
     progDesc,
     short,
@@ -39,13 +37,17 @@ data Operation
 
 data App = App
   { operations :: Operation,
-    options :: Options
+    options :: GlobalOptions
   }
   deriving (Show)
 
-data Options = Options
-  { version :: Bool,
-    root :: String,
+newtype GlobalOptions = GlobalOptions
+  { version :: Bool
+  }
+  deriving (Show)
+
+data BuildOptions = BuildOptions
+  { root :: String,
     namespaces :: Bool
   }
   deriving (Show)
@@ -89,15 +91,8 @@ parseCLI =
 parseApp :: OA.Parser App
 parseApp = App <$> commandParser <*> parseOptions
 
-parseOptions :: Parser Options
-parseOptions =
-  Options
-    <$> switch (long "version" <> short 'v' <> help "show Version number")
-    <*> option readOutput (long "root" <> short 'r' <> help "Root directory of the Haskell project")
-    <*> switch (long "namespaces" <> short 'n' <> help "namespaces type fields to avoid name conflicts")
-
-readOutput :: ReadM String
-readOutput = eitherReader Right
+parseOptions :: Parser GlobalOptions
+parseOptions = GlobalOptions <$> switch (long "version" <> short 'v' <> help "show Version number")
 
 description :: OA.InfoMod a
 description = fullDesc <> progDesc "Morpheus GraphQL CLI - haskell Api Generator"

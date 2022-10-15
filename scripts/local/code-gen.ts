@@ -15,7 +15,7 @@ export const codeGen = async ({ src = root }: Options = {}) => {
 
     exec("stack install --fast --test morpheus-graphql-code-gen", "pipe");
 
-    exec(`morpheus build ${src} -r=""`, "inherit");
+    exec(`morpheus build ${src}`, "inherit");
 
     const hsPath = `${src}/**/*hs`;
 

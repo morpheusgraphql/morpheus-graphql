@@ -4,7 +4,7 @@
 module CLI.Generator (processDocument) where
 
 import CLI.Commands
-  ( Options (..),
+  ( BuildOptions (..),
   )
 import CLI.File
   ( getModuleNameByPath,
@@ -19,8 +19,8 @@ import Data.Morpheus.CodeGen
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Relude hiding (ByteString)
 
-processDocument :: Options -> FilePath -> ByteString -> GQLResult ByteString
-processDocument Options {root, namespaces} hsPath =
+processDocument :: BuildOptions -> FilePath -> ByteString -> GQLResult ByteString
+processDocument BuildOptions {root, namespaces} hsPath =
   fmap
     ( printServerTypeDefinitions
         PrinterConfig
