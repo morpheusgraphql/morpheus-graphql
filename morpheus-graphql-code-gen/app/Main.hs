@@ -9,6 +9,7 @@ where
 
 import CLI.Commands
 import CLI.File
+import CLI.Generator
 import qualified Data.ByteString.Lazy as L
   ( readFile,
   )
@@ -35,18 +36,3 @@ runApp App {..}
   where
     runOperation About = putStrLn $ "Morpheus GraphQL CLI, version " <> currentVersion
     runOperation Build {source} = traverse_ (processFile options) source
-
-processFile :: Options -> FilePath -> IO ()
-processFile Options {root, namespaces} path =
-  print (path, hsPath)
-    >> L.readFile path
-    >>= saveDocument hsPath
-      . fmap
-        ( printServerTypeDefinitions
-            PrinterConfig
-              { moduleName = getModuleNameByPath root hsPath
-              }
-        )
-      . parseServerTypeDefinitions CodeGenConfig {namespace = namespaces}
-  where
-    hsPath = processFileName path
