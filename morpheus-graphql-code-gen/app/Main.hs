@@ -44,11 +44,20 @@ runApp App {..}
 scan :: FilePath -> IO ()
 scan path = do
   Config {server, client} <- readConfig path
-  traverse_ (handleService path) (concat $ maybeToList server)
-  traverse_ (handleService path) (concat $ maybeToList client)
+  traverse_ (handleServerService path) (concat $ maybeToList server)
+  traverse_ (handleClientService path) (concat $ maybeToList client)
 
-handleService :: FilePath -> Service -> IO ()
-handleService target Service {name, source, includes, options} = do
+handleClientService :: FilePath -> Service -> IO ()
+handleClientService target Service {name, source, includes, options} = do
+  let root = normalise (target </> unpack source)
+  let namespaces = maybe False namespace options
+  let patterns = map (normalise . (root </>) . unpack) includes
+  files <- concat <$> traverse glob patterns
+  putStrLn ("\n build:" <> unpack name)
+  traverse_ (buildFile (BuildOptions {..}) {root, namespaces}) files
+
+handleServerService :: FilePath -> Service -> IO ()
+handleServerService target Service {name, source, includes, options} = do
   let root = normalise (target </> unpack source)
   let namespaces = maybe False namespace options
   let patterns = map (normalise . (root </>) . unpack) includes
