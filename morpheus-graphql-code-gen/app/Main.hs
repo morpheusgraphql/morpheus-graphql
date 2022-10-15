@@ -53,5 +53,5 @@ handleService :: FilePath -> Options -> Service -> IO ()
 handleService root options Service {name, source, includes} = do
   let patterns = map (normalise . ((root </> unpack source) </>) . unpack) includes
   files <- concat <$> traverse glob patterns
-  putStrLn (unpack name <> "\n")
+  putStrLn ("\n\n" <> unpack name <> "\n")
   traverse_ (build options) files
