@@ -21,6 +21,7 @@ where
 
 import Control.Monad.Except (MonadError (throwError))
 import qualified Data.Aeson as A
+import Data.Morpheus.App.Internal.Resolving.ResolverState
 import Data.Morpheus.App.Internal.Resolving.Types
   ( NamedResolverRef (..),
     ObjectTypeResolver (..),
@@ -45,7 +46,14 @@ import Data.Text (breakOn)
 import qualified Data.Vector as V
 import Relude
 
-lookupResJSON :: (MonadError GQLError f, Monad m) => FieldName -> A.Value -> f (ObjectTypeResolver m)
+lookupResJSON ::
+  ( MonadError GQLError f,
+    MonadReader ResolverContext f,
+    MonadReader ResolverContext m
+  ) =>
+  FieldName ->
+  A.Value ->
+  f (ObjectTypeResolver m)
 lookupResJSON name (A.Object fields) =
   selectOr
     mkEmptyObject
@@ -58,7 +66,9 @@ mkEmptyObject :: Monad m => m (ObjectTypeResolver a)
 mkEmptyObject = pure $ ObjectTypeResolver mempty
 
 mkValue ::
-  (Monad m, Monad f) =>
+  ( MonadReader ResolverContext f,
+    MonadReader ResolverContext m
+  ) =>
   A.Value ->
   f (ResolverValue m)
 mkValue (A.Object v) = pure $ mkObjectMaybe typename fields
@@ -68,10 +78,12 @@ mkValue (A.Object v) = pure $ mkObjectMaybe typename fields
 mkValue (A.Array ls) = mkList <$> traverse mkValue (V.toList ls)
 mkValue A.Null = pure mkNull
 mkValue (A.Number x) = pure $ ResScalar (decodeScientific x)
-mkValue (A.String x) = pure $ maybe simple f (withSelf x)
+mkValue (A.String x) = maybe simple f (withSelf x)
   where
-    simple = ResScalar (String x)
-    f _ = ResScalar (String "[4]")
+    simple = pure $ ResScalar (String x)
+    f _ = do
+      sel <- asks currentSelection
+      pure $ ResScalar (String (show sel))
 mkValue (A.Bool x) = pure $ ResScalar (Boolean x)
 
 withSelf :: Text -> Maybe Text
