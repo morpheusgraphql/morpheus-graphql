@@ -21,6 +21,7 @@ where
 
 import Control.Monad.Except (MonadError (throwError))
 import qualified Data.Aeson as A
+import Data.Morpheus.App.Internal.Resolving.ResolverState
 import Data.Morpheus.App.Internal.Resolving.Types
   ( NamedResolverRef (..),
     ObjectTypeResolver (..),
@@ -41,14 +42,23 @@ import Data.Morpheus.Types.Internal.AST
     packName,
     unpackName,
   )
+import Data.Morpheus.Types.SelectionTree (SelectionTree (..))
+import Data.Text (breakOnEnd, splitOn)
 import qualified Data.Vector as V
-import Relude
+import Relude hiding (break)
 
-lookupResJSON :: (MonadError GQLError f, Monad m) => FieldName -> A.Value -> f (ObjectTypeResolver m)
+lookupResJSON ::
+  ( MonadError GQLError f,
+    MonadReader ResolverContext f,
+    MonadReader ResolverContext m
+  ) =>
+  FieldName ->
+  A.Value ->
+  f (ObjectTypeResolver m)
 lookupResJSON name (A.Object fields) =
   selectOr
     mkEmptyObject
-    (requireObject . mkValue)
+    (requireObject <=< mkValue)
     (unpackName name)
     fields
 lookupResJSON _ _ = mkEmptyObject
@@ -57,20 +67,35 @@ mkEmptyObject :: Monad m => m (ObjectTypeResolver a)
 mkEmptyObject = pure $ ObjectTypeResolver mempty
 
 mkValue ::
-  (Monad m) =>
+  ( MonadReader ResolverContext f,
+    MonadReader ResolverContext m
+  ) =>
   A.Value ->
-  ResolverValue m
-mkValue (A.Object v) =
-  mkObjectMaybe
-    (U.lookup "__typename" v >>= unpackJSONName)
-    $ fmap
-      (bimap packName (pure . mkValue))
-      (toAssoc v)
-mkValue (A.Array ls) = mkList (fmap mkValue (V.toList ls))
-mkValue A.Null = mkNull
-mkValue (A.Number x) = ResScalar (decodeScientific x)
-mkValue (A.String x) = ResScalar (String x)
-mkValue (A.Bool x) = ResScalar (Boolean x)
+  f (ResolverValue m)
+mkValue (A.Object v) = pure $ mkObjectMaybe typename fields
+  where
+    typename = U.lookup "__typename" v >>= unpackJSONName
+    fields = map (bimap packName mkValue) (toAssoc v)
+mkValue (A.Array ls) = mkList <$> traverse mkValue (V.toList ls)
+mkValue A.Null = pure mkNull
+mkValue (A.Number x) = pure $ ResScalar (decodeScientific x)
+mkValue (A.String txt) = case withSelf txt of
+  ARG name -> do
+    sel <- asks currentSelection
+    mkValue (fromMaybe A.Null (getArgument name sel))
+  NoAPI v -> pure $ ResScalar (String v)
+mkValue (A.Bool x) = pure $ ResScalar (Boolean x)
+
+data SelfAPI
+  = ARG Text
+  | NoAPI Text
+
+withSelf :: Text -> SelfAPI
+withSelf txt = case breakOnEnd "::" txt of
+  ("@SELF::", field) -> case splitOn "." field of
+    ["ARG", name] -> ARG name
+    _ -> NoAPI txt
+  _ -> NoAPI txt
 
 requireObject :: MonadError GQLError f => ResolverValue m -> f (ObjectTypeResolver m)
 requireObject (ResObject _ x) = pure x

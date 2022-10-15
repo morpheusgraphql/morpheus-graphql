@@ -1,11 +1,15 @@
 {
   "errors": [
     {
-      "message": "Argument \"value\" got invalid value. Expected type \"[InputPairTextInt!]!\" found {}.",
+      "message": "Argument \"value\" got invalid value. Undefined Field \"_0\".",
       "locations": [{ "line": 2, "column": 15 }]
     },
     {
-      "message": "Argument \"value\" got invalid value. Expected type \"[InputPairTextInt!]!\" found 635.",
+      "message": "Argument \"value\" got invalid value. Undefined Field \"_1\".",
+      "locations": [{ "line": 2, "column": 15 }]
+    },
+    {
+      "message": "Argument \"value\" got invalid value. Expected type \"InputPairTextInt!\" found 635.",
       "locations": [{ "line": 3, "column": 15 }]
     },
     {
