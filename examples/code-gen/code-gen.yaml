@@ -1,0 +1,19 @@
+server:
+  - name: Server API
+    root: ./src
+    path:
+      - Domains/*
+      - Operations/*
+
+  - name: Server API with Namespaces
+    root: ./src
+    path:
+      - Domains/*
+      - Operations/*
+    options:
+      namespace: true
+
+client:
+  - name: Client API
+    root: ./src
+    path: /*
