@@ -30,7 +30,6 @@ library
       Data.Morpheus.CodeGen
       Data.Morpheus.CodeGen.Server
   other-modules:
-      Data.Morpheus.CodeGen.Client.Printing.Document
       Data.Morpheus.CodeGen.Server.Internal.AST
       Data.Morpheus.CodeGen.Server.Interpreting.Directive
       Data.Morpheus.CodeGen.Server.Interpreting.Transform

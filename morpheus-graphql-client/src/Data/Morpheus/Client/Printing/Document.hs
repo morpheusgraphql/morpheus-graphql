@@ -1,4 +1,4 @@
-module X
+module Data.Morpheus.Client.Printing.Document
   ( printClientTypeDeclarations,
   )
 where
