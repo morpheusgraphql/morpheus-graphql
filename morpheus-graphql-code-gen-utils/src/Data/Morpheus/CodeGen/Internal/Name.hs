@@ -43,7 +43,9 @@ toHaskellTypeName :: TypeName -> Text
 toHaskellTypeName "String" = "Text"
 toHaskellTypeName "Boolean" = "Bool"
 toHaskellTypeName "Float" = "Double"
-toHaskellTypeName name = capitalize $ unpackName name
+toHaskellTypeName name
+  | T.head (unpackName name) == '_' = capitalize $ T.tail (unpackName name)
+  | otherwise = capitalize $ unpackName name
 {-# INLINE toHaskellTypeName #-}
 
 uncapitalize :: Text -> Text
