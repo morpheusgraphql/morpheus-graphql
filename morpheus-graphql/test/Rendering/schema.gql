@@ -2,6 +2,8 @@ directive @TestDirective(name: String!, enum: TestEnum) on INPUT_OBJECT | OBJECT
 
 scalar TestScalar @TestDirective(name: "SomeName")
 
+scalar _TestUnderscoredType
+
 enum TestEnum @TestDirective(name: "SomeName") {
   EnumA
   EnumB @TestDirective(name: "SomeName")
@@ -28,7 +30,8 @@ type User {
   type: String!
   address(coordinates: Coordinates!, type: String): Int!
   friend(id: ID!, cityID: TestEnum): User!
-  charCases: testCharCases
+  CharCases: testCharCases
+  _underscored: _TestUnderscoredType
 }
 
 union TestUnion @TestDirective(name: "SomeName") = User | Address
