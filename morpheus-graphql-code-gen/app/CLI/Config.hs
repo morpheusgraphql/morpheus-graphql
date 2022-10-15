@@ -6,6 +6,7 @@ module CLI.Config
   ( Service (..),
     Config (..),
     readConfig,
+    ServiceOptions (..),
   )
 where
 
