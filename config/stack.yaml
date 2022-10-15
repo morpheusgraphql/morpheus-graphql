@@ -40,6 +40,7 @@ plan:
       retry: 0.8.1.0
       time-compat: 1.9.2.2
       websockets: 0.12.6.0
+      yaml: 0.8.31
     resolver: lts-12.16
   8.6.5:
     deps:
@@ -153,6 +154,6 @@ rules:
     - 1.0.0
     - 3.0.0
   yaml:
-    - 0.9.0
+    - 0.8.31
     - 1.0.0
 version: 0.22.1
