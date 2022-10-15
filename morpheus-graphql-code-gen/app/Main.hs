@@ -42,9 +42,8 @@ build options path = do
 
 scan :: Options -> FilePath -> IO ()
 scan options path = do
-  config <- readConfig path
-  print config
-  file <- L.readFile path
-  saveDocument hsPath (processDocument options hsPath file)
-  where
-    hsPath = processFileName path
+  Config {server} <- readConfig path
+  traverse_ (handleService options) server
+
+handleService :: Options -> Service -> IO ()
+handleService _ Service {name} = print name
