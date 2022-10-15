@@ -29,6 +29,7 @@ import Relude hiding (ByteString)
 data Operation
   = Build {source :: [FilePath]}
   | About
+  | Scan FilePath
   deriving (Show)
 
 data App = App
@@ -51,11 +52,23 @@ commandParser =
         "builds Haskell API from GraphQL schema",
         Build <$> readFiles
       ),
+      ( "scan",
+        "scan Haskell API from GraphQL schema",
+        Scan <$> argFile
+      ),
       ( "about",
         "api information",
         pure About
       )
     ]
+
+argFile :: Parser String
+argFile =
+  strArgument $
+    mconcat
+      [ metavar "file",
+        help "source files for generating api"
+      ]
 
 buildOperation :: [(String, String, Parser Operation)] -> Parser Operation
 buildOperation xs = joinParsers $ map parseOperation xs

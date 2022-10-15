@@ -1,18 +1,13 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module CLI.Generator (processFile) where
+module CLI.Generator (processDocument) where
 
 import CLI.Commands
   ( Options (..),
   )
 import CLI.File
   ( getModuleNameByPath,
-    processFileName,
-    saveDocument,
-  )
-import qualified Data.ByteString.Lazy as L
-  ( readFile,
   )
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Morpheus.CodeGen
@@ -24,8 +19,8 @@ import Data.Morpheus.CodeGen
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Relude hiding (ByteString)
 
-process :: Options -> FilePath -> ByteString -> GQLResult ByteString
-process Options {root, namespaces} hsPath =
+processDocument :: Options -> FilePath -> ByteString -> GQLResult ByteString
+processDocument Options {root, namespaces} hsPath =
   fmap
     ( printServerTypeDefinitions
         PrinterConfig
@@ -33,10 +28,3 @@ process Options {root, namespaces} hsPath =
           }
     )
     . parseServerTypeDefinitions CodeGenConfig {namespace = namespaces}
-
-processFile :: Options -> FilePath -> IO ()
-processFile options@Options {root, namespaces} path = do
-  file <- L.readFile path
-  saveDocument hsPath (process options hsPath file)
-  where
-    hsPath = processFileName path

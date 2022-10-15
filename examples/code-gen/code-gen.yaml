@@ -1,13 +1,13 @@
 server:
   - name: Server API
     root: ./src
-    path:
+    includes:
       - Domains/*
       - Operations/*
 
   - name: Server API with Namespaces
     root: ./src
-    path:
+    includes:
       - Domains/*
       - Operations/*
     options:
@@ -16,4 +16,5 @@ server:
 client:
   - name: Client API
     root: ./src
-    path: /*
+    includes:
+      - /*
