@@ -60,6 +60,7 @@ executable morpheus
   other-modules:
       CLI.Commands
       CLI.Config
+      CLI.File
       Paths_morpheus_graphql_code_gen
   hs-source-dirs:
       app

@@ -1,4 +1,10 @@
-module CLI.Config (App (..), Config (..)) where
+{-# LANGUAGE NoImplicitPrelude #-}
+
+module CLI.Config
+  ( App (..),
+    Config (..),
+  )
+where
 
 import Data.Text (Text)
 

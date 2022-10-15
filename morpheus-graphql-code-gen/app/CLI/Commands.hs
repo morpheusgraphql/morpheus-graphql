@@ -1,3 +1,5 @@
+{-# LANGUAGE NoImplicitPrelude #-}
+
 module CLI.Commands where
 
 import Options.Applicative
