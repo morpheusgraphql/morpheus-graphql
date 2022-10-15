@@ -78,8 +78,8 @@ parseOperation (bName, bDesc, bValue) =
 readFiles :: Parser [String]
 readFiles =
   (many . strArgument . mconcat)
-    [ metavar "file",
-      help "source files for generating api"
+    [ metavar "dir",
+      help "source dirs with code-gen.yaml file for generating APIs"
     ]
 
 parseCLI :: IO App
