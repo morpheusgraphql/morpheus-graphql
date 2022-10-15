@@ -22,6 +22,7 @@ instance GQLType TestUnderscoredType where
   directives _ =
     typeDirective Rename {newName = "_TestUnderscoredType"}
       <> typeDirective DropNamespace {dropNamespace = "TestUnderscoredType"}
+      <> enumDirective "TestUnderscoredType_TestUnderscoredType" Rename {newName = "_TestUnderscoredType"}
 
 data TestCharCases
   = TestCharCasesLowerCaseA
@@ -34,6 +35,8 @@ instance GQLType TestCharCases where
   directives _ =
     typeDirective Rename {newName = "testCharCases"}
       <> typeDirective DropNamespace {dropNamespace = "TestCharCases"}
+      <> enumDirective "TestCharCasesLowerCaseA" Rename {newName = "lowerCaseA"}
+      <> enumDirective "TestCharCases_underscoredC" Rename {newName = "_underscoredC"}
 
 data User m = User
   { userType :: m Text,

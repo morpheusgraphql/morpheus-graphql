@@ -2,13 +2,13 @@ directive @TestDirective(name: String!, enum: TestEnum) on INPUT_OBJECT | OBJECT
 
 scalar TestScalar @TestDirective(name: "SomeName")
 
-enum _TestUnderscoredType { _TestUnderscoredType }
-
 enum TestEnum @TestDirective(name: "SomeName") {
   EnumA
   EnumB @TestDirective(name: "SomeName")
   EnumC
 }
+
+enum _TestUnderscoredType { _TestUnderscoredType }
 
 enum testCharCases {
   lowerCaseA

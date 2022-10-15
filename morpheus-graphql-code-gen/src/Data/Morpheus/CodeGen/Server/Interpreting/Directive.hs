@@ -92,7 +92,8 @@ instance Meta (DataEnumValue CONST) where
   getDirs DataEnumValue {enumName, enumDirectives, enumDescription} = do
     dirs <- traverse directiveTypeValue (toList enumDirectives)
     name <- getFullName <$> getEnumName enumName
-    pure $ map (EnumDirectiveUsage name) (dirs <> descDirective enumDescription)
+    let renameEnum = [EnumDirectiveUsage name (dirRename enumName) | not (isUpperCase enumName)]
+    pure $ renameEnum <> map (EnumDirectiveUsage name) (dirs <> descDirective enumDescription)
 
 instance Meta (FieldsDefinition c CONST) where
   getDirs = fmap concat . traverse getDirs . toList
@@ -114,7 +115,7 @@ directiveTypeValue Directive {..} = inType typeContext $ do
 nativeDirectives :: AST.DirectivesDefinition CONST
 nativeDirectives = AST.directiveDefinitions internalSchema
 
-isUpperCase :: FieldName -> Bool
+isUpperCase :: Name t -> Bool
 isUpperCase = isUpper . head . unpackName
 
 getDirective :: (MonadReader (TypeContext CONST) m, MonadFail m) => FieldName -> m (DirectiveDefinition CONST)
