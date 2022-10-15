@@ -8,6 +8,12 @@ enum TestEnum @TestDirective(name: "SomeName") {
   EnumC
 }
 
+enum testCharCases {
+  lowerCaseA
+  UpperCaseB
+  _underscoredC
+}
+
 input Coordinates @TestDirective(name: "SomeName") {
   latitude: TestScalar!
   longitude: Int! @TestDirective(name: "SomeName")
@@ -22,6 +28,7 @@ type User {
   type: String!
   address(coordinates: Coordinates!, type: String): Int!
   friend(id: ID!, cityID: TestEnum): User!
+  charCases: testCharCases
 }
 
 union TestUnion @TestDirective(name: "SomeName") = User | Address
