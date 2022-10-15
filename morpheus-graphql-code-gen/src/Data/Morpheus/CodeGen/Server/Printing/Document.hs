@@ -134,13 +134,13 @@ renderGQLType :: GQLTypeDefinition -> Doc ann
 renderGQLType gql@GQLTypeDefinition {..}
   | gqlKind == Scalar = ""
   | otherwise =
-    "instance"
-      <> optional renderTypeableConstraints (typeParameters gqlTarget)
-      <+> "GQLType"
-      <+> typeHead
-      <+> "where"
-        <> line
-        <> indent 2 (vsep (renderMethods typeHead gql))
+      "instance"
+        <> optional renderTypeableConstraints (typeParameters gqlTarget)
+        <+> "GQLType"
+        <+> typeHead
+        <+> "where"
+          <> line
+          <> indent 2 (vsep (renderMethods typeHead gql))
   where
     typeHead = unpack (print gqlTarget)
 
