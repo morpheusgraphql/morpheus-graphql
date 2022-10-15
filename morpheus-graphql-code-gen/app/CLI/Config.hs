@@ -41,8 +41,8 @@ data Service = Service
     )
 
 data Config = Config
-  { server :: [Service],
-    client :: [Service]
+  { server :: Maybe [Service],
+    client :: Maybe [Service]
   }
   deriving
     ( Generic,
