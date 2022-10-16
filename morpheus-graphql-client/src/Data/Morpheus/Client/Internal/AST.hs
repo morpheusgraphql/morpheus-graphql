@@ -5,8 +5,9 @@ module Data.Morpheus.Client.Internal.AST where
 
 import Data.Morpheus.CodeGen.Internal.AST
   ( CodeGenConstructor (..),
-    CodeGenType,
+    CodeGenType (cgTypeName),
     CodeGenTypeName,
+    getFullName,
   )
 import Data.Morpheus.Types.Internal.AST
   ( OperationType,
@@ -41,6 +42,6 @@ data RequestTypeDefinition = RequestTypeDefinition
 
 instance Pretty ClientDeclaration where
   pretty (ClientType def) = pretty def
-  pretty ToJSONClass {} = "-- TODO: ToJSONClass"
-  pretty FromJSONClass {} = "-- TODO: FromJSONClass"
-  pretty RequestTypeClass {} = "-- TODO: RequestTypeClass"
+  pretty (ToJSONClass _ def) = "-- TODO: " <> show (getFullName $ cgTypeName def) <> " ToJSONClass\n"
+  pretty (FromJSONClass _ def) = "-- TODO: " <> show (getFullName $ cgTypeName def) <> " FromJSONClass\n"
+  pretty (RequestTypeClass def) = "-- TODO: " <> show (requestName def) <> " RequestTypeClass\n"

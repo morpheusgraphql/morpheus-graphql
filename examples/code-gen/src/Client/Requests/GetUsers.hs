@@ -9,14 +9,16 @@ module Client.Requests.GetUsers where
 import Client.Schema
 import GHC.Generics (Generic)
 
--- TODO: RequestTypeClass
+-- TODO: "GetUser" RequestTypeClass
+
 data GetUser = GetUser
   { myUser :: GetUserMyUserUser,
     user :: GetUserUserUser
   }
   deriving (Generic, Show, Eq)
 
--- TODO: FromJSONClass
+-- TODO: "GetUser" FromJSONClass
+
 data GetUserMyUserUser = GetUserMyUserUser
   { name :: String,
     aliasEmail :: String,
@@ -25,29 +27,33 @@ data GetUserMyUserUser = GetUserMyUserUser
   }
   deriving (Generic, Show, Eq)
 
--- TODO: FromJSONClass
+-- TODO: "GetUserMyUserUser" FromJSONClass
+
 newtype GetUserMyUserAddressAddress = GetUserMyUserAddressAddress
   { city :: String
   }
   deriving (Generic, Show, Eq)
 
--- TODO: FromJSONClass
+-- TODO: "GetUserMyUserAddressAddress" FromJSONClass
+
 newtype GetUserMyUserAliasAdressAddress = GetUserMyUserAliasAdressAddress
   { city :: String
   }
   deriving (Generic, Show, Eq)
 
--- TODO: FromJSONClass
+-- TODO: "GetUserMyUserAliasAdressAddress" FromJSONClass
+
 data GetUserUserUser = GetUserUserUser
   { email :: String,
     name :: String
   }
   deriving (Generic, Show, Eq)
 
--- TODO: FromJSONClass
+-- TODO: "GetUserUserUser" FromJSONClass
+
 newtype GetUserArgs = GetUserArgs
   { coordinates :: Coordinates
   }
   deriving (Generic, Show, Eq)
 
--- TODO: ToJSONClass
+-- TODO: "GetUserArgs" ToJSONClass
