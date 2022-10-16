@@ -57,10 +57,10 @@ instance ToJSON Dog where
   toJSON _ = undefined -- TODO: should be real function
 
 instance FromJSON Euro where
-  parseJSON _ = undefined -- TODO: should be real function
+  parseJSON _ = scalarFromJSON
 
 instance ToJSON Euro where
-  toJSON _ = undefined -- TODO: should be real function
+  toJSON _ = scalarToJSON
 
 data UniqueID = UniqueID
   { name :: Maybe String,
