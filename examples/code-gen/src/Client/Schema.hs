@@ -16,7 +16,7 @@ newtype Bird = Bird
   deriving (Generic, Show, Eq)
 
 instance ToJSON Bird where
-  toJSON _ = undefined
+  toJSON _ = undefined -- TODO: should be real function
 
 newtype Cat = Cat
   { name :: String
@@ -24,7 +24,7 @@ newtype Cat = Cat
   deriving (Generic, Show, Eq)
 
 instance ToJSON Cat where
-  toJSON _ = undefined
+  toJSON _ = undefined -- TODO: should be real function
 
 data CityID
   = CityIDParis
@@ -33,10 +33,10 @@ data CityID
   deriving (Generic, Show, Eq)
 
 instance FromJSON CityID where
-  parseJSON _ = undefined
+  parseJSON _ = undefined -- TODO: should be real function
 
 instance ToJSON CityID where
-  toJSON _ = undefined
+  toJSON _ = undefined -- TODO: should be real function
 
 data Coordinates = Coordinates
   { latitude :: Euro,
@@ -45,7 +45,7 @@ data Coordinates = Coordinates
   deriving (Generic, Show, Eq)
 
 instance ToJSON Coordinates where
-  toJSON _ = undefined
+  toJSON _ = undefined -- TODO: should be real function
 
 newtype Dog = Dog
   { name :: String
@@ -53,13 +53,13 @@ newtype Dog = Dog
   deriving (Generic, Show, Eq)
 
 instance ToJSON Dog where
-  toJSON _ = undefined
+  toJSON _ = undefined -- TODO: should be real function
 
 instance FromJSON Euro where
-  parseJSON _ = undefined
+  parseJSON _ = undefined -- TODO: should be real function
 
 instance ToJSON Euro where
-  toJSON _ = undefined
+  toJSON _ = undefined -- TODO: should be real function
 
 data UniqueID = UniqueID
   { name :: Maybe String,
@@ -69,4 +69,4 @@ data UniqueID = UniqueID
   deriving (Generic, Show, Eq)
 
 instance ToJSON UniqueID where
-  toJSON _ = undefined
+  toJSON _ = undefined -- TODO: should be real function

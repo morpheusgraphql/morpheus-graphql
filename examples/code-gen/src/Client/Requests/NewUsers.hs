@@ -12,9 +12,9 @@ import Data.Morpheus.Client.Internal.CodeGen
 
 instance RequestType NewUsers where
   type RequestArgs NewUsers = NewUsersArgs
-  __name _ = undefined
-  __query _ = undefined
-  __type _ = undefined
+  __name _ = undefined -- TODO: should be real function
+  __query _ = undefined -- TODO: should be real function
+  __type _ = undefined -- TODO: should be real function
 
 newtype NewUsers = NewUsers
   { newUser :: NewUsersNewUserUser
@@ -22,7 +22,7 @@ newtype NewUsers = NewUsers
   deriving (Generic, Show, Eq)
 
 instance FromJSON NewUsers where
-  parseJSON _ = undefined
+  parseJSON _ = undefined -- TODO: should be real function
 
 data NewUsersNewUserUser = NewUsersNewUserUser
   { name :: String,
@@ -32,7 +32,7 @@ data NewUsersNewUserUser = NewUsersNewUserUser
   deriving (Generic, Show, Eq)
 
 instance FromJSON NewUsersNewUserUser where
-  parseJSON _ = undefined
+  parseJSON _ = undefined -- TODO: should be real function
 
 newtype NewUsersNewUserAddressAddress = NewUsersNewUserAddressAddress
   { city :: String
@@ -40,7 +40,7 @@ newtype NewUsersNewUserAddressAddress = NewUsersNewUserAddressAddress
   deriving (Generic, Show, Eq)
 
 instance FromJSON NewUsersNewUserAddressAddress where
-  parseJSON _ = undefined
+  parseJSON _ = undefined -- TODO: should be real function
 
 newtype NewUsersArgs = NewUsersArgs
   { loc :: Coordinates
@@ -48,4 +48,4 @@ newtype NewUsersArgs = NewUsersArgs
   deriving (Generic, Show, Eq)
 
 instance ToJSON NewUsersArgs where
-  toJSON _ = undefined
+  toJSON _ = undefined -- TODO: should be real function
