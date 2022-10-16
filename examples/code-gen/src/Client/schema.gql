@@ -42,7 +42,7 @@ input UniqueID {
   """
   temporary multiline Test for Enum field descripions
   """
-  type: String = "test default value"
+  name: String = "test default value"
   id: String!
   rec: UniqueID
 }
@@ -95,7 +95,7 @@ union MyUnion = User | Address
 type Query {
   user: User!
   animal(animal: Animal): String!
-  wrapped1(type: UniqueID): AIntText!
+  wrapped1(name: UniqueID): AIntText!
   wrapped2: AText!
   set(if: Boolean! = true): SetInt!
   someMap: MapTextInt!

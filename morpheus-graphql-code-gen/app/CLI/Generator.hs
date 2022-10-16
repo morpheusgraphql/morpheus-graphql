@@ -41,8 +41,14 @@ processServerDocument BuildOptions {..} moduleName =
     )
     . parseServerTypeDefinitions CodeGenConfig {namespace = namespaces}
 
-processClientDocument :: BuildOptions -> SchemaSource -> Maybe Text -> Text -> GQLResult ByteString
-processClientDocument BuildOptions {} schema query moduleName = do
+processClientDocument ::
+  BuildOptions ->
+  SchemaSource ->
+  Maybe Text ->
+  [(Text, [Text])] ->
+  Text ->
+  GQLResult ByteString
+processClientDocument BuildOptions {} schema query globals moduleName = do
   types <- parseClientTypeDeclarations schema query
   let moduleDef =
         ModuleDefinition
@@ -51,10 +57,10 @@ processClientDocument BuildOptions {} schema query moduleName = do
               [ ("Data.Text", ["Text"]),
                 ("GHC.Generics", ["Generic"]),
                 ("Globals.GQLScalars", ["*"])
-              ],
+              ]
+                <> globals,
             extensions =
               [ "DeriveGeneric",
-                "OverloadedStrings",
                 "DuplicateRecordFields"
               ],
             types

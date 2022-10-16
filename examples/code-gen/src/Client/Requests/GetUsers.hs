@@ -1,12 +1,12 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 {-# HLINT ignore "Use camelCase" #-}
 
 module Client.Requests.GetUsers where
 
+import Client.Schema
 import Data.Text (Text)
 import GHC.Generics (Generic)
 import Globals.GQLScalars

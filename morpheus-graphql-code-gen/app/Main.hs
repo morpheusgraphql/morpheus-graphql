@@ -1,4 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -62,15 +63,25 @@ handleClientService target Service {name, source, includes, options, schema} = d
   files <- concat <$> traverse glob patterns
   putStrLn ("\n build:" <> name)
   schemaPath <- maybe (fail $ "client service " <> name <> " should provide schema!") pure schema
-  traverse_ (buildClient (BuildOptions {..}) {root, namespaces} (normalise $ root </> schemaPath)) files
+  buildClientGlobals (BuildOptions {..}) (normalise $ root </> schemaPath)
+  traverse_ (buildClientQuery (BuildOptions {..}) (normalise $ root </> schemaPath)) files
 
-buildClient :: BuildOptions -> FilePath -> FilePath -> IO ()
-buildClient options schemaPath queryPath = do
+buildClientGlobals :: BuildOptions -> FilePath -> IO ()
+buildClientGlobals options schemaPath = do
+  putStr ("  - " <> schemaPath <> "\n")
+  schemaDoc <- readSchemaSource schemaPath
+  let hsPath = processFileName schemaPath
+  let moduleName = getModuleNameByPath (root options) hsPath
+  saveDocument hsPath (processClientDocument options schemaDoc Nothing [] (pack moduleName))
+
+buildClientQuery :: BuildOptions -> FilePath -> FilePath -> IO ()
+buildClientQuery options schemaPath queryPath = do
   putStr ("  - " <> queryPath <> "\n")
   file <- TIO.readFile queryPath
   schemaDoc <- readSchemaSource schemaPath
   let moduleName = getModuleNameByPath (root options) hsPath
-  saveDocument hsPath (processClientDocument options schemaDoc (Just file) (pack moduleName))
+  let globalModuleName = getModuleNameByPath (root options) (processFileName schemaPath)
+  saveDocument hsPath (processClientDocument options schemaDoc (Just file) [(pack globalModuleName, ["*"])] (pack moduleName))
   where
     hsPath = processFileName queryPath
 

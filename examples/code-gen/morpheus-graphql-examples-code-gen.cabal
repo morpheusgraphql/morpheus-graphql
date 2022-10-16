@@ -26,6 +26,7 @@ executable generated-server
   other-modules:
       Client.Requests.GetUsers
       Client.Requests.NewUsers
+      Client.Schema
       Domains.Posts.Posts
       Domains.Posts.Resolver
       Domains.Users.Resolver
