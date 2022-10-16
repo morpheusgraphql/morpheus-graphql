@@ -1,13 +1,14 @@
 {-# LANGUAGE DeriveGeneric #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# LANGUAGE TypeFamilies #-}
 
 {-# HLINT ignore "Use camelCase" #-}
 
 module Client.Requests.GetUsers where
 
 import Client.Schema
-import GHC.Generics (Generic)
+import Data.Morpheus.Client.Internal.CodeGen
 
 instance RequestType GetUser where
   type RequestArgs GetUser = GetUserArgs

@@ -55,6 +55,7 @@ source-repository head
 library
   exposed-modules:
       Data.Morpheus.Client
+      Data.Morpheus.Client.Internal.CodeGen
   other-modules:
       Data.Morpheus.Client.Declare
       Data.Morpheus.Client.Fetch

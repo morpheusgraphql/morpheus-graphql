@@ -50,6 +50,7 @@ executable generated-server
     , containers >=0.4.2.1 && <0.7
     , morpheus-graphql
     , morpheus-graphql-app
+    , morpheus-graphql-client
     , scotty
     , text >=1.2.3.0 && <1.3
   default-language: Haskell2010

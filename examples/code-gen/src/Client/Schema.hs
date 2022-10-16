@@ -1,12 +1,13 @@
 {-# LANGUAGE DeriveGeneric #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# LANGUAGE TypeFamilies #-}
 
 {-# HLINT ignore "Use camelCase" #-}
 
 module Client.Schema where
 
-import GHC.Generics (Generic)
+import Data.Morpheus.Client.Internal.CodeGen
 import Globals.GQLScalars
 
 newtype Bird = Bird
