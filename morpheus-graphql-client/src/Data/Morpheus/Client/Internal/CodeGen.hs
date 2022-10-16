@@ -3,6 +3,7 @@ module Data.Morpheus.Client.Internal.CodeGen
     ToJSON (..),
     RequestType (..),
     Generic,
+    OperationType (..),
   )
 where
 
@@ -13,4 +14,5 @@ import Data.Aeson
 import Data.Morpheus.Client.Fetch.RequestType
   ( RequestType (..),
   )
+import Data.Morpheus.Types.Internal.AST (OperationType (..))
 import GHC.Generics (Generic)

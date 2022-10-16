@@ -12,9 +12,9 @@ import Data.Morpheus.Client.Internal.CodeGen
 
 instance RequestType GetUser where
   type RequestArgs GetUser = GetUserArgs
-  __name _ = undefined -- TODO: should be real function
-  __query _ = undefined -- TODO: should be real function
-  __type _ = undefined -- TODO: should be real function
+  __name _ = "GetUser"
+  __query _ = "# Query Hero with Compile time Validation\nquery GetUser($coordinates: Coordinates!) {\n  myUser: user {\n    name\n    aliasEmail: email\n    address(coordinates: $coordinates) {\n      city\n    }\n    aliasAdress: address(coordinates: $coordinates) {\n      city\n    }\n  }\n  user {\n    email\n    name\n  }\n}\n"
+  __type _ = Query
 
 data GetUser = GetUser
   { myUser :: GetUserMyUserUser,
