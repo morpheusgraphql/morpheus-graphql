@@ -212,9 +212,9 @@ renderImportList ["*"] = ""
 renderImportList xs = tupled (map pretty xs)
 
 data TypeClassInstance name ty funBody = TypeClassInstance
-  { name :: name,
+  { typeClassName :: name,
     typeClassContext :: [(name, name)],
-    target :: ty,
+    typeClassTarget :: ty,
     assoc :: [(name, ty)],
-    methods :: [(name, funBody)]
+    typeClassMethods :: [(name, funBody)]
   }

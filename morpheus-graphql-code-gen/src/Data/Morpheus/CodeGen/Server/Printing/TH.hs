@@ -96,16 +96,16 @@ instance PrintDecQ ServerDeclaration where
   printDecQ (GQLDirectiveInstance dir) = printDecQ dir
 
 instance PrintDecQ GQLDirectiveTypeClass where
-  printDecQ GQLDirectiveTypeClass {..} =
+  printDecQ GQLDirectiveTypeClass {..} = do
     pure
       <$> printDec
-        ( TypeClassInstance
-            ''GQLDirective
-            []
-            (toCon directiveTypeName :: Type)
-            [(''DIRECTIVE_LOCATIONS, promotedList directiveLocations)]
-            ([] :: Methods)
-        )
+        TypeClassInstance
+          { typeClassName = ''GQLDirective,
+            typeClassContext = [],
+            typeClassTarget = toCon directiveTypeName :: Type,
+            assoc = [(''DIRECTIVE_LOCATIONS, promotedList directiveLocations)],
+            typeClassMethods = [] :: Methods
+          }
 
 type Methods = [(Name, ([PatQ], ExpQ))]
 
