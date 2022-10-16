@@ -36,7 +36,6 @@ import Data.Morpheus.CodeGen.Server.Internal.AST
     ServerDeclaration (..),
     ServerDirectiveUsage (..),
     ServerMethod (..),
-    printDirectiveUsages,
   )
 import Data.Morpheus.CodeGen.Server.Interpreting.Directive (dirRename, getDirs, getNamespaceDirs)
 import Data.Morpheus.CodeGen.Server.Interpreting.Utils (CodeGenMonad (printWarnings), CodeGenT, TypeContext (..), getEnumName, getFieldName, inType, isParamResolverType, isSubscription)

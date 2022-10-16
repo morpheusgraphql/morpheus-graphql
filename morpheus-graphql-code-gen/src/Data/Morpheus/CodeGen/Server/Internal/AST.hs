@@ -21,7 +21,6 @@ module Data.Morpheus.CodeGen.Server.Internal.AST
     InterfaceDefinition (..),
     GQLDirectiveTypeClass (..),
     ServerMethod (..),
-    printDirectiveUsages,
   )
 where
 
@@ -184,12 +183,7 @@ renderMethod :: ServerMethod -> Doc n
 renderMethod ServerMethod {} = "undefined"
 renderMethod (ServerMethodDirectives dirs) = align $ vsep $ punctuate " <>" (map pretty dirs)
 
-printDirectiveUsages :: [ServerDirectiveUsage] -> ExpQ
-printDirectiveUsages = foldr (appE . appE [|(<>)|] . printExp) [|mempty|]
-
-newtype CodeGenConfig = CodeGenConfig
-  { namespace :: Bool
-  }
+newtype CodeGenConfig = CodeGenConfig {namespace :: Bool}
 
 data ServerMethod
   = ServerMethod ExpQ
@@ -200,3 +194,4 @@ instance Show ServerMethod where
 
 instance PrintExp ServerMethod where
   printExp (ServerMethod x) = x
+  printExp (ServerMethodDirectives dirs) = foldr (appE . appE [|(<>)|] . printExp) [|mempty|] dirs
