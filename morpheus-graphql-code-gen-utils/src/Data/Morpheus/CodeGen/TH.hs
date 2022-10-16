@@ -39,6 +39,7 @@ import Data.Morpheus.CodeGen.Internal.AST
     CodeGenTypeName (..),
     DerivingClass (..),
     FIELD_TYPE_WRAPPER (..),
+    MethodArgument (..),
     TypeClassInstance (..),
     TypeValue (..),
     getFullName,
@@ -314,15 +315,15 @@ instance PrintType AssociatedType where
   printType (AssociatedLocations xs) = pure $ foldr (AppT . AppT PromotedConsT . PromotedT . toName) PromotedNilT xs
   printType (AssociatedTypeName name) = toCon name
 
-instance PrintDec (TypeClassInstance ([PatQ], ExpQ)) where
+instance PrintDec (TypeClassInstance ExpQ) where
   printDec TypeClassInstance {..} =
     instanceD
       (printConstraints typeClassContext)
       headType
       (map assocTypes assoc <> map printFun typeClassMethods)
     where
-      printFun :: (Name, ([PatQ], ExpQ)) -> DecQ
-      printFun (funName, (args, body)) = funD funName [clause args (normalB body) []]
+      printFun :: (Name, MethodArgument, ExpQ) -> DecQ
+      printFun (funName, args, body) = funD funName [clause (printArg args) (normalB body) []]
       assocTypes :: (Name, AssociatedType) -> DecQ
       assocTypes (assocName, type') = do
         ty <- printType typeClassTarget
@@ -332,6 +333,11 @@ instance PrintDec (TypeClassInstance ([PatQ], ExpQ)) where
       headType = do
         ty <- printType typeClassTarget
         pure $ apply typeClassName [ty]
+
+printArg :: MethodArgument -> [PatQ]
+printArg (DestructArgument cons) = [destructConstructor cons]
+printArg NoArgument = []
+printArg ProxyArgument = [_']
 
 instance PrintDec CodeGenType where
   printDec CodeGenType {..} =
