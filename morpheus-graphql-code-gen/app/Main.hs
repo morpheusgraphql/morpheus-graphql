@@ -25,6 +25,7 @@ import CLI.Generator
 import qualified Data.ByteString.Lazy as L
   ( readFile,
   )
+import Data.Morpheus.Client (readSchemaSource)
 import Data.Text (unpack)
 import qualified Data.Text.IO as TIO
 import Data.Version (showVersion)
@@ -66,7 +67,8 @@ buildClient :: BuildOptions -> FilePath -> IO ()
 buildClient options path = do
   putStr ("  - " <> path <> "\n")
   file <- TIO.readFile path
-  saveDocument hsPath (processClientDocument options hsPath file)
+  schema <- readSchemaSource "schemaPath"
+  saveDocument hsPath (processClientDocument options schema (Just file))
   where
     hsPath = processFileName path
 

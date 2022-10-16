@@ -17,8 +17,10 @@ import CLI.File
   )
 import Data.ByteString.Lazy.Char8 (ByteString, pack)
 import Data.Morpheus.Client
-  ( parseClientTypeDeclarations,
+  ( SchemaSource,
+    parseClientTypeDeclarations,
     printClientTypeDeclarations,
+    readSchemaSource,
   )
 import Data.Morpheus.CodeGen
   ( CodeGenConfig (..),
@@ -39,6 +41,6 @@ processServerDocument BuildOptions {..} hsPath =
     )
     . parseServerTypeDefinitions CodeGenConfig {namespace = namespaces}
 
-processClientDocument :: BuildOptions -> FilePath -> Text -> GQLResult ByteString
-processClientDocument BuildOptions {..} hsPath query =
-  pack . show . printClientTypeDeclarations <$> parseClientTypeDeclarations undefined (Just query)
+processClientDocument :: BuildOptions -> SchemaSource -> Maybe Text -> GQLResult ByteString
+processClientDocument BuildOptions {..} schema query = do
+  pack . show . printClientTypeDeclarations <$> parseClientTypeDeclarations schema query

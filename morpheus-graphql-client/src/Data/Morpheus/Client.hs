@@ -36,6 +36,8 @@ module Data.Morpheus.Client
     defineByIntrospectionFile',
     parseClientTypeDeclarations,
     printClientTypeDeclarations,
+    readSchemaSource,
+    SchemaSource,
   )
 where
 
@@ -70,6 +72,7 @@ import Data.Morpheus.Client.Internal.Types
     GQLClientResult,
     SchemaSource (..),
   )
+import Data.Morpheus.Client.Internal.Utils (readSchemaSource)
 import Data.Morpheus.Client.Printing.Document
   ( printClientTypeDeclarations,
   )
