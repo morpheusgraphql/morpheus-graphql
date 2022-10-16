@@ -79,7 +79,7 @@ typeDeclarations (RequestTypeClass RequestTypeDefinition {..}) = do
         ('__type, ProxyArgument, ClientMethodExp [|requestType|])
       ]
 
-mkFromJSON :: CodeGenTypeName -> ExpQ -> DecQ
+mkFromJSON :: CodeGenTypeName -> ClientMethod -> DecQ
 mkFromJSON name expr =
   printDec
     TypeClassInstance
@@ -87,7 +87,7 @@ mkFromJSON name expr =
         typeClassContext = [],
         typeClassTarget = name,
         assoc = [],
-        typeClassMethods = [('parseJSON, NoArgument, ClientMethodExp expr)]
+        typeClassMethods = [('parseJSON, NoArgument, expr)]
       }
 
 mkToJSON :: CodeGenTypeName -> MethodArgument -> ExpQ -> TypeClassInstance ClientMethod
@@ -101,12 +101,12 @@ mkToJSON name args expr =
     }
 
 -- FromJSON
-deriveFromJSON :: DERIVING_MODE -> CodeGenType -> DecQ
-deriveFromJSON SCALAR_MODE CodeGenType {cgTypeName} = mkFromJSON cgTypeName [|scalarFromJSON|]
-deriveFromJSON _ CodeGenType {cgConstructors = [], ..} = emptyTypeError cgTypeName
-deriveFromJSON ENUM_MODE CodeGenType {..} = mkFromJSON cgTypeName (fromJSONEnumMethod cgConstructors)
-deriveFromJSON _ CodeGenType {cgConstructors = [cons], ..} = mkFromJSON cgTypeName (fromJSONObjectMethod cons)
-deriveFromJSON _ typeD@CodeGenType {cgTypeName} = mkFromJSON cgTypeName (fromJSONUnionMethod typeD)
+deriveFromJSONMethod :: MonadFail m => DERIVING_MODE -> CodeGenType -> m ClientMethod
+deriveFromJSONMethod SCALAR_MODE _ = pure $ ClientMethodExp [|scalarFromJSON|]
+deriveFromJSONMethod _ CodeGenType {cgConstructors = [], ..} = emptyTypeError cgTypeName
+deriveFromJSONMethod ENUM_MODE CodeGenType {..} = pure $ ClientMethodExp (fromJSONEnumMethod cgConstructors)
+deriveFromJSONMethod _ CodeGenType {cgConstructors = [cons]} = pure $ ClientMethodExp (fromJSONObjectMethod cons)
+deriveFromJSONMethod _ typeD = pure $ ClientMethodExp (fromJSONUnionMethod typeD)
 
 deriveToJSONMethod :: MonadFail m => DERIVING_MODE -> CodeGenType -> m (MethodArgument, ClientMethod)
 deriveToJSONMethod SCALAR_MODE _ = pure (NoArgument, ClientMethodExp [|scalarToJSON|])
@@ -114,6 +114,11 @@ deriveToJSONMethod _ CodeGenType {cgConstructors = [], ..} = emptyTypeError cgTy
 deriveToJSONMethod ENUM_MODE CodeGenType {cgConstructors} = pure (NoArgument, ToJSONEnumMethod cgConstructors)
 deriveToJSONMethod _ CodeGenType {cgConstructors = [cons]} = pure (DestructArgument cons, ToJSONObjectMethod cons)
 deriveToJSONMethod _ _ = fail "Input Unions are not yet supported"
+
+deriveFromJSON :: DERIVING_MODE -> CodeGenType -> DecQ
+deriveFromJSON mode cType = do
+  x <- deriveFromJSONMethod mode cType
+  mkFromJSON (cgTypeName cType) x
 
 -- ToJSON
 
