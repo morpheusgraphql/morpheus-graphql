@@ -32,7 +32,6 @@ import Data.Morpheus.CodeGen.Server.Interpreting.Transform
   )
 import Data.Morpheus.CodeGen.TH
   ( PrintExp (..),
-    PrintType (..),
     ToName (..),
     apply,
     m',
@@ -79,15 +78,19 @@ instance PrintDecQ InterfaceDefinition where
     pure [printTypeSynonym aliasName [m_] (apply ''TypeGuard [apply interfaceName [m'], apply unionName [m']])]
 
 instance PrintDecQ GQLTypeDefinition where
-  printDecQ GQLTypeDefinition {..} = do
-    let params = map toName (typeParameters gqlTarget)
-    associatedTypes <- fmap (pure . (''KIND,)) (AssociatedTypeName $ toName gqlKind)
-    pure <$> printDec (TypeClassInstance ''GQLType (map (''Typeable,) params) gqlTarget associatedTypes methods)
-    where
-      methods =
-        [ ('defaultValues, ([_'], [|gqlTypeDefaultValues|])),
-          ('directives, ([_'], printDirectiveUsages gqlTypeDirectiveUses))
-        ]
+  printDecQ GQLTypeDefinition {..} =
+    pure
+      <$> printDec
+        TypeClassInstance
+          { typeClassName = ''GQLType,
+            typeClassContext = map ((''Typeable,) . toName) (typeParameters gqlTarget),
+            typeClassTarget = gqlTarget,
+            assoc = [(''KIND, AssociatedTypeName (toName gqlKind))],
+            typeClassMethods =
+              [ ('defaultValues, ([_'], [|gqlTypeDefaultValues|])),
+                ('directives, ([_'], printDirectiveUsages gqlTypeDirectiveUses))
+              ]
+          }
 
 instance PrintDecQ ServerDeclaration where
   printDecQ (InterfaceType interface) = printDecQ interface
