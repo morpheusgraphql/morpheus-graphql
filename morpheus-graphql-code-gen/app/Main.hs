@@ -15,6 +15,11 @@ import CLI.Commands
     parseCLI,
   )
 import CLI.Config
+  ( Config (..),
+    Service (..),
+    ServiceOptions (..),
+    readConfig,
+  )
 import CLI.File (processFileName, saveDocument)
 import CLI.Generator
 import qualified Data.ByteString.Lazy as L
