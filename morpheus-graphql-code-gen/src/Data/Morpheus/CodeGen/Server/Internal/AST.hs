@@ -160,8 +160,8 @@ renderGQLType :: TypeClassInstance ServerMethod -> Doc ann
 renderGQLType TypeClassInstance {..} =
   "instance"
     <> optional renderTypeableConstraints (typeParameters typeClassTarget)
-    <+> "GQLType"
     <+> printTHName typeClassName
+    <+> typeHead
     <+> "where"
       <> line
       <> indent 2 (vsep (map renderAssoc assoc <> map renderMethodD typeClassMethods))
