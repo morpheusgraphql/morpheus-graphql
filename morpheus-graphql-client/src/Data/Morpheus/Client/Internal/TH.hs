@@ -32,11 +32,7 @@ import Data.Aeson
   )
 import Data.Aeson.Types ((.:?))
 import Data.Foldable (foldr1)
-import Data.Morpheus.Client.Internal.Utils
-  ( invalidConstructorError,
-    omitNulls,
-    takeValueType,
-  )
+import Data.Morpheus.Client.Internal.Utils (omitNulls, takeValueType)
 import Data.Morpheus.CodeGen.Internal.AST
   ( CodeGenConstructor (..),
     CodeGenField (..),
@@ -60,9 +56,6 @@ import Data.Morpheus.CodeGen.Utils
 import Data.Morpheus.Types.Internal.AST (TypeName)
 import Language.Haskell.TH
 import Relude hiding (ToString, toString)
-
-failExp :: ExpQ
-failExp = appE (varE 'invalidConstructorError) v'
 
 decodeObjectE :: CodeGenConstructor -> ExpQ
 decodeObjectE CodeGenConstructor {..}
