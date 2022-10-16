@@ -17,6 +17,7 @@ import Data.ByteString.Lazy.Char8 (ByteString, pack)
 import Data.Morpheus.CodeGen.Internal.AST
   ( AssociatedType (..),
     CodeGenTypeName (..),
+    MethodArgument (ProxyArgument),
     TypeClassInstance (..),
   )
 import Data.Morpheus.CodeGen.Server.Internal.AST
@@ -38,7 +39,6 @@ import Data.Morpheus.CodeGen.TH
     m_,
     printDec,
     printTypeSynonym,
-    _',
   )
 import Data.Morpheus.Server.Types
   ( GQLDirective (..),
@@ -87,8 +87,8 @@ instance PrintDecQ GQLTypeDefinition where
             typeClassTarget = gqlTarget,
             assoc = [(''KIND, AssociatedTypeName (toName gqlKind))],
             typeClassMethods =
-              [ ('defaultValues, ([_'], [|gqlTypeDefaultValues|])),
-                ('directives, ([_'], printDirectiveUsages gqlTypeDirectiveUses))
+              [ ('defaultValues, ProxyArgument, [|gqlTypeDefaultValues|]),
+                ('directives, ProxyArgument, printDirectiveUsages gqlTypeDirectiveUses)
               ]
           }
 
@@ -103,15 +103,15 @@ instance PrintDecQ GQLDirectiveTypeClass where
   printDecQ GQLDirectiveTypeClass {..} = do
     pure
       <$> printDec
-        TypeClassInstance
-          { typeClassName = ''GQLDirective,
-            typeClassContext = [],
-            typeClassTarget = directiveTypeName,
-            assoc = [(''DIRECTIVE_LOCATIONS, AssociatedLocations directiveLocations)],
-            typeClassMethods = [] :: Methods
-          }
-
-type Methods = [(Name, ([PatQ], ExpQ))]
+        ( TypeClassInstance
+            { typeClassName = ''GQLDirective,
+              typeClassContext = [],
+              typeClassTarget = directiveTypeName,
+              assoc = [(''DIRECTIVE_LOCATIONS, AssociatedLocations directiveLocations)],
+              typeClassMethods = []
+            } ::
+            TypeClassInstance ExpQ
+        )
 
 printDirectiveUsages :: [ServerDirectiveUsage] -> ExpQ
 printDirectiveUsages = foldr (appE . appE [|(<>)|] . printExp) [|mempty|]
