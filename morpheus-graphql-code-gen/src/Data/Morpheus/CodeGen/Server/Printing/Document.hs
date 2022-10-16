@@ -1,7 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.CodeGen.Server.Printing.Document
@@ -10,9 +9,9 @@ module Data.Morpheus.CodeGen.Server.Printing.Document
 where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
+import Data.Morpheus.CodeGen.Internal.AST (ModuleDefinition (..))
 import Data.Morpheus.CodeGen.Server.Internal.AST
-  ( ModuleDefinition (..),
-    ServerDeclaration (..),
+  ( ServerDeclaration (..),
   )
 import Data.Text
   ( pack,

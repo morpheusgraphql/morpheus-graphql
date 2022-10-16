@@ -4,8 +4,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.CodeGen.Server.Internal.AST
-  ( ModuleDefinition (..),
-    CodeGenConfig (..),
+  ( CodeGenConfig (..),
     ServerDeclaration (..),
     GQLTypeDefinition (..),
     CONST,
@@ -76,33 +75,6 @@ import Prettyprinter
     (<+>),
   )
 import Relude hiding (optional, print)
-
-data ModuleDefinition dec = ModuleDefinition
-  { moduleName :: Text,
-    imports :: [(Text, [Text])],
-    extensions :: [Text],
-    types :: [dec]
-  }
-
-instance Pretty dec => Pretty (ModuleDefinition dec) where
-  pretty ModuleDefinition {..} =
-    vsep
-      (map renderExtension extensions)
-      <> "{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}"
-      <> line
-      <> line
-      <> "{-# HLINT ignore \"Use camelCase\" #-}"
-      <> line
-      <> line
-      <> "module"
-      <+> pretty moduleName
-      <+> "where"
-        <> line
-        <> line
-        <> vsep (map renderImport imports)
-        <> line
-        <> line
-        <> vsep (map pretty types)
 
 data Kind
   = Scalar
