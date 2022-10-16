@@ -9,6 +9,15 @@ module Client.Schema where
 import GHC.Generics (Generic)
 import Globals.GQLScalars
 
+-- TODO: FromJSONClass
+-- TODO: ToJSONClass
+data Coordinates = Coordinates
+  { latitude :: Euro,
+    longitude :: [Maybe [[UniqueID]]]
+  }
+  deriving (Generic, Show, Eq)
+
+-- TODO: ToJSONClass
 data CityID
   = CityIDParis
   | CityIDBLN
@@ -17,8 +26,8 @@ data CityID
 
 -- TODO: FromJSONClass
 -- TODO: ToJSONClass
-newtype Bird = Bird
-  { name :: Maybe String
+newtype Dog = Dog
+  { name :: String
   }
   deriving (Generic, Show, Eq)
 
@@ -31,24 +40,15 @@ data UniqueID = UniqueID
   deriving (Generic, Show, Eq)
 
 -- TODO: ToJSONClass
+newtype Bird = Bird
+  { name :: Maybe String
+  }
+  deriving (Generic, Show, Eq)
+
+-- TODO: ToJSONClass
 newtype Cat = Cat
   { name :: String
   }
   deriving (Generic, Show, Eq)
 
--- TODO: ToJSONClass
-data Coordinates = Coordinates
-  { latitude :: Euro,
-    longitude :: [Maybe [[UniqueID]]]
-  }
-  deriving (Generic, Show, Eq)
-
--- TODO: ToJSONClass
-newtype Dog = Dog
-  { name :: String
-  }
-  deriving (Generic, Show, Eq)
-
--- TODO: ToJSONClass
--- TODO: FromJSONClass
 -- TODO: ToJSONClass
