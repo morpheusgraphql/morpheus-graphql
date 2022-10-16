@@ -314,21 +314,18 @@ instance PrintType AssociatedType where
   printType (AssociatedLocations xs) = pure $ foldr (AppT . AppT PromotedConsT . PromotedT . toName) PromotedNilT xs
   printType (AssociatedTypeName name) = toCon name
 
-instance PrintDec (TypeClassInstance ExpQ) where
+instance PrintExp body => PrintDec (TypeClassInstance body) where
   printDec TypeClassInstance {..} =
     instanceD
       (printConstraints typeClassContext)
       headType
       (map assocTypes assoc <> map printFun typeClassMethods)
     where
-      printFun :: (Name, MethodArgument, ExpQ) -> DecQ
-      printFun (funName, args, body) = funD funName [clause (printArg args) (normalB body) []]
-      assocTypes :: (Name, AssociatedType) -> DecQ
+      printFun (funName, args, body) = funD funName [clause (printArg args) (normalB (printExp body)) []]
       assocTypes (assocName, type') = do
         ty <- printType typeClassTarget
         assocType <- printType type'
         pure $ typeInstanceDec assocName ty assocType
-      headType :: TypeQ
       headType = do
         ty <- printType typeClassTarget
         pure $ apply typeClassName [ty]

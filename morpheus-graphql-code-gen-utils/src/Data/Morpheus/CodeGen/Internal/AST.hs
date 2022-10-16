@@ -29,6 +29,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeWrapper,
     unpackName,
   )
+import Language.Haskell.TH (ExpQ)
 import qualified Language.Haskell.TH.Syntax as TH
 import Prettyprinter
   ( Doc,
