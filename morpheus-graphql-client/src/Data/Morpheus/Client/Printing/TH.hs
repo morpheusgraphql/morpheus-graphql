@@ -98,12 +98,25 @@ type Methods = [(Name, ([PatQ], ExpQ))]
 
 mkFromJSON :: CodeGenTypeName -> ExpQ -> DecQ
 mkFromJSON name expr =
-  printDec $
-    TypeClassInstance ''FromJSON [] name [] ([('parseJSON, ([], expr))] :: Methods)
+  printDec
+    TypeClassInstance
+      { typeClassName = ''FromJSON,
+        typeClassContext = [],
+        typeClassTarget = name,
+        assoc = [],
+        typeClassMethods = [('parseJSON, ([], expr))] :: Methods
+      }
 
-mkToJSON :: CodeGenTypeName -> [PatQ] -> ExpQ -> DecQ
-mkToJSON name args expr = do
-  printDec $ TypeClassInstance ''ToJSON [] name [] ([('toJSON, (args, expr))] :: Methods)
+mkToJSON :: CodeGenTypeName -> Maybe PatQ -> ExpQ -> DecQ
+mkToJSON name args expr =
+  printDec
+    TypeClassInstance
+      { typeClassName = ''ToJSON,
+        typeClassContext = [],
+        typeClassTarget = name,
+        assoc = [],
+        typeClassMethods = [('toJSON, (maybeToList args, expr))] :: Methods
+      }
 
 originalLit :: ToString TypeName a => CodeGenTypeName -> Q a
 originalLit = toString . typename
@@ -142,12 +155,12 @@ fromJSONUnion CodeGenType {..} = appE (toVar 'takeValueType) (matchWith elseCond
 
 -- ToJSON
 deriveToJSON :: DERIVING_MODE -> CodeGenType -> DecQ
-deriveToJSON SCALAR_MODE CodeGenType {..} = mkToJSON cgTypeName [] [|scalarToJSON|]
+deriveToJSON SCALAR_MODE CodeGenType {..} = mkToJSON cgTypeName Nothing [|scalarToJSON|]
 deriveToJSON _ CodeGenType {cgConstructors = [], ..} = emptyTypeError cgTypeName
 deriveToJSON ENUM_MODE CodeGenType {..} =
-  mkToJSON cgTypeName [] (matchWith Nothing toJSONEnum cgConstructors)
+  mkToJSON cgTypeName Nothing (matchWith Nothing toJSONEnum cgConstructors)
 deriveToJSON _ CodeGenType {cgConstructors = [cons], ..} =
-  mkToJSON cgTypeName [destructConstructor cons] (toJSONObject cons)
+  mkToJSON cgTypeName (Just $ destructConstructor cons) (toJSONObject cons)
 deriveToJSON _ _ = fail "Input Unions are not yet supported"
 
 toJSONEnum :: CodeGenConstructor -> (PatQ, ExpQ)
