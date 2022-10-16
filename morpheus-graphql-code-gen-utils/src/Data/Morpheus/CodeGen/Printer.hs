@@ -19,7 +19,8 @@ module Data.Morpheus.CodeGen.Printer
 where
 
 import Data.Morpheus.Types.Internal.AST
-  ( Name,
+  ( DirectiveLocation,
+    Name,
     TypeRef (..),
     TypeWrapper (..),
     unpackName,
@@ -27,6 +28,7 @@ import Data.Morpheus.Types.Internal.AST
 import qualified Data.Text as T
 import Prettyprinter (Doc, Pretty (..), list, pretty, tupled, (<+>))
 import Relude hiding (optional, print, show)
+import Prelude (show)
 
 infix' :: HSDoc n -> HSDoc n -> HSDoc n -> HSDoc n
 infix' a op b = pack $ rawDocument a <+> rawDocument op <+> rawDocument b
@@ -82,6 +84,9 @@ instance Printer Text where
 
 instance Printer String where
   print = pack . pretty
+
+instance Printer DirectiveLocation where
+  print = fromString . show
 
 optional :: ([a] -> Doc n) -> [a] -> Doc n
 optional _ [] = ""

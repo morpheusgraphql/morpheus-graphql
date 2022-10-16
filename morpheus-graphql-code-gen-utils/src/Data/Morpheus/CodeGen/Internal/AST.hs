@@ -40,6 +40,7 @@ import Prettyprinter
     hsep,
     indent,
     line,
+    list,
     nest,
     pretty,
     punctuate,
@@ -233,8 +234,12 @@ data AssociatedType
 printTHName :: TH.Name -> Doc ann
 printTHName = ignore . print . packName
 
+printPromotedLocation :: DirectiveLocation -> Doc ann
+printPromotedLocation = ("'" <>) . ignore . print
+
 instance Pretty AssociatedType where
   pretty (AssociatedTypeName x) = printTHName x
+  pretty (AssociatedLocations x) = list $ map printPromotedLocation x
 
 data MethodArgument
   = NoArgument
