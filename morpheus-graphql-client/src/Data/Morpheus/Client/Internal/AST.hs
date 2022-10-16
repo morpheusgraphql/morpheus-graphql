@@ -70,7 +70,6 @@ instance PrintExp Printable where
 data ClientMethod
   = PrintableMethod Printable
   | FunctionNameMethod Name
-  | ClientMethodExp ExpQ
   | ToJSONEnumMethod [CodeGenConstructor]
   | FromJSONEnumMethod [CodeGenConstructor]
   | ToJSONObjectMethod CodeGenConstructor
@@ -85,7 +84,6 @@ instance Pretty ClientMethod where
 instance PrintExp ClientMethod where
   printExp (FunctionNameMethod v) = varE v
   printExp (PrintableMethod v) = printExp v
-  printExp (ClientMethodExp x) = x
   printExp (ToJSONEnumMethod x) = toJSONEnumMethod x
   printExp (ToJSONObjectMethod x) = toJSONObjectMethod x
   printExp (FromJSONObjectMethod x) = fromJSONObjectMethod x
