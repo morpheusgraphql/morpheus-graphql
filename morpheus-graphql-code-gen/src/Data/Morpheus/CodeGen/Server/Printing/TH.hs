@@ -69,4 +69,4 @@ instance PrintDecQ ServerDeclaration where
   printDecQ ScalarType {} = pure []
   printDecQ (DataType dataType) = pure <$> printDec dataType
   printDecQ (GQLTypeInstance _ gql) = pure <$> printDec gql
-  printDecQ (GQLDirectiveInstance _ dir) = pure <$> printDec dir
+  printDecQ (GQLDirectiveInstance dir) = pure <$> printDec dir

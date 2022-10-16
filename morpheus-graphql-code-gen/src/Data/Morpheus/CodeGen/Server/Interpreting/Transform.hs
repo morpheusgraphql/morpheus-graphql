@@ -30,7 +30,6 @@ import Data.Morpheus.CodeGen.Server.Internal.AST
   ( CodeGenConfig (..),
     DerivingClass (..),
     FIELD_TYPE_WRAPPER (..),
-    GQLDirectiveTypeClass (..),
     GQLTypeDefinition (..),
     InterfaceDefinition (..),
     Kind (..),
@@ -121,10 +120,13 @@ toTHDefinitions namespace defs = concat <$> traverse generateTypes defs
                       cgConstructors = [CodeGenConstructor (fromTypeName typename) fields],
                       cgDerivations = [SHOW, GENERIC]
                     },
-                toDirectiveClass
-                  GQLDirectiveTypeClass
-                    { directiveTypeName = cgTypeName,
-                      directiveLocations = directiveDefinitionLocations
+                GQLDirectiveInstance
+                  TypeClassInstance
+                    { typeClassName = ''GQLDirective,
+                      typeClassContext = [],
+                      typeClassTarget = cgTypeName,
+                      assoc = [(''DIRECTIVE_LOCATIONS, AssociatedLocations directiveDefinitionLocations)],
+                      typeClassMethods = []
                     },
                 gqlTypeToInstance
                   GQLTypeDefinition
@@ -150,20 +152,6 @@ mkInterfaceName = ("Interface" <>)
 
 mkPossibleTypesName :: TypeName -> TypeName
 mkPossibleTypesName = ("PossibleTypes" <>)
-
-toDirectiveClass :: GQLDirectiveTypeClass -> ServerDeclaration
-toDirectiveClass x@GQLDirectiveTypeClass {..} = do
-  GQLDirectiveInstance
-    x
-    ( TypeClassInstance
-        { typeClassName = ''GQLDirective,
-          typeClassContext = [],
-          typeClassTarget = directiveTypeName,
-          assoc = [(''DIRECTIVE_LOCATIONS, AssociatedLocations directiveLocations)],
-          typeClassMethods = []
-        } ::
-        TypeClassInstance ServerMethod
-    )
 
 genTypeDefinition ::
   CodeGenMonad m =>
