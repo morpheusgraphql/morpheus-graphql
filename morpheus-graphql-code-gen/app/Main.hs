@@ -1,6 +1,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Main
@@ -55,24 +56,27 @@ scan path = do
   traverse_ (handleServerService path) (concat $ maybeToList server)
   traverse_ (handleClientService path) (concat $ maybeToList client)
 
+getImports :: Maybe ServiceOptions -> [(Text, [Text])]
+getImports = map (,["*"]) . concat . maybeToList . (>>= globals)
+
 handleClientService :: FilePath -> Service -> IO ()
 handleClientService target Service {name, source, includes, options, schema} = do
   let root = normalise (target </> source)
-  let namespaces = maybe False namespace options
+  let namespaces = fromMaybe False (options >>= namespace)
   let patterns = map (normalise . (root </>)) includes
   files <- concat <$> traverse glob patterns
   putStrLn ("\n build:" <> name)
   schemaPath <- maybe (fail $ "client service " <> name <> " should provide schema!") pure schema
-  buildClientGlobals (BuildOptions {..}) (normalise $ root </> schemaPath)
+  buildClientGlobals options (BuildOptions {..}) (normalise $ root </> schemaPath)
   traverse_ (buildClientQuery (BuildOptions {..}) (normalise $ root </> schemaPath)) files
 
-buildClientGlobals :: BuildOptions -> FilePath -> IO ()
-buildClientGlobals options schemaPath = do
+buildClientGlobals :: Maybe ServiceOptions -> BuildOptions -> FilePath -> IO ()
+buildClientGlobals serviceOps options schemaPath = do
   putStr ("  - " <> schemaPath <> "\n")
   schemaDoc <- readSchemaSource schemaPath
   let hsPath = processFileName schemaPath
   let moduleName = getModuleNameByPath (root options) hsPath
-  saveDocument hsPath (processClientDocument options schemaDoc Nothing [] (pack moduleName))
+  saveDocument hsPath (processClientDocument options schemaDoc Nothing (getImports serviceOps) (pack moduleName))
 
 buildClientQuery :: BuildOptions -> FilePath -> FilePath -> IO ()
 buildClientQuery options schemaPath queryPath = do
@@ -88,7 +92,7 @@ buildClientQuery options schemaPath queryPath = do
 handleServerService :: FilePath -> Service -> IO ()
 handleServerService target Service {name, source, includes, options} = do
   let root = normalise (target </> source)
-  let namespaces = maybe False namespace options
+  let namespaces = fromMaybe False (options >>= namespace)
   let patterns = map (normalise . (root </>)) includes
   files <- concat <$> traverse glob patterns
   putStrLn ("\n build:" <> name)

@@ -19,5 +19,5 @@ client:
     includes:
       - Client/Requests/**/*.gql
     options:
-      imports:
-        - Client.Scalars
+      globals:
+        - Globals.GQLScalars

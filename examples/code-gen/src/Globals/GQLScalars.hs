@@ -26,3 +26,18 @@ instance DecodeScalar TestScalar where
 
 instance EncodeScalar TestScalar where
   encodeScalar (TestScalar x y) = Int (x * 100 + y)
+
+newtype Euro = Euro Int
+  deriving
+    ( Show,
+      Eq
+    )
+
+instance GQLType Euro where
+  type KIND Euro = SCALAR
+
+instance DecodeScalar Euro where
+  decodeScalar _ = pure $ Euro 1
+
+instance EncodeScalar Euro where
+  encodeScalar (Euro x) = Int x

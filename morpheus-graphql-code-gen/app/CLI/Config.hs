@@ -20,8 +20,8 @@ import System.FilePath.Posix
   )
 
 data ServiceOptions = ServiceOptions
-  { namespace :: Bool,
-    scalars :: [Text]
+  { namespace :: Maybe Bool,
+    globals :: Maybe [Text]
   }
   deriving
     ( Generic,
