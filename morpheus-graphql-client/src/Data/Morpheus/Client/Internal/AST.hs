@@ -3,6 +3,7 @@
 
 module Data.Morpheus.Client.Internal.AST where
 
+import Data.Morpheus.Client.Internal.TH (toJSONEnumMethod, toJSONObjectMethod)
 import Data.Morpheus.CodeGen.Internal.AST
   ( CodeGenConstructor (..),
     CodeGenType (cgTypeName),
@@ -55,3 +56,5 @@ data ClientMethod
 
 instance PrintExp ClientMethod where
   printExp (ClientMethod x) = x
+  printExp (ToJSONEnumMethod x) = toJSONEnumMethod x
+  printExp (ToJSONObjectMethod x) = toJSONObjectMethod x

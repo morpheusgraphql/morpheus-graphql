@@ -14,6 +14,7 @@ where
 
 import Data.Aeson
   ( FromJSON (parseJSON),
+    KeyValue ((.=)),
     ToJSON (toJSON),
     withObject,
   )
@@ -32,12 +33,14 @@ import Data.Morpheus.Client.Internal.TH
     deriveIfNotDefined,
     failExp,
     matchWith,
+    mkFieldsE,
     originalLit,
     toJSONEnumMethod,
     toJSONObjectMethod,
   )
 import Data.Morpheus.Client.Internal.Utils
   ( emptyTypeError,
+    omitNulls,
     takeValueType,
   )
 import Data.Morpheus.CodeGen.Internal.AST
