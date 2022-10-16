@@ -21,6 +21,7 @@ module Data.Morpheus.CodeGen.Server.Internal.AST
     InterfaceDefinition (..),
     GQLDirectiveTypeClass (..),
     ServerMethod (..),
+    printDirectiveUsages,
   )
 where
 
@@ -29,6 +30,7 @@ import Data.Morpheus.CodeGen.Internal.AST
     CodeGenTypeName (typeParameters),
     DerivingClass (..),
     FIELD_TYPE_WRAPPER (..),
+    TypeClassInstance,
     TypeValue (..),
   )
 import Data.Morpheus.CodeGen.Printer
@@ -73,7 +75,8 @@ import Prettyprinter
     vsep,
     (<+>),
   )
-import Relude hiding (optional, print)
+import Relude hiding (Show, optional, print, show)
+import Prelude (Show (..))
 
 data Kind
   = Scalar
@@ -126,7 +129,7 @@ data GQLDirectiveTypeClass = GQLDirectiveTypeClass
   deriving (Show)
 
 data ServerDeclaration
-  = GQLTypeInstance GQLTypeDefinition
+  = GQLTypeInstance GQLTypeDefinition (TypeClassInstance ServerMethod)
   | GQLDirectiveInstance GQLDirectiveTypeClass
   | DataType CodeGenType
   | ScalarType {scalarTypeName :: Text}
@@ -145,7 +148,7 @@ instance Pretty ServerDeclaration where
   -- TODO: on scalar we should render user provided type
   pretty ScalarType {..} = "type" <+> ignore (print scalarTypeName) <+> "= Int"
   pretty (DataType cgType) = pretty cgType
-  pretty (GQLTypeInstance gqlType) = renderGQLType gqlType
+  pretty (GQLTypeInstance gqlType _) = renderGQLType gqlType
   pretty (GQLDirectiveInstance _) = "TODO: not supported"
 
 renderTypeableConstraints :: [Text] -> Doc n
@@ -173,11 +176,17 @@ renderMethods typeHead GQLTypeDefinition {..} =
 renderDirectiveUsages :: [ServerDirectiveUsage] -> Doc n
 renderDirectiveUsages = align . vsep . punctuate " <>" . map pretty
 
+printDirectiveUsages :: [ServerDirectiveUsage] -> ExpQ
+printDirectiveUsages = foldr (appE . appE [|(<>)|] . printExp) [|mempty|]
+
 newtype CodeGenConfig = CodeGenConfig
   { namespace :: Bool
   }
 
 newtype ServerMethod = ServerMethod ExpQ
+
+instance Show ServerMethod where
+  show _ = "ServerMethod"
 
 instance PrintExp ServerMethod where
   printExp (ServerMethod x) = x

@@ -78,26 +78,11 @@ instance PrintDecQ InterfaceDefinition where
   printDecQ InterfaceDefinition {..} =
     pure [printTypeSynonym aliasName [m_] (apply ''TypeGuard [apply interfaceName [m'], apply unionName [m']])]
 
-instance PrintDecQ GQLTypeDefinition where
-  printDecQ GQLTypeDefinition {..} =
-    pure
-      <$> printDec
-        TypeClassInstance
-          { typeClassName = ''GQLType,
-            typeClassContext = map ((''Typeable,) . toName) (typeParameters gqlTarget),
-            typeClassTarget = gqlTarget,
-            assoc = [(''KIND, AssociatedTypeName (toName gqlKind))],
-            typeClassMethods =
-              [ ('defaultValues, ProxyArgument, ServerMethod [|gqlTypeDefaultValues|]),
-                ('directives, ProxyArgument, ServerMethod $ printDirectiveUsages gqlTypeDirectiveUses)
-              ]
-          }
-
 instance PrintDecQ ServerDeclaration where
   printDecQ (InterfaceType interface) = printDecQ interface
   printDecQ ScalarType {} = pure []
   printDecQ (DataType dataType) = pure <$> printDec dataType
-  printDecQ (GQLTypeInstance gql) = printDecQ gql
+  printDecQ (GQLTypeInstance _ gql) = pure <$> printDec gql
   printDecQ (GQLDirectiveInstance dir) = printDecQ dir
 
 instance PrintDecQ GQLDirectiveTypeClass where
@@ -113,6 +98,3 @@ instance PrintDecQ GQLDirectiveTypeClass where
             } ::
             TypeClassInstance ServerMethod
         )
-
-printDirectiveUsages :: [ServerDirectiveUsage] -> ExpQ
-printDirectiveUsages = foldr (appE . appE [|(<>)|] . printExp) [|mempty|]

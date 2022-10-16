@@ -29,7 +29,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeWrapper,
     unpackName,
   )
-import Language.Haskell.TH (ExpQ)
 import qualified Language.Haskell.TH.Syntax as TH
 import Prettyprinter
   ( Doc,
@@ -222,12 +221,15 @@ data TypeClassInstance body = TypeClassInstance
     assoc :: [(TH.Name, AssociatedType)],
     typeClassMethods :: [(TH.Name, MethodArgument, body)]
   }
+  deriving (Show)
 
 data AssociatedType
   = AssociatedTypeName TH.Name
   | AssociatedLocations [DirectiveLocation]
+  deriving (Show)
 
 data MethodArgument
   = NoArgument
   | ProxyArgument
   | DestructArgument CodeGenConstructor
+  deriving (Show)
