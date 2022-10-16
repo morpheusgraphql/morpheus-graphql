@@ -21,7 +21,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeKind,
     TypeName,
   )
-import Language.Haskell.TH (ExpQ, Name)
+import Language.Haskell.TH (Name)
 import Language.Haskell.TH.Lib (varE)
 import Language.Haskell.TH.Syntax (Lift (..))
 import Prettyprinter (Pretty (..))
@@ -70,8 +70,8 @@ instance PrintExp Printable where
 data ClientMethod
   = PrintableMethod Printable
   | FunctionNameMethod Name
-  | ToJSONEnumMethod [CodeGenConstructor]
-  | FromJSONEnumMethod [CodeGenConstructor]
+  | ToJSONEnumMethod [CodeGenTypeName]
+  | FromJSONEnumMethod [CodeGenTypeName]
   | ToJSONObjectMethod CodeGenConstructor
   | FromJSONObjectMethod CodeGenConstructor
   | FromJSONUnionMethod CodeGenType

@@ -152,16 +152,16 @@ declareIfNotDeclared f c = do
 originalLit :: ToString TypeName a => CodeGenTypeName -> Q a
 originalLit = toString . typename
 
-toJSONEnum :: CodeGenConstructor -> (PatQ, ExpQ)
-toJSONEnum CodeGenConstructor {constructorName} = (toCon constructorName, originalLit constructorName)
+toJSONEnum :: CodeGenTypeName -> (TypeName, TypeName)
+toJSONEnum name = (getFullName name, typename name)
 
-fromJSONEnum :: CodeGenConstructor -> (PatQ, ExpQ)
-fromJSONEnum CodeGenConstructor {constructorName} = (originalLit constructorName, appE (toVar 'pure) (toCon constructorName))
+fromJSONEnum :: CodeGenTypeName -> (PatQ, ExpQ)
+fromJSONEnum name = (originalLit name, appE (toVar 'pure) (toCon name))
 
 -- EXPORTS
 
-toJSONEnumMethod :: [CodeGenConstructor] -> ExpQ
-toJSONEnumMethod = matchWith Nothing toJSONEnum
+toJSONEnumMethod :: [CodeGenTypeName] -> ExpQ
+toJSONEnumMethod xs = printMatch (ValueMatch False (map toJSONEnum xs))
 
 toJSONObjectMethod :: CodeGenConstructor -> ExpQ
 toJSONObjectMethod CodeGenConstructor {..} = pure $ AppE (VarE 'omitNulls) (mkFieldsE constructorName '(.=) constructorFields)
@@ -177,7 +177,7 @@ fromJSONUnionMethod CodeGenType {..} = appE (toVar 'takeValueType) (matchWith el
         decodeObjectE cons
       )
 
-fromJSONEnumMethod :: [CodeGenConstructor] -> ExpQ
+fromJSONEnumMethod :: [CodeGenTypeName] -> ExpQ
 fromJSONEnumMethod = matchWith (Just (v', failExp)) fromJSONEnum
 
 fromJSONObjectMethod :: CodeGenConstructor -> ExpQ
@@ -188,9 +188,18 @@ fromJSONObjectMethod con@CodeGenConstructor {constructorName} = withBody <$> dec
     name = toString (getFullName constructorName)
 
 data ValueMatch = ValueMatch
-  { withPure :: Bool,
+  { isFrom :: Bool,
     matchingCases :: [(TypeName, TypeName)]
   }
+
+printMatch :: ValueMatch -> ExpQ
+printMatch ValueMatch {..} = lamCaseE (map buildMatch matchingCases)
+  where
+    buildMatch (a, b) = match (toExp isFrom a) (normalB (toExp (not isFrom) b)) []
+      where
+        toExp x
+          | x = toString
+          | otherwise = toCon
 
 matchWith ::
   Maybe (PatQ, ExpQ) ->
