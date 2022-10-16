@@ -40,4 +40,7 @@ data RequestTypeDefinition = RequestTypeDefinition
   deriving (Show)
 
 instance Pretty ClientDeclaration where
-  pretty _ = "-- TODO: client type"
+  pretty (ClientType def) = pretty def
+  pretty ToJSONClass {} = "-- TODO: ToJSONClass"
+  pretty FromJSONClass {} = "-- TODO: FromJSONClass"
+  pretty RequestTypeClass {} = "-- TODO: RequestTypeClass"
