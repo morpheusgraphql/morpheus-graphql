@@ -70,11 +70,7 @@ processClientDocument BuildConfig {..} schema query moduleName = do
   let moduleDef =
         ModuleDefinition
           { moduleName,
-            imports =
-              [ ("GHC.Generics", ["Generic"]),
-                ("Globals.GQLScalars", ["*"])
-              ]
-                <> map (,["*"]) globalImports,
+            imports = [("GHC.Generics", ["Generic"])] <> map (,["*"]) globalImports,
             extensions =
               [ "DeriveGeneric",
                 "DuplicateRecordFields"

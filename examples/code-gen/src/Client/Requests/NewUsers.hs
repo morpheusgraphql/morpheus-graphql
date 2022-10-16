@@ -8,7 +8,6 @@ module Client.Requests.NewUsers where
 
 import Client.Schema
 import GHC.Generics (Generic)
-import Globals.GQLScalars
 
 -- TODO: RequestTypeClass
 newtype NewUsers = NewUsers

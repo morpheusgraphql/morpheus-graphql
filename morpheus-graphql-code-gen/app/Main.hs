@@ -76,8 +76,8 @@ buildClientGlobals options schemaPath = do
   putStr ("  - " <> schemaPath <> "\n")
   schemaDoc <- readSchemaSource schemaPath
   let hsPath = processFileName schemaPath
-  let moduleName = getModuleNameByPath (root options) hsPath
-  saveDocument hsPath (processClientDocument options schemaDoc Nothing (pack moduleName))
+  let moduleName = pack $ getModuleNameByPath (root options) hsPath
+  saveDocument hsPath (processClientDocument options schemaDoc Nothing moduleName)
 
 buildClientQuery :: BuildConfig -> FilePath -> FilePath -> IO ()
 buildClientQuery options schemaPath queryPath = do
@@ -86,7 +86,7 @@ buildClientQuery options schemaPath queryPath = do
   schemaDoc <- readSchemaSource schemaPath
   let moduleName = getModuleNameByPath (root options) hsPath
   let globalModuleName = pack (getModuleNameByPath (root options) (processFileName schemaPath))
-  saveDocument hsPath (processClientDocument (options {globalImports = globalModuleName : globalImports options}) schemaDoc (Just file) (pack moduleName))
+  saveDocument hsPath (processClientDocument (options {globalImports = [globalModuleName]}) schemaDoc (Just file) (pack moduleName))
   where
     hsPath = processFileName queryPath
 
