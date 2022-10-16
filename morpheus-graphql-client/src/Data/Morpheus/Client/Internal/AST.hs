@@ -9,6 +9,7 @@ import Data.Morpheus.CodeGen.Internal.AST
     CodeGenTypeName,
     getFullName,
   )
+import Data.Morpheus.CodeGen.TH (PrintExp (..))
 import Data.Morpheus.Types.Internal.AST
   ( OperationType,
     TypeKind,
@@ -48,3 +49,6 @@ instance Pretty ClientDeclaration where
   pretty (RequestTypeClass def) = "-- TODO: " <> show (requestName def) <> " RequestTypeClass\n"
 
 newtype ClientMethod = ClientMethod ExpQ
+
+instance PrintExp ClientMethod where
+  printExp (ClientMethod x) = x

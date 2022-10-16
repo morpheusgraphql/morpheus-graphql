@@ -23,6 +23,7 @@ import Data.Morpheus.Client.Fetch.RequestType
   )
 import Data.Morpheus.Client.Internal.AST
   ( ClientDeclaration (..),
+    ClientMethod (..),
     DERIVING_MODE (..),
     RequestTypeDefinition (..),
   )
@@ -101,7 +102,7 @@ mkFromJSON name expr =
         typeClassContext = [],
         typeClassTarget = name,
         assoc = [],
-        typeClassMethods = [('parseJSON, NoArgument, expr)]
+        typeClassMethods = [('parseJSON, NoArgument, ClientMethod expr)]
       }
 
 mkToJSON :: CodeGenTypeName -> MethodArgument -> ExpQ -> DecQ
@@ -112,7 +113,7 @@ mkToJSON name args expr =
         typeClassContext = [],
         typeClassTarget = name,
         assoc = [],
-        typeClassMethods = [('toJSON, args, expr)]
+        typeClassMethods = [('toJSON, args, ClientMethod expr)]
       }
 
 originalLit :: ToString TypeName a => CodeGenTypeName -> Q a
