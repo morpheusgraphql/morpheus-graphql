@@ -187,7 +187,7 @@ fromJSONObjectMethod con@CodeGenConstructor {constructorName} = withBody <$> dec
     name :: Exp
     name = toString (getFullName constructorName)
 
-data MatchCases = MatchCases [(TypeName, TypeName)]
+data MatchCases = MatchCases Bool [(TypeName, TypeName)]
 
 matchWith ::
   Maybe (PatQ, ExpQ) ->
