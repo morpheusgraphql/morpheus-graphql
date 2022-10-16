@@ -13,6 +13,7 @@ module Data.Morpheus.CodeGen.Internal.AST
     fromTypeName,
     getFullName,
     ModuleDefinition (..),
+    TypeClassInstance (..),
   )
 where
 
@@ -209,3 +210,11 @@ renderImport (src, ls) = "import" <+> pretty src <> renderImportList ls
 renderImportList :: [Text] -> Doc ann
 renderImportList ["*"] = ""
 renderImportList xs = tupled (map pretty xs)
+
+data TypeClassInstance name ty funBody = TypeClassInstance
+  { name :: name,
+    typeClassContext :: [(name, name)],
+    target :: ty,
+    assoc :: [(name, ty)],
+    methods :: [(name, funBody)]
+  }
