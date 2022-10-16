@@ -56,11 +56,11 @@ import Language.Haskell.TH.Lib (appE, conT, varE)
 import Prettyprinter (Pretty (..), (<+>))
 import Relude
 
-data ModuleDefinition = ModuleDefinition
+data ModuleDefinition dec = ModuleDefinition
   { moduleName :: Text,
     imports :: [(Text, [Text])],
     extensions :: [Text],
-    types :: [ServerDeclaration]
+    types :: [dec]
   }
 
 data Kind

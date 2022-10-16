@@ -75,7 +75,7 @@ renderDocument moduleName types =
               types
             }
 
-renderModuleDefinition :: ModuleDefinition -> Doc n
+renderModuleDefinition :: ModuleDefinition ServerDeclaration -> Doc n
 renderModuleDefinition
   ModuleDefinition
     { extensions,
