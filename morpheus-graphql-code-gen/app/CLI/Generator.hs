@@ -1,4 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module CLI.Generator
@@ -14,6 +15,10 @@ import CLI.File
   ( getModuleNameByPath,
   )
 import Data.ByteString.Lazy.Char8 (ByteString)
+import Data.Morpheus.Client
+  ( parseClientTypeDeclarations,
+    printClientTypeDeclarations,
+  )
 import Data.Morpheus.CodeGen
   ( CodeGenConfig (..),
     PrinterConfig (..),
@@ -33,12 +38,10 @@ processServerDocument BuildOptions {root, namespaces} hsPath =
     )
     . parseServerTypeDefinitions CodeGenConfig {namespace = namespaces}
 
-processClientDocument :: BuildOptions -> FilePath -> ByteString -> GQLResult ByteString
-processClientDocument BuildOptions {root, namespaces} hsPath =
-  fmap
-    ( printServerTypeDefinitions
-        PrinterConfig
-          { moduleName = getModuleNameByPath root hsPath
-          }
-    )
-    . parseServerTypeDefinitions CodeGenConfig {namespace = namespaces}
+processClientDocument :: BuildOptions -> FilePath -> Text -> GQLResult ByteString
+processClientDocument BuildOptions {root, namespaces} hsPath query =
+  encodeUtf8
+    . fromStrict
+    . show
+    . printClientTypeDeclarations
+    <$> parseClientTypeDeclarations undefined (Just query)

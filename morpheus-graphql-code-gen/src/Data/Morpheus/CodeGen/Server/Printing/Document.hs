@@ -52,29 +52,28 @@ renderDocument :: String -> [ServerDeclaration] -> ByteString
 renderDocument moduleName types =
   encodeUtf8 $
     LT.fromStrict $
-      pack $
-        show $
-          renderModuleDefinition
-            ModuleDefinition
-              { moduleName = pack moduleName,
-                imports =
-                  [ ("Data.Data", ["Typeable"]),
-                    ("Data.Morpheus.Kind", ["TYPE"]),
-                    ("Data.Morpheus.Types", ["*"]),
-                    ("Data.Morpheus", []),
-                    ("Data.Text", ["Text"]),
-                    ("GHC.Generics", ["Generic"]),
-                    ("Globals.GQLScalars", ["*"])
-                  ],
-                extensions =
-                  [ "DeriveGeneric",
-                    "TypeFamilies",
-                    "OverloadedStrings",
-                    "DataKinds",
-                    "DuplicateRecordFields"
-                  ],
-                types
-              }
+      show $
+        renderModuleDefinition
+          ModuleDefinition
+            { moduleName = pack moduleName,
+              imports =
+                [ ("Data.Data", ["Typeable"]),
+                  ("Data.Morpheus.Kind", ["TYPE"]),
+                  ("Data.Morpheus.Types", ["*"]),
+                  ("Data.Morpheus", []),
+                  ("Data.Text", ["Text"]),
+                  ("GHC.Generics", ["Generic"]),
+                  ("Globals.GQLScalars", ["*"])
+                ],
+              extensions =
+                [ "DeriveGeneric",
+                  "TypeFamilies",
+                  "OverloadedStrings",
+                  "DataKinds",
+                  "DuplicateRecordFields"
+                ],
+              types
+            }
 
 renderModuleDefinition :: ModuleDefinition -> Doc n
 renderModuleDefinition
@@ -134,13 +133,13 @@ renderGQLType :: GQLTypeDefinition -> Doc ann
 renderGQLType gql@GQLTypeDefinition {..}
   | gqlKind == Scalar = ""
   | otherwise =
-      "instance"
-        <> optional renderTypeableConstraints (typeParameters gqlTarget)
-        <+> "GQLType"
-        <+> typeHead
-        <+> "where"
-          <> line
-          <> indent 2 (vsep (renderMethods typeHead gql))
+    "instance"
+      <> optional renderTypeableConstraints (typeParameters gqlTarget)
+      <+> "GQLType"
+      <+> typeHead
+      <+> "where"
+        <> line
+        <> indent 2 (vsep (renderMethods typeHead gql))
   where
     typeHead = unpack (print gqlTarget)
 

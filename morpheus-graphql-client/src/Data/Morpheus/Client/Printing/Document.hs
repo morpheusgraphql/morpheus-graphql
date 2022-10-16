@@ -6,8 +6,8 @@ module Data.Morpheus.Client.Printing.Document
   )
 where
 
-import Data.Morpheus.Client.Internal.AST (ClientTypeDefinition)
+import Data.Morpheus.Client.Internal.AST (ClientDeclaration)
 import Prettyprinter (Doc)
 
-printClientTypeDeclarations :: [ClientTypeDefinition] -> Doc n
+printClientTypeDeclarations :: [ClientDeclaration] -> Doc n
 printClientTypeDeclarations _ = "TODO: client"
