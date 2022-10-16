@@ -21,6 +21,7 @@ import qualified Data.ByteString.Lazy as L
   ( readFile,
   )
 import Data.Text (unpack)
+import qualified Data.Text.IO as TIO
 import Data.Version (showVersion)
 import qualified Paths_morpheus_graphql_code_gen as CLI
 import Relude hiding (ByteString)
@@ -59,7 +60,7 @@ handleClientService target Service {name, source, includes, options} = do
 buildClient :: BuildOptions -> FilePath -> IO ()
 buildClient options path = do
   putStr ("  - " <> path <> "\n")
-  file <- L.readFile path
+  file <- TIO.readFile path
   saveDocument hsPath (processClientDocument options hsPath file)
   where
     hsPath = processFileName path

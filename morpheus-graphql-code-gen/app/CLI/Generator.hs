@@ -14,7 +14,7 @@ import CLI.Commands
 import CLI.File
   ( getModuleNameByPath,
   )
-import Data.ByteString.Lazy.Char8 (ByteString)
+import Data.ByteString.Lazy.Char8 (ByteString, pack)
 import Data.Morpheus.Client
   ( parseClientTypeDeclarations,
     printClientTypeDeclarations,
@@ -40,8 +40,4 @@ processServerDocument BuildOptions {root, namespaces} hsPath =
 
 processClientDocument :: BuildOptions -> FilePath -> Text -> GQLResult ByteString
 processClientDocument BuildOptions {root, namespaces} hsPath query =
-  encodeUtf8
-    . fromStrict
-    . show
-    . printClientTypeDeclarations
-    <$> parseClientTypeDeclarations undefined (Just query)
+  pack . show . printClientTypeDeclarations <$> parseClientTypeDeclarations undefined (Just query)
