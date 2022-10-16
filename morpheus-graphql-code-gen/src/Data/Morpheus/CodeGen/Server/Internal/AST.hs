@@ -29,7 +29,6 @@ import Data.Morpheus.CodeGen.Internal.AST
     CodeGenTypeName (typeParameters),
     DerivingClass (..),
     FIELD_TYPE_WRAPPER (..),
-    MethodArgument,
     TypeClassInstance (..),
     TypeValue (..),
     printTHName,
@@ -64,7 +63,6 @@ import Data.Morpheus.Types.Internal.AST
     unpackName,
   )
 import Language.Haskell.TH.Lib (appE, varE)
-import qualified Language.Haskell.TH.Syntax as TH
 import Prettyprinter
   ( Doc,
     Pretty (..),
