@@ -1,4 +1,3 @@
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -20,7 +19,6 @@ import Data.Morpheus.Client
   ( SchemaSource,
     parseClientTypeDeclarations,
     printClientTypeDeclarations,
-    readSchemaSource,
   )
 import Data.Morpheus.CodeGen
   ( CodeGenConfig (..),
@@ -42,5 +40,5 @@ processServerDocument BuildOptions {..} hsPath =
     . parseServerTypeDefinitions CodeGenConfig {namespace = namespaces}
 
 processClientDocument :: BuildOptions -> SchemaSource -> Maybe Text -> GQLResult ByteString
-processClientDocument BuildOptions {..} schema query = do
+processClientDocument BuildOptions {} schema query = do
   pack . show . printClientTypeDeclarations <$> parseClientTypeDeclarations schema query
