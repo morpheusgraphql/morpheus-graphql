@@ -21,7 +21,7 @@ module Data.Morpheus.Client.Internal.TH
     fromJSONObjectMethod,
     ValueMatch,
     MValue (..),
-    printMatch,
+    printMatchDec,
   )
 where
 
@@ -170,8 +170,8 @@ data MValue
   | MTo TypeName TypeName
   | MFunction String Name
 
-printMatch :: ValueMatch -> ExpQ
-printMatch = lamCaseE . map buildMatch
+printMatchDec :: ValueMatch -> ExpQ
+printMatchDec = lamCaseE . map buildMatch
   where
     buildMatch (MFrom a b) = match (toString a) (normalB (appE (toVar 'pure) (toCon b))) []
     buildMatch (MTo a b) = match (toCon a) (normalB (toString b)) []

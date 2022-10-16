@@ -11,7 +11,7 @@ import Data.Morpheus.Client.Internal.TH
   ( ValueMatch,
     fromJSONObjectMethod,
     fromJSONUnionMethod,
-    printMatch,
+    printMatchDec,
     toJSONObjectMethod,
   )
 import Data.Morpheus.CodeGen.Internal.AST
@@ -90,8 +90,8 @@ instance Pretty ClientMethod where
 instance PrintExp ClientMethod where
   printExp (FunctionNameMethod v) = varE v
   printExp (PrintableMethod v) = printExp v
-  printExp (ToJSONEnumMethod x) = printMatch x
+  printExp (ToJSONEnumMethod x) = printMatchDec x
   printExp (ToJSONObjectMethod x) = toJSONObjectMethod x
   printExp (FromJSONObjectMethod x) = fromJSONObjectMethod x
-  printExp (FromJSONEnumMethod x) = printMatch x
+  printExp (FromJSONEnumMethod x) = printMatchDec x
   printExp (FromJSONUnionMethod x) = fromJSONUnionMethod x
