@@ -1,6 +1,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module CLI.Generator
@@ -28,7 +29,7 @@ import Relude hiding (ByteString, print)
 data BuildConfig = BuildConfig
   { root :: String,
     namespaces :: Bool,
-    globalImports :: [(Text, [Text])]
+    globalImports :: [Text]
   }
   deriving (Show)
 
@@ -47,7 +48,7 @@ processServerDocument BuildConfig {..} moduleName schema = do
               ("Data.Text", ["Text"]),
               ("GHC.Generics", ["Generic"])
             ]
-              <> globalImports,
+              <> map (,["*"]) globalImports,
           extensions =
             [ "DeriveGeneric",
               "TypeFamilies",
@@ -73,7 +74,7 @@ processClientDocument BuildConfig {..} schema query moduleName = do
               [ ("GHC.Generics", ["Generic"]),
                 ("Globals.GQLScalars", ["*"])
               ]
-                <> globalImports,
+                <> map (,["*"]) globalImports,
             extensions =
               [ "DeriveGeneric",
                 "DuplicateRecordFields"

@@ -55,8 +55,8 @@ scan path = do
   traverse_ (handleServerService path) (concat $ maybeToList server)
   traverse_ (handleClientService path) (concat $ maybeToList client)
 
-getImports :: Maybe ServiceOptions -> [(Text, [Text])]
-getImports = map (,["*"]) . concat . maybeToList . (>>= globals)
+getImports :: Maybe ServiceOptions -> [Text]
+getImports = concat . maybeToList . (>>= globals)
 
 handleClientService :: FilePath -> Service -> IO ()
 handleClientService target Service {name, source, includes, options, schema} = do
@@ -66,16 +66,18 @@ handleClientService target Service {name, source, includes, options, schema} = d
   files <- concat <$> traverse glob patterns
   putStrLn ("\n build:" <> name)
   schemaPath <- maybe (fail $ "client service " <> name <> " should provide schema!") pure schema
-  buildClientGlobals options (BuildConfig {..}) (normalise $ root </> schemaPath)
-  traverse_ (buildClientQuery (BuildConfig {..}) (normalise $ root </> schemaPath)) files
+  let globalImports = getImports options
+  let config = BuildConfig {..}
+  buildClientGlobals config (normalise $ root </> schemaPath)
+  traverse_ (buildClientQuery config (normalise $ root </> schemaPath)) files
 
-buildClientGlobals :: Maybe ServiceOptions -> BuildConfig -> FilePath -> IO ()
-buildClientGlobals serviceOps options schemaPath = do
+buildClientGlobals :: BuildConfig -> FilePath -> IO ()
+buildClientGlobals options schemaPath = do
   putStr ("  - " <> schemaPath <> "\n")
   schemaDoc <- readSchemaSource schemaPath
   let hsPath = processFileName schemaPath
   let moduleName = getModuleNameByPath (root options) hsPath
-  saveDocument hsPath (processClientDocument options schemaDoc Nothing (getImports serviceOps) (pack moduleName))
+  saveDocument hsPath (processClientDocument options schemaDoc Nothing (pack moduleName))
 
 buildClientQuery :: BuildConfig -> FilePath -> FilePath -> IO ()
 buildClientQuery options schemaPath queryPath = do
@@ -83,8 +85,8 @@ buildClientQuery options schemaPath queryPath = do
   file <- TIO.readFile queryPath
   schemaDoc <- readSchemaSource schemaPath
   let moduleName = getModuleNameByPath (root options) hsPath
-  let globalModuleName = getModuleNameByPath (root options) (processFileName schemaPath)
-  saveDocument hsPath (processClientDocument options schemaDoc (Just file) [(pack globalModuleName, ["*"])] (pack moduleName))
+  let globalModuleName = pack (getModuleNameByPath (root options) (processFileName schemaPath))
+  saveDocument hsPath (processClientDocument (options {globalImports = globalModuleName : globalImports options}) schemaDoc (Just file) (pack moduleName))
   where
     hsPath = processFileName queryPath
 
@@ -95,6 +97,7 @@ handleServerService target Service {name, source, includes, options} = do
   let patterns = map (normalise . (root </>)) includes
   files <- concat <$> traverse glob patterns
   putStrLn ("\n build:" <> name)
+  let globalImports = getImports options
   traverse_ (buildServer (BuildConfig {..}) {root, namespaces}) files
 
 buildServer :: BuildConfig -> FilePath -> IO ()
