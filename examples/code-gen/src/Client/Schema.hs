@@ -14,14 +14,16 @@ newtype Bird = Bird
   }
   deriving (Generic, Show, Eq)
 
--- TODO: "Bird" ToJSONClass
+instance ToJSON Bird where
+  toJSON _ = undefined
 
 newtype Cat = Cat
   { name :: String
   }
   deriving (Generic, Show, Eq)
 
--- TODO: "Cat" ToJSONClass
+instance ToJSON Cat where
+  toJSON _ = undefined
 
 data CityID
   = CityIDParis
@@ -29,9 +31,11 @@ data CityID
   | CityIDHH
   deriving (Generic, Show, Eq)
 
--- TODO: "CityID" FromJSONClass
+instance FromJSON CityID where
+  parseJSON _ = undefined
 
--- TODO: "CityID" ToJSONClass
+instance ToJSON CityID where
+  toJSON _ = undefined
 
 data Coordinates = Coordinates
   { latitude :: Euro,
@@ -39,18 +43,22 @@ data Coordinates = Coordinates
   }
   deriving (Generic, Show, Eq)
 
--- TODO: "Coordinates" ToJSONClass
+instance ToJSON Coordinates where
+  toJSON _ = undefined
 
 newtype Dog = Dog
   { name :: String
   }
   deriving (Generic, Show, Eq)
 
--- TODO: "Dog" ToJSONClass
+instance ToJSON Dog where
+  toJSON _ = undefined
 
--- TODO: "Euro" FromJSONClass
+instance FromJSON Euro where
+  parseJSON _ = undefined
 
--- TODO: "Euro" ToJSONClass
+instance ToJSON Euro where
+  toJSON _ = undefined
 
 data UniqueID = UniqueID
   { name :: Maybe String,
@@ -59,4 +67,5 @@ data UniqueID = UniqueID
   }
   deriving (Generic, Show, Eq)
 
--- TODO: "UniqueID" ToJSONClass
+instance ToJSON UniqueID where
+  toJSON _ = undefined

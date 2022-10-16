@@ -9,7 +9,11 @@ module Client.Requests.GetUsers where
 import Client.Schema
 import GHC.Generics (Generic)
 
--- TODO: "GetUser" RequestTypeClass
+instance RequestType GetUser where
+  type RequestArgs GetUser = GetUserArgs
+  __name _ = undefined
+  __query _ = undefined
+  __type _ = undefined
 
 data GetUser = GetUser
   { myUser :: GetUserMyUserUser,
@@ -17,7 +21,8 @@ data GetUser = GetUser
   }
   deriving (Generic, Show, Eq)
 
--- TODO: "GetUser" FromJSONClass
+instance FromJSON GetUser where
+  parseJSON _ = undefined
 
 data GetUserMyUserUser = GetUserMyUserUser
   { name :: String,
@@ -27,21 +32,24 @@ data GetUserMyUserUser = GetUserMyUserUser
   }
   deriving (Generic, Show, Eq)
 
--- TODO: "GetUserMyUserUser" FromJSONClass
+instance FromJSON GetUserMyUserUser where
+  parseJSON _ = undefined
 
 newtype GetUserMyUserAddressAddress = GetUserMyUserAddressAddress
   { city :: String
   }
   deriving (Generic, Show, Eq)
 
--- TODO: "GetUserMyUserAddressAddress" FromJSONClass
+instance FromJSON GetUserMyUserAddressAddress where
+  parseJSON _ = undefined
 
 newtype GetUserMyUserAliasAdressAddress = GetUserMyUserAliasAdressAddress
   { city :: String
   }
   deriving (Generic, Show, Eq)
 
--- TODO: "GetUserMyUserAliasAdressAddress" FromJSONClass
+instance FromJSON GetUserMyUserAliasAdressAddress where
+  parseJSON _ = undefined
 
 data GetUserUserUser = GetUserUserUser
   { email :: String,
@@ -49,11 +57,13 @@ data GetUserUserUser = GetUserUserUser
   }
   deriving (Generic, Show, Eq)
 
--- TODO: "GetUserUserUser" FromJSONClass
+instance FromJSON GetUserUserUser where
+  parseJSON _ = undefined
 
 newtype GetUserArgs = GetUserArgs
   { coordinates :: Coordinates
   }
   deriving (Generic, Show, Eq)
 
--- TODO: "GetUserArgs" ToJSONClass
+instance ToJSON GetUserArgs where
+  toJSON _ = undefined
