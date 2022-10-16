@@ -1,5 +1,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module CLI.Generator
@@ -29,7 +30,7 @@ import Data.Morpheus.Internal.Ext (GQLResult)
 import Relude hiding (ByteString)
 
 processServerDocument :: BuildOptions -> FilePath -> ByteString -> GQLResult ByteString
-processServerDocument BuildOptions {root, namespaces} hsPath =
+processServerDocument BuildOptions {..} hsPath =
   fmap
     ( printServerTypeDefinitions
         PrinterConfig
@@ -39,5 +40,5 @@ processServerDocument BuildOptions {root, namespaces} hsPath =
     . parseServerTypeDefinitions CodeGenConfig {namespace = namespaces}
 
 processClientDocument :: BuildOptions -> FilePath -> Text -> GQLResult ByteString
-processClientDocument BuildOptions {root, namespaces} hsPath query =
+processClientDocument BuildOptions {..} hsPath query =
   pack . show . printClientTypeDeclarations <$> parseClientTypeDeclarations undefined (Just query)
