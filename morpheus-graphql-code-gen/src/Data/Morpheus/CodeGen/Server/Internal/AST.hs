@@ -63,7 +63,7 @@ import Data.Morpheus.Types.Internal.AST
     Value,
     unpackName,
   )
-import Language.Haskell.TH.Lib (ExpQ, appE, varE)
+import Language.Haskell.TH.Lib (appE, varE)
 import qualified Language.Haskell.TH.Syntax as TH
 import Prettyprinter
   ( Doc,
@@ -177,21 +177,19 @@ renderMethods typeHead TypeClassInstance {..} =
     renderAssoc (name, a) = "type" <+> printTHName name <+> typeHead <+> "=" <+> pretty a
 
 renderMethodD :: (TH.Name, MethodArgument, ServerMethod) -> Doc n
-renderMethodD (name, _, method) = printTHName name <+> " _ =" <+> renderMethod method
-
-renderMethod :: ServerMethod -> Doc n
-renderMethod ServerMethod {} = "undefined"
-renderMethod (ServerMethodDirectives dirs) = align $ vsep $ punctuate " <>" (map pretty dirs)
+renderMethodD (name, _, method) = printTHName name <+> " _ =" <+> pretty method
 
 newtype CodeGenConfig = CodeGenConfig {namespace :: Bool}
 
 data ServerMethod
-  = ServerMethod ExpQ
+  = ServerMethodDefaultValues (Map Text (Value CONST))
   | ServerMethodDirectives [ServerDirectiveUsage]
+  deriving (Show)
 
-instance Show ServerMethod where
-  show _ = "ServerMethod"
+instance Pretty ServerMethod where
+  pretty (ServerMethodDefaultValues x) = pretty (show x)
+  pretty (ServerMethodDirectives dirs) = align $ vsep $ punctuate " <>" (map pretty dirs)
 
 instance PrintExp ServerMethod where
-  printExp (ServerMethod x) = x
+  printExp (ServerMethodDefaultValues values) = [|values|]
   printExp (ServerMethodDirectives dirs) = foldr (appE . appE [|(<>)|] . printExp) [|mempty|] dirs
