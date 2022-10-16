@@ -38,7 +38,7 @@ toGlobalDefinitions :: (TypeName -> Bool) -> Schema VALID -> [ClientDeclaration]
 toGlobalDefinitions f Schema {types} =
   concatMap toClientDeclarations $
     mapMaybe generateGlobalType $
-      filter shouldInclude (toList types)
+      filter shouldInclude (sortWith typeName $ toList types)
   where
     shouldInclude t =
       not (isResolverType t)
