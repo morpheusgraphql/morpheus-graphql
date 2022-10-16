@@ -1,7 +1,11 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module CLI.Generator (processDocument) where
+module CLI.Generator
+  ( processServerDocument,
+    processClientDocument,
+  )
+where
 
 import CLI.Commands
   ( BuildOptions (..),
@@ -19,8 +23,18 @@ import Data.Morpheus.CodeGen
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Relude hiding (ByteString)
 
-processDocument :: BuildOptions -> FilePath -> ByteString -> GQLResult ByteString
-processDocument BuildOptions {root, namespaces} hsPath =
+processServerDocument :: BuildOptions -> FilePath -> ByteString -> GQLResult ByteString
+processServerDocument BuildOptions {root, namespaces} hsPath =
+  fmap
+    ( printServerTypeDefinitions
+        PrinterConfig
+          { moduleName = getModuleNameByPath root hsPath
+          }
+    )
+    . parseServerTypeDefinitions CodeGenConfig {namespace = namespaces}
+
+processClientDocument :: BuildOptions -> FilePath -> ByteString -> GQLResult ByteString
+processClientDocument BuildOptions {root, namespaces} hsPath =
   fmap
     ( printServerTypeDefinitions
         PrinterConfig

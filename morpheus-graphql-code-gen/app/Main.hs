@@ -54,7 +54,15 @@ handleClientService target Service {name, source, includes, options} = do
   let patterns = map (normalise . (root </>) . unpack) includes
   files <- concat <$> traverse glob patterns
   putStrLn ("\n build:" <> unpack name)
-  traverse_ (buildFile (BuildOptions {..}) {root, namespaces}) files
+  traverse_ (buildClient (BuildOptions {..}) {root, namespaces}) files
+
+buildClient :: BuildOptions -> FilePath -> IO ()
+buildClient options path = do
+  putStr ("  - " <> path <> "\n")
+  file <- L.readFile path
+  saveDocument hsPath (processClientDocument options hsPath file)
+  where
+    hsPath = processFileName path
 
 handleServerService :: FilePath -> Service -> IO ()
 handleServerService target Service {name, source, includes, options} = do
@@ -63,12 +71,12 @@ handleServerService target Service {name, source, includes, options} = do
   let patterns = map (normalise . (root </>) . unpack) includes
   files <- concat <$> traverse glob patterns
   putStrLn ("\n build:" <> unpack name)
-  traverse_ (buildFile (BuildOptions {..}) {root, namespaces}) files
+  traverse_ (buildServer (BuildOptions {..}) {root, namespaces}) files
 
-buildFile :: BuildOptions -> FilePath -> IO ()
-buildFile options path = do
+buildServer :: BuildOptions -> FilePath -> IO ()
+buildServer options path = do
   putStr ("  - " <> path <> "\n")
   file <- L.readFile path
-  saveDocument hsPath (processDocument options hsPath file)
+  saveDocument hsPath (processServerDocument options hsPath file)
   where
     hsPath = processFileName path
