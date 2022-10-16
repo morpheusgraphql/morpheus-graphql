@@ -238,7 +238,7 @@ instance Pretty a => Pretty (TypeClassInstance a) where
     where
       typeHead = unpack (print typeClassTarget)
       renderAssoc (name, a) = "type" <+> printTHName name <+> typeHead <+> "=" <+> pretty a
-      renderMethodD (name, _, method) = printTHName name <+> " _ =" <+> pretty method
+      renderMethodD (name, args, method) = printTHName name <+> pretty args <+> "=" <+> pretty method
 
 renderTypeableConstraints :: [Text] -> Doc n
 renderTypeableConstraints xs = tupled (map (("Typeable" <+>) . pretty) xs) <+> "=>"
@@ -263,3 +263,8 @@ data MethodArgument
   | ProxyArgument
   | DestructArgument CodeGenConstructor
   deriving (Show)
+
+instance Pretty MethodArgument where
+  pretty NoArgument = ""
+  pretty ProxyArgument = "_"
+  pretty (DestructArgument x) = "{-- TODO: fix me --}"

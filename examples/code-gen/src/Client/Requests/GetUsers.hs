@@ -24,7 +24,7 @@ data GetUser = GetUser
   deriving (Generic, Show, Eq)
 
 instance FromJSON GetUser where
-  parseJSON _ = undefined -- TODO: should be real function
+  parseJSON = undefined -- TODO: should be real function
 
 data GetUserMyUserUser = GetUserMyUserUser
   { name :: String,
@@ -35,7 +35,7 @@ data GetUserMyUserUser = GetUserMyUserUser
   deriving (Generic, Show, Eq)
 
 instance FromJSON GetUserMyUserUser where
-  parseJSON _ = undefined -- TODO: should be real function
+  parseJSON = undefined -- TODO: should be real function
 
 newtype GetUserMyUserAddressAddress = GetUserMyUserAddressAddress
   { city :: String
@@ -43,7 +43,7 @@ newtype GetUserMyUserAddressAddress = GetUserMyUserAddressAddress
   deriving (Generic, Show, Eq)
 
 instance FromJSON GetUserMyUserAddressAddress where
-  parseJSON _ = undefined -- TODO: should be real function
+  parseJSON = undefined -- TODO: should be real function
 
 newtype GetUserMyUserAliasAdressAddress = GetUserMyUserAliasAdressAddress
   { city :: String
@@ -51,7 +51,7 @@ newtype GetUserMyUserAliasAdressAddress = GetUserMyUserAliasAdressAddress
   deriving (Generic, Show, Eq)
 
 instance FromJSON GetUserMyUserAliasAdressAddress where
-  parseJSON _ = undefined -- TODO: should be real function
+  parseJSON = undefined -- TODO: should be real function
 
 data GetUserUserUser = GetUserUserUser
   { email :: String,
@@ -60,7 +60,7 @@ data GetUserUserUser = GetUserUserUser
   deriving (Generic, Show, Eq)
 
 instance FromJSON GetUserUserUser where
-  parseJSON _ = undefined -- TODO: should be real function
+  parseJSON = undefined -- TODO: should be real function
 
 newtype GetUserArgs = GetUserArgs
   { coordinates :: Coordinates
@@ -68,4 +68,4 @@ newtype GetUserArgs = GetUserArgs
   deriving (Generic, Show, Eq)
 
 instance ToJSON GetUserArgs where
-  toJSON _ = undefined -- TODO: should be real function
+  toJSON {-- TODO: fix me --} = undefined -- TODO: should be real function
