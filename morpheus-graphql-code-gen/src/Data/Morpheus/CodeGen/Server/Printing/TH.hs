@@ -27,6 +27,7 @@ import Data.Morpheus.CodeGen.Server.Internal.AST
     InterfaceDefinition (..),
     ServerDeclaration (..),
     ServerDirectiveUsage,
+    ServerMethod (..),
   )
 import Data.Morpheus.CodeGen.Server.Interpreting.Transform
   ( parseServerTypeDefinitions,
@@ -87,8 +88,8 @@ instance PrintDecQ GQLTypeDefinition where
             typeClassTarget = gqlTarget,
             assoc = [(''KIND, AssociatedTypeName (toName gqlKind))],
             typeClassMethods =
-              [ ('defaultValues, ProxyArgument, [|gqlTypeDefaultValues|]),
-                ('directives, ProxyArgument, printDirectiveUsages gqlTypeDirectiveUses)
+              [ ('defaultValues, ProxyArgument, ServerMethod [|gqlTypeDefaultValues|]),
+                ('directives, ProxyArgument, ServerMethod $ printDirectiveUsages gqlTypeDirectiveUses)
               ]
           }
 
@@ -110,7 +111,7 @@ instance PrintDecQ GQLDirectiveTypeClass where
               assoc = [(''DIRECTIVE_LOCATIONS, AssociatedLocations directiveLocations)],
               typeClassMethods = []
             } ::
-            TypeClassInstance ExpQ
+            TypeClassInstance ServerMethod
         )
 
 printDirectiveUsages :: [ServerDirectiveUsage] -> ExpQ

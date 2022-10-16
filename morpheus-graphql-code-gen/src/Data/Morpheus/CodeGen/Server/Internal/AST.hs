@@ -20,6 +20,7 @@ module Data.Morpheus.CodeGen.Server.Internal.AST
     TypeValue (..),
     InterfaceDefinition (..),
     GQLDirectiveTypeClass (..),
+    ServerMethod (..),
   )
 where
 
@@ -59,7 +60,7 @@ import Data.Morpheus.Types.Internal.AST
     Value,
     unpackName,
   )
-import Language.Haskell.TH.Lib (appE, varE)
+import Language.Haskell.TH.Lib (ExpQ, appE, varE)
 import Prettyprinter
   ( Doc,
     Pretty (..),
@@ -175,3 +176,8 @@ renderDirectiveUsages = align . vsep . punctuate " <>" . map pretty
 newtype CodeGenConfig = CodeGenConfig
   { namespace :: Bool
   }
+
+newtype ServerMethod = ServerMethod ExpQ
+
+instance PrintExp ServerMethod where
+  printExp (ServerMethod x) = x
