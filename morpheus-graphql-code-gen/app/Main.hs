@@ -26,7 +26,6 @@ import qualified Data.ByteString.Lazy as L
   ( readFile,
   )
 import Data.Morpheus.Client (readSchemaSource)
-import Data.Text (unpack)
 import qualified Data.Text.IO as TIO
 import Data.Version (showVersion)
 import qualified Paths_morpheus_graphql_code_gen as CLI
@@ -55,30 +54,31 @@ scan path = do
   traverse_ (handleClientService path) (concat $ maybeToList client)
 
 handleClientService :: FilePath -> Service -> IO ()
-handleClientService target Service {name, source, includes, options} = do
-  let root = normalise (target </> unpack source)
+handleClientService target Service {name, source, includes, options, schema} = do
+  let root = normalise (target </> source)
   let namespaces = maybe False namespace options
-  let patterns = map (normalise . (root </>) . unpack) includes
+  let patterns = map (normalise . (root </>)) includes
   files <- concat <$> traverse glob patterns
-  putStrLn ("\n build:" <> unpack name)
-  traverse_ (buildClient (BuildOptions {..}) {root, namespaces}) files
+  putStrLn ("\n build:" <> name)
+  schemaPath <- maybe (fail $ "client service " <> name <> " should provide schema!") pure schema
+  traverse_ (buildClient (BuildOptions {..}) {root, namespaces} (normalise $ root </> schemaPath)) files
 
-buildClient :: BuildOptions -> FilePath -> IO ()
-buildClient options path = do
-  putStr ("  - " <> path <> "\n")
-  file <- TIO.readFile path
-  schema <- readSchemaSource "schemaPath"
-  saveDocument hsPath (processClientDocument options schema (Just file))
+buildClient :: BuildOptions -> FilePath -> FilePath -> IO ()
+buildClient options schemaPath queryPath = do
+  putStr ("  - " <> queryPath <> "\n")
+  file <- TIO.readFile queryPath
+  schemaDoc <- readSchemaSource schemaPath
+  saveDocument hsPath (processClientDocument options schemaDoc (Just file))
   where
-    hsPath = processFileName path
+    hsPath = processFileName queryPath
 
 handleServerService :: FilePath -> Service -> IO ()
 handleServerService target Service {name, source, includes, options} = do
-  let root = normalise (target </> unpack source)
+  let root = normalise (target </> source)
   let namespaces = maybe False namespace options
-  let patterns = map (normalise . (root </>) . unpack) includes
+  let patterns = map (normalise . (root </>)) includes
   files <- concat <$> traverse glob patterns
-  putStrLn ("\n build:" <> unpack name)
+  putStrLn ("\n build:" <> name)
   traverse_ (buildServer (BuildOptions {..}) {root, namespaces}) files
 
 buildServer :: BuildOptions -> FilePath -> IO ()

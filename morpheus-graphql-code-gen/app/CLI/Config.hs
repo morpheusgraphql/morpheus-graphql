@@ -29,10 +29,11 @@ newtype ServiceOptions = ServiceOptions
     )
 
 data Service = Service
-  { name :: Text,
-    includes :: [Text],
-    source :: Text,
-    options :: Maybe ServiceOptions
+  { name :: String,
+    includes :: [FilePath],
+    source :: FilePath,
+    options :: Maybe ServiceOptions,
+    schema :: Maybe FilePath
   }
   deriving
     ( Generic,

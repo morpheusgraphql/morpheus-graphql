@@ -15,5 +15,6 @@ server:
 client:
   - name: Client API
     source: ./src
+    schema: Client/schema.gql
     includes:
       - Client/Requests/**/*.gql
