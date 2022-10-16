@@ -26,17 +26,15 @@ where
 
 import Data.Morpheus.CodeGen.Internal.AST
   ( CodeGenType,
-    CodeGenTypeName (typeParameters),
+    CodeGenTypeName,
     DerivingClass (..),
     FIELD_TYPE_WRAPPER (..),
     TypeClassInstance (..),
     TypeValue (..),
-    printTHName,
   )
 import Data.Morpheus.CodeGen.Printer
   ( Printer (..),
     ignore,
-    optional,
     unpack,
     (.<>),
   )
@@ -55,14 +53,10 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Language.Haskell.TH.Lib (appE, varE)
 import Prettyprinter
-  ( Doc,
-    Pretty (..),
+  ( Pretty (..),
     align,
-    indent,
-    line,
     pretty,
     punctuate,
-    tupled,
     vsep,
     (<+>),
   )
@@ -152,25 +146,8 @@ instance Pretty ServerDeclaration where
   pretty (DataType cgType) = pretty cgType
   pretty (GQLTypeInstance kind gql)
     | kind == Scalar = ""
-    | otherwise = renderGQLType gql
+    | otherwise = pretty gql
   pretty (GQLDirectiveInstance _) = "TODO: not supported"
-
-renderTypeableConstraints :: [Text] -> Doc n
-renderTypeableConstraints xs = tupled (map (("Typeable" <+>) . pretty) xs) <+> "=>"
-
-renderGQLType :: TypeClassInstance ServerMethod -> Doc ann
-renderGQLType TypeClassInstance {..} =
-  "instance"
-    <> optional renderTypeableConstraints (typeParameters typeClassTarget)
-    <+> printTHName typeClassName
-    <+> typeHead
-    <+> "where"
-      <> line
-      <> indent 2 (vsep (map renderAssoc assoc <> map renderMethodD typeClassMethods))
-  where
-    typeHead = unpack (print typeClassTarget)
-    renderAssoc (name, a) = "type" <+> printTHName name <+> typeHead <+> "=" <+> pretty a
-    renderMethodD (name, _, method) = printTHName name <+> " _ =" <+> pretty method
 
 newtype CodeGenConfig = CodeGenConfig {namespace :: Bool}
 

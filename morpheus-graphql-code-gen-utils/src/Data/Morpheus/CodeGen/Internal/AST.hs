@@ -48,7 +48,7 @@ import Prettyprinter
     vsep,
     (<+>),
   )
-import Relude hiding (print)
+import Relude hiding (optional, print)
 
 data DerivingClass
   = SHOW
@@ -225,6 +225,23 @@ data TypeClassInstance body = TypeClassInstance
     typeClassMethods :: [(TH.Name, MethodArgument, body)]
   }
   deriving (Show)
+
+instance Pretty a => Pretty (TypeClassInstance a) where
+  pretty TypeClassInstance {..} =
+    "instance"
+      <> optional renderTypeableConstraints (typeParameters typeClassTarget)
+      <+> printTHName typeClassName
+      <+> typeHead
+      <+> "where"
+        <> line
+        <> indent 2 (vsep (map renderAssoc assoc <> map renderMethodD typeClassMethods))
+    where
+      typeHead = unpack (print typeClassTarget)
+      renderAssoc (name, a) = "type" <+> printTHName name <+> typeHead <+> "=" <+> pretty a
+      renderMethodD (name, _, method) = printTHName name <+> " _ =" <+> pretty method
+
+renderTypeableConstraints :: [Text] -> Doc n
+renderTypeableConstraints xs = tupled (map (("Typeable" <+>) . pretty) xs) <+> "=>"
 
 data AssociatedType
   = AssociatedTypeName TH.Name

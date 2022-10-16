@@ -8,7 +8,7 @@ import Data.Morpheus.CodeGen.Internal.AST
   ( CodeGenConstructor (..),
     CodeGenType,
     CodeGenTypeName,
-    TypeClassInstance (typeClassName),
+    TypeClassInstance,
   )
 import Data.Morpheus.CodeGen.TH (PrintExp (..))
 import Data.Morpheus.Types.Internal.AST
@@ -49,12 +49,15 @@ data RequestTypeDefinition = RequestTypeDefinition
 
 instance Pretty ClientDeclaration where
   pretty (ClientTypeDeclaration def) = pretty def
-  pretty (InstanceDeclaration def) = "-- TODO: " <> show (typeClassName def) <> " ToJSONClass\n"
+  pretty (InstanceDeclaration def) = pretty def
 
 data ClientMethod
   = ClientMethodExp ExpQ
   | ToJSONEnumMethod [CodeGenConstructor]
   | ToJSONObjectMethod CodeGenConstructor
+
+instance Pretty ClientMethod where
+  pretty _ = "undefined"
 
 instance PrintExp ClientMethod where
   printExp (ClientMethodExp x) = x
