@@ -24,6 +24,7 @@ import Data.Morpheus.Client.Internal.AST
     ClientMethod (..),
     ClientPreDeclaration (..),
     DERIVING_MODE (..),
+    Printable (..),
     RequestTypeDefinition (..),
   )
 import Data.Morpheus.Client.Internal.TH
@@ -67,9 +68,9 @@ getRequestInstance RequestTypeDefinition {..} =
     }
   where
     typeClassMethods =
-      [ ('__name, ProxyArgument, ClientMethodExp [|requestName|]),
-        ('__query, ProxyArgument, ClientMethodExp [|requestQuery|]),
-        ('__type, ProxyArgument, ClientMethodExp [|requestType|])
+      [ ('__name, ProxyArgument, PrintableMethod $ Printable requestName),
+        ('__query, ProxyArgument, PrintableMethod $ Printable requestQuery),
+        ('__type, ProxyArgument, PrintableMethod $ Printable requestType)
       ]
 
 -- FromJSON
