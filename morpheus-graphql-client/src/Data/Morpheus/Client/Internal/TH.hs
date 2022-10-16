@@ -152,8 +152,8 @@ declareIfNotDeclared f c = do
 originalLit :: ToString TypeName a => CodeGenTypeName -> Q a
 originalLit = toString . typename
 
-toJSONEnum :: CodeGenTypeName -> (TypeName, TypeName)
-toJSONEnum name = (getFullName name, typename name)
+toJSONEnum :: CodeGenTypeName -> (MValue, MValue)
+toJSONEnum name = (MCon $ getFullName name, MString $ typename name)
 
 fromJSONEnum :: CodeGenTypeName -> (PatQ, ExpQ)
 fromJSONEnum name = (originalLit name, appE (toVar 'pure) (toCon name))
@@ -161,7 +161,7 @@ fromJSONEnum name = (originalLit name, appE (toVar 'pure) (toCon name))
 -- EXPORTS
 
 toJSONEnumMethod :: [CodeGenTypeName] -> ExpQ
-toJSONEnumMethod xs = printMatch (ValueMatch False (map toJSONEnum xs))
+toJSONEnumMethod xs = printMatch (ValueMatch (map toJSONEnum xs))
 
 toJSONObjectMethod :: CodeGenConstructor -> ExpQ
 toJSONObjectMethod CodeGenConstructor {..} = pure $ AppE (VarE 'omitNulls) (mkFieldsE constructorName '(.=) constructorFields)
@@ -187,19 +187,21 @@ fromJSONObjectMethod con@CodeGenConstructor {constructorName} = withBody <$> dec
     name :: Exp
     name = toString (getFullName constructorName)
 
-data ValueMatch = ValueMatch
-  { isFrom :: Bool,
-    matchingCases :: [(TypeName, TypeName)]
-  }
+newtype ValueMatch = ValueMatch {matchingCases :: [(MValue, MValue)]}
+
+data MValue
+  = MString TypeName
+  | MCon TypeName
+  | MVar TypeName
 
 printMatch :: ValueMatch -> ExpQ
 printMatch ValueMatch {..} = lamCaseE (map buildMatch matchingCases)
   where
-    buildMatch (a, b) = match (toExp isFrom a) (normalB (toExp (not isFrom) b)) []
+    buildMatch (a, b) = match (toExp a) (normalB (toExp b)) []
       where
-        toExp x
-          | x = toString
-          | otherwise = toCon
+        toExp (MString x) = toString x
+        toExp (MCon x) = toCon x
+        toExp (MVar x) = toVar x
 
 matchWith ::
   Maybe (PatQ, ExpQ) ->
