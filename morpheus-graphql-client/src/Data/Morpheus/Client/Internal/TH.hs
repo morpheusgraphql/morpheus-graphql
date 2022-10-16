@@ -86,10 +86,10 @@ decodeObjectE :: CodeGenConstructor -> ExpQ
 decodeObjectE CodeGenConstructor {..}
   | null constructorFields = appE [|pure|] (toCon constructorName)
   | otherwise =
-      uInfixE
-        (toCon constructorName)
-        [|(<$>)|]
-        (foldr1 withApplicative $ map defField constructorFields)
+    uInfixE
+      (toCon constructorName)
+      [|(<$>)|]
+      (foldr1 withApplicative $ map defField constructorFields)
 
 defField :: CodeGenField -> ExpQ
 defField CodeGenField {..} = uInfixE v' (varE $ bindField fieldIsNullable) (toString fieldName)
@@ -165,13 +165,16 @@ declareIfNotDeclared f c = do
 originalLit :: ToString TypeName a => CodeGenTypeName -> Q a
 originalLit = toString . typename
 
+toJSONEnum :: CodeGenConstructor -> (PatQ, ExpQ)
+toJSONEnum CodeGenConstructor {constructorName} = (toCon constructorName, originalLit constructorName)
+
+fromJSONEnum :: CodeGenConstructor -> (PatQ, ExpQ)
+fromJSONEnum CodeGenConstructor {constructorName} = (originalLit constructorName, appE (toVar 'pure) (toCon constructorName))
+
 -- EXPORTS
 
 toJSONEnumMethod :: [CodeGenConstructor] -> ExpQ
 toJSONEnumMethod = matchWith Nothing toJSONEnum
-
-toJSONEnum :: CodeGenConstructor -> (PatQ, ExpQ)
-toJSONEnum CodeGenConstructor {constructorName} = (toCon constructorName, originalLit constructorName)
 
 toJSONObjectMethod :: CodeGenConstructor -> ExpQ
 toJSONObjectMethod CodeGenConstructor {..} = pure $ AppE (VarE 'omitNulls) (mkFieldsE constructorName '(.=) constructorFields)
@@ -189,9 +192,6 @@ fromJSONUnionMethod CodeGenType {..} = appE (toVar 'takeValueType) (matchWith el
 
 fromJSONEnumMethod :: [CodeGenConstructor] -> ExpQ
 fromJSONEnumMethod = matchWith (Just (v', failExp)) fromJSONEnum
-
-fromJSONEnum :: CodeGenConstructor -> (PatQ, ExpQ)
-fromJSONEnum CodeGenConstructor {constructorName} = (originalLit constructorName, appE (toVar 'pure) (toCon constructorName))
 
 fromJSONObjectMethod :: CodeGenConstructor -> ExpQ
 fromJSONObjectMethod con@CodeGenConstructor {constructorName} = withBody <$> decodeObjectE con
