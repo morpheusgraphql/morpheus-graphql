@@ -1,3 +1,6 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NoImplicitPrelude #-}
+
 module Data.Morpheus.Client.Internal.AST where
 
 import Data.Morpheus.CodeGen.Internal.AST
@@ -10,6 +13,8 @@ import Data.Morpheus.Types.Internal.AST
     TypeKind,
     TypeName,
   )
+import Prettyprinter (Pretty (..))
+import Relude
 
 data DERIVING_MODE = SCALAR_MODE | ENUM_MODE | TYPE_MODE
 
@@ -33,3 +38,6 @@ data RequestTypeDefinition = RequestTypeDefinition
     requestQuery :: String
   }
   deriving (Show)
+
+instance Pretty ClientDeclaration where
+  pretty _ = "-- TODO: client type"

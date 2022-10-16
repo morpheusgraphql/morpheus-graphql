@@ -35,7 +35,6 @@ module Data.Morpheus.Client
     defineByIntrospectionFile,
     defineByIntrospectionFile',
     parseClientTypeDeclarations,
-    printClientTypeDeclarations,
     readSchemaSource,
     SchemaSource,
   )
@@ -73,9 +72,6 @@ import Data.Morpheus.Client.Internal.Types
     SchemaSource (..),
   )
 import Data.Morpheus.Client.Internal.Utils (readSchemaSource)
-import Data.Morpheus.Client.Printing.Document
-  ( printClientTypeDeclarations,
-  )
 import Data.Morpheus.Types.GQLScalar
   ( DecodeScalar (..),
     EncodeScalar (..),
