@@ -44,6 +44,7 @@ import Data.Morpheus.CodeGen.Internal.AST
     CodeGenConstructor (..),
     CodeGenType (..),
     CodeGenTypeName (..),
+    MethodArgument (..),
     TypeClassInstance (..),
     fromTypeName,
     getFullName,
@@ -52,7 +53,6 @@ import Data.Morpheus.CodeGen.TH
   ( PrintDec (printDec),
     ToName (toName),
     ToString (..),
-    destructConstructor,
     toCon,
     toString,
     toVar,
@@ -66,7 +66,7 @@ import Data.Morpheus.Types.GQLScalar
 import Data.Morpheus.Types.Internal.AST
   ( TypeName,
   )
-import Language.Haskell.TH (Dec, DecQ, Exp (..), ExpQ, Name, PatQ, Q, appE, tupP)
+import Language.Haskell.TH (Dec, DecQ, Exp (..), ExpQ, PatQ, Q, appE, tupP)
 import Relude hiding (ToString, Type, toString)
 
 printDeclarations :: [ClientDeclaration] -> Q [Dec]
@@ -88,13 +88,10 @@ typeDeclarations (RequestTypeClass RequestTypeDefinition {..}) = do
         }
   where
     typeClassMethods =
-      [ ('__name, ([_'], [|requestName|])),
-        ('__query, ([_'], [|requestQuery|])),
-        ('__type, ([_'], [|requestType|]))
+      [ ('__name, ProxyArgument, [|requestName|]),
+        ('__query, ProxyArgument, [|requestQuery|]),
+        ('__type, ProxyArgument, [|requestType|])
       ]
-
--- UTILS
-type Methods = [(Name, ([PatQ], ExpQ))]
 
 mkFromJSON :: CodeGenTypeName -> ExpQ -> DecQ
 mkFromJSON name expr =
@@ -104,10 +101,10 @@ mkFromJSON name expr =
         typeClassContext = [],
         typeClassTarget = name,
         assoc = [],
-        typeClassMethods = [('parseJSON, ([], expr))] :: Methods
+        typeClassMethods = [('parseJSON, NoArgument, expr)]
       }
 
-mkToJSON :: CodeGenTypeName -> Maybe PatQ -> ExpQ -> DecQ
+mkToJSON :: CodeGenTypeName -> MethodArgument -> ExpQ -> DecQ
 mkToJSON name args expr =
   printDec
     TypeClassInstance
@@ -115,7 +112,7 @@ mkToJSON name args expr =
         typeClassContext = [],
         typeClassTarget = name,
         assoc = [],
-        typeClassMethods = [('toJSON, (maybeToList args, expr))] :: Methods
+        typeClassMethods = [('toJSON, args, expr)]
       }
 
 originalLit :: ToString TypeName a => CodeGenTypeName -> Q a
@@ -155,12 +152,12 @@ fromJSONUnion CodeGenType {..} = appE (toVar 'takeValueType) (matchWith elseCond
 
 -- ToJSON
 deriveToJSON :: DERIVING_MODE -> CodeGenType -> DecQ
-deriveToJSON SCALAR_MODE CodeGenType {..} = mkToJSON cgTypeName Nothing [|scalarToJSON|]
+deriveToJSON SCALAR_MODE CodeGenType {..} = mkToJSON cgTypeName NoArgument [|scalarToJSON|]
 deriveToJSON _ CodeGenType {cgConstructors = [], ..} = emptyTypeError cgTypeName
 deriveToJSON ENUM_MODE CodeGenType {..} =
-  mkToJSON cgTypeName Nothing (matchWith Nothing toJSONEnum cgConstructors)
+  mkToJSON cgTypeName NoArgument (matchWith Nothing toJSONEnum cgConstructors)
 deriveToJSON _ CodeGenType {cgConstructors = [cons], ..} =
-  mkToJSON cgTypeName (Just $ destructConstructor cons) (toJSONObject cons)
+  mkToJSON cgTypeName (DestructArgument cons) (toJSONObject cons)
 deriveToJSON _ _ = fail "Input Unions are not yet supported"
 
 toJSONEnum :: CodeGenConstructor -> (PatQ, ExpQ)

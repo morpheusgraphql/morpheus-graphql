@@ -27,7 +27,6 @@ module Data.Morpheus.CodeGen.TH
     m',
     m_,
     printTypeSynonym,
-    destructConstructor,
   )
 where
 
