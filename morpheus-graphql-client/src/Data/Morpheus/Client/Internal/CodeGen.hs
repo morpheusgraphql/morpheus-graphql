@@ -4,6 +4,8 @@ module Data.Morpheus.Client.Internal.CodeGen
     RequestType (..),
     Generic,
     OperationType (..),
+    scalarFromJSON,
+    scalarToJSON,
   )
 where
 
@@ -14,5 +16,6 @@ import Data.Aeson
 import Data.Morpheus.Client.Fetch.RequestType
   ( RequestType (..),
   )
+import Data.Morpheus.Types.GQLScalar (scalarFromJSON, scalarToJSON)
 import Data.Morpheus.Types.Internal.AST (OperationType (..))
 import GHC.Generics (Generic)

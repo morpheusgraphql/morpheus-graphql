@@ -13,6 +13,7 @@ import Data.Morpheus.CodeGen.Internal.AST
     CodeGenType,
     CodeGenTypeName,
     TypeClassInstance,
+    printTHName,
   )
 import Data.Morpheus.CodeGen.TH (PrintExp (..))
 import Data.Morpheus.Types.Internal.AST
@@ -20,7 +21,8 @@ import Data.Morpheus.Types.Internal.AST
     TypeKind,
     TypeName,
   )
-import Language.Haskell.TH (ExpQ)
+import Language.Haskell.TH (ExpQ, Name)
+import Language.Haskell.TH.Lib (varE)
 import Language.Haskell.TH.Syntax (Lift (..))
 import Prettyprinter (Pretty (..))
 import Relude hiding (lift)
@@ -67,15 +69,18 @@ instance PrintExp Printable where
 
 data ClientMethod
   = PrintableMethod Printable
+  | FunctionNameMethod Name
   | ClientMethodExp ExpQ
   | ToJSONEnumMethod [CodeGenConstructor]
   | ToJSONObjectMethod CodeGenConstructor
 
 instance Pretty ClientMethod where
+  pretty (FunctionNameMethod x) = printTHName x
   pretty (PrintableMethod x) = pretty x
   pretty _ = "undefined -- TODO: should be real function"
 
 instance PrintExp ClientMethod where
+  printExp (FunctionNameMethod v) = varE v
   printExp (PrintableMethod v) = printExp v
   printExp (ClientMethodExp x) = x
   printExp (ToJSONEnumMethod x) = toJSONEnumMethod x

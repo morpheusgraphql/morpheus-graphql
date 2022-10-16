@@ -75,14 +75,14 @@ getRequestInstance RequestTypeDefinition {..} =
 
 -- FromJSON
 deriveFromJSONMethod :: MonadFail m => DERIVING_MODE -> CodeGenType -> m ClientMethod
-deriveFromJSONMethod SCALAR_MODE _ = pure $ ClientMethodExp [|scalarFromJSON|]
+deriveFromJSONMethod SCALAR_MODE _ = pure $ FunctionNameMethod 'scalarFromJSON
 deriveFromJSONMethod _ CodeGenType {cgConstructors = [], ..} = emptyTypeError cgTypeName
 deriveFromJSONMethod ENUM_MODE CodeGenType {..} = pure $ ClientMethodExp (fromJSONEnumMethod cgConstructors)
 deriveFromJSONMethod _ CodeGenType {cgConstructors = [cons]} = pure $ ClientMethodExp (fromJSONObjectMethod cons)
 deriveFromJSONMethod _ typeD = pure $ ClientMethodExp (fromJSONUnionMethod typeD)
 
 deriveToJSONMethod :: MonadFail m => DERIVING_MODE -> CodeGenType -> m (MethodArgument, ClientMethod)
-deriveToJSONMethod SCALAR_MODE _ = pure (NoArgument, ClientMethodExp [|scalarToJSON|])
+deriveToJSONMethod SCALAR_MODE _ = pure (NoArgument, FunctionNameMethod 'scalarToJSON)
 deriveToJSONMethod _ CodeGenType {cgConstructors = [], ..} = emptyTypeError cgTypeName
 deriveToJSONMethod ENUM_MODE CodeGenType {cgConstructors} = pure (NoArgument, ToJSONEnumMethod cgConstructors)
 deriveToJSONMethod _ CodeGenType {cgConstructors = [cons]} = pure (DestructArgument cons, ToJSONObjectMethod cons)
