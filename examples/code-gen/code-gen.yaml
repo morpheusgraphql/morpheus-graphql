@@ -16,4 +16,4 @@ client:
   - name: Client API
     source: ./src
     includes:
-      - Client/Requests/**/*/gql
+      - Client/Requests/**/*.gql
