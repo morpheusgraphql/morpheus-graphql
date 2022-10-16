@@ -44,6 +44,7 @@ import Data.Morpheus.CodeGen.Internal.AST
     CodeGenType (..),
     CodeGenTypeName (..),
     TypeClassInstance (..),
+    fromTypeName,
     getFullName,
   )
 import Data.Morpheus.CodeGen.TH
@@ -51,7 +52,6 @@ import Data.Morpheus.CodeGen.TH
     ToString (..),
     destructConstructor,
     toCon,
-    toName,
     toString,
     toVar,
     v',
@@ -75,10 +75,17 @@ typeDeclarations (FromJSONClass mode clientDef) = deriveIfNotDefined (deriveFrom
 typeDeclarations (ToJSONClass mode clientDef) = deriveIfNotDefined (deriveToJSON mode) ''ToJSON clientDef
 typeDeclarations (ClientType c) = declareIfNotDeclared printDec c
 typeDeclarations (RequestTypeClass RequestTypeDefinition {..}) = do
-  x <- printDec $ TypeClassInstance ''RequestType [] (toCon requestName :: Type) [(''RequestArgs, toCon requestArgs)] methods
-  pure [x]
+  pure
+    <$> printDec
+      TypeClassInstance
+        { typeClassName = ''RequestType,
+          typeClassContext = [],
+          typeClassTarget = fromTypeName requestName,
+          assoc = [(''RequestArgs, toCon requestArgs)] :: Constraints,
+          typeClassMethods
+        }
   where
-    methods =
+    typeClassMethods =
       [ ('__name, ([_'], [|requestName|])),
         ('__query, ([_'], [|requestQuery|])),
         ('__type, ([_'], [|requestType|]))
@@ -87,14 +94,16 @@ typeDeclarations (RequestTypeClass RequestTypeDefinition {..}) = do
 -- UTILS
 type Methods = [(Name, ([PatQ], ExpQ))]
 
+type Constraints = [(Name, Type)]
+
 mkFromJSON :: CodeGenTypeName -> ExpQ -> DecQ
-mkFromJSON name expr = do
-  (tName :: Type) <- toCon (toName name)
-  printDec $ TypeClassInstance ''FromJSON [] tName [] ([('parseJSON, ([], expr))] :: Methods)
+mkFromJSON name expr =
+  printDec $
+    TypeClassInstance ''FromJSON [] name ([] :: Constraints) ([('parseJSON, ([], expr))] :: Methods)
 
 mkToJSON :: CodeGenTypeName -> [PatQ] -> ExpQ -> DecQ
 mkToJSON name args expr = do
-  printDec $ TypeClassInstance ''ToJSON [] (toCon $ toName name :: Type) [] ([('toJSON, (args, expr))] :: Methods)
+  printDec $ TypeClassInstance ''ToJSON [] name ([] :: Constraints) ([('toJSON, (args, expr))] :: Methods)
 
 originalLit :: ToString TypeName a => CodeGenTypeName -> Q a
 originalLit = toString . typename

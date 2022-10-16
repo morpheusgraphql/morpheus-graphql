@@ -35,7 +35,6 @@ import Data.Morpheus.CodeGen.TH
     m_,
     printDec,
     printTypeSynonym,
-    toCon,
     _',
   )
 import Data.Morpheus.Server.Types
@@ -80,8 +79,7 @@ instance PrintDecQ GQLTypeDefinition where
   printDecQ GQLTypeDefinition {..} = do
     let params = map toName (typeParameters gqlTarget)
     associatedTypes <- fmap (pure . (''KIND,)) (printType gqlKind)
-    target <- printType gqlTarget
-    pure <$> printDec (TypeClassInstance ''GQLType (map (''Typeable,) params) target associatedTypes methods)
+    pure <$> printDec (TypeClassInstance ''GQLType (map (''Typeable,) params) gqlTarget associatedTypes methods)
     where
       methods =
         [ ('defaultValues, ([_'], [|gqlTypeDefaultValues|])),
@@ -102,7 +100,7 @@ instance PrintDecQ GQLDirectiveTypeClass where
         TypeClassInstance
           { typeClassName = ''GQLDirective,
             typeClassContext = [],
-            typeClassTarget = toCon directiveTypeName :: Type,
+            typeClassTarget = directiveTypeName,
             assoc = [(''DIRECTIVE_LOCATIONS, promotedList directiveLocations)],
             typeClassMethods = [] :: Methods
           }

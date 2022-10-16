@@ -309,7 +309,7 @@ instance ToName AST.DirectiveLocation where
   toName AST.INPUT_OBJECT = 'AST.INPUT_OBJECT
   toName AST.INPUT_FIELD_DEFINITION = 'AST.INPUT_FIELD_DEFINITION
 
-instance PrintDec (TypeClassInstance Name Type ([PatQ], ExpQ)) where
+instance PrintDec (TypeClassInstance Name ([PatQ], ExpQ)) where
   printDec TypeClassInstance {..} =
     instanceD
       (printConstraints typeClassContext)
