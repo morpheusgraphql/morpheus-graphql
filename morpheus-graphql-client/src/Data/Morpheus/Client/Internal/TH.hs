@@ -10,40 +10,54 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Internal.TH
-  ( matchWith,
-    decodeObjectE,
-    mkFieldsE,
-    failExp,
-    deriveIfNotDefined,
+  ( deriveIfNotDefined,
     declareIfNotDeclared,
+    toJSONEnumMethod,
+    toJSONObjectMethod,
+    fromJSONUnionMethod,
+    fromJSONEnumMethod,
+    fromJSONObjectMethod,
   )
 where
 
-import Data.Aeson ((.:))
+import Data.Aeson
+  ( withObject,
+    (.:),
+    (.=),
+  )
 import Data.Aeson.Types ((.:?))
 import Data.Foldable (foldr1)
+import Data.Morpheus.Client.Internal.Utils
+  ( omitNulls,
+    takeValueType,
+  )
 import Data.Morpheus.CodeGen.Internal.AST
   ( CodeGenConstructor (..),
     CodeGenField (..),
-    CodeGenType (cgTypeName),
+    CodeGenType (..),
     CodeGenTypeName (..),
+    TypeClassInstance (..),
     getFullName,
   )
 import Data.Morpheus.CodeGen.TH
-  ( toCon,
+  ( ToString,
+    toCon,
     toName,
     toString,
     toVar,
     v',
+    _',
   )
 import Data.Morpheus.CodeGen.Utils
   ( camelCaseFieldName,
   )
+import Data.Morpheus.Types.Internal.AST (TypeName)
 import Language.Haskell.TH
-import Relude hiding (toString)
+import Relude hiding (ToString, toString)
 
 matchWith ::
   Maybe (PatQ, ExpQ) ->
@@ -124,26 +138,64 @@ isTypeDeclared clientTypeName = do
     Nothing -> pure False
     _ -> pure True
 
-hasInstance :: Name -> CodeGenType -> Q Bool
-hasInstance typeClass clientDef = isInstance typeClass [ConT (toName (cgTypeName clientDef))]
+hasInstance :: Name -> CodeGenTypeName -> Q Bool
+hasInstance typeClass tName = isInstance typeClass [ConT (toName tName)]
 
-deriveIfNotDefined :: (CodeGenType -> Q Dec) -> Name -> CodeGenType -> Q [Dec]
-deriveIfNotDefined derivation typeClass clientDef = do
-  exists <- isTypeDeclared (cgTypeName clientDef)
+deriveIfNotDefined :: (TypeClassInstance a -> Q Dec) -> TypeClassInstance a -> Q [Dec]
+deriveIfNotDefined derivation dec = do
+  exists <- isTypeDeclared (typeClassTarget dec)
   if exists
     then do
-      has <- hasInstance typeClass clientDef
+      has <- hasInstance (typeClassName dec) (typeClassTarget dec)
       if has
         then pure []
         else mkDerivation
     else mkDerivation
   where
     mkDerivation :: Q [Dec]
-    mkDerivation = pure <$> derivation clientDef
+    mkDerivation = pure <$> derivation dec
 
-declareIfNotDeclared :: (CodeGenType -> a) -> CodeGenType -> Q [a]
+declareIfNotDeclared :: (CodeGenType -> Q a) -> CodeGenType -> Q [a]
 declareIfNotDeclared f c = do
   exists <- isTypeDeclared (cgTypeName c)
   if exists
     then pure []
-    else pure [f c]
+    else pure <$> f c
+
+originalLit :: ToString TypeName a => CodeGenTypeName -> Q a
+originalLit = toString . typename
+
+-- EXPORTS
+
+toJSONEnumMethod :: [CodeGenConstructor] -> ExpQ
+toJSONEnumMethod = matchWith Nothing toJSONEnum
+
+toJSONEnum :: CodeGenConstructor -> (PatQ, ExpQ)
+toJSONEnum CodeGenConstructor {constructorName} = (toCon constructorName, originalLit constructorName)
+
+toJSONObjectMethod :: CodeGenConstructor -> ExpQ
+toJSONObjectMethod CodeGenConstructor {..} = pure $ AppE (VarE 'omitNulls) (mkFieldsE constructorName '(.=) constructorFields)
+
+fromJSONUnionMethod :: CodeGenType -> ExpQ
+fromJSONUnionMethod CodeGenType {..} = appE (toVar 'takeValueType) (matchWith elseCondition f cgConstructors)
+  where
+    elseCondition =
+      (tupP [_', v'],) . decodeObjectE
+        <$> find ((typename cgTypeName ==) . typename . constructorName) cgConstructors
+    f cons@CodeGenConstructor {..} =
+      ( tupP [originalLit constructorName, if null constructorFields then _' else v'],
+        decodeObjectE cons
+      )
+
+fromJSONEnumMethod :: [CodeGenConstructor] -> ExpQ
+fromJSONEnumMethod = matchWith (Just (v', failExp)) fromJSONEnum
+
+fromJSONEnum :: CodeGenConstructor -> (PatQ, ExpQ)
+fromJSONEnum CodeGenConstructor {constructorName} = (originalLit constructorName, appE (toVar 'pure) (toCon constructorName))
+
+fromJSONObjectMethod :: CodeGenConstructor -> ExpQ
+fromJSONObjectMethod con@CodeGenConstructor {constructorName} = withBody <$> decodeObjectE con
+  where
+    withBody body = AppE (AppE (VarE 'withObject) name) (LamE [v'] body)
+    name :: Exp
+    name = toString (getFullName constructorName)

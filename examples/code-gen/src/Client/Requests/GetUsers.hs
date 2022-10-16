@@ -1,15 +1,20 @@
 {-# LANGUAGE DeriveGeneric #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# LANGUAGE TypeFamilies #-}
 
 {-# HLINT ignore "Use camelCase" #-}
 
 module Client.Requests.GetUsers where
 
 import Client.Schema
-import GHC.Generics (Generic)
+import Data.Morpheus.Client.Internal.CodeGen
 
--- TODO: "GetUser" RequestTypeClass
+instance RequestType GetUser where
+  type RequestArgs GetUser = GetUserArgs
+  __name _ = undefined -- TODO: should be real function
+  __query _ = undefined -- TODO: should be real function
+  __type _ = undefined -- TODO: should be real function
 
 data GetUser = GetUser
   { myUser :: GetUserMyUserUser,
@@ -17,7 +22,8 @@ data GetUser = GetUser
   }
   deriving (Generic, Show, Eq)
 
--- TODO: "GetUser" FromJSONClass
+instance FromJSON GetUser where
+  parseJSON _ = undefined -- TODO: should be real function
 
 data GetUserMyUserUser = GetUserMyUserUser
   { name :: String,
@@ -27,21 +33,24 @@ data GetUserMyUserUser = GetUserMyUserUser
   }
   deriving (Generic, Show, Eq)
 
--- TODO: "GetUserMyUserUser" FromJSONClass
+instance FromJSON GetUserMyUserUser where
+  parseJSON _ = undefined -- TODO: should be real function
 
 newtype GetUserMyUserAddressAddress = GetUserMyUserAddressAddress
   { city :: String
   }
   deriving (Generic, Show, Eq)
 
--- TODO: "GetUserMyUserAddressAddress" FromJSONClass
+instance FromJSON GetUserMyUserAddressAddress where
+  parseJSON _ = undefined -- TODO: should be real function
 
 newtype GetUserMyUserAliasAdressAddress = GetUserMyUserAliasAdressAddress
   { city :: String
   }
   deriving (Generic, Show, Eq)
 
--- TODO: "GetUserMyUserAliasAdressAddress" FromJSONClass
+instance FromJSON GetUserMyUserAliasAdressAddress where
+  parseJSON _ = undefined -- TODO: should be real function
 
 data GetUserUserUser = GetUserUserUser
   { email :: String,
@@ -49,11 +58,13 @@ data GetUserUserUser = GetUserUserUser
   }
   deriving (Generic, Show, Eq)
 
--- TODO: "GetUserUserUser" FromJSONClass
+instance FromJSON GetUserUserUser where
+  parseJSON _ = undefined -- TODO: should be real function
 
 newtype GetUserArgs = GetUserArgs
   { coordinates :: Coordinates
   }
   deriving (Generic, Show, Eq)
 
--- TODO: "GetUserArgs" ToJSONClass
+instance ToJSON GetUserArgs where
+  toJSON _ = undefined -- TODO: should be real function

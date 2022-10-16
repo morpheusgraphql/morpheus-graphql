@@ -20,34 +20,26 @@ module Data.Morpheus.CodeGen.Server.Internal.AST
     TypeValue (..),
     InterfaceDefinition (..),
     GQLDirectiveTypeClass (..),
+    ServerMethod (..),
   )
 where
 
 import Data.Morpheus.CodeGen.Internal.AST
   ( CodeGenType,
-    CodeGenTypeName (typeParameters),
+    CodeGenTypeName,
     DerivingClass (..),
     FIELD_TYPE_WRAPPER (..),
+    TypeClassInstance (..),
     TypeValue (..),
   )
 import Data.Morpheus.CodeGen.Printer
   ( Printer (..),
     ignore,
-    optional,
     unpack,
     (.<>),
   )
-import Data.Morpheus.CodeGen.TH
-  ( PrintExp (..),
-    PrintType (..),
-  )
-import Data.Morpheus.Server.Types
-  ( SCALAR,
-    TYPE,
-    enumDirective,
-    fieldDirective,
-    typeDirective,
-  )
+import Data.Morpheus.CodeGen.TH (PrintDec (..), PrintExp (..), ToName (..), apply, m', m_, printTypeSynonym)
+import Data.Morpheus.Server.Types (SCALAR, TYPE, TypeGuard, enumDirective, fieldDirective, typeDirective)
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
     DirectiveLocation (..),
@@ -59,20 +51,17 @@ import Data.Morpheus.Types.Internal.AST
     Value,
     unpackName,
   )
-import Language.Haskell.TH.Lib (appE, conT, varE)
+import Language.Haskell.TH.Lib (appE, varE)
 import Prettyprinter
-  ( Doc,
-    Pretty (..),
+  ( Pretty (..),
     align,
-    indent,
-    line,
     pretty,
     punctuate,
-    tupled,
     vsep,
     (<+>),
   )
-import Relude hiding (optional, print)
+import Relude hiding (Show, optional, print, show)
+import Prelude (Show (..))
 
 data Kind
   = Scalar
@@ -83,9 +72,9 @@ instance Pretty Kind where
   pretty Type = "TYPE"
   pretty Scalar = "SCALAR"
 
-instance PrintType Kind where
-  printType Scalar = conT ''SCALAR
-  printType Type = conT ''TYPE
+instance ToName Kind where
+  toName Scalar = ''SCALAR
+  toName Type = ''TYPE
 
 data ServerDirectiveUsage
   = TypeDirectiveUsage TypeValue
@@ -118,6 +107,17 @@ data InterfaceDefinition = InterfaceDefinition
   }
   deriving (Show)
 
+instance PrintDec InterfaceDefinition where
+  printDec InterfaceDefinition {..} =
+    pure $
+      printTypeSynonym
+        aliasName
+        [m_]
+        ( apply
+            ''TypeGuard
+            [apply interfaceName [m'], apply unionName [m']]
+        )
+
 data GQLDirectiveTypeClass = GQLDirectiveTypeClass
   { directiveTypeName :: CodeGenTypeName,
     directiveLocations :: [DirectiveLocation]
@@ -125,8 +125,8 @@ data GQLDirectiveTypeClass = GQLDirectiveTypeClass
   deriving (Show)
 
 data ServerDeclaration
-  = GQLTypeInstance GQLTypeDefinition
-  | GQLDirectiveInstance GQLDirectiveTypeClass
+  = GQLTypeInstance Kind (TypeClassInstance ServerMethod)
+  | GQLDirectiveInstance (TypeClassInstance ServerMethod)
   | DataType CodeGenType
   | ScalarType {scalarTypeName :: Text}
   | InterfaceType InterfaceDefinition
@@ -144,34 +144,22 @@ instance Pretty ServerDeclaration where
   -- TODO: on scalar we should render user provided type
   pretty ScalarType {..} = "type" <+> ignore (print scalarTypeName) <+> "= Int"
   pretty (DataType cgType) = pretty cgType
-  pretty (GQLTypeInstance gqlType) = renderGQLType gqlType
+  pretty (GQLTypeInstance kind gql)
+    | kind == Scalar = ""
+    | otherwise = pretty gql
   pretty (GQLDirectiveInstance _) = "TODO: not supported"
 
-renderTypeableConstraints :: [Text] -> Doc n
-renderTypeableConstraints xs = tupled (map (("Typeable" <+>) . pretty) xs) <+> "=>"
+newtype CodeGenConfig = CodeGenConfig {namespace :: Bool}
 
-renderGQLType :: GQLTypeDefinition -> Doc ann
-renderGQLType gql@GQLTypeDefinition {..}
-  | gqlKind == Scalar = ""
-  | otherwise =
-      "instance"
-        <> optional renderTypeableConstraints (typeParameters gqlTarget)
-        <+> "GQLType"
-        <+> typeHead
-        <+> "where"
-          <> line
-          <> indent 2 (vsep (renderMethods typeHead gql))
-  where
-    typeHead = unpack (print gqlTarget)
+data ServerMethod
+  = ServerMethodDefaultValues (Map Text (Value CONST))
+  | ServerMethodDirectives [ServerDirectiveUsage]
+  deriving (Show)
 
-renderMethods :: Doc n -> GQLTypeDefinition -> [Doc n]
-renderMethods typeHead GQLTypeDefinition {..} =
-  ["type KIND" <+> typeHead <+> "=" <+> pretty gqlKind]
-    <> ["directives _=" <+> renderDirectiveUsages gqlTypeDirectiveUses | not (null gqlTypeDirectiveUses)]
+instance Pretty ServerMethod where
+  pretty (ServerMethodDefaultValues x) = pretty (show x)
+  pretty (ServerMethodDirectives dirs) = align $ vsep $ punctuate " <>" (map pretty dirs)
 
-renderDirectiveUsages :: [ServerDirectiveUsage] -> Doc n
-renderDirectiveUsages = align . vsep . punctuate " <>" . map pretty
-
-newtype CodeGenConfig = CodeGenConfig
-  { namespace :: Bool
-  }
+instance PrintExp ServerMethod where
+  printExp (ServerMethodDefaultValues values) = [|values|]
+  printExp (ServerMethodDirectives dirs) = foldr (appE . appE [|(<>)|] . printExp) [|mempty|] dirs

@@ -26,19 +26,20 @@ module Data.Morpheus.CodeGen.TH
     PrintDec (..),
     m',
     m_,
-    printTypeClass,
     printTypeSynonym,
-    destructConstructor,
   )
 where
 
 import Data.Morpheus.CodeGen.Internal.AST
-  ( CodeGenConstructor (..),
+  ( AssociatedType (..),
+    CodeGenConstructor (..),
     CodeGenField (..),
     CodeGenType (..),
     CodeGenTypeName (..),
     DerivingClass (..),
     FIELD_TYPE_WRAPPER (..),
+    MethodArgument (..),
+    TypeClassInstance (..),
     TypeValue (..),
     getFullName,
   )
@@ -142,7 +143,7 @@ instance (ToName a) => ToCon a Pat where
 #if MIN_VERSION_template_haskell(2,18,0)
   toCon name = ConP (toName name) [] []
 #else
-  toCon name = ConP (toName name) [] 
+  toCon name = ConP (toName name) []
 #endif
 {- ORMOLU_ENABLE -}
 
@@ -214,7 +215,7 @@ class PrintType a where
   printType :: a -> TypeQ
 
 class PrintDec a where
-  printDec :: a -> Dec
+  printDec :: a -> Q Dec
 
 printFieldExp :: (FieldName, TypeValue) -> Q FieldExp
 printFieldExp (fName, fValue) = do
@@ -275,17 +276,6 @@ constraint (con, name) = pure $ apply con [toVar name]
 printConstraints :: [(Name, Name)] -> Q Cxt
 printConstraints = cxt . map constraint
 
-printTypeClass :: [(Name, Name)] -> Name -> Q Type -> [(Name, Type)] -> [(Name, [PatQ], ExpQ)] -> Q Dec
-printTypeClass cts name target assoc methods =
-  instanceD
-    (printConstraints cts)
-    headType
-    (map assocTypes assoc <> map printFun methods)
-  where
-    printFun (funName, args, body) = funD funName [clause args (normalB body) []]
-    assocTypes (assocName, type') = flip (typeInstanceDec assocName) type' <$> target
-    headType = apply name [target]
-
 printConstructor :: CodeGenConstructor -> Con
 printConstructor CodeGenConstructor {..}
   | null constructorFields = NormalC (toName constructorName) []
@@ -320,15 +310,41 @@ instance ToName AST.DirectiveLocation where
   toName AST.INPUT_OBJECT = 'AST.INPUT_OBJECT
   toName AST.INPUT_FIELD_DEFINITION = 'AST.INPUT_FIELD_DEFINITION
 
+instance PrintType AssociatedType where
+  printType (AssociatedLocations xs) = pure $ foldr (AppT . AppT PromotedConsT . PromotedT . toName) PromotedNilT xs
+  printType (AssociatedTypeName name) = toCon name
+
+instance PrintExp body => PrintDec (TypeClassInstance body) where
+  printDec TypeClassInstance {..} =
+    instanceD
+      (printConstraints typeClassContext)
+      headType
+      (map assocTypes assoc <> map printFun typeClassMethods)
+    where
+      printFun (funName, args, body) = funD funName [clause (printArg args) (normalB (printExp body)) []]
+      assocTypes (assocName, type') = do
+        ty <- printType typeClassTarget
+        assocType <- printType type'
+        pure $ typeInstanceDec assocName ty assocType
+      headType = do
+        ty <- printType typeClassTarget
+        pure $ apply typeClassName [ty]
+
+printArg :: MethodArgument -> [PatQ]
+printArg (DestructArgument cons) = [destructConstructor cons]
+printArg NoArgument = []
+printArg ProxyArgument = [_']
+
 instance PrintDec CodeGenType where
   printDec CodeGenType {..} =
-    DataD
-      []
-      (toName cgTypeName)
-      (toTypeVars $ map toName $ typeParameters cgTypeName)
-      Nothing
-      (map printConstructor cgConstructors)
-      [printDerivClause cgDerivations]
+    pure $
+      DataD
+        []
+        (toName cgTypeName)
+        (toTypeVars $ map toName $ typeParameters cgTypeName)
+        Nothing
+        (map printConstructor cgConstructors)
+        [printDerivClause cgDerivations]
 
 -- |
 -- input:

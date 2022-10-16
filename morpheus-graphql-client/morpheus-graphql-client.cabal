@@ -55,6 +55,7 @@ source-repository head
 library
   exposed-modules:
       Data.Morpheus.Client
+      Data.Morpheus.Client.Internal.CodeGen
   other-modules:
       Data.Morpheus.Client.Declare
       Data.Morpheus.Client.Fetch
@@ -67,7 +68,6 @@ library
       Data.Morpheus.Client.Internal.TH
       Data.Morpheus.Client.Internal.Types
       Data.Morpheus.Client.Internal.Utils
-      Data.Morpheus.Client.Printing.TH
       Data.Morpheus.Client.QuasiQuoter
       Data.Morpheus.Client.Schema.JSON.Parse
       Data.Morpheus.Client.Schema.JSON.TypeKind
@@ -78,6 +78,7 @@ library
       Data.Morpheus.Client.Transform.Core
       Data.Morpheus.Client.Transform.Global
       Data.Morpheus.Client.Transform.Local
+      Data.Morpheus.Client.Transform.PreDeclarations
       Paths_morpheus_graphql_client
   hs-source-dirs:
       src

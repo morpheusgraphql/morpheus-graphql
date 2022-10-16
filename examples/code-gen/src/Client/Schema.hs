@@ -1,12 +1,13 @@
 {-# LANGUAGE DeriveGeneric #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# LANGUAGE TypeFamilies #-}
 
 {-# HLINT ignore "Use camelCase" #-}
 
 module Client.Schema where
 
-import GHC.Generics (Generic)
+import Data.Morpheus.Client.Internal.CodeGen
 import Globals.GQLScalars
 
 newtype Bird = Bird
@@ -14,14 +15,16 @@ newtype Bird = Bird
   }
   deriving (Generic, Show, Eq)
 
--- TODO: "Bird" ToJSONClass
+instance ToJSON Bird where
+  toJSON _ = undefined -- TODO: should be real function
 
 newtype Cat = Cat
   { name :: String
   }
   deriving (Generic, Show, Eq)
 
--- TODO: "Cat" ToJSONClass
+instance ToJSON Cat where
+  toJSON _ = undefined -- TODO: should be real function
 
 data CityID
   = CityIDParis
@@ -29,9 +32,11 @@ data CityID
   | CityIDHH
   deriving (Generic, Show, Eq)
 
--- TODO: "CityID" FromJSONClass
+instance FromJSON CityID where
+  parseJSON _ = undefined -- TODO: should be real function
 
--- TODO: "CityID" ToJSONClass
+instance ToJSON CityID where
+  toJSON _ = undefined -- TODO: should be real function
 
 data Coordinates = Coordinates
   { latitude :: Euro,
@@ -39,18 +44,22 @@ data Coordinates = Coordinates
   }
   deriving (Generic, Show, Eq)
 
--- TODO: "Coordinates" ToJSONClass
+instance ToJSON Coordinates where
+  toJSON _ = undefined -- TODO: should be real function
 
 newtype Dog = Dog
   { name :: String
   }
   deriving (Generic, Show, Eq)
 
--- TODO: "Dog" ToJSONClass
+instance ToJSON Dog where
+  toJSON _ = undefined -- TODO: should be real function
 
--- TODO: "Euro" FromJSONClass
+instance FromJSON Euro where
+  parseJSON _ = undefined -- TODO: should be real function
 
--- TODO: "Euro" ToJSONClass
+instance ToJSON Euro where
+  toJSON _ = undefined -- TODO: should be real function
 
 data UniqueID = UniqueID
   { name :: Maybe String,
@@ -59,4 +68,5 @@ data UniqueID = UniqueID
   }
   deriving (Generic, Show, Eq)
 
--- TODO: "UniqueID" ToJSONClass
+instance ToJSON UniqueID where
+  toJSON _ = undefined -- TODO: should be real function

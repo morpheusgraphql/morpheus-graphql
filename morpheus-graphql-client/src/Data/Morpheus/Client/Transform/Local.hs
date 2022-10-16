@@ -14,11 +14,15 @@ where
 
 import Control.Monad.Except (MonadError (throwError))
 import Data.Morpheus.Client.Internal.AST
-  ( ClientDeclaration (..),
+  ( ClientDeclaration,
+    ClientPreDeclaration (..),
     ClientTypeDefinition (..),
     RequestTypeDefinition (..),
   )
 import Data.Morpheus.Client.Transform.Core (Converter (..), compileError, deprecationWarning, getType, toClientDeclarations, toCodeGenField, typeFrom)
+import Data.Morpheus.Client.Transform.PreDeclarations
+  ( mapPreDeclarations,
+  )
 import Data.Morpheus.CodeGen.Internal.AST (CodeGenConstructor (..), CodeGenTypeName (..), fromTypeName)
 import Data.Morpheus.Core (Config (..), VALIDATION_MODE (WITHOUT_VARIABLES), validateRequest)
 import Data.Morpheus.Internal.Ext
@@ -72,9 +76,10 @@ clientConfig =
 toLocalDefinitions :: (Text, ExecutableDocument) -> Schema VALID -> GQLResult [ClientDeclaration]
 toLocalDefinitions (query, request) schema = do
   validOperation <- validateRequest clientConfig schema request
-  flip runReaderT (schema, operationArguments $ operation request) $ runConverter $ genLocalDeclarations query validOperation
+  x <- flip runReaderT (schema, operationArguments $ operation request) $ runConverter $ genLocalDeclarations query validOperation
+  traverse mapPreDeclarations x
 
-genLocalDeclarations :: Text -> Operation VALID -> Converter [ClientDeclaration]
+genLocalDeclarations :: Text -> Operation VALID -> Converter [ClientPreDeclaration]
 genLocalDeclarations query op@Operation {operationName, operationSelection, operationType} = do
   (schema, varDefs) <- asks id
   datatype <- getOperationDataType op schema

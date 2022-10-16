@@ -14,11 +14,15 @@ import Data.Morpheus.Client.Internal.AST
     ClientTypeDefinition (..),
   )
 import Data.Morpheus.Client.Transform.Core (toClientDeclarations, toCodeGenField)
+import Data.Morpheus.Client.Transform.PreDeclarations
+  ( mapPreDeclarations,
+  )
 import Data.Morpheus.CodeGen.Internal.AST
   ( CodeGenConstructor (..),
     CodeGenTypeName (..),
     fromTypeName,
   )
+import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     DataEnumValue (DataEnumValue, enumName),
@@ -34,11 +38,12 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Relude hiding (empty)
 
-toGlobalDefinitions :: (TypeName -> Bool) -> Schema VALID -> [ClientDeclaration]
+toGlobalDefinitions :: (TypeName -> Bool) -> Schema VALID -> GQLResult [ClientDeclaration]
 toGlobalDefinitions f Schema {types} =
-  concatMap toClientDeclarations $
-    mapMaybe generateGlobalType $
-      filter shouldInclude (sortWith typeName $ toList types)
+  traverse mapPreDeclarations $
+    concatMap toClientDeclarations $
+      mapMaybe generateGlobalType $
+        filter shouldInclude (sortWith typeName $ toList types)
   where
     shouldInclude t =
       not (isResolverType t)

@@ -13,16 +13,22 @@ module Data.Morpheus.CodeGen.Internal.AST
     fromTypeName,
     getFullName,
     ModuleDefinition (..),
+    TypeClassInstance (..),
+    AssociatedType (..),
+    MethodArgument (..),
+    printTHName,
   )
 where
 
 import Data.Morpheus.CodeGen.Internal.Name (camelCaseTypeName)
 import Data.Morpheus.CodeGen.Printer
 import Data.Morpheus.Types.Internal.AST
-  ( FieldName,
+  ( DirectiveLocation,
+    FieldName,
     TypeName,
     TypeRef,
     TypeWrapper,
+    packName,
     unpackName,
   )
 import qualified Language.Haskell.TH.Syntax as TH
@@ -34,6 +40,7 @@ import Prettyprinter
     hsep,
     indent,
     line,
+    list,
     nest,
     pretty,
     punctuate,
@@ -41,7 +48,7 @@ import Prettyprinter
     vsep,
     (<+>),
   )
-import Relude hiding (print)
+import Relude hiding (optional, print)
 
 data DerivingClass
   = SHOW
@@ -209,3 +216,50 @@ renderImport (src, ls) = "import" <+> pretty src <> renderImportList ls
 renderImportList :: [Text] -> Doc ann
 renderImportList ["*"] = ""
 renderImportList xs = tupled (map pretty xs)
+
+data TypeClassInstance body = TypeClassInstance
+  { typeClassName :: TH.Name,
+    typeClassContext :: [(TH.Name, TH.Name)],
+    typeClassTarget :: CodeGenTypeName,
+    assoc :: [(TH.Name, AssociatedType)],
+    typeClassMethods :: [(TH.Name, MethodArgument, body)]
+  }
+  deriving (Show)
+
+instance Pretty a => Pretty (TypeClassInstance a) where
+  pretty TypeClassInstance {..} =
+    "instance"
+      <> optional renderTypeableConstraints (typeParameters typeClassTarget)
+      <+> printTHName typeClassName
+      <+> typeHead
+      <+> "where"
+        <> line
+        <> indent 2 (vsep (map renderAssoc assoc <> map renderMethodD typeClassMethods))
+    where
+      typeHead = unpack (print typeClassTarget)
+      renderAssoc (name, a) = "type" <+> printTHName name <+> typeHead <+> "=" <+> pretty a
+      renderMethodD (name, _, method) = printTHName name <+> " _ =" <+> pretty method
+
+renderTypeableConstraints :: [Text] -> Doc n
+renderTypeableConstraints xs = tupled (map (("Typeable" <+>) . pretty) xs) <+> "=>"
+
+data AssociatedType
+  = AssociatedTypeName TH.Name
+  | AssociatedLocations [DirectiveLocation]
+  deriving (Show)
+
+printTHName :: TH.Name -> Doc ann
+printTHName = ignore . print . packName
+
+printPromotedLocation :: DirectiveLocation -> Doc ann
+printPromotedLocation = ("'" <>) . ignore . print
+
+instance Pretty AssociatedType where
+  pretty (AssociatedTypeName x) = printTHName x
+  pretty (AssociatedLocations x) = list $ map printPromotedLocation x
+
+data MethodArgument
+  = NoArgument
+  | ProxyArgument
+  | DestructArgument CodeGenConstructor
+  deriving (Show)

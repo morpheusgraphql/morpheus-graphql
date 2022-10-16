@@ -14,21 +14,25 @@ module Data.Morpheus.Client.Declare
 where
 
 import Data.Morpheus.Client.Internal.AST
-  ( ClientDeclaration,
+  ( ClientDeclaration (..),
+  )
+import Data.Morpheus.Client.Internal.TH
+  ( declareIfNotDeclared,
+    deriveIfNotDefined,
   )
 import Data.Morpheus.Client.Internal.Types
   ( ExecutableSource,
     SchemaSource,
   )
 import Data.Morpheus.Client.Internal.Utils (getFile, getSource, handleResult)
-import Data.Morpheus.Client.Printing.TH
-  ( printDeclarations,
-  )
 import Data.Morpheus.Client.QuasiQuoter (raw)
 import Data.Morpheus.Client.Schema.Parse (parseSchema)
 import Data.Morpheus.Client.Transform
   ( toGlobalDefinitions,
     toLocalDefinitions,
+  )
+import Data.Morpheus.CodeGen.TH
+  ( PrintDec (printDec),
   )
 import Data.Morpheus.Core (parseRequest)
 import Data.Morpheus.Internal.Ext (GQLResult)
@@ -38,13 +42,20 @@ import qualified Data.Set as S
 import Language.Haskell.TH (Dec, Q, runIO)
 import Relude
 
+printDeclarations :: [ClientDeclaration] -> Q [Dec]
+printDeclarations clientType = concat <$> traverse typeDeclarations clientType
+
+typeDeclarations :: ClientDeclaration -> Q [Dec]
+typeDeclarations (InstanceDeclaration dec) = deriveIfNotDefined printDec dec
+typeDeclarations (ClientTypeDeclaration c) = declareIfNotDeclared printDec c
+
 internalLegacyLocalDeclareTypes :: IO SchemaSource -> ExecutableSource -> Q [Dec]
 internalLegacyLocalDeclareTypes schemaSrc query = do
   schemaText <- runIO schemaSrc
   clientTypeDeclarations schemaText (Just query)
 
 globalTypeDeclarations :: SchemaSource -> (TypeName -> Bool) -> Q [Dec]
-globalTypeDeclarations src f = handleResult (toGlobalDefinitions f <$> parseSchema src) printDeclarations
+globalTypeDeclarations src f = handleResult (parseSchema src >>= toGlobalDefinitions f) printDeclarations
 
 parseClientTypeDeclarations :: SchemaSource -> Maybe Text -> GQLResult [ClientDeclaration]
 parseClientTypeDeclarations schemaText (Just query) = do
@@ -57,7 +68,7 @@ parseClientTypeDeclarations schemaText (Just query) = do
           variables = Nothing
         }
   toLocalDefinitions (query, executableDoc) schemaDoc
-parseClientTypeDeclarations src Nothing = toGlobalDefinitions (const True) <$> parseSchema src
+parseClientTypeDeclarations src Nothing = parseSchema src >>= toGlobalDefinitions (const True)
 
 -- | declares global or local types, depending
 -- on whether the second argument is specified or not

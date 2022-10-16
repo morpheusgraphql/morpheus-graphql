@@ -3,23 +3,30 @@
 
 module Data.Morpheus.Client.Internal.AST where
 
+import Data.Morpheus.Client.Internal.TH (toJSONEnumMethod, toJSONObjectMethod)
 import Data.Morpheus.CodeGen.Internal.AST
   ( CodeGenConstructor (..),
-    CodeGenType (cgTypeName),
+    CodeGenType,
     CodeGenTypeName,
-    getFullName,
+    TypeClassInstance,
   )
+import Data.Morpheus.CodeGen.TH (PrintExp (..))
 import Data.Morpheus.Types.Internal.AST
   ( OperationType,
     TypeKind,
     TypeName,
   )
+import Language.Haskell.TH (ExpQ)
 import Prettyprinter (Pretty (..))
 import Relude
 
 data DERIVING_MODE = SCALAR_MODE | ENUM_MODE | TYPE_MODE
 
 data ClientDeclaration
+  = InstanceDeclaration (TypeClassInstance ClientMethod)
+  | ClientTypeDeclaration CodeGenType
+
+data ClientPreDeclaration
   = ToJSONClass DERIVING_MODE CodeGenType
   | FromJSONClass DERIVING_MODE CodeGenType
   | RequestTypeClass RequestTypeDefinition
@@ -41,7 +48,18 @@ data RequestTypeDefinition = RequestTypeDefinition
   deriving (Show)
 
 instance Pretty ClientDeclaration where
-  pretty (ClientType def) = pretty def
-  pretty (ToJSONClass _ def) = "-- TODO: " <> show (getFullName $ cgTypeName def) <> " ToJSONClass\n"
-  pretty (FromJSONClass _ def) = "-- TODO: " <> show (getFullName $ cgTypeName def) <> " FromJSONClass\n"
-  pretty (RequestTypeClass def) = "-- TODO: " <> show (requestName def) <> " RequestTypeClass\n"
+  pretty (ClientTypeDeclaration def) = pretty def
+  pretty (InstanceDeclaration def) = pretty def
+
+data ClientMethod
+  = ClientMethodExp ExpQ
+  | ToJSONEnumMethod [CodeGenConstructor]
+  | ToJSONObjectMethod CodeGenConstructor
+
+instance Pretty ClientMethod where
+  pretty _ = "undefined -- TODO: should be real function"
+
+instance PrintExp ClientMethod where
+  printExp (ClientMethodExp x) = x
+  printExp (ToJSONEnumMethod x) = toJSONEnumMethod x
+  printExp (ToJSONObjectMethod x) = toJSONObjectMethod x

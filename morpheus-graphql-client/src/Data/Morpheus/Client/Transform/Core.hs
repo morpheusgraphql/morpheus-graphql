@@ -21,7 +21,7 @@ where
 
 import Control.Monad.Except (MonadError)
 import Data.Morpheus.Client.Internal.AST
-  ( ClientDeclaration (..),
+  ( ClientPreDeclaration (..),
     ClientTypeDefinition (..),
     DERIVING_MODE (..),
   )
@@ -122,7 +122,7 @@ toCodeGenField FieldDefinition {fieldType = field@TypeRef {..}, ..} =
       fieldIsNullable = isNullable field
     }
 
-toClientDeclarations :: ClientTypeDefinition -> [ClientDeclaration]
+toClientDeclarations :: ClientTypeDefinition -> [ClientPreDeclaration]
 toClientDeclarations def@ClientTypeDefinition {clientKind}
   | KindScalar == clientKind = [FromJSONClass SCALAR_MODE cgType, ToJSONClass SCALAR_MODE cgType]
   | KindEnum == clientKind = [ClientType cgType, FromJSONClass ENUM_MODE cgType, ToJSONClass ENUM_MODE cgType]
