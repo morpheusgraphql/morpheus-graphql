@@ -14,16 +14,10 @@ module Data.Morpheus.CodeGen.Server.Printing.TH
 where
 
 import Data.ByteString.Lazy.Char8 (ByteString, pack)
-import Data.Morpheus.CodeGen.Internal.AST
-  ( AssociatedType (..),
-    TypeClassInstance (..),
-  )
 import Data.Morpheus.CodeGen.Server.Internal.AST
   ( CodeGenConfig (..),
-    GQLDirectiveTypeClass (..),
     InterfaceDefinition (..),
     ServerDeclaration (..),
-    ServerMethod (..),
   )
 import Data.Morpheus.CodeGen.Server.Interpreting.Transform
   ( parseServerTypeDefinitions,
@@ -36,8 +30,7 @@ import Data.Morpheus.CodeGen.TH
     printTypeSynonym,
   )
 import Data.Morpheus.Server.Types
-  ( GQLDirective (..),
-    TypeGuard (..),
+  ( TypeGuard (..),
   )
 import Language.Haskell.TH
 import Language.Haskell.TH.Quote (QuasiQuoter (..))
@@ -76,4 +69,4 @@ instance PrintDecQ ServerDeclaration where
   printDecQ ScalarType {} = pure []
   printDecQ (DataType dataType) = pure <$> printDec dataType
   printDecQ (GQLTypeInstance _ gql) = pure <$> printDec gql
-  printDecQ (GQLDirectiveInstance _ dir) = printDec dir
+  printDecQ (GQLDirectiveInstance _ dir) = pure <$> printDec dir
