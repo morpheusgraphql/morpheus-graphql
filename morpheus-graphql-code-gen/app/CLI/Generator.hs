@@ -47,8 +47,16 @@ processClientDocument BuildOptions {} schema query moduleName = do
   let moduleDef =
         ModuleDefinition
           { moduleName,
-            imports = [],
-            extensions = [],
+            imports =
+              [ ("Data.Text", ["Text"]),
+                ("GHC.Generics", ["Generic"]),
+                ("Globals.GQLScalars", ["*"])
+              ],
+            extensions =
+              [ "DeriveGeneric",
+                "OverloadedStrings",
+                "DuplicateRecordFields"
+              ],
             types
           }
   pure $ pack $ show $ pretty moduleDef
