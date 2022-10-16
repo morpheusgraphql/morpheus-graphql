@@ -43,13 +43,13 @@ import Data.Morpheus.CodeGen.Internal.AST
   ( CodeGenConstructor (..),
     CodeGenType (..),
     CodeGenTypeName (..),
+    TypeClassInstance (..),
     getFullName,
   )
 import Data.Morpheus.CodeGen.TH
   ( PrintDec (printDec),
     ToString (..),
     destructConstructor,
-    printTypeClass,
     toCon,
     toName,
     toString,
@@ -64,17 +64,8 @@ import Data.Morpheus.Types.GQLScalar
 import Data.Morpheus.Types.Internal.AST
   ( TypeName,
   )
-import Language.Haskell.TH
-  ( Dec,
-    DecQ,
-    Exp (..),
-    ExpQ,
-    PatQ,
-    Q,
-    appE,
-    tupP,
-  )
-import Relude hiding (ToString, toString)
+import Language.Haskell.TH (Dec, DecQ, Exp (..), ExpQ, Name, PatQ, Q, Type, appE, tupP)
+import Relude hiding (ToString, Type, toString)
 
 printDeclarations :: [ClientDeclaration] -> Q [Dec]
 printDeclarations clientType = concat <$> traverse typeDeclarations clientType
@@ -83,22 +74,27 @@ typeDeclarations :: ClientDeclaration -> Q [Dec]
 typeDeclarations (FromJSONClass mode clientDef) = deriveIfNotDefined (deriveFromJSON mode) ''FromJSON clientDef
 typeDeclarations (ToJSONClass mode clientDef) = deriveIfNotDefined (deriveToJSON mode) ''ToJSON clientDef
 typeDeclarations (ClientType c) = declareIfNotDeclared printDec c
-typeDeclarations (RequestTypeClass RequestTypeDefinition {..}) =
-  pure <$> printTypeClass [] ''RequestType (toCon requestName) [(''RequestArgs, toCon requestArgs)] methods
+typeDeclarations (RequestTypeClass RequestTypeDefinition {..}) = do
+  x <- printDec $ TypeClassInstance ''RequestType [] (toCon requestName :: Type) [(''RequestArgs, toCon requestArgs)] methods
+  pure [x]
   where
     methods =
-      [ ('__name, [_'], [|requestName|]),
-        ('__query, [_'], [|requestQuery|]),
-        ('__type, [_'], [|requestType|])
+      [ ('__name, ([_'], [|requestName|])),
+        ('__query, ([_'], [|requestQuery|])),
+        ('__type, ([_'], [|requestType|]))
       ]
 
 -- UTILS
+type Methods = [(Name, ([PatQ], ExpQ))]
 
 mkFromJSON :: CodeGenTypeName -> ExpQ -> DecQ
-mkFromJSON name expr = printTypeClass [] ''FromJSON (toCon (toName name)) [] [('parseJSON, [], expr)]
+mkFromJSON name expr = do
+  (tName :: Type) <- toCon (toName name)
+  printDec $ TypeClassInstance ''FromJSON [] tName [] ([('parseJSON, ([], expr))] :: Methods)
 
 mkToJSON :: CodeGenTypeName -> [PatQ] -> ExpQ -> DecQ
-mkToJSON name args expr = printTypeClass [] ''ToJSON (toCon $ toName name) [] [('toJSON, args, expr)]
+mkToJSON name args expr = do
+  printDec $ TypeClassInstance ''ToJSON [] (toCon $ toName name :: Type) [] ([('toJSON, (args, expr))] :: Methods)
 
 originalLit :: ToString TypeName a => CodeGenTypeName -> Q a
 originalLit = toString . typename

@@ -72,10 +72,10 @@ decodeObjectE :: CodeGenConstructor -> ExpQ
 decodeObjectE CodeGenConstructor {..}
   | null constructorFields = appE [|pure|] (toCon constructorName)
   | otherwise =
-      uInfixE
-        (toCon constructorName)
-        [|(<$>)|]
-        (foldr1 withApplicative $ map defField constructorFields)
+    uInfixE
+      (toCon constructorName)
+      [|(<$>)|]
+      (foldr1 withApplicative $ map defField constructorFields)
 
 defField :: CodeGenField -> ExpQ
 defField CodeGenField {..} = uInfixE v' (varE $ bindField fieldIsNullable) (toString fieldName)
@@ -141,9 +141,9 @@ deriveIfNotDefined derivation typeClass clientDef = do
     mkDerivation :: Q [Dec]
     mkDerivation = pure <$> derivation clientDef
 
-declareIfNotDeclared :: (CodeGenType -> a) -> CodeGenType -> Q [a]
+declareIfNotDeclared :: (CodeGenType -> Q a) -> CodeGenType -> Q [a]
 declareIfNotDeclared f c = do
   exists <- isTypeDeclared (cgTypeName c)
   if exists
     then pure []
-    else pure [f c]
+    else pure <$> f c

@@ -14,7 +14,7 @@ module Data.Morpheus.CodeGen.Server.Printing.TH
 where
 
 import Data.ByteString.Lazy.Char8 (ByteString, pack)
-import Data.Morpheus.CodeGen.Internal.AST (CodeGenTypeName (..))
+import Data.Morpheus.CodeGen.Internal.AST (CodeGenTypeName (..), TypeClassInstance (..))
 import Data.Morpheus.CodeGen.Server.Internal.AST
   ( CodeGenConfig (..),
     GQLDirectiveTypeClass (..),
@@ -34,7 +34,6 @@ import Data.Morpheus.CodeGen.TH
     m',
     m_,
     printDec,
-    printTypeClass,
     printTypeSynonym,
     toCon,
     _',
@@ -81,29 +80,34 @@ instance PrintDecQ GQLTypeDefinition where
   printDecQ GQLTypeDefinition {..} = do
     let params = map toName (typeParameters gqlTarget)
     associatedTypes <- fmap (pure . (''KIND,)) (printType gqlKind)
-    pure <$> printTypeClass (map (''Typeable,) params) ''GQLType (printType gqlTarget) associatedTypes methods
+    target <- printType gqlTarget
+    pure <$> printDec (TypeClassInstance ''GQLType (map (''Typeable,) params) target associatedTypes methods)
     where
       methods =
-        [ ('defaultValues, [_'], [|gqlTypeDefaultValues|]),
-          ('directives, [_'], printDirectiveUsages gqlTypeDirectiveUses)
+        [ ('defaultValues, ([_'], [|gqlTypeDefaultValues|])),
+          ('directives, ([_'], printDirectiveUsages gqlTypeDirectiveUses))
         ]
 
 instance PrintDecQ ServerDeclaration where
   printDecQ (InterfaceType interface) = printDecQ interface
   printDecQ ScalarType {} = pure []
-  printDecQ (DataType dataType) = pure [printDec dataType]
+  printDecQ (DataType dataType) = pure <$> printDec dataType
   printDecQ (GQLTypeInstance gql) = printDecQ gql
   printDecQ (GQLDirectiveInstance dir) = printDecQ dir
 
 instance PrintDecQ GQLDirectiveTypeClass where
   printDecQ GQLDirectiveTypeClass {..} =
     pure
-      <$> printTypeClass
-        []
-        ''GQLDirective
-        (toCon directiveTypeName)
-        [(''DIRECTIVE_LOCATIONS, promotedList directiveLocations)]
-        []
+      <$> printDec
+        ( TypeClassInstance
+            ''GQLDirective
+            []
+            (toCon directiveTypeName :: Type)
+            [(''DIRECTIVE_LOCATIONS, promotedList directiveLocations)]
+            ([] :: Methods)
+        )
+
+type Methods = [(Name, ([PatQ], ExpQ))]
 
 promotedList :: [DirectiveLocation] -> Type
 promotedList = foldr (AppT . AppT PromotedConsT . PromotedT . toName) PromotedNilT
