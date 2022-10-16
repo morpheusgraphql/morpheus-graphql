@@ -15,7 +15,6 @@ where
 import Data.Aeson
   ( FromJSON (parseJSON),
     ToJSON (toJSON),
-    withObject,
   )
 import Data.Morpheus.Client.Fetch.RequestType
   ( RequestType (..),
@@ -28,42 +27,32 @@ import Data.Morpheus.Client.Internal.AST
   )
 import Data.Morpheus.Client.Internal.TH
   ( declareIfNotDeclared,
-    decodeObjectE,
     deriveIfNotDefined,
-    failExp,
-    matchWith,
-    originalLit,
+    fromJSONEnumMethod,
+    fromJSONObjectMethod,
+    fromJSONUnionMethod,
   )
 import Data.Morpheus.Client.Internal.Utils
   ( emptyTypeError,
-    takeValueType,
   )
 import Data.Morpheus.CodeGen.Internal.AST
   ( AssociatedType (AssociatedTypeName),
-    CodeGenConstructor (..),
     CodeGenType (..),
     CodeGenTypeName (..),
     MethodArgument (..),
     TypeClassInstance (..),
     fromTypeName,
-    getFullName,
   )
 import Data.Morpheus.CodeGen.TH
   ( PrintDec (printDec),
     PrintExp (printExp),
     ToName (toName),
-    ToString (..),
-    toCon,
-    toString,
-    toVar,
-    v',
-    _',
   )
 import Data.Morpheus.Types.GQLScalar
   ( scalarFromJSON,
     scalarToJSON,
   )
-import Language.Haskell.TH (Dec, DecQ, Exp (..), ExpQ, PatQ, Q, appE, tupP)
+import Language.Haskell.TH (Dec, DecQ, ExpQ, Q)
 import Relude hiding (ToString, Type, toString)
 
 printDeclarations :: [ClientDeclaration] -> Q [Dec]
@@ -115,33 +104,9 @@ mkToJSON name args expr =
 deriveFromJSON :: DERIVING_MODE -> CodeGenType -> DecQ
 deriveFromJSON SCALAR_MODE CodeGenType {cgTypeName} = mkFromJSON cgTypeName [|scalarFromJSON|]
 deriveFromJSON _ CodeGenType {cgConstructors = [], ..} = emptyTypeError cgTypeName
-deriveFromJSON ENUM_MODE CodeGenType {..} =
-  mkFromJSON cgTypeName (matchWith (Just (v', failExp)) fromJSONEnum cgConstructors)
-deriveFromJSON _ CodeGenType {cgConstructors = [cons], ..} =
-  mkFromJSON cgTypeName (fromJSONObject cons)
-deriveFromJSON _ typeD@CodeGenType {cgTypeName} =
-  mkFromJSON cgTypeName (fromJSONUnion typeD)
-
-fromJSONEnum :: CodeGenConstructor -> (PatQ, ExpQ)
-fromJSONEnum CodeGenConstructor {constructorName} = (originalLit constructorName, appE (toVar 'pure) (toCon constructorName))
-
-fromJSONObject :: CodeGenConstructor -> ExpQ
-fromJSONObject con@CodeGenConstructor {constructorName} = withBody <$> decodeObjectE con
-  where
-    withBody body = AppE (AppE (VarE 'withObject) name) (LamE [v'] body)
-    name :: Exp
-    name = toString (getFullName constructorName)
-
-fromJSONUnion :: CodeGenType -> ExpQ
-fromJSONUnion CodeGenType {..} = appE (toVar 'takeValueType) (matchWith elseCondition f cgConstructors)
-  where
-    elseCondition =
-      (tupP [_', v'],) . decodeObjectE
-        <$> find ((typename cgTypeName ==) . typename . constructorName) cgConstructors
-    f cons@CodeGenConstructor {..} =
-      ( tupP [originalLit constructorName, if null constructorFields then _' else v'],
-        decodeObjectE cons
-      )
+deriveFromJSON ENUM_MODE CodeGenType {..} = mkFromJSON cgTypeName (fromJSONEnumMethod cgConstructors)
+deriveFromJSON _ CodeGenType {cgConstructors = [cons], ..} = mkFromJSON cgTypeName (fromJSONObjectMethod cons)
+deriveFromJSON _ typeD@CodeGenType {cgTypeName} = mkFromJSON cgTypeName (fromJSONUnionMethod typeD)
 
 deriveToJSONMethod :: MonadFail m => DERIVING_MODE -> CodeGenType -> m (MethodArgument, ClientMethod)
 deriveToJSONMethod SCALAR_MODE _ = pure (NoArgument, ClientMethodExp [|scalarToJSON|])

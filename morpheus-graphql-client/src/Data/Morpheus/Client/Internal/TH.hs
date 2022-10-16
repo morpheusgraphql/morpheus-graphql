@@ -10,29 +10,35 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Internal.TH
-  ( matchWith,
-    decodeObjectE,
-    mkFieldsE,
-    failExp,
-    deriveIfNotDefined,
+  ( deriveIfNotDefined,
     declareIfNotDeclared,
     toJSONEnumMethod,
-    originalLit,
     toJSONObjectMethod,
+    fromJSONUnionMethod,
+    fromJSONEnumMethod,
+    fromJSONObjectMethod,
   )
 where
 
-import Data.Aeson ((.:), (.=))
+import Data.Aeson
+  ( withObject,
+    (.:),
+    (.=),
+  )
 import Data.Aeson.Types ((.:?))
 import Data.Foldable (foldr1)
-import Data.Morpheus.Client.Internal.Utils (omitNulls)
+import Data.Morpheus.Client.Internal.Utils
+  ( omitNulls,
+    takeValueType,
+  )
 import Data.Morpheus.CodeGen.Internal.AST
   ( CodeGenConstructor (..),
     CodeGenField (..),
-    CodeGenType (cgTypeName),
+    CodeGenType (..),
     CodeGenTypeName (..),
     getFullName,
   )
@@ -43,6 +49,7 @@ import Data.Morpheus.CodeGen.TH
     toString,
     toVar,
     v',
+    _',
   )
 import Data.Morpheus.CodeGen.Utils
   ( camelCaseFieldName,
@@ -167,3 +174,27 @@ toJSONEnum CodeGenConstructor {constructorName} = (toCon constructorName, origin
 
 toJSONObjectMethod :: CodeGenConstructor -> ExpQ
 toJSONObjectMethod CodeGenConstructor {..} = pure $ AppE (VarE 'omitNulls) (mkFieldsE constructorName '(.=) constructorFields)
+
+fromJSONUnionMethod :: CodeGenType -> ExpQ
+fromJSONUnionMethod CodeGenType {..} = appE (toVar 'takeValueType) (matchWith elseCondition f cgConstructors)
+  where
+    elseCondition =
+      (tupP [_', v'],) . decodeObjectE
+        <$> find ((typename cgTypeName ==) . typename . constructorName) cgConstructors
+    f cons@CodeGenConstructor {..} =
+      ( tupP [originalLit constructorName, if null constructorFields then _' else v'],
+        decodeObjectE cons
+      )
+
+fromJSONEnumMethod :: [CodeGenConstructor] -> ExpQ
+fromJSONEnumMethod = matchWith (Just (v', failExp)) fromJSONEnum
+
+fromJSONEnum :: CodeGenConstructor -> (PatQ, ExpQ)
+fromJSONEnum CodeGenConstructor {constructorName} = (originalLit constructorName, appE (toVar 'pure) (toCon constructorName))
+
+fromJSONObjectMethod :: CodeGenConstructor -> ExpQ
+fromJSONObjectMethod con@CodeGenConstructor {constructorName} = withBody <$> decodeObjectE con
+  where
+    withBody body = AppE (AppE (VarE 'withObject) name) (LamE [v'] body)
+    name :: Exp
+    name = toString (getFullName constructorName)
