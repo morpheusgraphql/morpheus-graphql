@@ -89,9 +89,9 @@ typeDeclarations (RequestTypeClass RequestTypeDefinition {..}) = do
         }
   where
     typeClassMethods =
-      [ ('__name, ProxyArgument, [|requestName|]),
-        ('__query, ProxyArgument, [|requestQuery|]),
-        ('__type, ProxyArgument, [|requestType|])
+      [ ('__name, ProxyArgument, ClientMethod [|requestName|]),
+        ('__query, ProxyArgument, ClientMethod [|requestQuery|]),
+        ('__type, ProxyArgument, ClientMethod [|requestType|])
       ]
 
 mkFromJSON :: CodeGenTypeName -> ExpQ -> DecQ
