@@ -266,9 +266,8 @@ gqlTypeToInstance GQLTypeDefinition {..} =
         typeClassTarget = gqlTarget,
         assoc = [(''KIND, AssociatedTypeName (toName gqlKind))],
         typeClassMethods =
-          [ ('defaultValues, ProxyArgument, ServerMethodDefaultValues gqlTypeDefaultValues),
-            ('directives, ProxyArgument, ServerMethodDirectives gqlTypeDirectiveUses)
-          ]
+          [('defaultValues, ProxyArgument, ServerMethodDefaultValues gqlTypeDefaultValues) | not (null gqlTypeDefaultValues)]
+            <> [('directives, ProxyArgument, ServerMethodDirectives gqlTypeDirectiveUses) | not (null gqlTypeDirectiveUses)]
       }
 
 genInterfaceUnion :: Monad m => TypeName -> CodeGenT m [ServerDeclaration]
