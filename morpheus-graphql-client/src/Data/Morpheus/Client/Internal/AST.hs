@@ -57,7 +57,7 @@ data ClientMethod
   | ToJSONObjectMethod CodeGenConstructor
 
 instance Pretty ClientMethod where
-  pretty _ = "undefined"
+  pretty _ = "undefined -- TODO: should be real function"
 
 instance PrintExp ClientMethod where
   printExp (ClientMethodExp x) = x
