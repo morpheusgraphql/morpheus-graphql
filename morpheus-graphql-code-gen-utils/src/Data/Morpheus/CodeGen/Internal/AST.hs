@@ -15,6 +15,7 @@ module Data.Morpheus.CodeGen.Internal.AST
     ModuleDefinition (..),
     TypeClassInstance (..),
     AssociatedType (..),
+    MethodArgument (..),
   )
 where
 
@@ -213,14 +214,19 @@ renderImportList :: [Text] -> Doc ann
 renderImportList ["*"] = ""
 renderImportList xs = tupled (map pretty xs)
 
-data TypeClassInstance funBody = TypeClassInstance
+data TypeClassInstance body = TypeClassInstance
   { typeClassName :: TH.Name,
     typeClassContext :: [(TH.Name, TH.Name)],
     typeClassTarget :: CodeGenTypeName,
     assoc :: [(TH.Name, AssociatedType)],
-    typeClassMethods :: [(TH.Name, funBody)]
+    typeClassMethods :: [(TH.Name, MethodArgument, body)]
   }
 
 data AssociatedType
   = AssociatedTypeName TH.Name
   | AssociatedLocations [DirectiveLocation]
+
+data MethodArgument
+  = NoArgument
+  | ProxyArgument
+  | DestructArgument CodeGenConstructor
