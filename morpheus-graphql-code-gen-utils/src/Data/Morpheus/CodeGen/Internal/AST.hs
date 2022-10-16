@@ -228,6 +228,9 @@ data AssociatedType
   | AssociatedLocations [DirectiveLocation]
   deriving (Show)
 
+instance Pretty AssociatedType where
+  pretty (AssociatedTypeName x) = pretty (show x :: String)
+
 data MethodArgument
   = NoArgument
   | ProxyArgument

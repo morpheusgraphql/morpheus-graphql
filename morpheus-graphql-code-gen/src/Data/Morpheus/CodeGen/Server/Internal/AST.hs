@@ -26,11 +26,13 @@ module Data.Morpheus.CodeGen.Server.Internal.AST
 where
 
 import Data.Morpheus.CodeGen.Internal.AST
-  ( CodeGenType,
+  ( AssociatedType,
+    CodeGenType,
     CodeGenTypeName (typeParameters),
     DerivingClass (..),
     FIELD_TYPE_WRAPPER (..),
-    TypeClassInstance,
+    MethodArgument,
+    TypeClassInstance (..),
     TypeValue (..),
   )
 import Data.Morpheus.CodeGen.Printer
@@ -46,6 +48,7 @@ import Data.Morpheus.CodeGen.TH
   )
 import Data.Morpheus.Server.Types
   ( SCALAR,
+    ScalarValue (String),
     TYPE,
     enumDirective,
     fieldDirective,
@@ -63,6 +66,7 @@ import Data.Morpheus.Types.Internal.AST
     unpackName,
   )
 import Language.Haskell.TH.Lib (ExpQ, appE, varE)
+import qualified Language.Haskell.TH.Syntax as TH
 import Prettyprinter
   ( Doc,
     Pretty (..),
@@ -129,7 +133,7 @@ data GQLDirectiveTypeClass = GQLDirectiveTypeClass
   deriving (Show)
 
 data ServerDeclaration
-  = GQLTypeInstance GQLTypeDefinition (TypeClassInstance ServerMethod)
+  = GQLTypeInstance Kind (TypeClassInstance ServerMethod)
   | GQLDirectiveInstance (TypeClassInstance ServerMethod)
   | DataType CodeGenType
   | ScalarType {scalarTypeName :: Text}
@@ -148,30 +152,34 @@ instance Pretty ServerDeclaration where
   -- TODO: on scalar we should render user provided type
   pretty ScalarType {..} = "type" <+> ignore (print scalarTypeName) <+> "= Int"
   pretty (DataType cgType) = pretty cgType
-  pretty (GQLTypeInstance gqlType _) = renderGQLType gqlType
+  pretty (GQLTypeInstance kind gql)
+    | kind == Scalar = ""
+    | otherwise = renderGQLType gql
   pretty (GQLDirectiveInstance _) = "TODO: not supported"
 
 renderTypeableConstraints :: [Text] -> Doc n
 renderTypeableConstraints xs = tupled (map (("Typeable" <+>) . pretty) xs) <+> "=>"
 
-renderGQLType :: GQLTypeDefinition -> Doc ann
-renderGQLType gql@GQLTypeDefinition {..}
-  | gqlKind == Scalar = ""
-  | otherwise =
-    "instance"
-      <> optional renderTypeableConstraints (typeParameters gqlTarget)
-      <+> "GQLType"
-      <+> typeHead
-      <+> "where"
-        <> line
-        <> indent 2 (vsep (renderMethods typeHead gql))
+renderGQLType :: TypeClassInstance ServerMethod -> Doc ann
+renderGQLType gql@TypeClassInstance {..} =
+  "instance"
+    <> optional renderTypeableConstraints (typeParameters typeClassTarget)
+    <+> "GQLType"
+    <+> typeHead
+    <+> "where"
+      <> line
+      <> indent 2 (vsep (renderMethods typeHead gql))
   where
-    typeHead = unpack (print gqlTarget)
+    typeHead = unpack (print (show typeClassName :: String))
 
-renderMethods :: Doc n -> GQLTypeDefinition -> [Doc n]
-renderMethods typeHead GQLTypeDefinition {..} =
-  ["type KIND" <+> typeHead <+> "=" <+> pretty gqlKind]
-    <> ["directives _=" <+> renderDirectiveUsages gqlTypeDirectiveUses | not (null gqlTypeDirectiveUses)]
+renderMethods :: Doc n -> TypeClassInstance ServerMethod -> [Doc n]
+renderMethods typeHead TypeClassInstance {..} =
+  map renderAssoc assoc <> map renderMethod typeClassMethods
+  where
+    renderAssoc (name, a) = "type KIND" <+> typeHead <+> "=" <+> pretty a
+
+renderMethod :: (TH.Name, MethodArgument, ServerMethod) -> Doc n
+renderMethod _ = "directives _=" <+> "TODO: renderDirectiveUsages"
 
 renderDirectiveUsages :: [ServerDirectiveUsage] -> Doc n
 renderDirectiveUsages = align . vsep . punctuate " <>" . map pretty

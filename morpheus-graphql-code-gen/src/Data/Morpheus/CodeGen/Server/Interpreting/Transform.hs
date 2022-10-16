@@ -258,9 +258,9 @@ data BuildPlan
   | ConsOUT [ServerDeclaration] [CodeGenConstructor]
 
 gqlTypeToInstance :: GQLTypeDefinition -> ServerDeclaration
-gqlTypeToInstance t@GQLTypeDefinition {..} =
+gqlTypeToInstance GQLTypeDefinition {..} =
   GQLTypeInstance
-    t
+    gqlKind
     TypeClassInstance
       { typeClassName = ''GQLType,
         typeClassContext = map ((''Typeable,) . toName) (typeParameters gqlTarget),
