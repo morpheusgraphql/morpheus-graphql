@@ -26,8 +26,7 @@ module Data.Morpheus.CodeGen.Server.Internal.AST
 where
 
 import Data.Morpheus.CodeGen.Internal.AST
-  ( AssociatedType,
-    CodeGenType,
+  ( CodeGenType,
     CodeGenTypeName (typeParameters),
     DerivingClass (..),
     FIELD_TYPE_WRAPPER (..),
@@ -49,7 +48,6 @@ import Data.Morpheus.CodeGen.TH
   )
 import Data.Morpheus.Server.Types
   ( SCALAR,
-    ScalarValue (String),
     TYPE,
     enumDirective,
     fieldDirective,
@@ -64,7 +62,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef (..),
     TypeWrapper (..),
     Value,
-    packName,
     unpackName,
   )
 import Language.Haskell.TH.Lib (ExpQ, appE, varE)
@@ -176,15 +173,16 @@ renderGQLType gql@TypeClassInstance {..} =
 
 renderMethods :: Doc n -> TypeClassInstance ServerMethod -> [Doc n]
 renderMethods typeHead TypeClassInstance {..} =
-  map renderAssoc assoc <> map renderMethod typeClassMethods
+  map renderAssoc assoc <> map renderMethodD typeClassMethods
   where
     renderAssoc (name, a) = "type" <+> printTHName name <+> typeHead <+> "=" <+> pretty a
 
-renderMethod :: (TH.Name, MethodArgument, ServerMethod) -> Doc n
-renderMethod _ = "directives _=" <+> "TODO: renderDirectiveUsages"
+renderMethodD :: (TH.Name, MethodArgument, ServerMethod) -> Doc n
+renderMethodD (name, _, method) = printTHName name <+> " _ =" <+> renderMethod method
 
-renderDirectiveUsages :: [ServerDirectiveUsage] -> Doc n
-renderDirectiveUsages = align . vsep . punctuate " <>" . map pretty
+renderMethod :: ServerMethod -> Doc n
+renderMethod ServerMethod {} = "undefined"
+renderMethod (ServerMethodDirectives dirs) = align $ vsep $ punctuate " <>" (map pretty dirs)
 
 printDirectiveUsages :: [ServerDirectiveUsage] -> ExpQ
 printDirectiveUsages = foldr (appE . appE [|(<>)|] . printExp) [|mempty|]
@@ -193,7 +191,7 @@ newtype CodeGenConfig = CodeGenConfig
   { namespace :: Bool
   }
 
-newtype ServerMethod
+data ServerMethod
   = ServerMethod ExpQ
   | ServerMethodDirectives [ServerDirectiveUsage]
 
