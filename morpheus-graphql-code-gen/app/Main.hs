@@ -11,7 +11,6 @@ where
 
 import CLI.Commands
   ( App (..),
-    BuildOptions (..),
     GlobalOptions (..),
     Operation (..),
     parseCLI,
@@ -67,10 +66,10 @@ handleClientService target Service {name, source, includes, options, schema} = d
   files <- concat <$> traverse glob patterns
   putStrLn ("\n build:" <> name)
   schemaPath <- maybe (fail $ "client service " <> name <> " should provide schema!") pure schema
-  buildClientGlobals options (BuildOptions {..}) (normalise $ root </> schemaPath)
-  traverse_ (buildClientQuery (BuildOptions {..}) (normalise $ root </> schemaPath)) files
+  buildClientGlobals options (BuildConfig {..}) (normalise $ root </> schemaPath)
+  traverse_ (buildClientQuery (BuildConfig {..}) (normalise $ root </> schemaPath)) files
 
-buildClientGlobals :: Maybe ServiceOptions -> BuildOptions -> FilePath -> IO ()
+buildClientGlobals :: Maybe ServiceOptions -> BuildConfig -> FilePath -> IO ()
 buildClientGlobals serviceOps options schemaPath = do
   putStr ("  - " <> schemaPath <> "\n")
   schemaDoc <- readSchemaSource schemaPath
@@ -78,7 +77,7 @@ buildClientGlobals serviceOps options schemaPath = do
   let moduleName = getModuleNameByPath (root options) hsPath
   saveDocument hsPath (processClientDocument options schemaDoc Nothing (getImports serviceOps) (pack moduleName))
 
-buildClientQuery :: BuildOptions -> FilePath -> FilePath -> IO ()
+buildClientQuery :: BuildConfig -> FilePath -> FilePath -> IO ()
 buildClientQuery options schemaPath queryPath = do
   putStr ("  - " <> queryPath <> "\n")
   file <- TIO.readFile queryPath
@@ -96,9 +95,9 @@ handleServerService target Service {name, source, includes, options} = do
   let patterns = map (normalise . (root </>)) includes
   files <- concat <$> traverse glob patterns
   putStrLn ("\n build:" <> name)
-  traverse_ (buildServer (BuildOptions {..}) {root, namespaces}) files
+  traverse_ (buildServer (BuildConfig {..}) {root, namespaces}) files
 
-buildServer :: BuildOptions -> FilePath -> IO ()
+buildServer :: BuildConfig -> FilePath -> IO ()
 buildServer options path = do
   putStr ("  - " <> path <> "\n")
   file <- L.readFile path

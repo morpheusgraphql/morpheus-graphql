@@ -6,12 +6,10 @@
 module CLI.Generator
   ( processServerDocument,
     processClientDocument,
+    BuildConfig (..),
   )
 where
 
-import CLI.Commands
-  ( BuildOptions (..),
-  )
 import Data.ByteString.Lazy.Char8 (ByteString, pack)
 import Data.Morpheus.Client
   ( SchemaSource,
@@ -19,43 +17,63 @@ import Data.Morpheus.Client
   )
 import Data.Morpheus.CodeGen
   ( CodeGenConfig (..),
-    PrinterConfig (..),
     parseServerTypeDefinitions,
-    printServerTypeDefinitions,
   )
 import Data.Morpheus.CodeGen.Internal.AST
 import Data.Morpheus.Internal.Ext (GQLResult)
+import qualified Data.Text as T
 import Prettyprinter
 import Relude hiding (ByteString, print)
 
-processServerDocument :: BuildOptions -> String -> ByteString -> GQLResult ByteString
-processServerDocument BuildOptions {..} moduleName =
-  fmap
-    ( printServerTypeDefinitions
-        PrinterConfig
-          { moduleName
-          }
-    )
-    . parseServerTypeDefinitions CodeGenConfig {namespace = namespaces}
+data BuildConfig = BuildConfig
+  { root :: String,
+    namespaces :: Bool,
+    globalImports :: [(Text, [Text])]
+  }
+  deriving (Show)
+
+processServerDocument :: BuildConfig -> String -> ByteString -> GQLResult ByteString
+processServerDocument BuildConfig {..} moduleName schema = do
+  types <- parseServerTypeDefinitions CodeGenConfig {namespace = namespaces} schema
+  pure $
+    print $
+      ModuleDefinition
+        { moduleName = T.pack moduleName,
+          imports =
+            [ ("Data.Data", ["Typeable"]),
+              ("Data.Morpheus.Kind", ["TYPE"]),
+              ("Data.Morpheus.Types", ["*"]),
+              ("Data.Morpheus", []),
+              ("Data.Text", ["Text"]),
+              ("GHC.Generics", ["Generic"])
+            ]
+              <> globalImports,
+          extensions =
+            [ "DeriveGeneric",
+              "TypeFamilies",
+              "OverloadedStrings",
+              "DataKinds",
+              "DuplicateRecordFields"
+            ],
+          types
+        }
 
 processClientDocument ::
-  BuildOptions ->
+  BuildConfig ->
   SchemaSource ->
   Maybe Text ->
-  [(Text, [Text])] ->
   Text ->
   GQLResult ByteString
-processClientDocument BuildOptions {} schema query globals moduleName = do
+processClientDocument BuildConfig {..} schema query moduleName = do
   types <- parseClientTypeDeclarations schema query
   let moduleDef =
         ModuleDefinition
           { moduleName,
             imports =
-              [ ("Data.Text", ["Text"]),
-                ("GHC.Generics", ["Generic"]),
+              [ ("GHC.Generics", ["Generic"]),
                 ("Globals.GQLScalars", ["*"])
               ]
-                <> globals,
+                <> globalImports,
             extensions =
               [ "DeriveGeneric",
                 "DuplicateRecordFields"

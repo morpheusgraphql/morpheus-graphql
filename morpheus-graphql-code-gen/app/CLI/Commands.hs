@@ -1,8 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module CLI.Commands
-  ( BuildOptions (..),
-    GlobalOptions (..),
+  ( GlobalOptions (..),
     App (..),
     Operation (..),
     parseCLI,
@@ -43,12 +42,6 @@ data App = App
 
 newtype GlobalOptions = GlobalOptions
   { version :: Bool
-  }
-  deriving (Show)
-
-data BuildOptions = BuildOptions
-  { root :: String,
-    namespaces :: Bool
   }
   deriving (Show)
 

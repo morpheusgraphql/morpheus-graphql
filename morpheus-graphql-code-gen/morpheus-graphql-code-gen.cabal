@@ -34,7 +34,6 @@ library
       Data.Morpheus.CodeGen.Server.Interpreting.Directive
       Data.Morpheus.CodeGen.Server.Interpreting.Transform
       Data.Morpheus.CodeGen.Server.Interpreting.Utils
-      Data.Morpheus.CodeGen.Server.Printing.Document
       Data.Morpheus.CodeGen.Server.Printing.TH
       Paths_morpheus_graphql_code_gen
   hs-source-dirs:
