@@ -59,19 +59,6 @@ import Data.Morpheus.Types.Internal.AST (TypeName)
 import Language.Haskell.TH
 import Relude hiding (ToString, toString)
 
-matchWith ::
-  Maybe (PatQ, ExpQ) ->
-  (t -> (PatQ, ExpQ)) ->
-  [t] ->
-  ExpQ
-matchWith fbexp f xs = lamCaseE (map buildMatch xs <> fallback fbexp)
-  where
-    fallback (Just (pat, fb)) = [match pat (normalB fb) []]
-    fallback _ = []
-    buildMatch x = match pat (normalB body) []
-      where
-        (pat, body) = f x
-
 failExp :: ExpQ
 failExp =
   appE
@@ -201,3 +188,16 @@ fromJSONObjectMethod con@CodeGenConstructor {constructorName} = withBody <$> dec
     name = toString (getFullName constructorName)
 
 data MatchCases = MatchCases [(TypeName, TypeName)]
+
+matchWith ::
+  Maybe (PatQ, ExpQ) ->
+  (t -> (PatQ, ExpQ)) ->
+  [t] ->
+  ExpQ
+matchWith fbexp f xs = lamCaseE (map buildMatch xs <> fallback fbexp)
+  where
+    fallback (Just (pat, fb)) = [match pat (normalB fb) []]
+    fallback _ = []
+    buildMatch x = match pat (normalB body) []
+      where
+        (pat, body) = f x
