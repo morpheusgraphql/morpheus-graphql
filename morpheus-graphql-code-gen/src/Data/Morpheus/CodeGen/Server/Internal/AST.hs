@@ -34,8 +34,6 @@ import Data.Morpheus.CodeGen.Printer
   ( Printer (..),
     ignore,
     optional,
-    renderExtension,
-    renderImport,
     unpack,
     (.<>),
   )

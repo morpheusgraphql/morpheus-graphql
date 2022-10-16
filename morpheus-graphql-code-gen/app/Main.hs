@@ -20,12 +20,13 @@ import CLI.Config
     ServiceOptions (..),
     readConfig,
   )
-import CLI.File (processFileName, saveDocument)
+import CLI.File (getModuleNameByPath, processFileName, saveDocument)
 import CLI.Generator
 import qualified Data.ByteString.Lazy as L
   ( readFile,
   )
 import Data.Morpheus.Client (readSchemaSource)
+import Data.Text (pack)
 import qualified Data.Text.IO as TIO
 import Data.Version (showVersion)
 import qualified Paths_morpheus_graphql_code_gen as CLI
@@ -68,7 +69,8 @@ buildClient options schemaPath queryPath = do
   putStr ("  - " <> queryPath <> "\n")
   file <- TIO.readFile queryPath
   schemaDoc <- readSchemaSource schemaPath
-  saveDocument hsPath (processClientDocument options schemaDoc (Just file))
+  let moduleName = getModuleNameByPath (root options) hsPath
+  saveDocument hsPath (processClientDocument options schemaDoc (Just file) (pack moduleName))
   where
     hsPath = processFileName queryPath
 
@@ -85,6 +87,7 @@ buildServer :: BuildOptions -> FilePath -> IO ()
 buildServer options path = do
   putStr ("  - " <> path <> "\n")
   file <- L.readFile path
-  saveDocument hsPath (processServerDocument options hsPath file)
+  let moduleName = getModuleNameByPath (root options) hsPath
+  saveDocument hsPath (processServerDocument options moduleName file)
   where
     hsPath = processFileName path

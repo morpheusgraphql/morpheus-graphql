@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -18,7 +19,6 @@ import Data.ByteString.Lazy.Char8 (ByteString, pack)
 import Data.Morpheus.Client
   ( SchemaSource,
     parseClientTypeDeclarations,
-    printClientTypeDeclarations,
   )
 import Data.Morpheus.CodeGen
   ( CodeGenConfig (..),
@@ -26,19 +26,29 @@ import Data.Morpheus.CodeGen
     parseServerTypeDefinitions,
     printServerTypeDefinitions,
   )
+import Data.Morpheus.CodeGen.Internal.AST
 import Data.Morpheus.Internal.Ext (GQLResult)
+import Prettyprinter
 import Relude hiding (ByteString)
 
-processServerDocument :: BuildOptions -> FilePath -> ByteString -> GQLResult ByteString
-processServerDocument BuildOptions {..} hsPath =
+processServerDocument :: BuildOptions -> String -> ByteString -> GQLResult ByteString
+processServerDocument BuildOptions {..} moduleName =
   fmap
     ( printServerTypeDefinitions
         PrinterConfig
-          { moduleName = getModuleNameByPath root hsPath
+          { moduleName
           }
     )
     . parseServerTypeDefinitions CodeGenConfig {namespace = namespaces}
 
-processClientDocument :: BuildOptions -> SchemaSource -> Maybe Text -> GQLResult ByteString
-processClientDocument BuildOptions {} schema query = do
-  pack . show . printClientTypeDeclarations <$> parseClientTypeDeclarations schema query
+processClientDocument :: BuildOptions -> SchemaSource -> Maybe Text -> Text -> GQLResult ByteString
+processClientDocument BuildOptions {} schema query moduleName = do
+  types <- parseClientTypeDeclarations schema query
+  let moduleDef =
+        ModuleDefinition
+          { moduleName,
+            imports = [],
+            extensions = [],
+            types
+          }
+  pure $ pack $ show $ pretty moduleDef
