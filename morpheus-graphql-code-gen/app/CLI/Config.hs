@@ -19,8 +19,9 @@ import System.FilePath.Posix
   ( (</>),
   )
 
-newtype ServiceOptions = ServiceOptions
-  { namespace :: Bool
+data ServiceOptions = ServiceOptions
+  { namespace :: Bool,
+    scalars :: [Text]
   }
   deriving
     ( Generic,
