@@ -1,10 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.CodeGen.Server.Printing.TH
@@ -16,21 +13,13 @@ where
 import Data.ByteString.Lazy.Char8 (ByteString, pack)
 import Data.Morpheus.CodeGen.Server.Internal.AST
   ( CodeGenConfig (..),
-    InterfaceDefinition (..),
     ServerDeclaration (..),
   )
 import Data.Morpheus.CodeGen.Server.Interpreting.Transform
   ( parseServerTypeDefinitions,
   )
 import Data.Morpheus.CodeGen.TH
-  ( apply,
-    m',
-    m_,
-    printDec,
-    printTypeSynonym,
-  )
-import Data.Morpheus.Server.Types
-  ( TypeGuard (..),
+  ( PrintDec (..),
   )
 import Language.Haskell.TH
 import Language.Haskell.TH.Quote (QuasiQuoter (..))
@@ -52,21 +41,13 @@ mkQuasiQuoter ctx =
       error $ things <> " are not supported by the GraphQL QuasiQuoter"
 
 compileDocument :: CodeGenConfig -> ByteString -> Q [Dec]
-compileDocument ctx = parseServerTypeDefinitions ctx >=> printDecQ
+compileDocument config =
+  parseServerTypeDefinitions config
+    >=> fmap concat . traverse printServerDec
 
-class PrintDecQ a where
-  printDecQ :: a -> Q [Dec]
-
-instance PrintDecQ a => PrintDecQ [a] where
-  printDecQ = fmap concat . traverse printDecQ
-
-instance PrintDecQ InterfaceDefinition where
-  printDecQ InterfaceDefinition {..} =
-    pure [printTypeSynonym aliasName [m_] (apply ''TypeGuard [apply interfaceName [m'], apply unionName [m']])]
-
-instance PrintDecQ ServerDeclaration where
-  printDecQ (InterfaceType interface) = printDecQ interface
-  printDecQ ScalarType {} = pure []
-  printDecQ (DataType dataType) = pure <$> printDec dataType
-  printDecQ (GQLTypeInstance _ gql) = pure <$> printDec gql
-  printDecQ (GQLDirectiveInstance dir) = pure <$> printDec dir
+printServerDec :: ServerDeclaration -> Q [Dec]
+printServerDec (InterfaceType interface) = pure <$> printDec interface
+printServerDec ScalarType {} = pure []
+printServerDec (DataType dataType) = pure <$> printDec dataType
+printServerDec (GQLTypeInstance _ gql) = pure <$> printDec gql
+printServerDec (GQLDirectiveInstance dir) = pure <$> printDec dir

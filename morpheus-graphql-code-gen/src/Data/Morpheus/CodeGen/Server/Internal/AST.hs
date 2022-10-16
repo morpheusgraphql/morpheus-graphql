@@ -40,17 +40,8 @@ import Data.Morpheus.CodeGen.Printer
     unpack,
     (.<>),
   )
-import Data.Morpheus.CodeGen.TH
-  ( PrintExp (..),
-    ToName (..),
-  )
-import Data.Morpheus.Server.Types
-  ( SCALAR,
-    TYPE,
-    enumDirective,
-    fieldDirective,
-    typeDirective,
-  )
+import Data.Morpheus.CodeGen.TH (PrintDec (..), PrintExp (..), ToName (..), apply, m', m_, printTypeSynonym)
+import Data.Morpheus.Server.Types (SCALAR, TYPE, TypeGuard, enumDirective, fieldDirective, typeDirective)
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
     DirectiveLocation (..),
@@ -121,6 +112,17 @@ data InterfaceDefinition = InterfaceDefinition
     unionName :: TypeName
   }
   deriving (Show)
+
+instance PrintDec InterfaceDefinition where
+  printDec InterfaceDefinition {..} =
+    pure $
+      printTypeSynonym
+        aliasName
+        [m_]
+        ( apply
+            ''TypeGuard
+            [apply interfaceName [m'], apply unionName [m']]
+        )
 
 data GQLDirectiveTypeClass = GQLDirectiveTypeClass
   { directiveTypeName :: CodeGenTypeName,
