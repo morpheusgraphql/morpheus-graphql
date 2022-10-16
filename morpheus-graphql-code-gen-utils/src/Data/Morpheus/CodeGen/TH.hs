@@ -314,7 +314,7 @@ instance PrintType AssociatedType where
   printType (AssociatedLocations xs) = pure $ foldr (AppT . AppT PromotedConsT . PromotedT . toName) PromotedNilT xs
   printType (AssociatedTypeName name) = toCon name
 
-instance PrintDec (TypeClassInstance Name ([PatQ], ExpQ)) where
+instance PrintDec (TypeClassInstance ([PatQ], ExpQ)) where
   printDec TypeClassInstance {..} =
     instanceD
       (printConstraints typeClassContext)
