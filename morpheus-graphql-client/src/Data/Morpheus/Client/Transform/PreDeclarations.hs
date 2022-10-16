@@ -27,6 +27,9 @@ import Data.Morpheus.Client.Internal.AST
     Printable (..),
     RequestTypeDefinition (..),
   )
+import Data.Morpheus.Client.Internal.TH
+  ( MValue (..),
+  )
 import Data.Morpheus.Client.Internal.Utils
   ( emptyTypeError,
   )
@@ -34,9 +37,11 @@ import Data.Morpheus.CodeGen.Internal.AST
   ( AssociatedType (AssociatedTypeName),
     CodeGenConstructor (constructorName),
     CodeGenType (..),
+    CodeGenTypeName (typename),
     MethodArgument (..),
     TypeClassInstance (..),
     fromTypeName,
+    getFullName,
   )
 import Data.Morpheus.CodeGen.TH
   ( ToName (toName),
@@ -80,9 +85,12 @@ deriveFromJSONMethod _ typeD = pure $ FromJSONUnionMethod typeD
 deriveToJSONMethod :: MonadFail m => DERIVING_MODE -> CodeGenType -> m (MethodArgument, ClientMethod)
 deriveToJSONMethod SCALAR_MODE _ = pure (NoArgument, FunctionNameMethod 'scalarToJSON)
 deriveToJSONMethod _ CodeGenType {cgConstructors = [], ..} = emptyTypeError cgTypeName
-deriveToJSONMethod ENUM_MODE CodeGenType {cgConstructors} = pure (NoArgument, ToJSONEnumMethod $ map constructorName cgConstructors)
+deriveToJSONMethod ENUM_MODE CodeGenType {cgConstructors} = pure (NoArgument, ToJSONEnumMethod $ map (toJSONEnum . constructorName) cgConstructors)
 deriveToJSONMethod _ CodeGenType {cgConstructors = [cons]} = pure (DestructArgument cons, ToJSONObjectMethod cons)
 deriveToJSONMethod _ _ = fail "Input Unions are not yet supported"
+
+toJSONEnum :: CodeGenTypeName -> MValue
+toJSONEnum name = MTo (getFullName name) (typename name)
 
 deriveToJSON :: MonadFail m => DERIVING_MODE -> CodeGenType -> m (TypeClassInstance ClientMethod)
 deriveToJSON mode cType = do

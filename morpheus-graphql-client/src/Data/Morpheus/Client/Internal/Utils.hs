@@ -12,6 +12,7 @@ module Data.Morpheus.Client.Internal.Utils
     emptyTypeError,
     takeValueType,
     readSchemaSource,
+    invalidConstructorError,
   )
 where
 
@@ -95,3 +96,6 @@ takeValueType f (Object hMap) = case lookup "__typename" hMap of
   Just val ->
     fail $ "key \"__typename\" should be string but found: " <> show val
 takeValueType _ _ = fail "expected Object"
+
+invalidConstructorError :: (MonadFail m, Show a) => a -> m b
+invalidConstructorError v = fail $ show v <> " is Not Valid Union Constructor"

@@ -16,11 +16,13 @@
 module Data.Morpheus.Client.Internal.TH
   ( deriveIfNotDefined,
     declareIfNotDeclared,
-    toJSONEnumMethod,
     toJSONObjectMethod,
     fromJSONUnionMethod,
     fromJSONEnumMethod,
     fromJSONObjectMethod,
+    ValueMatch,
+    MValue (..),
+    printMatch,
   )
 where
 
@@ -32,7 +34,8 @@ import Data.Aeson
 import Data.Aeson.Types ((.:?))
 import Data.Foldable (foldr1)
 import Data.Morpheus.Client.Internal.Utils
-  ( omitNulls,
+  ( invalidConstructorError,
+    omitNulls,
     takeValueType,
   )
 import Data.Morpheus.CodeGen.Internal.AST
@@ -60,14 +63,7 @@ import Language.Haskell.TH
 import Relude hiding (ToString, toString)
 
 failExp :: ExpQ
-failExp =
-  appE
-    (toVar 'fail)
-    ( uInfixE
-        (appE [|show|] v')
-        [|(<>)|]
-        (stringE " is Not Valid Union Constructor")
-    )
+failExp = appE (varE 'invalidConstructorError) v'
 
 decodeObjectE :: CodeGenConstructor -> ExpQ
 decodeObjectE CodeGenConstructor {..}
@@ -152,16 +148,10 @@ declareIfNotDeclared f c = do
 originalLit :: ToString TypeName a => CodeGenTypeName -> Q a
 originalLit = toString . typename
 
-toJSONEnum :: CodeGenTypeName -> (MValue, MValue)
-toJSONEnum name = (MCon $ getFullName name, MString $ typename name)
-
 fromJSONEnum :: CodeGenTypeName -> (PatQ, ExpQ)
 fromJSONEnum name = (originalLit name, appE (toVar 'pure) (toCon name))
 
 -- EXPORTS
-
-toJSONEnumMethod :: [CodeGenTypeName] -> ExpQ
-toJSONEnumMethod xs = printMatch (ValueMatch (map toJSONEnum xs))
 
 toJSONObjectMethod :: CodeGenConstructor -> ExpQ
 toJSONObjectMethod CodeGenConstructor {..} = pure $ AppE (VarE 'omitNulls) (mkFieldsE constructorName '(.=) constructorFields)
@@ -187,21 +177,19 @@ fromJSONObjectMethod con@CodeGenConstructor {constructorName} = withBody <$> dec
     name :: Exp
     name = toString (getFullName constructorName)
 
-newtype ValueMatch = ValueMatch {matchingCases :: [(MValue, MValue)]}
+type ValueMatch = [MValue]
 
 data MValue
-  = MString TypeName
-  | MCon TypeName
-  | MVar TypeName
+  = MFrom TypeName TypeName
+  | MTo TypeName TypeName
+  | MFunction TypeName Name
 
 printMatch :: ValueMatch -> ExpQ
-printMatch ValueMatch {..} = lamCaseE (map buildMatch matchingCases)
+printMatch = lamCaseE . map buildMatch
   where
-    buildMatch (a, b) = match (toExp a) (normalB (toExp b)) []
-      where
-        toExp (MString x) = toString x
-        toExp (MCon x) = toCon x
-        toExp (MVar x) = toVar x
+    buildMatch (MFrom a b) = match (toString a) (normalB (toCon b)) []
+    buildMatch (MTo a b) = match (toCon a) (normalB (toString b)) []
+    buildMatch (MFunction v name) = match (toVar v) (normalB $ appE (varE name) v') []
 
 matchWith ::
   Maybe (PatQ, ExpQ) ->
