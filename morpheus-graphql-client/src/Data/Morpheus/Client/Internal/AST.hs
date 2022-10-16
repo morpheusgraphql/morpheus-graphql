@@ -9,7 +9,6 @@ module Data.Morpheus.Client.Internal.AST where
 
 import Data.Morpheus.Client.Internal.TH
   ( ValueMatch,
-    fromJSONEnumMethod,
     fromJSONObjectMethod,
     fromJSONUnionMethod,
     printMatch,
@@ -78,7 +77,7 @@ data ClientMethod
   = PrintableMethod Printable
   | FunctionNameMethod Name
   | ToJSONEnumMethod ValueMatch
-  | FromJSONEnumMethod [CodeGenTypeName]
+  | FromJSONEnumMethod ValueMatch
   | ToJSONObjectMethod CodeGenConstructor
   | FromJSONObjectMethod CodeGenConstructor
   | FromJSONUnionMethod CodeGenType
@@ -94,5 +93,5 @@ instance PrintExp ClientMethod where
   printExp (ToJSONEnumMethod x) = printMatch x
   printExp (ToJSONObjectMethod x) = toJSONObjectMethod x
   printExp (FromJSONObjectMethod x) = fromJSONObjectMethod x
-  printExp (FromJSONEnumMethod x) = fromJSONEnumMethod x
+  printExp (FromJSONEnumMethod x) = printMatch x
   printExp (FromJSONUnionMethod x) = fromJSONUnionMethod x

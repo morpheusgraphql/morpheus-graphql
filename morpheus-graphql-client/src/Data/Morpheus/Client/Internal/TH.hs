@@ -18,7 +18,6 @@ module Data.Morpheus.Client.Internal.TH
     declareIfNotDeclared,
     toJSONObjectMethod,
     fromJSONUnionMethod,
-    fromJSONEnumMethod,
     fromJSONObjectMethod,
     ValueMatch,
     MValue (..),
@@ -148,9 +147,6 @@ declareIfNotDeclared f c = do
 originalLit :: ToString TypeName a => CodeGenTypeName -> Q a
 originalLit = toString . typename
 
-fromJSONEnum :: CodeGenTypeName -> (PatQ, ExpQ)
-fromJSONEnum name = (originalLit name, appE (toVar 'pure) (toCon name))
-
 -- EXPORTS
 
 toJSONObjectMethod :: CodeGenConstructor -> ExpQ
@@ -167,9 +163,6 @@ fromJSONUnionMethod CodeGenType {..} = appE (toVar 'takeValueType) (matchWith el
         decodeObjectE cons
       )
 
-fromJSONEnumMethod :: [CodeGenTypeName] -> ExpQ
-fromJSONEnumMethod = matchWith (Just (v', failExp)) fromJSONEnum
-
 fromJSONObjectMethod :: CodeGenConstructor -> ExpQ
 fromJSONObjectMethod con@CodeGenConstructor {constructorName} = withBody <$> decodeObjectE con
   where
@@ -182,12 +175,12 @@ type ValueMatch = [MValue]
 data MValue
   = MFrom TypeName TypeName
   | MTo TypeName TypeName
-  | MFunction TypeName Name
+  | MFunction String Name
 
 printMatch :: ValueMatch -> ExpQ
 printMatch = lamCaseE . map buildMatch
   where
-    buildMatch (MFrom a b) = match (toString a) (normalB (toCon b)) []
+    buildMatch (MFrom a b) = match (toString a) (normalB (appE (toVar 'pure) (toCon b))) []
     buildMatch (MTo a b) = match (toCon a) (normalB (toString b)) []
     buildMatch (MFunction v name) = match (toVar v) (normalB $ appE (varE name) v') []
 
