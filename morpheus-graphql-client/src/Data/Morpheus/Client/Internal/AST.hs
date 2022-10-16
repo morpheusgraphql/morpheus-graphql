@@ -23,15 +23,17 @@ import Data.Morpheus.CodeGen.Internal.AST
     printTHName,
   )
 import Data.Morpheus.CodeGen.TH (PrintExp (..))
-import Data.Morpheus.Types.Internal.AST
-  ( OperationType,
-    TypeKind,
-    TypeName,
-  )
+import Data.Morpheus.Types.Internal.AST (OperationType, TypeKind, TypeName, unpackName)
 import Language.Haskell.TH (Name)
 import Language.Haskell.TH.Lib (varE)
 import Language.Haskell.TH.Syntax (Lift (..))
-import Prettyprinter (Doc, Pretty (..), vsep, (<+>))
+import Prettyprinter
+  ( Doc,
+    Pretty (..),
+    indent,
+    vsep,
+    (<+>),
+  )
 import Relude hiding (lift, show)
 import Prelude (show)
 
@@ -89,11 +91,17 @@ instance Pretty ClientMethod where
   pretty (MatchMethod x) = printMatch x
   pretty _ = "undefined -- TODO: should be real function"
 
+prettyLit :: Show a => a -> Doc ann
+prettyLit a = pretty (show a)
+
+prettyName :: TypeName -> Doc ann
+prettyName a = pretty (unpackName a :: Text)
+
 printMatch :: [MValue] -> Doc n
-printMatch = ("\\case " <>) . vsep . map buildMatch
+printMatch = ("\\case " <>) . indent 4 . vsep . map buildMatch
   where
-    buildMatch (MFrom a b) = pretty (show a) <+> "->" <+> fromString (show b)
-    buildMatch (MTo a b) = fromString (show a) <+> "->" <+> pretty (show b)
+    buildMatch (MFrom a b) = prettyLit a <+> "-> pure" <+> prettyName b
+    buildMatch (MTo a b) = prettyName a <+> "->" <+> prettyLit b
     buildMatch (MFunction v name) = pretty v <+> "->" <+> printTHName name <+> pretty v
 
 instance PrintExp ClientMethod where

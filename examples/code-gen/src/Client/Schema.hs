@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -34,10 +35,17 @@ data CityID
   deriving (Generic, Show, Eq)
 
 instance FromJSON CityID where
-  parseJSON = undefined -- TODO: should be real function
+  parseJSON = \case
+    "Paris" -> CityIDParis
+    "BLN" -> CityIDBLN
+    "HH" -> CityIDHH
+    v -> invalidConstructorError v
 
 instance ToJSON CityID where
-  toJSON = undefined -- TODO: should be real function
+  toJSON = \case
+    CityIDParis -> "Paris"
+    CityIDBLN -> "BLN"
+    CityIDHH -> "HH"
 
 data Coordinates = Coordinates
   { latitude :: Euro,
