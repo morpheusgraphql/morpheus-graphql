@@ -14,6 +14,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeKind,
     TypeName,
   )
+import Language.Haskell.TH (ExpQ)
 import Prettyprinter (Pretty (..))
 import Relude
 
@@ -45,3 +46,5 @@ instance Pretty ClientDeclaration where
   pretty (ToJSONClass _ def) = "-- TODO: " <> show (getFullName $ cgTypeName def) <> " ToJSONClass\n"
   pretty (FromJSONClass _ def) = "-- TODO: " <> show (getFullName $ cgTypeName def) <> " FromJSONClass\n"
   pretty (RequestTypeClass def) = "-- TODO: " <> show (requestName def) <> " RequestTypeClass\n"
+
+newtype ClientMethod = ClientMethod ExpQ
