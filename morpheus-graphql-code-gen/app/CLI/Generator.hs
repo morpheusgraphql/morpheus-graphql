@@ -12,9 +12,6 @@ where
 import CLI.Commands
   ( BuildOptions (..),
   )
-import CLI.File
-  ( getModuleNameByPath,
-  )
 import Data.ByteString.Lazy.Char8 (ByteString, pack)
 import Data.Morpheus.Client
   ( SchemaSource,
@@ -29,7 +26,7 @@ import Data.Morpheus.CodeGen
 import Data.Morpheus.CodeGen.Internal.AST
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Prettyprinter
-import Relude hiding (ByteString)
+import Relude hiding (ByteString, print)
 
 processServerDocument :: BuildOptions -> String -> ByteString -> GQLResult ByteString
 processServerDocument BuildOptions {..} moduleName =
@@ -65,4 +62,7 @@ processClientDocument BuildOptions {} schema query globals moduleName = do
               ],
             types
           }
-  pure $ pack $ show $ pretty moduleDef
+  pure $ print moduleDef
+
+print :: Pretty a => a -> ByteString
+print = pack . show . pretty
