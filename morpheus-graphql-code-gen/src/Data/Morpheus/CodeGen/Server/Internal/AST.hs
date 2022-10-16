@@ -175,9 +175,7 @@ renderMethods typeHead TypeClassInstance {..} =
   map renderAssoc assoc <> map renderMethodD typeClassMethods
   where
     renderAssoc (name, a) = "type" <+> printTHName name <+> typeHead <+> "=" <+> pretty a
-
-renderMethodD :: (TH.Name, MethodArgument, ServerMethod) -> Doc n
-renderMethodD (name, _, method) = printTHName name <+> " _ =" <+> pretty method
+    renderMethodD (name, _, method) = printTHName name <+> " _ =" <+> pretty method
 
 newtype CodeGenConfig = CodeGenConfig {namespace :: Bool}
 
