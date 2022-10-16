@@ -130,7 +130,7 @@ data GQLDirectiveTypeClass = GQLDirectiveTypeClass
 
 data ServerDeclaration
   = GQLTypeInstance GQLTypeDefinition (TypeClassInstance ServerMethod)
-  | GQLDirectiveInstance GQLDirectiveTypeClass
+  | GQLDirectiveInstance GQLDirectiveTypeClass (TypeClassInstance ServerMethod)
   | DataType CodeGenType
   | ScalarType {scalarTypeName :: Text}
   | InterfaceType InterfaceDefinition
@@ -149,7 +149,7 @@ instance Pretty ServerDeclaration where
   pretty ScalarType {..} = "type" <+> ignore (print scalarTypeName) <+> "= Int"
   pretty (DataType cgType) = pretty cgType
   pretty (GQLTypeInstance gqlType _) = renderGQLType gqlType
-  pretty (GQLDirectiveInstance _) = "TODO: not supported"
+  pretty (GQLDirectiveInstance _ _) = "TODO: not supported"
 
 renderTypeableConstraints :: [Text] -> Doc n
 renderTypeableConstraints xs = tupled (map (("Typeable" <+>) . pretty) xs) <+> "=>"

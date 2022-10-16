@@ -16,26 +16,20 @@ where
 import Data.ByteString.Lazy.Char8 (ByteString, pack)
 import Data.Morpheus.CodeGen.Internal.AST
   ( AssociatedType (..),
-    CodeGenTypeName (..),
-    MethodArgument (ProxyArgument),
     TypeClassInstance (..),
   )
 import Data.Morpheus.CodeGen.Server.Internal.AST
   ( CodeGenConfig (..),
     GQLDirectiveTypeClass (..),
-    GQLTypeDefinition (..),
     InterfaceDefinition (..),
     ServerDeclaration (..),
-    ServerDirectiveUsage,
     ServerMethod (..),
   )
 import Data.Morpheus.CodeGen.Server.Interpreting.Transform
   ( parseServerTypeDefinitions,
   )
 import Data.Morpheus.CodeGen.TH
-  ( PrintExp (..),
-    ToName (..),
-    apply,
+  ( apply,
     m',
     m_,
     printDec,
@@ -43,7 +37,6 @@ import Data.Morpheus.CodeGen.TH
   )
 import Data.Morpheus.Server.Types
   ( GQLDirective (..),
-    GQLType (..),
     TypeGuard (..),
   )
 import Language.Haskell.TH
@@ -83,18 +76,4 @@ instance PrintDecQ ServerDeclaration where
   printDecQ ScalarType {} = pure []
   printDecQ (DataType dataType) = pure <$> printDec dataType
   printDecQ (GQLTypeInstance _ gql) = pure <$> printDec gql
-  printDecQ (GQLDirectiveInstance dir) = printDecQ dir
-
-instance PrintDecQ GQLDirectiveTypeClass where
-  printDecQ GQLDirectiveTypeClass {..} = do
-    pure
-      <$> printDec
-        ( TypeClassInstance
-            { typeClassName = ''GQLDirective,
-              typeClassContext = [],
-              typeClassTarget = directiveTypeName,
-              assoc = [(''DIRECTIVE_LOCATIONS, AssociatedLocations directiveLocations)],
-              typeClassMethods = []
-            } ::
-            TypeClassInstance ServerMethod
-        )
+  printDecQ (GQLDirectiveInstance _ dir) = printDec dir
