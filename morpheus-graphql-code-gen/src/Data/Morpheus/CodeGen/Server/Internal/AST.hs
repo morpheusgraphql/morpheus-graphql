@@ -39,7 +39,7 @@ import Data.Morpheus.CodeGen.Printer
   )
 import Data.Morpheus.CodeGen.TH
   ( PrintExp (..),
-    PrintType (..),
+    ToName (..),
   )
 import Data.Morpheus.Server.Types
   ( SCALAR,
@@ -59,7 +59,7 @@ import Data.Morpheus.Types.Internal.AST
     Value,
     unpackName,
   )
-import Language.Haskell.TH.Lib (appE, conT, varE)
+import Language.Haskell.TH.Lib (appE, varE)
 import Prettyprinter
   ( Doc,
     Pretty (..),
@@ -83,9 +83,9 @@ instance Pretty Kind where
   pretty Type = "TYPE"
   pretty Scalar = "SCALAR"
 
-instance PrintType Kind where
-  printType Scalar = conT ''SCALAR
-  printType Type = conT ''TYPE
+instance ToName Kind where
+  toName Scalar = ''SCALAR
+  toName Type = ''TYPE
 
 data ServerDirectiveUsage
   = TypeDirectiveUsage TypeValue
@@ -154,13 +154,13 @@ renderGQLType :: GQLTypeDefinition -> Doc ann
 renderGQLType gql@GQLTypeDefinition {..}
   | gqlKind == Scalar = ""
   | otherwise =
-      "instance"
-        <> optional renderTypeableConstraints (typeParameters gqlTarget)
-        <+> "GQLType"
-        <+> typeHead
-        <+> "where"
-          <> line
-          <> indent 2 (vsep (renderMethods typeHead gql))
+    "instance"
+      <> optional renderTypeableConstraints (typeParameters gqlTarget)
+      <+> "GQLType"
+      <+> typeHead
+      <+> "where"
+        <> line
+        <> indent 2 (vsep (renderMethods typeHead gql))
   where
     typeHead = unpack (print gqlTarget)
 

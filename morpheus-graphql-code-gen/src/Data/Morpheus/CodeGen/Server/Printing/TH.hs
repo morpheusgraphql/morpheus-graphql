@@ -14,7 +14,11 @@ module Data.Morpheus.CodeGen.Server.Printing.TH
 where
 
 import Data.ByteString.Lazy.Char8 (ByteString, pack)
-import Data.Morpheus.CodeGen.Internal.AST (CodeGenTypeName (..), TypeClassInstance (..))
+import Data.Morpheus.CodeGen.Internal.AST
+  ( AssociatedType (..),
+    CodeGenTypeName (..),
+    TypeClassInstance (..),
+  )
 import Data.Morpheus.CodeGen.Server.Internal.AST
   ( CodeGenConfig (..),
     GQLDirectiveTypeClass (..),
@@ -42,7 +46,6 @@ import Data.Morpheus.Server.Types
     GQLType (..),
     TypeGuard (..),
   )
-import Data.Morpheus.Types.Internal.AST (DirectiveLocation)
 import Language.Haskell.TH
 import Language.Haskell.TH.Quote (QuasiQuoter (..))
 import Relude hiding (ByteString, Type)
@@ -78,7 +81,7 @@ instance PrintDecQ InterfaceDefinition where
 instance PrintDecQ GQLTypeDefinition where
   printDecQ GQLTypeDefinition {..} = do
     let params = map toName (typeParameters gqlTarget)
-    associatedTypes <- fmap (pure . (''KIND,)) (printType gqlKind)
+    associatedTypes <- fmap (pure . (''KIND,)) (AssociatedTypeName $ toName gqlKind)
     pure <$> printDec (TypeClassInstance ''GQLType (map (''Typeable,) params) gqlTarget associatedTypes methods)
     where
       methods =
@@ -101,14 +104,11 @@ instance PrintDecQ GQLDirectiveTypeClass where
           { typeClassName = ''GQLDirective,
             typeClassContext = [],
             typeClassTarget = directiveTypeName,
-            assoc = [(''DIRECTIVE_LOCATIONS, promotedList directiveLocations)],
+            assoc = [(''DIRECTIVE_LOCATIONS, AssociatedLocations directiveLocations)],
             typeClassMethods = [] :: Methods
           }
 
 type Methods = [(Name, ([PatQ], ExpQ))]
-
-promotedList :: [DirectiveLocation] -> Type
-promotedList = foldr (AppT . AppT PromotedConsT . PromotedT . toName) PromotedNilT
 
 printDirectiveUsages :: [ServerDirectiveUsage] -> ExpQ
 printDirectiveUsages = foldr (appE . appE [|(<>)|] . printExp) [|mempty|]

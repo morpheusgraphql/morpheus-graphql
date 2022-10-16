@@ -14,13 +14,15 @@ module Data.Morpheus.CodeGen.Internal.AST
     getFullName,
     ModuleDefinition (..),
     TypeClassInstance (..),
+    AssociatedType (..),
   )
 where
 
 import Data.Morpheus.CodeGen.Internal.Name (camelCaseTypeName)
 import Data.Morpheus.CodeGen.Printer
 import Data.Morpheus.Types.Internal.AST
-  ( FieldName,
+  ( DirectiveLocation,
+    FieldName,
     TypeName,
     TypeRef,
     TypeWrapper,
@@ -215,6 +217,10 @@ data TypeClassInstance name funBody = TypeClassInstance
   { typeClassName :: name,
     typeClassContext :: [(name, name)],
     typeClassTarget :: CodeGenTypeName,
-    assoc :: [(name, name)],
+    assoc :: [(name, AssociatedType)],
     typeClassMethods :: [(name, funBody)]
   }
+
+data AssociatedType
+  = AssociatedTypeName TH.Name
+  | AssociatedLocations [DirectiveLocation]

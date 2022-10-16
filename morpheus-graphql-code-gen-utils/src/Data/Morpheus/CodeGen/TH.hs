@@ -32,7 +32,8 @@ module Data.Morpheus.CodeGen.TH
 where
 
 import Data.Morpheus.CodeGen.Internal.AST
-  ( CodeGenConstructor (..),
+  ( AssociatedType (..),
+    CodeGenConstructor (..),
     CodeGenField (..),
     CodeGenType (..),
     CodeGenTypeName (..),
@@ -309,6 +310,10 @@ instance ToName AST.DirectiveLocation where
   toName AST.INPUT_OBJECT = 'AST.INPUT_OBJECT
   toName AST.INPUT_FIELD_DEFINITION = 'AST.INPUT_FIELD_DEFINITION
 
+instance PrintType AssociatedType where
+  printType (AssociatedLocations xs) = pure $ foldr (AppT . AppT PromotedConsT . PromotedT . toName) PromotedNilT xs
+  printType (AssociatedTypeName name) = toCon name
+
 instance PrintDec (TypeClassInstance Name ([PatQ], ExpQ)) where
   printDec TypeClassInstance {..} =
     instanceD
@@ -318,10 +323,11 @@ instance PrintDec (TypeClassInstance Name ([PatQ], ExpQ)) where
     where
       printFun :: (Name, ([PatQ], ExpQ)) -> DecQ
       printFun (funName, (args, body)) = funD funName [clause args (normalB body) []]
-      assocTypes :: (Name, Type) -> DecQ
+      assocTypes :: (Name, AssociatedType) -> DecQ
       assocTypes (assocName, type') = do
         ty <- printType typeClassTarget
-        pure $ typeInstanceDec assocName ty type'
+        assocType <- printType type'
+        pure $ typeInstanceDec assocName ty assocType
       headType :: TypeQ
       headType = do
         ty <- printType typeClassTarget

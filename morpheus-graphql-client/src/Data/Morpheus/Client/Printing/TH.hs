@@ -64,7 +64,7 @@ import Data.Morpheus.Types.GQLScalar
 import Data.Morpheus.Types.Internal.AST
   ( TypeName,
   )
-import Language.Haskell.TH (Dec, DecQ, Exp (..), ExpQ, Name, PatQ, Q, Type, appE, tupP)
+import Language.Haskell.TH (Dec, DecQ, Exp (..), ExpQ, Name, PatQ, Q, appE, tupP)
 import Relude hiding (ToString, Type, toString)
 
 printDeclarations :: [ClientDeclaration] -> Q [Dec]
@@ -81,7 +81,7 @@ typeDeclarations (RequestTypeClass RequestTypeDefinition {..}) = do
         { typeClassName = ''RequestType,
           typeClassContext = [],
           typeClassTarget = fromTypeName requestName,
-          assoc = [(''RequestArgs, toCon requestArgs)] :: Constraints,
+          assoc = [(''RequestArgs, toCon requestArgs)],
           typeClassMethods
         }
   where
@@ -94,16 +94,14 @@ typeDeclarations (RequestTypeClass RequestTypeDefinition {..}) = do
 -- UTILS
 type Methods = [(Name, ([PatQ], ExpQ))]
 
-type Constraints = [(Name, Type)]
-
 mkFromJSON :: CodeGenTypeName -> ExpQ -> DecQ
 mkFromJSON name expr =
   printDec $
-    TypeClassInstance ''FromJSON [] name ([] :: Constraints) ([('parseJSON, ([], expr))] :: Methods)
+    TypeClassInstance ''FromJSON [] name [] ([('parseJSON, ([], expr))] :: Methods)
 
 mkToJSON :: CodeGenTypeName -> [PatQ] -> ExpQ -> DecQ
 mkToJSON name args expr = do
-  printDec $ TypeClassInstance ''ToJSON [] name ([] :: Constraints) ([('toJSON, (args, expr))] :: Methods)
+  printDec $ TypeClassInstance ''ToJSON [] name [] ([('toJSON, (args, expr))] :: Methods)
 
 originalLit :: ToString TypeName a => CodeGenTypeName -> Q a
 originalLit = toString . typename
