@@ -22,6 +22,7 @@ import Data.Morpheus.Client.Fetch.RequestType
 import Data.Morpheus.Client.Internal.AST
   ( ClientDeclaration (..),
     ClientMethod (..),
+    ClientPreDeclaration (..),
     DERIVING_MODE (..),
     RequestTypeDefinition (..),
   )
@@ -38,7 +39,6 @@ import Data.Morpheus.Client.Internal.Utils
 import Data.Morpheus.CodeGen.Internal.AST
   ( AssociatedType (AssociatedTypeName),
     CodeGenType (..),
-    CodeGenTypeName (..),
     MethodArgument (..),
     TypeClassInstance (..),
     fromTypeName,
@@ -58,45 +58,30 @@ printDeclarations :: [ClientDeclaration] -> Q [Dec]
 printDeclarations clientType = concat <$> traverse typeDeclarations clientType
 
 typeDeclarations :: ClientDeclaration -> Q [Dec]
-typeDeclarations (FromJSONClass mode clientDef) = deriveIfNotDefined (deriveFromJSON mode >=> printDec) ''FromJSON clientDef
-typeDeclarations (ToJSONClass mode clientDef) = deriveIfNotDefined (deriveToJSON mode >=> printDec) ''ToJSON clientDef
-typeDeclarations (ClientType c) = declareIfNotDeclared printDec c
-typeDeclarations (RequestTypeClass RequestTypeDefinition {..}) = do
-  pure
-    <$> printDec
-      TypeClassInstance
-        { typeClassName = ''RequestType,
-          typeClassContext = [],
-          typeClassTarget = fromTypeName requestName,
-          assoc = [(''RequestArgs, AssociatedTypeName $ toName requestArgs)],
-          typeClassMethods
-        }
+typeDeclarations (InstanceDeclaration mode dec) = deriveIfNotDefined (deriveFromJSON mode >=> printDec) ''FromJSON dec
+typeDeclarations (ClientTypeDeclaration c) = declareIfNotDeclared printDec c
+
+transformDeclarations :: ClientPreDeclaration -> Q [Dec]
+transformDeclarations (FromJSONClass mode clientDef) = deriveIfNotDefined (deriveFromJSON mode >=> printDec) ''FromJSON clientDef
+transformDeclarations (ToJSONClass mode clientDef) = deriveIfNotDefined (deriveToJSON mode >=> printDec) ''ToJSON clientDef
+transformDeclarations (ClientType c) = declareIfNotDeclared printDec c
+transformDeclarations (RequestTypeClass req) = pure <$> printDec (getRequestInstance req)
+
+getRequestInstance :: RequestTypeDefinition -> TypeClassInstance ClientMethod
+getRequestInstance RequestTypeDefinition {..} =
+  TypeClassInstance
+    { typeClassName = ''RequestType,
+      typeClassContext = [],
+      typeClassTarget = fromTypeName requestName,
+      assoc = [(''RequestArgs, AssociatedTypeName $ toName requestArgs)],
+      typeClassMethods
+    }
   where
     typeClassMethods =
       [ ('__name, ProxyArgument, ClientMethodExp [|requestName|]),
         ('__query, ProxyArgument, ClientMethodExp [|requestQuery|]),
         ('__type, ProxyArgument, ClientMethodExp [|requestType|])
       ]
-
-mkFromJSON :: CodeGenTypeName -> ClientMethod -> TypeClassInstance ClientMethod
-mkFromJSON name expr =
-  TypeClassInstance
-    { typeClassName = ''FromJSON,
-      typeClassContext = [],
-      typeClassTarget = name,
-      assoc = [],
-      typeClassMethods = [('parseJSON, NoArgument, expr)]
-    }
-
-mkToJSON :: CodeGenTypeName -> (MethodArgument, ClientMethod) -> TypeClassInstance ClientMethod
-mkToJSON name (args, expr) =
-  TypeClassInstance
-    { typeClassName = ''ToJSON,
-      typeClassContext = [],
-      typeClassTarget = name,
-      assoc = [],
-      typeClassMethods = [('toJSON, args, expr)]
-    }
 
 -- FromJSON
 deriveFromJSONMethod :: MonadFail m => DERIVING_MODE -> CodeGenType -> m ClientMethod
@@ -114,7 +99,25 @@ deriveToJSONMethod _ CodeGenType {cgConstructors = [cons]} = pure (DestructArgum
 deriveToJSONMethod _ _ = fail "Input Unions are not yet supported"
 
 deriveToJSON :: MonadFail m => DERIVING_MODE -> CodeGenType -> m (TypeClassInstance ClientMethod)
-deriveToJSON mode cType = mkToJSON (cgTypeName cType) <$> deriveToJSONMethod mode cType
+deriveToJSON mode cType = do
+  (args, expr) <- deriveToJSONMethod mode cType
+  pure
+    TypeClassInstance
+      { typeClassName = ''ToJSON,
+        typeClassContext = [],
+        typeClassTarget = cgTypeName cType,
+        assoc = [],
+        typeClassMethods = [('toJSON, args, expr)]
+      }
 
 deriveFromJSON :: MonadFail m => DERIVING_MODE -> CodeGenType -> m (TypeClassInstance ClientMethod)
-deriveFromJSON mode cType = mkFromJSON (cgTypeName cType) <$> deriveFromJSONMethod mode cType
+deriveFromJSON mode cType = do
+  expr <- deriveFromJSONMethod mode cType
+  pure
+    TypeClassInstance
+      { typeClassName = ''FromJSON,
+        typeClassContext = [],
+        typeClassTarget = cgTypeName cType,
+        assoc = [],
+        typeClassMethods = [('parseJSON, NoArgument, expr)]
+      }

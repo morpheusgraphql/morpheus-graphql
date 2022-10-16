@@ -10,7 +10,7 @@ module Data.Morpheus.Client.Transform.Global
 where
 
 import Data.Morpheus.Client.Internal.AST
-  ( ClientDeclaration,
+  ( ClientPreDeclaration,
     ClientTypeDefinition (..),
   )
 import Data.Morpheus.Client.Transform.Core (toClientDeclarations, toCodeGenField)
@@ -34,7 +34,7 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Relude hiding (empty)
 
-toGlobalDefinitions :: (TypeName -> Bool) -> Schema VALID -> [ClientDeclaration]
+toGlobalDefinitions :: (TypeName -> Bool) -> Schema VALID -> [ClientPreDeclaration]
 toGlobalDefinitions f Schema {types} =
   concatMap toClientDeclarations $
     mapMaybe generateGlobalType $

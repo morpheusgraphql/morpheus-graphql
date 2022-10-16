@@ -14,7 +14,7 @@ where
 
 import Control.Monad.Except (MonadError (throwError))
 import Data.Morpheus.Client.Internal.AST
-  ( ClientDeclaration (..),
+  ( ClientPreDeclaration (..),
     ClientTypeDefinition (..),
     RequestTypeDefinition (..),
   )
@@ -69,12 +69,12 @@ clientConfig =
       validationMode = WITHOUT_VARIABLES
     }
 
-toLocalDefinitions :: (Text, ExecutableDocument) -> Schema VALID -> GQLResult [ClientDeclaration]
+toLocalDefinitions :: (Text, ExecutableDocument) -> Schema VALID -> GQLResult [ClientPreDeclaration]
 toLocalDefinitions (query, request) schema = do
   validOperation <- validateRequest clientConfig schema request
   flip runReaderT (schema, operationArguments $ operation request) $ runConverter $ genLocalDeclarations query validOperation
 
-genLocalDeclarations :: Text -> Operation VALID -> Converter [ClientDeclaration]
+genLocalDeclarations :: Text -> Operation VALID -> Converter [ClientPreDeclaration]
 genLocalDeclarations query op@Operation {operationName, operationSelection, operationType} = do
   (schema, varDefs) <- asks id
   datatype <- getOperationDataType op schema
@@ -92,8 +92,8 @@ genLocalDeclarations query op@Operation {operationName, operationSelection, oper
             requestName = typename (clientTypeName rootType),
             requestType = operationType,
             requestQuery = T.unpack query
-          }
-        : concatMap toClientDeclarations (rootType : (localTypes <> maybeToList argumentsType))
+          } :
+      concatMap toClientDeclarations (rootType : (localTypes <> maybeToList argumentsType))
     )
 
 -------------------------------------------------------------------------
@@ -160,8 +160,8 @@ subTypesBySelection namespace dType Selection {selectionContent = UnionSelection
           { clientTypeName = CodeGenTypeName {namespace, typeParameters = [], typename = typeFrom [] dType},
             clientCons,
             clientKind = KindUnion
-          }
-          : concat subTypes
+          } :
+        concat subTypes
       )
 
 getVariantType :: [FieldName] -> UnionTag -> Converter (CodeGenConstructor, [ClientTypeDefinition])
@@ -185,14 +185,14 @@ getFieldType
       toFieldDef :: TypeContent TRUE ANY VALID -> Converter (FieldDefinition OUT VALID)
       toFieldDef _
         | selectionName == "__typename" =
-            pure
-              FieldDefinition
-                { fieldName = "__typename",
-                  fieldDescription = Nothing,
-                  fieldType = mkTypeRef "String",
-                  fieldDirectives = empty,
-                  fieldContent = Nothing
-                }
+          pure
+            FieldDefinition
+              { fieldName = "__typename",
+                fieldDescription = Nothing,
+                fieldType = mkTypeRef "String",
+                fieldDirectives = empty,
+                fieldContent = Nothing
+              }
       toFieldDef DataObject {objectFields} = selectBy selError selectionName objectFields
       toFieldDef DataInterface {interfaceFields} = selectBy selError selectionName interfaceFields
       toFieldDef dt = throwError (compileError $ "Type should be output Object \"" <> msg (show dt))
@@ -217,17 +217,17 @@ toArgumentsType ::
 toArgumentsType clientTypeName variables
   | null variables = Nothing
   | otherwise =
-      Just
-        ClientTypeDefinition
-          { clientTypeName,
-            clientKind = KindInputObject,
-            clientCons =
-              [ CodeGenConstructor
-                  { constructorName = clientTypeName,
-                    constructorFields = toCodeGenField . toFieldDefinition <$> toList variables
-                  }
-              ]
-          }
+    Just
+      ClientTypeDefinition
+        { clientTypeName,
+          clientKind = KindInputObject,
+          clientCons =
+            [ CodeGenConstructor
+                { constructorName = clientTypeName,
+                  constructorFields = toCodeGenField . toFieldDefinition <$> toList variables
+                }
+            ]
+        }
 
 toFieldDefinition :: Variable RAW -> FieldDefinition ANY VALID
 toFieldDefinition Variable {variableName, variableType} =

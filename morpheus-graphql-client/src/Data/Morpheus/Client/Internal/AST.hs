@@ -8,7 +8,7 @@ import Data.Morpheus.CodeGen.Internal.AST
   ( CodeGenConstructor (..),
     CodeGenType (cgTypeName),
     CodeGenTypeName,
-    getFullName,
+    TypeClassInstance (typeClassName),
   )
 import Data.Morpheus.CodeGen.TH (PrintExp (..))
 import Data.Morpheus.Types.Internal.AST
@@ -16,13 +16,17 @@ import Data.Morpheus.Types.Internal.AST
     TypeKind,
     TypeName,
   )
-import Language.Haskell.TH (ExpQ)
+import Language.Haskell.TH (ExpQ, Name)
 import Prettyprinter (Pretty (..))
 import Relude
 
 data DERIVING_MODE = SCALAR_MODE | ENUM_MODE | TYPE_MODE
 
 data ClientDeclaration
+  = InstanceDeclaration (Maybe Name) (TypeClassInstance ClientMethod)
+  | ClientTypeDeclaration CodeGenType
+
+data ClientPreDeclaration
   = ToJSONClass DERIVING_MODE CodeGenType
   | FromJSONClass DERIVING_MODE CodeGenType
   | RequestTypeClass RequestTypeDefinition
@@ -44,10 +48,8 @@ data RequestTypeDefinition = RequestTypeDefinition
   deriving (Show)
 
 instance Pretty ClientDeclaration where
-  pretty (ClientType def) = pretty def
-  pretty (ToJSONClass _ def) = "-- TODO: " <> show (getFullName $ cgTypeName def) <> " ToJSONClass\n"
-  pretty (FromJSONClass _ def) = "-- TODO: " <> show (getFullName $ cgTypeName def) <> " FromJSONClass\n"
-  pretty (RequestTypeClass def) = "-- TODO: " <> show (requestName def) <> " RequestTypeClass\n"
+  pretty (ClientTypeDeclaration def) = pretty def
+  pretty (InstanceDeclaration _ def) = "-- TODO: " <> show (typeClassName def) <> " ToJSONClass\n"
 
 data ClientMethod
   = ClientMethodExp ExpQ
