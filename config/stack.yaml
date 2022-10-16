@@ -40,7 +40,7 @@ plan:
       retry: 0.8.1.0
       time-compat: 1.9.2.2
       websockets: 0.12.6.0
-    resolver: lts-12.16
+    resolver: lts-12.26
   8.6.5:
     deps:
       req: 3.0.0
