@@ -157,21 +157,16 @@ renderTypeableConstraints :: [Text] -> Doc n
 renderTypeableConstraints xs = tupled (map (("Typeable" <+>) . pretty) xs) <+> "=>"
 
 renderGQLType :: TypeClassInstance ServerMethod -> Doc ann
-renderGQLType gql@TypeClassInstance {..} =
+renderGQLType TypeClassInstance {..} =
   "instance"
     <> optional renderTypeableConstraints (typeParameters typeClassTarget)
     <+> "GQLType"
-    <+> typeHead
+    <+> printTHName typeClassName
     <+> "where"
       <> line
-      <> indent 2 (vsep (renderMethods typeHead gql))
+      <> indent 2 (vsep (map renderAssoc assoc <> map renderMethodD typeClassMethods))
   where
-    typeHead = printTHName typeClassName
-
-renderMethods :: Doc n -> TypeClassInstance ServerMethod -> [Doc n]
-renderMethods typeHead TypeClassInstance {..} =
-  map renderAssoc assoc <> map renderMethodD typeClassMethods
-  where
+    typeHead = unpack (print typeClassTarget)
     renderAssoc (name, a) = "type" <+> printTHName name <+> typeHead <+> "=" <+> pretty a
     renderMethodD (name, _, method) = printTHName name <+> " _ =" <+> pretty method
 
