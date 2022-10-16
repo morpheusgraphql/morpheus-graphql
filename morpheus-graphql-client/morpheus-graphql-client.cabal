@@ -78,6 +78,7 @@ library
       Data.Morpheus.Client.Transform.Core
       Data.Morpheus.Client.Transform.Global
       Data.Morpheus.Client.Transform.Local
+      Data.Morpheus.Client.Transform.PreDeclarations
       Paths_morpheus_graphql_client
   hs-source-dirs:
       src

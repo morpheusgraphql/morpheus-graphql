@@ -44,7 +44,7 @@ internalLegacyLocalDeclareTypes schemaSrc query = do
   clientTypeDeclarations schemaText (Just query)
 
 globalTypeDeclarations :: SchemaSource -> (TypeName -> Bool) -> Q [Dec]
-globalTypeDeclarations src f = handleResult (toGlobalDefinitions f <$> parseSchema src) printDeclarations
+globalTypeDeclarations src f = handleResult (parseSchema src >>= toGlobalDefinitions f) printDeclarations
 
 parseClientTypeDeclarations :: SchemaSource -> Maybe Text -> GQLResult [ClientDeclaration]
 parseClientTypeDeclarations schemaText (Just query) = do
@@ -57,7 +57,7 @@ parseClientTypeDeclarations schemaText (Just query) = do
           variables = Nothing
         }
   toLocalDefinitions (query, executableDoc) schemaDoc
-parseClientTypeDeclarations src Nothing = toGlobalDefinitions (const True) <$> parseSchema src
+parseClientTypeDeclarations src Nothing = parseSchema src >>= toGlobalDefinitions (const True)
 
 -- | declares global or local types, depending
 -- on whether the second argument is specified or not
