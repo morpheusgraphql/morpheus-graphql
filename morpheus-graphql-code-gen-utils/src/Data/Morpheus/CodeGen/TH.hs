@@ -313,15 +313,19 @@ instance PrintDec (TypeClassInstance Name Type ([PatQ], ExpQ)) where
   printDec TypeClassInstance {..} =
     instanceD
       (printConstraints typeClassContext)
-      (pure headType)
+      headType
       (map assocTypes assoc <> map printFun typeClassMethods)
     where
       printFun :: (Name, ([PatQ], ExpQ)) -> DecQ
       printFun (funName, (args, body)) = funD funName [clause args (normalB body) []]
       assocTypes :: (Name, Type) -> DecQ
-      assocTypes (assocName, type') = pure $ typeInstanceDec assocName typeClassTarget type'
-      headType :: Type
-      headType = apply typeClassName [typeClassTarget]
+      assocTypes (assocName, type') = do
+        ty <- printType typeClassTarget
+        pure $ typeInstanceDec assocName ty type'
+      headType :: TypeQ
+      headType = do
+        ty <- printType typeClassTarget
+        pure $ apply typeClassName [ty]
 
 instance PrintDec CodeGenType where
   printDec CodeGenType {..} =

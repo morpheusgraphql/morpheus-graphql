@@ -214,7 +214,7 @@ renderImportList xs = tupled (map pretty xs)
 data TypeClassInstance name ty funBody = TypeClassInstance
   { typeClassName :: name,
     typeClassContext :: [(name, name)],
-    typeClassTarget :: ty,
+    typeClassTarget :: CodeGenTypeName,
     assoc :: [(name, ty)],
     typeClassMethods :: [(name, funBody)]
   }
