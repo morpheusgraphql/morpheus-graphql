@@ -146,7 +146,7 @@ fromJSONUnion CodeGenType {..} = appE (toVar 'takeValueType) (matchWith elseCond
 deriveToJSONMethod :: MonadFail m => DERIVING_MODE -> CodeGenType -> m (MethodArgument, ClientMethod)
 deriveToJSONMethod SCALAR_MODE _ = pure (NoArgument, ClientMethodExp [|scalarToJSON|])
 deriveToJSONMethod _ CodeGenType {cgConstructors = [], ..} = emptyTypeError cgTypeName
-deriveToJSONMethod ENUM_MODE CodeGenType {..} = pure (NoArgument, ToJSONEnumMethod cgConstructors)
+deriveToJSONMethod ENUM_MODE CodeGenType {cgConstructors} = pure (NoArgument, ToJSONEnumMethod cgConstructors)
 deriveToJSONMethod _ CodeGenType {cgConstructors = [cons]} = pure (DestructArgument cons, ToJSONObjectMethod cons)
 deriveToJSONMethod _ _ = fail "Input Unions are not yet supported"
 
