@@ -213,12 +213,12 @@ renderImportList :: [Text] -> Doc ann
 renderImportList ["*"] = ""
 renderImportList xs = tupled (map pretty xs)
 
-data TypeClassInstance name funBody = TypeClassInstance
-  { typeClassName :: name,
-    typeClassContext :: [(name, name)],
+data TypeClassInstance funBody = TypeClassInstance
+  { typeClassName :: TH.Name,
+    typeClassContext :: [(TH.Name, TH.Name)],
     typeClassTarget :: CodeGenTypeName,
-    assoc :: [(name, AssociatedType)],
-    typeClassMethods :: [(name, funBody)]
+    assoc :: [(TH.Name, AssociatedType)],
+    typeClassMethods :: [(TH.Name, funBody)]
   }
 
 data AssociatedType
