@@ -16,6 +16,7 @@ module Data.Morpheus.CodeGen.Internal.AST
     TypeClassInstance (..),
     AssociatedType (..),
     MethodArgument (..),
+    printTHName,
   )
 where
 
@@ -27,6 +28,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeName,
     TypeRef,
     TypeWrapper,
+    packName,
     unpackName,
   )
 import qualified Language.Haskell.TH.Syntax as TH
@@ -228,8 +230,11 @@ data AssociatedType
   | AssociatedLocations [DirectiveLocation]
   deriving (Show)
 
+printTHName :: TH.Name -> Doc ann
+printTHName = ignore . print . packName
+
 instance Pretty AssociatedType where
-  pretty (AssociatedTypeName x) = pretty (show x :: String)
+  pretty (AssociatedTypeName x) = printTHName x
 
 data MethodArgument
   = NoArgument

@@ -34,6 +34,7 @@ import Data.Morpheus.CodeGen.Internal.AST
     MethodArgument,
     TypeClassInstance (..),
     TypeValue (..),
+    printTHName,
   )
 import Data.Morpheus.CodeGen.Printer
   ( Printer (..),
@@ -171,16 +172,13 @@ renderGQLType gql@TypeClassInstance {..} =
       <> line
       <> indent 2 (vsep (renderMethods typeHead gql))
   where
-    typeHead = printName typeClassName
-
-printName :: TH.Name -> Doc ann
-printName = ignore . print . packName
+    typeHead = printTHName typeClassName
 
 renderMethods :: Doc n -> TypeClassInstance ServerMethod -> [Doc n]
 renderMethods typeHead TypeClassInstance {..} =
   map renderAssoc assoc <> map renderMethod typeClassMethods
   where
-    renderAssoc (name, a) = "type" <+> printName name <+> typeHead <+> "=" <+> pretty a
+    renderAssoc (name, a) = "type" <+> printTHName name <+> typeHead <+> "=" <+> pretty a
 
 renderMethod :: (TH.Name, MethodArgument, ServerMethod) -> Doc n
 renderMethod _ = "directives _=" <+> "TODO: renderDirectiveUsages"
