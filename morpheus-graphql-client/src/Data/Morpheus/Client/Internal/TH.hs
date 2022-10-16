@@ -86,10 +86,10 @@ decodeObjectE :: CodeGenConstructor -> ExpQ
 decodeObjectE CodeGenConstructor {..}
   | null constructorFields = appE [|pure|] (toCon constructorName)
   | otherwise =
-      uInfixE
-        (toCon constructorName)
-        [|(<$>)|]
-        (foldr1 withApplicative $ map defField constructorFields)
+    uInfixE
+      (toCon constructorName)
+      [|(<$>)|]
+      (foldr1 withApplicative $ map defField constructorFields)
 
 defField :: CodeGenField -> ExpQ
 defField CodeGenField {..} = uInfixE v' (varE $ bindField fieldIsNullable) (toString fieldName)
@@ -199,3 +199,5 @@ fromJSONObjectMethod con@CodeGenConstructor {constructorName} = withBody <$> dec
     withBody body = AppE (AppE (VarE 'withObject) name) (LamE [v'] body)
     name :: Exp
     name = toString (getFullName constructorName)
+
+data MatchCases = MatchCases [(TypeName, TypeName)]
