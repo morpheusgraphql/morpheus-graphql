@@ -7,7 +7,6 @@
 module Client.Requests.NewUsers where
 
 import Client.Schema
-import Data.Text (Text)
 import GHC.Generics (Generic)
 import Globals.GQLScalars
 

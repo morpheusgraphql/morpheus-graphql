@@ -6,7 +6,6 @@
 
 module Client.Schema where
 
-import Data.Text (Text)
 import GHC.Generics (Generic)
 import Globals.GQLScalars
 
