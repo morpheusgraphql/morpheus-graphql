@@ -6,7 +6,7 @@ module Data.Morpheus.Client.Internal.AST where
 import Data.Morpheus.Client.Internal.TH (toJSONEnumMethod, toJSONObjectMethod)
 import Data.Morpheus.CodeGen.Internal.AST
   ( CodeGenConstructor (..),
-    CodeGenType (cgTypeName),
+    CodeGenType,
     CodeGenTypeName,
     TypeClassInstance (typeClassName),
   )
@@ -23,7 +23,7 @@ import Relude
 data DERIVING_MODE = SCALAR_MODE | ENUM_MODE | TYPE_MODE
 
 data ClientDeclaration
-  = InstanceDeclaration (Maybe Name) (TypeClassInstance ClientMethod)
+  = InstanceDeclaration (TypeClassInstance ClientMethod)
   | ClientTypeDeclaration CodeGenType
 
 data ClientPreDeclaration
@@ -49,7 +49,7 @@ data RequestTypeDefinition = RequestTypeDefinition
 
 instance Pretty ClientDeclaration where
   pretty (ClientTypeDeclaration def) = pretty def
-  pretty (InstanceDeclaration _ def) = "-- TODO: " <> show (typeClassName def) <> " ToJSONClass\n"
+  pretty (InstanceDeclaration def) = "-- TODO: " <> show (typeClassName def) <> " ToJSONClass\n"
 
 data ClientMethod
   = ClientMethodExp ExpQ

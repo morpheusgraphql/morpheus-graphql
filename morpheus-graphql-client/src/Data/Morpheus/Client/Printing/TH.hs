@@ -58,14 +58,14 @@ printDeclarations :: [ClientDeclaration] -> Q [Dec]
 printDeclarations clientType = concat <$> traverse typeDeclarations clientType
 
 typeDeclarations :: ClientDeclaration -> Q [Dec]
-typeDeclarations (InstanceDeclaration mode dec) = deriveIfNotDefined (deriveFromJSON mode >=> printDec) ''FromJSON dec
+typeDeclarations (InstanceDeclaration dec) = deriveIfNotDefined printDec dec
 typeDeclarations (ClientTypeDeclaration c) = declareIfNotDeclared printDec c
 
-transformDeclarations :: ClientPreDeclaration -> Q [Dec]
-transformDeclarations (FromJSONClass mode clientDef) = deriveIfNotDefined (deriveFromJSON mode >=> printDec) ''FromJSON clientDef
-transformDeclarations (ToJSONClass mode clientDef) = deriveIfNotDefined (deriveToJSON mode >=> printDec) ''ToJSON clientDef
-transformDeclarations (ClientType c) = declareIfNotDeclared printDec c
-transformDeclarations (RequestTypeClass req) = pure <$> printDec (getRequestInstance req)
+transformDeclarations :: MonadFail m => ClientPreDeclaration -> m ClientDeclaration
+transformDeclarations (FromJSONClass mode dec) = InstanceDeclaration <$> deriveFromJSON mode dec
+transformDeclarations (ToJSONClass mode clientDef) = InstanceDeclaration <$> deriveToJSON mode clientDef
+transformDeclarations (ClientType c) = pure $ ClientTypeDeclaration c
+transformDeclarations (RequestTypeClass req) = pure $ InstanceDeclaration (getRequestInstance req)
 
 getRequestInstance :: RequestTypeDefinition -> TypeClassInstance ClientMethod
 getRequestInstance RequestTypeDefinition {..} =

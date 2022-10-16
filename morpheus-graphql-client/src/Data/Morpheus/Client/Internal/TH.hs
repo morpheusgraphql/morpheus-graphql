@@ -40,6 +40,7 @@ import Data.Morpheus.CodeGen.Internal.AST
     CodeGenField (..),
     CodeGenType (..),
     CodeGenTypeName (..),
+    TypeClassInstance (..),
     getFullName,
   )
 import Data.Morpheus.CodeGen.TH
@@ -137,22 +138,22 @@ isTypeDeclared clientTypeName = do
     Nothing -> pure False
     _ -> pure True
 
-hasInstance :: Name -> CodeGenType -> Q Bool
-hasInstance typeClass clientDef = isInstance typeClass [ConT (toName (cgTypeName clientDef))]
+hasInstance :: Name -> CodeGenTypeName -> Q Bool
+hasInstance typeClass tName = isInstance typeClass [ConT (toName tName)]
 
-deriveIfNotDefined :: (CodeGenType -> Q Dec) -> Name -> CodeGenType -> Q [Dec]
-deriveIfNotDefined derivation typeClass clientDef = do
-  exists <- isTypeDeclared (cgTypeName clientDef)
+deriveIfNotDefined :: (TypeClassInstance a -> Q Dec) -> TypeClassInstance a -> Q [Dec]
+deriveIfNotDefined derivation dec = do
+  exists <- isTypeDeclared (typeClassTarget dec)
   if exists
     then do
-      has <- hasInstance typeClass clientDef
+      has <- hasInstance (typeClassName dec) (typeClassTarget dec)
       if has
         then pure []
         else mkDerivation
     else mkDerivation
   where
     mkDerivation :: Q [Dec]
-    mkDerivation = pure <$> derivation clientDef
+    mkDerivation = pure <$> derivation dec
 
 declareIfNotDeclared :: (CodeGenType -> Q a) -> CodeGenType -> Q [a]
 declareIfNotDeclared f c = do
