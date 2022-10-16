@@ -193,7 +193,9 @@ newtype CodeGenConfig = CodeGenConfig
   { namespace :: Bool
   }
 
-newtype ServerMethod = ServerMethod ExpQ
+newtype ServerMethod
+  = ServerMethod ExpQ
+  | ServerMethodDirectives [ServerDirectiveUsage]
 
 instance Show ServerMethod where
   show _ = "ServerMethod"
