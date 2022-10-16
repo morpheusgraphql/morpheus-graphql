@@ -97,8 +97,8 @@ genLocalDeclarations query op@Operation {operationName, operationSelection, oper
             requestName = typename (clientTypeName rootType),
             requestType = operationType,
             requestQuery = T.unpack query
-          } :
-      concatMap toClientDeclarations (rootType : (localTypes <> maybeToList argumentsType))
+          }
+        : concatMap toClientDeclarations (rootType : (localTypes <> maybeToList argumentsType))
     )
 
 -------------------------------------------------------------------------
@@ -165,8 +165,8 @@ subTypesBySelection namespace dType Selection {selectionContent = UnionSelection
           { clientTypeName = CodeGenTypeName {namespace, typeParameters = [], typename = typeFrom [] dType},
             clientCons,
             clientKind = KindUnion
-          } :
-        concat subTypes
+          }
+          : concat subTypes
       )
 
 getVariantType :: [FieldName] -> UnionTag -> Converter (CodeGenConstructor, [ClientTypeDefinition])
@@ -190,14 +190,14 @@ getFieldType
       toFieldDef :: TypeContent TRUE ANY VALID -> Converter (FieldDefinition OUT VALID)
       toFieldDef _
         | selectionName == "__typename" =
-          pure
-            FieldDefinition
-              { fieldName = "__typename",
-                fieldDescription = Nothing,
-                fieldType = mkTypeRef "String",
-                fieldDirectives = empty,
-                fieldContent = Nothing
-              }
+            pure
+              FieldDefinition
+                { fieldName = "__typename",
+                  fieldDescription = Nothing,
+                  fieldType = mkTypeRef "String",
+                  fieldDirectives = empty,
+                  fieldContent = Nothing
+                }
       toFieldDef DataObject {objectFields} = selectBy selError selectionName objectFields
       toFieldDef DataInterface {interfaceFields} = selectBy selError selectionName interfaceFields
       toFieldDef dt = throwError (compileError $ "Type should be output Object \"" <> msg (show dt))
@@ -222,17 +222,17 @@ toArgumentsType ::
 toArgumentsType clientTypeName variables
   | null variables = Nothing
   | otherwise =
-    Just
-      ClientTypeDefinition
-        { clientTypeName,
-          clientKind = KindInputObject,
-          clientCons =
-            [ CodeGenConstructor
-                { constructorName = clientTypeName,
-                  constructorFields = toCodeGenField . toFieldDefinition <$> toList variables
-                }
-            ]
-        }
+      Just
+        ClientTypeDefinition
+          { clientTypeName,
+            clientKind = KindInputObject,
+            clientCons =
+              [ CodeGenConstructor
+                  { constructorName = clientTypeName,
+                    constructorFields = toCodeGenField . toFieldDefinition <$> toList variables
+                  }
+              ]
+          }
 
 toFieldDefinition :: Variable RAW -> FieldDefinition ANY VALID
 toFieldDefinition Variable {variableName, variableType} =
