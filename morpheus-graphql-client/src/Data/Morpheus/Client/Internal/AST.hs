@@ -50,11 +50,11 @@ instance Pretty ClientDeclaration where
   pretty (RequestTypeClass def) = "-- TODO: " <> show (requestName def) <> " RequestTypeClass\n"
 
 data ClientMethod
-  = ClientMethod ExpQ
+  = ClientMethodExp ExpQ
   | ToJSONEnumMethod [CodeGenConstructor]
   | ToJSONObjectMethod CodeGenConstructor
 
 instance PrintExp ClientMethod where
-  printExp (ClientMethod x) = x
+  printExp (ClientMethodExp x) = x
   printExp (ToJSONEnumMethod x) = toJSONEnumMethod x
   printExp (ToJSONObjectMethod x) = toJSONObjectMethod x

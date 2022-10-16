@@ -14,7 +14,6 @@ where
 
 import Data.Aeson
   ( FromJSON (parseJSON),
-    KeyValue ((.=)),
     ToJSON (toJSON),
     withObject,
   )
@@ -33,14 +32,10 @@ import Data.Morpheus.Client.Internal.TH
     deriveIfNotDefined,
     failExp,
     matchWith,
-    mkFieldsE,
     originalLit,
-    toJSONEnumMethod,
-    toJSONObjectMethod,
   )
 import Data.Morpheus.Client.Internal.Utils
   ( emptyTypeError,
-    omitNulls,
     takeValueType,
   )
 import Data.Morpheus.CodeGen.Internal.AST
@@ -55,6 +50,7 @@ import Data.Morpheus.CodeGen.Internal.AST
   )
 import Data.Morpheus.CodeGen.TH
   ( PrintDec (printDec),
+    PrintExp (printExp),
     ToName (toName),
     ToString (..),
     toCon,
@@ -75,7 +71,7 @@ printDeclarations clientType = concat <$> traverse typeDeclarations clientType
 
 typeDeclarations :: ClientDeclaration -> Q [Dec]
 typeDeclarations (FromJSONClass mode clientDef) = deriveIfNotDefined (deriveFromJSON mode) ''FromJSON clientDef
-typeDeclarations (ToJSONClass mode clientDef) = deriveIfNotDefined (deriveToJSON mode) ''ToJSON clientDef
+typeDeclarations (ToJSONClass mode clientDef) = deriveIfNotDefined (deriveToJSON mode >=> printDec) ''ToJSON clientDef
 typeDeclarations (ClientType c) = declareIfNotDeclared printDec c
 typeDeclarations (RequestTypeClass RequestTypeDefinition {..}) = do
   pure
@@ -89,9 +85,9 @@ typeDeclarations (RequestTypeClass RequestTypeDefinition {..}) = do
         }
   where
     typeClassMethods =
-      [ ('__name, ProxyArgument, ClientMethod [|requestName|]),
-        ('__query, ProxyArgument, ClientMethod [|requestQuery|]),
-        ('__type, ProxyArgument, ClientMethod [|requestType|])
+      [ ('__name, ProxyArgument, ClientMethodExp [|requestName|]),
+        ('__query, ProxyArgument, ClientMethodExp [|requestQuery|]),
+        ('__type, ProxyArgument, ClientMethodExp [|requestType|])
       ]
 
 mkFromJSON :: CodeGenTypeName -> ExpQ -> DecQ
@@ -102,19 +98,18 @@ mkFromJSON name expr =
         typeClassContext = [],
         typeClassTarget = name,
         assoc = [],
-        typeClassMethods = [('parseJSON, NoArgument, ClientMethod expr)]
+        typeClassMethods = [('parseJSON, NoArgument, ClientMethodExp expr)]
       }
 
-mkToJSON :: CodeGenTypeName -> MethodArgument -> ExpQ -> DecQ
+mkToJSON :: CodeGenTypeName -> MethodArgument -> ExpQ -> TypeClassInstance ClientMethod
 mkToJSON name args expr =
-  printDec
-    TypeClassInstance
-      { typeClassName = ''ToJSON,
-        typeClassContext = [],
-        typeClassTarget = name,
-        assoc = [],
-        typeClassMethods = [('toJSON, args, ClientMethod expr)]
-      }
+  TypeClassInstance
+    { typeClassName = ''ToJSON,
+      typeClassContext = [],
+      typeClassTarget = name,
+      assoc = [],
+      typeClassMethods = [('toJSON, args, ClientMethodExp expr)]
+    }
 
 -- FromJSON
 deriveFromJSON :: DERIVING_MODE -> CodeGenType -> DecQ
@@ -148,10 +143,16 @@ fromJSONUnion CodeGenType {..} = appE (toVar 'takeValueType) (matchWith elseCond
         decodeObjectE cons
       )
 
+deriveToJSONMethod :: MonadFail m => DERIVING_MODE -> CodeGenType -> m (MethodArgument, ClientMethod)
+deriveToJSONMethod SCALAR_MODE _ = pure (NoArgument, ClientMethodExp [|scalarToJSON|])
+deriveToJSONMethod _ CodeGenType {cgConstructors = [], ..} = emptyTypeError cgTypeName
+deriveToJSONMethod ENUM_MODE CodeGenType {..} = pure (NoArgument, ToJSONEnumMethod cgConstructors)
+deriveToJSONMethod _ CodeGenType {cgConstructors = [cons]} = pure (DestructArgument cons, ToJSONObjectMethod cons)
+deriveToJSONMethod _ _ = fail "Input Unions are not yet supported"
+
 -- ToJSON
-deriveToJSON :: DERIVING_MODE -> CodeGenType -> DecQ
-deriveToJSON SCALAR_MODE CodeGenType {..} = mkToJSON cgTypeName NoArgument [|scalarToJSON|]
-deriveToJSON _ CodeGenType {cgConstructors = [], ..} = emptyTypeError cgTypeName
-deriveToJSON ENUM_MODE CodeGenType {..} = mkToJSON cgTypeName NoArgument (toJSONEnumMethod cgConstructors)
-deriveToJSON _ CodeGenType {cgConstructors = [cons], ..} = mkToJSON cgTypeName (DestructArgument cons) (toJSONObjectMethod cons)
-deriveToJSON _ _ = fail "Input Unions are not yet supported"
+
+deriveToJSON :: MonadFail m => DERIVING_MODE -> CodeGenType -> m (TypeClassInstance ClientMethod)
+deriveToJSON mode cType = do
+  (args, method) <- deriveToJSONMethod mode cType
+  pure $ mkToJSON (cgTypeName cType) args (printExp method)
