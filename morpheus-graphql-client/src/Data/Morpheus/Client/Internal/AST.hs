@@ -16,7 +16,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeKind,
     TypeName,
   )
-import Language.Haskell.TH (ExpQ, Name)
+import Language.Haskell.TH (ExpQ)
 import Prettyprinter (Pretty (..))
 import Relude
 
