@@ -40,7 +40,8 @@ import Data.Morpheus.Client.Internal.Utils
     takeValueType,
   )
 import Data.Morpheus.CodeGen.Internal.AST
-  ( CodeGenConstructor (..),
+  ( AssociatedType (AssociatedTypeName),
+    CodeGenConstructor (..),
     CodeGenType (..),
     CodeGenTypeName (..),
     TypeClassInstance (..),
@@ -49,6 +50,7 @@ import Data.Morpheus.CodeGen.Internal.AST
   )
 import Data.Morpheus.CodeGen.TH
   ( PrintDec (printDec),
+    ToName (toName),
     ToString (..),
     destructConstructor,
     toCon,
@@ -81,7 +83,7 @@ typeDeclarations (RequestTypeClass RequestTypeDefinition {..}) = do
         { typeClassName = ''RequestType,
           typeClassContext = [],
           typeClassTarget = fromTypeName requestName,
-          assoc = [(''RequestArgs, toCon requestArgs)],
+          assoc = [(''RequestArgs, AssociatedTypeName $ toName requestArgs)],
           typeClassMethods
         }
   where
