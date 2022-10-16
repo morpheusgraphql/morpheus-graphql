@@ -8,7 +8,8 @@
 module Data.Morpheus.Client.Internal.AST where
 
 import Data.Morpheus.Client.Internal.TH
-  ( ValueMatch,
+  ( MValue (..),
+    ValueMatch,
     fromJSONObjectMethod,
     fromJSONUnionMethod,
     printMatchDec,
@@ -30,8 +31,9 @@ import Data.Morpheus.Types.Internal.AST
 import Language.Haskell.TH (Name)
 import Language.Haskell.TH.Lib (varE)
 import Language.Haskell.TH.Syntax (Lift (..))
-import Prettyprinter (Pretty (..))
-import Relude hiding (lift)
+import Prettyprinter (Doc, Pretty (..), vsep, (<+>))
+import Relude hiding (lift, show)
+import Prelude (show)
 
 data DERIVING_MODE = SCALAR_MODE | ENUM_MODE | TYPE_MODE
 
@@ -76,8 +78,7 @@ instance PrintExp Printable where
 data ClientMethod
   = PrintableMethod Printable
   | FunctionNameMethod Name
-  | ToJSONEnumMethod ValueMatch
-  | FromJSONEnumMethod ValueMatch
+  | MatchMethod ValueMatch
   | ToJSONObjectMethod CodeGenConstructor
   | FromJSONObjectMethod CodeGenConstructor
   | FromJSONUnionMethod CodeGenType
@@ -85,13 +86,20 @@ data ClientMethod
 instance Pretty ClientMethod where
   pretty (FunctionNameMethod x) = printTHName x
   pretty (PrintableMethod x) = pretty x
+  pretty (MatchMethod x) = printMatch x
   pretty _ = "undefined -- TODO: should be real function"
+
+printMatch :: [MValue] -> Doc n
+printMatch = ("\\case " <>) . vsep . map buildMatch
+  where
+    buildMatch (MFrom a b) = pretty (show a) <+> "->" <+> fromString (show b)
+    buildMatch (MTo a b) = fromString (show a) <+> "->" <+> pretty (show b)
+    buildMatch (MFunction v name) = pretty v <+> "->" <+> printTHName name <+> pretty v
 
 instance PrintExp ClientMethod where
   printExp (FunctionNameMethod v) = varE v
   printExp (PrintableMethod v) = printExp v
-  printExp (ToJSONEnumMethod x) = printMatchDec x
+  printExp (MatchMethod x) = printMatchDec x
   printExp (ToJSONObjectMethod x) = toJSONObjectMethod x
   printExp (FromJSONObjectMethod x) = fromJSONObjectMethod x
-  printExp (FromJSONEnumMethod x) = printMatchDec x
   printExp (FromJSONUnionMethod x) = fromJSONUnionMethod x

@@ -81,7 +81,7 @@ deriveFromJSONMethod SCALAR_MODE _ = pure $ FunctionNameMethod 'scalarFromJSON
 deriveFromJSONMethod _ CodeGenType {cgConstructors = [], ..} = emptyTypeError cgTypeName
 deriveFromJSONMethod ENUM_MODE CodeGenType {..} =
   pure $
-    FromJSONEnumMethod $
+    MatchMethod $
       map (fromJSONEnum . constructorName) cgConstructors
         <> [MFunction "v" 'invalidConstructorError]
 deriveFromJSONMethod _ CodeGenType {cgConstructors = [cons]} = pure $ FromJSONObjectMethod cons
@@ -90,7 +90,11 @@ deriveFromJSONMethod _ typeD = pure $ FromJSONUnionMethod typeD
 deriveToJSONMethod :: MonadFail m => DERIVING_MODE -> CodeGenType -> m (MethodArgument, ClientMethod)
 deriveToJSONMethod SCALAR_MODE _ = pure (NoArgument, FunctionNameMethod 'scalarToJSON)
 deriveToJSONMethod _ CodeGenType {cgConstructors = [], ..} = emptyTypeError cgTypeName
-deriveToJSONMethod ENUM_MODE CodeGenType {cgConstructors} = pure (NoArgument, ToJSONEnumMethod $ map (toJSONEnum . constructorName) cgConstructors)
+deriveToJSONMethod ENUM_MODE CodeGenType {cgConstructors} =
+  pure
+    ( NoArgument,
+      MatchMethod $ map (toJSONEnum . constructorName) cgConstructors
+    )
 deriveToJSONMethod _ CodeGenType {cgConstructors = [cons]} = pure (DestructArgument cons, ToJSONObjectMethod cons)
 deriveToJSONMethod _ _ = fail "Input Unions are not yet supported"
 
