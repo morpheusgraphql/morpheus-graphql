@@ -14,7 +14,6 @@ where
 
 import Data.Aeson
   ( FromJSON (parseJSON),
-    KeyValue ((.=)),
     ToJSON (toJSON),
     withObject,
   )
@@ -33,11 +32,12 @@ import Data.Morpheus.Client.Internal.TH
     deriveIfNotDefined,
     failExp,
     matchWith,
-    mkFieldsE,
+    originalLit,
+    toJSONEnumMethod,
+    toJSONObjectMethod,
   )
 import Data.Morpheus.Client.Internal.Utils
   ( emptyTypeError,
-    omitNulls,
     takeValueType,
   )
 import Data.Morpheus.CodeGen.Internal.AST
@@ -63,9 +63,6 @@ import Data.Morpheus.CodeGen.TH
 import Data.Morpheus.Types.GQLScalar
   ( scalarFromJSON,
     scalarToJSON,
-  )
-import Data.Morpheus.Types.Internal.AST
-  ( TypeName,
   )
 import Language.Haskell.TH (Dec, DecQ, Exp (..), ExpQ, PatQ, Q, appE, tupP)
 import Relude hiding (ToString, Type, toString)
@@ -116,9 +113,6 @@ mkToJSON name args expr =
         typeClassMethods = [('toJSON, args, ClientMethod expr)]
       }
 
-originalLit :: ToString TypeName a => CodeGenTypeName -> Q a
-originalLit = toString . typename
-
 -- FromJSON
 deriveFromJSON :: DERIVING_MODE -> CodeGenType -> DecQ
 deriveFromJSON SCALAR_MODE CodeGenType {cgTypeName} = mkFromJSON cgTypeName [|scalarFromJSON|]
@@ -155,14 +149,6 @@ fromJSONUnion CodeGenType {..} = appE (toVar 'takeValueType) (matchWith elseCond
 deriveToJSON :: DERIVING_MODE -> CodeGenType -> DecQ
 deriveToJSON SCALAR_MODE CodeGenType {..} = mkToJSON cgTypeName NoArgument [|scalarToJSON|]
 deriveToJSON _ CodeGenType {cgConstructors = [], ..} = emptyTypeError cgTypeName
-deriveToJSON ENUM_MODE CodeGenType {..} =
-  mkToJSON cgTypeName NoArgument (matchWith Nothing toJSONEnum cgConstructors)
-deriveToJSON _ CodeGenType {cgConstructors = [cons], ..} =
-  mkToJSON cgTypeName (DestructArgument cons) (toJSONObject cons)
+deriveToJSON ENUM_MODE CodeGenType {..} = mkToJSON cgTypeName NoArgument (toJSONEnumMethod cgConstructors)
+deriveToJSON _ CodeGenType {cgConstructors = [cons], ..} = mkToJSON cgTypeName (DestructArgument cons) (toJSONObjectMethod cons)
 deriveToJSON _ _ = fail "Input Unions are not yet supported"
-
-toJSONEnum :: CodeGenConstructor -> (PatQ, ExpQ)
-toJSONEnum CodeGenConstructor {constructorName} = (toCon constructorName, originalLit constructorName)
-
-toJSONObject :: CodeGenConstructor -> ExpQ
-toJSONObject CodeGenConstructor {..} = pure $ AppE (VarE 'omitNulls) (mkFieldsE constructorName '(.=) constructorFields)

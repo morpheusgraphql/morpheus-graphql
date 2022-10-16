@@ -19,12 +19,16 @@ module Data.Morpheus.Client.Internal.TH
     failExp,
     deriveIfNotDefined,
     declareIfNotDeclared,
+    toJSONEnumMethod,
+    originalLit,
+    toJSONObjectMethod,
   )
 where
 
-import Data.Aeson ((.:))
+import Data.Aeson ((.:), (.=))
 import Data.Aeson.Types ((.:?))
 import Data.Foldable (foldr1)
+import Data.Morpheus.Client.Internal.Utils (omitNulls)
 import Data.Morpheus.CodeGen.Internal.AST
   ( CodeGenConstructor (..),
     CodeGenField (..),
@@ -33,7 +37,8 @@ import Data.Morpheus.CodeGen.Internal.AST
     getFullName,
   )
 import Data.Morpheus.CodeGen.TH
-  ( toCon,
+  ( ToString,
+    toCon,
     toName,
     toString,
     toVar,
@@ -42,8 +47,9 @@ import Data.Morpheus.CodeGen.TH
 import Data.Morpheus.CodeGen.Utils
   ( camelCaseFieldName,
   )
+import Data.Morpheus.Types.Internal.AST (TypeName)
 import Language.Haskell.TH
-import Relude hiding (toString)
+import Relude hiding (ToString, toString)
 
 matchWith ::
   Maybe (PatQ, ExpQ) ->
@@ -72,10 +78,10 @@ decodeObjectE :: CodeGenConstructor -> ExpQ
 decodeObjectE CodeGenConstructor {..}
   | null constructorFields = appE [|pure|] (toCon constructorName)
   | otherwise =
-      uInfixE
-        (toCon constructorName)
-        [|(<$>)|]
-        (foldr1 withApplicative $ map defField constructorFields)
+    uInfixE
+      (toCon constructorName)
+      [|(<$>)|]
+      (foldr1 withApplicative $ map defField constructorFields)
 
 defField :: CodeGenField -> ExpQ
 defField CodeGenField {..} = uInfixE v' (varE $ bindField fieldIsNullable) (toString fieldName)
@@ -147,3 +153,17 @@ declareIfNotDeclared f c = do
   if exists
     then pure []
     else pure <$> f c
+
+originalLit :: ToString TypeName a => CodeGenTypeName -> Q a
+originalLit = toString . typename
+
+-- EXPORTS
+
+toJSONEnumMethod :: [CodeGenConstructor] -> ExpQ
+toJSONEnumMethod = matchWith Nothing toJSONEnum
+
+toJSONEnum :: CodeGenConstructor -> (PatQ, ExpQ)
+toJSONEnum CodeGenConstructor {constructorName} = (toCon constructorName, originalLit constructorName)
+
+toJSONObjectMethod :: CodeGenConstructor -> ExpQ
+toJSONObjectMethod CodeGenConstructor {..} = pure $ AppE (VarE 'omitNulls) (mkFieldsE constructorName '(.=) constructorFields)

@@ -48,7 +48,10 @@ instance Pretty ClientDeclaration where
   pretty (FromJSONClass _ def) = "-- TODO: " <> show (getFullName $ cgTypeName def) <> " FromJSONClass\n"
   pretty (RequestTypeClass def) = "-- TODO: " <> show (requestName def) <> " RequestTypeClass\n"
 
-newtype ClientMethod = ClientMethod ExpQ
+data ClientMethod
+  = ClientMethod ExpQ
+  | ToJSONEnumMethod [CodeGenConstructor]
+  | ToJSONObjectMethod CodeGenConstructor
 
 instance PrintExp ClientMethod where
   printExp (ClientMethod x) = x
