@@ -1,0 +1,17 @@
+# Query Hero with Compile time Validation
+query GetUser($coordinates: Coordinates!) {
+  myUser: user {
+    name
+    aliasEmail: email
+    address(coordinates: $coordinates) {
+      city
+    }
+    aliasAdress: address(coordinates: $coordinates) {
+      city
+    }
+  }
+  user {
+    email
+    name
+  }
+}

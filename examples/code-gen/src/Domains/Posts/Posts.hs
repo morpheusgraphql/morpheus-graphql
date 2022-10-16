@@ -15,7 +15,6 @@ import Data.Morpheus.Kind (TYPE)
 import Data.Morpheus.Types
 import Data.Text (Text)
 import GHC.Generics (Generic)
-import Globals.GQLScalars
 
 data Post m = Post
   { id :: m ID,

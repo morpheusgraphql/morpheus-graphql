@@ -40,7 +40,7 @@ plan:
       retry: 0.8.1.0
       time-compat: 1.9.2.2
       websockets: 0.12.6.0
-    resolver: lts-12.16
+    resolver: lts-12.26
   8.6.5:
     deps:
       req: 3.0.0
@@ -65,6 +65,9 @@ plan:
     skip:
       - examples/scotty-fraxl
 rules:
+  Glob:
+    - 0.7.0
+    - 1.0.0
   aeson:
     - 1.4.4
     - 3.0.0
@@ -149,4 +152,7 @@ rules:
   wuss:
     - 1.0.0
     - 3.0.0
+  yaml:
+    - 0.8.32
+    - 1.0.0
 version: 0.22.1

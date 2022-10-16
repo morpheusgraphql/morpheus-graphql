@@ -1,4 +1,3 @@
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.CodeGen.Server
@@ -6,21 +5,15 @@ module Data.Morpheus.CodeGen.Server
     PrinterConfig (..),
     gqlDocument,
     importServerTypeDefinitions,
-    printServerTypeDefinitions,
   )
 where
 
 import Data.ByteString.Lazy.Char8
-  ( ByteString,
-    readFile,
+  ( readFile,
   )
 import Data.FileEmbed (makeRelativeToProject)
 import Data.Morpheus.CodeGen.Server.Internal.AST
   ( CodeGenConfig (..),
-    ServerDeclaration,
-  )
-import Data.Morpheus.CodeGen.Server.Printing.Document
-  ( renderDocument,
   )
 import Data.Morpheus.CodeGen.Server.Printing.TH
   ( compileDocument,
@@ -35,9 +28,6 @@ import Relude hiding (ByteString, readFile)
 newtype PrinterConfig = PrinterConfig
   { moduleName :: String
   }
-
-printServerTypeDefinitions :: PrinterConfig -> [ServerDeclaration] -> ByteString
-printServerTypeDefinitions PrinterConfig {moduleName} = renderDocument moduleName
 
 importServerTypeDefinitions :: CodeGenConfig -> FilePath -> Q [Dec]
 importServerTypeDefinitions ctx rawSrc = do

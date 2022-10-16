@@ -12,6 +12,7 @@ module Data.Morpheus.CodeGen.Internal.AST
     TypeValue (..),
     fromTypeName,
     getFullName,
+    ModuleDefinition (..),
   )
 where
 
@@ -171,3 +172,40 @@ instance Printer CodeGenTypeName where
 
 parametrizedType :: Text -> [Text] -> Doc ann
 parametrizedType tName typeParameters = hsep $ map pretty $ tName : typeParameters
+
+data ModuleDefinition dec = ModuleDefinition
+  { moduleName :: Text,
+    imports :: [(Text, [Text])],
+    extensions :: [Text],
+    types :: [dec]
+  }
+
+instance Pretty dec => Pretty (ModuleDefinition dec) where
+  pretty ModuleDefinition {..} =
+    vsep
+      (map renderExtension extensions)
+      <> "{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}"
+      <> line
+      <> line
+      <> "{-# HLINT ignore \"Use camelCase\" #-}"
+      <> line
+      <> line
+      <> "module"
+      <+> pretty moduleName
+      <+> "where"
+        <> line
+        <> line
+        <> vsep (map renderImport imports)
+        <> line
+        <> line
+        <> vsep (map pretty types)
+
+renderExtension :: Text -> Doc ann
+renderExtension name = "{-#" <+> "LANGUAGE" <+> pretty name <+> "#-}"
+
+renderImport :: (Text, [Text]) -> Doc ann
+renderImport (src, ls) = "import" <+> pretty src <> renderImportList ls
+
+renderImportList :: [Text] -> Doc ann
+renderImportList ["*"] = ""
+renderImportList xs = tupled (map pretty xs)

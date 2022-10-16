@@ -13,13 +13,12 @@ module Data.Morpheus.Client.Transform.Local
 where
 
 import Control.Monad.Except (MonadError (throwError))
-import Data.Morpheus.Client.Internal.Types
+import Data.Morpheus.Client.Internal.AST
   ( ClientDeclaration (..),
     ClientTypeDefinition (..),
     RequestTypeDefinition (..),
   )
 import Data.Morpheus.Client.Transform.Core (Converter (..), compileError, deprecationWarning, getType, toClientDeclarations, toCodeGenField, typeFrom)
-import Data.Morpheus.Client.Transform.Global (toArgumentsType)
 import Data.Morpheus.CodeGen.Internal.AST (CodeGenConstructor (..), CodeGenTypeName (..), fromTypeName)
 import Data.Morpheus.Core (Config (..), VALIDATION_MODE (WITHOUT_VARIABLES), validateRequest)
 import Data.Morpheus.Internal.Ext
@@ -37,6 +36,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldName,
     OUT,
     Operation (..),
+    RAW,
     Ref (..),
     Schema (..),
     Selection (..),
@@ -50,6 +50,8 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef (..),
     UnionTag (..),
     VALID,
+    Variable (..),
+    VariableDefinitions,
     getOperationDataType,
     getOperationName,
     mkTypeRef,
@@ -207,3 +209,32 @@ getFieldType
             ------------------------------------------------------------------
             checkDeprecated :: Converter ()
             checkDeprecated = deprecationWarning fieldDirectives (coerce typeName, Ref selectionName selectionPosition)
+
+toArgumentsType ::
+  CodeGenTypeName ->
+  VariableDefinitions RAW ->
+  Maybe ClientTypeDefinition
+toArgumentsType clientTypeName variables
+  | null variables = Nothing
+  | otherwise =
+      Just
+        ClientTypeDefinition
+          { clientTypeName,
+            clientKind = KindInputObject,
+            clientCons =
+              [ CodeGenConstructor
+                  { constructorName = clientTypeName,
+                    constructorFields = toCodeGenField . toFieldDefinition <$> toList variables
+                  }
+              ]
+          }
+
+toFieldDefinition :: Variable RAW -> FieldDefinition ANY VALID
+toFieldDefinition Variable {variableName, variableType} =
+  FieldDefinition
+    { fieldName = variableName,
+      fieldContent = Nothing,
+      fieldType = variableType,
+      fieldDescription = Nothing,
+      fieldDirectives = empty
+    }

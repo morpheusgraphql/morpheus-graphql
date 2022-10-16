@@ -1,0 +1,25 @@
+server:
+  - name: Server API
+    source: ./src
+    includes:
+      - Domains/**/*.gql
+      - Operation/**/*.gql
+
+  - name: Server API (Namespaces)
+    source: ./src
+    includes:
+      - Namespaces/**/*.gql
+    options:
+      namespace: true
+      globals:
+        - Globals.GQLScalars
+
+client:
+  - name: Client API
+    source: ./src
+    schema: Client/schema.gql
+    includes:
+      - Client/Requests/**/*.gql
+    options:
+      globals:
+        - Globals.GQLScalars

@@ -11,6 +11,7 @@ module Data.Morpheus.Client.Internal.Utils
     omitNulls,
     emptyTypeError,
     takeValueType,
+    readSchemaSource,
   )
 where
 
@@ -49,11 +50,14 @@ splitDuplicates = collectElems ([], [])
 isEnum :: [CodeGenConstructor] -> Bool
 isEnum = all (null . constructorFields)
 
-getSource :: FilePath -> Q SchemaSource
-getSource p
-  | ".json" `isSuffixOf` p = JSON <$> readWith L.readFile p
-  | ".gql" `isSuffixOf` p || ".graphql" `isSuffixOf` p = GQL <$> readWith L.readFile p
+readSchemaSource :: FilePath -> IO SchemaSource
+readSchemaSource p
+  | ".json" `isSuffixOf` p = JSON <$> L.readFile p
+  | ".gql" `isSuffixOf` p || ".graphql" `isSuffixOf` p = GQL <$> L.readFile p
   | otherwise = fail "Unsupported file format! The input should have one of the following extensions: json, gql, graphql"
+
+getSource :: FilePath -> Q SchemaSource
+getSource = readWith readSchemaSource
 
 getFile :: FilePath -> Q Text
 getFile = readWith TIO.readFile

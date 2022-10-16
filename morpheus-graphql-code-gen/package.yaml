@@ -37,6 +37,10 @@ executables:
     source-dirs: app
     ghc-options: '-Wall'
     dependencies:
-      - filepath                   >=  1.1.0   &&  <  1.5.0
+      - Glob                             >=  0.7.0   &&  <  1.0.0
+      - filepath                         >=  1.1.0   &&  <  1.5.0
       - morpheus-graphql-code-gen
-      - optparse-applicative       >=  0.12.0  &&  <  0.18.0
+      - morpheus-graphql-client
+      - morpheus-graphql-code-gen-utils
+      - optparse-applicative             >=  0.12.0  &&  <  0.18.0
+      - yaml                             >=  0.8.32  &&  <  1.0.0

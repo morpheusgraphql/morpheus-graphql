@@ -5,12 +5,11 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.Transform.Global
-  ( toArgumentsType,
-    toGlobalDefinitions,
+  ( toGlobalDefinitions,
   )
 where
 
-import Data.Morpheus.Client.Internal.Types
+import Data.Morpheus.Client.Internal.AST
   ( ClientDeclaration,
     ClientTypeDefinition (..),
   )
@@ -20,14 +19,9 @@ import Data.Morpheus.CodeGen.Internal.AST
     CodeGenTypeName (..),
     fromTypeName,
   )
-import Data.Morpheus.Internal.Utils
-  ( empty,
-  )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     DataEnumValue (DataEnumValue, enumName),
-    FieldDefinition (..),
-    RAW,
     Schema (Schema, types),
     TRUE,
     TypeContent (..),
@@ -35,47 +29,16 @@ import Data.Morpheus.Types.Internal.AST
     TypeKind (..),
     TypeName,
     VALID,
-    Variable (..),
-    VariableDefinitions,
     isNotSystemTypeName,
     isResolverType,
   )
 import Relude hiding (empty)
 
-toArgumentsType ::
-  CodeGenTypeName ->
-  VariableDefinitions RAW ->
-  Maybe ClientTypeDefinition
-toArgumentsType clientTypeName variables
-  | null variables = Nothing
-  | otherwise =
-      Just
-        ClientTypeDefinition
-          { clientTypeName,
-            clientKind = KindInputObject,
-            clientCons =
-              [ CodeGenConstructor
-                  { constructorName = clientTypeName,
-                    constructorFields = toCodeGenField . toFieldDefinition <$> toList variables
-                  }
-              ]
-          }
-
-toFieldDefinition :: Variable RAW -> FieldDefinition ANY VALID
-toFieldDefinition Variable {variableName, variableType} =
-  FieldDefinition
-    { fieldName = variableName,
-      fieldContent = Nothing,
-      fieldType = variableType,
-      fieldDescription = Nothing,
-      fieldDirectives = empty
-    }
-
 toGlobalDefinitions :: (TypeName -> Bool) -> Schema VALID -> [ClientDeclaration]
 toGlobalDefinitions f Schema {types} =
   concatMap toClientDeclarations $
     mapMaybe generateGlobalType $
-      filter shouldInclude (toList types)
+      filter shouldInclude (sortWith typeName $ toList types)
   where
     shouldInclude t =
       not (isResolverType t)

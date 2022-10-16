@@ -1,10 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.CodeGen.Server.Internal.AST
-  ( ModuleDefinition (..),
-    CodeGenConfig (..),
+  ( CodeGenConfig (..),
     ServerDeclaration (..),
     GQLTypeDefinition (..),
     CONST,
@@ -25,10 +25,17 @@ where
 
 import Data.Morpheus.CodeGen.Internal.AST
   ( CodeGenType,
-    CodeGenTypeName,
+    CodeGenTypeName (typeParameters),
     DerivingClass (..),
     FIELD_TYPE_WRAPPER (..),
     TypeValue (..),
+  )
+import Data.Morpheus.CodeGen.Printer
+  ( Printer (..),
+    ignore,
+    optional,
+    unpack,
+    (.<>),
   )
 import Data.Morpheus.CodeGen.TH
   ( PrintExp (..),
@@ -53,15 +60,19 @@ import Data.Morpheus.Types.Internal.AST
     unpackName,
   )
 import Language.Haskell.TH.Lib (appE, conT, varE)
-import Prettyprinter (Pretty (..), (<+>))
-import Relude
-
-data ModuleDefinition = ModuleDefinition
-  { moduleName :: Text,
-    imports :: [(Text, [Text])],
-    extensions :: [Text],
-    types :: [ServerDeclaration]
-  }
+import Prettyprinter
+  ( Doc,
+    Pretty (..),
+    align,
+    indent,
+    line,
+    pretty,
+    punctuate,
+    tupled,
+    vsep,
+    (<+>),
+  )
+import Relude hiding (optional, print)
 
 data Kind
   = Scalar
@@ -120,6 +131,46 @@ data ServerDeclaration
   | ScalarType {scalarTypeName :: Text}
   | InterfaceType InterfaceDefinition
   deriving (Show)
+
+instance Pretty ServerDeclaration where
+  pretty (InterfaceType InterfaceDefinition {..}) =
+    "type"
+      <+> ignore (print aliasName)
+      <+> "m"
+      <+> "="
+      <+> "TypeGuard"
+      <+> unpack (print interfaceName .<> "m")
+      <+> unpack (print unionName .<> "m")
+  -- TODO: on scalar we should render user provided type
+  pretty ScalarType {..} = "type" <+> ignore (print scalarTypeName) <+> "= Int"
+  pretty (DataType cgType) = pretty cgType
+  pretty (GQLTypeInstance gqlType) = renderGQLType gqlType
+  pretty (GQLDirectiveInstance _) = "TODO: not supported"
+
+renderTypeableConstraints :: [Text] -> Doc n
+renderTypeableConstraints xs = tupled (map (("Typeable" <+>) . pretty) xs) <+> "=>"
+
+renderGQLType :: GQLTypeDefinition -> Doc ann
+renderGQLType gql@GQLTypeDefinition {..}
+  | gqlKind == Scalar = ""
+  | otherwise =
+      "instance"
+        <> optional renderTypeableConstraints (typeParameters gqlTarget)
+        <+> "GQLType"
+        <+> typeHead
+        <+> "where"
+          <> line
+          <> indent 2 (vsep (renderMethods typeHead gql))
+  where
+    typeHead = unpack (print gqlTarget)
+
+renderMethods :: Doc n -> GQLTypeDefinition -> [Doc n]
+renderMethods typeHead GQLTypeDefinition {..} =
+  ["type KIND" <+> typeHead <+> "=" <+> pretty gqlKind]
+    <> ["directives _=" <+> renderDirectiveUsages gqlTypeDirectiveUses | not (null gqlTypeDirectiveUses)]
+
+renderDirectiveUsages :: [ServerDirectiveUsage] -> Doc n
+renderDirectiveUsages = align . vsep . punctuate " <>" . map pretty
 
 newtype CodeGenConfig = CodeGenConfig
   { namespace :: Bool
