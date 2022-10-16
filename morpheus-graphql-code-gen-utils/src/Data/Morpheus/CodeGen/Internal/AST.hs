@@ -199,3 +199,13 @@ instance Pretty dec => Pretty (ModuleDefinition dec) where
         <> line
         <> line
         <> vsep (map pretty types)
+
+renderExtension :: Text -> Doc ann
+renderExtension name = "{-#" <+> "LANGUAGE" <+> pretty name <+> "#-}"
+
+renderImport :: (Text, [Text]) -> Doc ann
+renderImport (src, ls) = "import" <+> pretty src <> renderImportList ls
+
+renderImportList :: [Text] -> Doc ann
+renderImportList ["*"] = ""
+renderImportList xs = tupled (map pretty xs)

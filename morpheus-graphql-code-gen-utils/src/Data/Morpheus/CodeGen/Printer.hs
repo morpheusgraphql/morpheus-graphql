@@ -13,8 +13,6 @@ module Data.Morpheus.CodeGen.Printer
     wrapped,
     (.<>),
     optional,
-    renderExtension,
-    renderImport,
     ignore,
     pack,
   )
@@ -88,13 +86,3 @@ instance Printer String where
 optional :: ([a] -> Doc n) -> [a] -> Doc n
 optional _ [] = ""
 optional f xs = " " <> f xs
-
-renderExtension :: Text -> Doc ann
-renderExtension name = "{-#" <+> "LANGUAGE" <+> pretty name <+> "#-}"
-
-renderImport :: (Text, [Text]) -> Doc ann
-renderImport (src, ls) = "import" <+> pretty src <> renderImportList ls
-
-renderImportList :: [Text] -> Doc ann
-renderImportList ["*"] = ""
-renderImportList xs = tupled (map pretty xs)
