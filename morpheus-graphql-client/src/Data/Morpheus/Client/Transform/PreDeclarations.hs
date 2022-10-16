@@ -27,11 +27,6 @@ import Data.Morpheus.Client.Internal.AST
     Printable (..),
     RequestTypeDefinition (..),
   )
-import Data.Morpheus.Client.Internal.TH
-  ( fromJSONEnumMethod,
-    fromJSONObjectMethod,
-    fromJSONUnionMethod,
-  )
 import Data.Morpheus.Client.Internal.Utils
   ( emptyTypeError,
   )
@@ -77,9 +72,9 @@ getRequestInstance RequestTypeDefinition {..} =
 deriveFromJSONMethod :: MonadFail m => DERIVING_MODE -> CodeGenType -> m ClientMethod
 deriveFromJSONMethod SCALAR_MODE _ = pure $ FunctionNameMethod 'scalarFromJSON
 deriveFromJSONMethod _ CodeGenType {cgConstructors = [], ..} = emptyTypeError cgTypeName
-deriveFromJSONMethod ENUM_MODE CodeGenType {..} = pure $ ClientMethodExp (fromJSONEnumMethod cgConstructors)
-deriveFromJSONMethod _ CodeGenType {cgConstructors = [cons]} = pure $ ClientMethodExp (fromJSONObjectMethod cons)
-deriveFromJSONMethod _ typeD = pure $ ClientMethodExp (fromJSONUnionMethod typeD)
+deriveFromJSONMethod ENUM_MODE CodeGenType {..} = pure $ FromJSONEnumMethod cgConstructors
+deriveFromJSONMethod _ CodeGenType {cgConstructors = [cons]} = pure $ FromJSONObjectMethod cons
+deriveFromJSONMethod _ typeD = pure $ FromJSONUnionMethod typeD
 
 deriveToJSONMethod :: MonadFail m => DERIVING_MODE -> CodeGenType -> m (MethodArgument, ClientMethod)
 deriveToJSONMethod SCALAR_MODE _ = pure (NoArgument, FunctionNameMethod 'scalarToJSON)

@@ -7,7 +7,7 @@
 
 module Data.Morpheus.Client.Internal.AST where
 
-import Data.Morpheus.Client.Internal.TH (toJSONEnumMethod, toJSONObjectMethod)
+import Data.Morpheus.Client.Internal.TH (fromJSONEnumMethod, fromJSONObjectMethod, fromJSONUnionMethod, toJSONEnumMethod, toJSONObjectMethod)
 import Data.Morpheus.CodeGen.Internal.AST
   ( CodeGenConstructor (..),
     CodeGenType,
@@ -72,7 +72,10 @@ data ClientMethod
   | FunctionNameMethod Name
   | ClientMethodExp ExpQ
   | ToJSONEnumMethod [CodeGenConstructor]
+  | FromJSONEnumMethod [CodeGenConstructor]
   | ToJSONObjectMethod CodeGenConstructor
+  | FromJSONObjectMethod CodeGenConstructor
+  | FromJSONUnionMethod CodeGenType
 
 instance Pretty ClientMethod where
   pretty (FunctionNameMethod x) = printTHName x
@@ -85,3 +88,6 @@ instance PrintExp ClientMethod where
   printExp (ClientMethodExp x) = x
   printExp (ToJSONEnumMethod x) = toJSONEnumMethod x
   printExp (ToJSONObjectMethod x) = toJSONObjectMethod x
+  printExp (FromJSONObjectMethod x) = fromJSONObjectMethod x
+  printExp (FromJSONEnumMethod x) = fromJSONEnumMethod x
+  printExp (FromJSONUnionMethod x) = fromJSONUnionMethod x
