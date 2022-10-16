@@ -36,9 +36,9 @@ data CityID
 
 instance FromJSON CityID where
   parseJSON = \case
-    "Paris" -> CityIDParis
-    "BLN" -> CityIDBLN
-    "HH" -> CityIDHH
+    "Paris" -> pure CityIDParis
+    "BLN" -> pure CityIDBLN
+    "HH" -> pure CityIDHH
     v -> invalidConstructorError v
 
 instance ToJSON CityID where
