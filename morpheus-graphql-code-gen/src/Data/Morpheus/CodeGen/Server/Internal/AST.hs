@@ -176,7 +176,7 @@ renderMethods :: Doc n -> TypeClassInstance ServerMethod -> [Doc n]
 renderMethods typeHead TypeClassInstance {..} =
   map renderAssoc assoc <> map renderMethod typeClassMethods
   where
-    renderAssoc (name, a) = "type KIND" <+> typeHead <+> "=" <+> pretty a
+    renderAssoc (name, a) = "type" <+> pretty (show name :: String) <+> typeHead <+> "=" <+> pretty a
 
 renderMethod :: (TH.Name, MethodArgument, ServerMethod) -> Doc n
 renderMethod _ = "directives _=" <+> "TODO: renderDirectiveUsages"
