@@ -26,6 +26,7 @@ import Data.Morpheus.Client.Fetch.RequestType
     Request (..),
     isSubscription,
   )
+import Data.Morpheus.Client.Fetch.Types
 import Data.Morpheus.Client.Fetch.WebSockets
   ( endSession,
     receiveResponse,
@@ -34,7 +35,6 @@ import Data.Morpheus.Client.Fetch.WebSockets
     sendRequest,
     useWS,
   )
-import Data.Morpheus.Client.Internal.Types
 import qualified Data.Text as T
 import Relude hiding (ByteString)
 import Text.URI (URI, mkURI)

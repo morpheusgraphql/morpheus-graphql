@@ -23,9 +23,11 @@ import Data.Morpheus.Types.Internal.AST
     Name,
     TypeRef (..),
     TypeWrapper (..),
+    packName,
     unpackName,
   )
 import qualified Data.Text as T
+import qualified Language.Haskell.TH as TH
 import Prettyprinter (Doc, Pretty (..), list, pretty, tupled, (<+>))
 import Relude hiding (optional, print, show)
 import Prelude (show)
@@ -87,6 +89,9 @@ instance Printer String where
 
 instance Printer DirectiveLocation where
   print = fromString . show
+
+instance Printer TH.Name where
+  print = print . packName
 
 optional :: ([a] -> Doc n) -> [a] -> Doc n
 optional _ [] = ""

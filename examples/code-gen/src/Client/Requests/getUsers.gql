@@ -14,4 +14,10 @@ query GetUser($coordinates: Coordinates!) {
     email
     name
   }
+
+  character {
+    ... on Deity {
+      power
+    }
+  }
 }

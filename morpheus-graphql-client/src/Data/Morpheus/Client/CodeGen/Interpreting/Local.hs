@@ -7,20 +7,20 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Client.Transform.Local
+module Data.Morpheus.Client.CodeGen.Interpreting.Local
   ( toLocalDefinitions,
   )
 where
 
 import Control.Monad.Except (MonadError (throwError))
-import Data.Morpheus.Client.Internal.AST
+import Data.Morpheus.Client.CodeGen.AST
   ( ClientDeclaration,
     ClientPreDeclaration (..),
     ClientTypeDefinition (..),
     RequestTypeDefinition (..),
   )
-import Data.Morpheus.Client.Transform.Core (Converter (..), compileError, deprecationWarning, getType, toClientDeclarations, toCodeGenField, typeFrom)
-import Data.Morpheus.Client.Transform.PreDeclarations
+import Data.Morpheus.Client.CodeGen.Interpreting.Core (Converter (..), compileError, deprecationWarning, getType, toClientDeclarations, toCodeGenField, typeFrom)
+import Data.Morpheus.Client.CodeGen.Interpreting.PreDeclarations
   ( mapPreDeclarations,
   )
 import Data.Morpheus.CodeGen.Internal.AST (CodeGenConstructor (..), CodeGenTypeName (..), fromTypeName)

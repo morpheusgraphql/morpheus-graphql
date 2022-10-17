@@ -24,6 +24,7 @@ source-repository head
 executable generated-server
   main-is: Main.hs
   other-modules:
+      Client.Requests.GetInterfaceTypes
       Client.Requests.GetUsers
       Client.Requests.NewUsers
       Client.Schema

@@ -30,19 +30,11 @@ import Data.Aeson
   ( FromJSON,
     ToJSON (..),
   )
-import Data.Morpheus.Rendering.RenderGQL
-  ( RenderGQL (..),
-    fromText,
-    renderGQL,
-  )
-import Data.Morpheus.Types.Internal.AST.Error
-  ( Msg (..),
-  )
 #if MIN_VERSION_aeson(2,0,0)
 import Data.Aeson.Key (Key)
 import qualified Data.Aeson.Key as A
 #endif
-import qualified Data.Text as T
+
 #if MIN_VERSION_template_haskell(2,17,0)
 import Language.Haskell.TH
   ( Quote,
@@ -66,6 +58,15 @@ import Language.Haskell.TH.Syntax
 #endif
 import Data.Char (isLetter, isNumber)
 import qualified Data.List as L
+import Data.Morpheus.Rendering.RenderGQL
+  ( RenderGQL (..),
+    fromText,
+    renderGQL,
+  )
+import Data.Morpheus.Types.Internal.AST.Error
+  ( Msg (..),
+  )
+import qualified Data.Text as T
 import qualified Language.Haskell.TH.Syntax as TH
 import Relude hiding
   ( ByteString,
@@ -110,8 +111,7 @@ class NamePacking a where
 instance NamePacking TH.Name where
   packName (TH.Name name _) = Name $ T.pack (occName name)
     where
-      occName (TH.OccName n) = takeWhile (/= ':') (removeSelector n)
-      removeSelector x = fromMaybe x (L.stripPrefix "$sel:" x)
+      occName (TH.OccName x) = maybe x (takeWhile (/= ':')) (L.stripPrefix "$sel:" x)
   unpackName = TH.mkName . toString . _unpackName
 
 instance NamePacking Text where

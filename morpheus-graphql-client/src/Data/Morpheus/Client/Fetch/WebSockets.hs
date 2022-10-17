@@ -22,7 +22,7 @@ import Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.Map as M
 import Data.Morpheus.Client.Fetch.GQLClient (Headers)
 import Data.Morpheus.Client.Fetch.RequestType (Request, RequestType (..), processResponse, toRequest)
-import Data.Morpheus.Client.Internal.Types (FetchError (..), GQLClientResult)
+import Data.Morpheus.Client.Fetch.Types (FetchError (..), GQLClientResult)
 import Data.Morpheus.Client.Schema.JSON.Types (JSONResponse (..))
 import Data.Morpheus.Subscriptions.Internal (ApolloSubscription (..))
 import qualified Data.Text as T

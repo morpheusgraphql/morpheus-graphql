@@ -1,7 +1,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Client.Declare
+module Data.Morpheus.Client.CodeGen.Declare
   ( declareGlobalTypes,
     declareGlobalTypesByName,
     declareLocalTypes,
@@ -13,24 +13,26 @@ module Data.Morpheus.Client.Declare
   )
 where
 
-import Data.Morpheus.Client.Internal.AST
+import Data.Morpheus.Client.CodeGen.AST
   ( ClientDeclaration (..),
   )
-import Data.Morpheus.Client.Internal.TH
+import Data.Morpheus.Client.CodeGen.Interpreting.Global
+  ( toGlobalDefinitions,
+  )
+import Data.Morpheus.Client.CodeGen.Interpreting.Local
+  ( toLocalDefinitions,
+  )
+import Data.Morpheus.Client.CodeGen.QuasiQuoter (raw)
+import Data.Morpheus.Client.CodeGen.TH
   ( declareIfNotDeclared,
     deriveIfNotDefined,
   )
-import Data.Morpheus.Client.Internal.Types
+import Data.Morpheus.Client.CodeGen.Utils (getFile, getSource, handleResult)
+import Data.Morpheus.Client.Fetch.Types
   ( ExecutableSource,
     SchemaSource,
   )
-import Data.Morpheus.Client.Internal.Utils (getFile, getSource, handleResult)
-import Data.Morpheus.Client.QuasiQuoter (raw)
 import Data.Morpheus.Client.Schema.Parse (parseSchema)
-import Data.Morpheus.Client.Transform
-  ( toGlobalDefinitions,
-    toLocalDefinitions,
-  )
 import Data.Morpheus.CodeGen.TH
   ( PrintDec (printDec),
   )

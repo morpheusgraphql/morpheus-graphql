@@ -71,12 +71,14 @@ processClientDocument BuildConfig {..} schema query moduleName = do
         ModuleDefinition
           { moduleName,
             imports =
-              [("Data.Morpheus.Client.Internal.CodeGen", ["*"])]
+              [("Data.Morpheus.Client.CodeGen.Internal", ["*"])]
                 <> map (,["*"]) globalImports,
             extensions =
               [ "DeriveGeneric",
                 "DuplicateRecordFields",
-                "TypeFamilies"
+                "TypeFamilies",
+                "OverloadedStrings",
+                "LambdaCase"
               ],
             types
           }
