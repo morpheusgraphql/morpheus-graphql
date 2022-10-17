@@ -55,30 +55,29 @@ source-repository head
 library
   exposed-modules:
       Data.Morpheus.Client
-      Data.Morpheus.Client.Internal.CodeGen
+      Data.Morpheus.Client.CodeGen.Internal
   other-modules:
-      Data.Morpheus.Client.Declare
+      Data.Morpheus.Client.CodeGen.AST
+      Data.Morpheus.Client.CodeGen.Declare
+      Data.Morpheus.Client.CodeGen.Interpreting.Core
+      Data.Morpheus.Client.CodeGen.Interpreting.Global
+      Data.Morpheus.Client.CodeGen.Interpreting.Local
+      Data.Morpheus.Client.CodeGen.Interpreting.PreDeclarations
+      Data.Morpheus.Client.CodeGen.QuasiQuoter
+      Data.Morpheus.Client.CodeGen.TH
       Data.Morpheus.Client.Fetch
       Data.Morpheus.Client.Fetch.GQLClient
       Data.Morpheus.Client.Fetch.Http
       Data.Morpheus.Client.Fetch.RequestType
       Data.Morpheus.Client.Fetch.ResponseStream
+      Data.Morpheus.Client.Fetch.Types
       Data.Morpheus.Client.Fetch.WebSockets
-      Data.Morpheus.Client.Internal.AST
-      Data.Morpheus.Client.Internal.TH
-      Data.Morpheus.Client.Internal.Types
       Data.Morpheus.Client.Internal.Utils
-      Data.Morpheus.Client.QuasiQuoter
       Data.Morpheus.Client.Schema.JSON.Parse
       Data.Morpheus.Client.Schema.JSON.TypeKind
       Data.Morpheus.Client.Schema.JSON.TypeRef
       Data.Morpheus.Client.Schema.JSON.Types
       Data.Morpheus.Client.Schema.Parse
-      Data.Morpheus.Client.Transform
-      Data.Morpheus.Client.Transform.Core
-      Data.Morpheus.Client.Transform.Global
-      Data.Morpheus.Client.Transform.Local
-      Data.Morpheus.Client.Transform.PreDeclarations
       Paths_morpheus_graphql_client
   hs-source-dirs:
       src

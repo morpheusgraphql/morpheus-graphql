@@ -3,7 +3,7 @@ module Data.Morpheus.Client.Schema.Parse
   )
 where
 
-import Data.Morpheus.Client.Internal.Types (SchemaSource (..))
+import Data.Morpheus.Client.Fetch.Types (SchemaSource (..))
 import Data.Morpheus.Client.Schema.JSON.Parse
   ( decodeIntrospection,
   )

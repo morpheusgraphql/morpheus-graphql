@@ -88,9 +88,36 @@ type User implements Account {
   home: CityID!
   office(zipCode: [[[ID!]]!], id: CityID!): Address
   entity: [MyUnion!]!
+  worships: Character!
 }
 
 union MyUnion = User | Address
+
+interface Character {
+  name: String!
+}
+
+enum Power {
+  Shapeshifting
+  Thunderbolt
+  Lightning
+  Teleportation
+  Omniscience
+}
+
+interface Supernatural {
+  power: Power!
+}
+
+type Hero implements Character {
+  name: String!
+  hobby: String!
+}
+
+type Deity implements Character & Supernatural {
+  name: String!
+  power: Power!
+}
 
 type Query {
   user: User!
@@ -104,6 +131,8 @@ type Query {
   shared: SharedType!
   testInterface: [Account!]!
   testInput(i1: Coordinates, i2: String = "some value"): String!
+  character: [Character!]!
+  deity: Deity
 }
 
 type Mutation {

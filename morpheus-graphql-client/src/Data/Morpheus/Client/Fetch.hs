@@ -23,7 +23,7 @@ import Data.Aeson
   )
 import Data.ByteString.Lazy (ByteString)
 import Data.Morpheus.Client.Fetch.RequestType (Request (Request), RequestType (RequestArgs), processResponse, toRequest)
-import Data.Morpheus.Client.Internal.Types
+import Data.Morpheus.Client.Fetch.Types
   ( FetchError (..),
   )
 import Relude hiding (ByteString)

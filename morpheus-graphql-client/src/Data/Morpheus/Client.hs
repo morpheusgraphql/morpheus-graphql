@@ -44,7 +44,7 @@ import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as L
   ( readFile,
   )
-import Data.Morpheus.Client.Declare
+import Data.Morpheus.Client.CodeGen.Declare
   ( clientTypeDeclarations,
     declareGlobalTypes,
     declareGlobalTypesByName,
@@ -65,7 +65,7 @@ import Data.Morpheus.Client.Fetch.ResponseStream
     single,
     withHeaders,
   )
-import Data.Morpheus.Client.Internal.Types
+import Data.Morpheus.Client.Fetch.Types
   ( ExecutableSource,
     FetchError (..),
     GQLClientResult,

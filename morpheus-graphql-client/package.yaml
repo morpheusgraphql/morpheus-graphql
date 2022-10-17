@@ -41,7 +41,7 @@ library:
   source-dirs: src
   exposed-modules:
     - Data.Morpheus.Client
-    - Data.Morpheus.Client.Internal.CodeGen
+    - Data.Morpheus.Client.CodeGen.Internal
   ghc-options: "-Wall"
 tests:
   morpheus-graphql-client-test:

@@ -43,7 +43,6 @@ import Data.Morpheus.CodeGen.Internal.AST
     TypeValue (..),
     getFullName,
   )
-import Data.Morpheus.CodeGen.Internal.Name (camelCaseFieldName)
 import Data.Morpheus.CodeGen.Utils
   ( toHaskellName,
     toHaskellTypeName,
@@ -331,7 +330,7 @@ instance PrintExp body => PrintDec (TypeClassInstance body) where
         pure $ apply typeClassName [ty]
 
 printArg :: MethodArgument -> [PatQ]
-printArg (DestructArgument cons) = [destructConstructor cons]
+printArg (DestructArgument con fields) = [conP con (map toVar fields)]
 printArg NoArgument = []
 printArg ProxyArgument = [_']
 
@@ -345,21 +344,3 @@ instance PrintDec CodeGenType where
         Nothing
         (map printConstructor cgConstructors)
         [printDerivClause cgDerivations]
-
--- |
--- input:
--- >>>
--- WAS WAS destructRecord "User" ["name","id"]
--- >>>
---
--- expression:
--- >>>
--- WAS WAS (User name id)
--- >>>
-destructConstructor :: CodeGenConstructor -> PatQ
-destructConstructor (CodeGenConstructor conName fields) = conP (toName conName) names
-  where
-    names = map (typeField conName . fieldName) fields
-
-typeField :: ToVar FieldName c => CodeGenTypeName -> FieldName -> c
-typeField conName = toVar . camelCaseFieldName (getFullName conName)

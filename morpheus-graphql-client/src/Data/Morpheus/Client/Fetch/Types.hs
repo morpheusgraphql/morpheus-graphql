@@ -3,7 +3,7 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Client.Internal.Types
+module Data.Morpheus.Client.Fetch.Types
   ( FetchError (..),
     SchemaSource (..),
     ExecutableSource,

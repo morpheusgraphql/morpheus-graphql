@@ -18,7 +18,7 @@ import Data.Morpheus.Client.Fetch.RequestType
     decodeResponse,
     toRequest,
   )
-import Data.Morpheus.Client.Internal.Types (GQLClientResult)
+import Data.Morpheus.Client.Fetch.Types (GQLClientResult)
 import qualified Data.Text as T
 import Network.HTTP.Req
   ( POST (..),

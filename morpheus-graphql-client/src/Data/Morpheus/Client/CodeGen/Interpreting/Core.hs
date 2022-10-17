@@ -8,7 +8,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Client.Transform.Core
+module Data.Morpheus.Client.CodeGen.Interpreting.Core
   ( Converter (..),
     compileError,
     getType,
@@ -20,7 +20,7 @@ module Data.Morpheus.Client.Transform.Core
 where
 
 import Control.Monad.Except (MonadError)
-import Data.Morpheus.Client.Internal.AST
+import Data.Morpheus.Client.CodeGen.AST
   ( ClientPreDeclaration (..),
     ClientTypeDefinition (..),
     DERIVING_MODE (..),

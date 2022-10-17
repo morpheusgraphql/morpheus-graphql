@@ -18,7 +18,9 @@ newtype Bird = Bird
   deriving (Generic, Show, Eq)
 
 instance ToJSON Bird where
-  toJSON {-- TODO: fix me --} = undefined -- TODO: should be real function
+  toJSON (Bird birdName) =
+    omitNulls
+      ["name" .= birdName]
 
 newtype Cat = Cat
   { name :: String
@@ -26,7 +28,9 @@ newtype Cat = Cat
   deriving (Generic, Show, Eq)
 
 instance ToJSON Cat where
-  toJSON {-- TODO: fix me --} = undefined -- TODO: should be real function
+  toJSON (Cat catName) =
+    omitNulls
+      ["name" .= catName]
 
 data CityID
   = CityIDParis
@@ -54,7 +58,11 @@ data Coordinates = Coordinates
   deriving (Generic, Show, Eq)
 
 instance ToJSON Coordinates where
-  toJSON {-- TODO: fix me --} = undefined -- TODO: should be real function
+  toJSON (Coordinates coordinatesLatitude coordinatesLongitude) =
+    omitNulls
+      [ "latitude" .= coordinatesLatitude,
+        "longitude" .= coordinatesLongitude
+      ]
 
 newtype Dog = Dog
   { name :: String
@@ -62,13 +70,40 @@ newtype Dog = Dog
   deriving (Generic, Show, Eq)
 
 instance ToJSON Dog where
-  toJSON {-- TODO: fix me --} = undefined -- TODO: should be real function
+  toJSON (Dog dogName) =
+    omitNulls
+      ["name" .= dogName]
 
 instance FromJSON Euro where
   parseJSON = scalarFromJSON
 
 instance ToJSON Euro where
   toJSON = scalarToJSON
+
+data Power
+  = PowerShapeshifting
+  | PowerThunderbolt
+  | PowerLightning
+  | PowerTeleportation
+  | PowerOmniscience
+  deriving (Generic, Show, Eq)
+
+instance FromJSON Power where
+  parseJSON = \case
+    "Shapeshifting" -> pure PowerShapeshifting
+    "Thunderbolt" -> pure PowerThunderbolt
+    "Lightning" -> pure PowerLightning
+    "Teleportation" -> pure PowerTeleportation
+    "Omniscience" -> pure PowerOmniscience
+    v -> invalidConstructorError v
+
+instance ToJSON Power where
+  toJSON = \case
+    PowerShapeshifting -> "Shapeshifting"
+    PowerThunderbolt -> "Thunderbolt"
+    PowerLightning -> "Lightning"
+    PowerTeleportation -> "Teleportation"
+    PowerOmniscience -> "Omniscience"
 
 data UniqueID = UniqueID
   { name :: Maybe String,
@@ -78,4 +113,9 @@ data UniqueID = UniqueID
   deriving (Generic, Show, Eq)
 
 instance ToJSON UniqueID where
-  toJSON {-- TODO: fix me --} = undefined -- TODO: should be real function
+  toJSON (UniqueID uniqueIDName uniqueIDId uniqueIDRec) =
+    omitNulls
+      [ "name" .= uniqueIDName,
+        "id" .= uniqueIDId,
+        "rec" .= uniqueIDRec
+      ]

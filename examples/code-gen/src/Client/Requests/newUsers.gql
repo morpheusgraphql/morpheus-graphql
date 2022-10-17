@@ -5,5 +5,10 @@ subscription NewUsers($loc: Coordinates!) {
     address(coordinates: $loc) {
       city
     }
+    worships {
+      ... on Hero {
+        hobby
+      }
+    }
   }
 }

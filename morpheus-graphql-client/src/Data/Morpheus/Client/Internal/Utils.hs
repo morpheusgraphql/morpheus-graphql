@@ -22,7 +22,7 @@ import Data.Aeson.Types (Pair, Parser, Value (..), object)
 import qualified Data.ByteString.Lazy.Char8 as L
 import Data.FileEmbed (makeRelativeToProject)
 import Data.List (isSuffixOf)
-import Data.Morpheus.Client.Internal.Types
+import Data.Morpheus.Client.Fetch.Types
   ( SchemaSource (..),
   )
 import Data.Morpheus.CodeGen.Internal.AST (CodeGenConstructor (..), CodeGenTypeName (..), getFullName)

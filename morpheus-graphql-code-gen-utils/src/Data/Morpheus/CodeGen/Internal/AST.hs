@@ -28,7 +28,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeName,
     TypeRef,
     TypeWrapper,
-    packName,
     unpackName,
   )
 import qualified Language.Haskell.TH.Syntax as TH
@@ -249,7 +248,7 @@ data AssociatedType
   deriving (Show)
 
 printTHName :: TH.Name -> Doc ann
-printTHName = ignore . print . packName
+printTHName = ignore . print
 
 printPromotedLocation :: DirectiveLocation -> Doc ann
 printPromotedLocation = ("'" <>) . ignore . print
@@ -261,10 +260,10 @@ instance Pretty AssociatedType where
 data MethodArgument
   = NoArgument
   | ProxyArgument
-  | DestructArgument CodeGenConstructor
+  | DestructArgument TH.Name [TH.Name]
   deriving (Show)
 
 instance Pretty MethodArgument where
   pretty NoArgument = ""
   pretty ProxyArgument = "_"
-  pretty (DestructArgument x) = "{-- TODO: fix me --}"
+  pretty (DestructArgument x xs) = unpack (print x .<> pack (hsep $ map printTHName xs))

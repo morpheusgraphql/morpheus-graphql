@@ -15,17 +15,18 @@ import Data.Morpheus.Client.Internal.CodeGen
 instance RequestType GetUser where
   type RequestArgs GetUser = GetUserArgs
   __name _ = "GetUser"
-  __query _ = "# Query Hero with Compile time Validation\nquery GetUser($coordinates: Coordinates!) {\n  myUser: user {\n    name\n    aliasEmail: email\n    address(coordinates: $coordinates) {\n      city\n    }\n    aliasAdress: address(coordinates: $coordinates) {\n      city\n    }\n  }\n  user {\n    email\n    name\n  }\n}\n"
+  __query _ = "# Query Hero with Compile time Validation\nquery GetUser($coordinates: Coordinates!) {\n  myUser: user {\n    name\n    aliasEmail: email\n    address(coordinates: $coordinates) {\n      city\n    }\n    aliasAdress: address(coordinates: $coordinates) {\n      city\n    }\n  }\n  user {\n    email\n    name\n  }\n\n  character {\n    ... on Deity {\n      power\n    }\n  }\n}\n"
   __type _ = Query
 
 data GetUser = GetUser
   { myUser :: GetUserMyUserUser,
-    user :: GetUserUserUser
+    user :: GetUserUserUser,
+    character :: [GetUserCharacterCharacter]
   }
   deriving (Generic, Show, Eq)
 
 instance FromJSON GetUser where
-  parseJSON = undefined -- TODO: should be real function
+  parseJSON = withObject "GetUser" (\v -> GetUser <$> v .: "myUser" <*> v .: "user" <*> v .: "character")
 
 data GetUserMyUserUser = GetUserMyUserUser
   { name :: String,
@@ -36,7 +37,7 @@ data GetUserMyUserUser = GetUserMyUserUser
   deriving (Generic, Show, Eq)
 
 instance FromJSON GetUserMyUserUser where
-  parseJSON = undefined -- TODO: should be real function
+  parseJSON = withObject "GetUserMyUserUser" (\v -> GetUserMyUserUser <$> v .: "name" <*> v .: "aliasEmail" <*> v .: "address" <*> v .: "aliasAdress")
 
 newtype GetUserMyUserAddressAddress = GetUserMyUserAddressAddress
   { city :: String
@@ -44,7 +45,7 @@ newtype GetUserMyUserAddressAddress = GetUserMyUserAddressAddress
   deriving (Generic, Show, Eq)
 
 instance FromJSON GetUserMyUserAddressAddress where
-  parseJSON = undefined -- TODO: should be real function
+  parseJSON = withObject "GetUserMyUserAddressAddress" (\v -> GetUserMyUserAddressAddress <$> v .: "city")
 
 newtype GetUserMyUserAliasAdressAddress = GetUserMyUserAliasAdressAddress
   { city :: String
@@ -52,7 +53,7 @@ newtype GetUserMyUserAliasAdressAddress = GetUserMyUserAliasAdressAddress
   deriving (Generic, Show, Eq)
 
 instance FromJSON GetUserMyUserAliasAdressAddress where
-  parseJSON = undefined -- TODO: should be real function
+  parseJSON = withObject "GetUserMyUserAliasAdressAddress" (\v -> GetUserMyUserAliasAdressAddress <$> v .: "city")
 
 data GetUserUserUser = GetUserUserUser
   { email :: String,
@@ -61,7 +62,26 @@ data GetUserUserUser = GetUserUserUser
   deriving (Generic, Show, Eq)
 
 instance FromJSON GetUserUserUser where
-  parseJSON = undefined -- TODO: should be real function
+  parseJSON = withObject "GetUserUserUser" (\v -> GetUserUserUser <$> v .: "email" <*> v .: "name")
+
+data GetUserCharacterCharacter
+  = GetUserCharacterCharacter
+      { __typename :: String
+      }
+  | GetUserCharacterDeity
+      { __typename :: String,
+        power :: Power
+      }
+  deriving (Generic, Show, Eq)
+
+instance FromJSON GetUserCharacterCharacter where
+  parseJSON =
+    takeValueType
+      ( \case
+          ("Character", v) -> GetUserCharacterCharacter <$> v .: "__typename"
+          ("Deity", v) -> GetUserCharacterDeity <$> v .: "__typename" <*> v .: "power"
+          (_, v) -> GetUserCharacterCharacter <$> v .: "__typename"
+      )
 
 newtype GetUserArgs = GetUserArgs
   { coordinates :: Coordinates
@@ -69,4 +89,6 @@ newtype GetUserArgs = GetUserArgs
   deriving (Generic, Show, Eq)
 
 instance ToJSON GetUserArgs where
-  toJSON {-- TODO: fix me --} = undefined -- TODO: should be real function
+  toJSON (GetUserArgs getUserArgsCoordinates) =
+    omitNulls
+      ["coordinates" .= getUserArgsCoordinates]

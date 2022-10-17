@@ -4,17 +4,17 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Client.Transform.Global
+module Data.Morpheus.Client.CodeGen.Interpreting.Global
   ( toGlobalDefinitions,
   )
 where
 
-import Data.Morpheus.Client.Internal.AST
+import Data.Morpheus.Client.CodeGen.AST
   ( ClientDeclaration,
     ClientTypeDefinition (..),
   )
-import Data.Morpheus.Client.Transform.Core (toClientDeclarations, toCodeGenField)
-import Data.Morpheus.Client.Transform.PreDeclarations
+import Data.Morpheus.Client.CodeGen.Interpreting.Core (toClientDeclarations, toCodeGenField)
+import Data.Morpheus.Client.CodeGen.Interpreting.PreDeclarations
   ( mapPreDeclarations,
   )
 import Data.Morpheus.CodeGen.Internal.AST

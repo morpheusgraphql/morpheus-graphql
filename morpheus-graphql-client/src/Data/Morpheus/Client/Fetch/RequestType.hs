@@ -29,7 +29,7 @@ import Data.Aeson
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as A
 import Data.ByteString.Lazy (ByteString)
-import Data.Morpheus.Client.Internal.Types
+import Data.Morpheus.Client.Fetch.Types
   ( FetchError (..),
   )
 import Data.Morpheus.Client.Schema.JSON.Types
