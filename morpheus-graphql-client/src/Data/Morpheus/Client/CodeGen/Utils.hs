@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Client.Internal.Utils
+module Data.Morpheus.Client.CodeGen.Utils
   ( getSource,
     handleResult,
     getFile,

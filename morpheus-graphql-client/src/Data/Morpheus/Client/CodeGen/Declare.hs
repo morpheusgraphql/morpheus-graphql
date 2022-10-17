@@ -27,11 +27,11 @@ import Data.Morpheus.Client.CodeGen.TH
   ( declareIfNotDeclared,
     deriveIfNotDefined,
   )
+import Data.Morpheus.Client.CodeGen.Utils (getFile, getSource, handleResult)
 import Data.Morpheus.Client.Fetch.Types
   ( ExecutableSource,
     SchemaSource,
   )
-import Data.Morpheus.Client.Internal.Utils (getFile, getSource, handleResult)
 import Data.Morpheus.Client.Schema.Parse (parseSchema)
 import Data.Morpheus.CodeGen.TH
   ( PrintDec (printDec),

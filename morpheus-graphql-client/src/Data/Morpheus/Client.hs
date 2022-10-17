@@ -54,6 +54,7 @@ import Data.Morpheus.Client.CodeGen.Declare
     parseClientTypeDeclarations,
     raw,
   )
+import Data.Morpheus.Client.CodeGen.Utils (readSchemaSource)
 import Data.Morpheus.Client.Fetch
   ( Fetch (..),
   )
@@ -71,7 +72,6 @@ import Data.Morpheus.Client.Fetch.Types
     GQLClientResult,
     SchemaSource (..),
   )
-import Data.Morpheus.Client.Internal.Utils (readSchemaSource)
 import Data.Morpheus.Types.GQLScalar
   ( DecodeScalar (..),
     EncodeScalar (..),

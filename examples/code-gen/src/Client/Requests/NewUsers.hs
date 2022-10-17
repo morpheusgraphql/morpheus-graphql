@@ -10,7 +10,7 @@
 module Client.Requests.NewUsers where
 
 import Client.Schema
-import Data.Morpheus.Client.Internal.CodeGen
+import Data.Morpheus.Client.CodeGen.Internal
 
 instance RequestType NewUsers where
   type RequestArgs NewUsers = NewUsersArgs

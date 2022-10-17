@@ -65,6 +65,7 @@ library
       Data.Morpheus.Client.CodeGen.Interpreting.PreDeclarations
       Data.Morpheus.Client.CodeGen.QuasiQuoter
       Data.Morpheus.Client.CodeGen.TH
+      Data.Morpheus.Client.CodeGen.Utils
       Data.Morpheus.Client.Fetch
       Data.Morpheus.Client.Fetch.GQLClient
       Data.Morpheus.Client.Fetch.Http
@@ -72,7 +73,6 @@ library
       Data.Morpheus.Client.Fetch.ResponseStream
       Data.Morpheus.Client.Fetch.Types
       Data.Morpheus.Client.Fetch.WebSockets
-      Data.Morpheus.Client.Internal.Utils
       Data.Morpheus.Client.Schema.JSON.Parse
       Data.Morpheus.Client.Schema.JSON.TypeKind
       Data.Morpheus.Client.Schema.JSON.TypeRef

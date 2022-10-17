@@ -9,7 +9,7 @@
 
 module Client.Schema where
 
-import Data.Morpheus.Client.Internal.CodeGen
+import Data.Morpheus.Client.CodeGen.Internal
 import Globals.GQLScalars
 
 newtype Bird = Bird

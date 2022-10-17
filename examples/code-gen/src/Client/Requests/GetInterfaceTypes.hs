@@ -10,7 +10,7 @@
 module Client.Requests.GetInterfaceTypes where
 
 import Client.Schema
-import Data.Morpheus.Client.Internal.CodeGen
+import Data.Morpheus.Client.CodeGen.Internal
 
 instance RequestType GetInterfaceTypes where
   type RequestArgs GetInterfaceTypes = ()
