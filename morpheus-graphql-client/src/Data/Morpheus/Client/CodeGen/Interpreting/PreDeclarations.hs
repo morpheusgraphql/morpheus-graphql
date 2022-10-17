@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskellQuotes #-}
@@ -28,13 +29,9 @@ import Data.Morpheus.Client.CodeGen.AST
     RequestTypeDefinition (..),
     UnionPat (..),
   )
-import Data.Morpheus.Client.CodeGen.Internal (omitNulls)
+import Data.Morpheus.Client.CodeGen.Internal (invalidConstructorError, omitNulls)
 import Data.Morpheus.Client.Fetch.RequestType
   ( RequestType (..),
-  )
-import Data.Morpheus.Client.Internal.Utils
-  ( emptyTypeError,
-    invalidConstructorError,
   )
 import Data.Morpheus.CodeGen.Internal.AST
   ( AssociatedType (AssociatedTypeName),
@@ -55,6 +52,7 @@ import Data.Morpheus.Types.GQLScalar
   ( scalarFromJSON,
     scalarToJSON,
   )
+import Data.Morpheus.Types.Internal.AST (Msg (..), internal)
 import Language.Haskell.TH.Syntax (Name)
 import Relude hiding (ToString, Type, toString)
 
@@ -100,7 +98,7 @@ genObj :: CodeGenConstructor -> (Name, [AesonField])
 genObj CodeGenConstructor {..} = (toName constructorName, map defField constructorFields)
 
 defField :: CodeGenField -> AesonField
-defField CodeGenField {..} = (toName "v", bindField fieldIsNullable, fieldName)
+defField CodeGenField {..} = (toName ("v" :: String), bindField fieldIsNullable, fieldName)
 
 bindField :: Bool -> Name
 bindField nullable
@@ -158,3 +156,6 @@ deriveFromJSON mode cType = do
         assoc = [],
         typeClassMethods = [('parseJSON, NoArgument, expr)]
       }
+
+emptyTypeError :: MonadFail m => CodeGenTypeName -> m a
+emptyTypeError name = fail $ show $ internal ("Type " <> msg (getFullName name) <> " Should Have at least one Constructor")

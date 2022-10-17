@@ -22,8 +22,10 @@ module Data.Morpheus.Client.CodeGen.AST
 where
 
 import Data.Foldable (foldr1)
-import Data.Morpheus.Client.CodeGen.Internal (withObject)
-import Data.Morpheus.Client.Internal.Utils (takeValueType)
+import Data.Morpheus.Client.CodeGen.Internal
+  ( takeValueType,
+    withObject,
+  )
 import Data.Morpheus.CodeGen.Internal.AST
   ( CodeGenConstructor (..),
     CodeGenType,
