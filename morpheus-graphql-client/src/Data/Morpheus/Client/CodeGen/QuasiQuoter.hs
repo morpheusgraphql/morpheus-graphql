@@ -6,7 +6,7 @@
 {-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Client.CodeGen.QuasiQuoter 
+module Data.Morpheus.Client.CodeGen.QuasiQuoter
   ( raw,
   )
 where
