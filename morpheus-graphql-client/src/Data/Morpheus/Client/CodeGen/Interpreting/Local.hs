@@ -26,6 +26,7 @@ import Data.Morpheus.Client.CodeGen.Interpreting.Core
     defaultDerivations,
     deprecationWarning,
     getType,
+    gqlWarning,
     typeFrom,
   )
 import Data.Morpheus.Client.CodeGen.Interpreting.PreDeclarations
@@ -39,6 +40,7 @@ import Data.Morpheus.Internal.Ext
 import Data.Morpheus.Internal.Utils
   ( empty,
     keyOf,
+    member,
     selectBy,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -48,6 +50,7 @@ import Data.Morpheus.Types.Internal.AST
     FieldName,
     OUT,
     Operation (..),
+    PropName (..),
     RAW,
     Ref (..),
     Schema (..),
@@ -69,6 +72,8 @@ import Data.Morpheus.Types.Internal.AST
     mkTypeRef,
     msg,
     toAny,
+    unpackName,
+    withPath,
   )
 import qualified Data.Text as T
 import Relude hiding (empty, show)
@@ -97,8 +102,8 @@ genLocalDeclarations query op@Operation {operationName, operationSelection, oper
             requestName = typename rootTypeName,
             requestType = operationType,
             requestQuery = T.unpack query
-          }
-        : localTypes <> argTypes
+          } :
+      localTypes <> argTypes
     )
 
 -------------------------------------------------------------------------
@@ -153,13 +158,23 @@ subTypesBySelection path dType Selection {selectionContent = SelectionSet select
 subTypesBySelection namespace dType Selection {selectionContent = UnionSelection interface unionSelections} =
   do
     let variants = toList unionSelections
+    traverse_ (checkTypename namespace interface) variants
     (cons, subTypes) <- unzip <$> traverse (getVariantType namespace) variants
     (fallbackCons, fallBackTypes) <- maybe (getEmptyFallback namespace (typeName dType)) (getVariantType namespace . UnionTag (typeName dType)) interface
     let cgTypeName = CodeGenTypeName {namespace, typeParameters = [], typename = typeFrom [] dType}
     let typeDef = CodeGenType {cgTypeName, cgConstructors = cons <> [fallbackCons], cgDerivations = defaultDerivations}
-    pure ([ClientType typeDef, FromJSONUnionClass cgTypeName (map tagConstructor cons <> [(UVar "_", fallbackCons)])] <> concat subTypes <> fallBackTypes)
+    pure ([ClientType typeDef, FromJSONUnionClass cgTypeName (map tagConstructor cons <> [(UVar "_fallback", fallbackCons)])] <> concat subTypes <> fallBackTypes)
   where
     tagConstructor x = (UString $ typename $ constructorName x, x)
+
+checkTypename :: [FieldName] -> Maybe (SelectionSet VALID) -> UnionTag -> Converter ()
+checkTypename path iFace UnionTag {..}
+  | any (member "__typename") (unionTagSelection : toList iFace) = pure ()
+  | otherwise =
+    gqlWarning $
+      withPath
+        ("missing \"__typename\" for union selection " <> msg unionTagName <> ". this can lead to undesired behavior at runtime!")
+        (map (PropName . unpackName) path)
 
 getEmptyFallback :: [FieldName] -> TypeName -> Converter (CodeGenConstructor, [ClientPreDeclaration])
 getEmptyFallback path selectedTyName =
@@ -192,14 +207,14 @@ getFieldType
       toFieldDef :: TypeContent TRUE ANY VALID -> Converter (FieldDefinition OUT VALID)
       toFieldDef _
         | selectionName == "__typename" =
-            pure
-              FieldDefinition
-                { fieldName = "__typename",
-                  fieldDescription = Nothing,
-                  fieldType = mkTypeRef "String",
-                  fieldDirectives = empty,
-                  fieldContent = Nothing
-                }
+          pure
+            FieldDefinition
+              { fieldName = "__typename",
+                fieldDescription = Nothing,
+                fieldType = mkTypeRef "String",
+                fieldDirectives = empty,
+                fieldContent = Nothing
+              }
       toFieldDef DataObject {objectFields} = selectBy selError selectionName objectFields
       toFieldDef DataInterface {interfaceFields} = selectBy selError selectionName interfaceFields
       toFieldDef dt = throwError (compileError $ "Type should be output Object \"" <> msg (show dt))

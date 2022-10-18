@@ -16,6 +16,7 @@ module Data.Morpheus.Client.CodeGen.Interpreting.Core
     deprecationWarning,
     printClientType,
     defaultDerivations,
+    gqlWarning,
   )
 where
 
@@ -94,15 +95,11 @@ typeFrom path TypeDefinition {typeName, typeContent} = __typeFrom typeContent
 
 deprecationWarning :: Directives VALID -> (FieldName, Ref FieldName) -> Converter ()
 deprecationWarning dirs (typename, ref) = case lookupDeprecated dirs of
-  Just deprecation -> Converter $ lift $ Success {result = (), warnings}
-    where
-      warnings =
-        [ deprecatedField
-            typename
-            ref
-            (lookupDeprecatedReason deprecation)
-        ]
+  Just deprecation -> gqlWarning $ deprecatedField typename ref (lookupDeprecatedReason deprecation)
   Nothing -> pure ()
+
+gqlWarning :: GQLError -> Converter ()
+gqlWarning w = Converter $ lift $ Success {result = (), warnings = [w]}
 
 defaultDerivations :: [DerivingClass]
 defaultDerivations = [GENERIC, SHOW, CLASS_EQ]
