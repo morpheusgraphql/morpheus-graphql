@@ -9,7 +9,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.CodeGen.Interpreting.Core
-  ( Converter (..),
+  ( LocalM (..),
     compileError,
     getType,
     typeFrom,
@@ -17,6 +17,9 @@ module Data.Morpheus.Client.CodeGen.Interpreting.Core
     printClientType,
     defaultDerivations,
     gqlWarning,
+    LocalContext (..),
+    runLocalM,
+    withPosition,
   )
 where
 
@@ -44,6 +47,7 @@ import Data.Morpheus.Types.Internal.AST
     Directives,
     FieldName,
     GQLError,
+    Position,
     RAW,
     Ref (..),
     Schema (..),
@@ -60,12 +64,22 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Relude
 
-type Env = (Schema VALID, VariableDefinitions RAW)
+data LocalContext = LocalContext
+  { ctxSchema :: Schema VALID,
+    ctxVariables :: VariableDefinitions RAW,
+    ctxPosition :: Maybe Position
+  }
 
-newtype Converter a = Converter
-  { runConverter ::
+runLocalM :: LocalContext -> LocalM a -> GQLResult a
+runLocalM context = flip runReaderT context . _runLocalM
+
+withPosition :: Position -> LocalM a -> LocalM a
+withPosition pos = local (\ctx -> ctx {ctxPosition = Just pos})
+
+newtype LocalM a = LocalM
+  { _runLocalM ::
       ReaderT
-        Env
+        LocalContext
         GQLResult
         a
   }
@@ -73,16 +87,16 @@ newtype Converter a = Converter
     ( Functor,
       Applicative,
       Monad,
-      MonadReader Env,
+      MonadReader LocalContext,
       MonadError GQLError
     )
 
 compileError :: GQLError -> GQLError
 compileError x = internal $ "Unhandled Compile Time Error: \"" <> x <> "\" ;"
 
-getType :: TypeName -> Converter (TypeDefinition ANY VALID)
+getType :: TypeName -> LocalM (TypeDefinition ANY VALID)
 getType typename =
-  asks (typeDefinitions . fst)
+  asks (typeDefinitions . ctxSchema)
     >>= selectBy (compileError $ " can't find Type" <> msg typename) typename
 
 typeFrom :: [FieldName] -> TypeDefinition a VALID -> TypeName
@@ -93,13 +107,13 @@ typeFrom path TypeDefinition {typeName, typeContent} = __typeFrom typeContent
     __typeFrom DataUnion {} = camelCaseTypeName path typeName
     __typeFrom _ = typeName
 
-deprecationWarning :: Directives VALID -> (FieldName, Ref FieldName) -> Converter ()
+deprecationWarning :: Directives VALID -> (FieldName, Ref FieldName) -> LocalM ()
 deprecationWarning dirs (typename, ref) = case lookupDeprecated dirs of
   Just deprecation -> gqlWarning $ deprecatedField typename ref (lookupDeprecatedReason deprecation)
   Nothing -> pure ()
 
-gqlWarning :: GQLError -> Converter ()
-gqlWarning w = Converter $ lift $ Success {result = (), warnings = [w]}
+gqlWarning :: GQLError -> LocalM ()
+gqlWarning w = LocalM $ lift $ Success {result = (), warnings = [w]}
 
 defaultDerivations :: [DerivingClass]
 defaultDerivations = [GENERIC, SHOW, CLASS_EQ]
