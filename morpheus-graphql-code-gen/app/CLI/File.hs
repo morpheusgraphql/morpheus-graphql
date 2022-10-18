@@ -3,16 +3,14 @@
 
 module CLI.File where
 
-import Data.ByteString.Lazy (ByteString)
-import qualified Data.ByteString.Lazy as L
-  ( writeFile,
-  )
+import Data.ByteString.Lazy.Char8 (ByteString, unpack, writeFile)
 import Data.Char
 import Data.Morpheus.Internal.Ext
   ( GQLResult,
     Result (..),
   )
-import Relude hiding (ByteString)
+import Data.Morpheus.Types.Internal.AST (GQLError (..))
+import Relude hiding (ByteString, writeFile)
 import System.FilePath.Posix
   ( dropExtensions,
     makeRelative,
@@ -30,9 +28,22 @@ capitalize :: String -> String
 capitalize [] = []
 capitalize (x : xs) = toUpper x : xs
 
+printWarnings :: [GQLError] -> IO ()
+printWarnings [] = pure ()
+printWarnings warnings = traverse_ handleWarning warnings
+  where
+    handleWarning warning =
+      putStr $
+        ( "\x1b[33m Morpheus warning: "
+            <> toString (message warning)
+            <> "\x1b[33m\n\n        "
+            <> (unpack . show) warning
+            <> "\n"
+        )
+
 saveDocument :: FilePath -> GQLResult ByteString -> IO ()
 saveDocument _ (Failure errors) = print errors
-saveDocument output Success {result} = L.writeFile output result
+saveDocument output Success {result, warnings} = printWarnings warnings >> writeFile output result
 
 getModuleNameByPath :: FilePath -> FilePath -> [Char]
 getModuleNameByPath root path = intercalate "." $ splitDirectories $ dropExtensions $ makeRelative root path
