@@ -19,8 +19,7 @@
     "character2": [
       {
         "name1": "test name",
-        "name": "test name",
-        "__typename": "Character"
+        "name": "test name"
       }
     ],
     "character3": [
@@ -30,8 +29,8 @@
         "name2": "Hero name2"
       },
       {
-        "__typename": "Deity",
-        "name2": "Hero name2"
+        "name2": "This should be a Deity!",
+        "power": "Power"
       },
       {
         "__typename": "Character",

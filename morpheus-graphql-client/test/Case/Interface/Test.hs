@@ -39,14 +39,17 @@ test =
         MyQuery
           { character =
               [ MyQueryCharacterDeity
-                  { name = "Deity Name",
+                  { __typename = "Deity",
+                    name = "Deity Name",
                     power = "Deity Power"
                   },
                 MyQueryCharacterCharacter
-                  { name = "Character Name"
+                  { __typename = "Character",
+                    name = "Character Name"
                   },
                 MyQueryCharacterHero
-                  { name = "Hero Name",
+                  { __typename = "Hero",
+                    name = "Hero Name",
                     hobby = "Deity Power"
                   }
               ],
@@ -58,11 +61,12 @@ test =
               ],
             character3 =
               [ MyQueryCharacter3Hero
-                  { name2 = "Hero name2",
+                  { __typename = "Hero",
+                    name2 = "Hero name2",
                     hobby = "Hero Hobby"
                   },
                 MyQueryCharacter3Character
-                  { name2 = "Hero name2"
+                  { name2 = "This should be a Deity!"
                   },
                 MyQueryCharacter3Character
                   { name2 = "Character name2"
@@ -70,7 +74,10 @@ test =
               ],
             character4 =
               [ MyQueryCharacter4Character,
-                MyQueryCharacter4Hero {hobby = "Hero Hobby"},
+                MyQueryCharacter4Hero
+                  { __typename = "Hero",
+                    hobby = "Hero Hobby"
+                  },
                 MyQueryCharacter4Character
               ]
           }
