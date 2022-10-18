@@ -37,7 +37,7 @@ printWarnings warnings = traverse_ handleWarning warnings
         "  \x1b[33m  warning: "
           <> toString (message warning)
           <> "\x1b[0m\n      "
-          <> unpack (show $ concat $toList $ locations warning)
+          <> unpack (show $ concat $ toList $ locations warning)
           <> "\n"
 
 saveDocument :: FilePath -> GQLResult ByteString -> IO ()
