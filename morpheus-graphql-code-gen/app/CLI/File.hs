@@ -34,12 +34,11 @@ printWarnings warnings = traverse_ handleWarning warnings
   where
     handleWarning warning =
       putStr $
-        ( "\x1b[33m Morpheus warning: "
-            <> toString (message warning)
-            <> "\x1b[33m\n\n        "
-            <> (unpack . show) warning
-            <> "\n"
-        )
+        "  \x1b[33m  warning: "
+          <> toString (message warning)
+          <> "\x1b[0m\n      "
+          <> unpack (show $ concat $toList $ locations warning)
+          <> "\n"
 
 saveDocument :: FilePath -> GQLResult ByteString -> IO ()
 saveDocument _ (Failure errors) = print errors
