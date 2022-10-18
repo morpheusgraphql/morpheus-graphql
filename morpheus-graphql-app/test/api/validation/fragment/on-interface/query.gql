@@ -3,6 +3,7 @@
     ...OnSupernatural
   }
   character {
+    __typename
     ...OnCharacter
   }
 }

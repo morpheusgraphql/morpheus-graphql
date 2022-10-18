@@ -39,19 +39,13 @@
       }
     ],
     "character4": [
-      {
-        "__typename": "Character",
-        "name2": "Character name2"
-      },
+      {},
       {
         "__typename": "Hero",
         "hobby": "Hero Hobby",
         "name2": "Hero name2"
       },
-      {
-        "__typename": "Deity",
-        "name": "Deity name"
-      }
+      {}
     ]
   }
 }

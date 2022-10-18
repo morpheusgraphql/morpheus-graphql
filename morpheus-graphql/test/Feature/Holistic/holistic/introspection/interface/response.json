@@ -1,8 +1,7 @@
 {
   "data": {
     "person": {
-      "name": "test Person Name",
-      "__typename": "User"
+      "name": "test Person Name"
     },
     "interface": {
       "kind": "INTERFACE",

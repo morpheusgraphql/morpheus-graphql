@@ -14,6 +14,7 @@ module Data.Morpheus.Validation.Query.UnionSelection
   )
 where
 
+import Control.Monad.Except (MonadError (throwError))
 import qualified Data.HashMap.Lazy as HM
 import Data.Mergeable (OrdMap)
 import Data.Morpheus.Internal.Utils
@@ -23,7 +24,6 @@ import Data.Morpheus.Internal.Utils
     selectOr,
     startHistory,
   )
-import Data.Morpheus.Types.Internal.AST.Base (Position (..))
 import Data.Morpheus.Types.Internal.AST.Name (TypeName)
 import Data.Morpheus.Types.Internal.AST.Selection
   ( Fragment (..),
@@ -82,23 +82,13 @@ exploreFragments ::
   ) ->
   OrdMap TypeName (TypeDefinition IMPLEMENTABLE VALID) ->
   SelectionSet RAW ->
-  FragmentValidator s ([UnionTag], SelectionSet RAW)
+  FragmentValidator s ([UnionTag], Maybe (SelectionSet RAW))
 exploreFragments validateFragment types selectionSet = do
   (tags, selections) <- partitionEithers <$> traverse (splitFragment validateFragment (toList types)) (toList selectionSet)
-  selectionPosition <- fromMaybe (Position 0 0) <$> asksScope position
   (tags,)
-    <$> fromElems
-      ( ( Selection
-            { selectionName = "__typename",
-              selectionAlias = Nothing,
-              selectionPosition,
-              selectionArguments = empty,
-              selectionContent = SelectionField,
-              selectionDirectives = empty
-            }
-        )
-          : selections
-      )
+    <$> if null selections
+      then pure Nothing
+      else Just <$> fromElems selections
 
 -- sorts Fragment by conditional Types
 -- [
@@ -134,18 +124,29 @@ getCompatibleTypes :: TypeDefinition a s -> [TypeName]
 getCompatibleTypes TypeDefinition {typeName, typeContent = DataObject {objectImplements}} = typeName : objectImplements
 getCompatibleTypes TypeDefinition {typeName} = [typeName]
 
+maybeMerge :: [SelectionSet VALID] -> FragmentValidator s (Maybe (SelectionSet VALID))
+maybeMerge [] = pure Nothing
+maybeMerge (x : xs) = Just <$> startHistory (mergeConcat (x :| xs))
+
+emptySelection :: FragmentValidator s a
+emptySelection = throwError "xyz"
+
+mergeList :: [SelectionSet VALID] -> FragmentValidator s (SelectionSet VALID)
+mergeList [] = emptySelection
+mergeList (x : xs) = startHistory $ mergeConcat (x :| xs)
+
 joinClusters ::
-  SelectionSet VALID ->
+  Maybe (SelectionSet VALID) ->
   HashMap TypeName [SelectionSet VALID] ->
   FragmentValidator s (SelectionContent VALID)
-joinClusters selSet typedSelections
-  | null typedSelections = pure (SelectionSet selSet)
+joinClusters maybeSelSet typedSelections
+  | null typedSelections = maybe emptySelection (pure . SelectionSet) maybeSelSet
   | otherwise =
-      traverse mkUnionTag (HM.toList typedSelections)
-        >>= fmap (UnionSelection selSet) . startHistory . fromElems
+    traverse mkUnionTag (HM.toList typedSelections)
+      >>= fmap (UnionSelection maybeSelSet) . startHistory . fromElems
   where
     mkUnionTag :: (TypeName, [SelectionSet VALID]) -> FragmentValidator s UnionTag
-    mkUnionTag (typeName, fragments) = UnionTag typeName <$> startHistory (mergeConcat (selSet :| fragments))
+    mkUnionTag (typeName, fragments) = UnionTag typeName <$> mergeList (toList maybeSelSet <> fragments)
 
 validateInterfaceSelection ::
   ValidateFragmentSelection s =>
@@ -161,10 +162,9 @@ validateInterfaceSelection
   inputSelectionSet = do
     possibleTypes <- askInterfaceTypes typeDef
     (spreads, selectionSet) <- exploreFragments validateFragment possibleTypes inputSelectionSet
-    validSelectionSet <- validate typeDef selectionSet
+    validSelectionSet <- traverse (validate typeDef) selectionSet
     let tags = tagUnionFragments spreads possibleTypes
-    let interfaces = selectOr [] id typeName tags
-    defaultSelection <- startHistory $ mergeConcat (validSelectionSet :| interfaces)
+    defaultSelection <- maybeMerge (toList validSelectionSet <> selectOr [] id typeName tags)
     joinClusters defaultSelection (HM.delete typeName tags)
 
 mkUnionRootType :: FragmentValidator s (TypeDefinition IMPLEMENTABLE VALID)
@@ -177,9 +177,10 @@ validateUnionSelection ::
   UnionTypeDefinition OUT VALID ->
   SelectionSet RAW ->
   FragmentValidator s (SelectionContent VALID)
-validateUnionSelection validateFragment validate members selectionSet = do
-  unionTypes <- traverse (fmap toCategory . askTypeMember) members
-  (spreads, selSet) <- exploreFragments validateFragment unionTypes selectionSet
+validateUnionSelection validateFragment validate members inputSelectionSet = do
   typeDef <- mkUnionRootType
-  validSelection <- validate typeDef selSet
-  joinClusters validSelection (tagUnionFragments spreads unionTypes)
+  possibleTypes <- traverse (fmap toCategory . askTypeMember) members
+  (spreads, selectionSet) <- exploreFragments validateFragment possibleTypes inputSelectionSet
+  validSelectionSet <- traverse (validate typeDef) selectionSet
+  let tags = tagUnionFragments spreads possibleTypes
+  joinClusters validSelectionSet tags

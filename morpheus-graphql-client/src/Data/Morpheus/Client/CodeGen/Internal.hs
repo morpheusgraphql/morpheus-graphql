@@ -35,7 +35,7 @@ invalidConstructorError v = fail $ show v <> " is Not Valid Union Constructor"
 
 takeValueType :: ((String, Object) -> Parser a) -> Value -> Parser a
 takeValueType f (Object hMap) = case lookup "__typename" hMap of
-  Nothing -> fail "key \"__typename\" not found on object"
+  Nothing -> f ("__TYPENAME_NOT__FOUND__", hMap)
   Just (String x) -> f (T.unpack x, hMap)
   Just val ->
     fail $ "key \"__typename\" should be string but found: " <> show val

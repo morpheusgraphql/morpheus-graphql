@@ -6,8 +6,7 @@
       "email2": "",
       "address": {
         "city": ""
-      },
-      "__typename": "User"
+      }
     }
   }
 }

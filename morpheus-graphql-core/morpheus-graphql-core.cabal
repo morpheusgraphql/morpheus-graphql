@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.35.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -21,7 +21,9 @@ extra-source-files:
     README.md
     changelog.md
 data-files:
+    test/query/parsing/selection-set/empty-selection-2/query.gql
     test/query/parsing/selection-set/empty-selection/query.gql
+    test/query/parsing/selection-set/non-empty-selection-2/query.gql
     test/query/parsing/selection-set/non-empty-selection/query.gql
     test/query/validation/__typename/arguments/query.gql
     test/query/validation/__typename/schema.gql
@@ -98,7 +100,9 @@ data-files:
     "test/schema/validation/schema-definition/fail/required query/schema-with-query/schema.gql"
     test/schema/validation/schema-definition/fail/unknown-type/unknown/schema.gql
     test/schema/validation/schema-definition/ok/full/schema.gql
+    test/query/parsing/selection-set/empty-selection-2/response.json
     test/query/parsing/selection-set/empty-selection/response.json
+    test/query/parsing/selection-set/non-empty-selection-2/response.json
     test/query/parsing/selection-set/non-empty-selection/response.json
     test/query/validation/__typename/arguments/response.json
     test/query/validation/__typename/selection-set/response.json

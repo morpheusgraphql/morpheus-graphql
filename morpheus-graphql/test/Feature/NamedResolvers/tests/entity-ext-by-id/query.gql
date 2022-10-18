@@ -1,6 +1,7 @@
 query {
   zeus: entity(id: "zeus") {
     ... on Deity {
+      __typename
       name
       power
     }

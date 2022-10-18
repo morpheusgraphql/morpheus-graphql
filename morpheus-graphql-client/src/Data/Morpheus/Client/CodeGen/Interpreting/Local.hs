@@ -16,14 +16,22 @@ import Control.Monad.Except (MonadError (throwError))
 import Data.Morpheus.Client.CodeGen.AST
   ( ClientDeclaration,
     ClientPreDeclaration (..),
-    ClientTypeDefinition (..),
+    DERIVING_MODE (..),
     RequestTypeDefinition (..),
+    UnionPat (..),
   )
-import Data.Morpheus.Client.CodeGen.Interpreting.Core (Converter (..), compileError, deprecationWarning, getType, toClientDeclarations, toCodeGenField, typeFrom)
+import Data.Morpheus.Client.CodeGen.Interpreting.Core
+  ( Converter (..),
+    compileError,
+    defaultDerivations,
+    deprecationWarning,
+    getType,
+    typeFrom,
+  )
 import Data.Morpheus.Client.CodeGen.Interpreting.PreDeclarations
   ( mapPreDeclarations,
   )
-import Data.Morpheus.CodeGen.Internal.AST (CodeGenConstructor (..), CodeGenTypeName (..), fromTypeName)
+import Data.Morpheus.CodeGen.Internal.AST (CodeGenConstructor (..), CodeGenField (..), CodeGenType (..), CodeGenTypeName (..), FIELD_TYPE_WRAPPER (..), fromTypeName, getFullName)
 import Data.Morpheus.Core (Config (..), VALIDATION_MODE (WITHOUT_VARIABLES), validateRequest)
 import Data.Morpheus.Internal.Ext
   ( GQLResult,
@@ -49,7 +57,6 @@ import Data.Morpheus.Types.Internal.AST
     TRUE,
     TypeContent (..),
     TypeDefinition (..),
-    TypeKind (..),
     TypeName,
     TypeRef (..),
     UnionTag (..),
@@ -58,6 +65,7 @@ import Data.Morpheus.Types.Internal.AST
     VariableDefinitions,
     getOperationDataType,
     getOperationName,
+    isNullable,
     mkTypeRef,
     msg,
     toAny,
@@ -67,11 +75,7 @@ import Relude hiding (empty, show)
 import Prelude (show)
 
 clientConfig :: Config
-clientConfig =
-  Config
-    { debug = False,
-      validationMode = WITHOUT_VARIABLES
-    }
+clientConfig = Config {debug = False, validationMode = WITHOUT_VARIABLES}
 
 toLocalDefinitions :: (Text, ExecutableDocument) -> Schema VALID -> GQLResult [ClientDeclaration]
 toLocalDefinitions (query, request) schema = do
@@ -83,22 +87,18 @@ genLocalDeclarations :: Text -> Operation VALID -> Converter [ClientPreDeclarati
 genLocalDeclarations query op@Operation {operationName, operationSelection, operationType} = do
   (schema, varDefs) <- asks id
   datatype <- getOperationDataType op schema
-  let argumentsType = toArgumentsType (fromTypeName $ getOperationName operationName <> "Args") varDefs
-  (rootType :| localTypes) <-
-    genLocalTypes
-      []
-      (getOperationName operationName)
-      (toAny datatype)
-      operationSelection
+  let operationTypeName = getOperationName operationName
+  let (requestArgs, argTypes) = toArgumentsType operationTypeName varDefs
+  (rootTypeName, localTypes) <- genLocalTypes [] operationTypeName (toAny datatype) operationSelection
   pure
     ( RequestTypeClass
         RequestTypeDefinition
-          { requestArgs = maybe "()" (typename . clientTypeName) argumentsType,
-            requestName = typename (clientTypeName rootType),
+          { requestArgs = requestArgs,
+            requestName = typename rootTypeName,
             requestType = operationType,
             requestQuery = T.unpack query
-          }
-        : concatMap toClientDeclarations (rootType : (localTypes <> maybeToList argumentsType))
+          } :
+      localTypes <> argTypes
     )
 
 -------------------------------------------------------------------------
@@ -108,41 +108,35 @@ genLocalTypes ::
   TypeName ->
   TypeDefinition ANY VALID ->
   SelectionSet VALID ->
-  Converter (NonEmpty ClientTypeDefinition)
+  Converter (CodeGenTypeName, [ClientPreDeclaration])
 genLocalTypes namespace tName dataType recordSelSet = do
-  let clientTypeName = CodeGenTypeName {namespace, typeParameters = [], typename = tName}
-  (con, subTypes) <- toConstructorDefinition (if null namespace then [coerce tName] else namespace) clientTypeName dataType recordSelSet
-  pure $
-    ClientTypeDefinition
-      { clientTypeName,
-        clientCons = [con],
-        clientKind = KindObject Nothing
-      }
-      :| subTypes
+  let cgTypeName = CodeGenTypeName {namespace, typeParameters = [], typename = tName}
+  (con, subTypes) <- toConstructorDefinition (if null namespace then [coerce tName] else namespace) cgTypeName dataType recordSelSet
+  let def = CodeGenType {cgTypeName, cgConstructors = [con], cgDerivations = defaultDerivations}
+  pure (cgTypeName, [ClientType def, FromJSONObjectClass cgTypeName con] <> subTypes)
 
 toConstructorDefinition ::
   [FieldName] ->
   CodeGenTypeName ->
   TypeDefinition ANY VALID ->
   SelectionSet VALID ->
-  Converter (CodeGenConstructor, [ClientTypeDefinition])
+  Converter (CodeGenConstructor, [ClientPreDeclaration])
 toConstructorDefinition path name datatype selSet = do
   (fields, subTypes) <- unzip <$> traverse genField (toList selSet)
-  pure (CodeGenConstructor {constructorName = name, constructorFields = map toCodeGenField fields}, concat subTypes)
+  pure (CodeGenConstructor {constructorName = name, constructorFields = fields}, concat subTypes)
   where
-    genField :: Selection VALID -> Converter (FieldDefinition ANY VALID, [ClientTypeDefinition])
+    genField :: Selection VALID -> Converter (CodeGenField, [ClientPreDeclaration])
     genField sel = do
       let fieldName = keyOf sel
       let fieldPath = path <> [fieldName]
-      (fieldDataType, fieldType) <- getFieldType fieldPath datatype sel
+      (fieldDataType, ref@TypeRef {..}) <- getFieldType fieldPath datatype sel
       subTypes <- subTypesBySelection fieldPath fieldDataType sel
       pure
-        ( FieldDefinition
+        ( CodeGenField
             { fieldName,
-              fieldType,
-              fieldContent = Nothing,
-              fieldDescription = Nothing,
-              fieldDirectives = empty
+              fieldType = typeConName,
+              wrappers = [GQL_WRAPPER typeWrappers],
+              fieldIsNullable = isNullable ref
             },
           subTypes
         )
@@ -152,24 +146,32 @@ subTypesBySelection ::
   [FieldName] ->
   TypeDefinition ANY VALID ->
   Selection VALID ->
-  Converter [ClientTypeDefinition]
+  Converter [ClientPreDeclaration]
 subTypesBySelection _ _ Selection {selectionContent = SelectionField} = pure []
 subTypesBySelection path dType Selection {selectionContent = SelectionSet selectionSet} =
-  toList <$> genLocalTypes path (typeFrom [] dType) dType selectionSet
+  snd <$> genLocalTypes path (typeFrom [] dType) dType selectionSet
 subTypesBySelection namespace dType Selection {selectionContent = UnionSelection interface unionSelections} =
   do
-    let variants = UnionTag (typeName dType) interface : toList unionSelections
-    (clientCons, subTypes) <- unzip <$> traverse (getVariantType namespace) variants
-    pure
-      ( ClientTypeDefinition
-          { clientTypeName = CodeGenTypeName {namespace, typeParameters = [], typename = typeFrom [] dType},
-            clientCons,
-            clientKind = KindUnion
-          }
-          : concat subTypes
-      )
+    let variants = toList unionSelections
+    (cons, subTypes) <- unzip <$> traverse (getVariantType namespace) variants
+    (fallbackCons, fallBackTypes) <- maybe (getEmptyFallback namespace (typeName dType)) (getVariantType namespace . UnionTag (typeName dType)) interface
+    let cgTypeName = CodeGenTypeName {namespace, typeParameters = [], typename = typeFrom [] dType}
+    let typeDef = CodeGenType {cgTypeName, cgConstructors = cons <> [fallbackCons], cgDerivations = defaultDerivations}
+    pure ([ClientType typeDef, FromJSONUnionClass cgTypeName (map tagConstructor cons <> [(UVar "_", fallbackCons)])] <> concat subTypes <> fallBackTypes)
+  where
+    tagConstructor x = (UString $ typename $ constructorName x, x)
 
-getVariantType :: [FieldName] -> UnionTag -> Converter (CodeGenConstructor, [ClientTypeDefinition])
+getEmptyFallback :: [FieldName] -> TypeName -> Converter (CodeGenConstructor, [ClientPreDeclaration])
+getEmptyFallback path selectedTyName =
+  pure
+    ( CodeGenConstructor
+        { constructorName = CodeGenTypeName path [] selectedTyName,
+          constructorFields = []
+        },
+      []
+    )
+
+getVariantType :: [FieldName] -> UnionTag -> Converter (CodeGenConstructor, [ClientPreDeclaration])
 getVariantType path (UnionTag selectedTyName selectionVariant) = do
   conDatatype <- getType selectedTyName
   toConstructorDefinition path (CodeGenTypeName path [] selectedTyName) conDatatype selectionVariant
@@ -190,14 +192,14 @@ getFieldType
       toFieldDef :: TypeContent TRUE ANY VALID -> Converter (FieldDefinition OUT VALID)
       toFieldDef _
         | selectionName == "__typename" =
-            pure
-              FieldDefinition
-                { fieldName = "__typename",
-                  fieldDescription = Nothing,
-                  fieldType = mkTypeRef "String",
-                  fieldDirectives = empty,
-                  fieldContent = Nothing
-                }
+          pure
+            FieldDefinition
+              { fieldName = "__typename",
+                fieldDescription = Nothing,
+                fieldType = mkTypeRef "String",
+                fieldDirectives = empty,
+                fieldContent = Nothing
+              }
       toFieldDef DataObject {objectFields} = selectBy selError selectionName objectFields
       toFieldDef DataInterface {interfaceFields} = selectBy selError selectionName interfaceFields
       toFieldDef dt = throwError (compileError $ "Type should be output Object \"" <> msg (show dt))
@@ -216,30 +218,26 @@ getFieldType
             checkDeprecated = deprecationWarning fieldDirectives (coerce typeName, Ref selectionName selectionPosition)
 
 toArgumentsType ::
-  CodeGenTypeName ->
+  TypeName ->
   VariableDefinitions RAW ->
-  Maybe ClientTypeDefinition
-toArgumentsType clientTypeName variables
-  | null variables = Nothing
-  | otherwise =
-      Just
-        ClientTypeDefinition
-          { clientTypeName,
-            clientKind = KindInputObject,
-            clientCons =
-              [ CodeGenConstructor
-                  { constructorName = clientTypeName,
-                    constructorFields = toCodeGenField . toFieldDefinition <$> toList variables
-                  }
-              ]
-          }
+  (TypeName, [ClientPreDeclaration])
+toArgumentsType operationTypeName variables
+  | null variables = ("()", [])
+  | otherwise = (getFullName cgTypeName, [ClientType def, ToJSONClass TYPE_MODE def])
+  where
+    def =
+      CodeGenType
+        { cgTypeName,
+          cgConstructors = [CodeGenConstructor {constructorName = cgTypeName, constructorFields = packAsCodeGenField <$> toList variables}],
+          cgDerivations = defaultDerivations
+        }
+    cgTypeName = fromTypeName $ operationTypeName <> "Args"
 
-toFieldDefinition :: Variable RAW -> FieldDefinition ANY VALID
-toFieldDefinition Variable {variableName, variableType} =
-  FieldDefinition
+packAsCodeGenField :: Variable RAW -> CodeGenField
+packAsCodeGenField Variable {variableName, variableType = ref@TypeRef {..}} =
+  CodeGenField
     { fieldName = variableName,
-      fieldContent = Nothing,
-      fieldType = variableType,
-      fieldDescription = Nothing,
-      fieldDirectives = empty
+      fieldType = typeConName,
+      wrappers = [GQL_WRAPPER typeWrappers],
+      fieldIsNullable = isNullable ref
     }

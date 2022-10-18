@@ -14,22 +14,18 @@ module Data.Morpheus.Client.CodeGen.Interpreting.Core
     getType,
     typeFrom,
     deprecationWarning,
-    toCodeGenField,
-    toClientDeclarations,
+    printClientType,
+    defaultDerivations,
   )
 where
 
 import Control.Monad.Except (MonadError)
 import Data.Morpheus.Client.CodeGen.AST
-  ( ClientPreDeclaration (..),
-    ClientTypeDefinition (..),
-    DERIVING_MODE (..),
+  ( ClientTypeDefinition (..),
   )
 import Data.Morpheus.CodeGen.Internal.AST
-  ( CodeGenField (..),
-    CodeGenType (..),
+  ( CodeGenType (..),
     DerivingClass (..),
-    FIELD_TYPE_WRAPPER (..),
   )
 import Data.Morpheus.CodeGen.Utils (camelCaseTypeName)
 import Data.Morpheus.Error
@@ -45,7 +41,6 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     Directives,
-    FieldDefinition (..),
     FieldName,
     GQLError,
     RAW,
@@ -53,14 +48,10 @@ import Data.Morpheus.Types.Internal.AST
     Schema (..),
     TypeContent (..),
     TypeDefinition (..),
-    TypeKind (..),
     TypeName,
-    TypeRef (..),
     VALID,
     VariableDefinitions,
     internal,
-    isNullable,
-    isResolverType,
     lookupDeprecated,
     lookupDeprecatedReason,
     msg,
@@ -113,28 +104,13 @@ deprecationWarning dirs (typename, ref) = case lookupDeprecated dirs of
         ]
   Nothing -> pure ()
 
-toCodeGenField :: FieldDefinition a b -> CodeGenField
-toCodeGenField FieldDefinition {fieldType = field@TypeRef {..}, ..} =
-  CodeGenField
-    { fieldName,
-      fieldType = typeConName,
-      wrappers = [GQL_WRAPPER typeWrappers],
-      fieldIsNullable = isNullable field
-    }
-
-toClientDeclarations :: ClientTypeDefinition -> [ClientPreDeclaration]
-toClientDeclarations def@ClientTypeDefinition {clientKind}
-  | KindScalar == clientKind = [FromJSONClass SCALAR_MODE cgType, ToJSONClass SCALAR_MODE cgType]
-  | KindEnum == clientKind = [ClientType cgType, FromJSONClass ENUM_MODE cgType, ToJSONClass ENUM_MODE cgType]
-  | isResolverType clientKind = [ClientType cgType, FromJSONClass TYPE_MODE cgType]
-  | otherwise = [ClientType cgType, ToJSONClass TYPE_MODE cgType]
-  where
-    cgType = printClientType def
+defaultDerivations :: [DerivingClass]
+defaultDerivations = [GENERIC, SHOW, CLASS_EQ]
 
 printClientType :: ClientTypeDefinition -> CodeGenType
 printClientType ClientTypeDefinition {..} =
   CodeGenType
     { cgTypeName = clientTypeName,
       cgConstructors = clientCons,
-      cgDerivations = [GENERIC, SHOW, CLASS_EQ]
+      cgDerivations = defaultDerivations
     }

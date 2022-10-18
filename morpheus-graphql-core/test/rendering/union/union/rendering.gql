@@ -1,12 +1,9 @@
 query {
   mortal {
-    __typename
     ... on Animal {
-      __typename
       weight
     }
     ... on Human {
-      __typename
       name
     }
   }

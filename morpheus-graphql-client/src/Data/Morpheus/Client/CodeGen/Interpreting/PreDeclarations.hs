@@ -58,6 +58,11 @@ import Relude hiding (ToString, Type, toString)
 
 mapPreDeclarations :: MonadFail m => ClientPreDeclaration -> m ClientDeclaration
 mapPreDeclarations (FromJSONClass mode dec) = InstanceDeclaration <$> deriveFromJSON mode dec
+mapPreDeclarations (FromJSONObjectClass cType CodeGenConstructor {..}) =
+  pure $ InstanceDeclaration $ mkFromJSON cType $ FromJSONObjectMethod (getFullName constructorName) (map defField constructorFields)
+mapPreDeclarations (FromJSONUnionClass cType constructors) = pure $ InstanceDeclaration $ mkFromJSON cType $ FromJSONUnionMethod $ map mkMatch constructors
+  where
+    mkMatch (tag, cons) = ([tag, if null (constructorFields cons) then UVar "_" else UVar "v"], genObj cons)
 mapPreDeclarations (ToJSONClass mode clientDef) = InstanceDeclaration <$> deriveToJSON mode clientDef
 mapPreDeclarations (ClientType c) = pure $ ClientTypeDeclaration c
 mapPreDeclarations (RequestTypeClass req) = pure $ InstanceDeclaration (getRequestInstance req)
@@ -81,18 +86,12 @@ getRequestInstance RequestTypeDefinition {..} =
 -- FromJSON
 deriveFromJSONMethod :: MonadFail m => DERIVING_MODE -> CodeGenType -> m ClientMethod
 deriveFromJSONMethod SCALAR_MODE _ = pure $ FunctionNameMethod 'scalarFromJSON
-deriveFromJSONMethod _ CodeGenType {cgConstructors = [], ..} = emptyTypeError cgTypeName
 deriveFromJSONMethod ENUM_MODE CodeGenType {..} =
   pure $
     MatchMethod $
       map (fromJSONEnum . constructorName) cgConstructors
         <> [MFunction "v" 'invalidConstructorError]
-deriveFromJSONMethod _ CodeGenType {cgConstructors = [CodeGenConstructor {..}]} = pure $ FromJSONObjectMethod (getFullName constructorName) (map defField constructorFields)
-deriveFromJSONMethod _ CodeGenType {..} = pure $ FromJSONUnionMethod $ map f cgConstructors <> elseCondition
-  where
-    interfaceConstructor = map genObj (maybeToList $ find ((typename cgTypeName ==) . typename . constructorName) cgConstructors)
-    elseCondition = map ([UVar "_", UVar "v"],) interfaceConstructor
-    f cons@CodeGenConstructor {..} = ([UString $ typename constructorName, if null constructorFields then UVar "_" else UVar "v"], genObj cons)
+deriveFromJSONMethod _ CodeGenType {..} = emptyTypeError cgTypeName
 
 genObj :: CodeGenConstructor -> (Name, [AesonField])
 genObj CodeGenConstructor {..} = (toName constructorName, map defField constructorFields)
@@ -145,17 +144,18 @@ deriveToJSON mode cType = do
         typeClassMethods = [('toJSON, args, expr)]
       }
 
+mkFromJSON :: CodeGenTypeName -> body -> TypeClassInstance body
+mkFromJSON typeClassTarget expr =
+  TypeClassInstance
+    { typeClassName = ''FromJSON,
+      typeClassContext = [],
+      typeClassTarget = typeClassTarget,
+      assoc = [],
+      typeClassMethods = [('parseJSON, NoArgument, expr)]
+    }
+
 deriveFromJSON :: MonadFail m => DERIVING_MODE -> CodeGenType -> m (TypeClassInstance ClientMethod)
-deriveFromJSON mode cType = do
-  expr <- deriveFromJSONMethod mode cType
-  pure
-    TypeClassInstance
-      { typeClassName = ''FromJSON,
-        typeClassContext = [],
-        typeClassTarget = cgTypeName cType,
-        assoc = [],
-        typeClassMethods = [('parseJSON, NoArgument, expr)]
-      }
+deriveFromJSON mode cType = mkFromJSON (cgTypeName cType) <$> deriveFromJSONMethod mode cType
 
 emptyTypeError :: MonadFail m => CodeGenTypeName -> m a
 emptyTypeError name = fail $ show $ internal ("Type " <> msg (getFullName name) <> " Should Have at least one Constructor")

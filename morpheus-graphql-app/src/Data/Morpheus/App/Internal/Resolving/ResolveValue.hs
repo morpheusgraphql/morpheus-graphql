@@ -28,7 +28,13 @@ import Data.Morpheus.App.Internal.Resolving.Types
     mkUnion,
   )
 import Data.Morpheus.Error (subfieldsNotSelected)
-import Data.Morpheus.Internal.Utils (KeyOf (keyOf), selectOr, traverseCollection, (<:>))
+import Data.Morpheus.Internal.Utils
+  ( KeyOf (keyOf),
+    empty,
+    selectOr,
+    traverseCollection,
+    (<:>),
+  )
 import Data.Morpheus.Types.Internal.AST
   ( GQLError,
     Msg (msg),
@@ -48,7 +54,7 @@ import Data.Morpheus.Types.Internal.AST
     unitTypeName,
     unpackName,
   )
-import Relude
+import Relude hiding (empty)
 
 resolveSelection ::
   ( Monad m,
@@ -78,24 +84,29 @@ resolveSelection _ ResScalar {} _ =
 resolveSelection rmap (ResRef ref) sel = ref >>= flip (resolveRef rmap) sel
 
 withObject ::
-  ( Monad m,
-    MonadError GQLError m,
+  ( MonadError GQLError m,
     MonadReader ResolverContext m
   ) =>
   Maybe TypeName ->
-  (SelectionSet VALID -> m value) ->
+  (Maybe (SelectionSet VALID) -> m value) ->
   SelectionContent VALID ->
   m value
 withObject __typename f = updateCurrentType __typename . checkContent
   where
-    checkContent (SelectionSet selection) = f selection
+    checkContent (SelectionSet selection) = f (Just selection)
     checkContent (UnionSelection interface unionSel) = do
       typename <- asks (typeName . currentType)
-      selection <- selectOr (pure interface) ((interface <:>) . unionTagSelection) typename unionSel
+      selection <- selectOr (pure interface) (fx interface) typename unionSel
       f selection
-    checkContent _ = do
-      sel <- asks currentSelection
-      throwError $ subfieldsNotSelected (selectionName sel) "" (selectionPosition sel)
+      where
+        fx (Just x) y = Just <$> (x <:> unionTagSelection y)
+        fx Nothing y = pure $ Just $ unionTagSelection y
+    checkContent _ = noEmptySelection
+
+noEmptySelection :: (MonadError GQLError m, MonadReader ResolverContext m) => m value
+noEmptySelection = do
+  sel <- asks currentSelection
+  throwError $ subfieldsNotSelected (selectionName sel) "" (selectionPosition sel)
 
 resolveRef ::
   ( MonadError GQLError m,
@@ -127,10 +138,9 @@ resolveObject ::
   ) =>
   ResolverMap m ->
   ObjectTypeResolver m ->
-  SelectionSet VALID ->
+  Maybe (SelectionSet VALID) ->
   m ValidValue
-resolveObject rmap drv =
-  fmap Object . traverseCollection resolver
+resolveObject rmap drv = fmap Object . maybe (pure empty) (traverseCollection resolver)
   where
     resolver currentSelection = do
       t <- askFieldTypeName (selectionName currentSelection)
@@ -150,8 +160,8 @@ runFieldResolver ::
   m ValidValue
 runFieldResolver rmap Selection {selectionName, selectionContent}
   | selectionName == "__typename" =
-      const (Scalar . String . unpackName <$> asks (typeName . currentType))
+    const (Scalar . String . unpackName <$> asks (typeName . currentType))
   | otherwise =
-      maybe (pure Null) (>>= \x -> resolveSelection rmap x selectionContent)
-        . HM.lookup selectionName
-        . objectFields
+    maybe (pure Null) (>>= \x -> resolveSelection rmap x selectionContent)
+      . HM.lookup selectionName
+      . objectFields

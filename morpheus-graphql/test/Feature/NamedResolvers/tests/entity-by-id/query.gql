@@ -1,11 +1,13 @@
 query {
   zeus: entity(id: "zeus") {
+    __typename
     ... on Deity {
       name
       power
     }
   }
   olympus: entity(id: "olympus") {
+    __typename
     ... on Realm {
       name
       owner {
