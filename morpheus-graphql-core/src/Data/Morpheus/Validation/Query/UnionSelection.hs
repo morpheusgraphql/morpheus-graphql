@@ -128,25 +128,21 @@ maybeMerge :: [SelectionSet VALID] -> FragmentValidator s (Maybe (SelectionSet V
 maybeMerge [] = pure Nothing
 maybeMerge (x : xs) = Just <$> startHistory (mergeConcat (x :| xs))
 
-emptySelection :: FragmentValidator s a
-emptySelection = throwError "xyz"
-
-mergeList :: [SelectionSet VALID] -> FragmentValidator s (SelectionSet VALID)
-mergeList [] = emptySelection
-mergeList (x : xs) = startHistory $ mergeConcat (x :| xs)
+noEmptySelection :: FragmentValidator s a
+noEmptySelection = throwError "empty selection sets are not supported."
 
 joinClusters ::
   Maybe (SelectionSet VALID) ->
   HashMap TypeName [SelectionSet VALID] ->
   FragmentValidator s (SelectionContent VALID)
 joinClusters maybeSelSet typedSelections
-  | null typedSelections = maybe emptySelection (pure . SelectionSet) maybeSelSet
+  | null typedSelections = maybe noEmptySelection (pure . SelectionSet) maybeSelSet
   | otherwise =
-      traverse mkUnionTag (HM.toList typedSelections)
-        >>= fmap (UnionSelection maybeSelSet) . startHistory . fromElems
+    traverse mkUnionTag (HM.toList typedSelections)
+      >>= fmap (UnionSelection maybeSelSet) . startHistory . fromElems
   where
     mkUnionTag :: (TypeName, [SelectionSet VALID]) -> FragmentValidator s UnionTag
-    mkUnionTag (typeName, fragments) = UnionTag typeName <$> mergeList (toList maybeSelSet <> fragments)
+    mkUnionTag (typeName, fragments) = UnionTag typeName <$> (maybeMerge (toList maybeSelSet <> fragments) >>= maybe noEmptySelection pure)
 
 validateInterfaceSelection ::
   ValidateFragmentSelection s =>
