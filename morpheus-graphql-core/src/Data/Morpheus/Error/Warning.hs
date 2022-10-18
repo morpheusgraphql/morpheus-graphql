@@ -17,7 +17,7 @@ import Data.Morpheus.Types.Internal.AST.Base
     Ref (..),
   )
 import Data.Morpheus.Types.Internal.AST.Error
-  ( GQLError (locations, message),
+  ( GQLError (..),
     GQLErrors,
     at,
     msg,
@@ -58,9 +58,9 @@ gqlWarnings warnings = traverse_ handleWarning warnings
   where
     handleWarning warning =
       reportWarning
-        ( "\x1b[33m Morpheus GraphQL Warning: "
+        ( "\x1b[33m Morpheus warning: "
             <> toString (message warning)
-            <> "\n"
+            <> "\x1b[33m\n\n        "
             <> (unpack . encode) warning
-            <> "\x1b[33m"
+            <> "\n"
         )

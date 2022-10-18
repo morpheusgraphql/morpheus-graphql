@@ -183,7 +183,7 @@ checkTypename pos path iFace UnionTag {..}
   | otherwise =
     gqlWarning $
       withPath
-        ("missing \"__typename\" for union selection " <> msg unionTagName <> ".\nthis can lead to undesired behavior at runtime!")
+        ("missing \"__typename\" for selection " <> msg unionTagName <> ". this can lead to undesired behavior at runtime!")
         (map (PropName . unpackName) path)
         `at` pos
 
