@@ -112,8 +112,8 @@ genLocalDeclarations query op@Operation {operationName, operationSelection, oper
             requestName = typename rootTypeName,
             requestType = operationType,
             requestQuery = T.unpack query
-          } :
-      localTypes <> argTypes
+          }
+        : localTypes <> argTypes
     )
 
 -------------------------------------------------------------------------
@@ -181,11 +181,11 @@ checkTypename :: Position -> [FieldName] -> Maybe (SelectionSet VALID) -> UnionT
 checkTypename pos path iFace UnionTag {..}
   | any (member "__typename") (unionTagSelection : toList iFace) = pure ()
   | otherwise =
-    gqlWarning $
-      withPath
-        ("missing \"__typename\" for union selection " <> msg unionTagName <> ". this can lead to undesired behavior at runtime!")
-        (map (PropName . unpackName) path)
-        `at` pos
+      gqlWarning $
+        withPath
+          ("missing \"__typename\" for union selection " <> msg unionTagName <> ". this can lead to undesired behavior at runtime!")
+          (map (PropName . unpackName) path)
+          `at` pos
 
 getEmptyFallback :: [FieldName] -> TypeName -> LocalM (CodeGenConstructor, [ClientPreDeclaration])
 getEmptyFallback path selectedTyName =
@@ -218,14 +218,14 @@ getFieldType
       toFieldDef :: TypeContent TRUE ANY VALID -> LocalM (FieldDefinition OUT VALID)
       toFieldDef _
         | selectionName == "__typename" =
-          pure
-            FieldDefinition
-              { fieldName = "__typename",
-                fieldDescription = Nothing,
-                fieldType = mkTypeRef "String",
-                fieldDirectives = empty,
-                fieldContent = Nothing
-              }
+            pure
+              FieldDefinition
+                { fieldName = "__typename",
+                  fieldDescription = Nothing,
+                  fieldType = mkTypeRef "String",
+                  fieldDirectives = empty,
+                  fieldContent = Nothing
+                }
       toFieldDef DataObject {objectFields} = selectBy selError selectionName objectFields
       toFieldDef DataInterface {interfaceFields} = selectBy selError selectionName interfaceFields
       toFieldDef dt = throwError (compileError $ "Type should be output Object \"" <> msg (show dt))

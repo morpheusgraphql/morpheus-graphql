@@ -138,8 +138,8 @@ joinClusters ::
 joinClusters maybeSelSet typedSelections
   | null typedSelections = maybe noEmptySelection (pure . SelectionSet) maybeSelSet
   | otherwise =
-    traverse mkUnionTag (HM.toList typedSelections)
-      >>= fmap (UnionSelection maybeSelSet) . startHistory . fromElems
+      traverse mkUnionTag (HM.toList typedSelections)
+        >>= fmap (UnionSelection maybeSelSet) . startHistory . fromElems
   where
     mkUnionTag :: (TypeName, [SelectionSet VALID]) -> FragmentValidator s UnionTag
     mkUnionTag (typeName, fragments) = UnionTag typeName <$> (maybeMerge (toList maybeSelSet <> fragments) >>= maybe noEmptySelection pure)
