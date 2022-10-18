@@ -55,37 +55,30 @@ test =
               ],
             character2 =
               [ MyQueryCharacter2Character
-                  { __typename = "Character",
-                    name1 = "test name",
+                  { name1 = "test name",
                     name = "test name"
                   }
               ],
             character3 =
               [ MyQueryCharacter3Hero
                   { __typename = "Hero",
-                    hobby = "Hero Hobby",
-                    name2 = "Hero name2"
+                    name2 = "Hero name2",
+                    hobby = "Hero Hobby"
                   },
                 MyQueryCharacter3Character
-                  { __typename = "Deity",
-                    name2 = "Hero name2"
+                  { name2 = "This should be a Deity!"
                   },
                 MyQueryCharacter3Character
-                  { __typename = "Character",
-                    name2 = "Character name2"
+                  { name2 = "Character name2"
                   }
               ],
             character4 =
-              [ MyQueryCharacter4Character
-                  { __typename = "Character"
-                  },
+              [ MyQueryCharacter4Character,
                 MyQueryCharacter4Hero
                   { __typename = "Hero",
                     hobby = "Hero Hobby"
                   },
                 MyQueryCharacter4Character
-                  { __typename = "Deity"
-                  }
               ]
           }
     )

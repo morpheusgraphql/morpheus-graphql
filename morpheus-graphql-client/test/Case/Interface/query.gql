@@ -1,5 +1,6 @@
 query MyQuery {
   character {
+    __typename
     name
     ... on Deity {
       power
@@ -15,7 +16,11 @@ query MyQuery {
   }
   character3: character {
     ... on Hero {
+      __typename
       hobby
+    }
+    ... on Deity {
+      power
     }
     ... on Character {
       name2: name
@@ -23,6 +28,7 @@ query MyQuery {
   }
   character4: character {
     ... on Hero {
+      __typename
       hobby
     }
   }

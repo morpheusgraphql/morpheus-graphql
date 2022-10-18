@@ -22,6 +22,10 @@ import CLI.Config
   )
 import CLI.File (getModuleNameByPath, processFileName, saveDocument)
 import CLI.Generator
+  ( BuildConfig (..),
+    processClientDocument,
+    processServerDocument,
+  )
 import qualified Data.ByteString.Lazy as L
   ( readFile,
   )

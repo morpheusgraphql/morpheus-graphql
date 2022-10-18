@@ -30,19 +30,16 @@ instance FromJSON GetInterfaceTypes where
   parseJSON = withObject "GetInterfaceTypes" (\v -> GetInterfaceTypes <$> v .: "character" <*> v .: "character2" <*> v .: "character3" <*> v .: "character4")
 
 data GetInterfaceTypesCharacterCharacter
-  = GetInterfaceTypesCharacterCharacter
-      { __typename :: String,
-        name :: String
-      }
-  | GetInterfaceTypesCharacterDeity
-      { __typename :: String,
-        name :: String,
+  = GetInterfaceTypesCharacterDeity
+      { name :: String,
         power :: Power
       }
   | GetInterfaceTypesCharacterHero
-      { __typename :: String,
-        name :: String,
+      { name :: String,
         hobby :: String
+      }
+  | GetInterfaceTypesCharacterCharacter
+      { name :: String
       }
   deriving (Generic, Show, Eq)
 
@@ -50,31 +47,27 @@ instance FromJSON GetInterfaceTypesCharacterCharacter where
   parseJSON =
     takeValueType
       ( \case
-          ("Character", v) -> GetInterfaceTypesCharacterCharacter <$> v .: "__typename" <*> v .: "name"
-          ("Deity", v) -> GetInterfaceTypesCharacterDeity <$> v .: "__typename" <*> v .: "name" <*> v .: "power"
-          ("Hero", v) -> GetInterfaceTypesCharacterHero <$> v .: "__typename" <*> v .: "name" <*> v .: "hobby"
-          (_, v) -> GetInterfaceTypesCharacterCharacter <$> v .: "__typename" <*> v .: "name"
+          ("Deity", v) -> GetInterfaceTypesCharacterDeity <$> v .: "name" <*> v .: "power"
+          ("Hero", v) -> GetInterfaceTypesCharacterHero <$> v .: "name" <*> v .: "hobby"
+          (_fallback, v) -> GetInterfaceTypesCharacterCharacter <$> v .: "name"
       )
 
 data GetInterfaceTypesCharacter2Character = GetInterfaceTypesCharacter2Character
-  { __typename :: String,
-    name1 :: String,
+  { name1 :: String,
     name :: String
   }
   deriving (Generic, Show, Eq)
 
 instance FromJSON GetInterfaceTypesCharacter2Character where
-  parseJSON = withObject "GetInterfaceTypesCharacter2Character" (\v -> GetInterfaceTypesCharacter2Character <$> v .: "__typename" <*> v .: "name1" <*> v .: "name")
+  parseJSON = withObject "GetInterfaceTypesCharacter2Character" (\v -> GetInterfaceTypesCharacter2Character <$> v .: "name1" <*> v .: "name")
 
 data GetInterfaceTypesCharacter3Character
-  = GetInterfaceTypesCharacter3Character
-      { __typename :: String,
-        name2 :: String
-      }
-  | GetInterfaceTypesCharacter3Hero
-      { __typename :: String,
-        name2 :: String,
+  = GetInterfaceTypesCharacter3Hero
+      { name2 :: String,
         hobby :: String
+      }
+  | GetInterfaceTypesCharacter3Character
+      { name2 :: String
       }
   deriving (Generic, Show, Eq)
 
@@ -82,26 +75,21 @@ instance FromJSON GetInterfaceTypesCharacter3Character where
   parseJSON =
     takeValueType
       ( \case
-          ("Character", v) -> GetInterfaceTypesCharacter3Character <$> v .: "__typename" <*> v .: "name2"
-          ("Hero", v) -> GetInterfaceTypesCharacter3Hero <$> v .: "__typename" <*> v .: "name2" <*> v .: "hobby"
-          (_, v) -> GetInterfaceTypesCharacter3Character <$> v .: "__typename" <*> v .: "name2"
+          ("Hero", v) -> GetInterfaceTypesCharacter3Hero <$> v .: "name2" <*> v .: "hobby"
+          (_fallback, v) -> GetInterfaceTypesCharacter3Character <$> v .: "name2"
       )
 
 data GetInterfaceTypesCharacter4Character
-  = GetInterfaceTypesCharacter4Character
-      { __typename :: String
+  = GetInterfaceTypesCharacter4Hero
+      { hobby :: String
       }
-  | GetInterfaceTypesCharacter4Hero
-      { __typename :: String,
-        hobby :: String
-      }
+  | GetInterfaceTypesCharacter4Character
   deriving (Generic, Show, Eq)
 
 instance FromJSON GetInterfaceTypesCharacter4Character where
   parseJSON =
     takeValueType
       ( \case
-          ("Character", v) -> GetInterfaceTypesCharacter4Character <$> v .: "__typename"
-          ("Hero", v) -> GetInterfaceTypesCharacter4Hero <$> v .: "__typename" <*> v .: "hobby"
-          (_, v) -> GetInterfaceTypesCharacter4Character <$> v .: "__typename"
+          ("Hero", v) -> GetInterfaceTypesCharacter4Hero <$> v .: "hobby"
+          (_fallback, _) -> pure GetInterfaceTypesCharacter4Character
       )

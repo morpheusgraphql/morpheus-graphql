@@ -86,7 +86,7 @@ instance SelectionTree (Selection VALID) where
     SelectionField -> mempty
     (SelectionSet deeperSel) -> toList deeperSel
     (UnionSelection interfaceSelection sel) ->
-      toList interfaceSelection
+      concatMap toList (toList interfaceSelection)
         <> concatMap
           (toList . unionTagSelection)
           (toList sel)
@@ -94,7 +94,7 @@ instance SelectionTree (Selection VALID) where
   getChild name node = case selectionContent node of
     SelectionField -> Nothing
     (SelectionSet deeperSel) -> __lookup name deeperSel
-    (UnionSelection interfaceSelection sel) -> select (interfaceSelection : map unionTagSelection (toList sel))
+    (UnionSelection interfaceSelection sel) -> select (toList interfaceSelection <> map unionTagSelection (toList sel))
       where
         select (x : xs) = __lookup name x <|> select xs
         select [] = Nothing

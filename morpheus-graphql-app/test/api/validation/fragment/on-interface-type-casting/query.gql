@@ -1,5 +1,6 @@
 {
   character {
+    __typename
     ...OnCharacter
     ...onDeity
     ...onHero

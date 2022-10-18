@@ -13,8 +13,12 @@ query GetUser($coordinates: Coordinates!) {
   user {
     email
     name
+    entity {
+      ... on User {
+        name
+      }
+    }
   }
-
   character {
     ... on Deity {
       power

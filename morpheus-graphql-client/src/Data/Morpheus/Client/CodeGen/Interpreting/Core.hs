@@ -9,27 +9,27 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.CodeGen.Interpreting.Core
-  ( Converter (..),
+  ( LocalM (..),
     compileError,
     getType,
     typeFrom,
     deprecationWarning,
-    toCodeGenField,
-    toClientDeclarations,
+    printClientType,
+    defaultDerivations,
+    gqlWarning,
+    LocalContext (..),
+    runLocalM,
+    withPosition,
   )
 where
 
 import Control.Monad.Except (MonadError)
 import Data.Morpheus.Client.CodeGen.AST
-  ( ClientPreDeclaration (..),
-    ClientTypeDefinition (..),
-    DERIVING_MODE (..),
+  ( ClientTypeDefinition (..),
   )
 import Data.Morpheus.CodeGen.Internal.AST
-  ( CodeGenField (..),
-    CodeGenType (..),
+  ( CodeGenType (..),
     DerivingClass (..),
-    FIELD_TYPE_WRAPPER (..),
   )
 import Data.Morpheus.CodeGen.Utils (camelCaseTypeName)
 import Data.Morpheus.Error
@@ -45,22 +45,18 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     Directives,
-    FieldDefinition (..),
     FieldName,
     GQLError,
+    Position,
     RAW,
     Ref (..),
     Schema (..),
     TypeContent (..),
     TypeDefinition (..),
-    TypeKind (..),
     TypeName,
-    TypeRef (..),
     VALID,
     VariableDefinitions,
     internal,
-    isNullable,
-    isResolverType,
     lookupDeprecated,
     lookupDeprecatedReason,
     msg,
@@ -68,12 +64,22 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Relude
 
-type Env = (Schema VALID, VariableDefinitions RAW)
+data LocalContext = LocalContext
+  { ctxSchema :: Schema VALID,
+    ctxVariables :: VariableDefinitions RAW,
+    ctxPosition :: Maybe Position
+  }
 
-newtype Converter a = Converter
-  { runConverter ::
+runLocalM :: LocalContext -> LocalM a -> GQLResult a
+runLocalM context = flip runReaderT context . _runLocalM
+
+withPosition :: Position -> LocalM a -> LocalM a
+withPosition pos = local (\ctx -> ctx {ctxPosition = Just pos})
+
+newtype LocalM a = LocalM
+  { _runLocalM ::
       ReaderT
-        Env
+        LocalContext
         GQLResult
         a
   }
@@ -81,16 +87,16 @@ newtype Converter a = Converter
     ( Functor,
       Applicative,
       Monad,
-      MonadReader Env,
+      MonadReader LocalContext,
       MonadError GQLError
     )
 
 compileError :: GQLError -> GQLError
 compileError x = internal $ "Unhandled Compile Time Error: \"" <> x <> "\" ;"
 
-getType :: TypeName -> Converter (TypeDefinition ANY VALID)
+getType :: TypeName -> LocalM (TypeDefinition ANY VALID)
 getType typename =
-  asks (typeDefinitions . fst)
+  asks (typeDefinitions . ctxSchema)
     >>= selectBy (compileError $ " can't find Type" <> msg typename) typename
 
 typeFrom :: [FieldName] -> TypeDefinition a VALID -> TypeName
@@ -101,40 +107,21 @@ typeFrom path TypeDefinition {typeName, typeContent} = __typeFrom typeContent
     __typeFrom DataUnion {} = camelCaseTypeName path typeName
     __typeFrom _ = typeName
 
-deprecationWarning :: Directives VALID -> (FieldName, Ref FieldName) -> Converter ()
+deprecationWarning :: Directives VALID -> (FieldName, Ref FieldName) -> LocalM ()
 deprecationWarning dirs (typename, ref) = case lookupDeprecated dirs of
-  Just deprecation -> Converter $ lift $ Success {result = (), warnings}
-    where
-      warnings =
-        [ deprecatedField
-            typename
-            ref
-            (lookupDeprecatedReason deprecation)
-        ]
+  Just deprecation -> gqlWarning $ deprecatedField typename ref (lookupDeprecatedReason deprecation)
   Nothing -> pure ()
 
-toCodeGenField :: FieldDefinition a b -> CodeGenField
-toCodeGenField FieldDefinition {fieldType = field@TypeRef {..}, ..} =
-  CodeGenField
-    { fieldName,
-      fieldType = typeConName,
-      wrappers = [GQL_WRAPPER typeWrappers],
-      fieldIsNullable = isNullable field
-    }
+gqlWarning :: GQLError -> LocalM ()
+gqlWarning w = LocalM $ lift $ Success {result = (), warnings = [w]}
 
-toClientDeclarations :: ClientTypeDefinition -> [ClientPreDeclaration]
-toClientDeclarations def@ClientTypeDefinition {clientKind}
-  | KindScalar == clientKind = [FromJSONClass SCALAR_MODE cgType, ToJSONClass SCALAR_MODE cgType]
-  | KindEnum == clientKind = [ClientType cgType, FromJSONClass ENUM_MODE cgType, ToJSONClass ENUM_MODE cgType]
-  | isResolverType clientKind = [ClientType cgType, FromJSONClass TYPE_MODE cgType]
-  | otherwise = [ClientType cgType, ToJSONClass TYPE_MODE cgType]
-  where
-    cgType = printClientType def
+defaultDerivations :: [DerivingClass]
+defaultDerivations = [GENERIC, SHOW, CLASS_EQ]
 
 printClientType :: ClientTypeDefinition -> CodeGenType
 printClientType ClientTypeDefinition {..} =
   CodeGenType
     { cgTypeName = clientTypeName,
       cgConstructors = clientCons,
-      cgDerivations = [GENERIC, SHOW, CLASS_EQ]
+      cgDerivations = defaultDerivations
     }

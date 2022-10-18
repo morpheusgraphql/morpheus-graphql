@@ -66,6 +66,8 @@ data ClientDeclaration
 data ClientPreDeclaration
   = ToJSONClass DERIVING_MODE CodeGenType
   | FromJSONClass DERIVING_MODE CodeGenType
+  | FromJSONUnionClass CodeGenTypeName [(UnionPat, CodeGenConstructor)]
+  | FromJSONObjectClass CodeGenTypeName CodeGenConstructor
   | RequestTypeClass RequestTypeDefinition
   | ClientType CodeGenType
 

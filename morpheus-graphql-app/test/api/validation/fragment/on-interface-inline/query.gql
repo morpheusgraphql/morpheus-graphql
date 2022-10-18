@@ -5,6 +5,7 @@
     }
   }
   character {
+    __typename
     ... on Character {
       name
     }

@@ -1,0 +1,7 @@
+query {
+  field1 {
+    ... on X {
+      name
+    }
+  }
+}

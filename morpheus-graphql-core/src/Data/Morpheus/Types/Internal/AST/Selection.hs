@@ -126,7 +126,7 @@ data SelectionContent (s :: Stage) where
   SelectionField :: SelectionContent s
   SelectionSet :: SelectionSet s -> SelectionContent s
   UnionSelection ::
-    { defaultSelection :: SelectionSet VALID,
+    { defaultSelection :: Maybe (SelectionSet VALID),
       conditionalSelections :: UnionSelection VALID
     } ->
     SelectionContent VALID
@@ -142,7 +142,7 @@ instance RenderGQL (SelectionContent VALID) where
     where
       unionSelectionElements :: [Either (Selection VALID) UnionTag]
       unionSelectionElements =
-        map Left (toList interfaceFields)
+        map Left (concatMap toList $ maybeToList interfaceFields)
           <> map Right (sortOn unionTagName $ toList unionSets)
 
 instance
@@ -153,7 +153,7 @@ instance
   Merge (HistoryT m) (SelectionContent s)
   where
   merge (SelectionSet s1) (SelectionSet s2) = SelectionSet <$> merge s1 s2
-  merge (UnionSelection m1 u1) (UnionSelection m2 u2) = UnionSelection <$> merge m1 m2 <*> merge u1 u2
+  merge (UnionSelection m1 u1) (UnionSelection m2 u2) = UnionSelection <$> withMaybe m1 m2 <*> merge u1 u2
   merge oldC currentC
     | oldC == currentC = pure oldC
     | otherwise = do
@@ -162,6 +162,12 @@ instance
           ( msg (intercalate "." $ fmap refName path)
               `atPositions` fmap refPosition path
           )
+
+withMaybe :: (Merge f a, Monad f) => Maybe a -> Maybe a -> f (Maybe a)
+withMaybe (Just x) (Just y) = Just <$> merge x y
+withMaybe (Just x) Nothing = pure $ Just x
+withMaybe Nothing (Just y) = pure $ Just y
+withMaybe Nothing Nothing = pure Nothing
 
 deriving instance Show (SelectionContent a)
 

@@ -46,22 +46,18 @@ instance FromJSON NewUsersNewUserAddressAddress where
   parseJSON = withObject "NewUsersNewUserAddressAddress" (\v -> NewUsersNewUserAddressAddress <$> v .: "city")
 
 data NewUsersNewUserWorshipsCharacter
-  = NewUsersNewUserWorshipsCharacter
-      { __typename :: String
+  = NewUsersNewUserWorshipsHero
+      { hobby :: String
       }
-  | NewUsersNewUserWorshipsHero
-      { __typename :: String,
-        hobby :: String
-      }
+  | NewUsersNewUserWorshipsCharacter
   deriving (Generic, Show, Eq)
 
 instance FromJSON NewUsersNewUserWorshipsCharacter where
   parseJSON =
     takeValueType
       ( \case
-          ("Character", v) -> NewUsersNewUserWorshipsCharacter <$> v .: "__typename"
-          ("Hero", v) -> NewUsersNewUserWorshipsHero <$> v .: "__typename" <*> v .: "hobby"
-          (_, v) -> NewUsersNewUserWorshipsCharacter <$> v .: "__typename"
+          ("Hero", v) -> NewUsersNewUserWorshipsHero <$> v .: "hobby"
+          (_fallback, _) -> pure NewUsersNewUserWorshipsCharacter
       )
 
 newtype NewUsersArgs = NewUsersArgs
