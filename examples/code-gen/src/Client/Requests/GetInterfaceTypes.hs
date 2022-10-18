@@ -49,7 +49,7 @@ instance FromJSON GetInterfaceTypesCharacterCharacter where
       ( \case
           ("Deity", v) -> GetInterfaceTypesCharacterDeity <$> v .: "name" <*> v .: "power"
           ("Hero", v) -> GetInterfaceTypesCharacterHero <$> v .: "name" <*> v .: "hobby"
-          (_, v) -> GetInterfaceTypesCharacterCharacter <$> v .: "name"
+          (_fallback, v) -> GetInterfaceTypesCharacterCharacter <$> v .: "name"
       )
 
 data GetInterfaceTypesCharacter2Character = GetInterfaceTypesCharacter2Character
@@ -76,7 +76,7 @@ instance FromJSON GetInterfaceTypesCharacter3Character where
     takeValueType
       ( \case
           ("Hero", v) -> GetInterfaceTypesCharacter3Hero <$> v .: "name2" <*> v .: "hobby"
-          (_, v) -> GetInterfaceTypesCharacter3Character <$> v .: "name2"
+          (_fallback, v) -> GetInterfaceTypesCharacter3Character <$> v .: "name2"
       )
 
 data GetInterfaceTypesCharacter4Character
@@ -91,5 +91,5 @@ instance FromJSON GetInterfaceTypesCharacter4Character where
     takeValueType
       ( \case
           ("Hero", v) -> GetInterfaceTypesCharacter4Hero <$> v .: "hobby"
-          (_, _) -> pure GetInterfaceTypesCharacter4Character
+          (_fallback, _) -> pure GetInterfaceTypesCharacter4Character
       )

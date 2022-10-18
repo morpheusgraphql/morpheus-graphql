@@ -57,7 +57,7 @@ instance FromJSON NewUsersNewUserWorshipsCharacter where
     takeValueType
       ( \case
           ("Hero", v) -> NewUsersNewUserWorshipsHero <$> v .: "hobby"
-          (_, _) -> pure NewUsersNewUserWorshipsCharacter
+          (_fallback, _) -> pure NewUsersNewUserWorshipsCharacter
       )
 
 newtype NewUsersArgs = NewUsersArgs

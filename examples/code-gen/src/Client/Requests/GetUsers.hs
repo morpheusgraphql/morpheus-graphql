@@ -77,7 +77,7 @@ instance FromJSON GetUserUserEntityMyUnion where
     takeValueType
       ( \case
           ("User", v) -> GetUserUserEntityUser <$> v .: "name"
-          (_, _) -> pure GetUserUserEntityMyUnion
+          (_fallback, _) -> pure GetUserUserEntityMyUnion
       )
 
 data GetUserCharacterCharacter
@@ -92,7 +92,7 @@ instance FromJSON GetUserCharacterCharacter where
     takeValueType
       ( \case
           ("Deity", v) -> GetUserCharacterDeity <$> v .: "power"
-          (_, _) -> pure GetUserCharacterCharacter
+          (_fallback, _) -> pure GetUserCharacterCharacter
       )
 
 newtype GetUserArgs = GetUserArgs
