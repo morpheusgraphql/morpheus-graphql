@@ -50,7 +50,6 @@ import Prettyprinter
     Pretty (..),
     indent,
     line,
-    list,
     vsep,
     (<+>),
   )
@@ -124,6 +123,9 @@ instance Pretty ClientMethod where
       toMatch (pat, expr) = (tuple $ map mapP pat, printVariantDoc expr)
       mapP (UString v) = prettyLit v
       mapP (UVar v) = pretty v
+
+list :: Foldable t => t (Doc ann) -> Doc ann
+list xs = "[" <> indent 1 (foldr1 (\a b -> a <> "," <> line <> b) xs) <> line <> "]"
 
 tuple :: Foldable t => t (Doc ann) -> Doc ann
 tuple ls = "(" <> foldr1 (\a b -> a <> "," <+> b) ls <> ")"

@@ -74,4 +74,5 @@ newtype NewUsersArgs = NewUsersArgs
 instance ToJSON NewUsersArgs where
   toJSON (NewUsersArgs newUsersArgsLoc) =
     omitNulls
-      ["loc" .= newUsersArgsLoc]
+      [ "loc" .= newUsersArgsLoc
+      ]

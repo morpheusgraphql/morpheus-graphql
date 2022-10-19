@@ -115,4 +115,5 @@ newtype GetUserArgs = GetUserArgs
 instance ToJSON GetUserArgs where
   toJSON (GetUserArgs getUserArgsCoordinates) =
     omitNulls
-      ["coordinates" .= getUserArgsCoordinates]
+      [ "coordinates" .= getUserArgsCoordinates
+      ]

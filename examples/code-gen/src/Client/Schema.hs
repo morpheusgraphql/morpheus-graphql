@@ -20,7 +20,8 @@ newtype Bird = Bird
 instance ToJSON Bird where
   toJSON (Bird birdName) =
     omitNulls
-      ["name" .= birdName]
+      [ "name" .= birdName
+      ]
 
 newtype Cat = Cat
   { name :: String
@@ -30,7 +31,8 @@ newtype Cat = Cat
 instance ToJSON Cat where
   toJSON (Cat catName) =
     omitNulls
-      ["name" .= catName]
+      [ "name" .= catName
+      ]
 
 data CityID
   = CityIDParis
@@ -72,7 +74,8 @@ newtype Dog = Dog
 instance ToJSON Dog where
   toJSON (Dog dogName) =
     omitNulls
-      ["name" .= dogName]
+      [ "name" .= dogName
+      ]
 
 instance FromJSON Euro where
   parseJSON = scalarFromJSON
