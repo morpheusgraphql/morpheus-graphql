@@ -26,7 +26,8 @@ data Query m = Query
 
 instance (Typeable m) => GQLType (Query m) where
   type KIND (Query m) = TYPE
-  directives _ = typeDirective DropNamespace {dropNamespace = "Query"}
+  directives _ =
+    typeDirective DropNamespace {dropNamespace = "Query"}
 
 data QueryDeityArgs = QueryDeityArgs
   { queryDeityArgsName :: Maybe [Maybe [Maybe [[Maybe [Text]]]]],
@@ -36,7 +37,8 @@ data QueryDeityArgs = QueryDeityArgs
 
 instance GQLType QueryDeityArgs where
   type KIND QueryDeityArgs = TYPE
-  directives _ = typeDirective DropNamespace {dropNamespace = "QueryDeityArgs"}
+  directives _ =
+    typeDirective DropNamespace {dropNamespace = "QueryDeityArgs"}
 
 data QueryCharacterArgs = QueryCharacterArgs
   { queryCharacterArgsCharacterID :: Text,
@@ -46,7 +48,8 @@ data QueryCharacterArgs = QueryCharacterArgs
 
 instance GQLType QueryCharacterArgs where
   type KIND QueryCharacterArgs = TYPE
-  directives _ = typeDirective DropNamespace {dropNamespace = "QueryCharacterArgs"}
+  directives _ =
+    typeDirective DropNamespace {dropNamespace = "QueryCharacterArgs"}
 
 data Mutation m = Mutation
   { mutationCreateDeity :: MutationCreateDeityArgs -> m (Deity m),
@@ -56,7 +59,8 @@ data Mutation m = Mutation
 
 instance (Typeable m) => GQLType (Mutation m) where
   type KIND (Mutation m) = TYPE
-  directives _ = typeDirective DropNamespace {dropNamespace = "Mutation"}
+  directives _ =
+    typeDirective DropNamespace {dropNamespace = "Mutation"}
 
 data MutationCreateDeityArgs = MutationCreateDeityArgs
   { mutationCreateDeityArgsDeityName :: Maybe [Maybe [Maybe [[Maybe [Text]]]]],
@@ -66,7 +70,8 @@ data MutationCreateDeityArgs = MutationCreateDeityArgs
 
 instance GQLType MutationCreateDeityArgs where
   type KIND MutationCreateDeityArgs = TYPE
-  directives _ = typeDirective DropNamespace {dropNamespace = "MutationCreateDeityArgs"}
+  directives _ =
+    typeDirective DropNamespace {dropNamespace = "MutationCreateDeityArgs"}
 
 data MutationCreateCharacterArgs = MutationCreateCharacterArgs
   { mutationCreateCharacterArgsCharRealm :: Realm,
@@ -76,7 +81,8 @@ data MutationCreateCharacterArgs = MutationCreateCharacterArgs
 
 instance GQLType MutationCreateCharacterArgs where
   type KIND MutationCreateCharacterArgs = TYPE
-  directives _ = typeDirective DropNamespace {dropNamespace = "MutationCreateCharacterArgs"}
+  directives _ =
+    typeDirective DropNamespace {dropNamespace = "MutationCreateCharacterArgs"}
 
 data Character m
   = CharacterCreature
@@ -92,7 +98,8 @@ data Character m
 
 instance (Typeable m) => GQLType (Character m) where
   type KIND (Character m) = TYPE
-  directives _ = typeDirective DropNamespace {dropNamespace = "Character"}
+  directives _ =
+    typeDirective DropNamespace {dropNamespace = "Character"}
 
 data Deity m = Deity
   { deityFullName :: m Text,
@@ -115,7 +122,8 @@ data Creature m = Creature
 
 instance (Typeable m) => GQLType (Creature m) where
   type KIND (Creature m) = TYPE
-  directives _ = typeDirective DropNamespace {dropNamespace = "Creature"}
+  directives _ =
+    typeDirective DropNamespace {dropNamespace = "Creature"}
 
 data Human m = Human
   { humanHumanName :: m Text,
@@ -125,7 +133,8 @@ data Human m = Human
 
 instance (Typeable m) => GQLType (Human m) where
   type KIND (Human m) = TYPE
-  directives _ = typeDirective DropNamespace {dropNamespace = "Human"}
+  directives _ =
+    typeDirective DropNamespace {dropNamespace = "Human"}
 
 data Realm = Realm
   { realmOwner :: Text,
@@ -135,7 +144,8 @@ data Realm = Realm
 
 instance GQLType Realm where
   type KIND Realm = TYPE
-  directives _ = typeDirective DropNamespace {dropNamespace = "Realm"}
+  directives _ =
+    typeDirective DropNamespace {dropNamespace = "Realm"}
 
 data City
   = CityAthens

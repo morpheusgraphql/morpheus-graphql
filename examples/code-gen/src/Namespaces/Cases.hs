@@ -61,4 +61,5 @@ newtype MyQuery m = MyQuery
 
 instance (Typeable m) => GQLType (MyQuery m) where
   type KIND (MyQuery m) = TYPE
-  directives _ = typeDirective DropNamespace {dropNamespace = "MyQuery"}
+  directives _ =
+    typeDirective DropNamespace {dropNamespace = "MyQuery"}

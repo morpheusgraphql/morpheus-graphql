@@ -134,6 +134,7 @@ data City
 
 instance GQLType City where
   type KIND City = TYPE
-  directives _ = enumDirective "Troy" Deprecated {reason = Just "some reason"}
+  directives _ =
+    enumDirective "Troy" Deprecated {reason = Just "some reason"}
 
 type Power = Int

@@ -24,7 +24,8 @@ data Query m = Query
 
 instance (Typeable m) => GQLType (Query m) where
   type KIND (Query m) = TYPE
-  directives _ = typeDirective Describe {text = "\nmy interface description\n"}
+  directives _ =
+    typeDirective Describe {text = "\nmy interface description\n"}
 
 data DeityArgs = DeityArgs
   { name :: Maybe [Maybe [Maybe [[Maybe [Text]]]]],
@@ -64,7 +65,8 @@ data Deity m = Deity
 
 instance (Typeable m) => GQLType (Deity m) where
   type KIND (Deity m) = TYPE
-  directives _ = fieldDirective "fullName" Describe {text = "\n  simple field description\n  "}
+  directives _ =
+    fieldDirective "fullName" Describe {text = "\n  simple field description\n  "}
 
 data Creature m = Creature
   { creatureName :: m Text,

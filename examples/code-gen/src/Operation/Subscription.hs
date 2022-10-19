@@ -112,7 +112,8 @@ data Creature m = Creature
 
 instance (Typeable m) => GQLType (Creature m) where
   type KIND (Creature m) = TYPE
-  directives _ = fieldDirective "creatureName" Describe {text = "\n  simple field description\n  "}
+  directives _ =
+    fieldDirective "creatureName" Describe {text = "\n  simple field description\n  "}
 
 data Human m = Human
   { humanName :: m Text,
