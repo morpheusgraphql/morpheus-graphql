@@ -203,7 +203,7 @@ instance Pretty dec => Pretty (ModuleDefinition dec) where
       <+> "where"
         <> line
         <> line
-        <> vsep (map renderImport imports)
+        <> vsep (map renderImport $ sortWith fst imports)
         <> line
         <> line
         <> vsep (map pretty types)
@@ -236,10 +236,11 @@ instance Pretty a => Pretty (TypeClassInstance a) where
       <+> "where"
         <> line
         <> indent 2 (vsep (map renderAssoc assoc <> map renderMethodD typeClassMethods))
+        <> line
     where
       typeHead = unpack (print typeClassTarget)
       renderAssoc (name, a) = "type" <+> printTHName name <+> typeHead <+> "=" <+> pretty a
-      renderMethodD (name, args, method) = printTHName name <+> pretty args <+> "=" <+> pretty method
+      renderMethodD (name, args, method) = printTHName name <+> pretty args <> "=" <+> pretty method
 
 renderTypeableConstraints :: [Text] -> Doc n
 renderTypeableConstraints xs = tupled (map (("Typeable" <+>) . pretty) xs) <+> "=>"
@@ -267,5 +268,5 @@ data MethodArgument
 
 instance Pretty MethodArgument where
   pretty NoArgument = ""
-  pretty ProxyArgument = "_"
-  pretty (DestructArgument x xs) = unpack (print x .<> pack (hsep $ map printTHName xs))
+  pretty ProxyArgument = "_ "
+  pretty (DestructArgument x xs) = unpack (print x .<> pack (hsep $ map printTHName xs)) <> " "

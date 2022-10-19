@@ -119,7 +119,7 @@ instance Pretty ClientMethod where
       mkEntry (n, o, v) = prettyLit n <+> printTHName o <+> printTHName v
   pretty (FromJSONObjectMethod name xs) = withBody $ printObjectDoc (toName name, xs)
     where
-      withBody body = "withObject" <+> prettyLit name <+> "(\\v ->" <+> body <+> ")"
+      withBody body = "withObject" <+> prettyLit name <+> "(\\v ->" <+> body <> ")"
   pretty (FromJSONUnionMethod xs) = "withUnion" <+> tupled [matchDoc (map toMatch xs)]
     where
       toMatch (pat, expr) = (tuple $ map mapP pat, printVariantDoc expr)
