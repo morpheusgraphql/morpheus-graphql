@@ -44,6 +44,7 @@ import Prettyprinter
     nest,
     pretty,
     punctuate,
+    space,
     tupled,
     vsep,
     (<+>),
@@ -215,7 +216,7 @@ renderImport (src, ls) = "import" <+> pretty src <> renderImportList ls
 
 renderImportList :: [Text] -> Doc ann
 renderImportList ["*"] = ""
-renderImportList xs = tupled (map pretty xs)
+renderImportList xs = space <> tupled (map pretty xs)
 
 data TypeClassInstance body = TypeClassInstance
   { typeClassName :: TH.Name,
