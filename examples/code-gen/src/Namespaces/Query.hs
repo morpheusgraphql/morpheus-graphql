@@ -1,11 +1,10 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
-
 {-# HLINT ignore "Use camelCase" #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 module Namespaces.Query where
 
@@ -37,7 +36,8 @@ data QueryDeityArgs = QueryDeityArgs
 
 instance GQLType QueryDeityArgs where
   type KIND QueryDeityArgs = TYPE
-  directives _ = typeDirective DropNamespace {dropNamespace = "QueryDeityArgs"}
+  directives _ =
+    typeDirective DropNamespace {dropNamespace = "QueryDeityArgs"}
 
 data QueryCharacterArgs = QueryCharacterArgs
   { queryCharacterArgsCharacterID :: Text,
@@ -47,20 +47,18 @@ data QueryCharacterArgs = QueryCharacterArgs
 
 instance GQLType QueryCharacterArgs where
   type KIND QueryCharacterArgs = TYPE
-  directives _ = typeDirective DropNamespace {dropNamespace = "QueryCharacterArgs"}
+  directives _ =
+    typeDirective DropNamespace {dropNamespace = "QueryCharacterArgs"}
 
 data Character m
-  = CharacterCreature
-      { unCharacterCreature :: Creature m
-      }
-  | CharacterDeity
-      { unCharacterDeity :: Deity m
-      }
+  = CharacterCreature (Creature m)
+  | CharacterDeity (Deity m)
   deriving (Generic)
 
 instance (Typeable m) => GQLType (Character m) where
   type KIND (Character m) = TYPE
-  directives _ = typeDirective DropNamespace {dropNamespace = "Character"}
+  directives _ =
+    typeDirective DropNamespace {dropNamespace = "Character"}
 
 data Deity m = Deity
   { deityFullName :: m Text,
@@ -83,7 +81,8 @@ data Creature m = Creature
 
 instance (Typeable m) => GQLType (Creature m) where
   type KIND (Creature m) = TYPE
-  directives _ = typeDirective DropNamespace {dropNamespace = "Creature"}
+  directives _ =
+    typeDirective DropNamespace {dropNamespace = "Creature"}
 
 data City
   = CityAthens
@@ -94,6 +93,7 @@ data City
 
 instance GQLType City where
   type KIND City = TYPE
-  directives _ = typeDirective DropNamespace {dropNamespace = "City"}
+  directives _ =
+    typeDirective DropNamespace {dropNamespace = "City"}
 
 type Power = Int

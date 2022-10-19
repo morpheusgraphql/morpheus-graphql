@@ -51,13 +51,12 @@ import Data.Morpheus.Types.Internal.AST
     Value,
     unpackName,
   )
+import Data.Text.Prettyprint.Doc (concatWith, indent, line)
 import Language.Haskell.TH.Lib (appE, varE)
 import Prettyprinter
   ( Pretty (..),
     align,
     pretty,
-    punctuate,
-    vsep,
     (<+>),
   )
 import Relude hiding (Show, optional, print, show)
@@ -141,6 +140,7 @@ instance Pretty ServerDeclaration where
       <+> "TypeGuard"
       <+> unpack (print interfaceName .<> "m")
       <+> unpack (print unionName .<> "m")
+        <> line
   -- TODO: on scalar we should render user provided type
   pretty ScalarType {..} = "type" <+> ignore (print scalarTypeName) <+> "= Int"
   pretty (DataType cgType) = pretty cgType
@@ -158,7 +158,7 @@ data ServerMethod
 
 instance Pretty ServerMethod where
   pretty (ServerMethodDefaultValues x) = pretty (show x)
-  pretty (ServerMethodDirectives dirs) = align $ vsep $ punctuate " <>" (map pretty dirs)
+  pretty (ServerMethodDirectives dirs) = line <> indent 2 (align $ concatWith (\x y -> x <> "\n  <>" <+> y) (map pretty dirs))
 
 instance PrintExp ServerMethod where
   printExp (ServerMethodDefaultValues values) = [|values|]

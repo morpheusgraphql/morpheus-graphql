@@ -1,11 +1,10 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
-
 {-# HLINT ignore "Use camelCase" #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 module Namespaces.Cases where
 
@@ -61,4 +60,5 @@ newtype MyQuery m = MyQuery
 
 instance (Typeable m) => GQLType (MyQuery m) where
   type KIND (MyQuery m) = TYPE
-  directives _ = typeDirective DropNamespace {dropNamespace = "MyQuery"}
+  directives _ =
+    typeDirective DropNamespace {dropNamespace = "MyQuery"}

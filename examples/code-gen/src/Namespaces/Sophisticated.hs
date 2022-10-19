@@ -1,11 +1,10 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
-
 {-# HLINT ignore "Use camelCase" #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 module Namespaces.Sophisticated where
 
@@ -55,7 +54,8 @@ newtype NestedInputObject = NestedInputObject
 
 instance GQLType NestedInputObject where
   type KIND NestedInputObject = TYPE
-  directives _ = typeDirective DropNamespace {dropNamespace = "NestedInputObject"}
+  directives _ =
+    typeDirective DropNamespace {dropNamespace = "NestedInputObject"}
 
 data TestInputObject = TestInputObject
   { testInputObjectFieldTestScalar :: TestScalar,
@@ -65,7 +65,8 @@ data TestInputObject = TestInputObject
 
 instance GQLType TestInputObject where
   type KIND TestInputObject = TYPE
-  directives _ = typeDirective DropNamespace {dropNamespace = "TestInputObject"}
+  directives _ =
+    typeDirective DropNamespace {dropNamespace = "TestInputObject"}
 
 data Coordinates = Coordinates
   { coordinatesLatitude :: TestScalar,
@@ -110,12 +111,8 @@ instance GQLType AddressStreetArgs where
       <> fieldDirective "addressStreetArgsArgInputObject" Describe {text = "\n    argument Description: inputObject\n    "}
 
 data TestUnion m
-  = TestUnionUser
-      { unTestUnionUser :: User m
-      }
-  | TestUnionAddress
-      { unTestUnionAddress :: Address m
-      }
+  = TestUnionUser (User m)
+  | TestUnionAddress (Address m)
   deriving (Generic)
 
 instance (Typeable m) => GQLType (TestUnion m) where
@@ -162,7 +159,8 @@ data UserAddressArgs = UserAddressArgs
 
 instance GQLType UserAddressArgs where
   type KIND UserAddressArgs = TYPE
-  directives _ = typeDirective DropNamespace {dropNamespace = "UserAddressArgs"}
+  directives _ =
+    typeDirective DropNamespace {dropNamespace = "UserAddressArgs"}
 
 data UserOfficeArgs = UserOfficeArgs
   { userOfficeArgsZipCode :: Maybe [Int],
@@ -172,7 +170,8 @@ data UserOfficeArgs = UserOfficeArgs
 
 instance GQLType UserOfficeArgs where
   type KIND UserOfficeArgs = TYPE
-  directives _ = typeDirective DropNamespace {dropNamespace = "UserOfficeArgs"}
+  directives _ =
+    typeDirective DropNamespace {dropNamespace = "UserOfficeArgs"}
 
 data Query m = Query
   { queryUser :: m (User m),
@@ -184,7 +183,8 @@ data Query m = Query
 
 instance (Typeable m) => GQLType (Query m) where
   type KIND (Query m) = TYPE
-  directives _ = typeDirective DropNamespace {dropNamespace = "Query"}
+  directives _ =
+    typeDirective DropNamespace {dropNamespace = "Query"}
 
 newtype Mutation m = Mutation
   { mutationCreateUser :: MutationCreateUserArgs -> m (User m)
@@ -193,7 +193,8 @@ newtype Mutation m = Mutation
 
 instance (Typeable m) => GQLType (Mutation m) where
   type KIND (Mutation m) = TYPE
-  directives _ = typeDirective DropNamespace {dropNamespace = "Mutation"}
+  directives _ =
+    typeDirective DropNamespace {dropNamespace = "Mutation"}
 
 data MutationCreateUserArgs = MutationCreateUserArgs
   { mutationCreateUserArgsUserID :: Text,
@@ -203,7 +204,8 @@ data MutationCreateUserArgs = MutationCreateUserArgs
 
 instance GQLType MutationCreateUserArgs where
   type KIND MutationCreateUserArgs = TYPE
-  directives _ = typeDirective DropNamespace {dropNamespace = "MutationCreateUserArgs"}
+  directives _ =
+    typeDirective DropNamespace {dropNamespace = "MutationCreateUserArgs"}
 
 data Subscription m = Subscription
   { subscriptionNewUser :: m (User m),
@@ -213,4 +215,5 @@ data Subscription m = Subscription
 
 instance (Typeable m) => GQLType (Subscription m) where
   type KIND (Subscription m) = TYPE
-  directives _ = typeDirective DropNamespace {dropNamespace = "Subscription"}
+  directives _ =
+    typeDirective DropNamespace {dropNamespace = "Subscription"}

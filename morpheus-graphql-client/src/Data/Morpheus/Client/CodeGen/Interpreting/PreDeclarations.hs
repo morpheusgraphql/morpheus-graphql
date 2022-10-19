@@ -62,7 +62,7 @@ mapPreDeclarations (FromJSONObjectClass cType CodeGenConstructor {..}) =
   pure $ InstanceDeclaration $ mkFromJSON cType $ FromJSONObjectMethod (getFullName constructorName) (map defField constructorFields)
 mapPreDeclarations (FromJSONUnionClass cType constructors) = pure $ InstanceDeclaration $ mkFromJSON cType $ FromJSONUnionMethod $ map mkMatch constructors
   where
-    mkMatch (tag, cons) = ([tag, if null (constructorFields cons) then UVar "_" else UVar "v"], genObj cons)
+    mkMatch (tag, (consName, typeName)) = ([tag, UVar $ if isJust typeName then "v" else "_"], (toName consName, fmap toName typeName))
 mapPreDeclarations (ToJSONClass mode clientDef) = InstanceDeclaration <$> deriveToJSON mode clientDef
 mapPreDeclarations (ClientType c) = pure $ ClientTypeDeclaration c
 mapPreDeclarations (RequestTypeClass req) = pure $ InstanceDeclaration (getRequestInstance req)
@@ -92,9 +92,6 @@ deriveFromJSONMethod ENUM_MODE CodeGenType {..} =
       map (fromJSONEnum . constructorName) cgConstructors
         <> [MFunction "v" 'invalidConstructorError]
 deriveFromJSONMethod _ CodeGenType {..} = emptyTypeError cgTypeName
-
-genObj :: CodeGenConstructor -> (Name, [AesonField])
-genObj CodeGenConstructor {..} = (toName constructorName, map defField constructorFields)
 
 defField :: CodeGenField -> AesonField
 defField CodeGenField {..} = (toName ("v" :: String), bindField fieldIsNullable, fieldName)

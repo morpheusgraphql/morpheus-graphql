@@ -50,11 +50,13 @@ processServerDocument BuildConfig {..} moduleName schema = do
             ]
               <> map (,["*"]) globalImports,
           extensions =
-            [ "DeriveGeneric",
-              "TypeFamilies",
+            [ "DataKinds",
+              "DeriveGeneric",
+              "DuplicateRecordFields",
               "OverloadedStrings",
-              "DataKinds",
-              "DuplicateRecordFields"
+              "TypeFamilies",
+              "{-# HLINT ignore \"Use camelCase\" #-}",
+              "{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}"
             ],
           types
         }
@@ -76,9 +78,9 @@ processClientDocument BuildConfig {..} schema query moduleName = do
             extensions =
               [ "DeriveGeneric",
                 "DuplicateRecordFields",
-                "TypeFamilies",
+                "LambdaCase",
                 "OverloadedStrings",
-                "LambdaCase"
+                "TypeFamilies"
               ],
             types
           }

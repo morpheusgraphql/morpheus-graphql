@@ -349,7 +349,7 @@ mkUnionFieldDefinition typeName memberName =
     { constructorName,
       constructorFields =
         [ CodeGenField
-            { fieldName = coerce ("un" <> getFullName constructorName),
+            { fieldName = "_",
               fieldType = packName (toHaskellTypeName memberName),
               wrappers = [PARAMETRIZED],
               fieldIsNullable = False

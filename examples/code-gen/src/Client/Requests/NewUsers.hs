@@ -1,11 +1,8 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
-
-{-# HLINT ignore "Use camelCase" #-}
 
 module Client.Requests.NewUsers where
 
@@ -19,46 +16,56 @@ instance RequestType NewUsers where
   __type _ = Subscription
 
 newtype NewUsers = NewUsers
-  { newUser :: NewUsersNewUserUser
+  { newUser :: NewUsersNewUser
   }
   deriving (Generic, Show, Eq)
 
 instance FromJSON NewUsers where
-  parseJSON = withObject "NewUsers" (\v -> NewUsers <$> v .: "newUser")
+  parseJSON =
+    withObject "NewUsers" (\v -> NewUsers <$> v .: "newUser")
 
-data NewUsersNewUserUser = NewUsersNewUserUser
+data NewUsersNewUser = NewUsersNewUser
   { name :: String,
     email :: String,
-    address :: NewUsersNewUserAddressAddress,
-    worships :: NewUsersNewUserWorshipsCharacter
+    address :: NewUsersNewUserAddress,
+    worships :: NewUsersNewUserWorships
   }
   deriving (Generic, Show, Eq)
 
-instance FromJSON NewUsersNewUserUser where
-  parseJSON = withObject "NewUsersNewUserUser" (\v -> NewUsersNewUserUser <$> v .: "name" <*> v .: "email" <*> v .: "address" <*> v .: "worships")
+instance FromJSON NewUsersNewUser where
+  parseJSON =
+    withObject "NewUsersNewUser" (\v -> NewUsersNewUser <$> v .: "name" <*> v .: "email" <*> v .: "address" <*> v .: "worships")
 
-newtype NewUsersNewUserAddressAddress = NewUsersNewUserAddressAddress
+newtype NewUsersNewUserAddress = NewUsersNewUserAddress
   { city :: String
   }
   deriving (Generic, Show, Eq)
 
-instance FromJSON NewUsersNewUserAddressAddress where
-  parseJSON = withObject "NewUsersNewUserAddressAddress" (\v -> NewUsersNewUserAddressAddress <$> v .: "city")
+instance FromJSON NewUsersNewUserAddress where
+  parseJSON =
+    withObject "NewUsersNewUserAddress" (\v -> NewUsersNewUserAddress <$> v .: "city")
 
-data NewUsersNewUserWorshipsCharacter
-  = NewUsersNewUserWorshipsHero
-      { hobby :: String
-      }
-  | NewUsersNewUserWorshipsCharacter
+data NewUsersNewUserWorships
+  = NewUsersNewUserWorshipsVariantHero NewUsersNewUserWorshipsHero
+  | NewUsersNewUserWorships
   deriving (Generic, Show, Eq)
 
-instance FromJSON NewUsersNewUserWorshipsCharacter where
+instance FromJSON NewUsersNewUserWorships where
   parseJSON =
-    takeValueType
+    withUnion
       ( \case
-          ("Hero", v) -> NewUsersNewUserWorshipsHero <$> v .: "hobby"
-          (_fallback, _) -> pure NewUsersNewUserWorshipsCharacter
+          ("Hero", v) -> NewUsersNewUserWorshipsVariantHero <$> parseJSON v
+          (_fallback, _) -> pure NewUsersNewUserWorships
       )
+
+newtype NewUsersNewUserWorshipsHero = NewUsersNewUserWorshipsHero
+  { hobby :: String
+  }
+  deriving (Generic, Show, Eq)
+
+instance FromJSON NewUsersNewUserWorshipsHero where
+  parseJSON =
+    withObject "NewUsersNewUserWorshipsHero" (\v -> NewUsersNewUserWorshipsHero <$> v .: "hobby")
 
 newtype NewUsersArgs = NewUsersArgs
   { loc :: Coordinates
@@ -68,4 +75,5 @@ newtype NewUsersArgs = NewUsersArgs
 instance ToJSON NewUsersArgs where
   toJSON (NewUsersArgs newUsersArgsLoc) =
     omitNulls
-      ["loc" .= newUsersArgsLoc]
+      [ "loc" .= newUsersArgsLoc
+      ]

@@ -20,6 +20,7 @@ module Data.Morpheus.Client.CodeGen.Interpreting.Core
     LocalContext (..),
     runLocalM,
     withPosition,
+    getNameByPath,
   )
 where
 
@@ -29,9 +30,10 @@ import Data.Morpheus.Client.CodeGen.AST
   )
 import Data.Morpheus.CodeGen.Internal.AST
   ( CodeGenType (..),
+    CodeGenTypeName (..),
     DerivingClass (..),
+    fromTypeName,
   )
-import Data.Morpheus.CodeGen.Utils (camelCaseTypeName)
 import Data.Morpheus.Error
   ( deprecatedField,
   )
@@ -99,13 +101,18 @@ getType typename =
   asks (typeDefinitions . ctxSchema)
     >>= selectBy (compileError $ " can't find Type" <> msg typename) typename
 
-typeFrom :: [FieldName] -> TypeDefinition a VALID -> TypeName
+typeFrom :: [FieldName] -> TypeDefinition a VALID -> CodeGenTypeName
 typeFrom path TypeDefinition {typeName, typeContent} = __typeFrom typeContent
   where
-    __typeFrom DataObject {} = camelCaseTypeName path typeName
-    __typeFrom DataInterface {} = camelCaseTypeName path typeName
-    __typeFrom DataUnion {} = camelCaseTypeName path typeName
-    __typeFrom _ = typeName
+    __typeFrom DataObject {} = getNameByPath path typeName
+    __typeFrom DataInterface {} = getNameByPath path typeName
+    __typeFrom DataUnion {} = getNameByPath path typeName
+    __typeFrom _ = fromTypeName typeName
+
+getNameByPath :: [FieldName] -> TypeName -> CodeGenTypeName
+getNameByPath path tName = case reverse path of
+  (p : ps) -> CodeGenTypeName {namespace = reverse ps, typeParameters = [], typename = coerce p}
+  [] -> CodeGenTypeName {namespace = [], typeParameters = [], typename = tName}
 
 deprecationWarning :: Directives VALID -> (FieldName, Ref FieldName) -> LocalM ()
 deprecationWarning dirs (typename, ref) = case lookupDeprecated dirs of

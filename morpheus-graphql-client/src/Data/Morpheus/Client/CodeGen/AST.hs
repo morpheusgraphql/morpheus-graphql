@@ -21,10 +21,11 @@ module Data.Morpheus.Client.CodeGen.AST
   )
 where
 
+import Data.Aeson (parseJSON)
 import Data.Foldable (foldr1)
 import Data.Morpheus.Client.CodeGen.Internal
-  ( takeValueType,
-    withObject,
+  ( withObject,
+    withUnion,
   )
 import Data.Morpheus.CodeGen.Internal.AST
   ( CodeGenConstructor (..),
@@ -49,8 +50,7 @@ import Prettyprinter
     Pretty (..),
     indent,
     line,
-    list,
-    tupled,
+    space,
     vsep,
     (<+>),
   )
@@ -66,7 +66,7 @@ data ClientDeclaration
 data ClientPreDeclaration
   = ToJSONClass DERIVING_MODE CodeGenType
   | FromJSONClass DERIVING_MODE CodeGenType
-  | FromJSONUnionClass CodeGenTypeName [(UnionPat, CodeGenConstructor)]
+  | FromJSONUnionClass CodeGenTypeName [(UnionPat, (CodeGenTypeName, Maybe String))]
   | FromJSONObjectClass CodeGenTypeName CodeGenConstructor
   | RequestTypeClass RequestTypeDefinition
   | ClientType CodeGenType
@@ -105,26 +105,31 @@ data ClientMethod
   | MatchMethod ValueMatch
   | ToJSONObjectMethod Name [(FieldName, Name, Name)]
   | FromJSONObjectMethod TypeName [AesonField]
-  | FromJSONUnionMethod [([UnionPat], (Name, [AesonField]))]
+  | FromJSONUnionMethod [([UnionPat], (Name, Maybe Name))]
 
 type AesonField = (Name, Name, FieldName)
 
 instance Pretty ClientMethod where
-  pretty (FunctionNameMethod x) = printTHName x
-  pretty (PrintableMethod x) = pretty x
-  pretty (MatchMethod x) = printMatchDoc x
-  pretty (ToJSONObjectMethod name fields) = printTHName name <+> indent 2 (line <+> list (map mkEntry fields))
+  pretty (FunctionNameMethod x) = space <> printTHName x
+  pretty (PrintableMethod x) = space <> pretty x
+  pretty (MatchMethod x) = space <> printMatchDoc x
+  pretty (ToJSONObjectMethod name fields) = line <> indent 2 (printTHName name <> line <> indent 2 (list (map mkEntry fields)))
     where
       mkEntry (n, o, v) = prettyLit n <+> printTHName o <+> printTHName v
   pretty (FromJSONObjectMethod name xs) = withBody $ printObjectDoc (toName name, xs)
     where
-      withBody body = "withObject" <+> prettyLit name <+> "(\\v ->" <+> body <+> ")"
-  pretty (FromJSONUnionMethod xs) = "takeValueType" <+> tupled [matchDoc (map toMatch xs)]
+      withBody body = line <> indent 2 "withObject" <+> prettyLit name <+> "(\\v ->" <+> body <> ")"
+  pretty (FromJSONUnionMethod xs) = line <> indent 2 ("withUnion" <> line <> indent 2 (tuple [indent 1 (matchDoc $ map toMatch xs) <> line]))
     where
-      toMatch (pat, expr) = (tuple $ map mapP pat, printObjectDoc expr)
+      toMatch (pat, expr) = (tuple $ map mapP pat, printVariantDoc expr)
       mapP (UString v) = prettyLit v
       mapP (UVar v) = pretty v
-      tuple ls = "(" <> foldr1 (\a b -> a <> "," <+> b) ls <> ")"
+
+list :: Foldable t => t (Doc ann) -> Doc ann
+list xs = "[" <> indent 1 (foldr1 (\a b -> a <> "," <> line <> b) xs) <> line <> "]"
+
+tuple :: Foldable t => t (Doc ann) -> Doc ann
+tuple ls = "(" <> foldr1 (\a b -> a <> "," <+> b) ls <> ")"
 
 instance PrintExp ClientMethod where
   printExp (FunctionNameMethod v) = varE v
@@ -136,12 +141,20 @@ instance PrintExp ClientMethod where
   printExp (FromJSONObjectMethod name fields) = withBody $ printObjectExp (toName name, fields)
     where
       withBody body = appE (appE (toVar 'withObject) (toString name)) (lamE [v'] body)
-  printExp (FromJSONUnionMethod matches) = appE (toVar 'takeValueType) (matchExp $ map toMatch matches)
+  printExp (FromJSONUnionMethod matches) = appE (toVar 'withUnion) (matchExp $ map toMatch matches)
     where
-      toMatch (pat, expr) = (tupP $ map mapP pat, printObjectExp expr)
+      toMatch (pat, expr) = (tupP $ map mapP pat, printVariantExp expr)
       --
       mapP (UString v) = toString v
       mapP (UVar v) = toVar v
+
+printVariantExp :: (Name, Maybe Name) -> ExpQ
+printVariantExp (con, Just x) = uInfixE (toCon con) [|(<$>)|] (appE (toVar 'parseJSON) (toVar x))
+printVariantExp (con, Nothing) = appE [|pure|] (toCon con)
+
+printVariantDoc :: (Name, Maybe Name) -> Doc n
+printVariantDoc (con, Just x) = printTHName con <+> "<$>" <+> "parseJSON" <+> printTHName x
+printVariantDoc (con, Nothing) = "pure" <+> printTHName con
 
 printObjectExp :: (Name, [AesonField]) -> ExpQ
 printObjectExp (con, fields)
@@ -196,6 +209,6 @@ matchExp xs = lamCaseE (map buildMatch xs)
     buildMatch (pat, fb) = match pat (normalB fb) []
 
 matchDoc :: [(Doc n, Doc n)] -> Doc n
-matchDoc = ("\\case " <>) . indent 4 . vsep . map buildMatch
+matchDoc = (("\\case" <> line) <>) . indent 2 . vsep . map buildMatch
   where
     buildMatch (pat, fb) = pat <+> "->" <+> fb

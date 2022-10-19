@@ -26,6 +26,7 @@ import Data.Morpheus.Client.CodeGen.Interpreting.Core
     compileError,
     defaultDerivations,
     deprecationWarning,
+    getNameByPath,
     getType,
     gqlWarning,
     runLocalM,
@@ -104,7 +105,7 @@ genLocalDeclarations query op@Operation {operationName, operationSelection, oper
   datatype <- getOperationDataType op ctxSchema
   let operationTypeName = getOperationName operationName
   let (requestArgs, argTypes) = toArgumentsType operationTypeName ctxVariables
-  (rootTypeName, localTypes) <- genLocalTypes [] operationTypeName (toAny datatype) operationSelection
+  (rootTypeName, localTypes) <- genLocalTypes [coerce operationTypeName] operationTypeName (toAny datatype) operationSelection
   pure
     ( RequestTypeClass
         RequestTypeDefinition
@@ -124,11 +125,7 @@ genLocalTypes ::
   TypeDefinition ANY VALID ->
   SelectionSet VALID ->
   LocalM (CodeGenTypeName, [ClientPreDeclaration])
-genLocalTypes namespace tName dataType recordSelSet = do
-  let cgTypeName = CodeGenTypeName {namespace, typeParameters = [], typename = tName}
-  (con, subTypes) <- toConstructorDefinition (if null namespace then [coerce tName] else namespace) cgTypeName dataType recordSelSet
-  let def = CodeGenType {cgTypeName, cgConstructors = [con], cgDerivations = defaultDerivations}
-  pure (cgTypeName, [ClientType def, FromJSONObjectClass cgTypeName con] <> subTypes)
+genLocalTypes namespace tName = genObjectType namespace (getNameByPath namespace tName)
 
 toConstructorDefinition ::
   [FieldName] ->
@@ -164,18 +161,19 @@ subTypesBySelection ::
   LocalM [ClientPreDeclaration]
 subTypesBySelection _ _ Selection {selectionContent = SelectionField} = pure []
 subTypesBySelection path dType Selection {selectionContent = SelectionSet selectionSet} =
-  snd <$> genLocalTypes path (typeFrom [] dType) dType selectionSet
+  snd <$> genLocalTypes path (getFullName $ typeFrom [] dType) dType selectionSet
 subTypesBySelection namespace dType Selection {selectionPosition, selectionContent = UnionSelection interface unionSelections} =
   do
     let variants = toList unionSelections
     traverse_ (checkTypename selectionPosition namespace interface) variants
-    (cons, subTypes) <- unzip <$> traverse (getVariantType namespace) variants
-    (fallbackCons, fallBackTypes) <- maybe (getEmptyFallback namespace (typeName dType)) (getVariantType namespace . UnionTag (typeName dType)) interface
-    let cgTypeName = CodeGenTypeName {namespace, typeParameters = [], typename = typeFrom [] dType}
-    let typeDef = CodeGenType {cgTypeName, cgConstructors = cons <> [fallbackCons], cgDerivations = defaultDerivations}
-    pure ([ClientType typeDef, FromJSONUnionClass cgTypeName (map tagConstructor cons <> [(UVar "_fallback", fallbackCons)])] <> concat subTypes <> fallBackTypes)
+    let cgTypeName = typeFrom namespace dType
+    (cons, subTypes) <- unzip <$> traverse (getVariant namespace) variants
+    (fallbackCons, fallBackTypes) <- maybe (getEmptyFallback cgTypeName) (getVariant namespace . UnionTag (typeName dType)) interface
+    let typeDef = CodeGenType {cgTypeName, cgConstructors = map buildVariantConstructor (cons <> [fallbackCons]), cgDerivations = defaultDerivations}
+    pure ([ClientType typeDef, FromJSONUnionClass cgTypeName (map tagConstructor cons <> [(UVar "_fallback", mapFallback fallbackCons)])] <> concat subTypes <> fallBackTypes)
   where
-    tagConstructor x = (UString $ typename $ constructorName x, x)
+    tagConstructor (name, x) = (UString $ typename name, (name, fmap (const "v") x))
+    mapFallback (x, y) = (x, fmap (const "v") y)
 
 checkTypename :: Position -> [FieldName] -> Maybe (SelectionSet VALID) -> UnionTag -> LocalM ()
 checkTypename pos path iFace UnionTag {..}
@@ -187,20 +185,49 @@ checkTypename pos path iFace UnionTag {..}
           (map (PropName . unpackName) path)
           `at` pos
 
-getEmptyFallback :: [FieldName] -> TypeName -> LocalM (CodeGenConstructor, [ClientPreDeclaration])
-getEmptyFallback path selectedTyName =
+type Variant = (CodeGenTypeName, Maybe TypeName)
+
+getEmptyFallback :: CodeGenTypeName -> LocalM (Variant, [ClientPreDeclaration])
+getEmptyFallback name = pure ((name, Nothing), [])
+
+buildVariantConstructor :: Variant -> CodeGenConstructor
+buildVariantConstructor (conName, ref) =
+  CodeGenConstructor
+    { constructorName = conName,
+      constructorFields =
+        ( \fieldType ->
+            CodeGenField
+              { fieldName = "_",
+                fieldType,
+                wrappers = [],
+                fieldIsNullable = False
+              }
+        )
+          <$> toList ref
+    }
+
+getVariant :: [FieldName] -> UnionTag -> LocalM (Variant, [ClientPreDeclaration])
+getVariant path (UnionTag selectedTyName selectionVariant) = do
+  conDatatype <- getType selectedTyName
+  let name = CodeGenTypeName path [] selectedTyName
+  (n, types) <- genObjectType path name conDatatype selectionVariant
   pure
-    ( CodeGenConstructor
-        { constructorName = CodeGenTypeName path [] selectedTyName,
-          constructorFields = []
-        },
-      []
+    ( ( CodeGenTypeName (path <> ["variant"]) [] selectedTyName,
+        Just (getFullName n)
+      ),
+      types
     )
 
-getVariantType :: [FieldName] -> UnionTag -> LocalM (CodeGenConstructor, [ClientPreDeclaration])
-getVariantType path (UnionTag selectedTyName selectionVariant) = do
-  conDatatype <- getType selectedTyName
-  toConstructorDefinition path (CodeGenTypeName path [] selectedTyName) conDatatype selectionVariant
+genObjectType ::
+  [FieldName] ->
+  CodeGenTypeName ->
+  TypeDefinition ANY VALID ->
+  SelectionSet VALID ->
+  LocalM (CodeGenTypeName, [ClientPreDeclaration])
+genObjectType namespace cgTypeName dataType recordSelSet = do
+  (con, subTypes) <- toConstructorDefinition namespace cgTypeName dataType recordSelSet
+  let def = CodeGenType {cgTypeName, cgConstructors = [con], cgDerivations = defaultDerivations}
+  pure (cgTypeName, [ClientType def, FromJSONObjectClass cgTypeName con] <> subTypes)
 
 getFieldType ::
   [FieldName] ->
@@ -238,7 +265,7 @@ getFieldType
           } =
           checkDeprecated *> (trans <$> getType typeConName)
           where
-            trans x = (x, TypeRef {typeConName = typeFrom path x, ..})
+            trans x = (x, TypeRef {typeConName = getFullName (typeFrom path x), ..})
             ------------------------------------------------------------------
             checkDeprecated :: LocalM ()
             checkDeprecated = deprecationWarning fieldDirectives (coerce typeName, Ref selectionName selectionPosition)

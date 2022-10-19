@@ -30,6 +30,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeWrapper,
     unpackName,
   )
+import qualified Data.Text as T
 import qualified Language.Haskell.TH.Syntax as TH
 import Prettyprinter
   ( Doc,
@@ -43,6 +44,7 @@ import Prettyprinter
     nest,
     pretty,
     punctuate,
+    space,
     tupled,
     vsep,
     (<+>),
@@ -70,14 +72,14 @@ data TypeValue
   deriving (Show)
 
 renderField :: (FieldName, TypeValue) -> Doc n
-renderField (fName, fValue) = pretty (unpackName fName :: Text) <> "=" <+> pretty fValue
+renderField (fName, fValue) = pretty (unpackName fName :: Text) <+> "=" <+> pretty fValue
 
 instance Pretty TypeValue where
   pretty (TypeValueObject name xs) =
     pretty (unpackName name :: Text)
       <+> "{"
-      <+> vsep (punctuate "," (map renderField xs))
-      <+> "}"
+        <> vsep (punctuate "," (map renderField xs))
+        <> "}"
   pretty (TypeValueNumber x) = pretty x
   pretty (TypeValueString x) = pretty (show x :: String)
   pretty (TypeValueBool x) = pretty x
@@ -120,6 +122,8 @@ data CodeGenConstructor = CodeGenConstructor
   deriving (Show)
 
 instance Printer CodeGenConstructor where
+  print CodeGenConstructor {constructorFields = [CodeGenField {fieldName = "_", ..}], ..} =
+    pack (print' constructorName <+> unpack (foldr renderWrapper (print fieldType) wrappers))
   print CodeGenConstructor {constructorFields = [], ..} =
     print constructorName
   print CodeGenConstructor {..} = do
@@ -190,10 +194,6 @@ instance Pretty dec => Pretty (ModuleDefinition dec) where
   pretty ModuleDefinition {..} =
     vsep
       (map renderExtension extensions)
-      <> "{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}"
-      <> line
-      <> line
-      <> "{-# HLINT ignore \"Use camelCase\" #-}"
       <> line
       <> line
       <> "module"
@@ -201,20 +201,22 @@ instance Pretty dec => Pretty (ModuleDefinition dec) where
       <+> "where"
         <> line
         <> line
-        <> vsep (map renderImport imports)
+        <> vsep (map renderImport $ sortWith fst imports)
         <> line
         <> line
         <> vsep (map pretty types)
 
 renderExtension :: Text -> Doc ann
-renderExtension name = "{-#" <+> "LANGUAGE" <+> pretty name <+> "#-}"
+renderExtension txt
+  | T.isPrefixOf "{-#" txt = pretty txt
+  | otherwise = "{-#" <+> "LANGUAGE" <+> pretty txt <+> "#-}"
 
 renderImport :: (Text, [Text]) -> Doc ann
 renderImport (src, ls) = "import" <+> pretty src <> renderImportList ls
 
 renderImportList :: [Text] -> Doc ann
 renderImportList ["*"] = ""
-renderImportList xs = tupled (map pretty xs)
+renderImportList xs = space <> tupled (map pretty xs)
 
 data TypeClassInstance body = TypeClassInstance
   { typeClassName :: TH.Name,
@@ -234,10 +236,11 @@ instance Pretty a => Pretty (TypeClassInstance a) where
       <+> "where"
         <> line
         <> indent 2 (vsep (map renderAssoc assoc <> map renderMethodD typeClassMethods))
+        <> line
     where
       typeHead = unpack (print typeClassTarget)
       renderAssoc (name, a) = "type" <+> printTHName name <+> typeHead <+> "=" <+> pretty a
-      renderMethodD (name, args, method) = printTHName name <+> pretty args <+> "=" <+> pretty method
+      renderMethodD (name, args, method) = printTHName name <+> pretty args <> "=" <> pretty method
 
 renderTypeableConstraints :: [Text] -> Doc n
 renderTypeableConstraints xs = tupled (map (("Typeable" <+>) . pretty) xs) <+> "=>"
@@ -265,5 +268,5 @@ data MethodArgument
 
 instance Pretty MethodArgument where
   pretty NoArgument = ""
-  pretty ProxyArgument = "_"
-  pretty (DestructArgument x xs) = unpack (print x .<> pack (hsep $ map printTHName xs))
+  pretty ProxyArgument = "_ "
+  pretty (DestructArgument x xs) = unpack (print x .<> pack (hsep $ map printTHName xs)) <> " "

@@ -1,11 +1,10 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
-
 {-# HLINT ignore "Use camelCase" #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 module Operation.Query where
 
@@ -24,7 +23,8 @@ data Query m = Query
 
 instance (Typeable m) => GQLType (Query m) where
   type KIND (Query m) = TYPE
-  directives _ = typeDirective Describe {text = "\nmy interface description\n"}
+  directives _ =
+    typeDirective Describe {text = "\nmy interface description\n"}
 
 data DeityArgs = DeityArgs
   { name :: Maybe [Maybe [Maybe [[Maybe [Text]]]]],
@@ -45,12 +45,8 @@ instance GQLType CharacterArgs where
   type KIND CharacterArgs = TYPE
 
 data Character m
-  = CharacterCreature
-      { unCharacterCreature :: Creature m
-      }
-  | CharacterDeity
-      { unCharacterDeity :: Deity m
-      }
+  = CharacterCreature (Creature m)
+  | CharacterDeity (Deity m)
   deriving (Generic)
 
 instance (Typeable m) => GQLType (Character m) where
@@ -64,7 +60,8 @@ data Deity m = Deity
 
 instance (Typeable m) => GQLType (Deity m) where
   type KIND (Deity m) = TYPE
-  directives _ = fieldDirective "fullName" Describe {text = "\n  simple field description\n  "}
+  directives _ =
+    fieldDirective "fullName" Describe {text = "\n  simple field description\n  "}
 
 data Creature m = Creature
   { creatureName :: m Text,

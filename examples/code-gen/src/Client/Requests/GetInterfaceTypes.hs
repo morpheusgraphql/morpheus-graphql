@@ -1,95 +1,136 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
-
-{-# HLINT ignore "Use camelCase" #-}
 
 module Client.Requests.GetInterfaceTypes where
 
 import Client.Schema
 import Data.Morpheus.Client.CodeGen.Internal
 
-instance RequestType GetInterfaceTypes where
-  type RequestArgs GetInterfaceTypes = ()
-  __name _ = "GetInterfaceTypes"
-  __query _ = "query GetInterfaceTypes {\n  character {\n    name\n    ... on Deity {\n      power\n    }\n\n    ... on Hero {\n      hobby\n    }\n  }\n  character2: character {\n    name1: name\n    name\n  }\n  character3: character {\n    ... on Hero {\n      hobby\n    }\n    ... on Character {\n      name2: name\n    }\n  }\n  character4: character {\n    ... on Hero {\n      hobby\n    }\n  }\n}\n"
+instance RequestType GetCharacters where
+  type RequestArgs GetCharacters = ()
+  __name _ = "GetCharacters"
+  __query _ = "query GetCharacters {\n  character {\n    name\n    ... on Deity {\n      power\n    }\n\n    ... on Hero {\n      hobby\n    }\n  }\n  anonymous: character {\n    name1: name\n    name\n  }\n  heros: character {\n    ... on Hero {\n      hobby\n    }\n    ... on Character {\n      name2: name\n    }\n  }\n  superheros: character {\n    ... on Hero {\n      hobby\n    }\n  }\n}\n"
   __type _ = Query
 
-data GetInterfaceTypes = GetInterfaceTypes
-  { character :: [GetInterfaceTypesCharacterCharacter],
-    character2 :: [GetInterfaceTypesCharacter2Character],
-    character3 :: [GetInterfaceTypesCharacter3Character],
-    character4 :: [GetInterfaceTypesCharacter4Character]
+data GetCharacters = GetCharacters
+  { character :: [GetCharactersCharacter],
+    anonymous :: [GetCharactersAnonymous],
+    heros :: [GetCharactersHeros],
+    superheros :: [GetCharactersSuperheros]
   }
   deriving (Generic, Show, Eq)
 
-instance FromJSON GetInterfaceTypes where
-  parseJSON = withObject "GetInterfaceTypes" (\v -> GetInterfaceTypes <$> v .: "character" <*> v .: "character2" <*> v .: "character3" <*> v .: "character4")
+instance FromJSON GetCharacters where
+  parseJSON =
+    withObject "GetCharacters" (\v -> GetCharacters <$> v .: "character" <*> v .: "anonymous" <*> v .: "heros" <*> v .: "superheros")
 
-data GetInterfaceTypesCharacterCharacter
-  = GetInterfaceTypesCharacterDeity
-      { name :: String,
-        power :: Power
-      }
-  | GetInterfaceTypesCharacterHero
-      { name :: String,
-        hobby :: String
-      }
-  | GetInterfaceTypesCharacterCharacter
-      { name :: String
-      }
+data GetCharactersCharacter
+  = GetCharactersCharacterVariantDeity GetCharactersCharacterDeity
+  | GetCharactersCharacterVariantHero GetCharactersCharacterHero
+  | GetCharactersCharacterVariantCharacter GetCharactersCharacterCharacter
   deriving (Generic, Show, Eq)
 
-instance FromJSON GetInterfaceTypesCharacterCharacter where
+instance FromJSON GetCharactersCharacter where
   parseJSON =
-    takeValueType
+    withUnion
       ( \case
-          ("Deity", v) -> GetInterfaceTypesCharacterDeity <$> v .: "name" <*> v .: "power"
-          ("Hero", v) -> GetInterfaceTypesCharacterHero <$> v .: "name" <*> v .: "hobby"
-          (_fallback, v) -> GetInterfaceTypesCharacterCharacter <$> v .: "name"
+          ("Deity", v) -> GetCharactersCharacterVariantDeity <$> parseJSON v
+          ("Hero", v) -> GetCharactersCharacterVariantHero <$> parseJSON v
+          (_fallback, v) -> GetCharactersCharacterVariantCharacter <$> parseJSON v
       )
 
-data GetInterfaceTypesCharacter2Character = GetInterfaceTypesCharacter2Character
+data GetCharactersCharacterDeity = GetCharactersCharacterDeity
+  { name :: String,
+    power :: Power
+  }
+  deriving (Generic, Show, Eq)
+
+instance FromJSON GetCharactersCharacterDeity where
+  parseJSON =
+    withObject "GetCharactersCharacterDeity" (\v -> GetCharactersCharacterDeity <$> v .: "name" <*> v .: "power")
+
+data GetCharactersCharacterHero = GetCharactersCharacterHero
+  { name :: String,
+    hobby :: String
+  }
+  deriving (Generic, Show, Eq)
+
+instance FromJSON GetCharactersCharacterHero where
+  parseJSON =
+    withObject "GetCharactersCharacterHero" (\v -> GetCharactersCharacterHero <$> v .: "name" <*> v .: "hobby")
+
+newtype GetCharactersCharacterCharacter = GetCharactersCharacterCharacter
+  { name :: String
+  }
+  deriving (Generic, Show, Eq)
+
+instance FromJSON GetCharactersCharacterCharacter where
+  parseJSON =
+    withObject "GetCharactersCharacterCharacter" (\v -> GetCharactersCharacterCharacter <$> v .: "name")
+
+data GetCharactersAnonymous = GetCharactersAnonymous
   { name1 :: String,
     name :: String
   }
   deriving (Generic, Show, Eq)
 
-instance FromJSON GetInterfaceTypesCharacter2Character where
-  parseJSON = withObject "GetInterfaceTypesCharacter2Character" (\v -> GetInterfaceTypesCharacter2Character <$> v .: "name1" <*> v .: "name")
+instance FromJSON GetCharactersAnonymous where
+  parseJSON =
+    withObject "GetCharactersAnonymous" (\v -> GetCharactersAnonymous <$> v .: "name1" <*> v .: "name")
 
-data GetInterfaceTypesCharacter3Character
-  = GetInterfaceTypesCharacter3Hero
-      { name2 :: String,
-        hobby :: String
-      }
-  | GetInterfaceTypesCharacter3Character
-      { name2 :: String
-      }
+data GetCharactersHeros
+  = GetCharactersHerosVariantHero GetCharactersHerosHero
+  | GetCharactersHerosVariantCharacter GetCharactersHerosCharacter
   deriving (Generic, Show, Eq)
 
-instance FromJSON GetInterfaceTypesCharacter3Character where
+instance FromJSON GetCharactersHeros where
   parseJSON =
-    takeValueType
+    withUnion
       ( \case
-          ("Hero", v) -> GetInterfaceTypesCharacter3Hero <$> v .: "name2" <*> v .: "hobby"
-          (_fallback, v) -> GetInterfaceTypesCharacter3Character <$> v .: "name2"
+          ("Hero", v) -> GetCharactersHerosVariantHero <$> parseJSON v
+          (_fallback, v) -> GetCharactersHerosVariantCharacter <$> parseJSON v
       )
 
-data GetInterfaceTypesCharacter4Character
-  = GetInterfaceTypesCharacter4Hero
-      { hobby :: String
-      }
-  | GetInterfaceTypesCharacter4Character
+data GetCharactersHerosHero = GetCharactersHerosHero
+  { name2 :: String,
+    hobby :: String
+  }
   deriving (Generic, Show, Eq)
 
-instance FromJSON GetInterfaceTypesCharacter4Character where
+instance FromJSON GetCharactersHerosHero where
   parseJSON =
-    takeValueType
+    withObject "GetCharactersHerosHero" (\v -> GetCharactersHerosHero <$> v .: "name2" <*> v .: "hobby")
+
+newtype GetCharactersHerosCharacter = GetCharactersHerosCharacter
+  { name2 :: String
+  }
+  deriving (Generic, Show, Eq)
+
+instance FromJSON GetCharactersHerosCharacter where
+  parseJSON =
+    withObject "GetCharactersHerosCharacter" (\v -> GetCharactersHerosCharacter <$> v .: "name2")
+
+data GetCharactersSuperheros
+  = GetCharactersSuperherosVariantHero GetCharactersSuperherosHero
+  | GetCharactersSuperheros
+  deriving (Generic, Show, Eq)
+
+instance FromJSON GetCharactersSuperheros where
+  parseJSON =
+    withUnion
       ( \case
-          ("Hero", v) -> GetInterfaceTypesCharacter4Hero <$> v .: "hobby"
-          (_fallback, _) -> pure GetInterfaceTypesCharacter4Character
+          ("Hero", v) -> GetCharactersSuperherosVariantHero <$> parseJSON v
+          (_fallback, _) -> pure GetCharactersSuperheros
       )
+
+newtype GetCharactersSuperherosHero = GetCharactersSuperherosHero
+  { hobby :: String
+  }
+  deriving (Generic, Show, Eq)
+
+instance FromJSON GetCharactersSuperherosHero where
+  parseJSON =
+    withObject "GetCharactersSuperherosHero" (\v -> GetCharactersSuperherosHero <$> v .: "hobby")

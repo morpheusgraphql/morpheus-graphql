@@ -1,11 +1,10 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
-
 {-# HLINT ignore "Use camelCase" #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 module Operation.Subscription where
 
@@ -81,15 +80,9 @@ instance (Typeable m) => GQLType (Subscription m) where
   type KIND (Subscription m) = TYPE
 
 data Character m
-  = CharacterCreature
-      { unCharacterCreature :: Creature m
-      }
-  | CharacterDeity
-      { unCharacterDeity :: Deity m
-      }
-  | CharacterHuman
-      { unCharacterHuman :: Human m
-      }
+  = CharacterCreature (Creature m)
+  | CharacterDeity (Deity m)
+  | CharacterHuman (Human m)
   deriving (Generic)
 
 instance (Typeable m) => GQLType (Character m) where
@@ -112,7 +105,8 @@ data Creature m = Creature
 
 instance (Typeable m) => GQLType (Creature m) where
   type KIND (Creature m) = TYPE
-  directives _ = fieldDirective "creatureName" Describe {text = "\n  simple field description\n  "}
+  directives _ =
+    fieldDirective "creatureName" Describe {text = "\n  simple field description\n  "}
 
 data Human m = Human
   { humanName :: m Text,

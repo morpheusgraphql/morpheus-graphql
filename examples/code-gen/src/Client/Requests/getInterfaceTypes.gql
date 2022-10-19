@@ -1,4 +1,4 @@
-query GetInterfaceTypes {
+query GetCharacters {
   character {
     name
     ... on Deity {
@@ -9,11 +9,11 @@ query GetInterfaceTypes {
       hobby
     }
   }
-  character2: character {
+  anonymous: character {
     name1: name
     name
   }
-  character3: character {
+  heros: character {
     ... on Hero {
       hobby
     }
@@ -21,7 +21,7 @@ query GetInterfaceTypes {
       name2: name
     }
   }
-  character4: character {
+  superheros: character {
     ... on Hero {
       hobby
     }

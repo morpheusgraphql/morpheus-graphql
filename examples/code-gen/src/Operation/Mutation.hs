@@ -1,11 +1,10 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
-
 {-# HLINT ignore "Use camelCase" #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 module Operation.Mutation where
 
@@ -72,15 +71,9 @@ instance GQLType CreateCharacterArgs where
   type KIND CreateCharacterArgs = TYPE
 
 data Character m
-  = CharacterCreature
-      { unCharacterCreature :: Creature m
-      }
-  | CharacterDeity
-      { unCharacterDeity :: Deity m
-      }
-  | CharacterHuman
-      { unCharacterHuman :: Human m
-      }
+  = CharacterCreature (Creature m)
+  | CharacterDeity (Deity m)
+  | CharacterHuman (Human m)
   deriving (Generic)
 
 instance (Typeable m) => GQLType (Character m) where
@@ -134,6 +127,7 @@ data City
 
 instance GQLType City where
   type KIND City = TYPE
-  directives _ = enumDirective "Troy" Deprecated {reason = Just "some reason"}
+  directives _ =
+    enumDirective "Troy" Deprecated {reason = Just "some reason"}
 
 type Power = Int

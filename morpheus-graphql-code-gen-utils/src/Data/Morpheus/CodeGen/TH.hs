@@ -238,13 +238,6 @@ genName CLASS_EQ = ''Eq
 printDerivClause :: [DerivingClass] -> DerivClause
 printDerivClause derives = DerivClause Nothing (map (ConT . genName) derives)
 
-printField :: CodeGenField -> (Name, Bang, Type)
-printField CodeGenField {..} =
-  ( toName fieldName,
-    Bang NoSourceUnpackedness NoSourceStrictness,
-    foldr applyWrapper (toCon fieldType) wrappers
-  )
-
 applyWrapper :: FIELD_TYPE_WRAPPER -> Type -> Type
 applyWrapper PARAMETRIZED = (`AppT` m')
 applyWrapper MONAD = AppT m'
@@ -276,9 +269,20 @@ printConstraints :: [(Name, Name)] -> Q Cxt
 printConstraints = cxt . map constraint
 
 printConstructor :: CodeGenConstructor -> Con
+printConstructor CodeGenConstructor {constructorFields = [field], ..}
+  | fieldName field == "_" = NormalC (toName constructorName) [ignoreName $ printField field]
+  where
+    ignoreName (_, b, t) = (b, t)
 printConstructor CodeGenConstructor {..}
   | null constructorFields = NormalC (toName constructorName) []
   | otherwise = RecC (toName constructorName) (map printField constructorFields)
+
+printField :: CodeGenField -> (Name, Bang, Type)
+printField CodeGenField {..} =
+  ( toName fieldName,
+    Bang NoSourceUnpackedness NoSourceStrictness,
+    foldr applyWrapper (toCon fieldType) wrappers
+  )
 
 printTypeSynonym :: ToName a => a -> [Name] -> Type -> Dec
 printTypeSynonym name params = TySynD (toName name) (toTypeVars params)
