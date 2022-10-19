@@ -9,6 +9,19 @@ type Options = {
 
 const root = "examples/code-gen";
 
+const noChanges = (label: string) => {
+  const changes = exec("git status -s")
+    .trim()
+    .split("\n")
+    .flatMap((file) => file.split(" "))
+    .map((x) => x.trim())
+    .filter((x) => x.includes(".hs"));
+
+  if (changes.length > 0) {
+    throw Error([label, ...changes].join("\n  "));
+  }
+};
+
 export const codeGen = async ({ src = root }: Options = {}) => {
   try {
     log("installing code-gen\n");
@@ -19,18 +32,11 @@ export const codeGen = async ({ src = root }: Options = {}) => {
 
     const hsPath = `${src}/**/*hs`;
 
+    noChanges("generated files are corrupted!");
+
     exec(`ts-node scripts/local.ts format --fix=true --path=${hsPath}`);
 
-    const changes = exec("git status -s")
-      .trim()
-      .split("\n")
-      .flatMap((file) => file.split(" "))
-      .map((x) => x.trim())
-      .filter((x) => x.includes(".hs"));
-
-    if (changes.length > 0) {
-      throw Error(["generated files are corrupted!", ...changes].join("\n  "));
-    }
+    noChanges("generated files are not formatted properly!");
 
     log("OK\n", "success");
   } catch (e) {
