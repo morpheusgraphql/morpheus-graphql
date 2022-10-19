@@ -133,6 +133,7 @@ instance (Typeable m) => GQLType (InterfacePerson m) where
       <> typeDirective DropNamespace {dropNamespace = "InterfacePerson"}
 
 type Person m = TypeGuard (InterfacePerson m) (User m)
+
 data User m = User
   { userName :: m Text,
     userEmail :: m Text,
