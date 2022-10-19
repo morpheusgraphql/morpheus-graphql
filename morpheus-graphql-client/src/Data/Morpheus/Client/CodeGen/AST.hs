@@ -51,7 +51,6 @@ import Prettyprinter
     indent,
     line,
     list,
-    tupled,
     vsep,
     (<+>),
   )
@@ -120,12 +119,14 @@ instance Pretty ClientMethod where
   pretty (FromJSONObjectMethod name xs) = withBody $ printObjectDoc (toName name, xs)
     where
       withBody body = "withObject" <+> prettyLit name <+> "(\\v ->" <+> body <> ")"
-  pretty (FromJSONUnionMethod xs) = "withUnion" <+> tupled [matchDoc (map toMatch xs)]
+  pretty (FromJSONUnionMethod xs) = line <> indent 2 ("withUnion" <> line <> indent 2 (tuple [indent 1 (matchDoc $ map toMatch xs) <> line]))
     where
       toMatch (pat, expr) = (tuple $ map mapP pat, printVariantDoc expr)
       mapP (UString v) = prettyLit v
       mapP (UVar v) = pretty v
-      tuple ls = "(" <> foldr1 (\a b -> a <> "," <+> b) ls <> ")"
+
+tuple :: Foldable t => t (Doc ann) -> Doc ann
+tuple ls = "(" <> foldr1 (\a b -> a <> "," <+> b) ls <> ")"
 
 instance PrintExp ClientMethod where
   printExp (FunctionNameMethod v) = varE v
@@ -205,6 +206,6 @@ matchExp xs = lamCaseE (map buildMatch xs)
     buildMatch (pat, fb) = match pat (normalB fb) []
 
 matchDoc :: [(Doc n, Doc n)] -> Doc n
-matchDoc = ("\\case " <>) . indent 4 . vsep . map buildMatch
+matchDoc = (("\\case" <> line) <>) . indent 2 . vsep . map buildMatch
   where
     buildMatch (pat, fb) = pat <+> "->" <+> fb
