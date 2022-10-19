@@ -113,7 +113,7 @@ instance Pretty ClientMethod where
   pretty (FunctionNameMethod x) = printTHName x
   pretty (PrintableMethod x) = pretty x
   pretty (MatchMethod x) = printMatchDoc x
-  pretty (ToJSONObjectMethod name fields) = printTHName name <+> indent 2 (line <+> list (map mkEntry fields))
+  pretty (ToJSONObjectMethod name fields) = line <> indent 2 (printTHName name <> line <> indent 2 (list (map mkEntry fields)))
     where
       mkEntry (n, o, v) = prettyLit n <+> printTHName o <+> printTHName v
   pretty (FromJSONObjectMethod name xs) = withBody $ printObjectDoc (toName name, xs)
