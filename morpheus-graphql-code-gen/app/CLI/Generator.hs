@@ -54,7 +54,9 @@ processServerDocument BuildConfig {..} moduleName schema = do
               "TypeFamilies",
               "OverloadedStrings",
               "DataKinds",
-              "DuplicateRecordFields"
+              "DuplicateRecordFields",
+              "{-# HLINT ignore \"Use camelCase\" #-}",
+              "{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}"
             ],
           types
         }

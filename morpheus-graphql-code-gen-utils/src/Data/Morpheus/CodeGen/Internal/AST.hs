@@ -30,6 +30,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeWrapper,
     unpackName,
   )
+import qualified Data.Text as T
 import qualified Language.Haskell.TH.Syntax as TH
 import Prettyprinter
   ( Doc,
@@ -192,10 +193,6 @@ instance Pretty dec => Pretty (ModuleDefinition dec) where
   pretty ModuleDefinition {..} =
     vsep
       (map renderExtension extensions)
-      <> "{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}"
-      <> line
-      <> line
-      <> "{-# HLINT ignore \"Use camelCase\" #-}"
       <> line
       <> line
       <> "module"
@@ -209,7 +206,9 @@ instance Pretty dec => Pretty (ModuleDefinition dec) where
         <> vsep (map pretty types)
 
 renderExtension :: Text -> Doc ann
-renderExtension name = "{-#" <+> "LANGUAGE" <+> pretty name <+> "#-}"
+renderExtension txt
+  | T.isPrefixOf "{-#" txt = pretty txt
+  | otherwise = "{-#" <+> "LANGUAGE" <+> pretty txt <+> "#-}"
 
 renderImport :: (Text, [Text]) -> Doc ann
 renderImport (src, ls) = "import" <+> pretty src <> renderImportList ls
