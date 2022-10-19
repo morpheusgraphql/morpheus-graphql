@@ -50,11 +50,11 @@ processServerDocument BuildConfig {..} moduleName schema = do
             ]
               <> map (,["*"]) globalImports,
           extensions =
-            [ "DeriveGeneric",
-              "TypeFamilies",
-              "OverloadedStrings",
-              "DataKinds",
+            [ "DataKinds",
+              "DeriveGeneric",
               "DuplicateRecordFields",
+              "OverloadedStrings",
+              "TypeFamilies",
               "{-# HLINT ignore \"Use camelCase\" #-}",
               "{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}"
             ],
