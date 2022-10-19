@@ -5,6 +5,7 @@ module CLI.File where
 
 import Data.ByteString.Lazy.Char8 (ByteString, unpack, writeFile)
 import Data.Char
+import Data.Morpheus.Error (printWarning)
 import Data.Morpheus.Internal.Ext
   ( GQLResult,
     Result (..),
@@ -30,15 +31,7 @@ capitalize (x : xs) = toUpper x : xs
 
 printWarnings :: [GQLError] -> IO ()
 printWarnings [] = pure ()
-printWarnings warnings = traverse_ handleWarning warnings
-  where
-    handleWarning warning =
-      putStr $
-        "  \x1b[33m  warning: "
-          <> toString (message warning)
-          <> "\x1b[0m\n      "
-          <> unpack (show $ concat $ toList $ locations warning)
-          <> "\n"
+printWarnings warnings = traverse_ (putStr . ("      " <>) . printWarning) warnings
 
 saveDocument :: FilePath -> GQLResult ByteString -> IO ()
 saveDocument _ (Failure errors) = print errors

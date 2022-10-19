@@ -120,6 +120,8 @@ data CodeGenConstructor = CodeGenConstructor
   deriving (Show)
 
 instance Printer CodeGenConstructor where
+  print CodeGenConstructor {constructorFields = [CodeGenField {fieldName = "_", ..}], ..} =
+    pack (print' constructorName <+> unpack (foldr renderWrapper (print fieldType) wrappers))
   print CodeGenConstructor {constructorFields = [], ..} =
     print constructorName
   print CodeGenConstructor {..} = do

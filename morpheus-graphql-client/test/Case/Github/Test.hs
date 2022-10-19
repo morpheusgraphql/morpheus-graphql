@@ -62,29 +62,30 @@ test =
         GetTags
           { repository =
               Just
-                GetTagsRepositoryRepository
+                GetTagsRepository
                   { refs =
                       Just
-                        GetTagsRepositoryRefsRefConnection
+                        GetTagsRepositoryRefs
                           { pageInfo =
-                              GetTagsRepositoryRefsPageInfoPageInfo
+                              GetTagsRepositoryRefsPageInfo
                                 { endCursor = Just "test value 1",
                                   hasNextPage = False
                                 },
                             edges =
                               Just
-                                [ Just
-                                    GetTagsRepositoryRefsEdgesRefEdge
+                                [ Just $
+                                    GetTagsRepositoryRefsEdges
                                       { cursor = "test cursor",
                                         node =
                                           Just
-                                            GetTagsRepositoryRefsEdgesNodeRef
+                                            GetTagsRepositoryRefsEdgesNode
                                               { name = "test name",
                                                 target =
-                                                  Just
-                                                    GetTagsRepositoryRefsEdgesNodeTargetGitObject
-                                                      { __typename = "GitObject"
-                                                      }
+                                                  Just $
+                                                    GetTagsRepositoryRefsEdgesNodeTargetVariantGitObject
+                                                      GetTagsRepositoryRefsEdgesNodeTargetGitObject
+                                                        { __typename = "GitObject"
+                                                        }
                                               }
                                       }
                                 ]

@@ -21,10 +21,11 @@ module Data.Morpheus.Client.CodeGen.AST
   )
 where
 
+import Data.Aeson (parseJSON)
 import Data.Foldable (foldr1)
 import Data.Morpheus.Client.CodeGen.Internal
-  ( takeValueType,
-    withObject,
+  ( withObject,
+    withUnion,
   )
 import Data.Morpheus.CodeGen.Internal.AST
   ( CodeGenConstructor (..),
@@ -66,7 +67,7 @@ data ClientDeclaration
 data ClientPreDeclaration
   = ToJSONClass DERIVING_MODE CodeGenType
   | FromJSONClass DERIVING_MODE CodeGenType
-  | FromJSONUnionClass CodeGenTypeName [(UnionPat, CodeGenConstructor)]
+  | FromJSONUnionClass CodeGenTypeName [(UnionPat, (CodeGenTypeName, Maybe String))]
   | FromJSONObjectClass CodeGenTypeName CodeGenConstructor
   | RequestTypeClass RequestTypeDefinition
   | ClientType CodeGenType
@@ -105,7 +106,7 @@ data ClientMethod
   | MatchMethod ValueMatch
   | ToJSONObjectMethod Name [(FieldName, Name, Name)]
   | FromJSONObjectMethod TypeName [AesonField]
-  | FromJSONUnionMethod [([UnionPat], (Name, [AesonField]))]
+  | FromJSONUnionMethod [([UnionPat], (Name, Maybe Name))]
 
 type AesonField = (Name, Name, FieldName)
 
@@ -119,9 +120,9 @@ instance Pretty ClientMethod where
   pretty (FromJSONObjectMethod name xs) = withBody $ printObjectDoc (toName name, xs)
     where
       withBody body = "withObject" <+> prettyLit name <+> "(\\v ->" <+> body <+> ")"
-  pretty (FromJSONUnionMethod xs) = "takeValueType" <+> tupled [matchDoc (map toMatch xs)]
+  pretty (FromJSONUnionMethod xs) = "withUnion" <+> tupled [matchDoc (map toMatch xs)]
     where
-      toMatch (pat, expr) = (tuple $ map mapP pat, printObjectDoc expr)
+      toMatch (pat, expr) = (tuple $ map mapP pat, printVariantDoc expr)
       mapP (UString v) = prettyLit v
       mapP (UVar v) = pretty v
       tuple ls = "(" <> foldr1 (\a b -> a <> "," <+> b) ls <> ")"
@@ -136,12 +137,20 @@ instance PrintExp ClientMethod where
   printExp (FromJSONObjectMethod name fields) = withBody $ printObjectExp (toName name, fields)
     where
       withBody body = appE (appE (toVar 'withObject) (toString name)) (lamE [v'] body)
-  printExp (FromJSONUnionMethod matches) = appE (toVar 'takeValueType) (matchExp $ map toMatch matches)
+  printExp (FromJSONUnionMethod matches) = appE (toVar 'withUnion) (matchExp $ map toMatch matches)
     where
-      toMatch (pat, expr) = (tupP $ map mapP pat, printObjectExp expr)
+      toMatch (pat, expr) = (tupP $ map mapP pat, printVariantExp expr)
       --
       mapP (UString v) = toString v
       mapP (UVar v) = toVar v
+
+printVariantExp :: (Name, Maybe Name) -> ExpQ
+printVariantExp (con, Just x) = uInfixE (toCon con) [|(<$>)|] (appE (toVar 'parseJSON) (toVar x))
+printVariantExp (con, Nothing) = appE [|pure|] (toCon con)
+
+printVariantDoc :: (Name, Maybe Name) -> Doc n
+printVariantDoc (con, Just x) = printTHName con <+> "<$>" <+> "parseJSON" <+> printTHName x
+printVariantDoc (con, Nothing) = "pure" <+> printTHName con
 
 printObjectExp :: (Name, [AesonField]) -> ExpQ
 printObjectExp (con, fields)

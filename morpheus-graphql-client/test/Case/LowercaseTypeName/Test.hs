@@ -63,7 +63,7 @@ test =
     ( Right
         MyQuery
           { user =
-              MyQueryUserUser
+              MyQueryUser
                 { id = Uuid "11343135"
                 }
           }

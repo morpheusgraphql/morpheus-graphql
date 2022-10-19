@@ -19,81 +19,93 @@ instance RequestType GetUser where
   __type _ = Query
 
 data GetUser = GetUser
-  { myUser :: GetUserMyUserUser,
-    user :: GetUserUserUser,
-    character :: [GetUserCharacterCharacter]
+  { myUser :: GetUserMyUser,
+    user :: GetUserUser,
+    character :: [GetUserCharacter]
   }
   deriving (Generic, Show, Eq)
 
 instance FromJSON GetUser where
   parseJSON = withObject "GetUser" (\v -> GetUser <$> v .: "myUser" <*> v .: "user" <*> v .: "character")
 
-data GetUserMyUserUser = GetUserMyUserUser
+data GetUserMyUser = GetUserMyUser
   { name :: String,
     aliasEmail :: String,
-    address :: GetUserMyUserAddressAddress,
-    aliasAdress :: GetUserMyUserAliasAdressAddress
+    address :: GetUserMyUserAddress,
+    aliasAdress :: GetUserMyUserAliasAdress
   }
   deriving (Generic, Show, Eq)
 
-instance FromJSON GetUserMyUserUser where
-  parseJSON = withObject "GetUserMyUserUser" (\v -> GetUserMyUserUser <$> v .: "name" <*> v .: "aliasEmail" <*> v .: "address" <*> v .: "aliasAdress")
+instance FromJSON GetUserMyUser where
+  parseJSON = withObject "GetUserMyUser" (\v -> GetUserMyUser <$> v .: "name" <*> v .: "aliasEmail" <*> v .: "address" <*> v .: "aliasAdress")
 
-newtype GetUserMyUserAddressAddress = GetUserMyUserAddressAddress
+newtype GetUserMyUserAddress = GetUserMyUserAddress
   { city :: String
   }
   deriving (Generic, Show, Eq)
 
-instance FromJSON GetUserMyUserAddressAddress where
-  parseJSON = withObject "GetUserMyUserAddressAddress" (\v -> GetUserMyUserAddressAddress <$> v .: "city")
+instance FromJSON GetUserMyUserAddress where
+  parseJSON = withObject "GetUserMyUserAddress" (\v -> GetUserMyUserAddress <$> v .: "city")
 
-newtype GetUserMyUserAliasAdressAddress = GetUserMyUserAliasAdressAddress
+newtype GetUserMyUserAliasAdress = GetUserMyUserAliasAdress
   { city :: String
   }
   deriving (Generic, Show, Eq)
 
-instance FromJSON GetUserMyUserAliasAdressAddress where
-  parseJSON = withObject "GetUserMyUserAliasAdressAddress" (\v -> GetUserMyUserAliasAdressAddress <$> v .: "city")
+instance FromJSON GetUserMyUserAliasAdress where
+  parseJSON = withObject "GetUserMyUserAliasAdress" (\v -> GetUserMyUserAliasAdress <$> v .: "city")
 
-data GetUserUserUser = GetUserUserUser
+data GetUserUser = GetUserUser
   { email :: String,
     name :: String,
-    entity :: [GetUserUserEntityMyUnion]
+    entity :: [GetUserUserEntity]
   }
   deriving (Generic, Show, Eq)
 
-instance FromJSON GetUserUserUser where
-  parseJSON = withObject "GetUserUserUser" (\v -> GetUserUserUser <$> v .: "email" <*> v .: "name" <*> v .: "entity")
+instance FromJSON GetUserUser where
+  parseJSON = withObject "GetUserUser" (\v -> GetUserUser <$> v .: "email" <*> v .: "name" <*> v .: "entity")
 
-data GetUserUserEntityMyUnion
-  = GetUserUserEntityUser
-      { name :: String
-      }
-  | GetUserUserEntityMyUnion
+data GetUserUserEntity
+  = GetUserUserEntityVariantUser GetUserUserEntityUser
+  | GetUserUserEntity
   deriving (Generic, Show, Eq)
 
-instance FromJSON GetUserUserEntityMyUnion where
+instance FromJSON GetUserUserEntity where
   parseJSON =
-    takeValueType
+    withUnion
       ( \case
-          ("User", v) -> GetUserUserEntityUser <$> v .: "name"
-          (_fallback, _) -> pure GetUserUserEntityMyUnion
+          ("User", v) -> GetUserUserEntityVariantUser <$> parseJSON v
+          (_fallback, _) -> pure GetUserUserEntity
       )
 
-data GetUserCharacterCharacter
-  = GetUserCharacterDeity
-      { power :: Power
-      }
-  | GetUserCharacterCharacter
+newtype GetUserUserEntityUser = GetUserUserEntityUser
+  { name :: String
+  }
   deriving (Generic, Show, Eq)
 
-instance FromJSON GetUserCharacterCharacter where
+instance FromJSON GetUserUserEntityUser where
+  parseJSON = withObject "GetUserUserEntityUser" (\v -> GetUserUserEntityUser <$> v .: "name")
+
+data GetUserCharacter
+  = GetUserCharacterVariantDeity GetUserCharacterDeity
+  | GetUserCharacter
+  deriving (Generic, Show, Eq)
+
+instance FromJSON GetUserCharacter where
   parseJSON =
-    takeValueType
+    withUnion
       ( \case
-          ("Deity", v) -> GetUserCharacterDeity <$> v .: "power"
-          (_fallback, _) -> pure GetUserCharacterCharacter
+          ("Deity", v) -> GetUserCharacterVariantDeity <$> parseJSON v
+          (_fallback, _) -> pure GetUserCharacter
       )
+
+newtype GetUserCharacterDeity = GetUserCharacterDeity
+  { power :: Power
+  }
+  deriving (Generic, Show, Eq)
+
+instance FromJSON GetUserCharacterDeity where
+  parseJSON = withObject "GetUserCharacterDeity" (\v -> GetUserCharacterDeity <$> v .: "power")
 
 newtype GetUserArgs = GetUserArgs
   { coordinates :: Coordinates

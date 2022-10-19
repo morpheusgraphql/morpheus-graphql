@@ -8,6 +8,7 @@ module Data.Morpheus.Error
     subfieldsNotSelected,
     NameCollision (..),
     gqlWarnings,
+    printWarning,
   )
 where
 
