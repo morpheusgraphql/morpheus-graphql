@@ -140,7 +140,7 @@ instance Pretty ServerDeclaration where
       <+> "TypeGuard"
       <+> unpack (print interfaceName .<> "m")
       <+> unpack (print unionName .<> "m")
-      <> line
+        <> line
   -- TODO: on scalar we should render user provided type
   pretty ScalarType {..} = "type" <+> ignore (print scalarTypeName) <+> "= Int"
   pretty (DataType cgType) = pretty cgType
