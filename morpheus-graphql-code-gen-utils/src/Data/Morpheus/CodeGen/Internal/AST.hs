@@ -76,8 +76,8 @@ instance Pretty TypeValue where
   pretty (TypeValueObject name xs) =
     pretty (unpackName name :: Text)
       <+> "{"
-      <> vsep (punctuate "," (map renderField xs))
-      <> "}"
+        <> vsep (punctuate "," (map renderField xs))
+        <> "}"
   pretty (TypeValueNumber x) = pretty x
   pretty (TypeValueString x) = pretty (show x :: String)
   pretty (TypeValueBool x) = pretty x
