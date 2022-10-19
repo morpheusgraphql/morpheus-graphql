@@ -70,14 +70,14 @@ data TypeValue
   deriving (Show)
 
 renderField :: (FieldName, TypeValue) -> Doc n
-renderField (fName, fValue) = pretty (unpackName fName :: Text) <> "=" <+> pretty fValue
+renderField (fName, fValue) = pretty (unpackName fName :: Text) <+> "=" <+> pretty fValue
 
 instance Pretty TypeValue where
   pretty (TypeValueObject name xs) =
     pretty (unpackName name :: Text)
       <+> "{"
-      <+> vsep (punctuate "," (map renderField xs))
-      <+> "}"
+      <> vsep (punctuate "," (map renderField xs))
+      <> "}"
   pretty (TypeValueNumber x) = pretty x
   pretty (TypeValueString x) = pretty (show x :: String)
   pretty (TypeValueBool x) = pretty x
