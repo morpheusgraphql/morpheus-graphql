@@ -240,7 +240,7 @@ instance Pretty a => Pretty (TypeClassInstance a) where
     where
       typeHead = unpack (print typeClassTarget)
       renderAssoc (name, a) = "type" <+> printTHName name <+> typeHead <+> "=" <+> pretty a
-      renderMethodD (name, args, method) = printTHName name <+> pretty args <> "=" <+> pretty method
+      renderMethodD (name, args, method) = printTHName name <+> pretty args <> "=" <> pretty method
 
 renderTypeableConstraints :: [Text] -> Doc n
 renderTypeableConstraints xs = tupled (map (("Typeable" <+>) . pretty) xs) <+> "=>"

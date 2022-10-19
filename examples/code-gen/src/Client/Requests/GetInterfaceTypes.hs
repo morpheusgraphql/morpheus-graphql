@@ -27,7 +27,8 @@ data GetCharacters = GetCharacters
   deriving (Generic, Show, Eq)
 
 instance FromJSON GetCharacters where
-  parseJSON = withObject "GetCharacters" (\v -> GetCharacters <$> v .: "character" <*> v .: "anonymous" <*> v .: "heros" <*> v .: "superheros")
+  parseJSON =
+    withObject "GetCharacters" (\v -> GetCharacters <$> v .: "character" <*> v .: "anonymous" <*> v .: "heros" <*> v .: "superheros")
 
 data GetCharactersCharacter
   = GetCharactersCharacterVariantDeity GetCharactersCharacterDeity
@@ -51,7 +52,8 @@ data GetCharactersCharacterDeity = GetCharactersCharacterDeity
   deriving (Generic, Show, Eq)
 
 instance FromJSON GetCharactersCharacterDeity where
-  parseJSON = withObject "GetCharactersCharacterDeity" (\v -> GetCharactersCharacterDeity <$> v .: "name" <*> v .: "power")
+  parseJSON =
+    withObject "GetCharactersCharacterDeity" (\v -> GetCharactersCharacterDeity <$> v .: "name" <*> v .: "power")
 
 data GetCharactersCharacterHero = GetCharactersCharacterHero
   { name :: String,
@@ -60,7 +62,8 @@ data GetCharactersCharacterHero = GetCharactersCharacterHero
   deriving (Generic, Show, Eq)
 
 instance FromJSON GetCharactersCharacterHero where
-  parseJSON = withObject "GetCharactersCharacterHero" (\v -> GetCharactersCharacterHero <$> v .: "name" <*> v .: "hobby")
+  parseJSON =
+    withObject "GetCharactersCharacterHero" (\v -> GetCharactersCharacterHero <$> v .: "name" <*> v .: "hobby")
 
 newtype GetCharactersCharacterCharacter = GetCharactersCharacterCharacter
   { name :: String
@@ -68,7 +71,8 @@ newtype GetCharactersCharacterCharacter = GetCharactersCharacterCharacter
   deriving (Generic, Show, Eq)
 
 instance FromJSON GetCharactersCharacterCharacter where
-  parseJSON = withObject "GetCharactersCharacterCharacter" (\v -> GetCharactersCharacterCharacter <$> v .: "name")
+  parseJSON =
+    withObject "GetCharactersCharacterCharacter" (\v -> GetCharactersCharacterCharacter <$> v .: "name")
 
 data GetCharactersAnonymous = GetCharactersAnonymous
   { name1 :: String,
@@ -77,7 +81,8 @@ data GetCharactersAnonymous = GetCharactersAnonymous
   deriving (Generic, Show, Eq)
 
 instance FromJSON GetCharactersAnonymous where
-  parseJSON = withObject "GetCharactersAnonymous" (\v -> GetCharactersAnonymous <$> v .: "name1" <*> v .: "name")
+  parseJSON =
+    withObject "GetCharactersAnonymous" (\v -> GetCharactersAnonymous <$> v .: "name1" <*> v .: "name")
 
 data GetCharactersHeros
   = GetCharactersHerosVariantHero GetCharactersHerosHero
@@ -99,7 +104,8 @@ data GetCharactersHerosHero = GetCharactersHerosHero
   deriving (Generic, Show, Eq)
 
 instance FromJSON GetCharactersHerosHero where
-  parseJSON = withObject "GetCharactersHerosHero" (\v -> GetCharactersHerosHero <$> v .: "name2" <*> v .: "hobby")
+  parseJSON =
+    withObject "GetCharactersHerosHero" (\v -> GetCharactersHerosHero <$> v .: "name2" <*> v .: "hobby")
 
 newtype GetCharactersHerosCharacter = GetCharactersHerosCharacter
   { name2 :: String
@@ -107,7 +113,8 @@ newtype GetCharactersHerosCharacter = GetCharactersHerosCharacter
   deriving (Generic, Show, Eq)
 
 instance FromJSON GetCharactersHerosCharacter where
-  parseJSON = withObject "GetCharactersHerosCharacter" (\v -> GetCharactersHerosCharacter <$> v .: "name2")
+  parseJSON =
+    withObject "GetCharactersHerosCharacter" (\v -> GetCharactersHerosCharacter <$> v .: "name2")
 
 data GetCharactersSuperheros
   = GetCharactersSuperherosVariantHero GetCharactersSuperherosHero
@@ -128,4 +135,5 @@ newtype GetCharactersSuperherosHero = GetCharactersSuperherosHero
   deriving (Generic, Show, Eq)
 
 instance FromJSON GetCharactersSuperherosHero where
-  parseJSON = withObject "GetCharactersSuperherosHero" (\v -> GetCharactersSuperherosHero <$> v .: "hobby")
+  parseJSON =
+    withObject "GetCharactersSuperherosHero" (\v -> GetCharactersSuperherosHero <$> v .: "hobby")

@@ -26,7 +26,8 @@ data GetUser = GetUser
   deriving (Generic, Show, Eq)
 
 instance FromJSON GetUser where
-  parseJSON = withObject "GetUser" (\v -> GetUser <$> v .: "myUser" <*> v .: "user" <*> v .: "character")
+  parseJSON =
+    withObject "GetUser" (\v -> GetUser <$> v .: "myUser" <*> v .: "user" <*> v .: "character")
 
 data GetUserMyUser = GetUserMyUser
   { name :: String,
@@ -37,7 +38,8 @@ data GetUserMyUser = GetUserMyUser
   deriving (Generic, Show, Eq)
 
 instance FromJSON GetUserMyUser where
-  parseJSON = withObject "GetUserMyUser" (\v -> GetUserMyUser <$> v .: "name" <*> v .: "aliasEmail" <*> v .: "address" <*> v .: "aliasAdress")
+  parseJSON =
+    withObject "GetUserMyUser" (\v -> GetUserMyUser <$> v .: "name" <*> v .: "aliasEmail" <*> v .: "address" <*> v .: "aliasAdress")
 
 newtype GetUserMyUserAddress = GetUserMyUserAddress
   { city :: String
@@ -45,7 +47,8 @@ newtype GetUserMyUserAddress = GetUserMyUserAddress
   deriving (Generic, Show, Eq)
 
 instance FromJSON GetUserMyUserAddress where
-  parseJSON = withObject "GetUserMyUserAddress" (\v -> GetUserMyUserAddress <$> v .: "city")
+  parseJSON =
+    withObject "GetUserMyUserAddress" (\v -> GetUserMyUserAddress <$> v .: "city")
 
 newtype GetUserMyUserAliasAdress = GetUserMyUserAliasAdress
   { city :: String
@@ -53,7 +56,8 @@ newtype GetUserMyUserAliasAdress = GetUserMyUserAliasAdress
   deriving (Generic, Show, Eq)
 
 instance FromJSON GetUserMyUserAliasAdress where
-  parseJSON = withObject "GetUserMyUserAliasAdress" (\v -> GetUserMyUserAliasAdress <$> v .: "city")
+  parseJSON =
+    withObject "GetUserMyUserAliasAdress" (\v -> GetUserMyUserAliasAdress <$> v .: "city")
 
 data GetUserUser = GetUserUser
   { email :: String,
@@ -63,7 +67,8 @@ data GetUserUser = GetUserUser
   deriving (Generic, Show, Eq)
 
 instance FromJSON GetUserUser where
-  parseJSON = withObject "GetUserUser" (\v -> GetUserUser <$> v .: "email" <*> v .: "name" <*> v .: "entity")
+  parseJSON =
+    withObject "GetUserUser" (\v -> GetUserUser <$> v .: "email" <*> v .: "name" <*> v .: "entity")
 
 data GetUserUserEntity
   = GetUserUserEntityVariantUser GetUserUserEntityUser
@@ -84,7 +89,8 @@ newtype GetUserUserEntityUser = GetUserUserEntityUser
   deriving (Generic, Show, Eq)
 
 instance FromJSON GetUserUserEntityUser where
-  parseJSON = withObject "GetUserUserEntityUser" (\v -> GetUserUserEntityUser <$> v .: "name")
+  parseJSON =
+    withObject "GetUserUserEntityUser" (\v -> GetUserUserEntityUser <$> v .: "name")
 
 data GetUserCharacter
   = GetUserCharacterVariantDeity GetUserCharacterDeity
@@ -105,7 +111,8 @@ newtype GetUserCharacterDeity = GetUserCharacterDeity
   deriving (Generic, Show, Eq)
 
 instance FromJSON GetUserCharacterDeity where
-  parseJSON = withObject "GetUserCharacterDeity" (\v -> GetUserCharacterDeity <$> v .: "power")
+  parseJSON =
+    withObject "GetUserCharacterDeity" (\v -> GetUserCharacterDeity <$> v .: "power")
 
 newtype GetUserArgs = GetUserArgs
   { coordinates :: Coordinates

@@ -24,7 +24,8 @@ newtype NewUsers = NewUsers
   deriving (Generic, Show, Eq)
 
 instance FromJSON NewUsers where
-  parseJSON = withObject "NewUsers" (\v -> NewUsers <$> v .: "newUser")
+  parseJSON =
+    withObject "NewUsers" (\v -> NewUsers <$> v .: "newUser")
 
 data NewUsersNewUser = NewUsersNewUser
   { name :: String,
@@ -35,7 +36,8 @@ data NewUsersNewUser = NewUsersNewUser
   deriving (Generic, Show, Eq)
 
 instance FromJSON NewUsersNewUser where
-  parseJSON = withObject "NewUsersNewUser" (\v -> NewUsersNewUser <$> v .: "name" <*> v .: "email" <*> v .: "address" <*> v .: "worships")
+  parseJSON =
+    withObject "NewUsersNewUser" (\v -> NewUsersNewUser <$> v .: "name" <*> v .: "email" <*> v .: "address" <*> v .: "worships")
 
 newtype NewUsersNewUserAddress = NewUsersNewUserAddress
   { city :: String
@@ -43,7 +45,8 @@ newtype NewUsersNewUserAddress = NewUsersNewUserAddress
   deriving (Generic, Show, Eq)
 
 instance FromJSON NewUsersNewUserAddress where
-  parseJSON = withObject "NewUsersNewUserAddress" (\v -> NewUsersNewUserAddress <$> v .: "city")
+  parseJSON =
+    withObject "NewUsersNewUserAddress" (\v -> NewUsersNewUserAddress <$> v .: "city")
 
 data NewUsersNewUserWorships
   = NewUsersNewUserWorshipsVariantHero NewUsersNewUserWorshipsHero
@@ -64,7 +67,8 @@ newtype NewUsersNewUserWorshipsHero = NewUsersNewUserWorshipsHero
   deriving (Generic, Show, Eq)
 
 instance FromJSON NewUsersNewUserWorshipsHero where
-  parseJSON = withObject "NewUsersNewUserWorshipsHero" (\v -> NewUsersNewUserWorshipsHero <$> v .: "hobby")
+  parseJSON =
+    withObject "NewUsersNewUserWorshipsHero" (\v -> NewUsersNewUserWorshipsHero <$> v .: "hobby")
 
 newtype NewUsersArgs = NewUsersArgs
   { loc :: Coordinates

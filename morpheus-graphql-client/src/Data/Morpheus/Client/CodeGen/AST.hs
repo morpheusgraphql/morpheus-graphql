@@ -50,6 +50,7 @@ import Prettyprinter
     Pretty (..),
     indent,
     line,
+    space,
     vsep,
     (<+>),
   )
@@ -109,15 +110,15 @@ data ClientMethod
 type AesonField = (Name, Name, FieldName)
 
 instance Pretty ClientMethod where
-  pretty (FunctionNameMethod x) = printTHName x
-  pretty (PrintableMethod x) = pretty x
-  pretty (MatchMethod x) = printMatchDoc x
+  pretty (FunctionNameMethod x) = space <> printTHName x
+  pretty (PrintableMethod x) = space <> pretty x
+  pretty (MatchMethod x) = space <> printMatchDoc x
   pretty (ToJSONObjectMethod name fields) = line <> indent 2 (printTHName name <> line <> indent 2 (list (map mkEntry fields)))
     where
       mkEntry (n, o, v) = prettyLit n <+> printTHName o <+> printTHName v
   pretty (FromJSONObjectMethod name xs) = withBody $ printObjectDoc (toName name, xs)
     where
-      withBody body = "withObject" <+> prettyLit name <+> "(\\v ->" <+> body <> ")"
+      withBody body = line <> indent 2 "withObject" <+> prettyLit name <+> "(\\v ->" <+> body <> ")"
   pretty (FromJSONUnionMethod xs) = line <> indent 2 ("withUnion" <> line <> indent 2 (tuple [indent 1 (matchDoc $ map toMatch xs) <> line]))
     where
       toMatch (pat, expr) = (tuple $ map mapP pat, printVariantDoc expr)
