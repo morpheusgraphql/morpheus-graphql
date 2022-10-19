@@ -78,9 +78,9 @@ processClientDocument BuildConfig {..} schema query moduleName = do
             extensions =
               [ "DeriveGeneric",
                 "DuplicateRecordFields",
-                "TypeFamilies",
+                "LambdaCase",
                 "OverloadedStrings",
-                "LambdaCase"
+                "TypeFamilies"
               ],
             types
           }
