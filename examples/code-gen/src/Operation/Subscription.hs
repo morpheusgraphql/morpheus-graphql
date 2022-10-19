@@ -80,15 +80,9 @@ instance (Typeable m) => GQLType (Subscription m) where
   type KIND (Subscription m) = TYPE
 
 data Character m
-  = CharacterCreature
-      { unCharacterCreature :: Creature m
-      }
-  | CharacterDeity
-      { unCharacterDeity :: Deity m
-      }
-  | CharacterHuman
-      { unCharacterHuman :: Human m
-      }
+  = CharacterCreature (Creature m)
+  | CharacterDeity (Deity m)
+  | CharacterHuman (Human m)
   deriving (Generic)
 
 instance (Typeable m) => GQLType (Character m) where

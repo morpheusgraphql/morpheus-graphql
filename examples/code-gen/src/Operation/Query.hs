@@ -45,12 +45,8 @@ instance GQLType CharacterArgs where
   type KIND CharacterArgs = TYPE
 
 data Character m
-  = CharacterCreature
-      { unCharacterCreature :: Creature m
-      }
-  | CharacterDeity
-      { unCharacterDeity :: Deity m
-      }
+  = CharacterCreature (Creature m)
+  | CharacterDeity (Deity m)
   deriving (Generic)
 
 instance (Typeable m) => GQLType (Character m) where

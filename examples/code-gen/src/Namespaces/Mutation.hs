@@ -84,15 +84,9 @@ instance GQLType MutationCreateCharacterArgs where
     typeDirective DropNamespace {dropNamespace = "MutationCreateCharacterArgs"}
 
 data Character m
-  = CharacterCreature
-      { unCharacterCreature :: Creature m
-      }
-  | CharacterDeity
-      { unCharacterDeity :: Deity m
-      }
-  | CharacterHuman
-      { unCharacterHuman :: Human m
-      }
+  = CharacterCreature (Creature m)
+  | CharacterDeity (Deity m)
+  | CharacterHuman (Human m)
   deriving (Generic)
 
 instance (Typeable m) => GQLType (Character m) where

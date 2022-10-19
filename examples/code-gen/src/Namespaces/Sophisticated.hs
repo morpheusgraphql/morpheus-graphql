@@ -111,12 +111,8 @@ instance GQLType AddressStreetArgs where
       <> fieldDirective "addressStreetArgsArgInputObject" Describe {text = "\n    argument Description: inputObject\n    "}
 
 data TestUnion m
-  = TestUnionUser
-      { unTestUnionUser :: User m
-      }
-  | TestUnionAddress
-      { unTestUnionAddress :: Address m
-      }
+  = TestUnionUser (User m)
+  | TestUnionAddress (Address m)
   deriving (Generic)
 
 instance (Typeable m) => GQLType (TestUnion m) where
@@ -137,7 +133,6 @@ instance (Typeable m) => GQLType (InterfacePerson m) where
       <> typeDirective DropNamespace {dropNamespace = "InterfacePerson"}
 
 type Person m = TypeGuard (InterfacePerson m) (User m)
-
 data User m = User
   { userName :: m Text,
     userEmail :: m Text,
