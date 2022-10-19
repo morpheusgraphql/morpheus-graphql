@@ -51,14 +51,12 @@ import Data.Morpheus.Types.Internal.AST
     Value,
     unpackName,
   )
-import Data.Text.Prettyprint.Doc (indent, line)
+import Data.Text.Prettyprint.Doc (concatWith, indent, line)
 import Language.Haskell.TH.Lib (appE, varE)
 import Prettyprinter
   ( Pretty (..),
     align,
     pretty,
-    punctuate,
-    vsep,
     (<+>),
   )
 import Relude hiding (Show, optional, print, show)
@@ -159,7 +157,7 @@ data ServerMethod
 
 instance Pretty ServerMethod where
   pretty (ServerMethodDefaultValues x) = pretty (show x)
-  pretty (ServerMethodDirectives dirs) = line <> indent 2 (align $ vsep $ punctuate " <>" (map pretty dirs))
+  pretty (ServerMethodDirectives dirs) = line <> indent 2 (align $ concatWith (\x y -> x <> "\n  <>" <+> y) (map pretty dirs))
 
 instance PrintExp ServerMethod where
   printExp (ServerMethodDefaultValues values) = [|values|]
