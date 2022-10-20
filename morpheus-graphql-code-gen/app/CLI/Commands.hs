@@ -3,7 +3,7 @@
 module CLI.Commands
   ( GlobalOptions (..),
     App (..),
-    Operation (..),
+    Command (..),
     parseCLI,
   )
 where
@@ -29,13 +29,14 @@ import Options.Applicative
 import qualified Options.Applicative as OA
 import Relude hiding (ByteString)
 
-data Operation
-  = Build {source :: [FilePath]}
+data Command
+  = Build [FilePath]
+  | Check [FilePath]
   | About
   deriving (Show)
 
 data App = App
-  { operations :: Operation,
+  { operations :: Command,
     options :: GlobalOptions
   }
   deriving (Show)
@@ -45,26 +46,21 @@ newtype GlobalOptions = GlobalOptions
   }
   deriving (Show)
 
-commandParser :: Parser Operation
+commandParser :: Parser Command
 commandParser =
   buildOperation
-    [ ( "build",
-        "builds Haskell API from GraphQL schema",
-        Build <$> readFiles
-      ),
-      ( "about",
-        "api information",
-        pure About
-      )
+    [ ("build", "builds Haskell code from GQL source", Build <$> readFiles),
+      ("check", "check if built Haskell code represent GQL source", Check <$> readFiles),
+      ("about", "api information", pure About)
     ]
 
-buildOperation :: [(String, String, Parser Operation)] -> Parser Operation
+buildOperation :: [(String, String, Parser Command)] -> Parser Command
 buildOperation xs = joinParsers $ map parseOperation xs
 
 joinParsers :: [OA.Mod OA.CommandFields a] -> Parser a
 joinParsers xs = subparser $ mconcat xs
 
-parseOperation :: (String, String, Parser Operation) -> OA.Mod OA.CommandFields Operation
+parseOperation :: (String, String, Parser Command) -> OA.Mod OA.CommandFields Command
 parseOperation (bName, bDesc, bValue) =
   command bName (info (helper <*> bValue) (fullDesc <> progDesc bDesc))
 

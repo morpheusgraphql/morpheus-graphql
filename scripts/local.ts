@@ -1,5 +1,4 @@
 import { Command } from "commander";
-import { codeGen } from "./local/code-gen";
 import { format } from "./local/format";
 import { setup } from "./local/setup";
 
@@ -12,11 +11,6 @@ cli
   .description("setup stack config")
   .argument("[string]", "version number", "latest")
   .action(setup);
-
-cli
-  .command("code-gen")
-  .description("generates Morpheus code based on samples")
-  .action(() => codeGen());
 
 cli
   .command("format")

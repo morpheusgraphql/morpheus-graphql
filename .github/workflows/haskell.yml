@@ -40,20 +40,18 @@ jobs:
       # Install & Build & Test
 
       - name: Install dependencies
-        run: |
-          stack build --fast --skip-ghc-check --no-terminal --test --only-dependencies
+        run: stack build --fast --skip-ghc-check --no-terminal --test --only-dependencies
 
       - name: Build
-        run: |
-          stack build --fast --bench --no-run-benchmarks --haddock --no-haddock-deps
+        run: stack build --fast --bench --no-run-benchmarks --haddock --no-haddock-deps
 
       - name: Test
-        run: |
-          stack test --fast
+        run: stack test --fast
 
       - name: Test Code Gen
         run: |
-          npm run code-gen
+          stack install --fast morpheus-graphql-code-gen
+          morpheus check examples/code-gen
 
   hlint:
     runs-on: ubuntu-latest

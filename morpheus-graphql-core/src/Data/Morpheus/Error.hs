@@ -9,6 +9,7 @@ module Data.Morpheus.Error
     NameCollision (..),
     gqlWarnings,
     printWarning,
+    printError,
   )
 where
 
