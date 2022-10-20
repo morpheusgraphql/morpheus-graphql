@@ -102,6 +102,7 @@ enum Power {
   Thunderbolt
   Lightning
   Teleportation
+  Omniscience
 }
 
 interface Supernatural {

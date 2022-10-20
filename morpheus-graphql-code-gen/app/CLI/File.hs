@@ -40,8 +40,9 @@ cliError = putStr . ("    " <>) . printError "error" "\x1b[31m"
 checkGenerated :: FilePath -> ByteString -> IO Bool
 checkGenerated path result = do
   file <- readFile path
-  cliError ("outdated: " <> msg path)
-  pure $ file == result
+  let isOutdated = file /= result
+  traverse_ cliError ["outdated: " <> msg path | isOutdated]
+  pure $ not isOutdated
 
 processDocument :: Bool -> FilePath -> GQLResult ByteString -> IO Bool
 processDocument _ _ (Failure errors) = traverse_ cliError (toList errors) $> False

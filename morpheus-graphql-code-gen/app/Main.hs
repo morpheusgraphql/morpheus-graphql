@@ -65,7 +65,7 @@ processAll :: (Traversable t, MonadIO m) => (a1 -> m Bool) -> t a1 -> m b
 processAll f xs = do
   res <- traverse f xs
   if and res
-    then exitSuccess
+    then putStr "\x1b[32mOK\x1b[0m\n" >> exitSuccess
     else exitWith (ExitFailure 1)
 
 scan :: Context -> IO CommandResult
