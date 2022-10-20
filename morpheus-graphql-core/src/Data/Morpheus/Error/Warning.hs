@@ -9,6 +9,7 @@ module Data.Morpheus.Error.Warning
     deprecatedField,
     gqlWarnings,
     printWarning,
+    printError,
   )
 where
 
@@ -62,18 +63,31 @@ gqlWarnings [] = pure ()
 gqlWarnings warnings = traverse_ (reportWarning . printWarning) warnings
 
 printWarning :: GQLError -> String
-printWarning warning =
-  yellow "warning:"
+printWarning = printError "warning" "\x1b[33m"
+
+printError :: String -> String -> GQLError -> String
+printError label color warning =
+  withColor (label <> ":")
     <> description
     <> loc
-    <> p
+    <> printedPath
     <> "\n"
   where
-    yellow x = "\x1b[33m" <> x <> "\x1b[0m"
-    description = indent <> yellow (toString (message warning))
-    loc = indent <> "  loc: " <> concatMap printLocation (concat $ toList $ locations warning)
-    p = indent <> "  path: " <> intercalate "/" (map printPath $ concat $ toList $ path warning)
-    indent = "\n      "
+    propPath = concat $ toList $ path warning
+    propLoc = concat $ toList $ locations warning
+    description = indent <> withColor (toString (message warning))
+    loc
+      | null propPath = ""
+      | otherwise = indent <> "  locations: " <> concatMap printLocation propLoc
+    printedPath
+      | null propPath = ""
+      | otherwise = indent <> "  path: " <> intercalate "." (map printPath propPath)
+
+    withColor :: String -> String
+    withColor x = color <> x <> "\x1b[0m"
+
+indent :: String
+indent = "\n      "
 
 printPath :: PropName -> String
 printPath (PropIndex x) = show x

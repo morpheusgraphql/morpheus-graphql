@@ -1,17 +1,18 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module CLI.File where
 
-import Data.ByteString.Lazy.Char8 (ByteString, unpack, writeFile)
+import Data.ByteString.Lazy.Char8 (ByteString, readFile, writeFile)
 import Data.Char
-import Data.Morpheus.Error (printWarning)
+import Data.Morpheus.Error (printError, printWarning)
 import Data.Morpheus.Internal.Ext
   ( GQLResult,
     Result (..),
   )
-import Data.Morpheus.Types.Internal.AST (GQLError (..))
-import Relude hiding (ByteString, writeFile)
+import Data.Morpheus.Types.Internal.AST (GQLError (..), msg)
+import Relude hiding (ByteString, readFile, writeFile)
 import System.FilePath.Posix
   ( dropExtensions,
     makeRelative,
@@ -31,11 +32,22 @@ capitalize (x : xs) = toUpper x : xs
 
 printWarnings :: [GQLError] -> IO ()
 printWarnings [] = pure ()
-printWarnings warnings = traverse_ (putStr . ("      " <>) . printWarning) warnings
+printWarnings warnings = traverse_ (putStr . ("    " <>) . printWarning) warnings
 
-saveDocument :: FilePath -> GQLResult ByteString -> IO ()
-saveDocument _ (Failure errors) = print errors
-saveDocument output Success {result, warnings} = printWarnings warnings >> writeFile output result
+cliError :: GQLError -> IO ()
+cliError = putStr . ("    " <>) . printError "error" "\x1b[31m"
+
+checkGenerated :: FilePath -> ByteString -> IO Bool
+checkGenerated path result = do
+  file <- readFile path
+  cliError ("outdated: " <> msg path)
+  pure $ file == result
+
+processDocument :: Bool -> FilePath -> GQLResult ByteString -> IO Bool
+processDocument _ _ (Failure errors) = traverse_ cliError (toList errors) $> False
+processDocument check path Success {result, warnings}
+  | check = printWarnings warnings >> checkGenerated path result
+  | otherwise = printWarnings warnings >> writeFile path result $> True
 
 getModuleNameByPath :: FilePath -> FilePath -> [Char]
 getModuleNameByPath root path = intercalate "." $ splitDirectories $ dropExtensions $ makeRelative root path

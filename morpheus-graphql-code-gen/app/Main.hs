@@ -10,8 +10,8 @@ where
 
 import CLI.Commands
   ( App (..),
+    Command (..),
     GlobalOptions (..),
-    Operation (..),
     parseCLI,
   )
 import CLI.Config
@@ -20,7 +20,7 @@ import CLI.Config
     ServiceOptions (..),
     readConfig,
   )
-import CLI.File (getModuleNameByPath, processFileName, saveDocument)
+import CLI.File (getModuleNameByPath, processDocument, processFileName)
 import CLI.Generator
   ( BuildConfig (..),
     processClientDocument,
@@ -35,6 +35,7 @@ import qualified Data.Text.IO as TIO
 import Data.Version (showVersion)
 import qualified Paths_morpheus_graphql_code_gen as CLI
 import Relude hiding (ByteString)
+import System.Exit (ExitCode (..))
 import System.FilePath (normalise, (</>))
 import System.FilePath.Glob (glob)
 
@@ -50,64 +51,84 @@ runApp App {..}
   | otherwise = runOperation operations
   where
     runOperation About = putStrLn $ "Morpheus GraphQL CLI, version " <> currentVersion
-    runOperation Build {source} = traverse_ scan source
+    runOperation (Build source) = processAll (scan . Context False) source
+    runOperation (Check source) = processAll (scan . Context True) source
 
-scan :: FilePath -> IO ()
-scan path = do
-  Config {server, client} <- readConfig path
-  traverse_ (handleServerService path) (concat $ maybeToList server)
-  traverse_ (handleClientService path) (concat $ maybeToList client)
+data Context = Context
+  { isCheck :: Bool,
+    configDir :: FilePath
+  }
+
+type CommandResult = Bool
+
+processAll :: (Traversable t, MonadIO m) => (a1 -> m Bool) -> t a1 -> m b
+processAll f xs = do
+  res <- traverse f xs
+  if and res
+    then exitSuccess
+    else exitWith (ExitFailure 1)
+
+scan :: Context -> IO CommandResult
+scan ctx = do
+  Config {server, client} <- readConfig (configDir ctx)
+  servers <- traverse (handleServerService ctx) (concat $ maybeToList server)
+  clients <- traverse (handleClientService ctx) (concat $ maybeToList client)
+  pure $ and (servers <> clients)
 
 getImports :: Maybe ServiceOptions -> [Text]
 getImports = concat . maybeToList . (>>= globals)
 
-handleClientService :: FilePath -> Service -> IO ()
-handleClientService target Service {name, source, includes, options, schema} = do
-  let root = normalise (target </> source)
+parseServiceData :: Context -> Service -> IO (FilePath, Bool, [FilePath], [Text])
+parseServiceData ctx Service {source, includes, options} = do
+  let root = normalise (configDir ctx </> source)
   let namespaces = fromMaybe False (options >>= namespace)
   let patterns = map (normalise . (root </>)) includes
   files <- concat <$> traverse glob patterns
+  let globalImports = getImports options
+  pure (root, namespaces, files, globalImports)
+
+handleClientService :: Context -> Service -> IO CommandResult
+handleClientService ctx s@Service {name, schema} = do
+  (root, namespaces, files, globalImports) <- parseServiceData ctx s
   putStrLn ("\n build:" <> name)
   schemaPath <- maybe (fail $ "client service " <> name <> " should provide schema!") pure schema
-  let globalImports = getImports options
   let config = BuildConfig {..}
-  buildClientGlobals config (normalise $ root </> schemaPath)
-  traverse_ (buildClientQuery config (normalise $ root </> schemaPath)) files
+  globals <- buildClientGlobals ctx config (normalise $ root </> schemaPath)
+  and . (globals :) <$> traverse (buildClientQuery ctx config (normalise $ root </> schemaPath)) files
 
-buildClientGlobals :: BuildConfig -> FilePath -> IO ()
-buildClientGlobals options schemaPath = do
+buildClientGlobals :: Context -> BuildConfig -> FilePath -> IO CommandResult
+buildClientGlobals ctx options schemaPath = do
   putStr ("  - " <> schemaPath <> "\n")
   schemaDoc <- readSchemaSource schemaPath
   let hsPath = processFileName schemaPath
   let moduleName = pack $ getModuleNameByPath (root options) hsPath
-  saveDocument hsPath (processClientDocument options schemaDoc Nothing moduleName)
+  let result = processClientDocument options schemaDoc Nothing moduleName
+  processDocument (isCheck ctx) hsPath result
 
-buildClientQuery :: BuildConfig -> FilePath -> FilePath -> IO ()
-buildClientQuery options schemaPath queryPath = do
+buildClientQuery :: Context -> BuildConfig -> FilePath -> FilePath -> IO CommandResult
+buildClientQuery ctx options schemaPath queryPath = do
   putStr ("  - " <> queryPath <> "\n")
   file <- TIO.readFile queryPath
   schemaDoc <- readSchemaSource schemaPath
   let moduleName = getModuleNameByPath (root options) hsPath
   let globalModuleName = pack (getModuleNameByPath (root options) (processFileName schemaPath))
-  saveDocument hsPath (processClientDocument (options {globalImports = [globalModuleName]}) schemaDoc (Just file) (pack moduleName))
+  let result = processClientDocument (options {globalImports = [globalModuleName]}) schemaDoc (Just file) (pack moduleName)
+  processDocument (isCheck ctx) hsPath result
   where
     hsPath = processFileName queryPath
 
-handleServerService :: FilePath -> Service -> IO ()
-handleServerService target Service {name, source, includes, options} = do
-  let root = normalise (target </> source)
-  let namespaces = fromMaybe False (options >>= namespace)
-  let patterns = map (normalise . (root </>)) includes
-  files <- concat <$> traverse glob patterns
+handleServerService :: Context -> Service -> IO CommandResult
+handleServerService ctx s@Service {name} = do
+  (root, namespaces, files, globalImports) <- parseServiceData ctx s
   putStrLn ("\n build:" <> name)
-  let globalImports = getImports options
-  traverse_ (buildServer (BuildConfig {..}) {root, namespaces}) files
+  and <$> traverse (buildServer ctx (BuildConfig {..}) {root, namespaces}) files
 
-buildServer :: BuildConfig -> FilePath -> IO ()
-buildServer options path = do
+buildServer :: Context -> BuildConfig -> FilePath -> IO CommandResult
+buildServer ctx options path = do
   putStr ("  - " <> path <> "\n")
   file <- L.readFile path
   let moduleName = getModuleNameByPath (root options) hsPath
-  saveDocument hsPath (processServerDocument options moduleName file)
+  let result = processServerDocument options moduleName file
+  processDocument (isCheck ctx) hsPath result
   where
     hsPath = processFileName path
