@@ -7,9 +7,9 @@ module Main
 where
 
 import qualified Case.Enum.Test as Enum
+import qualified Case.Fragments.Test as Fragments
 import qualified Case.Github.Test as Github
 import qualified Case.Interface.Test as Interface
-import qualified Case.Fragments.Test as Fragments
 import qualified Case.LocalGlobal.Test as LocalGlobal
 import qualified Case.LowercaseTypeName.Test as LowercaseTypeName
 import qualified Case.ResponseTypes.Test as ResponseTypes
