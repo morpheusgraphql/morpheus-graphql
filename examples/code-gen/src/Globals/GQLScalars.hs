@@ -3,6 +3,7 @@
 
 module Globals.GQLScalars where
 
+import Data.Morpheus.Client.CodeGen.Internal
 import Data.Morpheus.Kind (SCALAR)
 import Data.Morpheus.Types
   ( DecodeScalar (..),
@@ -10,7 +11,6 @@ import Data.Morpheus.Types
     GQLType (KIND),
     ScalarValue (Int),
   )
-import GHC.Generics (Generic)
 
 data TestScalar
   = TestScalar
@@ -41,3 +41,9 @@ instance DecodeScalar Euro where
 
 instance EncodeScalar Euro where
   encodeScalar (Euro x) = Int x
+
+instance FromJSON Euro where
+  parseJSON = scalarFromJSON
+
+instance ToJSON Euro where
+  toJSON = scalarToJSON

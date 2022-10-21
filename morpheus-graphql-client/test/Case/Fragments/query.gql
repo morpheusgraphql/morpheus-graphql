@@ -1,0 +1,39 @@
+query MyQuery {
+  character {
+    ...DEITY
+    ...HERO
+  }
+  withNewTypes: character {
+    lastName
+    ...DEITY
+    ... on Deity {
+      power
+    }
+  }
+  person: character {
+    ...Person
+  }
+  hero: character {
+    ...HERO
+  }
+  superhero: character {
+    ...HERO
+  }
+}
+
+fragment Person on Character {
+  name
+  lastName
+}
+
+fragment DEITY on Deity {
+  __typename
+  name
+  power
+}
+
+fragment HERO on Hero {
+  __typename
+  name
+  hobby
+}

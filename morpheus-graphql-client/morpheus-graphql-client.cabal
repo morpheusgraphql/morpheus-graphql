@@ -22,6 +22,8 @@ extra-source-files:
     changelog.md
 data-files:
     test/Case/Enum/schema.gql
+    test/Case/Fragments/query.gql
+    test/Case/Fragments/schema.gql
     test/Case/Github/query.gql
     test/Case/Github/schema.gql
     test/Case/Interface/query.gql
@@ -32,6 +34,7 @@ data-files:
     test/Case/LowercaseTypeName/schema.gql
     test/Case/Scalar/schema.gql
     test/Case/Enum/response.json
+    test/Case/Fragments/response.json
     test/Case/Github/response.json
     test/Case/Interface/response.json
     test/Case/LocalGlobal/cities.json
@@ -56,9 +59,10 @@ library
   exposed-modules:
       Data.Morpheus.Client
       Data.Morpheus.Client.CodeGen.Internal
-  other-modules:
       Data.Morpheus.Client.CodeGen.AST
+  other-modules:
       Data.Morpheus.Client.CodeGen.Declare
+      Data.Morpheus.Client.CodeGen.Interpreting.Arguments
       Data.Morpheus.Client.CodeGen.Interpreting.Core
       Data.Morpheus.Client.CodeGen.Interpreting.Global
       Data.Morpheus.Client.CodeGen.Interpreting.Local
@@ -110,6 +114,7 @@ test-suite morpheus-graphql-client-test
   main-is: Spec.hs
   other-modules:
       Case.Enum.Test
+      Case.Fragments.Test
       Case.Github.Test
       Case.Interface.Test
       Case.LocalGlobal.Api

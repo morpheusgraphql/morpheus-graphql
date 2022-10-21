@@ -74,12 +74,6 @@ instance ToJSON Dog where
       [ "name" .= dogName
       ]
 
-instance FromJSON Euro where
-  parseJSON = scalarFromJSON
-
-instance ToJSON Euro where
-  toJSON = scalarToJSON
-
 data Power
   = PowerShapeshifting
   | PowerThunderbolt

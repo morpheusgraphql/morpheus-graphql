@@ -57,15 +57,15 @@ import Language.Haskell.TH.Syntax (Name)
 import Relude hiding (ToString, Type, toString)
 
 mapPreDeclarations :: MonadFail m => ClientPreDeclaration -> m ClientDeclaration
-mapPreDeclarations (FromJSONClass mode dec) = InstanceDeclaration <$> deriveFromJSON mode dec
+mapPreDeclarations (FromJSONClass mode dec) = InstanceDeclaration mode <$> deriveFromJSON mode dec
 mapPreDeclarations (FromJSONObjectClass cType CodeGenConstructor {..}) =
-  pure $ InstanceDeclaration $ mkFromJSON cType $ FromJSONObjectMethod (getFullName constructorName) (map defField constructorFields)
-mapPreDeclarations (FromJSONUnionClass cType constructors) = pure $ InstanceDeclaration $ mkFromJSON cType $ FromJSONUnionMethod $ map mkMatch constructors
+  pure $ InstanceDeclaration TYPE_MODE $ mkFromJSON cType $ FromJSONObjectMethod (getFullName constructorName) (map defField constructorFields)
+mapPreDeclarations (FromJSONUnionClass cType constructors) = pure $ InstanceDeclaration TYPE_MODE $ mkFromJSON cType $ FromJSONUnionMethod $ map mkMatch constructors
   where
     mkMatch (tag, (consName, typeName)) = ([tag, UVar $ if isJust typeName then "v" else "_"], (toName consName, fmap toName typeName))
-mapPreDeclarations (ToJSONClass mode clientDef) = InstanceDeclaration <$> deriveToJSON mode clientDef
+mapPreDeclarations (ToJSONClass mode clientDef) = InstanceDeclaration mode <$> deriveToJSON mode clientDef
 mapPreDeclarations (ClientType c) = pure $ ClientTypeDeclaration c
-mapPreDeclarations (RequestTypeClass req) = pure $ InstanceDeclaration (getRequestInstance req)
+mapPreDeclarations (RequestTypeClass req) = pure $ InstanceDeclaration TYPE_MODE (getRequestInstance req)
 
 getRequestInstance :: RequestTypeDefinition -> TypeClassInstance ClientMethod
 getRequestInstance RequestTypeDefinition {..} =

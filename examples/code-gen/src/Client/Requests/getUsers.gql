@@ -15,12 +15,14 @@ query GetUser($coordinates: Coordinates!) {
     name
     entity {
       ... on User {
+        __typename
         name
       }
     }
   }
   character {
     ... on Deity {
+      __typename
       power
     }
   }

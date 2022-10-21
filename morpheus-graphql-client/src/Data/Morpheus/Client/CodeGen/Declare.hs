@@ -48,7 +48,7 @@ printDeclarations :: [ClientDeclaration] -> Q [Dec]
 printDeclarations clientType = concat <$> traverse typeDeclarations clientType
 
 typeDeclarations :: ClientDeclaration -> Q [Dec]
-typeDeclarations (InstanceDeclaration dec) = deriveIfNotDefined printDec dec
+typeDeclarations (InstanceDeclaration _ dec) = deriveIfNotDefined printDec dec
 typeDeclarations (ClientTypeDeclaration c) = declareIfNotDeclared printDec c
 
 internalLegacyLocalDeclareTypes :: IO SchemaSource -> ExecutableSource -> Q [Dec]

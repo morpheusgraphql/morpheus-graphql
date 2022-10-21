@@ -12,7 +12,7 @@ import Data.Morpheus.Client.CodeGen.Internal
 instance RequestType NewUsers where
   type RequestArgs NewUsers = NewUsersArgs
   __name _ = "NewUsers"
-  __query _ = "subscription NewUsers($loc: Coordinates!) {\n  newUser {\n    name\n    email\n    address(coordinates: $loc) {\n      city\n    }\n    worships {\n      ... on Hero {\n        hobby\n      }\n    }\n  }\n}\n"
+  __query _ = "subscription NewUsers($loc: Coordinates!) {\n  newUser {\n    name\n    email\n    address(coordinates: $loc) {\n      city\n    }\n    worships {\n      ... on Hero {\n        __typename\n        hobby\n      }\n    }\n  }\n}\n"
   __type _ = Subscription
 
 newtype NewUsers = NewUsers
@@ -58,14 +58,15 @@ instance FromJSON NewUsersNewUserWorships where
           (_fallback, _) -> pure NewUsersNewUserWorships
       )
 
-newtype NewUsersNewUserWorshipsHero = NewUsersNewUserWorshipsHero
-  { hobby :: String
+data NewUsersNewUserWorshipsHero = NewUsersNewUserWorshipsHero
+  { __typename :: String,
+    hobby :: String
   }
   deriving (Generic, Show, Eq)
 
 instance FromJSON NewUsersNewUserWorshipsHero where
   parseJSON =
-    withObject "NewUsersNewUserWorshipsHero" (\v -> NewUsersNewUserWorshipsHero <$> v .: "hobby")
+    withObject "NewUsersNewUserWorshipsHero" (\v -> NewUsersNewUserWorshipsHero <$> v .: "__typename" <*> v .: "hobby")
 
 newtype NewUsersArgs = NewUsersArgs
   { loc :: Coordinates

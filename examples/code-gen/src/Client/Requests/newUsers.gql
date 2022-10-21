@@ -7,6 +7,7 @@ subscription NewUsers($loc: Coordinates!) {
     }
     worships {
       ... on Hero {
+        __typename
         hobby
       }
     }

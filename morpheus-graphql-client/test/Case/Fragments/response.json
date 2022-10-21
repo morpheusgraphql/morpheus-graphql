@@ -1,0 +1,66 @@
+{
+  "data": {
+    "character": [
+      {
+        "__typename": "Deity",
+        "name": "Deity Name",
+        "power": "Deity Power"
+      },
+      {
+        "__typename": "Character",
+        "name": "Character Name"
+      },
+      {
+        "__typename": "Hero",
+        "name": "Hero Name",
+        "hobby": "Deity Power"
+      }
+    ],
+    "withNewTypes": [
+      {
+        "__typename": "Deity",
+        "name": "Deity Name",
+        "power": "Deity Power"
+      },
+      {
+        "__typename": "Character",
+        "name": "Character Name"
+      },
+      {
+        "__typename": "Hero",
+        "name": "Hero Name",
+        "hobby": "Deity Power"
+      }
+    ],
+    "person": [
+      {
+        "name1": "test name",
+        "name": "test name"
+      }
+    ],
+    "hero": [
+      {
+        "__typename": "Hero",
+        "hobby": "Hero Hobby",
+        "name": "Hero name2"
+      },
+      {
+        "name": "This should be a Deity!",
+        "power": "Power"
+      },
+      {
+        "__typename": "Character",
+        "name": "Character name2"
+      }
+    ],
+    "superhero": [
+      {},
+      {
+        "__typename": "Hero",
+        "hobby": "Hero Hobby",
+        "name": "Hero name2"
+      },
+      { "__typename": "Deity" }
+    ]
+  }
+}

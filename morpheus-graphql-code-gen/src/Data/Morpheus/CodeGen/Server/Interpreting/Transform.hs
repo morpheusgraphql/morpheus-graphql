@@ -24,7 +24,6 @@ import Data.Morpheus.CodeGen.Internal.AST
     MethodArgument (..),
     TypeClassInstance (..),
     fromTypeName,
-    getFullName,
   )
 import Data.Morpheus.CodeGen.Server.Internal.AST
   ( CodeGenConfig (..),
@@ -369,29 +368,29 @@ genArgumentType
       fieldContent = Just (FieldArgs arguments)
     }
     | length arguments > 1 = do
-        tName <- (fieldName &) <$> asks toArgsTypeName
-        inType (Just tName) $ do
-          let argumentFields = argument <$> toList arguments
-          fields <- traverse renderDataField argumentFields
-          let typename = toHaskellTypeName tName
-          namespaceDirs <- getNamespaceDirs typename
-          dirs <- concat <$> traverse getDirs argumentFields
-          let cgTypeName = fromTypeName (packName typename)
-          pure
-            [ DataType
-                CodeGenType
-                  { cgTypeName,
-                    cgConstructors = mkObjectCons tName fields,
-                    cgDerivations = derivesClasses False
-                  },
-              gqlTypeToInstance
-                GQLTypeDefinition
-                  { gqlTarget = cgTypeName,
-                    gqlKind = Type,
-                    gqlTypeDefaultValues = fromList (mapMaybe getDefaultValue argumentFields),
-                    gqlTypeDirectiveUses = namespaceDirs <> dirs
-                  }
-            ]
+      tName <- (fieldName &) <$> asks toArgsTypeName
+      inType (Just tName) $ do
+        let argumentFields = argument <$> toList arguments
+        fields <- traverse renderDataField argumentFields
+        let typename = toHaskellTypeName tName
+        namespaceDirs <- getNamespaceDirs typename
+        dirs <- concat <$> traverse getDirs argumentFields
+        let cgTypeName = fromTypeName (packName typename)
+        pure
+          [ DataType
+              CodeGenType
+                { cgTypeName,
+                  cgConstructors = mkObjectCons tName fields,
+                  cgDerivations = derivesClasses False
+                },
+            gqlTypeToInstance
+              GQLTypeDefinition
+                { gqlTarget = cgTypeName,
+                  gqlKind = Type,
+                  gqlTypeDefaultValues = fromList (mapMaybe getDefaultValue argumentFields),
+                  gqlTypeDirectiveUses = namespaceDirs <> dirs
+                }
+          ]
 genArgumentType _ = pure []
 
 getInputFields :: TypeDefinition c s -> [FieldDefinition IN s]

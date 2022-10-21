@@ -12,7 +12,7 @@ import Data.Morpheus.Client.CodeGen.Internal
 instance RequestType GetCharacters where
   type RequestArgs GetCharacters = ()
   __name _ = "GetCharacters"
-  __query _ = "query GetCharacters {\n  character {\n    name\n    ... on Deity {\n      power\n    }\n\n    ... on Hero {\n      hobby\n    }\n  }\n  anonymous: character {\n    name1: name\n    name\n  }\n  heros: character {\n    ... on Hero {\n      hobby\n    }\n    ... on Character {\n      name2: name\n    }\n  }\n  superheros: character {\n    ... on Hero {\n      hobby\n    }\n  }\n}\n"
+  __query _ = "query GetCharacters {\n  character {\n    name\n    ...DEITY\n    ...HERO\n  }\n  anonymous: character {\n    name1: name\n    name\n  }\n  heros: character {\n    ...HERO\n    ... on Character {\n      name2: name\n    }\n  }\n  superheros: character {\n    ...HERO\n  }\n}\n\nfragment DEITY on Deity {\n  power\n}\n\nfragment HERO on Hero {\n  __typename\n  hobby\n}"
   __type _ = Query
 
 data GetCharacters = GetCharacters
@@ -54,13 +54,14 @@ instance FromJSON GetCharactersCharacterDeity where
 
 data GetCharactersCharacterHero = GetCharactersCharacterHero
   { name :: String,
+    __typename :: String,
     hobby :: String
   }
   deriving (Generic, Show, Eq)
 
 instance FromJSON GetCharactersCharacterHero where
   parseJSON =
-    withObject "GetCharactersCharacterHero" (\v -> GetCharactersCharacterHero <$> v .: "name" <*> v .: "hobby")
+    withObject "GetCharactersCharacterHero" (\v -> GetCharactersCharacterHero <$> v .: "name" <*> v .: "__typename" <*> v .: "hobby")
 
 newtype GetCharactersCharacterCharacter = GetCharactersCharacterCharacter
   { name :: String
@@ -96,13 +97,14 @@ instance FromJSON GetCharactersHeros where
 
 data GetCharactersHerosHero = GetCharactersHerosHero
   { name2 :: String,
+    __typename :: String,
     hobby :: String
   }
   deriving (Generic, Show, Eq)
 
 instance FromJSON GetCharactersHerosHero where
   parseJSON =
-    withObject "GetCharactersHerosHero" (\v -> GetCharactersHerosHero <$> v .: "name2" <*> v .: "hobby")
+    withObject "GetCharactersHerosHero" (\v -> GetCharactersHerosHero <$> v .: "name2" <*> v .: "__typename" <*> v .: "hobby")
 
 newtype GetCharactersHerosCharacter = GetCharactersHerosCharacter
   { name2 :: String
@@ -114,7 +116,7 @@ instance FromJSON GetCharactersHerosCharacter where
     withObject "GetCharactersHerosCharacter" (\v -> GetCharactersHerosCharacter <$> v .: "name2")
 
 data GetCharactersSuperheros
-  = GetCharactersSuperherosVariantHero GetCharactersSuperherosHero
+  = GetCharactersSuperherosVariantHero FragmentHERO
   | GetCharactersSuperheros
   deriving (Generic, Show, Eq)
 
@@ -126,11 +128,12 @@ instance FromJSON GetCharactersSuperheros where
           (_fallback, _) -> pure GetCharactersSuperheros
       )
 
-newtype GetCharactersSuperherosHero = GetCharactersSuperherosHero
-  { hobby :: String
+data FragmentHERO = FragmentHERO
+  { __typename :: String,
+    hobby :: String
   }
   deriving (Generic, Show, Eq)
 
-instance FromJSON GetCharactersSuperherosHero where
+instance FromJSON FragmentHERO where
   parseJSON =
-    withObject "GetCharactersSuperherosHero" (\v -> GetCharactersSuperherosHero <$> v .: "hobby")
+    withObject "FragmentHERO" (\v -> FragmentHERO <$> v .: "__typename" <*> v .: "hobby")
