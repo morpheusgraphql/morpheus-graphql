@@ -95,6 +95,7 @@ union MyUnion = User | Address
 
 interface Character {
   name: String!
+  lastName: String
 }
 
 enum Power {
@@ -112,11 +113,13 @@ interface Supernatural {
 type Hero implements Character {
   name: String!
   hobby: String!
+  lastName: String
 }
 
 type Deity implements Character & Supernatural {
   name: String!
   power: Power!
+  lastName: String
 }
 
 type Query {

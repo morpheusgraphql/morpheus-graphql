@@ -80,6 +80,7 @@ parseSelectionField =
       <*> maybeArguments
       <*> optionalDirectives
       <*> parseSelectionContent
+      <*> pure empty
 
 parseSelectionContent :: Parser (SelectionContent RAW)
 parseSelectionContent =

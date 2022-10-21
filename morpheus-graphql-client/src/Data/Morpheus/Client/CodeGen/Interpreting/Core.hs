@@ -21,19 +21,27 @@ module Data.Morpheus.Client.CodeGen.Interpreting.Core
     runLocalM,
     withPosition,
     getNameByPath,
+    registerFragment,
+    existFragment,
+    removeDuplicates,
+    clientConfig,
+    lookupField,
   )
 where
 
-import Control.Monad.Except (MonadError)
+import Control.Monad.Except (MonadError (..))
 import Data.Morpheus.Client.CodeGen.AST
-  ( ClientTypeDefinition (..),
+  ( ClientDeclaration (..),
+    ClientTypeDefinition (..),
   )
 import Data.Morpheus.CodeGen.Internal.AST
   ( CodeGenType (..),
     CodeGenTypeName (..),
     DerivingClass (..),
+    TypeClassInstance (..),
     fromTypeName,
   )
+import Data.Morpheus.Core (Config (..), VALIDATION_MODE (WITHOUT_VARIABLES))
 import Data.Morpheus.Error
   ( deprecatedField,
   )
@@ -42,17 +50,23 @@ import Data.Morpheus.Internal.Ext
     Result (..),
   )
 import Data.Morpheus.Internal.Utils
-  ( selectBy,
+  ( empty,
+    selectBy,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     Directives,
+    FieldDefinition (..),
     FieldName,
+    FragmentName,
     GQLError,
+    Msg,
+    OUT,
     Position,
     RAW,
     Ref (..),
     Schema (..),
+    TRUE,
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
@@ -61,16 +75,40 @@ import Data.Morpheus.Types.Internal.AST
     internal,
     lookupDeprecated,
     lookupDeprecatedReason,
+    mkTypeRef,
     msg,
     typeDefinitions,
   )
-import Relude
+import Data.Set (insert, member)
+import Relude hiding (empty)
+
+clientConfig :: Config
+clientConfig = Config {debug = False, validationMode = WITHOUT_VARIABLES}
 
 data LocalContext = LocalContext
   { ctxSchema :: Schema VALID,
     ctxVariables :: VariableDefinitions RAW,
-    ctxPosition :: Maybe Position
+    ctxPosition :: Maybe Position,
+    ctxFragments :: Set FragmentName
   }
+
+getKey :: ClientDeclaration -> String
+getKey (InstanceDeclaration _ x) = show (typeClassName x) <> show (typeClassTarget x)
+getKey (ClientTypeDeclaration x) = show x
+
+removeDuplicates :: [ClientDeclaration] -> [ClientDeclaration]
+removeDuplicates = collect []
+  where
+    collect seen [] = seen
+    collect seen (x : xs)
+      | getKey x `elem` map getKey seen = collect seen xs
+      | otherwise = collect (seen <> [x]) xs
+
+registerFragment :: FragmentName -> LocalM a -> LocalM a
+registerFragment name = local (\ctx -> ctx {ctxFragments = insert name (ctxFragments ctx)})
+
+existFragment :: FragmentName -> LocalM Bool
+existFragment name = (name `member`) <$> asks ctxFragments
 
 runLocalM :: LocalContext -> LocalM a -> GQLResult a
 runLocalM context = flip runReaderT context . _runLocalM
@@ -132,3 +170,21 @@ printClientType ClientTypeDefinition {..} =
       cgConstructors = clientCons,
       cgDerivations = defaultDerivations
     }
+
+lookupField :: FieldName -> TypeContent TRUE ANY VALID -> LocalM (FieldDefinition OUT VALID)
+lookupField selectionName _
+  | selectionName == "__typename" =
+      pure
+        FieldDefinition
+          { fieldName = "__typename",
+            fieldDescription = Nothing,
+            fieldType = mkTypeRef "String",
+            fieldDirectives = empty,
+            fieldContent = Nothing
+          }
+lookupField selectionName x@DataObject {objectFields} = selectBy (selError selectionName x) selectionName objectFields
+lookupField selectionName x@DataInterface {interfaceFields} = selectBy (selError selectionName x) selectionName interfaceFields
+lookupField _ dt = throwError (compileError $ "Type should be output Object \"" <> msg (show dt :: String))
+
+selError :: (Msg a, Show b) => a -> b -> GQLError
+selError selectionName con = compileError $ "can't find field " <> msg selectionName <> " on type: " <> msg (show con :: String)

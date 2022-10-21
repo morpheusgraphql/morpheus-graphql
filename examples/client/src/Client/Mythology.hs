@@ -62,6 +62,7 @@ declareLocalTypesInline
           bornAt
         }
         character  {
+          __typename
           ...on Creature {
             name
             age
@@ -72,6 +73,7 @@ declareLocalTypesInline
           }
         }
         persons {
+          __typename
           ...on Deity {
               cName: name
           }

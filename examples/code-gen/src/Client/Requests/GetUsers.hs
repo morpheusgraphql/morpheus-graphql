@@ -12,7 +12,7 @@ import Data.Morpheus.Client.CodeGen.Internal
 instance RequestType GetUser where
   type RequestArgs GetUser = GetUserArgs
   __name _ = "GetUser"
-  __query _ = "# Query Hero with Compile time Validation\nquery GetUser($coordinates: Coordinates!) {\n  myUser: user {\n    name\n    aliasEmail: email\n    address(coordinates: $coordinates) {\n      city\n    }\n    aliasAdress: address(coordinates: $coordinates) {\n      city\n    }\n  }\n  user {\n    email\n    name\n    entity {\n      ... on User {\n        name\n      }\n    }\n  }\n  character {\n    ... on Deity {\n      power\n    }\n  }\n}\n"
+  __query _ = "# Query Hero with Compile time Validation\nquery GetUser($coordinates: Coordinates!) {\n  myUser: user {\n    name\n    aliasEmail: email\n    address(coordinates: $coordinates) {\n      city\n    }\n    aliasAdress: address(coordinates: $coordinates) {\n      city\n    }\n  }\n  user {\n    email\n    name\n    entity {\n      ... on User {\n        __typename\n        name\n      }\n    }\n  }\n  character {\n    ... on Deity {\n      __typename\n      power\n    }\n  }\n}\n"
   __type _ = Query
 
 data GetUser = GetUser
@@ -80,14 +80,15 @@ instance FromJSON GetUserUserEntity where
           (_fallback, _) -> pure GetUserUserEntity
       )
 
-newtype GetUserUserEntityUser = GetUserUserEntityUser
-  { name :: String
+data GetUserUserEntityUser = GetUserUserEntityUser
+  { __typename :: String,
+    name :: String
   }
   deriving (Generic, Show, Eq)
 
 instance FromJSON GetUserUserEntityUser where
   parseJSON =
-    withObject "GetUserUserEntityUser" (\v -> GetUserUserEntityUser <$> v .: "name")
+    withObject "GetUserUserEntityUser" (\v -> GetUserUserEntityUser <$> v .: "__typename" <*> v .: "name")
 
 data GetUserCharacter
   = GetUserCharacterVariantDeity GetUserCharacterDeity
@@ -102,14 +103,15 @@ instance FromJSON GetUserCharacter where
           (_fallback, _) -> pure GetUserCharacter
       )
 
-newtype GetUserCharacterDeity = GetUserCharacterDeity
-  { power :: Power
+data GetUserCharacterDeity = GetUserCharacterDeity
+  { __typename :: String,
+    power :: Power
   }
   deriving (Generic, Show, Eq)
 
 instance FromJSON GetUserCharacterDeity where
   parseJSON =
-    withObject "GetUserCharacterDeity" (\v -> GetUserCharacterDeity <$> v .: "power")
+    withObject "GetUserCharacterDeity" (\v -> GetUserCharacterDeity <$> v .: "__typename" <*> v .: "power")
 
 newtype GetUserArgs = GetUserArgs
   { coordinates :: Coordinates

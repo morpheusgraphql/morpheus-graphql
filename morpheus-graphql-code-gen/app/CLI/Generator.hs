@@ -16,6 +16,7 @@ import Data.Morpheus.Client
   ( SchemaSource,
     parseClientTypeDeclarations,
   )
+import Data.Morpheus.Client.CodeGen.AST (ClientDeclaration (..), DERIVING_MODE (SCALAR_MODE))
 import Data.Morpheus.CodeGen
   ( CodeGenConfig (..),
     parseServerTypeDefinitions,
@@ -61,6 +62,10 @@ processServerDocument BuildConfig {..} moduleName schema = do
           types
         }
 
+notScalars :: ClientDeclaration -> Bool
+notScalars (InstanceDeclaration SCALAR_MODE _) = False
+notScalars _ = True
+
 processClientDocument ::
   BuildConfig ->
   SchemaSource ->
@@ -68,7 +73,7 @@ processClientDocument ::
   Text ->
   GQLResult ByteString
 processClientDocument BuildConfig {..} schema query moduleName = do
-  types <- parseClientTypeDeclarations schema query
+  types <- filter notScalars <$> parseClientTypeDeclarations schema query
   let moduleDef =
         ModuleDefinition
           { moduleName,

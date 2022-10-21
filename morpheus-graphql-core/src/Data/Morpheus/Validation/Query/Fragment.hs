@@ -34,6 +34,7 @@ import Data.Morpheus.Types.Internal.AST
     Position,
     RAW,
     Ref (..),
+    Selection (..),
     SelectionSet,
     Stage,
     TypeDefinition,
@@ -71,8 +72,8 @@ validateSpread ::
   Ref FragmentName ->
   FragmentValidator s UnionTag
 validateSpread f allowedTargets ref = do
-  fragment@Fragment {fragmentType} <- resolveSpread allowedTargets ref
-  UnionTag fragmentType <$> validateFragmentSelection f fragment
+  fragment@Fragment {fragmentType, fragmentName} <- resolveSpread allowedTargets ref
+  UnionTag fragmentType . fmap (\s -> s {selectionOrigin = Just fragmentName}) <$> validateFragmentSelection f fragment
 
 validateFragment ::
   (Fragment RAW -> FragmentValidator s (SelectionSet VALID)) ->

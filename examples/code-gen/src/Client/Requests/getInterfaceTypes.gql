@@ -1,29 +1,29 @@
 query GetCharacters {
   character {
     name
-    ... on Deity {
-      power
-    }
-
-    ... on Hero {
-      hobby
-    }
+    ...DEITY
+    ...HERO
   }
   anonymous: character {
     name1: name
     name
   }
   heros: character {
-    ... on Hero {
-      hobby
-    }
+    ...HERO
     ... on Character {
       name2: name
     }
   }
   superheros: character {
-    ... on Hero {
-      hobby
-    }
+    ...HERO
   }
+}
+
+fragment DEITY on Deity {
+  power
+}
+
+fragment HERO on Hero {
+  __typename
+  hobby
 }

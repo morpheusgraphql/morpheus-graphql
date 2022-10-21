@@ -27,6 +27,7 @@ executable generated-server
       Client.Requests.GetInterfaceTypes
       Client.Requests.GetUsers
       Client.Requests.NewUsers
+      Client.Requests.TestFragments
       Client.Schema
       Domains.Posts.Posts
       Domains.Posts.Resolver

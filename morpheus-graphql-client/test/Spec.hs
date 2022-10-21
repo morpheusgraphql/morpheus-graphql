@@ -7,6 +7,7 @@ module Main
 where
 
 import qualified Case.Enum.Test as Enum
+import qualified Case.Fragments.Test as Fragments
 import qualified Case.Github.Test as Github
 import qualified Case.Interface.Test as Interface
 import qualified Case.LocalGlobal.Test as LocalGlobal
@@ -33,5 +34,6 @@ main =
         Enum.test,
         Scalar.test,
         ResponseTypes.test,
-        Github.test
+        Github.test,
+        Fragments.test
       ]

@@ -60,7 +60,7 @@ import Prelude (show)
 data DERIVING_MODE = SCALAR_MODE | ENUM_MODE | TYPE_MODE
 
 data ClientDeclaration
-  = InstanceDeclaration (TypeClassInstance ClientMethod)
+  = InstanceDeclaration DERIVING_MODE (TypeClassInstance ClientMethod)
   | ClientTypeDeclaration CodeGenType
 
 data ClientPreDeclaration
@@ -88,7 +88,7 @@ data RequestTypeDefinition = RequestTypeDefinition
 
 instance Pretty ClientDeclaration where
   pretty (ClientTypeDeclaration def) = pretty def
-  pretty (InstanceDeclaration def) = pretty def
+  pretty (InstanceDeclaration _ def) = pretty def
 
 data Printable where
   Printable :: forall a. (Show a, Lift a) => a -> Printable

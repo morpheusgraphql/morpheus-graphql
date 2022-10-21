@@ -165,7 +165,8 @@ validateReq constraints inputSchema config request = ResultT $
                     selectionPosition = operationPosition operation,
                     selectionAlias = Nothing,
                     selectionContent = SelectionSet (operationSelection operation),
-                    selectionDirectives = empty
+                    selectionDirectives = empty,
+                    selectionOrigin = Nothing
                   }
             }
         )

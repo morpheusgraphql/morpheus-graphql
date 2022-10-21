@@ -1,0 +1,38 @@
+query TestFragments {
+  character {
+    ...DEITY
+    ...HERO
+  }
+  newTypes: character {
+    lastName
+    ...DEITY
+    ...HERO
+  }
+  person: character {
+    ...Person
+  }
+  heros: character {
+    ...HERO
+  }
+  superheros: character {
+    ...HERO
+  }
+}
+
+fragment Person on Character {
+  __typename
+  name
+  lastName
+}
+
+fragment DEITY on Deity {
+  __typename
+  name
+  power
+}
+
+fragment HERO on Hero {
+  __typename
+  name
+  hobby
+}

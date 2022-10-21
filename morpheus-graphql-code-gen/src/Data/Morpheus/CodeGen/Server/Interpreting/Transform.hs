@@ -24,7 +24,6 @@ import Data.Morpheus.CodeGen.Internal.AST
     MethodArgument (..),
     TypeClassInstance (..),
     fromTypeName,
-    getFullName,
   )
 import Data.Morpheus.CodeGen.Server.Internal.AST
   ( CodeGenConfig (..),

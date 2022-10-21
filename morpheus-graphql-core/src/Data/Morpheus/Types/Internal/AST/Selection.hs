@@ -233,7 +233,8 @@ data Selection (s :: Stage) where
       selectionName :: FieldName,
       selectionArguments :: Arguments s,
       selectionDirectives :: Directives s,
-      selectionContent :: SelectionContent s
+      selectionContent :: SelectionContent s,
+      selectionOrigin :: Maybe FragmentName
     } ->
     Selection s
   InlineFragment :: Fragment RAW -> Selection RAW
@@ -293,6 +294,7 @@ mergeSelection
             { selectionAlias = mergeAlias,
               selectionPosition = pos1,
               selectionDirectives = dirs,
+              selectionOrigin = Nothing,
               ..
             }
     where
