@@ -24,10 +24,10 @@ source-repository head
 executable generated-server
   main-is: Main.hs
   other-modules:
-      Client.GetPosts
-      Client.GetUsers
+      Client.Blog
+      Client.Queries.GetPosts
+      Client.Queries.GetUsers
       Scalars
-      Server.API
       Server.Blog
       Paths_morpheus_graphql_examples_code_gen_docs
   hs-source-dirs:

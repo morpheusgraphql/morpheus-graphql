@@ -9,9 +9,9 @@ server:
 client:
   - name: Client API # Name of the service
     source: ./src # root folder for haskell source files
-    schema: Server/Blog.gql
+    schema: Client/Blog.gql
     includes:
-      - Client/**/*.gql # list of gql sources
+      - Client/Queries/**/*.gql # list of gql sources
     options:
       globals: # The following module definitions are imported into the generated files
         - Scalars

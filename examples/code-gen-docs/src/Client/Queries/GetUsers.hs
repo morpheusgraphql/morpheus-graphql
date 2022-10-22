@@ -4,10 +4,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Client.GetUsers where
+module Client.Queries.GetUsers where
 
+import Client.Blog
 import Data.Morpheus.Client.CodeGen.Internal
-import Server.Blog
 
 instance RequestType GetUsers where
   type RequestArgs GetUsers = ()
