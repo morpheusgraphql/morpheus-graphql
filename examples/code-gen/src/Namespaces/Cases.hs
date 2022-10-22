@@ -3,8 +3,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# HLINT ignore "Use camelCase" #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 module Namespaces.Cases where
 
