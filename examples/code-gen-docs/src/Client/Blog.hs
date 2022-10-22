@@ -7,4 +7,5 @@
 module Client.Blog where
 
 import Data.Morpheus.Client.CodeGen.Internal
-import Scalars (Markdown)
+import Scalars
+

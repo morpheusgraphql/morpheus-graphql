@@ -4,8 +4,8 @@ server:
     includes:
       - Server/**/*.gql # list of gql sources
     options:
-      globals: # The following module definitions are imported into the generated files
-        - Scalars
+      globals:
+        - Scalars # imports Markdown type declatation from Scalars.hs
 client:
   - name: Client API # Name of the service
     source: ./src # root folder for haskell source files
@@ -13,5 +13,5 @@ client:
     includes:
       - Client/Queries/**/*.gql # list of gql sources
     options:
-      globals: # The following module definitions are imported into the generated files
-        - Scalars
+      globals:
+        - Scalars # imports Markdown type declatation from Scalars.hs

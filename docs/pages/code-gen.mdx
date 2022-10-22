@@ -38,7 +38,36 @@ posts and users and want to develop an application for client and server.
             └── GetUsers.gql
 ```
 
-where `src/Server/Blog.gql` and `src/Client/Blog.gql` are defined as follows.
+where files are defined as follows.
+
+**src/Scalars.hs**
+
+```hs
+newtype Markdown = Markdown Text
+  deriving
+    ( Show,
+      Generic,
+      Eq
+    )
+
+instance GQLType Markdown where
+  type KIND Markdown = SCALAR
+
+instance DecodeScalar Markdown where
+  decodeScalar (String x) = pure (Markdown x)
+  decodeScalar _ = fail "not suppoorted"
+
+instance EncodeScalar Markdown where
+  encodeScalar (Markdown x) = String x
+
+instance FromJSON Markdown where
+  parseJSON = scalarFromJSON
+
+instance ToJSON Markdown where
+  toJSON = scalarToJSON
+```
+
+**src/Server/Blog.gql** and **src/Client/Blog.gql**
 
 ```graphql
 scalar Markdown
@@ -59,7 +88,32 @@ type Query {
 }
 ```
 
-To do this, we should first configure `code-gen.yaml`.
+**src/Client/Queries/GetPosts.gql**
+
+```graphql
+query GetPosts {
+  posts {
+    title
+    body
+  }
+}
+```
+
+**src/Client/Queries/GetUsers.gql**
+
+```graphql
+query GetUsers {
+  users {
+    name
+    posts {
+      title
+      body
+    }
+  }
+}
+```
+
+to generate files from it, we should first configure `code-gen.yaml`.
 
 ```yaml
 server:
@@ -68,20 +122,20 @@ server:
     includes:
       - Server/**/*.gql # list of gql sources
     options:
-      globals: # The following module definitions are imported into the generated files
-        - Scalars
+      globals:
+        - Scalars # imports Markdown type declatation from Scalars.hs
 client:
   - name: Client API # Name of the service
     source: ./src # root folder for haskell source files
-    schema: Server/Blog.gql
+    schema: Client/Blog.gql
     includes:
-      - Client/**/*.gql # list of gql sources
+      - Client/Queries/**/*.gql # list of gql sources
     options:
-      globals: # The following module definitions are imported into the generated files
-        - Scalars
+      globals:
+        - Scalars # imports Markdown type declatation from Scalars.hs
 ```
 
-### Build
+now we are ready to generated files
 
 ```ssh
 morpheus build ./

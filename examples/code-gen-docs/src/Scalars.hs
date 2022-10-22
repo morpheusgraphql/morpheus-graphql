@@ -13,7 +13,7 @@ import Data.Morpheus.Types
   )
 import Data.Text (Text)
 
-newtype Markdown = Markdown {markdown :: Text}
+newtype Markdown = Markdown Text
   deriving
     ( Show,
       Generic,
