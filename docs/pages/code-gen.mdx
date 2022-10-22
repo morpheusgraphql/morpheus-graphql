@@ -29,6 +29,7 @@ posts and users and want to develop an application for client and server.
 ├── package.yaml
 ├── code-gen.yaml
 └── src
+    ├── Main.hs
     ├── Scalars.hs
     ├── Server
     |   └── Blog.gql
@@ -114,7 +115,7 @@ query GetUsers {
 }
 ```
 
-to generate files from it, we should first configure `code-gen.yaml`.
+to generate files from it, we should now configure `code-gen.yaml`.
 
 ```yaml
 server:
