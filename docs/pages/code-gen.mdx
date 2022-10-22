@@ -9,11 +9,12 @@ import { Section } from "../components/section";
 
 Template Haskell
 
-<Section id="cli">CLI</Section>
+<Section id="cli">Morpheus CLI</Section>
 
 Moprheus GraphQL also supports generating code from GraphQL
 documents. To do this, you should first install
-the `morpheus-graphql-code-gen` package.
+the `morpheus-graphql-code-gen` package. to get a correct result,
+make sure that the package versions match.
 
 the package provides cli `morpheus` with commands `build` and `check` .
 The `build` command generates files from the GQL source files
@@ -135,8 +136,21 @@ client:
         - Scalars # imports Markdown type declatation from Scalars.hs
 ```
 
-now we are ready to generated files
+now we are ready to generate types.
 
 ```ssh
 morpheus build ./
+```
+
+command will lookup `code-gen.yaml` and generate following files.
+
+```
+|── src
+    ├── Server
+    |   └── Blog.hs
+    └── Client
+        ├── Blog.hs
+        └── Queries
+            ├── GetPosts.hs
+            └── GetUsers.hs
 ```
