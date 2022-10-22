@@ -204,7 +204,10 @@ instance Pretty dec => Pretty (ModuleDefinition dec) where
         <> vsep (map renderImport $ sortWith fst imports)
         <> line
         <> line
-        <> vsep (map pretty types)
+        <> vsep (filter notEmpty $ map pretty types)
+
+notEmpty :: Doc a -> Bool
+notEmpty x = not $ null (show x :: String)
 
 renderExtension :: Text -> Doc ann
 renderExtension txt
