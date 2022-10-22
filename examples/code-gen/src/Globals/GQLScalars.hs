@@ -8,9 +8,10 @@ import Data.Morpheus.Kind (SCALAR)
 import Data.Morpheus.Types
   ( DecodeScalar (..),
     EncodeScalar (..),
-    GQLType (KIND),
-    ScalarValue (Int),
+    GQLType (..),
+    ScalarValue (..),
   )
+import Data.Text (Text)
 
 data TestScalar
   = TestScalar
@@ -27,8 +28,7 @@ instance DecodeScalar TestScalar where
 instance EncodeScalar TestScalar where
   encodeScalar (TestScalar x y) = Int (x * 100 + y)
 
-
-data Power = Power Text deriving (Show, Generic)
+newtype Power = Power Text deriving (Show, Generic)
 
 instance GQLType Power where
   type KIND Power = SCALAR
@@ -38,7 +38,7 @@ instance DecodeScalar Power where
   decodeScalar _ = fail "only strings!"
 
 instance EncodeScalar Power where
-  encodeScalar (TestScalar x) = String x
+  encodeScalar (Power x) = String x
 
 newtype Euro = Euro Int
   deriving
