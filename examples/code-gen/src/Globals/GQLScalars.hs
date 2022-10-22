@@ -40,6 +40,12 @@ instance DecodeScalar Power where
 instance EncodeScalar Power where
   encodeScalar (Power x) = String x
 
+instance FromJSON Power where
+  parseJSON = scalarFromJSON
+
+instance ToJSON Power where
+  toJSON = scalarToJSON
+
 newtype Euro = Euro Int
   deriving
     ( Show,
