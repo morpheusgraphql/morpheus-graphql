@@ -110,14 +110,17 @@ buildClientGlobals ctx options schemaPath = do
   let result = processClientDocument options schemaDoc Nothing moduleName
   processDocument (isCheck ctx) hsPath result
 
+getSchemaImports :: BuildConfig -> FilePath -> [Text]
+getSchemaImports options schemaPath = [pack (getModuleNameByPath (root options) (processFileName schemaPath))]
+
 buildClientQuery :: Context -> BuildConfig -> FilePath -> FilePath -> IO CommandResult
 buildClientQuery ctx options schemaPath queryPath = do
   putStr ("  - " <> queryPath <> "\n")
   file <- TIO.readFile queryPath
   schemaDoc <- readSchemaSource schemaPath
   let moduleName = getModuleNameByPath (root options) hsPath
-  let globalModuleName = pack (getModuleNameByPath (root options) (processFileName schemaPath))
-  let result = processClientDocument (options {globalImports = [globalModuleName]}) schemaDoc (Just file) (pack moduleName)
+  let globalImports = getSchemaImports options schemaPath
+  let result = processClientDocument (options {globalImports}) schemaDoc (Just file) (pack moduleName)
   processDocument (isCheck ctx) hsPath result
   where
     hsPath = processFileName queryPath
