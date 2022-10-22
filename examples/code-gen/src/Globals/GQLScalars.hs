@@ -28,22 +28,22 @@ instance DecodeScalar TestScalar where
 instance EncodeScalar TestScalar where
   encodeScalar (TestScalar x y) = Int (x * 100 + y)
 
-newtype Power = Power Text deriving (Show, Generic)
+newtype ScalarPower = ScalarPower Text deriving (Show, Generic)
 
-instance GQLType Power where
-  type KIND Power = SCALAR
+instance GQLType ScalarPower where
+  type KIND ScalarPower = SCALAR
 
-instance DecodeScalar Power where
-  decodeScalar (String x) = pure (Power x)
+instance DecodeScalar ScalarPower where
+  decodeScalar (String x) = pure (ScalarPower x)
   decodeScalar _ = fail "only strings!"
 
-instance EncodeScalar Power where
-  encodeScalar (Power x) = String x
+instance EncodeScalar ScalarPower where
+  encodeScalar (ScalarPower x) = String x
 
-instance FromJSON Power where
+instance FromJSON ScalarPower where
   parseJSON = scalarFromJSON
 
-instance ToJSON Power where
+instance ToJSON ScalarPower where
   toJSON = scalarToJSON
 
 newtype Euro = Euro Int

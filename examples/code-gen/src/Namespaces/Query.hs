@@ -60,7 +60,7 @@ instance (Typeable m) => GQLType (Character m) where
 
 data Deity m = Deity
   { deityFullName :: m Text,
-    deityPower :: m (Maybe Power)
+    deityPower :: m (Maybe ScalarPower)
   }
   deriving (Generic)
 
