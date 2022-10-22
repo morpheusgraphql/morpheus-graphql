@@ -100,8 +100,8 @@ type User {
 }
 
 type Query {
-  users: [User!]!
-  posts: [Post!]!
+  getUsers: [User!]!
+  getPosts: [Post!]!
 }
 ```
 
@@ -109,7 +109,7 @@ type Query {
 
 ```graphql
 query GetPosts {
-  posts {
+  getPosts {
     title
     body
   }
@@ -120,7 +120,7 @@ query GetPosts {
 
 ```graphql
 query GetUsers {
-  users {
+  getUsers {
     name
     posts {
       title
