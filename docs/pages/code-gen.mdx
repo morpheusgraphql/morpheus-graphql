@@ -39,27 +39,22 @@ posts and users and want to develop an application for client and server.
 
 where `src/Server/Shop.gql` and `src/Client/Shop.gql` are defined as follows.
 
-```gql
+```graphql
+scalar Markdown
+
 type Post {
-  id: ID!
   title: String
-  author: ID
+  body: Markdown
 }
 
 type User {
-  id: ID!
   name: String!
   posts: [Post!]!
 }
 
 type Query {
   users: [User!]!
-  user(id: ID!): User
-}
-
-type Query {
   posts: [Post!]!
-  post(id: ID!): Post
 }
 ```
 
