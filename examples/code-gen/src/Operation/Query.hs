@@ -82,5 +82,3 @@ data City
 
 instance GQLType City where
   type KIND City = TYPE
-
-type Power = Int

@@ -95,5 +95,3 @@ instance GQLType City where
   type KIND City = TYPE
   directives _ =
     typeDirective DropNamespace {dropNamespace = "City"}
-
-type Power = Int

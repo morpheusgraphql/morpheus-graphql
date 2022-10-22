@@ -152,5 +152,3 @@ instance GQLType City where
   directives _ =
     typeDirective DropNamespace {dropNamespace = "City"}
       <> enumDirective "CityTroy" Deprecated {reason = Just "some reason"}
-
-type Power = Int
