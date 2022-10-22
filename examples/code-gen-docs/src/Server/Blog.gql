@@ -1,0 +1,16 @@
+scalar Markdown
+
+type Post {
+  title: String!
+  body: Markdown
+}
+
+type User {
+  name: String!
+  posts: [Post!]!
+}
+
+type Query {
+  users: [User!]!
+  posts: [Post!]!
+}

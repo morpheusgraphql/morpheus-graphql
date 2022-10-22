@@ -1,0 +1,17 @@
+server:
+  - name: Server API # Name of the service
+    source: ./src # root folder for haskell source files
+    includes:
+      - Server/**/*.gql # list of gql sources
+    options:
+      globals: # The following module definitions are imported into the generated files
+        - Scalars
+client:
+  - name: Client API # Name of the service
+    source: ./src # root folder for haskell source files
+    schema: Server/Blog.gql
+    includes:
+      - Client/**/*.gql # list of gql sources
+    options:
+      globals: # The following module definitions are imported into the generated files
+        - Scalars

@@ -4,6 +4,7 @@ bounds:
 examples:
   - client
   - code-gen
+  - code-gen-docs
   - scotty
   - scotty-fraxl
   - scotty-haxl

@@ -1,0 +1,15 @@
+subscription NewUsers($loc: Coordinates!) {
+  newUser {
+    name
+    email
+    address(coordinates: $loc) {
+      city
+    }
+    worships {
+      ... on Hero {
+        __typename
+        hobby
+      }
+    }
+  }
+}
