@@ -154,11 +154,28 @@ client:
 
 now we are ready to generate types.
 
-```ssh
+**build command**
+
+```bash
 morpheus build ./
 ```
 
-command will lookup `code-gen.yaml` and generate following files.
+command will lookup `code-gen.yaml` and generate coresponding Haskell modules.
+it will also print out the processed documents listed in these services.
+
+```bash
+ build:Server API
+  - src/Server/Blog.gql
+
+ build:Client API
+  - src/Client/Blog.gql
+  - src/Client/Queries/GetPosts.gql
+  - src/Client/Queries/GetUsers.gql
+
+OK
+```
+
+the generated files are.
 
 ```
 |── src
