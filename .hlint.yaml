@@ -1,0 +1,14 @@
+- ignore:
+    {
+      name: Unused LANGUAGE pragma,
+      within:
+        [
+          Client.Queries.GetUsers,
+          Client.Queries.GetPosts,
+          Client.Blog,
+          Server.Blog,
+        ],
+    }
+- ignore: { name: Use const, within: Config.Yaml }
+# TEMPORARY: this lint is deleted on HEAD
+- ignore: { name: Use String }
