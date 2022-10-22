@@ -9,6 +9,4 @@
           Server.Blog,
         ],
     }
-- ignore: { name: Use const, within: Config.Yaml }
-# TEMPORARY: this lint is deleted on HEAD
-- ignore: { name: Use String }
+- ignore: { name: Use camelCase, within: [Namespaces.Cases] }
