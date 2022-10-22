@@ -13,24 +13,24 @@ import Scalars
 instance RequestType GetPosts where
   type RequestArgs GetPosts = ()
   __name _ = "GetPosts"
-  __query _ = "query GetPosts {\n  posts {\n    title\n    body\n  }\n}\n"
+  __query _ = "query GetPosts {\n  getPosts {\n    title\n    body\n  }\n}\n"
   __type _ = Query
 
 newtype GetPosts = GetPosts
-  { posts :: [GetPostsPosts]
+  { getPosts :: [GetPostsGetPosts]
   }
   deriving (Generic, Show, Eq)
 
 instance FromJSON GetPosts where
   parseJSON =
-    withObject "GetPosts" (\v -> GetPosts <$> v .: "posts")
+    withObject "GetPosts" (\v -> GetPosts <$> v .: "getPosts")
 
-data GetPostsPosts = GetPostsPosts
+data GetPostsGetPosts = GetPostsGetPosts
   { title :: String,
     body :: Maybe Markdown
   }
   deriving (Generic, Show, Eq)
 
-instance FromJSON GetPostsPosts where
+instance FromJSON GetPostsGetPosts where
   parseJSON =
-    withObject "GetPostsPosts" (\v -> GetPostsPosts <$> v .: "title" <*> v .:? "body")
+    withObject "GetPostsGetPosts" (\v -> GetPostsGetPosts <$> v .: "title" <*> v .:? "body")

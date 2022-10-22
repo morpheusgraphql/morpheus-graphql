@@ -33,8 +33,8 @@ instance (Typeable m) => GQLType (User m) where
   type KIND (User m) = TYPE
 
 data Query m = Query
-  { users :: m [User m],
-    posts :: m [Post m]
+  { getUsers :: m [User m],
+    getPosts :: m [Post m]
   }
   deriving (Generic)
 

@@ -11,6 +11,6 @@ type User {
 }
 
 type Query {
-  users: [User!]!
-  posts: [Post!]!
+  getUsers: [User!]!
+  getPosts: [Post!]!
 }

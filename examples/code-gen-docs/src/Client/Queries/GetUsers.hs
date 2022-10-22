@@ -13,34 +13,34 @@ import Scalars
 instance RequestType GetUsers where
   type RequestArgs GetUsers = ()
   __name _ = "GetUsers"
-  __query _ = "query GetUsers {\n  users {\n    name\n    posts {\n      title\n      body\n    }\n  }\n}\n"
+  __query _ = "query GetUsers {\n  getUsers {\n    name\n    posts {\n      title\n      body\n    }\n  }\n}\n"
   __type _ = Query
 
 newtype GetUsers = GetUsers
-  { users :: [GetUsersUsers]
+  { getUsers :: [GetUsersGetUsers]
   }
   deriving (Generic, Show, Eq)
 
 instance FromJSON GetUsers where
   parseJSON =
-    withObject "GetUsers" (\v -> GetUsers <$> v .: "users")
+    withObject "GetUsers" (\v -> GetUsers <$> v .: "getUsers")
 
-data GetUsersUsers = GetUsersUsers
+data GetUsersGetUsers = GetUsersGetUsers
   { name :: String,
-    posts :: [GetUsersUsersPosts]
+    posts :: [GetUsersGetUsersPosts]
   }
   deriving (Generic, Show, Eq)
 
-instance FromJSON GetUsersUsers where
+instance FromJSON GetUsersGetUsers where
   parseJSON =
-    withObject "GetUsersUsers" (\v -> GetUsersUsers <$> v .: "name" <*> v .: "posts")
+    withObject "GetUsersGetUsers" (\v -> GetUsersGetUsers <$> v .: "name" <*> v .: "posts")
 
-data GetUsersUsersPosts = GetUsersUsersPosts
+data GetUsersGetUsersPosts = GetUsersGetUsersPosts
   { title :: String,
     body :: Maybe Markdown
   }
   deriving (Generic, Show, Eq)
 
-instance FromJSON GetUsersUsersPosts where
+instance FromJSON GetUsersGetUsersPosts where
   parseJSON =
-    withObject "GetUsersUsersPosts" (\v -> GetUsersUsersPosts <$> v .: "title" <*> v .:? "body")
+    withObject "GetUsersGetUsersPosts" (\v -> GetUsersGetUsersPosts <$> v .: "title" <*> v .:? "body")

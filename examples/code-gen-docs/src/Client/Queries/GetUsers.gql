@@ -1,5 +1,5 @@
 query GetUsers {
-  users {
+  getUsers {
     name
     posts {
       title

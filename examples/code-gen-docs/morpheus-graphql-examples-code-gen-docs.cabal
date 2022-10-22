@@ -28,6 +28,7 @@ executable generated-server
       Client.Queries.GetPosts
       Client.Queries.GetUsers
       Scalars
+      Server.API
       Server.Blog
       Paths_morpheus_graphql_examples_code_gen_docs
   hs-source-dirs:

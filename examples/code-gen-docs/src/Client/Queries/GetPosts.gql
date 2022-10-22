@@ -1,5 +1,5 @@
 query GetPosts {
-  posts {
+  getPosts {
     title
     body
   }
