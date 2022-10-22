@@ -21,7 +21,7 @@ source-repository head
   type: git
   location: https://github.com/nalchevanidze/morpheus-graphql
 
-executable generated-server
+executable code-gen-docs-server
   main-is: Main.hs
   other-modules:
       Client.Blog

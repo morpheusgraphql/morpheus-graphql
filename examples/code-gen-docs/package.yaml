@@ -19,7 +19,7 @@ dependencies:
   - containers                      >= 0.4.2.1       && <  0.7
 
 executables:
-  generated-server:
+  code-gen-docs-server:
     main: Main.hs
     source-dirs: src
     ghc-options: -Wall
