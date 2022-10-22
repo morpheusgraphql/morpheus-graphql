@@ -37,7 +37,7 @@ posts and users and want to develop an application for client and server.
         └── GetUsers.gql
 ```
 
-where `src/Server/Shop.gql` and `src/Client/Shop.gql` are defined as follows.
+where `src/Server/Blog.gql` is defined as follows.
 
 ```graphql
 scalar Markdown
@@ -72,7 +72,7 @@ server:
 client:
   - name: Client API # Name of the service
     source: ./src # root folder for haskell source files
-    schema: Client/Blog.gql
+    schema: Server/Blog.gql
     includes:
       - Client/**/*.gql # list of gql sources
     options:
