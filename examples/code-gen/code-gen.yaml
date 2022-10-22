@@ -4,6 +4,9 @@ server:
     includes:
       - Domains/**/*.gql
       - Operation/**/*.gql
+    options:
+      globals:
+        - Globals.GQLScalars
 
   - name: Server API (Namespaces)
     source: ./src

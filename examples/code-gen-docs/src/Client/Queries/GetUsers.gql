@@ -1,0 +1,9 @@
+query GetUsers {
+  getUsers {
+    name
+    posts {
+      title
+      body
+    }
+  }
+}

@@ -3,8 +3,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# HLINT ignore "Use camelCase" #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 module Operation.Subscription where
 
@@ -14,6 +12,7 @@ import Data.Morpheus.Kind (TYPE)
 import Data.Morpheus.Types
 import Data.Text (Text)
 import GHC.Generics (Generic)
+import Globals.GQLScalars
 
 data Query m = Query
   { deity :: DeityArgs -> m (Deity m),
@@ -90,7 +89,7 @@ instance (Typeable m) => GQLType (Character m) where
 
 data Deity m = Deity
   { fullName :: m Text,
-    power :: m Power
+    power :: m ScalarPower
   }
   deriving (Generic)
 
@@ -135,5 +134,3 @@ data City
 
 instance GQLType City where
   type KIND City = TYPE
-
-type Power = Int

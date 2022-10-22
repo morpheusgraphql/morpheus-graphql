@@ -8,6 +8,7 @@ module Client.Requests.TestFragments where
 
 import Client.Schema
 import Data.Morpheus.Client.CodeGen.Internal
+import Globals.GQLScalars
 
 instance RequestType TestFragments where
   type RequestArgs TestFragments = ()

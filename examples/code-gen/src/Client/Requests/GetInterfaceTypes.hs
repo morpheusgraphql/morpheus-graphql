@@ -8,6 +8,7 @@ module Client.Requests.GetInterfaceTypes where
 
 import Client.Schema
 import Data.Morpheus.Client.CodeGen.Internal
+import Globals.GQLScalars
 
 instance RequestType GetCharacters where
   type RequestArgs GetCharacters = ()

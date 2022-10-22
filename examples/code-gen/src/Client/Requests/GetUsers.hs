@@ -8,6 +8,7 @@ module Client.Requests.GetUsers where
 
 import Client.Schema
 import Data.Morpheus.Client.CodeGen.Internal
+import Globals.GQLScalars
 
 instance RequestType GetUser where
   type RequestArgs GetUser = GetUserArgs

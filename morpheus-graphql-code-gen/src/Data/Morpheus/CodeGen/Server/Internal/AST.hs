@@ -141,8 +141,7 @@ instance Pretty ServerDeclaration where
       <+> unpack (print interfaceName .<> "m")
       <+> unpack (print unionName .<> "m")
         <> line
-  -- TODO: on scalar we should render user provided type
-  pretty ScalarType {..} = "type" <+> ignore (print scalarTypeName) <+> "= Int"
+  pretty ScalarType {} = ""
   pretty (DataType cgType) = pretty cgType
   pretty (GQLTypeInstance kind gql)
     | kind == Scalar = ""

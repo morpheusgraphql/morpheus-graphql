@@ -40,6 +40,7 @@ const Header = () => (
       <Item href="/server">Server</Item>
       <Item href="/client">Client</Item>
       <Item href="/examples">Examples</Item>
+      <Item href="/code-gen">Code Gen</Item>
     </div>
   </div>
 );

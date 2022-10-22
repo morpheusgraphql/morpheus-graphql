@@ -1,0 +1,191 @@
+import SEO from "../components/seo";
+import { Section } from "../components/section";
+
+<SEO title="Code Gen" />
+
+# Code Gen
+
+<Section id="th">Template Haskell</Section>
+
+Moprheus GraphQL supports the import of GQL schemas directly into Haskell code based on Template Haskell.
+
+for client you can use `declareGlobalTypes` and `declareLocalTypes` from `Data.Morpheus.Client`.
+
+```hs
+-- defines input and enum types
+declareGlobalTypes "./schema.gql"
+-- defines types for query
+declareLocalTypes "./schema.gql" "./query.gql"
+```
+
+for server you can use `importGQLDocument` from `Data.Morpheus.Document`
+
+```hs
+importGQLDocument "./schema.gql"
+```
+
+<Section id="cli">Morpheus CLI</Section>
+
+Moprheus GraphQL also supports generating code from GraphQL
+documents. To do this, you should first install
+the `morpheus-graphql-code-gen` package. to get a correct result,
+make sure that the package versions match.
+
+the package provides `morpheus` cli with commands `build` and `check` .
+The `build` command generates files from the GQL source files
+contained in the `code-gen.yaml` configuration for the specified project root.
+However, the `check` command only checks if the generated files match the existing GQL documents,
+which is quite handy to check if the files are outdated.
+
+Let's take a look at the following project. where we have different
+posts and users and want to develop an application for client and server.
+
+```
+├── package.yaml
+├── code-gen.yaml
+└── src
+    ├── Main.hs
+    ├── Scalars.hs
+    ├── Server
+    |   └── Blog.gql
+    └── Client
+        ├── Blog.gql
+        └── Queries
+            ├── GetPosts.gql
+            └── GetUsers.gql
+```
+
+files are defined as follows.
+
+**src/Scalars.hs**
+
+```hs
+newtype Markdown = Markdown Text
+  deriving
+    ( Show,
+      Generic,
+      Eq
+    )
+
+instance GQLType Markdown where
+  type KIND Markdown = SCALAR
+
+instance DecodeScalar Markdown where
+  decodeScalar (String x) = pure (Markdown x)
+  decodeScalar _ = fail "not suppoorted"
+
+instance EncodeScalar Markdown where
+  encodeScalar (Markdown x) = String x
+
+instance FromJSON Markdown where
+  parseJSON = scalarFromJSON
+
+instance ToJSON Markdown where
+  toJSON = scalarToJSON
+```
+
+**src/Server/Blog.gql** and **src/Client/Blog.gql**
+
+```graphql
+scalar Markdown
+
+type Post {
+  title: String!
+  body: Markdown
+}
+
+type User {
+  name: String!
+  posts: [Post!]!
+}
+
+type Query {
+  getUsers: [User!]!
+  getPosts: [Post!]!
+}
+```
+
+**src/Client/Queries/GetPosts.gql**
+
+```graphql
+query GetPosts {
+  getPosts {
+    title
+    body
+  }
+}
+```
+
+**src/Client/Queries/GetUsers.gql**
+
+```graphql
+query GetUsers {
+  getUsers {
+    name
+    posts {
+      title
+      body
+    }
+  }
+}
+```
+
+to generate files from it, we should now configure `code-gen.yaml`.
+
+```yaml
+server:
+  - name: Server API # Name of the service
+    source: ./src # root folder for haskell source files
+    includes:
+      - Server/**/*.gql # list of gql sources
+    options:
+      globals:
+        - Scalars # imports Markdown type declatation from Scalars.hs
+client:
+  - name: Client API # Name of the service
+    source: ./src # root folder for haskell source files
+    schema: Client/Blog.gql
+    includes:
+      - Client/Queries/**/*.gql # list of gql sources
+    options:
+      globals:
+        - Scalars # imports Markdown type declatation from Scalars.hs
+```
+
+now we are ready to generate types.
+
+**build command**
+
+```bash
+morpheus build ./
+```
+
+command will lookup `code-gen.yaml` and generate coresponding Haskell modules.
+it will also print out the processed documents listed in these services.
+
+```bash
+ build:Server API
+  - src/Server/Blog.gql
+
+ build:Client API
+  - src/Client/Blog.gql
+  - src/Client/Queries/GetPosts.gql
+  - src/Client/Queries/GetUsers.gql
+
+OK
+```
+
+the generated files are.
+
+```
+|── src
+    ├── Server
+    |   └── Blog.hs
+    └── Client
+        ├── Blog.hs
+        └── Queries
+            ├── GetPosts.hs
+            └── GetUsers.hs
+```
+
+Now you can import types and write your own handlers or client queries based on them. For the full implementation of the example, see [code-gen-docs](https://github.com/morpheusgraphql/morpheus-graphql/tree/main/examples/code-gen-docs).

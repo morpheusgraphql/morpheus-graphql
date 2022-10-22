@@ -30,7 +30,6 @@ import qualified Data.ByteString.Lazy as L
   ( readFile,
   )
 import Data.Morpheus.Client (readSchemaSource)
-import Data.Text (pack)
 import qualified Data.Text.IO as TIO
 import Data.Version (showVersion)
 import qualified Paths_morpheus_graphql_code_gen as CLI
@@ -84,38 +83,49 @@ parseServiceData ctx Service {source, includes, options} = do
   let namespaces = fromMaybe False (options >>= namespace)
   let patterns = map (normalise . (root </>)) includes
   files <- concat <$> traverse glob patterns
-  let globalImports = getImports options
-  pure (root, namespaces, files, globalImports)
+  pure
+    ( root,
+      namespaces,
+      files,
+      getImports options
+    )
+
+getSchemaPath :: MonadFail m => FilePath -> String -> Maybe FilePath -> m FilePath
+getSchemaPath root name schema = do
+  schemaPath <- maybe (fail $ "client service " <> name <> " should provide schema!") pure schema
+  pure $ normalise $ root </> schemaPath
 
 handleClientService :: Context -> Service -> IO CommandResult
 handleClientService ctx s@Service {name, schema} = do
   (root, namespaces, files, globalImports) <- parseServiceData ctx s
   putStrLn ("\n build:" <> name)
-  schemaPath <- maybe (fail $ "client service " <> name <> " should provide schema!") pure schema
+  schemaPath <- getSchemaPath root name schema
   let config = BuildConfig {..}
-  globals <- buildClientGlobals ctx config (normalise $ root </> schemaPath)
-  and . (globals :) <$> traverse (buildClientQuery ctx config (normalise $ root </> schemaPath)) files
+  globals <- buildClientGlobals ctx config schemaPath
+  and . (globals :) <$> traverse (buildClientQuery ctx config schemaPath) files
 
 buildClientGlobals :: Context -> BuildConfig -> FilePath -> IO CommandResult
 buildClientGlobals ctx options schemaPath = do
   putStr ("  - " <> schemaPath <> "\n")
   schemaDoc <- readSchemaSource schemaPath
   let hsPath = processFileName schemaPath
-  let moduleName = pack $ getModuleNameByPath (root options) hsPath
+  let moduleName = getModuleNameByPath (root options) hsPath
   let result = processClientDocument options schemaDoc Nothing moduleName
   processDocument (isCheck ctx) hsPath result
+
+getSchemaImports :: BuildConfig -> FilePath -> [Text]
+getSchemaImports options schemaPath = [getModuleNameByPath (root options) (processFileName schemaPath)]
 
 buildClientQuery :: Context -> BuildConfig -> FilePath -> FilePath -> IO CommandResult
 buildClientQuery ctx options schemaPath queryPath = do
   putStr ("  - " <> queryPath <> "\n")
   file <- TIO.readFile queryPath
   schemaDoc <- readSchemaSource schemaPath
+  let hsPath = processFileName queryPath
   let moduleName = getModuleNameByPath (root options) hsPath
-  let globalModuleName = pack (getModuleNameByPath (root options) (processFileName schemaPath))
-  let result = processClientDocument (options {globalImports = [globalModuleName]}) schemaDoc (Just file) (pack moduleName)
+  let imports = getSchemaImports options schemaPath <> globalImports options
+  let result = processClientDocument (options {globalImports = imports}) schemaDoc (Just file) moduleName
   processDocument (isCheck ctx) hsPath result
-  where
-    hsPath = processFileName queryPath
 
 handleServerService :: Context -> Service -> IO CommandResult
 handleServerService ctx s@Service {name} = do

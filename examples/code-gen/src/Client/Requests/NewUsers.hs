@@ -8,6 +8,7 @@ module Client.Requests.NewUsers where
 
 import Client.Schema
 import Data.Morpheus.Client.CodeGen.Internal
+import Globals.GQLScalars
 
 instance RequestType NewUsers where
   type RequestArgs NewUsers = NewUsersArgs

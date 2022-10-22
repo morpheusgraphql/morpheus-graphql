@@ -4,7 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module Domains.Posts.Posts where
+module Server.Blog where
 
 import Data.Data (Typeable)
 import Data.Morpheus ()
@@ -12,24 +12,29 @@ import Data.Morpheus.Kind (TYPE)
 import Data.Morpheus.Types
 import Data.Text (Text)
 import GHC.Generics (Generic)
-import Globals.GQLScalars
+import Scalars
 
 data Post m = Post
-  { id :: m ID,
-    title :: m Text,
-    authorID :: m Text
+  { title :: m Text,
+    body :: m (Maybe Markdown)
   }
   deriving (Generic)
 
 instance (Typeable m) => GQLType (Post m) where
   type KIND (Post m) = TYPE
-  directives _ =
-    fieldDirective "title" Deprecated {reason = Nothing}
-      <> fieldDirective "authorID" Deprecated {reason = Nothing}
+
+data User m = User
+  { name :: m Text,
+    posts :: m [Post m]
+  }
+  deriving (Generic)
+
+instance (Typeable m) => GQLType (User m) where
+  type KIND (User m) = TYPE
 
 data Query m = Query
-  { posts :: m [Post m],
-    post :: Arg "id" ID -> m (Maybe (Post m))
+  { getUsers :: m [User m],
+    getPosts :: m [Post m]
   }
   deriving (Generic)
 

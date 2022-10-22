@@ -3,8 +3,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# HLINT ignore "Use camelCase" #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 module Namespaces.Mutation where
 
@@ -96,7 +94,7 @@ instance (Typeable m) => GQLType (Character m) where
 
 data Deity m = Deity
   { deityFullName :: m Text,
-    deityPower :: m Power
+    deityPower :: m ScalarPower
   }
   deriving (Generic)
 
@@ -152,5 +150,3 @@ instance GQLType City where
   directives _ =
     typeDirective DropNamespace {dropNamespace = "City"}
       <> enumDirective "CityTroy" Deprecated {reason = Just "some reason"}
-
-type Power = Int

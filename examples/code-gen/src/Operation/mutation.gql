@@ -19,7 +19,7 @@ type Deity {
   """
   simple power description
   """
-  power: Power!
+  power: ScalarPower!
 }
 
 type Creature {
@@ -44,4 +44,4 @@ enum City {
   Troy @deprecated(reason: "some reason")
 }
 
-scalar Power
+scalar ScalarPower

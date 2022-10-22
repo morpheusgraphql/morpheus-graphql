@@ -2,7 +2,7 @@ import { useContext } from "react";
 import Link from "next/link";
 import { NavContext } from "./nav-context";
 
-const linkSytle = (level: number) =>
+const linkStyle = (level: number) =>
   ({
     color: "rgb(39, 51, 63)",
     textDecoration: "none",
@@ -31,7 +31,7 @@ type NavLinkProps = {
 
 const NavLink: React.FC<NavLinkProps> = ({ to, children, level }) => (
   <Link href={url(to)} as={url(to)}>
-    <a style={linkSytle(level)}>{children}</a>
+    <a style={linkStyle(level)}>{children}</a>
   </Link>
 );
 

@@ -13,7 +13,7 @@ type Deity {
   simple field description
   """
   fullName: String!
-  power: Power
+  power: ScalarPower
 }
 
 type Creature {
@@ -29,4 +29,4 @@ enum City {
   Troy
 }
 
-scalar Power
+scalar ScalarPower

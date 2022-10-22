@@ -3,8 +3,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# HLINT ignore "Use camelCase" #-}
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 module Namespaces.Query where
 
@@ -62,7 +60,7 @@ instance (Typeable m) => GQLType (Character m) where
 
 data Deity m = Deity
   { deityFullName :: m Text,
-    deityPower :: m (Maybe Power)
+    deityPower :: m (Maybe ScalarPower)
   }
   deriving (Generic)
 
@@ -95,5 +93,3 @@ instance GQLType City where
   type KIND City = TYPE
   directives _ =
     typeDirective DropNamespace {dropNamespace = "City"}
-
-type Power = Int
