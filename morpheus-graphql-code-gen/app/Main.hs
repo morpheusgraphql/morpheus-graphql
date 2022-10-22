@@ -83,8 +83,12 @@ parseServiceData ctx Service {source, includes, options} = do
   let namespaces = fromMaybe False (options >>= namespace)
   let patterns = map (normalise . (root </>)) includes
   files <- concat <$> traverse glob patterns
-  let globalImports = getImports options
-  pure (root, namespaces, files, globalImports)
+  pure
+    ( root,
+      namespaces,
+      files,
+      getImports options
+    )
 
 getSchemaPath :: MonadFail m => FilePath -> String -> Maybe FilePath -> m FilePath
 getSchemaPath root name schema = do
@@ -117,12 +121,11 @@ buildClientQuery ctx options schemaPath queryPath = do
   putStr ("  - " <> queryPath <> "\n")
   file <- TIO.readFile queryPath
   schemaDoc <- readSchemaSource schemaPath
+  let hsPath = processFileName queryPath
   let moduleName = getModuleNameByPath (root options) hsPath
-  let globalImports = getSchemaImports options schemaPath
-  let result = processClientDocument (options {globalImports}) schemaDoc (Just file) moduleName
+  let imports = getSchemaImports options schemaPath <> globalImports options
+  let result = processClientDocument (options {globalImports = imports}) schemaDoc (Just file) moduleName
   processDocument (isCheck ctx) hsPath result
-  where
-    hsPath = processFileName queryPath
 
 handleServerService :: Context -> Service -> IO CommandResult
 handleServerService ctx s@Service {name} = do
