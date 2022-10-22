@@ -32,15 +32,16 @@ posts and users and want to develop an application for client and server.
     ├── Server
     |   └── Blog.gql
     └── Client
-        ├── GetPosts.gql
-        └── GetUsers.gql
+        ├── Blog.gql
+        └── Client
+            ├── GetPosts.gql
+            └── GetUsers.gql
 ```
 
 where files are defined as follows.
 
 ```graphql
 # src/Server/Blog.gql
-
 scalar Markdown
 
 type Post {
