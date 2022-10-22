@@ -27,6 +27,19 @@ instance DecodeScalar TestScalar where
 instance EncodeScalar TestScalar where
   encodeScalar (TestScalar x y) = Int (x * 100 + y)
 
+
+data Power = Power Text deriving (Show, Generic)
+
+instance GQLType Power where
+  type KIND Power = SCALAR
+
+instance DecodeScalar Power where
+  decodeScalar (String x) = pure (Power x)
+  decodeScalar _ = fail "only strings!"
+
+instance EncodeScalar Power where
+  encodeScalar (TestScalar x) = String x
+
 newtype Euro = Euro Int
   deriving
     ( Show,
