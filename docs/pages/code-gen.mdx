@@ -11,4 +11,56 @@ Template Haskell
 
 <Section id="cli">CLI</Section>
 
-CLI
+Moprheus GraphQL also supports generating code from GraphQL
+documents. To do this, you should first install
+the `morpheus-graphql-code-gen` package.
+
+the package provides cli `morpheus` with commands `build` and `check` .
+The `build` command generates files from the GQL source files
+contained in the `code-gen.yaml` configuration for the specified project root.
+However, the `check` command only checks if the generated files match the existing GQL documents,
+which is quite handy to check if the files are outdated.
+
+Let's take a look at the following project. where we have different
+products and users and want to develop an application for client and server.
+
+```
+├── package.yaml
+├── code-gen.yaml
+└── src
+    ├── Scalars.hs
+    ├── Server
+    |   └── Schema.gql
+    └── Client
+        ├── Schema.gql
+        ├── GetProducts.gql
+        └── GetUsers.gql
+```
+
+To do this, we should first configure `code-gen.yaml`.
+
+```yaml
+server:
+  - name: Server API # Name of the service
+    source: ./src # root folder for haskell source files
+    includes:
+      - Server/**/*.gql # list of gql sources
+    options:
+      globals: # The following module definitions are imported into the generated files
+        - Scalars
+client:
+  - name: Client API # Name of the service
+    source: ./src # root folder for haskell source files
+    schema: Client/Schema.gql
+    includes:
+      - Client/**/*.gql # list of gql sources
+    options:
+      globals: # The following module definitions are imported into the generated files
+        - Scalars
+```
+
+### Build
+
+```ssh
+morpheus build ./
+```
