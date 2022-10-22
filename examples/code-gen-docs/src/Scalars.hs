@@ -9,41 +9,29 @@ import Data.Morpheus.Types
   ( DecodeScalar (..),
     EncodeScalar (..),
     GQLType (KIND),
-    ScalarValue (Int),
+    ScalarValue (..),
   )
+import Data.Text (Text)
 
-data TestScalar
-  = TestScalar
-      Int
-      Int
-  deriving (Show, Generic)
-
-instance GQLType TestScalar where
-  type KIND TestScalar = SCALAR
-
-instance DecodeScalar TestScalar where
-  decodeScalar _ = pure (TestScalar 1 0)
-
-instance EncodeScalar TestScalar where
-  encodeScalar (TestScalar x y) = Int (x * 100 + y)
-
-newtype Euro = Euro Int
+newtype Markdown = Markdown {markdown :: Text}
   deriving
     ( Show,
+      Generic,
       Eq
     )
 
-instance GQLType Euro where
-  type KIND Euro = SCALAR
+instance GQLType Markdown where
+  type KIND Markdown = SCALAR
 
-instance DecodeScalar Euro where
-  decodeScalar _ = pure $ Euro 1
+instance DecodeScalar Markdown where
+  decodeScalar (String x) = pure (Markdown x)
+  decodeScalar _ = fail "not suppoorted"
 
-instance EncodeScalar Euro where
-  encodeScalar (Euro x) = Int x
+instance EncodeScalar Markdown where
+  encodeScalar (Markdown x) = String x
 
-instance FromJSON Euro where
+instance FromJSON Markdown where
   parseJSON = scalarFromJSON
 
-instance ToJSON Euro where
+instance ToJSON Markdown where
   toJSON = scalarToJSON
