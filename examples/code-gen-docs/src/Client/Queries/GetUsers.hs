@@ -8,6 +8,7 @@ module Client.Queries.GetUsers where
 
 import Client.Blog
 import Data.Morpheus.Client.CodeGen.Internal
+import Scalars
 
 instance RequestType GetUsers where
   type RequestArgs GetUsers = ()

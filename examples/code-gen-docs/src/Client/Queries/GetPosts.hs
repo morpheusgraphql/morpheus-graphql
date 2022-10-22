@@ -8,6 +8,7 @@ module Client.Queries.GetPosts where
 
 import Client.Blog
 import Data.Morpheus.Client.CodeGen.Internal
+import Scalars
 
 instance RequestType GetPosts where
   type RequestArgs GetPosts = ()
