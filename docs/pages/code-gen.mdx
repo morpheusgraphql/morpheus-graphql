@@ -7,7 +7,22 @@ import { Section } from "../components/section";
 
 <Section id="th">Template Haskell</Section>
 
-Template Haskell
+Moprheus GraphQL supports the import of GQL schemas directly into Haskell code based on Template Haskell.
+
+for client you can use `declareGlobalTypes` and `declareLocalTypes` from `Data.Morpheus.Client`.
+
+```hs
+-- defines input and enum types
+declareGlobalTypes "./schema.gql"
+-- defines types for query
+declareLocalTypes "./schema.gql" "./query.gql"
+```
+
+for server you can use `importGQLDocument` from `Data.Morpheus.Document`
+
+```hs
+importGQLDocument "./schema.gql"
+```
 
 <Section id="cli">Morpheus CLI</Section>
 
@@ -16,7 +31,7 @@ documents. To do this, you should first install
 the `morpheus-graphql-code-gen` package. to get a correct result,
 make sure that the package versions match.
 
-the package provides cli `morpheus` with commands `build` and `check` .
+the package provides `morpheus` cli with commands `build` and `check` .
 The `build` command generates files from the GQL source files
 contained in the `code-gen.yaml` configuration for the specified project root.
 However, the `check` command only checks if the generated files match the existing GQL documents,
