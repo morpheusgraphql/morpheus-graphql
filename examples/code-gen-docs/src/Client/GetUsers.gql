@@ -1,29 +1,9 @@
-# Query Hero with Compile time Validation
-query GetUser($coordinates: Coordinates!) {
-  myUser: user {
+query GetUsers {
+  users {
     name
-    aliasEmail: email
-    address(coordinates: $coordinates) {
-      city
-    }
-    aliasAdress: address(coordinates: $coordinates) {
-      city
-    }
-  }
-  user {
-    email
-    name
-    entity {
-      ... on User {
-        __typename
-        name
-      }
-    }
-  }
-  character {
-    ... on Deity {
-      __typename
-      power
+    posts {
+      title
+      body
     }
   }
 }
