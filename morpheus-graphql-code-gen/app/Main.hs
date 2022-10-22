@@ -30,7 +30,6 @@ import qualified Data.ByteString.Lazy as L
   ( readFile,
   )
 import Data.Morpheus.Client (readSchemaSource)
-import Data.Text (pack)
 import qualified Data.Text.IO as TIO
 import Data.Version (showVersion)
 import qualified Paths_morpheus_graphql_code_gen as CLI
@@ -106,12 +105,12 @@ buildClientGlobals ctx options schemaPath = do
   putStr ("  - " <> schemaPath <> "\n")
   schemaDoc <- readSchemaSource schemaPath
   let hsPath = processFileName schemaPath
-  let moduleName = pack $ getModuleNameByPath (root options) hsPath
+  let moduleName = getModuleNameByPath (root options) hsPath
   let result = processClientDocument options schemaDoc Nothing moduleName
   processDocument (isCheck ctx) hsPath result
 
 getSchemaImports :: BuildConfig -> FilePath -> [Text]
-getSchemaImports options schemaPath = [pack (getModuleNameByPath (root options) (processFileName schemaPath))]
+getSchemaImports options schemaPath = [getModuleNameByPath (root options) (processFileName schemaPath)]
 
 buildClientQuery :: Context -> BuildConfig -> FilePath -> FilePath -> IO CommandResult
 buildClientQuery ctx options schemaPath queryPath = do
@@ -120,7 +119,7 @@ buildClientQuery ctx options schemaPath queryPath = do
   schemaDoc <- readSchemaSource schemaPath
   let moduleName = getModuleNameByPath (root options) hsPath
   let globalImports = getSchemaImports options schemaPath
-  let result = processClientDocument (options {globalImports}) schemaDoc (Just file) (pack moduleName)
+  let result = processClientDocument (options {globalImports}) schemaDoc (Just file) moduleName
   processDocument (isCheck ctx) hsPath result
   where
     hsPath = processFileName queryPath

@@ -12,6 +12,7 @@ import Data.Morpheus.Internal.Ext
     Result (..),
   )
 import Data.Morpheus.Types.Internal.AST (GQLError (..), msg)
+import Data.Text (pack)
 import Relude hiding (ByteString, readFile, writeFile)
 import System.FilePath.Posix
   ( dropExtensions,
@@ -50,5 +51,5 @@ processDocument check path Success {result, warnings}
   | check = printWarnings warnings >> checkGenerated path result
   | otherwise = printWarnings warnings >> writeFile path result $> True
 
-getModuleNameByPath :: FilePath -> FilePath -> [Char]
-getModuleNameByPath root path = intercalate "." $ splitDirectories $ dropExtensions $ makeRelative root path
+getModuleNameByPath :: FilePath -> FilePath -> Text
+getModuleNameByPath root path = pack . intercalate "." $ splitDirectories $ dropExtensions $ makeRelative root path

@@ -23,7 +23,6 @@ import Data.Morpheus.CodeGen
   )
 import Data.Morpheus.CodeGen.Internal.AST
 import Data.Morpheus.Internal.Ext (GQLResult)
-import qualified Data.Text as T
 import Prettyprinter
 import Relude hiding (ByteString, print)
 
@@ -34,13 +33,13 @@ data BuildConfig = BuildConfig
   }
   deriving (Show)
 
-processServerDocument :: BuildConfig -> String -> ByteString -> GQLResult ByteString
+processServerDocument :: BuildConfig -> Text -> ByteString -> GQLResult ByteString
 processServerDocument BuildConfig {..} moduleName schema = do
   types <- parseServerTypeDefinitions CodeGenConfig {namespace = namespaces} schema
   pure $
     print $
       ModuleDefinition
-        { moduleName = T.pack moduleName,
+        { moduleName,
           imports =
             [ ("Data.Data", ["Typeable"]),
               ("Data.Morpheus.Kind", ["TYPE"]),
