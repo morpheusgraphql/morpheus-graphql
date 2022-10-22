@@ -87,14 +87,19 @@ parseServiceData ctx Service {source, includes, options} = do
   let globalImports = getImports options
   pure (root, namespaces, files, globalImports)
 
+getSchemaPath :: MonadFail m => FilePath -> String -> Maybe FilePath -> m FilePath
+getSchemaPath root name schema = do
+  schemaPath <- maybe (fail $ "client service " <> name <> " should provide schema!") pure schema
+  pure $ normalise $ root </> schemaPath
+
 handleClientService :: Context -> Service -> IO CommandResult
 handleClientService ctx s@Service {name, schema} = do
   (root, namespaces, files, globalImports) <- parseServiceData ctx s
   putStrLn ("\n build:" <> name)
-  schemaPath <- maybe (fail $ "client service " <> name <> " should provide schema!") pure schema
+  schemaPath <- getSchemaPath root name schema
   let config = BuildConfig {..}
-  globals <- buildClientGlobals ctx config (normalise $ root </> schemaPath)
-  and . (globals :) <$> traverse (buildClientQuery ctx config (normalise $ root </> schemaPath)) files
+  globals <- buildClientGlobals ctx config schemaPath
+  and . (globals :) <$> traverse (buildClientQuery ctx config schemaPath) files
 
 buildClientGlobals :: Context -> BuildConfig -> FilePath -> IO CommandResult
 buildClientGlobals ctx options schemaPath = do
