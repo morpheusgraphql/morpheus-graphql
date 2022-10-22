@@ -16,8 +16,6 @@ import Data.Text (Text)
 import GHC.Generics (Generic)
 import Scalars
 
-type Markdown = Int
-
 data Post m = Post
   { title :: m Text,
     body :: m (Maybe Markdown)
