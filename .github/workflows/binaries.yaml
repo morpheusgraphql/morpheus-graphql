@@ -8,15 +8,15 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            targetOs: linux
-            execName: morpheus
+            target: linux
+            executable: morpheus
           - os: macOS-latest
-            targetOs: mac-os
-            execName: morpheus
+            target: mac-os
+            executable: morpheus
           - os: windows-latest
-            targetOs: windows
-            execName: morpheus.exe
-    name: Build binary for ${{ matrix.targetOs }}
+            target: windows
+            executable: morpheus.exe
+    name: Build binary for ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
@@ -32,7 +32,7 @@ jobs:
       - name: prepare upload
         run: |
           mkdir out
-          cp $(stack exec which morpheus) ./out/${{ matrix.fileName }}
+          cp $(stack exec which morpheus) ./out/${{ matrix.executable }}
           7z a -l ./morpheus.zip ./out
 
       - name: upload binary
@@ -43,5 +43,5 @@ jobs:
           # upload_url: ${{ github.event.release.upload_url }}
           upload_url: "https://uploads.github.com/repos/morpheusgraphql/morpheus-graphql/releases/80705605/assets{?name,label}"
           asset_path: morpheus.zip
-          asset_name: morpheus-${{ matrix.targetOs }}.zip
+          asset_name: morpheus-${{ matrix.target }}.zip
           asset_content_type: application/octet-stream
