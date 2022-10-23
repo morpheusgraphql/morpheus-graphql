@@ -18,10 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: haskell/actions/setup@v1.2
-      - run: stack install morpheus-graphql-code-gen
-      - run: cp ./local
-      - name: Prepare upload
-        run: cp ~/.local/bin/morpheus ~/morpheus-${{ matrix.os }}
+      - run: sh ./scripts/binary.sh
 
       # - uses: actions/upload-release-asset@v1
       #   env:
