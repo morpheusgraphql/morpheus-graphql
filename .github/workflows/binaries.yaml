@@ -8,11 +8,11 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            targetOs: Linux
+            targetOs: linux
           - os: macOS-latest
-            targetOs: macOS
+            targetOs: mac-os
           - os: ubuntu-latest
-            targetOs: Windows
+            targetOs: windows
     name: Build binary for ${{ matrix.targetOs }}
     runs-on: ${{ matrix.os }}
     steps:
@@ -26,6 +26,9 @@ jobs:
       - name: build binary
         run: stack build morpheus-graphql-code-gen
 
+      - name: Prepare upload
+        run: 7z a -l ./morpheus.zip .
+
       - name: prepare binary
         run: |
           cp $(stack exec which morpheus) ./morpheus
@@ -37,7 +40,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           # upload_url: ${{ github.event.release.upload_url }}
-          upload_url: https://github.com/morpheusgraphql/morpheus-graphql/releases/0.24.1
+          upload_url: /morpheusgraphql/morpheus-graphql/releases/0.24.1
           asset_path: morpheus
           asset_name: morpheus-${{ matrix.targetOs }}
           asset_content_type: application/octet-stream
