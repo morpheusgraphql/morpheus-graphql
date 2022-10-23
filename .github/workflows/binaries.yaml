@@ -33,7 +33,8 @@ jobs:
         run: |
           mkdir out
           cp $(stack exec which morpheus) ./out/${{ matrix.executable }}
-          7z a -l ./morpheus.zip ./out
+          cd ./out
+          7z a -l ../morpheus.zip ./out
 
       - name: upload binary
         uses: actions/upload-release-asset@v1
