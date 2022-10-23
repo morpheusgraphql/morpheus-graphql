@@ -34,13 +34,19 @@ jobs:
           cp $(stack exec which morpheus) ./morpheus
           ls
 
+      - name: Get release
+        id: get_release
+        uses: bruceadams/get-release@v1.2.3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: upload binary
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           # upload_url: ${{ github.event.release.upload_url }}
-          upload_url: /morpheusgraphql/morpheus-graphql/releases/0.24.1
+          upload_url: ${{ steps.get_release.outputs.upload_url }}
           asset_path: morpheus
           asset_name: morpheus-${{ matrix.targetOs }}
           asset_content_type: application/octet-stream
