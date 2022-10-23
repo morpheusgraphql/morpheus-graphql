@@ -33,7 +33,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ github.event.release.upload_url }}
+          # upload_url: ${{ github.event.release.upload_url }}
+          upload_url: https://github.com/morpheusgraphql/morpheus-graphql/releases/0.24.1
           asset_path: morpheus
           asset_name: morpheus-${{ matrix.targetOs }}
           asset_content_type: application/octet-stream
