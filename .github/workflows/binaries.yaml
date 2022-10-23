@@ -43,5 +43,5 @@ jobs:
           # upload_url: ${{ github.event.release.upload_url }}
           upload_url: "https://uploads.github.com/repos/morpheusgraphql/morpheus-graphql/releases/80705605/assets{?name,label}"
           asset_path: morpheus.zip
-          asset_name: morpheus-${{ matrix.targetOs }}
+          asset_name: morpheus-${{ matrix.targetOs }}.zip
           asset_content_type: application/octet-stream
