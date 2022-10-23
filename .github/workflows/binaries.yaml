@@ -18,10 +18,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: haskell/actions/setup@v1.2
+      - run: stack install morpheus-graphql-code-gen
+      - run: cp ./local
       - name: Prepare upload
-        run: |
-          cd result/bin
-          7z a -l ${{ github.workspace }}/ormolu.zip .
+        run: cp ~/.local/bin/morpheus ~/morpheus-${{ matrix.os }}
+
       # - uses: actions/upload-release-asset@v1
       #   env:
       #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -30,24 +31,3 @@ jobs:
       #     asset_path: ormolu.zip
       #     asset_name: ormolu-${{ matrix.targetOs }}.zip
       #     asset_content_type: application/zip
-  test:
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - ubuntu-latest
-          - macOS-latest
-          - windows-latest
-    name: Test built binaries
-    runs-on: ${{ matrix.os }}
-    needs: build
-    steps:
-      - name: Download and extract binary
-        run: |
-          curl -sL https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/ormolu-${{ runner.os }}.zip > ormolu.zip
-          7z e ormolu.zip
-      - name: Basic functionality tests
-        run: |
-          ./ormolu --version
-          echo "data A = A" > test.hs
-          ./ormolu -m check test.hs
