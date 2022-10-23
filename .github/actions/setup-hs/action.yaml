@@ -1,0 +1,32 @@
+name: Source Distribution
+inputs:
+  ghc:
+    description: GHC Version
+    required: false
+    default: latest
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Node
+      uses: actions/setup-node@v3
+
+    - name: Install Node
+      run: npm i
+
+    - name: setup stack config
+      run: npm run setup ${{ inputs.ghc }}
+
+    - name: Setup Haskell
+      uses: haskell/actions/setup@v1.2
+      with:
+        ghc-version: ${{ inputs.ghc }}
+        enable-stack: true
+
+    - name: Cache Stack
+      uses: actions/cache@v2
+      with:
+        path: ~/.stack
+        key: ${{ runner.os  }}-${{ inputs.ghc }}-stack-${{ hashFiles('stack.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-${{ inputs.ghc }}-stack
