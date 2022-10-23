@@ -13,7 +13,9 @@ jobs:
     name: GHC ${{ matrix.ghc}} (${{ matrix.os }})
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/setup-hs
+
+      - name: Setup
+        uses: ./.github/actions/setup-hs
         with:
           ghc: ${{ matrix.ghc }}
 

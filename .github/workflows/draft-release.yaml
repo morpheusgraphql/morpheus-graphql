@@ -15,7 +15,8 @@ jobs:
           ref: "main"
       - run: git fetch --prune --unshallow
 
-      - uses: ./.github/actions/setup-hs
+      - name: Setup
+        uses: ./.github/actions/setup-hs
         with:
           ghc: latest
 
