@@ -28,7 +28,7 @@ jobs:
 
       - name: build binary
         run: stack build morpheus-graphql-code-gen
-        shall: bash
+        shell: bash
 
       - name: prepare upload
         run: |
@@ -36,7 +36,7 @@ jobs:
           cd ./out
           cp $(stack exec which morpheus) ./${{ matrix.executable }}
           7z a -l ../morpheus.zip .
-        shall: bash
+        shell: bash
 
       - name: upload binary
         uses: actions/upload-release-asset@v1
