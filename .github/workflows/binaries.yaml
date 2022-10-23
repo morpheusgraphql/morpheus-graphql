@@ -18,13 +18,14 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: haskell/actions/setup@v1.2
-      - run: sh ./scripts/binary.sh
-
-      # - uses: actions/upload-release-asset@v1
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     upload_url: ${{ github.event.release.upload_url }}
-      #     asset_path: ormolu.zip
-      #     asset_name: ormolu-${{ matrix.targetOs }}.zip
-      #     asset_content_type: application/zip
+      - run: stack build morpheus-graphql-code-gen
+      - run: cp $(stack exec which morpheus) ./morpheus
+      - run: ls
+      - uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: morpheus
+          asset_name: morpheus-${{ matrix.targetOs }}
+          asset_content_type: application/octet-stream
