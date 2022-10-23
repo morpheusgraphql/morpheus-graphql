@@ -14,8 +14,8 @@ jobs:
             targetOs: mac-os
             execName: morpheus
           - os: windows-latest
-            fileName: morpheus.exe
-            execName: windows
+            targetOs: windows
+            execName: morpheus.exe
     name: Build binary for ${{ matrix.targetOs }}
     runs-on: ${{ matrix.os }}
     steps:
@@ -31,7 +31,7 @@ jobs:
 
       - name: prepare upload
         run: |
-          cp $(stack exec which morpheus) ./out/morpheus
+          cp $(stack exec which morpheus) ./out/{{ matrix.fileName }}
           7z a -l ./morpheus.zip ./out
 
       - name: upload binary
