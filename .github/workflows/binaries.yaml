@@ -31,7 +31,8 @@ jobs:
 
       - name: prepare upload
         run: |
-          cp $(stack exec which morpheus) ./out/{{ matrix.fileName }}
+          mkdir out
+          cp $(stack exec which morpheus) ./out/${{ matrix.fileName }}
           7z a -l ./morpheus.zip ./out
 
       - name: upload binary
