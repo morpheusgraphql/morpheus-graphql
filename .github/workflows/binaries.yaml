@@ -26,19 +26,10 @@ jobs:
       - name: build binary
         run: stack build morpheus-graphql-code-gen
 
-      - name: Prepare upload
-        run: 7z a -l ./morpheus.zip .
-
-      - name: prepare binary
+      - name: prepare upload
         run: |
           cp $(stack exec which morpheus) ./morpheus
-          ls
-
-      - name: Get release
-        id: get_release
-        uses: bruceadams/get-release@v1.2.3
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          7z a -l ./morpheus.zip ./out
 
       - name: upload binary
         uses: actions/upload-release-asset@v1
@@ -46,7 +37,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           # upload_url: ${{ github.event.release.upload_url }}
-          upload_url: ${{ steps.get_release.outputs.upload_url }}
+          upload_url: "https://uploads.github.com/repos/morpheusgraphql/morpheus-graphql/releases/80705605/assets{?name,label}"
           asset_path: morpheus
           asset_name: morpheus-${{ matrix.targetOs }}
           asset_content_type: application/octet-stream
