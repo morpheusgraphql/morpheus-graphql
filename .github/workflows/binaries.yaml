@@ -18,18 +18,21 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Setup
+      - name: setup
         uses: ./.github/actions/setup-hs
         with:
           ghc: latest
 
-      - run: stack build morpheus-graphql-code-gen
+      - name: build binary
+        run: stack build morpheus-graphql-code-gen
 
-      - run: cp $(stack exec which morpheus) ./morpheus
+      - name: prepare binary
+        run: |
+          cp $(stack exec which morpheus) ./morpheus
+          ls
 
-      - run: ls
-
-      - uses: actions/upload-release-asset@v1
+      - name: upload binary
+        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
