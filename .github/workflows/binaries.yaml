@@ -28,7 +28,7 @@ jobs:
 
       - name: prepare upload
         run: |
-          cp $(stack exec which morpheus) ./morpheus
+          cp $(stack exec which morpheus) ./out/morpheus
           7z a -l ./morpheus.zip ./out
 
       - name: upload binary
@@ -38,6 +38,6 @@ jobs:
         with:
           # upload_url: ${{ github.event.release.upload_url }}
           upload_url: "https://uploads.github.com/repos/morpheusgraphql/morpheus-graphql/releases/80705605/assets{?name,label}"
-          asset_path: morpheus
+          asset_path: morpheus.zip
           asset_name: morpheus-${{ matrix.targetOs }}
-          asset_content_type: application/octet-stream
+          asset_content_type: application/zip
