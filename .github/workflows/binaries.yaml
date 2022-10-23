@@ -17,10 +17,17 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
-      - uses: haskell/actions/setup@v1.2
+
+      - uses: ./.github/actions/setup-hs
+        with:
+          ghc: latest
+
       - run: stack build morpheus-graphql-code-gen
+
       - run: cp $(stack exec which morpheus) ./morpheus
+
       - run: ls
+
       - uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -15,13 +15,9 @@ jobs:
           ref: "main"
       - run: git fetch --prune --unshallow
 
-      - name: Setup
-        uses: actions/setup-node@v1
+      - uses: ./.github/actions/setup-hs
         with:
-          node-version: 14.x
-
-      - name: Install
-        run: npm i
+          ghc: latest
 
       - name: Draft Release
         id: draft
@@ -29,8 +25,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Source Distribution
-        uses: ./.github/actions/sdist
+      - name: generate cabal files
+        run: stack sdist
 
       - name: Open Release Pull Request
         run: |
