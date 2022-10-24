@@ -1,6 +1,8 @@
 name: Upload Artifacts
 on: push
 
+# thanks to:  https://github.com/tweag/ormolu/blob/master/.github/workflows/binaries.yml
+
 jobs:
   build:
     strategy:
