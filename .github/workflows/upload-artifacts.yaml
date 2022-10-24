@@ -1,4 +1,4 @@
-name: Publish Binaries
+name: Upload Artifacts
 on: push
 
 jobs:
@@ -26,11 +26,11 @@ jobs:
       #   with:
       #     ghc: latest
 
-      # - name: build artifact
+      # - name: Build Artifacts
       #   run: stack build morpheus-graphql-code-gen
       #   shell: bash
 
-      # - name: prepare artifact
+      # - name: Prepare Artifacts
       #   run: |
       #     mkdir out
       #     cd ./out
@@ -38,7 +38,7 @@ jobs:
       #     7z a ../morpheus.zip .
       #   shell: bash
 
-      # - name: upload artifact
+      # - name: Upload Artifact
       #   uses: actions/upload-release-asset@v1
       #   env:
       #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -64,11 +64,11 @@ jobs:
     needs: build
     steps:
       # curl -o morpheus.zip -LO https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/morpheus-${{ matrix.target }}.zip
-      - name: Download and extract CLI
+      - name: Download and extract Artifact
         run: |
           curl -o morpheus.zip -LO https://github.com/${{ github.repository }}/releases/download/0.24.1/morpheus-${{ matrix.target }}.zip
           7z e morpheus.zip
-      - name: Test CLI commands
+      - name: Test CLI Commands
         run: |
           ./morpheus about
           ./morpheus build examples/code-gen
