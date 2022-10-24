@@ -16,7 +16,7 @@ jobs:
           - os: windows-latest
             target: windows
             executable: morpheus.exe
-    name: Upload binary for ${{ matrix.target }}
+    name: Upload Artifacts for ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
