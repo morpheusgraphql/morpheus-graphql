@@ -9,8 +9,8 @@ jobs:
     if: ${{ github.base_ref == 'main' && startsWith(github.head_ref, 'publish-release/') && github.event.pull_request.merged == true  }}
     runs-on: ubuntu-latest
     outputs:
-      upload_url: ${{ steps.step1.outputs.test }}
-      output2: ${{ steps.step2.outputs.test }}
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      tag_name: ${{ steps.describe.outputs.version }}
     steps:
       - uses: actions/checkout@v2
       - uses: haskell/actions/setup@v1.2
@@ -44,6 +44,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Release
+        id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -93,7 +94,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{needs.publish_release.outputs.upload_url}}
+          upload_url: ${{ needs.publish_release.outputs.upload_url }}
           asset_path: morpheus.zip
           asset_name: morpheus-${{ matrix.target }}.zip
           asset_content_type: application/zip
@@ -111,12 +112,12 @@ jobs:
             target: windows
     name: Test Binaries
     runs-on: ${{ matrix.os }}
-    needs: build
+    needs: [publish_release, upload_artifact]
     steps:
       - uses: actions/checkout@v2
       - name: Download and extract Artifact
         run: |
-          curl -o morpheus.zip -LO https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/morpheus-${{ matrix.target }}.zip
+          curl -o morpheus.zip -LO https://github.com/${{ github.repository }}/releases/download/${{ needs.publish_release.outputs.tag_name }}/morpheus-${{ matrix.target }}.zip
           7z e morpheus.zip
       - name: Test CLI Commands
         run: |
