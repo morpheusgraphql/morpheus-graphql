@@ -5,9 +5,12 @@ on:
     types: [closed]
 
 jobs:
-  publish-release:
+  publish_release:
     if: ${{ github.base_ref == 'main' && startsWith(github.head_ref, 'publish-release/') && github.event.pull_request.merged == true  }}
     runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.step1.outputs.test }}
+      output2: ${{ steps.step2.outputs.test }}
     steps:
       - uses: actions/checkout@v2
       - uses: haskell/actions/setup@v1.2
@@ -48,3 +51,77 @@ jobs:
           tag_name: ${{ steps.describe.outputs.version }}
           release_name: ${{ steps.describe.outputs.version }}
           body: ${{ github.event.pull_request.body }}
+
+  upload_artifact:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux
+            executable: morpheus
+          - os: macOS-latest
+            target: mac-os
+            executable: morpheus
+          - os: windows-latest
+            target: windows
+            executable: morpheus.exe
+    name: Upload Artifacts for ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: setup
+        uses: ./.github/actions/setup-hs
+        with:
+          ghc: latest
+
+      - name: Build Artifacts
+        run: stack build morpheus-graphql-code-gen
+        shell: bash
+
+      - name: Prepare Artifacts
+        run: |
+          mkdir out
+          cd ./out
+          cp $(stack exec which morpheus) ./${{ matrix.executable }}
+          7z a ../morpheus.zip .
+        shell: bash
+
+      - name: Upload Artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{needs.publish_release.outputs.upload_url}}
+          asset_path: morpheus.zip
+          asset_name: morpheus-${{ matrix.target }}.zip
+          asset_content_type: application/zip
+
+  test_artifact:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux
+          - os: macOS-latest
+            target: mac-os
+          - os: windows-latest
+            target: windows
+    name: Test Binaries
+    runs-on: ${{ matrix.os }}
+    needs: build
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download and extract Artifact
+        run: |
+          curl -o morpheus.zip -LO https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/morpheus-${{ matrix.target }}.zip
+          7z e morpheus.zip
+      - name: Test CLI Commands
+        run: |
+          ./morpheus about
+          ./morpheus build examples/code-gen
+          ./morpheus build examples/code-gen-docs
+          ./morpheus check examples/code-gen
+          ./morpheus check examples/code-gen-docs
