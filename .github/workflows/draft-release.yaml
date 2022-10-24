@@ -26,8 +26,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: generate cabal files
-        run: stack sdist
+      - name: Generate Cabal Files
+        run: |
+          stack build --test --dry-run
+          stack sdist
 
       - name: Open Release Pull Request
         run: |
