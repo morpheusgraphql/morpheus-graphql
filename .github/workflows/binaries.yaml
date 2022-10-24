@@ -16,7 +16,7 @@ jobs:
           - os: windows-latest
             target: windows
             executable: morpheus.exe
-    name: Build binary for ${{ matrix.target }}
+    name: Upload binary for ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
@@ -26,11 +26,11 @@ jobs:
         with:
           ghc: latest
 
-      - name: build binary
+      - name: build artifact
         run: stack build morpheus-graphql-code-gen
         shell: bash
 
-      - name: prepare upload
+      - name: prepare artifact
         run: |
           mkdir out
           cd ./out
@@ -38,7 +38,7 @@ jobs:
           7z a ../morpheus.zip .
         shell: bash
 
-      - name: upload binary
+      - name: upload artifact
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -48,3 +48,25 @@ jobs:
           asset_path: morpheus.zip
           asset_name: morpheus-${{ matrix.target }}.zip
           asset_content_type: application/octet-stream
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux
+          - os: macOS-latest
+            target: mac-os
+          - os: windows-latest
+            target: windows
+    name: Test Binaries
+    runs-on: ${{ matrix.os }}
+    needs: build
+    steps:
+      # curl -o morpheus.zip -LO https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/morpheus-${{ matrix.target }}.zip
+      - name: download and extract binary
+        run: |
+          curl -o morpheus.zip -LO https://github.com/${{ github.repository }}/releases/download/0.24.1/morpheus-${{ matrix.target }}.zip
+          7z e ormolu.zip
+      - name: Basic tests
+        run: ./morpheus --version
