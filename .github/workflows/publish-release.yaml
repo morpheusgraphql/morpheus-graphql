@@ -54,6 +54,7 @@ jobs:
           body: ${{ github.event.pull_request.body }}
 
   upload_artifact:
+    needs: publish_release
     strategy:
       fail-fast: false
       matrix:
@@ -100,6 +101,7 @@ jobs:
           asset_content_type: application/zip
 
   test_artifact:
+    needs: [publish_release, upload_artifact]
     strategy:
       fail-fast: false
       matrix:
@@ -112,7 +114,6 @@ jobs:
             target: windows
     name: Test Binaries
     runs-on: ${{ matrix.os }}
-    needs: [publish_release, upload_artifact]
     steps:
       - uses: actions/checkout@v2
       - name: Download and extract Artifact
