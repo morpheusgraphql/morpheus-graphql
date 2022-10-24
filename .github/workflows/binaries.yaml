@@ -64,9 +64,14 @@ jobs:
     needs: build
     steps:
       # curl -o morpheus.zip -LO https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/morpheus-${{ matrix.target }}.zip
-      - name: download and extract binary
+      - name: Download and extract CLI
         run: |
           curl -o morpheus.zip -LO https://github.com/${{ github.repository }}/releases/download/0.24.1/morpheus-${{ matrix.target }}.zip
           7z e morpheus.zip
-      - name: Basic tests
-        run: ./morpheus --version
+      - name: Test CLI commands
+        run: |
+          ./morpheus about
+          ./morpheus build examples/code-gen
+          ./morpheus build examples/code-gen-docs
+          ./morpheus check examples/code-gen
+          ./morpheus check examples/code-gen-docs
