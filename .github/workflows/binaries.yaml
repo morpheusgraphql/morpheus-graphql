@@ -21,33 +21,33 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: setup
-        uses: ./.github/actions/setup-hs
-        with:
-          ghc: latest
+      # - name: setup
+      #   uses: ./.github/actions/setup-hs
+      #   with:
+      #     ghc: latest
 
-      - name: build artifact
-        run: stack build morpheus-graphql-code-gen
-        shell: bash
+      # - name: build artifact
+      #   run: stack build morpheus-graphql-code-gen
+      #   shell: bash
 
-      - name: prepare artifact
-        run: |
-          mkdir out
-          cd ./out
-          cp $(stack exec which morpheus) ./${{ matrix.executable }}
-          7z a ../morpheus.zip .
-        shell: bash
+      # - name: prepare artifact
+      #   run: |
+      #     mkdir out
+      #     cd ./out
+      #     cp $(stack exec which morpheus) ./${{ matrix.executable }}
+      #     7z a ../morpheus.zip .
+      #   shell: bash
 
-      - name: upload artifact
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          # upload_url: ${{ github.event.release.upload_url }}
-          upload_url: "https://uploads.github.com/repos/morpheusgraphql/morpheus-graphql/releases/80705605/assets{?name,label}"
-          asset_path: morpheus.zip
-          asset_name: morpheus-${{ matrix.target }}.zip
-          asset_content_type: application/octet-stream
+      # - name: upload artifact
+      #   uses: actions/upload-release-asset@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     # upload_url: ${{ github.event.release.upload_url }}
+      #     upload_url: "https://uploads.github.com/repos/morpheusgraphql/morpheus-graphql/releases/80705605/assets{?name,label}"
+      #     asset_path: morpheus.zip
+      #     asset_name: morpheus-${{ matrix.target }}.zip
+      #     asset_content_type: application/octet-stream
   test:
     strategy:
       fail-fast: false
@@ -67,6 +67,6 @@ jobs:
       - name: download and extract binary
         run: |
           curl -o morpheus.zip -LO https://github.com/${{ github.repository }}/releases/download/0.24.1/morpheus-${{ matrix.target }}.zip
-          7z e ormolu.zip
+          7z e morpheus.zip
       - name: Basic tests
         run: ./morpheus --version
