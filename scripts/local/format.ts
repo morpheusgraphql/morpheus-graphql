@@ -11,44 +11,52 @@ const config: Record<string, string> = {
 
 const name = config[process.platform] ?? config.linux;
 
-const binary = "./formatter/ormolu";
+type Ops = { fileName: string; url: string };
 
-export const format = async ({ fix, path }: { fix: boolean; path: string }) => {
+export const run = async (
+  f: (bin: string) => Promise<void>,
+  { fileName, url }: Ops
+) => {
+  const dir = `__${fileName}__`;
+  const bin = `./${dir}/${fileName}`;
+
   try {
-    exec(`mkdir formatter`);
+    exec(`mkdir ${dir}`);
   } catch {}
 
   try {
-    log("setup ormolu ... \n");
-
-    exec(
-      `curl -o ./formatter/ormolu.zip -LO  https://github.com/tweag/ormolu/releases/download/0.5.0.1/${name}`,
-      "pipe"
-    );
-    exec(`cd formatter && unzip ormolu.zip`, "pipe");
-
-    exec(`chmod +x ${binary}`, "pipe");
-
-    const files = await promisify(glob)(path);
-
-    log(`formatting(${files.length} files): ${path} \n\n`);
-
-    if (fix) {
-      exec(`${binary} --color=always --mode=inplace ${files.join(" ")}`);
-    } else {
-      exec(
-        `${binary} --color=always --check-idempotence --mode=check ${files.join(
-          " "
-        )}`
-      );
-    }
-
+    log(`setup ${fileName} ... \n`);
+    exec(`curl -o ${bin}.zip -LO  ${url}`, "pipe");
+    exec(`cd ${dir} && unzip ${fileName}.zip`, "pipe");
+    exec(`chmod +x ${bin}`, "pipe");
+    await f(bin);
     log("OK\n", "success");
   } catch (e) {
     log(e.message + "\n", "error");
-    exec(`rm -rf ./formatter`);
+    exec(`rm -rf ${dir}`);
     exit(1);
   }
-
-  exec(`rm -rf ./formatter`);
+  exec(`rm -rf ${dir}`);
 };
+
+export const format = async ({ fix, path }: { fix: boolean; path: string }) =>
+  run(
+    async (bin) => {
+      const files = await promisify(glob)(path);
+      log(`formatting(${files.length} files): ${path} \n\n`);
+
+      if (fix) {
+        exec(`${bin} --color=always --mode=inplace ${files.join(" ")}`);
+      } else {
+        exec(
+          `${bin} --color=always --check-idempotence --mode=check ${files.join(
+            " "
+          )}`
+        );
+      }
+    },
+    {
+      fileName: "ormolu",
+      url: `https://github.com/tweag/ormolu/releases/download/0.5.0.1/${name}`,
+    }
+  );

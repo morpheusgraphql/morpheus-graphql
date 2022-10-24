@@ -35,7 +35,7 @@ jobs:
           mkdir out
           cd ./out
           cp $(stack exec which morpheus) ./${{ matrix.executable }}
-          7z a -l ../morpheus.zip .
+          7z a ../morpheus.zip .
         shell: bash
 
       - name: upload binary
