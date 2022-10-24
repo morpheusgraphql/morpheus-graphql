@@ -63,6 +63,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     needs: build
     steps:
+      - uses: actions/checkout@v2
       # curl -o morpheus.zip -LO https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/morpheus-${{ matrix.target }}.zip
       - name: Download and extract Artifact
         run: |
