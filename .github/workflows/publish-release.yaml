@@ -75,8 +75,6 @@ jobs:
 
       - name: setup
         uses: ./.github/actions/setup-hs
-        with:
-          ghc: latest
 
       - name: Build Artifacts
         run: stack build morpheus-graphql-code-gen

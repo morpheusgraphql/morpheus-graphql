@@ -17,8 +17,6 @@ jobs:
 
       - name: Setup
         uses: ./.github/actions/setup-hs
-        with:
-          ghc: latest
 
       - name: Draft Release
         id: draft
