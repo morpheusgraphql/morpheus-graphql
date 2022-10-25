@@ -39,6 +39,7 @@ import Data.Morpheus.CodeGen.Internal.AST
     DerivingClass (..),
     FIELD_TYPE_WRAPPER (..),
     MethodArgument (..),
+    PrintableValue (..),
     TypeClassInstance (..),
     TypeValue (..),
     getFullName,
@@ -229,6 +230,7 @@ instance PrintExp TypeValue where
   printExp (TypedValueMaybe (Just x)) = appE (conE 'Just) (printExp x)
   printExp (TypedValueMaybe Nothing) = conE 'Nothing
   printExp (TypeValueList xs) = listE $ map printExp xs
+  printExp (PrintableTypeValue x) = printExp x
 
 genName :: DerivingClass -> Name
 genName GENERIC = ''Generic
@@ -348,3 +350,6 @@ instance PrintDec CodeGenType where
         Nothing
         (map printConstructor cgConstructors)
         [printDerivClause cgDerivations]
+
+instance PrintExp PrintableValue where
+  printExp (PrintableValue x) = [|x|]

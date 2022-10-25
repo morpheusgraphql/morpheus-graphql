@@ -25,7 +25,6 @@ import Data.Morpheus.Client.CodeGen.AST
     ClientPreDeclaration (..),
     DERIVING_MODE (..),
     MValue (..),
-    Printable (..),
     RequestTypeDefinition (..),
     UnionPat (..),
   )
@@ -40,6 +39,7 @@ import Data.Morpheus.CodeGen.Internal.AST
     CodeGenType (..),
     CodeGenTypeName (typename),
     MethodArgument (..),
+    PrintableValue (..),
     TypeClassInstance (..),
     fromTypeName,
     getFullName,
@@ -78,9 +78,9 @@ getRequestInstance RequestTypeDefinition {..} =
     }
   where
     typeClassMethods =
-      [ ('__name, ProxyArgument, PrintableMethod $ Printable requestName),
-        ('__query, ProxyArgument, PrintableMethod $ Printable requestQuery),
-        ('__type, ProxyArgument, PrintableMethod $ Printable requestType)
+      [ ('__name, ProxyArgument, PrintableMethod $ PrintableValue requestName),
+        ('__query, ProxyArgument, PrintableMethod $ PrintableValue requestQuery),
+        ('__type, ProxyArgument, PrintableMethod $ PrintableValue requestType)
       ]
 
 -- FromJSON
