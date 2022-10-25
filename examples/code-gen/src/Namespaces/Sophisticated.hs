@@ -6,12 +6,8 @@
 
 module Namespaces.Sophisticated where
 
-import Data.Data (Typeable)
-import Data.Morpheus ()
-import Data.Morpheus.Kind (TYPE)
-import Data.Morpheus.Types
-import Data.Text (Text)
-import GHC.Generics (Generic)
+import Data.Morpheus.Server.CodeGen.Internal
+import Data.Morpheus.Server.Types
 import Globals.GQLScalars
 
 data TestEnum
@@ -79,6 +75,7 @@ instance GQLType Coordinates where
       <> fieldDirective "coordinatesLatitude" Describe {text = "\n  inputValue Description: latitude\n  "}
       <> fieldDirective "coordinatesLongitude" Describe {text = "\n  inputValue Description: longitude\n  some random inputValue details\n  "}
       <> typeDirective Describe {text = "\ntype Description: Coordinates\n\nsome random text\n"}
+      <> fieldDirective "coordinatesLongitude" DefaultValue {defaultValue = Scalar (Int 4)}
 
 data Address m = Address
   { addressCity :: m Text,
