@@ -6,12 +6,8 @@
 
 module Operation.Subscription where
 
-import Data.Data (Typeable)
-import Data.Morpheus ()
-import Data.Morpheus.Kind (TYPE)
-import Data.Morpheus.Types
-import Data.Text (Text)
-import GHC.Generics (Generic)
+import Data.Morpheus.Server.CodeGen.Internal
+import Data.Morpheus.Server.Types
 import Globals.GQLScalars
 
 data Query m = Query

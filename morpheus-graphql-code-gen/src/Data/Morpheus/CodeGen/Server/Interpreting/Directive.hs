@@ -10,12 +10,14 @@ module Data.Morpheus.CodeGen.Server.Interpreting.Directive
   ( getDirs,
     getNamespaceDirs,
     dirRename,
+    getDefaultValueDir,
   )
 where
 
 import Data.Char (isUpper)
 import Data.Morpheus.CodeGen.Internal.AST
-  ( getFullName,
+  ( PrintableValue (..),
+    getFullName,
   )
 import Data.Morpheus.CodeGen.Server.Internal.AST (ServerDirectiveUsage (..), TypeValue (..), unpackName)
 import Data.Morpheus.CodeGen.Server.Interpreting.Utils
@@ -36,6 +38,7 @@ import Data.Morpheus.Types.Internal.AST
     Description,
     Directive (Directive, directiveArgs, directiveName),
     DirectiveDefinition (..),
+    FieldContent (..),
     FieldDefinition (..),
     FieldName,
     FieldsDefinition,
@@ -45,10 +48,24 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeName,
     TypeRef (..),
+    Value,
   )
 import qualified Data.Morpheus.Types.Internal.AST as AST
 import Data.Text (head)
 import Relude hiding (ByteString, get, head)
+
+getDefaultValueDir :: (Monad m) => FieldDefinition c CONST -> CodeGenT m [ServerDirectiveUsage]
+getDefaultValueDir
+  FieldDefinition
+    { fieldName,
+      fieldContent = Just DefaultInputValue {defaultInputValue}
+    } = do
+    name <- getFieldName fieldName
+    pure [FieldDirectiveUsage name (defValDirective defaultInputValue)]
+getDefaultValueDir _ = pure []
+
+defValDirective :: Value CONST -> TypeValue
+defValDirective desc = TypeValueObject "DefaultValue" [("defaultValue", PrintableTypeValue $ PrintableValue desc)]
 
 getNamespaceDirs :: MonadReader (TypeContext s) m => Text -> m [ServerDirectiveUsage]
 getNamespaceDirs genTypeName = do

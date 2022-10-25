@@ -41,12 +41,8 @@ processServerDocument BuildConfig {..} moduleName schema = do
       ModuleDefinition
         { moduleName,
           imports =
-            [ ("Data.Data", ["Typeable"]),
-              ("Data.Morpheus.Kind", ["TYPE"]),
-              ("Data.Morpheus.Types", ["*"]),
-              ("Data.Morpheus", []),
-              ("Data.Text", ["Text"]),
-              ("GHC.Generics", ["Generic"])
+            [ ("Data.Morpheus.Server.CodeGen.Internal", ["*"]),
+              ("Data.Morpheus.Server.Types", ["*"])
             ]
               <> map (,["*"]) globalImports,
           extensions =

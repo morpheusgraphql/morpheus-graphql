@@ -1,4 +1,6 @@
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -17,6 +19,7 @@ module Data.Morpheus.CodeGen.Internal.AST
     AssociatedType (..),
     MethodArgument (..),
     printTHName,
+    PrintableValue (..),
   )
 where
 
@@ -31,6 +34,7 @@ import Data.Morpheus.Types.Internal.AST
     unpackName,
   )
 import qualified Data.Text as T
+import Language.Haskell.TH.Syntax (Lift)
 import qualified Language.Haskell.TH.Syntax as TH
 import Prettyprinter
   ( Doc,
@@ -49,7 +53,8 @@ import Prettyprinter
     vsep,
     (<+>),
   )
-import Relude hiding (optional, print)
+import Relude hiding (Show, optional, print, show)
+import Prelude (Show (..))
 
 data DerivingClass
   = SHOW
@@ -69,6 +74,7 @@ data TypeValue
   | TypeValueBool Bool
   | TypeValueList [TypeValue]
   | TypedValueMaybe (Maybe TypeValue)
+  | PrintableTypeValue PrintableValue
   deriving (Show)
 
 renderField :: (FieldName, TypeValue) -> Doc n
@@ -86,6 +92,7 @@ instance Pretty TypeValue where
   pretty (TypedValueMaybe (Just x)) = "Just" <+> pretty x
   pretty (TypedValueMaybe Nothing) = "Nothing"
   pretty (TypeValueList xs) = prettyList xs
+  pretty (PrintableTypeValue x) = pretty x
 
 data CodeGenType = CodeGenType
   { cgTypeName :: CodeGenTypeName,
@@ -273,3 +280,12 @@ instance Pretty MethodArgument where
   pretty NoArgument = ""
   pretty ProxyArgument = "_ "
   pretty (DestructArgument x xs) = unpack (print x .<> pack (hsep $ map printTHName xs)) <> " "
+
+data PrintableValue where
+  PrintableValue :: forall a. (Show a, Lift a) => a -> PrintableValue
+
+instance Show PrintableValue where
+  show (PrintableValue a) = show a
+
+instance Pretty PrintableValue where
+  pretty (PrintableValue x) = pretty (show x)

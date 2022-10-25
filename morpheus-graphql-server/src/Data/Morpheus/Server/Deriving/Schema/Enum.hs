@@ -36,7 +36,6 @@ import Data.Morpheus.Types.Internal.AST
     mkEnumContent,
     mkType,
     unitTypeName,
-    unpackName,
   )
 
 buildEnumTypeContent :: GQLType a => KindedType kind a -> [TypeName] -> SchemaT c (TypeContent TRUE kind CONST)
@@ -46,11 +45,10 @@ buildEnumTypeContent p@OutputType enumCons = DataEnum <$> traverse (mkEnumValue 
 mkEnumValue :: GQLType a => f a -> TypeName -> SchemaT c (DataEnumValue CONST)
 mkEnumValue proxy enumName = do
   enumDirectives <- deriveEnumDirectives proxy enumName
-  let desc = lookupDescription proxy (unpackName enumName)
   pure
     DataEnumValue
       { enumName = visitEnumName proxy enumName,
-        enumDescription = visitEnumValueDescription proxy enumName desc,
+        enumDescription = visitEnumValueDescription proxy enumName (lookupDescription proxy enumName),
         ..
       }
 

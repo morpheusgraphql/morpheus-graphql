@@ -17,26 +17,29 @@ module Data.Morpheus.Server.Types.Directives
     ToLocations (..),
     getLocations,
     -- visitors
-    visitTypeName',
-    visitTypeDescription',
-    visitFieldName',
-    visitFieldDescription',
-    visitEnumName',
     visitEnumDescription',
-    visitFieldNames',
+    visitEnumName',
     visitEnumNames',
+    visitFieldDefaultValue',
+    visitFieldDescription',
+    visitFieldName',
+    visitFieldNames',
+    visitTypeDescription',
+    visitTypeName',
   )
 where
 
 import Data.Morpheus.Server.Types.TypeName (getTypename)
 import qualified Data.Morpheus.Server.Types.Visitors as Visitors
 import Data.Morpheus.Types.Internal.AST
-  ( Description,
+  ( CONST,
+    Description,
     DirectiveLocation (..),
     FALSE,
     FieldName,
     TRUE,
     TypeName,
+    Value,
     packName,
     unpackName,
   )
@@ -171,17 +174,23 @@ visitFieldName' = __visitFieldName (Proxy :: Proxy (ALLOWED a FIELD_VISITOR_KIND
 visitFieldDescription' :: forall a. GQLDirective a => a -> Maybe Description -> Maybe Description
 visitFieldDescription' = __visitFieldDescription (Proxy :: Proxy (ALLOWED a FIELD_VISITOR_KIND))
 
+visitFieldDefaultValue' :: forall a. GQLDirective a => a -> Maybe (Value CONST) -> Maybe (Value CONST)
+visitFieldDefaultValue' = __visitFieldDefaultValue (Proxy :: Proxy (ALLOWED a FIELD_VISITOR_KIND))
+
 class VISIT_FIELD a (t :: Bool) where
   __visitFieldName :: f t -> a -> FieldName -> FieldName
   __visitFieldDescription :: f t -> a -> Maybe Description -> Maybe Description
+  __visitFieldDefaultValue :: f t -> a -> Maybe (Value CONST) -> Maybe (Value CONST)
 
 instance VISIT_FIELD a FALSE where
   __visitFieldName _ _ = id
   __visitFieldDescription _ _ = id
+  __visitFieldDefaultValue _ _ = id
 
 instance Visitors.VisitField a => VISIT_FIELD a TRUE where
   __visitFieldName _ x name = packName $ Visitors.visitFieldName x (unpackName name)
   __visitFieldDescription _ = Visitors.visitFieldDescription
+  __visitFieldDefaultValue _ = Visitors.visitFieldDefaultValue
 
 -- VISIT_ENUM
 

@@ -82,6 +82,7 @@ module Data.Morpheus.Types
     dropNamespaceOptions,
     DropNamespace (..),
     Rename (..),
+    DefaultValue (..),
   )
 where
 
@@ -92,6 +93,7 @@ import Data.Morpheus.Server.Types
     Arg (..),
     DecodeScalar (..),
     DecodeWrapper (..),
+    DefaultValue (..),
     Deprecated (..),
     Describe (..),
     DropNamespace (..),

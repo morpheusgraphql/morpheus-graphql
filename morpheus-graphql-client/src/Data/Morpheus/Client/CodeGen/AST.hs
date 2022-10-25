@@ -14,7 +14,6 @@ module Data.Morpheus.Client.CodeGen.AST
     ClientPreDeclaration (..),
     DERIVING_MODE (..),
     MValue (..),
-    Printable (..),
     RequestTypeDefinition (..),
     UnionPat (..),
     ClientTypeDefinition (..),
@@ -31,6 +30,7 @@ import Data.Morpheus.CodeGen.Internal.AST
   ( CodeGenConstructor (..),
     CodeGenType,
     CodeGenTypeName,
+    PrintableValue (..),
     TypeClassInstance,
     printTHName,
   )
@@ -44,7 +44,6 @@ import Data.Morpheus.CodeGen.TH
   )
 import Data.Morpheus.Types.Internal.AST (FieldName, OperationType, TypeKind, TypeName, unpackName)
 import Language.Haskell.TH
-import Language.Haskell.TH.Syntax (Lift (..))
 import Prettyprinter
   ( Doc,
     Pretty (..),
@@ -90,17 +89,8 @@ instance Pretty ClientDeclaration where
   pretty (ClientTypeDeclaration def) = pretty def
   pretty (InstanceDeclaration _ def) = pretty def
 
-data Printable where
-  Printable :: forall a. (Show a, Lift a) => a -> Printable
-
-instance Pretty Printable where
-  pretty (Printable x) = pretty (show x :: String)
-
-instance PrintExp Printable where
-  printExp (Printable x) = [|x|]
-
 data ClientMethod
-  = PrintableMethod Printable
+  = PrintableMethod PrintableValue
   | FunctionNameMethod Name
   | MatchMethod ValueMatch
   | ToJSONObjectMethod Name [(FieldName, Name, Name)]

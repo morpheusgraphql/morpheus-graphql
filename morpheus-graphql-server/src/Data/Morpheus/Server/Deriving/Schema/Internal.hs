@@ -48,22 +48,25 @@ import Data.Morpheus.Types.Internal.AST
   ( CONST,
     Description,
     FieldContent (..),
+    FieldName,
+    Name,
     Schema (..),
     TRUE,
     VALID,
+    unpackName,
   )
 import Language.Haskell.TH (Exp, Q)
 import Relude hiding (empty)
 
-lookupDescription :: GQLType a => f a -> Text -> Maybe Description
-lookupDescription proxy name = name `M.lookup` getDescriptions proxy
+lookupDescription :: GQLType a => f a -> Name t -> Maybe Description
+lookupDescription proxy name = unpackName name `M.lookup` getDescriptions proxy
 
 lookupFieldContent ::
   GQLType a =>
   KindedType kind a ->
-  Text ->
+  FieldName ->
   Maybe (FieldContent TRUE kind CONST)
-lookupFieldContent proxy@InputType key = DefaultInputValue <$> key `M.lookup` defaultValues proxy
+lookupFieldContent proxy@InputType key = DefaultInputValue <$> unpackName key `M.lookup` defaultValues proxy
 lookupFieldContent OutputType _ = Nothing
 
 fromSchema :: GQLResult (Schema VALID) -> Q Exp

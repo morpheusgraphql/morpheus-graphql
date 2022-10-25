@@ -13,6 +13,7 @@ module Data.Morpheus.Server.Types.DirectiveDefinitions
     Describe (..),
     Rename (..),
     DropNamespace (..),
+    DefaultValue (..),
   )
 where
 
@@ -28,9 +29,7 @@ import Data.Morpheus.Server.Types.Visitors
     VisitField (..),
     VisitType (..),
   )
-import Data.Morpheus.Types.Internal.AST
-  ( DirectiveLocation (..),
-  )
+import Data.Morpheus.Types.Internal.AST (CONST, DirectiveLocation (..), Value)
 import Data.Text (drop, length, pack, unpack)
 import Relude hiding (drop, length)
 
@@ -167,3 +166,18 @@ instance GQLDirective DropNamespace where
 instance VisitType DropNamespace where
   visitFieldNames DropNamespace {dropNamespace} = pack . stripFieldNamespace dropNamespace . unpack
   visitEnumNames DropNamespace {dropNamespace} = pack . stripConstructorNamespace dropNamespace . unpack
+
+newtype DefaultValue = DefaultValue
+  { defaultValue :: Value CONST
+  }
+  deriving
+    ( Generic,
+      GQLType
+    )
+
+instance GQLDirective DefaultValue where
+  type DIRECTIVE_LOCATIONS DefaultValue = '[ 'INPUT_FIELD_DEFINITION]
+  excludeFromSchema _ = True
+
+instance VisitField DefaultValue where
+  visitFieldDefaultValue DefaultValue {defaultValue} _ = Just defaultValue

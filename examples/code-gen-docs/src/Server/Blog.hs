@@ -6,12 +6,8 @@
 
 module Server.Blog where
 
-import Data.Data (Typeable)
-import Data.Morpheus ()
-import Data.Morpheus.Kind (TYPE)
-import Data.Morpheus.Types
-import Data.Text (Text)
-import GHC.Generics (Generic)
+import Data.Morpheus.Server.CodeGen.Internal
+import Data.Morpheus.Server.Types
 import Scalars
 
 data Post m = Post

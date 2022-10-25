@@ -38,6 +38,7 @@ import Data.Morpheus.Subscriptions
 import Data.Morpheus.Types
   ( Arg (Arg),
     DecodeScalar (..),
+    DefaultValue (..),
     Deprecated (..),
     Describe (..),
     DropNamespace (..),

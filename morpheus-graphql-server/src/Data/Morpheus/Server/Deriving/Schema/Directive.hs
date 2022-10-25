@@ -22,6 +22,8 @@ module Data.Morpheus.Server.Deriving.Schema.Directive
     visitEnumValueDescription,
     visitFieldDescription,
     visitTypeDescription,
+    visitFieldDefaultValue,
+    visitFieldContent,
     visitEnumName,
     visitFieldName,
     toFieldRes,
@@ -34,6 +36,7 @@ import Data.Morpheus.Internal.Ext (resultOr, unsafeFromList)
 import Data.Morpheus.Internal.Utils (Empty (..), fromElems)
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( KindedProxy (..),
+    KindedType (..),
   )
 import Data.Morpheus.Server.Deriving.Utils.Types (FieldRep (..))
 import Data.Morpheus.Server.Types.Directives
@@ -48,6 +51,7 @@ import Data.Morpheus.Server.Types.GQLType
     GQLType (..),
     applyEnumDescription,
     applyEnumName,
+    applyFieldDefaultValue,
     applyFieldDescription,
     applyFieldName,
     applyTypeDescription,
@@ -70,10 +74,13 @@ import Data.Morpheus.Types.Internal.AST
     Directive (..),
     DirectiveDefinition (..),
     Directives,
+    FieldContent (..),
     FieldName,
     IN,
     Position (Position),
+    TRUE,
     TypeName,
+    Value,
   )
 import GHC.Generics ()
 import GHC.TypeLits ()
@@ -164,6 +171,7 @@ deriveTypeDirectives :: forall c f a. GQLType a => f a -> SchemaT c (Directives 
 deriveTypeDirectives proxy = deriveDirectiveUsages $ filter isIncluded $ typeDirectives $ directives proxy
 
 -- visit
+
 visitEnumValueDescription :: GQLType a => f a -> TypeName -> Maybe Description -> Maybe Description
 visitEnumValueDescription proxy name desc = foldr applyEnumDescription desc (getEnumDirectiveUsages proxy name)
 
@@ -175,6 +183,18 @@ visitEnumName proxy name = foldr applyEnumName (withTypeDirectives $ withOptions
 
 visitFieldDescription :: GQLType a => f a -> FieldName -> Maybe Description -> Maybe Description
 visitFieldDescription proxy name desc = foldr applyFieldDescription desc (getFieldDirectiveUsages name proxy)
+
+visitFieldDefaultValue :: GQLType a => f a -> FieldName -> Maybe (Value CONST) -> Maybe (Value CONST)
+visitFieldDefaultValue proxy name desc = foldr applyFieldDefaultValue desc (getFieldDirectiveUsages name proxy)
+
+visitFieldContent ::
+  GQLType a =>
+  KindedType kind a ->
+  FieldName ->
+  Maybe (FieldContent TRUE kind CONST) ->
+  Maybe (FieldContent TRUE kind CONST)
+visitFieldContent proxy@InputType name x = DefaultInputValue <$> visitFieldDefaultValue proxy name (defaultInputValue <$> x)
+visitFieldContent OutputType _ x = x
 
 applyGQLFieldOptions :: (GQLType a) => f a -> FieldName -> FieldName
 applyGQLFieldOptions proxy = withTypeDirectives . withOptions

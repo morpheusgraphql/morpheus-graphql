@@ -94,8 +94,7 @@ instance Pretty ServerDirectiveUsage where
 data GQLTypeDefinition = GQLTypeDefinition
   { gqlTarget :: CodeGenTypeName,
     gqlKind :: Kind,
-    gqlTypeDirectiveUses :: [ServerDirectiveUsage],
-    gqlTypeDefaultValues :: Map Text (Value CONST)
+    gqlTypeDirectiveUses :: [ServerDirectiveUsage]
   }
   deriving (Show)
 

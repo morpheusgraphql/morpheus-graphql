@@ -295,6 +295,8 @@ instance NameCollision GQLError (FieldDefinition cat s) where
 instance RenderGQL (FieldDefinition cat s) where
   renderGQL FieldDefinition {fieldContent = Just (FieldArgs args), ..} =
     renderGQL fieldName <> renderGQL args <> ": " <> renderGQL fieldType <> addDirectives fieldDirectives
+  renderGQL FieldDefinition {fieldContent = Just (DefaultInputValue x), ..} =
+    renderEntry fieldName fieldType <> " = " <> renderGQL x <> addDirectives fieldDirectives
   renderGQL FieldDefinition {..} =
     renderEntry fieldName fieldType <> addDirectives fieldDirectives
 

@@ -19,7 +19,8 @@ where
 import Data.Morpheus (interpreter)
 import Data.Morpheus.Document (importGQLDocument)
 import Data.Morpheus.Types
-  ( GQLRequest,
+  ( DefaultValue (..),
+    GQLRequest,
     GQLResponse,
     ID (..),
     RootResolver (..),

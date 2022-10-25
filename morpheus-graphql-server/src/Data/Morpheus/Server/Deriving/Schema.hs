@@ -94,6 +94,7 @@ import Data.Morpheus.Types.Internal.AST
     OUT,
     QUERY,
     SUBSCRIPTION,
+    ScalarDefinition (..),
     Schema (..),
     TRUE,
     TypeCategory,
@@ -102,6 +103,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeName,
     TypeRef (..),
     UnionMember (memberName),
+    Value,
     fieldsToArguments,
     mkField,
   )
@@ -192,6 +194,9 @@ instance DeriveTypeConstraint IN a => DeriveKindedType IN TYPE a where
 
 instance DeriveType cat a => DeriveKindedType cat CUSTOM (Resolver o e m a) where
   deriveKindedType _ = deriveType (Proxy @a)
+
+instance DeriveKindedType cat CUSTOM (Value CONST) where
+  deriveKindedType = insertTypeContent (const $ pure $ DataScalar $ ScalarDefinition pure) . setKind (Proxy @LEAF)
 
 instance DeriveType cat [(k, v)] => DeriveKindedType cat CUSTOM (Map k v) where
   deriveKindedType _ = deriveType (Proxy @[(k, v)])

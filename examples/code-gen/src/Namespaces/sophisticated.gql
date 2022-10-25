@@ -50,7 +50,7 @@ input Coordinates {
   inputValue Description: longitude
   some random inputValue details
   """
-  longitude: Int!
+  longitude: Int! = 4
 }
 
 """
