@@ -20,7 +20,7 @@ enum testCharCases {
 
 input Coordinates @TestDirective(name: "SomeName") {
   latitude: TestScalar!
-  longitude: Int! @TestDirective(name: "SomeName")
+  longitude: Int! = 4 @TestDirective(name: "SomeName")
 }
 
 type Address {
