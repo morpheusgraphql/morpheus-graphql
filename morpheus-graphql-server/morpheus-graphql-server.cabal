@@ -278,6 +278,7 @@ library
       Data.Morpheus.Server
       Data.Morpheus.Server.Resolvers
       Data.Morpheus.Server.Types
+      Data.Morpheus.Server.CodeGen.Internal
   other-modules:
       Data.Morpheus.Server.Deriving.App
       Data.Morpheus.Server.Deriving.Channels

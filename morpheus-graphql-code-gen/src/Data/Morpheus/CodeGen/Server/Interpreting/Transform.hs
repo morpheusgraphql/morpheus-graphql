@@ -36,7 +36,7 @@ import Data.Morpheus.CodeGen.Server.Internal.AST
     ServerDirectiveUsage (..),
     ServerMethod (..),
   )
-import Data.Morpheus.CodeGen.Server.Interpreting.Directive (dirRename, getDirs, getNamespaceDirs)
+import Data.Morpheus.CodeGen.Server.Interpreting.Directive (dirRename, getDefaultValueDir, getDirs, getNamespaceDirs)
 import Data.Morpheus.CodeGen.Server.Interpreting.Utils (CodeGenMonad (printWarnings), CodeGenT, TypeContext (..), getEnumName, getFieldName, inType, isParamResolverType, isSubscription)
 import Data.Morpheus.CodeGen.TH (ToName (..))
 import Data.Morpheus.CodeGen.Utils
@@ -74,7 +74,6 @@ import Data.Morpheus.Types.Internal.AST
     packName,
     unpackName,
   )
-import qualified Data.Morpheus.Types.Internal.AST as AST
 import Relude hiding (ByteString, get)
 
 parseServerTypeDefinitions :: CodeGenMonad m => CodeGenConfig -> ByteString -> m [ServerDeclaration]
@@ -130,7 +129,6 @@ toTHDefinitions namespace defs = concat <$> traverse generateTypes defs
                   GQLTypeDefinition
                     { gqlTarget = cgTypeName,
                       gqlKind = Type,
-                      gqlTypeDefaultValues = mempty,
                       gqlTypeDirectiveUses = namespaceDirs
                     }
               ]
@@ -171,6 +169,7 @@ genTypeDefinition
       cgTypeName = CodeGenTypeName [] ["m" | isResolverType tKind] hsTypeName
       renameDir = [TypeDirectiveUsage (dirRename originalTypeName) | originalTypeName /= hsTypeName]
       deriveGQL = do
+        defaultValueDirs <- concat <$> traverse getDefaultValueDir (getInputFields typeDef)
         namespaceDirs <- getNamespaceDirs (unpackName hsTypeName)
         dirs <- getDirs typeDef
         -- TODO: here
@@ -178,12 +177,8 @@ genTypeDefinition
           gqlTypeToInstance
             GQLTypeDefinition
               { gqlTarget = cgTypeName,
-                gqlTypeDirectiveUses = renameDir <> namespaceDirs <> dirs,
-                gqlKind = derivingKind tKind,
-                gqlTypeDefaultValues =
-                  fromList $
-                    mapMaybe getDefaultValue $
-                      getInputFields typeDef
+                gqlTypeDirectiveUses = renameDir <> namespaceDirs <> dirs <> defaultValueDirs,
+                gqlKind = derivingKind tKind
               }
       cgDerivations = derivesClasses (isResolverType tKind)
       -------------------------
@@ -265,8 +260,9 @@ gqlTypeToInstance GQLTypeDefinition {..} =
         typeClassTarget = gqlTarget,
         assoc = [(''KIND, AssociatedTypeName (toName gqlKind))],
         typeClassMethods =
-          [('defaultValues, ProxyArgument, ServerMethodDefaultValues gqlTypeDefaultValues) | not (null gqlTypeDefaultValues)]
-            <> [('directives, ProxyArgument, ServerMethodDirectives gqlTypeDirectiveUses) | not (null gqlTypeDirectiveUses)]
+          [ ('directives, ProxyArgument, ServerMethodDirectives gqlTypeDirectiveUses)
+            | not (null gqlTypeDirectiveUses)
+          ]
       }
 
 genInterfaceUnion :: Monad m => TypeName -> CodeGenT m [ServerDeclaration]
@@ -288,8 +284,7 @@ genInterfaceUnion interfaceName =
           GQLTypeDefinition
             { gqlTarget = possTypeName,
               gqlKind = Type,
-              gqlTypeDirectiveUses = empty,
-              gqlTypeDefaultValues = mempty
+              gqlTypeDirectiveUses = empty
             }
       ]
       where
@@ -376,6 +371,7 @@ genArgumentType
           namespaceDirs <- getNamespaceDirs typename
           dirs <- concat <$> traverse getDirs argumentFields
           let cgTypeName = fromTypeName (packName typename)
+          defaultValueDirs <- concat <$> traverse getDefaultValueDir argumentFields
           pure
             [ DataType
                 CodeGenType
@@ -387,8 +383,7 @@ genArgumentType
                 GQLTypeDefinition
                   { gqlTarget = cgTypeName,
                     gqlKind = Type,
-                    gqlTypeDefaultValues = fromList (mapMaybe getDefaultValue argumentFields),
-                    gqlTypeDirectiveUses = namespaceDirs <> dirs
+                    gqlTypeDirectiveUses = namespaceDirs <> dirs <> defaultValueDirs
                   }
             ]
 genArgumentType _ = pure []
@@ -396,11 +391,3 @@ genArgumentType _ = pure []
 getInputFields :: TypeDefinition c s -> [FieldDefinition IN s]
 getInputFields TypeDefinition {typeContent = DataInputObject {inputObjectFields}} = toList inputObjectFields
 getInputFields _ = []
-
-getDefaultValue :: FieldDefinition c s -> Maybe (Text, AST.Value s)
-getDefaultValue
-  FieldDefinition
-    { fieldName,
-      fieldContent = Just DefaultInputValue {defaultInputValue}
-    } = Just (unpackName fieldName, defaultInputValue)
-getDefaultValue _ = Nothing
