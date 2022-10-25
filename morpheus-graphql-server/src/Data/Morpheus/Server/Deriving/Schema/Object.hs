@@ -21,6 +21,7 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Server.Deriving.Schema.Directive
   ( deriveFieldDirectives,
+    visitFieldContent,
     visitFieldDescription,
     visitFieldName,
   )
@@ -63,7 +64,6 @@ import Data.Morpheus.Types.Internal.AST
     msg,
     unitFieldName,
     unitTypeName,
-    unpackName,
     unsafeFromFields,
   )
 import Relude hiding (empty)
@@ -135,10 +135,8 @@ setGQLTypeProps proxy FieldDefinition {..} = do
   pure
     FieldDefinition
       { fieldName = visitFieldName proxy fieldName,
-        fieldDescription = visitFieldDescription proxy fieldName (lookupDescription proxy key),
-        fieldContent = lookupFieldContent proxy key <|> fieldContent,
+        fieldDescription = visitFieldDescription proxy fieldName (lookupDescription proxy fieldName),
+        fieldContent = visitFieldContent proxy fieldName $ lookupFieldContent proxy fieldName <|> fieldContent,
         fieldDirectives = dirs,
         ..
       }
-  where
-    key = unpackName fieldName

@@ -7,6 +7,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -47,6 +48,7 @@ module Data.Morpheus.Server.Types.GQLType
     applyEnumDescription,
     applyFieldName,
     applyFieldDescription,
+    applyFieldDefaultValue,
     applyTypeFieldNames,
     applyTypeEnumNames,
     __isEmptyType,
@@ -71,10 +73,11 @@ import Data.Morpheus.Server.Deriving.Utils.Proxy (ContextValue (..))
 import Data.Morpheus.Server.NamedResolvers (NamedResolverT (..))
 import Data.Morpheus.Server.Types.Directives
   ( GQLDirective (..),
-    ToLocations,
+    ToLocations (..),
     visitEnumDescription',
     visitEnumName',
     visitEnumNames',
+    visitFieldDefaultValue',
     visitFieldDescription',
     visitFieldName',
     visitFieldNames',
@@ -203,6 +206,8 @@ wrapper f TypeData {..} = TypeData {gqlWrappers = f gqlWrappers, ..}
 
 {-# DEPRECATED typeOptions "use: custom directives with 'VisitType'" #-}
 
+{-# DEPRECATED defaultValues "use: custom directives with 'fieldDirective'" #-}
+
 class GQLType a where
   type KIND a :: DerivingKind
   type KIND a = TYPE
@@ -260,6 +265,10 @@ instance GQLType Bool where
 instance GQLType ID where
   type KIND ID = SCALAR
   __type _ = mkTypeData "ID"
+
+instance GQLType (Value CONST) where
+  type KIND (Value CONST) = CUSTOM
+  __type _ = mkTypeData "INTERNAL_VALUE"
 
 -- WRAPPERS
 instance GQLType () where
@@ -357,6 +366,9 @@ instance (EncodeScalar a) => EncodeKind SCALAR a where
 
 instance (EncodeConstraint a) => EncodeKind TYPE a where
   encodeKind = exploreResolvers . unContextValue
+
+instance EncodeKind CUSTOM (Value CONST) where
+  encodeKind = pure . unContextValue
 
 convertNode ::
   DataType (GQLResult (Value CONST)) ->
@@ -466,20 +478,22 @@ applyEnumDescription (DirectiveUsage x) = visitEnumDescription' x
 applyEnumName :: DirectiveUsage -> TypeName -> TypeName
 applyEnumName (DirectiveUsage x) = visitEnumName' x
 
+applyFieldName :: DirectiveUsage -> FieldName -> FieldName
+applyFieldName (DirectiveUsage x) = visitFieldName' x
+
 applyFieldDescription :: DirectiveUsage -> Maybe Description -> Maybe Description
 applyFieldDescription (DirectiveUsage x) = visitFieldDescription' x
 
-applyFieldName :: DirectiveUsage -> FieldName -> FieldName
-applyFieldName (DirectiveUsage x) = visitFieldName' x
+applyFieldDefaultValue :: DirectiveUsage -> Maybe (Value CONST) -> Maybe (Value CONST)
+applyFieldDefaultValue (DirectiveUsage x) = visitFieldDefaultValue' x
 
 applyTypeDescription :: DirectiveUsage -> Maybe Description -> Maybe Description
 applyTypeDescription (DirectiveUsage x) = visitTypeDescription' x
 
 newtype InputTypeNamespace = InputTypeNamespace {inputTypeNamespace :: Text}
-  deriving
-    ( Generic,
-      GQLType
-    )
+  deriving (Generic)
+  deriving anyclass
+    (GQLType)
 
 instance GQLDirective InputTypeNamespace where
   excludeFromSchema _ = True

@@ -78,6 +78,8 @@ module Data.Morpheus.Server.Types
     Rename (..),
     InputTypeNamespace (..),
     DropNamespace (..),
+    DefaultValue (..),
+    Value (..),
   )
 where
 
@@ -102,7 +104,8 @@ import Data.Morpheus.Server.Resolvers
     defaultRootResolver,
   )
 import Data.Morpheus.Server.Types.DirectiveDefinitions
-  ( Deprecated (..),
+  ( DefaultValue (..),
+    Deprecated (..),
     Describe (..),
     DropNamespace (..),
     Prefixes (..),
@@ -158,5 +161,6 @@ import Data.Morpheus.Types.Internal.AST
     QUERY,
     SUBSCRIPTION,
     ScalarValue (..),
+    Value (..),
   )
 import Relude hiding (Undefined)

@@ -16,6 +16,7 @@ module Data.Morpheus.Server.Types.Visitors
   )
 where
 
+import Data.Morpheus.Types.Internal.AST (CONST, Value)
 import Relude
 
 class VisitType a where
@@ -43,6 +44,9 @@ class VisitField a where
 
   visitFieldDescription :: a -> Maybe Text -> Maybe Text
   visitFieldDescription _ = id
+
+  visitFieldDefaultValue :: a -> Maybe (Value CONST) -> Maybe (Value CONST)
+  visitFieldDefaultValue _ = id
 
 class VisitEnum a where
   visitEnumName :: a -> Text -> Text
