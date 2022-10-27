@@ -226,14 +226,14 @@ selectSelectionField ::
   FragmentValidator s' (FieldDefinition OUT s)
 selectSelectionField ref typeDef
   | refName ref == "__typename" =
-    pure
-      FieldDefinition
-        { fieldDescription = Nothing,
-          fieldName = "__typename",
-          fieldType = mkTypeRef "String",
-          fieldContent = Nothing,
-          fieldDirectives = empty
-        }
+      pure
+        FieldDefinition
+          { fieldDescription = Nothing,
+            fieldName = "__typename",
+            fieldType = mkTypeRef "String",
+            fieldContent = Nothing,
+            fieldDirectives = empty
+          }
   | otherwise = selectKnown ref (getFields typeDef)
 
 validateSelectionContent ::
@@ -263,7 +263,7 @@ validateContentLeaf
   TypeDefinition {typeName, typeContent}
     | isLeaf typeContent = pure SelectionField
     | otherwise =
-      throwError $ subfieldsNotSelected selectionName typeName selectionPosition
+        throwError $ subfieldsNotSelected selectionName typeName selectionPosition
 
 validateByTypeContent ::
   forall s.

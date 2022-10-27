@@ -174,8 +174,8 @@ updateSchema fingerprint f x =
     upLib schema
       | Map.member fingerprint (typeDefinitions schema) = pure schema
       | otherwise = do
-        (type', updates) <- runSchemaT (f x)
-        execUpdates schema (update type' : updates)
+          (type', updates) <- runSchemaT (f x)
+          execUpdates schema (update type' : updates)
       where
         update t schemaState =
           pure
@@ -196,8 +196,8 @@ insertDirectiveDefinition fingerprint f x =
     upLib schema
       | Map.member fingerprint (typeDefinitions schema) = pure schema
       | otherwise = do
-        (type', updates) <- runSchemaT (f x)
-        execUpdates schema (update type' : updates)
+          (type', updates) <- runSchemaT (f x)
+          execUpdates schema (update type' : updates)
       where
         update t schemaState =
           pure

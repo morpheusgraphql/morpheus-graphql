@@ -169,14 +169,14 @@ printClientType ClientTypeDefinition {..} =
 lookupField :: FieldName -> TypeContent TRUE ANY VALID -> LocalM (FieldDefinition OUT VALID)
 lookupField selectionName _
   | selectionName == "__typename" =
-    pure
-      FieldDefinition
-        { fieldName = "__typename",
-          fieldDescription = Nothing,
-          fieldType = mkTypeRef "String",
-          fieldDirectives = empty,
-          fieldContent = Nothing
-        }
+      pure
+        FieldDefinition
+          { fieldName = "__typename",
+            fieldDescription = Nothing,
+            fieldType = mkTypeRef "String",
+            fieldDirectives = empty,
+            fieldContent = Nothing
+          }
 lookupField selectionName x@DataObject {objectFields} = selectBy (selError selectionName x) selectionName objectFields
 lookupField selectionName x@DataInterface {interfaceFields} = selectBy (selError selectionName x) selectionName interfaceFields
 lookupField _ dt = throwError (compileError $ "Type should be output Object \"" <> msg (show dt :: String))
