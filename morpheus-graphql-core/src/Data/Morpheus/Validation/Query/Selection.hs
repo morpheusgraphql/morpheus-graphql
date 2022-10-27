@@ -218,7 +218,7 @@ validateInlineFragmentSelection ::
   FragmentValidator s (SelectionSet VALID)
 validateInlineFragmentSelection typeDef x = do
   types <- possibleTypes typeDef <$> asks schema
-  fragmentSelection <$> validateFragment validateFragmentSelection types x
+  fragmentSelection <$> validateFragment INLINE_FRAGMENT validateFragmentSelection types x
 
 selectSelectionField ::
   Ref FieldName ->
@@ -226,14 +226,14 @@ selectSelectionField ::
   FragmentValidator s' (FieldDefinition OUT s)
 selectSelectionField ref typeDef
   | refName ref == "__typename" =
-      pure
-        FieldDefinition
-          { fieldDescription = Nothing,
-            fieldName = "__typename",
-            fieldType = mkTypeRef "String",
-            fieldContent = Nothing,
-            fieldDirectives = empty
-          }
+    pure
+      FieldDefinition
+        { fieldDescription = Nothing,
+          fieldName = "__typename",
+          fieldType = mkTypeRef "String",
+          fieldContent = Nothing,
+          fieldDirectives = empty
+        }
   | otherwise = selectKnown ref (getFields typeDef)
 
 validateSelectionContent ::
@@ -263,7 +263,7 @@ validateContentLeaf
   TypeDefinition {typeName, typeContent}
     | isLeaf typeContent = pure SelectionField
     | otherwise =
-        throwError $ subfieldsNotSelected selectionName typeName selectionPosition
+      throwError $ subfieldsNotSelected selectionName typeName selectionPosition
 
 validateByTypeContent ::
   forall s.
@@ -291,7 +291,6 @@ validateByTypeContent
       -- Validate Regular selection set
       __validate DataObject {..} =
         fmap SelectionSet . validateSelectionSet (TypeDefinition {typeContent = DataObject {..}, ..})
-      -- TODO: Union Like Validation
       __validate DataInterface {..} =
         validateInterfaceSelection
           validateFragmentSelection

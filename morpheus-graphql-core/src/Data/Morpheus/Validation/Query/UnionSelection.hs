@@ -4,6 +4,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -24,6 +25,7 @@ import Data.Morpheus.Internal.Utils
     selectOr,
     startHistory,
   )
+import Data.Morpheus.Types.Internal.AST.DirectiveLocation (DirectiveLocation (FRAGMENT_SPREAD, INLINE_FRAGMENT))
 import Data.Morpheus.Types.Internal.AST.Name (TypeName)
 import Data.Morpheus.Types.Internal.AST.Selection
   ( Fragment (..),
@@ -51,6 +53,7 @@ import Data.Morpheus.Types.Internal.Validation
     askTypeMember,
     asksScope,
   )
+import Data.Morpheus.Validation.Internal.Directive (validateDirectives)
 import Data.Morpheus.Validation.Query.Fragment
   ( ValidateFragmentSelection,
     castFragmentType,
@@ -68,18 +71,17 @@ splitFragment ::
   Selection RAW ->
   FragmentValidator s (Either UnionTag (Selection RAW))
 splitFragment _ _ x@Selection {} = pure (Right x)
-splitFragment f types (Spread _ ref) = Left <$> validateSpread f (typeName <$> types) ref
-splitFragment f types (InlineFragment fragment@Fragment {fragmentType}) =
+splitFragment f types (Spread dirs ref) = do
+  _ <- validateDirectives FRAGMENT_SPREAD dirs
+  Left <$> validateSpread f (typeName <$> types) ref
+splitFragment f types (InlineFragment fragment@Fragment {..}) = do
+  _ <- validateDirectives INLINE_FRAGMENT fragmentDirectives
   Left . UnionTag fragmentType
-    <$> ( castFragmentType Nothing (fragmentPosition fragment) (typeName <$> types) fragment
-            >>= f
-        )
+    <$> (castFragmentType Nothing fragmentPosition (typeName <$> types) fragment >>= f)
 
 exploreFragments ::
   (ValidateFragmentSelection s) =>
-  ( Fragment RAW ->
-    FragmentValidator s (SelectionSet VALID)
-  ) ->
+  (Fragment RAW -> FragmentValidator s (SelectionSet VALID)) ->
   OrdMap TypeName (TypeDefinition IMPLEMENTABLE VALID) ->
   SelectionSet RAW ->
   FragmentValidator s ([UnionTag], Maybe (SelectionSet RAW))
@@ -138,8 +140,8 @@ joinClusters ::
 joinClusters maybeSelSet typedSelections
   | null typedSelections = maybe noEmptySelection (pure . SelectionSet) maybeSelSet
   | otherwise =
-      traverse mkUnionTag (HM.toList typedSelections)
-        >>= fmap (UnionSelection maybeSelSet) . startHistory . fromElems
+    traverse mkUnionTag (HM.toList typedSelections)
+      >>= fmap (UnionSelection maybeSelSet) . startHistory . fromElems
   where
     mkUnionTag :: (TypeName, [SelectionSet VALID]) -> FragmentValidator s UnionTag
     mkUnionTag (typeName, fragments) = UnionTag typeName <$> (maybeMerge (toList maybeSelSet <> fragments) >>= maybe noEmptySelection pure)

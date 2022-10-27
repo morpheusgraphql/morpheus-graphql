@@ -8,8 +8,6 @@
 
 module Data.Morpheus.Internal.Utils
   ( IsMap (..),
-    Failure,
-    failure,
     KeyOf (..),
     toPair,
     selectBy,
@@ -31,7 +29,7 @@ module Data.Morpheus.Internal.Utils
   )
 where
 
-import Control.Monad.Except (MonadError (throwError))
+import Control.Monad.Except (MonadError)
 import Data.ByteString.Lazy (ByteString)
 import Data.Mergeable
   ( IsMap (..),
@@ -63,14 +61,6 @@ import Relude hiding
     fromList,
   )
 
-{-# DEPRECATED Failure "use MonadError" #-}
-
-type Failure = MonadError
-
-{-# DEPRECATED failure "use throwError" #-}
-failure :: MonadError e m => e -> m a
-failure = throwError
-
 (<:>) :: (Merge (HistoryT m) a, Monad m) => a -> a -> m a
 x <:> y = startHistory (merge x y)
 
@@ -93,7 +83,7 @@ prop f fSel a1 a2 = f (fSel a1) (fSel a2)
 
 traverseCollection ::
   ( Monad m,
-    Failure GQLError m,
+    MonadError GQLError m,
     KeyOf k b,
     FromList m map k b,
     Foldable t
@@ -115,7 +105,7 @@ fromElems = fromList . map toPair
 insert ::
   ( NameCollision e a,
     KeyOf k a,
-    Failure e m
+    MonadError e m
   ) =>
   a ->
   SafeHashMap k a ->

@@ -19,16 +19,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Types.GQLType
-  ( GQLType
-      ( KIND,
-        description,
-        getDescriptions,
-        typeOptions,
-        getDirectives,
-        defaultValues,
-        directives,
-        __type
-      ),
+  ( GQLType (KIND, directives, __type),
     __typeData,
     deriveTypename,
     deriveFingerprint,
@@ -84,9 +75,7 @@ import Data.Morpheus.Server.Types.Directives
     visitTypeName',
   )
 import Data.Morpheus.Server.Types.Internal
-  ( GQLTypeOptions (..),
-    TypeData (..),
-    defaultTypeOptions,
+  ( TypeData (..),
     mkTypeData,
   )
 import Data.Morpheus.Server.Types.Kind
@@ -116,8 +105,8 @@ import Data.Morpheus.Types.Internal.AST
     CONST,
     Description,
     DirectiveLocation (..),
-    Directives,
     FieldName,
+    GQLError,
     IN,
     OUT,
     ObjectEntry (..),
@@ -131,13 +120,8 @@ import Data.Morpheus.Types.Internal.AST
     packName,
     toNullable,
     unitTypeName,
-    unpackName,
   )
 import Data.Sequence (Seq)
-import Data.Text
-  ( pack,
-    unpack,
-  )
 import Data.Vector (Vector)
 import GHC.Generics
 import qualified Language.Haskell.TH.Syntax as TH
@@ -163,19 +147,14 @@ deriveTypeData ::
   Typeable a =>
   f a ->
   DirectiveUsages ->
-  (Bool -> String -> String) ->
   TypeCategory ->
   TypeData
-deriveTypeData proxy DirectiveUsages {typeDirectives} typeNameModifier cat =
+deriveTypeData proxy DirectiveUsages {typeDirectives} cat =
   TypeData
-    { gqlTypeName = modifyName . packName . pack $ typeNameModifier isInput originalTypeName,
+    { gqlTypeName = typeNameWithDirectives (cat == IN) (getTypename proxy) typeDirectives,
       gqlWrappers = mkBaseType,
       gqlFingerprint = getFingerprint cat proxy
     }
-  where
-    isInput = cat == IN
-    originalTypeName = unpack . unpackName $ getTypename proxy
-    modifyName name = typeNameWithDirectives isInput name typeDirectives
 
 list :: TypeWrapper -> TypeWrapper
 list = flip TypeList True
@@ -195,51 +174,18 @@ wrapper f TypeData {..} = TypeData {gqlWrappers = f gqlWrappers, ..}
 --       ... deriving (Generic)
 --
 --     instance GQLType ... where
---       description = const "your description ..."
+--        directives _ = typeDirective (Describe "some text")
 --  @
-{-# DEPRECATED getDirectives "use: directives" #-}
-
-{-# DEPRECATED description "use: directive Describe { text } with typeDirective" #-}
-
-{-# DEPRECATED getDescriptions "use: directive Describe { text } with fieldDirective" #-}
-
-{-# DEPRECATED typeOptions "use: custom directives with 'VisitType'" #-}
-
-{-# DEPRECATED defaultValues "use: custom directives with 'fieldDirective'" #-}
-
 class GQLType a where
   type KIND a :: DerivingKind
   type KIND a = TYPE
 
-  -- | A description of the type.
-  --
-  -- Used for documentation in the GraphQL schema.
-  description :: f a -> Maybe Text
-  description _ = Nothing
-
   directives :: f a -> DirectiveUsages
   directives _ = mempty
 
-  -- | A dictionary of descriptions for fields, keyed on field name.
-  --
-  -- Used for documentation in the GraphQL schema.
-  getDescriptions :: f a -> Map Text Description
-  getDescriptions _ = mempty
-
-  typeOptions :: f a -> GQLTypeOptions -> GQLTypeOptions
-  typeOptions _ = id
-
-  getDirectives :: f a -> Map Text (Directives CONST)
-  getDirectives _ = mempty
-
-  defaultValues :: f a -> Map Text (Value CONST)
-  defaultValues _ = mempty
-
   __type :: f a -> TypeCategory -> TypeData
   default __type :: Typeable a => f a -> TypeCategory -> TypeData
-  __type proxy = deriveTypeData proxy (directives proxy) typeNameModifier
-    where
-      GQLTypeOptions {typeNameModifier} = typeOptions proxy defaultTypeOptions
+  __type proxy = deriveTypeData proxy (directives proxy)
 
 instance GQLType Int where
   type KIND Int = SCALAR
@@ -344,11 +290,12 @@ instance (GQLType a) => GQLType (NamedResolverT m a) where
 
 type Decode a = EncodeKind (KIND a) a
 
-encodeArguments :: forall a. Decode a => a -> GQLResult (Arguments CONST)
-encodeArguments x = encode x >>= unpackValue
+encodeArguments :: forall m a. (MonadError GQLError m, Decode a) => a -> m (Arguments CONST)
+encodeArguments x = resultOr (const $ throwError err) pure (encode x) >>= unpackValue
   where
+    err = internal "could not encode arguments!"
     unpackValue (Object v) = pure $ fmap toArgument v
-    unpackValue _ = throwError (internal "TODO: expected arguments!")
+    unpackValue _ = throwError err
     toArgument ObjectEntry {..} = Argument (Position 0 0) entryName entryValue
 
 encode :: forall a. Decode a => a -> GQLResult (Value CONST)
@@ -387,7 +334,7 @@ convertNode
             entryValue <- fieldValue
             pure ObjectEntry {entryName = fieldSelector, entryValue}
       -- Type References --------------------------------------------------------------
-      encodeTypeFields _ = throwError (internal "TODO: union not supported")
+      encodeTypeFields _ = throwError (internal "input unions are not supported")
 
 -- Types & Constrains -------------------------------------------------------
 class (EncodeKind (KIND a) a, GQLType a) => ExplorerConstraint a

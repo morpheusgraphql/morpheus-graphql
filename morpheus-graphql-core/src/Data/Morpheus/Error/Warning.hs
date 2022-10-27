@@ -1,11 +1,9 @@
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Error.Warning
   ( renderGQLErrors,
-    deprecatedEnum,
     deprecatedField,
     gqlWarnings,
     printWarning,
@@ -18,17 +16,16 @@ import Data.ByteString.Lazy.Char8 (unpack)
 import Data.Morpheus.Types.Internal.AST.Base
   ( Description,
     Position (..),
-    Ref (..),
   )
 import Data.Morpheus.Types.Internal.AST.Error
   ( GQLError (..),
     GQLErrors,
     PropName (..),
-    at,
     msg,
   )
 import Data.Morpheus.Types.Internal.AST.Name
   ( FieldName,
+    TypeName,
   )
 import qualified Data.Text as T
 import Language.Haskell.TH
@@ -37,26 +34,12 @@ import Relude
 renderGQLErrors :: GQLErrors -> String
 renderGQLErrors = unpack . encode . toList
 
--- TODO: implement warnings, is not used
-deprecatedEnum :: FieldName -> Ref FieldName -> Maybe Description -> GQLError
-deprecatedEnum typeName Ref {refPosition, refName} reason =
-  "the enum value "
-    <> msg typeName
-    <> "."
-    <> msg refName
-    <> " is deprecated."
-    <> msg (maybe "" (" " <>) reason)
-    `at` refPosition
-
-deprecatedField :: FieldName -> Ref FieldName -> Maybe Description -> GQLError
-deprecatedField typeName Ref {refPosition, refName} reason =
+deprecatedField :: TypeName -> FieldName -> Maybe Description -> GQLError
+deprecatedField typeName refName reason =
   "the field "
-    <> msg typeName
-    <> "."
-    <> msg refName
+    <> msg (coerce typeName <> "." <> refName)
     <> " is deprecated."
     <> msg (maybe "" (" " <>) reason)
-    `at` refPosition
 
 gqlWarnings :: [GQLError] -> Q ()
 gqlWarnings [] = pure ()
@@ -77,7 +60,7 @@ printError label color warning =
     propLoc = concat $ toList $ locations warning
     description = indent <> withColor (toString (message warning))
     loc
-      | null propPath = ""
+      | null propLoc = ""
       | otherwise = indent <> "  locations: " <> concatMap printLocation propLoc
     printedPath
       | null propPath = ""

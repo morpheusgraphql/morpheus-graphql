@@ -174,8 +174,8 @@ updateSchema fingerprint f x =
     upLib schema
       | Map.member fingerprint (typeDefinitions schema) = pure schema
       | otherwise = do
-          (type', updates) <- runSchemaT (f x)
-          execUpdates schema (update type' : updates)
+        (type', updates) <- runSchemaT (f x)
+        execUpdates schema (update type' : updates)
       where
         update t schemaState =
           pure
@@ -196,8 +196,8 @@ insertDirectiveDefinition fingerprint f x =
     upLib schema
       | Map.member fingerprint (typeDefinitions schema) = pure schema
       | otherwise = do
-          (type', updates) <- runSchemaT (f x)
-          execUpdates schema (update type' : updates)
+        (type', updates) <- runSchemaT (f x)
+        execUpdates schema (update type' : updates)
       where
         update t schemaState =
           pure
@@ -208,7 +208,6 @@ insertDirectiveDefinition fingerprint f x =
 extendImplements :: TypeName -> [TypeName] -> SchemaT cat' ()
 extendImplements interface types = SchemaT $ pure ((), [upLib])
   where
-    -- TODO: what happens if interface name collides?
     upLib :: SchemaState -> GQLResult SchemaState
     upLib schema = pure schema {implements = foldr insertInterface (implements schema) types}
     insertInterface :: TypeName -> Map TypeName [TypeName] -> Map TypeName [TypeName]

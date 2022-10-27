@@ -145,7 +145,7 @@ instance Pretty ServerDeclaration where
   pretty (GQLTypeInstance kind gql)
     | kind == Scalar = ""
     | otherwise = pretty gql
-  pretty (GQLDirectiveInstance _) = "TODO: not supported"
+  pretty (GQLDirectiveInstance _) = ""
 
 newtype CodeGenConfig = CodeGenConfig {namespace :: Bool}
 

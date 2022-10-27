@@ -22,7 +22,7 @@ import Data.Morpheus.Types
   ( Event (Event, channels, content),
     GQLRequest,
     GQLResponse,
-    GQLType (description),
+    GQLType,
     Input,
     Resolver,
     RootResolver (..),

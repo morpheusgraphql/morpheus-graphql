@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -8,12 +9,13 @@ module Spec.Utils
   )
 where
 
-import Data.Aeson (FromJSON)
+import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.ByteString.Lazy as L (readFile)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Morpheus.Client
   ( Fetch (..),
     FetchError,
+    RequestType (..),
   )
 import Relude hiding (ByteString, exp)
 import Test.Tasty
@@ -34,8 +36,9 @@ mockJSON :: FilePath -> ByteString -> IO ByteString
 mockJSON p _ = getFile (p <> ".json")
 
 assertFetch ::
-  ( Fetch a,
+  ( RequestType a,
     FromJSON a,
+    ToJSON (RequestArgs a),
     Eq a,
     Show a
   ) =>

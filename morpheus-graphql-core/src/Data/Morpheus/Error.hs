@@ -1,9 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Error
-  ( errorMessage,
-    globalErrorMessage,
-    renderGQLErrors,
+  ( renderGQLErrors,
     deprecatedField,
     subfieldsNotSelected,
     NameCollision (..),
@@ -15,5 +13,4 @@ where
 
 import Data.Mergeable
 import Data.Morpheus.Error.Selection
-import Data.Morpheus.Error.Utils
 import Data.Morpheus.Error.Warning

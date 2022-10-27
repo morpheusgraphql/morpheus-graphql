@@ -22,11 +22,8 @@ import Control.Monad.Except (throwError)
 import Data.Morpheus.Error.Fragment
   ( cannotBeSpreadOnType,
   )
-import Data.Morpheus.Internal.Utils
-  ( Empty (empty),
-  )
 import Data.Morpheus.Types.Internal.AST
-  ( Directives,
+  ( DirectiveLocation (..),
     Fragment (..),
     FragmentName,
     Fragments,
@@ -50,6 +47,7 @@ import Data.Morpheus.Types.Internal.Validation
     constraint,
     selectKnown,
   )
+import Data.Morpheus.Validation.Internal.Directive (validateDirectives)
 import Relude hiding (empty)
 
 class ValidateFragmentSelection (s :: Stage) where
@@ -76,33 +74,32 @@ validateSpread f allowedTargets ref = do
   UnionTag fragmentType . fmap (\s -> s {selectionOrigin = Just fragmentName}) <$> validateFragmentSelection f fragment
 
 validateFragment ::
+  DirectiveLocation ->
   (Fragment RAW -> FragmentValidator s (SelectionSet VALID)) ->
   [TypeName] ->
   Fragment RAW ->
   FragmentValidator s (Fragment VALID)
-validateFragment validate allowedTypes fragment@Fragment {fragmentPosition} =
+validateFragment loc validate allowedTypes fragment@Fragment {fragmentPosition} =
   castFragmentType Nothing fragmentPosition allowedTypes fragment
-    >>= onlyValidateFrag validate
+    >>= onlyValidateFrag loc validate
 
 validateFragments ::
   (Fragment RAW -> FragmentValidator RAW (SelectionSet VALID)) ->
   FragmentValidator RAW (Fragments VALID)
-validateFragments f = askFragments >>= traverse (onlyValidateFrag f)
+validateFragments f = askFragments >>= traverse (onlyValidateFrag FRAGMENT_DEFINITION f)
 
 onlyValidateFrag ::
+  DirectiveLocation ->
   (Fragment RAW -> FragmentValidator s (SelectionSet VALID)) ->
   Fragment RAW ->
   FragmentValidator s (Fragment VALID)
-onlyValidateFrag validate f@Fragment {..} =
+onlyValidateFrag loc validate f@Fragment {..} =
   Fragment
     fragmentName
     fragmentType
     fragmentPosition
     <$> validate f
-    <*> validateFragmentDirectives fragmentDirectives
-
-validateFragmentDirectives :: Directives RAW -> FragmentValidator s (Directives VALID)
-validateFragmentDirectives _ = pure empty -- TODO: validate fragment directives
+    <*> validateDirectives loc fragmentDirectives
 
 castFragmentType ::
   Maybe FragmentName ->

@@ -19,7 +19,14 @@ import Data.Morpheus.Client.CodeGen.AST
 import Data.Morpheus.Client.CodeGen.Interpreting.Core
   ( defaultDerivations,
   )
-import Data.Morpheus.CodeGen.Internal.AST (CodeGenConstructor (..), CodeGenField (..), CodeGenType (..), FIELD_TYPE_WRAPPER (..), fromTypeName, getFullName)
+import Data.Morpheus.CodeGen.Internal.AST
+  ( CodeGenConstructor (..),
+    CodeGenField (..),
+    CodeGenType (..),
+    FIELD_TYPE_WRAPPER (..),
+    fromTypeName,
+    getFullName,
+  )
 import Data.Morpheus.Types.Internal.AST
   ( RAW,
     TypeName,
@@ -38,7 +45,12 @@ genArguments operationTypeName variables
     def =
       CodeGenType
         { cgTypeName,
-          cgConstructors = [CodeGenConstructor {constructorName = cgTypeName, constructorFields = packAsCodeGenField <$> toList variables}],
+          cgConstructors =
+            [ CodeGenConstructor
+                { constructorName = cgTypeName,
+                  constructorFields = packAsCodeGenField <$> toList variables
+                }
+            ],
           cgDerivations = defaultDerivations
         }
     cgTypeName = fromTypeName $ operationTypeName <> "Args"

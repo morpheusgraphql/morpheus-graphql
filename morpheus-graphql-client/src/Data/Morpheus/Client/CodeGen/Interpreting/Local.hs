@@ -28,18 +28,19 @@ import Data.Morpheus.Client.CodeGen.Interpreting.Core
     existFragment,
     getNameByPath,
     getType,
-    gqlWarning,
     lookupField,
     registerFragment,
     removeDuplicates,
     runLocalM,
     typeFrom,
+    warning,
   )
 import Data.Morpheus.Client.CodeGen.Interpreting.PreDeclarations
   ( mapPreDeclarations,
   )
 import Data.Morpheus.CodeGen.Internal.AST (CodeGenConstructor (..), CodeGenField (..), CodeGenType (..), CodeGenTypeName (..), FIELD_TYPE_WRAPPER (..), fromTypeName, getFullName)
 import Data.Morpheus.Core (validateRequest)
+import Data.Morpheus.Error (deprecatedField)
 import Data.Morpheus.Internal.Ext
   ( GQLResult,
   )
@@ -56,7 +57,6 @@ import Data.Morpheus.Types.Internal.AST
     Operation (..),
     Position (..),
     PropName (..),
-    Ref (..),
     Schema (..),
     Selection (..),
     SelectionContent (..),
@@ -106,8 +106,8 @@ genLocalDeclarations query op@Operation {operationName, operationSelection, oper
             requestName = typename rootTypeName,
             requestType = operationType,
             requestQuery = T.unpack query
-          }
-        : localTypes <> argTypes
+          } :
+      localTypes <> argTypes
     )
 
 genLocalTypes ::
@@ -144,11 +144,11 @@ checkTypename :: Position -> [FieldName] -> Maybe (SelectionSet VALID) -> UnionT
 checkTypename pos path iFace UnionTag {..}
   | any (member "__typename") (unionTagSelection : toList iFace) = pure ()
   | otherwise =
-      gqlWarning $
-        withPath
-          ("missing \"__typename\" for selection " <> msg unionTagName <> ". this can lead to undesired behavior at runtime!")
-          (map (PropName . unpackName) path)
-          `at` pos
+    warning $
+      withPath
+        ("missing \"__typename\" for selection " <> msg unionTagName <> ". this can lead to undesired behavior at runtime!")
+        (map (PropName . unpackName) path)
+        `at` pos
 
 type Variant = (CodeGenTypeName, Maybe TypeName)
 
@@ -246,15 +246,13 @@ getFieldType
       selectionPosition
     } = lookupField selectionName typeContent >>= processFieldDefinition
     where
-      --
-      processFieldDefinition
-        FieldDefinition
-          { fieldType = TypeRef {..},
-            fieldDirectives
-          } =
-          checkDeprecated *> (trans <$> getType typeConName)
-          where
-            trans x = (x, TypeRef {typeConName = getFullName (typeFrom path x), ..})
-            ------------------------------------------------------------------
-            checkDeprecated :: LocalM ()
-            checkDeprecated = deprecationWarning fieldDirectives (coerce typeName, Ref selectionName selectionPosition)
+      processFieldDefinition FieldDefinition {fieldType = TypeRef {..}, ..} = do
+        deprecationWarning fieldWarnings fieldDirectives
+        typeDef <- getType typeConName
+        pure (typeDef, TypeRef {typeConName = getFullName (typeFrom path typeDef), ..})
+        where
+          fieldWarnings reason =
+            ( deprecatedField typeName selectionName reason
+                `at` selectionPosition
+            )
+              `withPath` map (PropName . unpackName) path

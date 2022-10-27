@@ -12,9 +12,6 @@ import Data.Morpheus.Server.Deriving.Schema.Directive
     visitEnumName,
     visitEnumValueDescription,
   )
-import Data.Morpheus.Server.Deriving.Schema.Internal
-  ( lookupDescription,
-  )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( KindedType (..),
   )
@@ -48,7 +45,7 @@ mkEnumValue proxy enumName = do
   pure
     DataEnumValue
       { enumName = visitEnumName proxy enumName,
-        enumDescription = visitEnumValueDescription proxy enumName (lookupDescription proxy enumName),
+        enumDescription = visitEnumValueDescription proxy enumName Nothing,
         ..
       }
 

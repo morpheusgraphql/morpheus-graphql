@@ -204,13 +204,12 @@ our query will be resolved!
 
 <Section id="advanced-topics"> Advanced topics </Section>
 
-
 ### Introspection
 
 Morpheus converts your schema to a GraphQL introspection automatically. You can use tools like `Insomnia` to take a
 look at the introspection and validate your schema.
 If you need a description for your GQLType inside of the introspection you can define the GQLType instance manually
-and provide an implementation for the `description` function:
+and apply Describe directive to it:
 
 ```haskell
 data Deity = Deity
@@ -218,7 +217,7 @@ data Deity = Deity
 } deriving (Generic)
 
 instance GQLType Deity where
-  description = const "A supernatural being considered divine and sacred"
+  directives _ = typeDirective (Describe "A supernatural being considered divine and sacred")
 ```
 
 screenshots from `Insomnia`
@@ -226,7 +225,6 @@ screenshots from `Insomnia`
 ![alt text](https://morpheusgraphql.com/assets/img/introspection/spelling.png "spelling")
 ![alt text](https://morpheusgraphql.com/assets/img/introspection/autocomplete.png "autocomplete")
 ![alt text](https://morpheusgraphql.com/assets/img/introspection/type.png "type")
-
 
 <Section id="about"> About </Section>
 
