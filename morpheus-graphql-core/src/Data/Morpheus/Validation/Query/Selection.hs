@@ -218,7 +218,7 @@ validateInlineFragmentSelection ::
   FragmentValidator s (SelectionSet VALID)
 validateInlineFragmentSelection typeDef x = do
   types <- possibleTypes typeDef <$> asks schema
-  fragmentSelection <$> validateFragment validateFragmentSelection types x
+  fragmentSelection <$> validateFragment INLINE_FRAGMENT validateFragmentSelection types x
 
 selectSelectionField ::
   Ref FieldName ->
@@ -291,7 +291,6 @@ validateByTypeContent
       -- Validate Regular selection set
       __validate DataObject {..} =
         fmap SelectionSet . validateSelectionSet (TypeDefinition {typeContent = DataObject {..}, ..})
-      -- TODO: Union Like Validation
       __validate DataInterface {..} =
         validateInterfaceSelection
           validateFragmentSelection

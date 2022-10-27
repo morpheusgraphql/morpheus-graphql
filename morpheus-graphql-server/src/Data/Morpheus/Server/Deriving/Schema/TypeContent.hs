@@ -69,7 +69,7 @@ insertTypeContent f proxy =
       dirs <- deriveTypeDirectives proxy
       pure $
         TypeDefinition
-          (visitTypeDescription proxy $ description proxy)
+          (visitTypeDescription proxy Nothing)
           (deriveTypename proxy)
           dirs
           content

@@ -26,10 +26,6 @@ import Data.Morpheus.Server.Deriving.Schema.Directive
     visitFieldName,
   )
 import Data.Morpheus.Server.Deriving.Schema.Enum (defineEnumUnit)
-import Data.Morpheus.Server.Deriving.Schema.Internal
-  ( lookupDescription,
-    lookupFieldContent,
-  )
 import Data.Morpheus.Server.Deriving.Utils
   ( ConsRep (..),
     FieldRep (..),
@@ -135,8 +131,8 @@ setGQLTypeProps proxy FieldDefinition {..} = do
   pure
     FieldDefinition
       { fieldName = visitFieldName proxy fieldName,
-        fieldDescription = visitFieldDescription proxy fieldName (lookupDescription proxy fieldName),
-        fieldContent = visitFieldContent proxy fieldName $ lookupFieldContent proxy fieldName <|> fieldContent,
+        fieldDescription = visitFieldDescription proxy fieldName Nothing,
+        fieldContent = visitFieldContent proxy fieldName fieldContent,
         fieldDirectives = dirs,
         ..
       }

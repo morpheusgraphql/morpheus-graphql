@@ -94,7 +94,7 @@ resolveMergeable ::
 resolveMergeable (x :| xs) = recursiveMerge (MergeMap . NM.fromList) (x : xs)
 
 toNonEmpty :: (IsString e, MonadError e f) => [a] -> f (NonEmpty a)
-toNonEmpty [] = throwError $ fromString "empty selection sets are not supported."
+toNonEmpty [] = throwError "empty selection sets are not supported."
 toNonEmpty (x : xs) = pure (x :| xs)
 
 instance

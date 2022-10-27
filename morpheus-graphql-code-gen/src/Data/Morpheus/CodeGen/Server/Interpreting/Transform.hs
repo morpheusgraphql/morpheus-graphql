@@ -172,7 +172,6 @@ genTypeDefinition
         defaultValueDirs <- concat <$> traverse getDefaultValueDir (getInputFields typeDef)
         namespaceDirs <- getNamespaceDirs (unpackName hsTypeName)
         dirs <- getDirs typeDef
-        -- TODO: here
         pure $
           gqlTypeToInstance
             GQLTypeDefinition

@@ -23,14 +23,11 @@ module Data.Morpheus.Server.Deriving.Schema.Internal
     TyContentM,
     TyContent,
     fromSchema,
-    lookupDescription,
-    lookupFieldContent,
   )
 where
 
 -- MORPHEUS
 
-import qualified Data.Map as M
 import Data.Morpheus.Internal.Ext
   ( GQLResult,
     Result (Failure, Success, errors),
@@ -38,36 +35,18 @@ import Data.Morpheus.Internal.Ext
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( KindedType (..),
   )
-import Data.Morpheus.Server.Types.GQLType
-  ( GQLType (..),
-  )
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
   )
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
-    Description,
     FieldContent (..),
-    FieldName,
-    Name,
     Schema (..),
     TRUE,
     VALID,
-    unpackName,
   )
 import Language.Haskell.TH (Exp, Q)
 import Relude hiding (empty)
-
-lookupDescription :: GQLType a => f a -> Name t -> Maybe Description
-lookupDescription proxy name = unpackName name `M.lookup` getDescriptions proxy
-
-lookupFieldContent ::
-  GQLType a =>
-  KindedType kind a ->
-  FieldName ->
-  Maybe (FieldContent TRUE kind CONST)
-lookupFieldContent proxy@InputType key = DefaultInputValue <$> unpackName key `M.lookup` defaultValues proxy
-lookupFieldContent OutputType _ = Nothing
 
 fromSchema :: GQLResult (Schema VALID) -> Q Exp
 fromSchema Success {} = [|()|]

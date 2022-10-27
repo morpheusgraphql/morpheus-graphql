@@ -16,7 +16,7 @@ module Data.Morpheus.Client.CodeGen.Interpreting.Core
     deprecationWarning,
     printClientType,
     defaultDerivations,
-    gqlWarning,
+    warning,
     LocalContext (..),
     runLocalM,
     withPosition,
@@ -42,9 +42,6 @@ import Data.Morpheus.CodeGen.Internal.AST
     fromTypeName,
   )
 import Data.Morpheus.Core (Config (..), VALIDATION_MODE (WITHOUT_VARIABLES))
-import Data.Morpheus.Error
-  ( deprecatedField,
-  )
 import Data.Morpheus.Internal.Ext
   ( GQLResult,
     Result (..),
@@ -55,6 +52,7 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
+    Description,
     Directives,
     FieldDefinition (..),
     FieldName,
@@ -64,7 +62,6 @@ import Data.Morpheus.Types.Internal.AST
     OUT,
     Position,
     RAW,
-    Ref (..),
     Schema (..),
     TRUE,
     TypeContent (..),
@@ -152,13 +149,11 @@ getNameByPath path tName = case reverse path of
   (p : ps) -> CodeGenTypeName {namespace = reverse ps, typeParameters = [], typename = coerce p}
   [] -> CodeGenTypeName {namespace = [], typeParameters = [], typename = tName}
 
-deprecationWarning :: Directives VALID -> (FieldName, Ref FieldName) -> LocalM ()
-deprecationWarning dirs (typename, ref) = case lookupDeprecated dirs of
-  Just deprecation -> gqlWarning $ deprecatedField typename ref (lookupDeprecatedReason deprecation)
-  Nothing -> pure ()
+deprecationWarning :: (Maybe Description -> GQLError) -> Directives s -> LocalM ()
+deprecationWarning f = traverse_ warning . toList . fmap (f . lookupDeprecatedReason) . lookupDeprecated
 
-gqlWarning :: GQLError -> LocalM ()
-gqlWarning w = LocalM $ lift $ Success {result = (), warnings = [w]}
+warning :: GQLError -> LocalM ()
+warning w = LocalM $ lift $ Success {result = (), warnings = [w]}
 
 defaultDerivations :: [DerivingClass]
 defaultDerivations = [GENERIC, SHOW, CLASS_EQ]

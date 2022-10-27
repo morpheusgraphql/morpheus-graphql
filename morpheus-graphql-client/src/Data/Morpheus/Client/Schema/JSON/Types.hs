@@ -40,8 +40,6 @@ data Schema = Schema
     queryType :: TypeRef,
     mutationType :: Maybe TypeRef,
     subscriptionType :: Maybe TypeRef
-    -- TODO: directives
-    -- directives: [__Directive]
   }
   deriving (Generic, Show, FromJSON)
 

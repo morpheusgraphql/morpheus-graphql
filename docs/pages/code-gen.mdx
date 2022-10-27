@@ -1,5 +1,6 @@
 import SEO from "../components/seo";
 import { Section } from "../components/section";
+import { Code } from "../components/code";
 
 <SEO title="Code Gen" />
 
@@ -28,7 +29,7 @@ importGQLDocument "./schema.gql"
 
 Moprheus GraphQL also supports generating code from GraphQL
 documents. To do this, you should first install
-the `morpheus-graphql-code-gen` package. to get a correct result,
+the `morpheus-graphql-code-gen` package from [`hackage`](https://hackage.haskell.org/package/morpheus-graphql-code-gen) or dowload built binary from [`releases`](https://github.com/morpheusgraphql/morpheus-graphql/releases). to get a correct result,
 make sure that the package versions match.
 
 the package provides `morpheus` cli with commands `build` and `check` .
@@ -57,7 +58,7 @@ posts and users and want to develop an application for client and server.
 
 files are defined as follows.
 
-**src/Scalars.hs**
+<Code file="./src/Scalars.hs" >
 
 ```hs
 newtype Markdown = Markdown Text
@@ -84,7 +85,9 @@ instance ToJSON Markdown where
   toJSON = scalarToJSON
 ```
 
-**src/Server/Blog.gql** and **src/Client/Blog.gql**
+</Code>
+
+<Code file="./src/Server/Blog.gql & ./src/Client/Blog.gql" >
 
 ```graphql
 scalar Markdown
@@ -105,7 +108,9 @@ type Query {
 }
 ```
 
-**src/Client/Queries/GetPosts.gql**
+</Code>
+
+<Code file="./src/Client/Queries/GetPosts.gql" >
 
 ```graphql
 query GetPosts {
@@ -116,7 +121,9 @@ query GetPosts {
 }
 ```
 
-**src/Client/Queries/GetUsers.gql**
+</Code>
+
+<Code file="./src/Client/Queries/GetUsers.gql" >
 
 ```graphql
 query GetUsers {
@@ -130,7 +137,11 @@ query GetUsers {
 }
 ```
 
+</Code>
+
 to generate files from it, we should now configure `code-gen.yaml`.
+
+<Code file="./code-gen.yaml" >
 
 ```yaml
 server:
@@ -151,6 +162,8 @@ client:
       globals:
         - Scalars # imports Markdown type declatation from Scalars.hs
 ```
+
+</Code>
 
 now we are ready to generate types.
 

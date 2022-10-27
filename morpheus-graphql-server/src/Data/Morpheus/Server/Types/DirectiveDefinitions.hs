@@ -77,8 +77,6 @@ instance GQLDirective Deprecated where
          'ENUM_VALUE
        ]
 
--- description
-
 newtype Describe = Describe {text :: Text}
   deriving
     ( GQLType,

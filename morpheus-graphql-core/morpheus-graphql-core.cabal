@@ -183,7 +183,6 @@ library
       Data.Morpheus.Error.Input
       Data.Morpheus.Error.Operation
       Data.Morpheus.Error.Selection
-      Data.Morpheus.Error.Utils
       Data.Morpheus.Error.Variable
       Data.Morpheus.Error.Warning
       Data.Morpheus.Ext.Empty

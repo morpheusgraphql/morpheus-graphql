@@ -11,15 +11,7 @@
 
 -- | GQL Types
 module Data.Morpheus.Server.Types
-  ( GQLType
-      ( KIND,
-        description,
-        getDescriptions,
-        typeOptions,
-        getDirectives,
-        defaultValues,
-        directives
-      ),
+  ( GQLType (KIND, directives),
     EncodeScalar (..),
     EncodeWrapper (..),
     DecodeScalar (..),
@@ -36,7 +28,6 @@ module Data.Morpheus.Server.Types
     lift,
     WithOperation,
     subscribe,
-    unsafeInternalContext,
     ResolverContext (..),
     SubscriptionField,
     App,
@@ -44,13 +35,6 @@ module Data.Morpheus.Server.Types
     render,
     TypeGuard (..),
     Arg (..),
-
-    -- * GQLType naming configuration
-    GQLTypeOptions,
-    defaultTypeOptions,
-    fieldLabelModifier,
-    constructorTagModifier,
-    typeNameModifier,
 
     -- * GQL directives API
     Prefixes (..),
@@ -67,7 +51,6 @@ module Data.Morpheus.Server.Types
     GQLDirective (..),
     Deprecated (..),
     Describe (..),
-    dropNamespaceOptions,
     SCALAR,
     DerivingKind (..),
     TYPE,
@@ -92,7 +75,6 @@ import Data.Morpheus.App.Internal.Resolving
     SubscriptionField,
     WithOperation,
     subscribe,
-    unsafeInternalContext,
   )
 import Data.Morpheus.Core
   ( RenderGQL,
@@ -120,11 +102,6 @@ import Data.Morpheus.Server.Types.GQLType
     fieldDirective,
     fieldDirective',
     typeDirective,
-  )
-import Data.Morpheus.Server.Types.Internal
-  ( GQLTypeOptions (..),
-    defaultTypeOptions,
-    dropNamespaceOptions,
   )
 import Data.Morpheus.Server.Types.Kind
   ( CUSTOM,

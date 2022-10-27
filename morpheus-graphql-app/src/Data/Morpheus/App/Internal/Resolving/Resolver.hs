@@ -25,7 +25,6 @@ module Data.Morpheus.App.Internal.Resolving.Resolver
     ResponseStream,
     WithOperation,
     ResolverContext (..),
-    unsafeInternalContext,
     withArguments,
     getArguments,
     SubscriptionField (..),
@@ -171,14 +170,6 @@ instance (LiftOperation o, Monad m) => MonadReader ResolverContext (Resolver o e
   local f (ResolverM res) = ResolverM (local f res)
   local f (ResolverS resM) = ResolverS $ mapReaderT (local f) <$> resM
 
--- | A function to return the internal 'ResolverContext' within a resolver's monad.
--- Using the 'ResolverContext' itself is unsafe because it exposes internal structures
--- of the AST, but you can use the "Data.Morpheus.Types.SelectionTree" typeClass to manipulate
--- the internal AST with a safe interface.
-{-# DEPRECATED unsafeInternalContext "use asks" #-}
-unsafeInternalContext :: (Monad m, LiftOperation o) => Resolver o e m ResolverContext
-unsafeInternalContext = ask
-
 liftResolverState :: (LiftOperation o, Monad m) => ResolverState a -> Resolver o e m a
 liftResolverState = packResolver . toResolverStateT
 
@@ -216,7 +207,7 @@ withArguments = (getArguments >>=)
 getArguments ::
   (LiftOperation o, Monad m) =>
   Resolver o e m (Arguments VALID)
-getArguments = selectionArguments . currentSelection <$> unsafeInternalContext
+getArguments = asks (selectionArguments . currentSelection)
 
 getArgument ::
   (LiftOperation o, Monad m) =>

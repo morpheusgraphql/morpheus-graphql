@@ -1,8 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Internal.Ext
-  ( Failure,
-    PushEvents (..),
+  ( PushEvents (..),
     Result (..),
     ResultT (..),
     cleanEvents,
@@ -15,7 +14,6 @@ module Data.Morpheus.Internal.Ext
     runResolutionT,
     toEither,
     Merge (..),
-    failure,
     GQLResult,
   )
 where
