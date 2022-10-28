@@ -24,6 +24,9 @@ source-repository head
 executable scotty-server
   main-is: Main.hs
   other-modules:
+      Server.Haxl.API
+      Server.Haxl.DataSource
+      Server.Haxl.Schema
       Server.MonadIO.API
       Server.Mythology.API
       Server.Mythology.Character

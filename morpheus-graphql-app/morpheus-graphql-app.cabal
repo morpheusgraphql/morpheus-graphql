@@ -117,6 +117,7 @@ library
       Data.Morpheus.App.NamedResolvers
       Data.Morpheus.Types.GQLWrapper
   other-modules:
+      Data.Morpheus.App.Haxl
       Data.Morpheus.App.Internal.Resolving.Event
       Data.Morpheus.App.Internal.Resolving.NamedResolver
       Data.Morpheus.App.Internal.Resolving.Resolver
