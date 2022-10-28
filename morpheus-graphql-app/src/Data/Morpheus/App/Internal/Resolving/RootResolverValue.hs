@@ -109,11 +109,7 @@ runRootResolverValue
       selectByOperation Subscription =
         runRootDataResolver channelMap subscriptionResolver ctx operationSelection
 runRootResolverValue
-  NamedResolversValue
-    { queryResolverMap
-    -- mutationResolverMap,
-    -- subscriptionResolverMap
-    }
+  NamedResolversValue {queryResolverMap}
   ctx@ResolverContext {operation = Operation {operationType}} =
     selectByOperation operationType
     where
