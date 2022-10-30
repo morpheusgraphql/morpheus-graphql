@@ -30,7 +30,6 @@ import Data.Morpheus.App.NamedResolvers
     queryResolvers,
     ref,
     refs,
-    variant,
     withHaxl,
   )
 import Data.Morpheus.Core
@@ -42,9 +41,6 @@ import Data.Morpheus.Types.IO
   )
 import Data.Morpheus.Types.Internal.AST (QUERY, Schema, TypeName, VALID, ValidValue, Value (..))
 import Haxl.Core
-import Haxl.Core
-  ( GenHaxl,
-  )
 import Relude hiding (ByteString)
 import Test.Morpheus
   ( FileUrl,
@@ -117,90 +113,13 @@ deityResolver = traverse deityRes
           ("power", pure $ list [enum "Shapeshifting"])
         ]
 
--- REALMS
-resolverRealms :: Monad m => RootResolverValue e m
-resolverRealms =
-  queryResolvers
-    [ ( "Query",
-        traverse
-          ( const $
-              object
-                [ ("realm", ref "Realm" <$> getArgument "id"),
-                  ("realms", pure $ refs "Realm" ["olympus", "dreams"])
-                ]
-          )
-      ),
-      ("Deity", deityResolverExt),
-      ("Realm", realmResolver)
-    ]
-
-deityResolverExt :: Monad m => NamedResolverFunction QUERY e m
-deityResolverExt = traverse deityExt
-  where
-    deityExt "zeus" = object [("realm", pure $ ref "Realm" "olympus")]
-    deityExt "morpheus" = object [("realm", pure $ ref "Realm" "dreams")]
-    deityExt _ = object []
-
-realmResolver :: Monad m => NamedResolverFunction QUERY e m
-realmResolver = traverse realmResolver'
-  where
-    realmResolver' "olympus" =
-      object
-        [ ("name", pure "Mount Olympus"),
-          ("owner", pure $ ref "Deity" "zeus")
-        ]
-    realmResolver' "dreams" =
-      object
-        [ ("name", pure "Fictional world of dreams"),
-          ("owner", pure $ ref "Deity" "morpheus")
-        ]
-    realmResolver' _ =
-      object
-        [ ("name", pure "None")
-        ]
-
--- ENTITIES
-resolverEntities :: Monad m => RootResolverValue e m
-resolverEntities =
-  queryResolvers
-    [ ( "Query",
-        traverse
-          ( const $
-              object
-                [ ("entity", ref "Entity" <$> getArgument "id"),
-                  ( "entities",
-                    pure $
-                      refs
-                        "Entity"
-                        ["zeus", "morpheus", "olympus", "dreams"]
-                  )
-                ]
-          )
-      ),
-      ("Entity", resolveEntity)
-    ]
-
-resolveEntity :: Monad m => NamedResolverFunction QUERY e m
-resolveEntity = traverse resEntity
-  where
-    resEntity "zeus" = variant "Deity" "zeus"
-    resEntity "morpheus" = variant "Deity" "morpheus"
-    resEntity "olympus" = variant "Realm" "olympus"
-    resEntity "dreams" = variant "Realm" "dreams"
-    resEntity _ = object []
-
 getSchema :: String -> IO (Schema VALID)
 getSchema url = LBS.readFile url >>= resultOr (fail . show) pure . parseSchema
 
 getApps :: FileUrl -> IO (App e IO)
 getApps _ = do
   schemaDeities <- getSchema "test/named-resolvers/deities.gql"
-  schemaRealms <- getSchema "test/named-resolvers/realms.gql"
-  schemaEntities <- getSchema "test/named-resolvers/entities.gql"
-  pure $
-    mkApp schemaDeities resolverDeities
-      <> mkApp schemaRealms resolverRealms
-      <> mkApp schemaEntities resolverEntities
+  pure $ mkApp schemaDeities resolverDeities
 
 runBatchingTest :: FileUrl -> FileUrl -> TestTree
 runBatchingTest url = testApi api
