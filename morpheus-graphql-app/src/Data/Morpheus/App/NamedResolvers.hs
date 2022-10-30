@@ -10,10 +10,26 @@ module Data.Morpheus.App.NamedResolvers
     NamedResolverFunction,
     RootResolverValue,
     ResultBuilder,
+    Haxl,
+    NamedArg,
+    NamedResponse,
+    State (ReqState),
+    getIds,
+    getResponseById,
+    withHaxl,
   )
 where
 
 import qualified Data.HashMap.Lazy as HM
+import Data.Morpheus.App.Internal.Resolving.Haxl
+  ( Haxl,
+    NamedArg,
+    NamedResponse,
+    State (ReqState),
+    getIds,
+    getResponseById,
+    withHaxl,
+  )
 import Data.Morpheus.App.Internal.Resolving.Resolver (LiftOperation, Resolver, getArgument)
 import Data.Morpheus.App.Internal.Resolving.RootResolverValue (RootResolverValue (..))
 import Data.Morpheus.App.Internal.Resolving.Types
