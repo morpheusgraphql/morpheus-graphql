@@ -18,10 +18,10 @@ module Data.Morpheus.App.Haxl
 where
 
 import Control.Monad
-import Data.Aeson (Value (..))
 import Data.Bifunctor (Bifunctor (..))
 import Data.Hashable
 import qualified Data.Map as M
+import Data.Morpheus.Types.Internal.AST (TypeName, ValidValue, Value (..))
 import qualified Data.Set as S
 import Data.Typeable
 import GHC.Exts (sortWith)
@@ -56,9 +56,9 @@ getNamedResponseById = dataFetch . GetDeityNameById
 
 type Haxl = GenHaxl () ()
 
-type NamedArg = (String, Value)
+type NamedArg = (TypeName, ValidValue)
 
-type NamedResponse = Value
+type NamedResponse = ValidValue
 
 data DeityReq a where
   GetDeityIds :: DeityReq [NamedArg]
@@ -111,7 +111,7 @@ fetchDeityIds = do
   print ("Fetch Ids" :: String)
   pure [("", "Morpheus"), ("Zeus", Null), ("Ares", Null)]
 
-fetchValues :: [NamedArg] -> IO [Value]
+fetchValues :: [NamedArg] -> IO [ValidValue]
 fetchValues ids = do
   let entityTypes = getAllEntityTypes ids
   let indexed = zip [0 .. length ids] ids
@@ -125,7 +125,7 @@ getAllEntityTypes xs = S.toList (S.fromList (map fst xs))
 seletcByEntity :: Eq a => [(Int, (a, b))] -> a -> (a, [(Int, b)])
 seletcByEntity xs entityType = (entityType, map (second snd) $ filter (\v -> fst (snd v) == entityType) xs)
 
-fethcByTypeName :: (String, [(Int, Value)]) -> IO [(Int, Value)]
+fethcByTypeName :: (TypeName, [(Int, ValidValue)]) -> IO [(Int, ValidValue)]
 fethcByTypeName (typeName, ids) = do
   let values = map snd ids
   let indexes = map fst ids
@@ -133,7 +133,7 @@ fethcByTypeName (typeName, ids) = do
   xs <- maybe (fail "handler not found") (\f -> f values) handler
   pure (zip indexes xs)
 
-type ResMap = M.Map String ([Value] -> IO [Value])
+type ResMap = M.Map TypeName ([ValidValue] -> IO [ValidValue])
 
 resMap :: ResMap
 resMap =
@@ -142,12 +142,12 @@ resMap =
       ("Power", fetchDeityPowers)
     ]
 
-fetchDeityNames :: [Value] -> IO [Value]
+fetchDeityNames :: [ValidValue] -> IO [ValidValue]
 fetchDeityNames ids = do
   print ("Fetch Name for: " <> show ids)
   pure ids
 
-fetchDeityPowers :: [Value] -> IO [Value]
+fetchDeityPowers :: [ValidValue] -> IO [ValidValue]
 fetchDeityPowers ids = do
   print ("Fetch Power for: " <> show ids)
   pure $ map (const "Shapeshifting") ids
