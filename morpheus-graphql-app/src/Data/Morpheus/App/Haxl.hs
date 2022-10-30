@@ -6,6 +6,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
+{-# OPTIONS_GHC -Wno-overlapping-patterns #-}
 
 module Data.Morpheus.App.Haxl
   ( State (DeityState),
@@ -19,9 +21,10 @@ where
 
 import Control.Monad
 import Data.Bifunctor (Bifunctor (..))
+import Data.Foldable
 import Data.Hashable
 import qualified Data.Map as M
-import Data.Morpheus.Types.Internal.AST (TypeName, ValidValue, Value (..))
+import Data.Morpheus.Types.Internal.AST (ObjectEntry (..), TypeName, VALID, ValidValue, Value (..))
 import qualified Data.Set as S
 import Data.Typeable
 import GHC.Exts (sortWith)
@@ -66,6 +69,16 @@ data DeityReq a where
   deriving (Typeable)
 
 deriving instance Eq (DeityReq a)
+
+instance Hashable ValidValue where
+  hashWithSalt s (Object x) = hashWithSalt s (0 :: Int, toList x)
+  hashWithSalt s (List x) = hashWithSalt s (1 :: Int, x)
+  hashWithSalt s (Enum x) = hashWithSalt s (2 :: Int, x)
+  hashWithSalt s (Scalar x) = hashWithSalt s (3 :: Int, show x)
+  hashWithSalt s Null = hashWithSalt s (4 :: Int)
+
+instance Hashable (ObjectEntry VALID) where
+  hashWithSalt s (ObjectEntry name value) = hashWithSalt s (name, value)
 
 instance Hashable (DeityReq a) where
   hashWithSalt s GetDeityIds = hashWithSalt s (0 :: Int)
