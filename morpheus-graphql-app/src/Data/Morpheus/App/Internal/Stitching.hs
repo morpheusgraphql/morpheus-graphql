@@ -148,14 +148,15 @@ instance (MonadError GQLError m) => Stitching (NamedResolverResult m) where
 instance (MonadError GQLError m) => Stitching (NamedResolver m) where
   stitch t1 t2
     | resolverName t1 == resolverName t2 =
-        pure
-          NamedResolver
-            { resolverName = resolverName t1,
-              resolver = \arg -> do
-                t1' <- resolver t1 arg
-                t2' <- resolver t2 arg
-                stitch t1' t2'
-            }
+      pure
+        NamedResolver
+          { resolverName = resolverName t1,
+            resolverFun = \arg -> do
+              t1' <- resolverFun t1 arg
+              t2' <- resolverFun t2 arg
+              let xs = zip t1' t2'
+              traverse (uncurry stitch) xs
+          }
     | otherwise = throwError "ResolverMap must have same resolverName"
 
 instance Monad m => Stitching (RootResolverValue e m) where

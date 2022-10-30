@@ -140,6 +140,7 @@ library
     , bytestring >=0.10.4 && <0.12.0
     , containers >=0.4.2.1 && <0.7.0
     , hashable >=1.0.0 && <2.0.0
+    , haxl
     , megaparsec >=7.0.0 && <10.0.0
     , morpheus-graphql-core >=0.24.0 && <0.25.0
     , mtl >=2.0.0 && <3.0.0
@@ -170,6 +171,7 @@ test-suite morpheus-graphql-app-test
     , containers >=0.4.2.1 && <0.7.0
     , directory >=1.0.0 && <2.0.0
     , hashable >=1.0.0 && <2.0.0
+    , haxl
     , megaparsec >=7.0.0 && <10.0.0
     , morpheus-graphql-app
     , morpheus-graphql-core >=0.24.0 && <0.25.0

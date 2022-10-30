@@ -2,6 +2,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.App.Internal.Resolving.ResolveValue
@@ -117,20 +118,22 @@ resolveRef ::
   SelectionContent VALID ->
   m ValidValue
 resolveRef rmap ref selection = do
-  namedResolver <- getNamedResolverBy ref rmap
-  case namedResolver of
-    NamedObjectResolver res -> withObject (Just (resolverTypeName ref)) (resolveObject rmap res) selection
-    NamedUnionResolver unionRef -> resolveSelection rmap (ResRef $ pure unionRef) selection
-    NamedEnumResolver value -> resolveSelection rmap (ResEnum value) selection
+  getNamedResolverBy ref rmap >>= traverse process >>= toOne
+  where
+    toOne [x] = pure x
+    toOne _ = throwError "TODO:"
+    process (NamedObjectResolver res) = withObject (Just (resolverTypeName ref)) (resolveObject rmap res) selection
+    process (NamedUnionResolver unionRef) = resolveSelection rmap (ResRef $ pure unionRef) selection
+    process (NamedEnumResolver value) = resolveSelection rmap (ResEnum value) selection
 
 getNamedResolverBy ::
   (MonadError GQLError m) =>
   NamedResolverRef ->
   ResolverMap m ->
-  m (NamedResolverResult m)
-getNamedResolverBy ref = selectOr cantFoundError ((resolverArgument ref &) . resolver) (resolverTypeName ref)
+  m [NamedResolverResult m]
+getNamedResolverBy NamedResolverRef {..} = selectOr cantFoundError ((resolverArgument &) . resolverFun) resolverTypeName
   where
-    cantFoundError = throwError ("Resolver Type " <> msg (resolverTypeName ref) <> "can't found")
+    cantFoundError = throwError ("Resolver Type " <> msg resolverTypeName <> "can't found")
 
 resolveObject ::
   ( MonadReader ResolverContext m,
@@ -160,8 +163,8 @@ runFieldResolver ::
   m ValidValue
 runFieldResolver rmap Selection {selectionName, selectionContent}
   | selectionName == "__typename" =
-      const (Scalar . String . unpackName <$> asks (typeName . currentType))
+    const (Scalar . String . unpackName <$> asks (typeName . currentType))
   | otherwise =
-      maybe (pure Null) (>>= \x -> resolveSelection rmap x selectionContent)
-        . HM.lookup selectionName
-        . objectFields
+    maybe (pure Null) (>>= \x -> resolveSelection rmap x selectionContent)
+      . HM.lookup selectionName
+      . objectFields

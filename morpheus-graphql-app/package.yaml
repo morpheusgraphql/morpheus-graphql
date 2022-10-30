@@ -33,6 +33,7 @@ dependencies:
   - th-lift-instances      >=  0.1.1     &&  <  0.3.0
   - unordered-containers   >=  0.2.8     &&  <  0.3.0
   - vector                 >=  0.12.0.1  &&  <  0.13.0
+  - haxl
 library:
   source-dirs: src
   exposed-modules:
@@ -40,12 +41,12 @@ library:
     - Data.Morpheus.App.Internal.Resolving
     - Data.Morpheus.App.NamedResolvers
     - Data.Morpheus.Types.GQLWrapper
-  ghc-options: '-Wall'
+  ghc-options: "-Wall"
 tests:
   morpheus-graphql-app-test:
     main: Spec.hs
     source-dirs: test
-    ghc-options: '-Wall'
+    ghc-options: "-Wall"
     dependencies:
       - aeson                   >=  1.4.4   &&  <  3.0.0
       - directory               >=  1.0.0   &&  <  2.0.0

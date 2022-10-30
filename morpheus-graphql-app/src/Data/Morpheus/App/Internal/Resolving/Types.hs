@@ -50,9 +50,13 @@ import Relude hiding (show)
 
 type ResolverMap (m :: Type -> Type) = HashMap TypeName (NamedResolver m)
 
+type ResolverFunArg = [ValidValue]
+
+type ResolverFun m = ResolverFunArg -> m [NamedResolverResult m]
+
 data NamedResolver (m :: Type -> Type) = NamedResolver
   { resolverName :: TypeName,
-    resolver :: ValidValue -> m (NamedResolverResult m)
+    resolverFun :: ResolverFun m
   }
 
 instance Show (NamedResolver m) where
@@ -68,7 +72,7 @@ instance Show (ObjectTypeResolver m) where
 
 data NamedResolverRef = NamedResolverRef
   { resolverTypeName :: TypeName,
-    resolverArgument :: ValidValue
+    resolverArgument :: ResolverFunArg
   }
   deriving (Show)
 

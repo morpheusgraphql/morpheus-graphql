@@ -43,7 +43,7 @@ list :: [ResolverValue m] -> ResolverValue m
 list = mkList
 
 ref :: Applicative m => TypeName -> ValidValue -> ResolverValue m
-ref typeName = ResRef . pure . NamedResolverRef typeName
+ref typeName = ResRef . pure . NamedResolverRef typeName . pure
 
 refs :: Applicative m => TypeName -> [ValidValue] -> ResolverValue m
 refs typeName = mkList . map (ref typeName)

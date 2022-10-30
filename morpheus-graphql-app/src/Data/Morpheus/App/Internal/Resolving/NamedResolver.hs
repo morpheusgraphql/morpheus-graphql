@@ -41,4 +41,4 @@ runResolverMap
   ctx
   selection = runResolver channels resolvedValue ctx
     where
-      resolvedValue = resolveRef res (NamedResolverRef name Null) (SelectionSet selection)
+      resolvedValue = resolveRef res (NamedResolverRef name [Null]) (SelectionSet selection)
