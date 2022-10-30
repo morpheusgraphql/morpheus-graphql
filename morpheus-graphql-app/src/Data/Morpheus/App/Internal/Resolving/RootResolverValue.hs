@@ -14,7 +14,6 @@ import qualified Data.Aeson as A
 import Data.Morpheus.App.Internal.Resolving.Event
   ( EventHandler (..),
   )
-import Data.Morpheus.App.Internal.Resolving.NamedResolver (runResolverMap)
 import Data.Morpheus.App.Internal.Resolving.ResolveValue
 import Data.Morpheus.App.Internal.Resolving.Resolver
   ( LiftOperation,
@@ -42,6 +41,7 @@ import Data.Morpheus.Types.Internal.AST
     QUERY,
     SUBSCRIPTION,
     Selection,
+    SelectionContent (SelectionSet),
     SelectionSet,
     VALID,
     ValidValue,
@@ -103,7 +103,7 @@ runRootResolverValue
     selectByOperation operationType
     where
       selectByOperation Query =
-        withIntrospection (runRootDataResolver channelMap queryResolver) ctx
+        withIntrospection (runRootDataResolver channelMap queryResolver ctx) ctx
       selectByOperation Mutation =
         runRootDataResolver channelMap mutationResolver ctx operationSelection
       selectByOperation Subscription =
@@ -113,15 +113,17 @@ runRootResolverValue
   ctx@ResolverContext {operation = Operation {operationType}} =
     selectByOperation operationType
     where
-      selectByOperation Query = withIntrospection (runResolverMap Nothing "Query" queryResolverMap) ctx
+      selectByOperation Query = withIntrospection (\sel -> runResolver Nothing (resolvedValue sel) ctx) ctx
+        where
+          resolvedValue selection = resolveRef queryResolverMap (NamedResolverRef "Query" [Null]) (SelectionSet selection)
       selectByOperation _ = throwError "mutation and subscription is not supported for namedResolvers"
 
-withIntrospection :: Monad m => (ResolverContext -> SelectionSet VALID -> ResponseStream event m ValidValue) -> ResolverContext -> ResponseStream event m ValidValue
+withIntrospection :: Monad m => (SelectionSet VALID -> ResponseStream event m ValidValue) -> ResolverContext -> ResponseStream event m ValidValue
 withIntrospection f ctx@ResolverContext {operation} = case splitSystemSelection (operationSelection operation) of
-  (Nothing, _) -> f ctx (operationSelection operation)
+  (Nothing, _) -> f (operationSelection operation)
   (Just intro, Nothing) -> introspection intro ctx
   (Just intro, Just selection) -> do
-    x <- f ctx selection
+    x <- f selection
     y <- introspection intro ctx
     mergeRoot y x
 
