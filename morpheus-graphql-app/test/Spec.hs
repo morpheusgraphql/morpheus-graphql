@@ -8,6 +8,7 @@ module Main
 where
 
 import APIConstraints (runAPIConstraints)
+import Batching (runBatchingTest)
 import Data.Morpheus.App
   ( App (..),
     eitherSchema,
@@ -64,5 +65,6 @@ main =
     [ deepScan runMergeTest (mkUrl "merge"),
       deepScan runApiTest (mkUrl "api"),
       deepScan (map . runNamedResolversTest) (mkUrl "named-resolvers"),
+      deepScan (map . runBatchingTest) (mkUrl "batching"),
       deepScan (map . runAPIConstraints) (mkUrl "api-constraints")
     ]

@@ -2,7 +2,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Batching
-  ( runNamedResolversTest,
+  ( runBatchingTest,
   )
 where
 
@@ -202,8 +202,8 @@ getApps _ = do
       <> mkApp schemaRealms resolverRealms
       <> mkApp schemaEntities resolverEntities
 
-runNamedResolversTest :: FileUrl -> FileUrl -> TestTree
-runNamedResolversTest url = testApi api
+runBatchingTest :: FileUrl -> FileUrl -> TestTree
+runBatchingTest url = testApi api
   where
     api :: GQLRequest -> IO GQLResponse
     api req = getApps url >>= (`runApp` req)
