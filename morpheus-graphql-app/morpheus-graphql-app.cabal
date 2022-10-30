@@ -42,6 +42,7 @@ data-files:
     test/api/validation/input-coercion/list/list-single/query.gql
     test/api/validation/input-coercion/list/schema.gql
     test/api/validation/input-coercion/list/signle-value/query.gql
+    test/batching/deities.gql
     test/batching/deities/query.gql
     test/merge/schema/query-subscription-mutation/app-1.gql
     test/merge/schema/query-subscription-mutation/app-2.gql

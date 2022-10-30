@@ -50,7 +50,9 @@ import Test.Tasty
   ( TestTree,
   )
 
-withDeityHaxl :: GenHaxl () w b -> IO b
+type AppM = GenHaxl ()
+
+withDeityHaxl :: AppM w b -> IO b
 withDeityHaxl = withHaxl (ReqState resMap fetchDeityIds)
 
 getNamedIds :: Haxl [NamedArg]
