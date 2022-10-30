@@ -10,9 +10,9 @@
 {-# OPTIONS_GHC -Wno-overlapping-patterns #-}
 
 module Data.Morpheus.App.Internal.Resolving.Haxl
-  ( State (DeityState),
+  ( State (..),
     Haxl,
-    DeityReq (..),
+    Req (..),
     getNamedIds,
     getNamedResponseById,
     withHaxl,
@@ -45,17 +45,17 @@ import Haxl.Core
     stateSet,
   )
 
-withHaxl :: GenHaxl () w b -> IO b
-withHaxl haxlApp = do
-  let stateStore = stateSet DeityState stateEmpty
+withHaxl :: State Req -> GenHaxl () w b -> IO b
+withHaxl state haxlApp = do
+  let stateStore = stateSet state stateEmpty
   environment <- initEnv stateStore ()
   runHaxl environment haxlApp
 
 getNamedIds :: Haxl [NamedArg]
-getNamedIds = dataFetch GetDeityIds
+getNamedIds = dataFetch GetIds
 
 getNamedResponseById :: NamedArg -> Haxl NamedResponse
-getNamedResponseById = dataFetch . GetDeityNameById
+getNamedResponseById = dataFetch . GetValueById
 
 type Haxl = GenHaxl () ()
 
@@ -63,12 +63,12 @@ type NamedArg = (TypeName, ValidValue)
 
 type NamedResponse = ValidValue
 
-data DeityReq a where
-  GetDeityIds :: DeityReq [NamedArg]
-  GetDeityNameById :: NamedArg -> DeityReq NamedResponse
+data Req a where
+  GetIds :: Req [NamedArg]
+  GetValueById :: NamedArg -> Req NamedResponse
   deriving (Typeable)
 
-deriving instance Eq (DeityReq a)
+deriving instance Eq (Req a)
 
 instance Hashable ValidValue where
   hashWithSalt s (Object x) = hashWithSalt s (0 :: Int, toList x)
@@ -80,22 +80,22 @@ instance Hashable ValidValue where
 instance Hashable (ObjectEntry VALID) where
   hashWithSalt s (ObjectEntry name value) = hashWithSalt s (name, value)
 
-instance Hashable (DeityReq a) where
-  hashWithSalt s GetDeityIds = hashWithSalt s (0 :: Int)
-  hashWithSalt s (GetDeityNameById a) = hashWithSalt s (1 :: Int, a)
+instance Hashable (Req a) where
+  hashWithSalt s GetIds = hashWithSalt s (0 :: Int)
+  hashWithSalt s (GetValueById a) = hashWithSalt s (1 :: Int, a)
 
-deriving instance Show (DeityReq a)
+deriving instance Show (Req a)
 
-instance ShowP DeityReq where showp = show
+instance ShowP Req where showp = show
 
-instance StateKey DeityReq where
-  data State DeityReq = DeityState
+instance StateKey Req where
+  data State Req = ReqState {resMap :: M.Map TypeName ([ValidValue] -> IO [ValidValue])}
 
-instance DataSourceName DeityReq where
+instance DataSourceName Req where
   dataSourceName _ = "DeityDataSource"
 
-instance DataSource u DeityReq where
-  fetch _ _ _ = BackgroundFetch myfetch
+instance DataSource u Req where
+  fetch state _ _ = BackgroundFetch (appFetch state)
 
 fetchAll :: Foldable t => t (ResultVar [NamedArg]) -> IO ()
 fetchAll allIdVars = do
@@ -109,36 +109,38 @@ handleBatched f ls = unless (null ids) $ do
   where
     (ids, vars) = unzip ls
 
-myfetch :: [BlockedFetch DeityReq] -> IO ()
-myfetch blockedFetches = do
+appFetch :: State Req -> [BlockedFetch Req] -> IO ()
+appFetch state blockedFetches = do
   unless (null allIdVars) (fetchAll allIdVars)
-  handleBatched fetchValues [(uid, r) | BlockedFetch (GetDeityNameById uid) r <- blockedFetches]
+  handleBatched (fetchValues state) [(uid, r) | BlockedFetch (GetValueById uid) r <- blockedFetches]
   where
     allIdVars :: [ResultVar [NamedArg]]
-    allIdVars = [r | BlockedFetch GetDeityIds r <- blockedFetches]
+    allIdVars = [r | BlockedFetch GetIds r <- blockedFetches]
 
-fetchValues :: [NamedArg] -> IO [ValidValue]
-fetchValues ids = do
+-- Fetch
+fetchDeityIds :: IO [NamedArg]
+fetchDeityIds = do
+  print ("Fetch Ids" :: String)
+  pure [("", "Morpheus"), ("Zeus", Null), ("Ares", Null)]
+
+fetchValues :: State Req -> [NamedArg] -> IO [ValidValue]
+fetchValues state ids = do
   let entityTypes = getAllEntityTypes ids
   let indexed = zip [0 .. length ids] ids
-  let clusters = map (seletcByEntity indexed) entityTypes
-  xs <- concat <$> traverse fethcByTypeName clusters
+  let clusters = map (selectByEntity indexed) entityTypes
+  xs <- concat <$> traverse (fetchByTypeName state) clusters
   pure $ map snd (sortWith fst xs)
 
 getAllEntityTypes :: Ord a => [(a, b)] -> [a]
 getAllEntityTypes xs = S.toList (S.fromList (map fst xs))
 
-seletcByEntity :: Eq a => [(Int, (a, b))] -> a -> (a, [(Int, b)])
-seletcByEntity xs entityType = (entityType, map (second snd) $ filter (\v -> fst (snd v) == entityType) xs)
+selectByEntity :: Eq a => [(Int, (a, b))] -> a -> (a, [(Int, b)])
+selectByEntity xs entityType = (entityType, map (second snd) $ filter (\v -> fst (snd v) == entityType) xs)
 
-fethcByTypeName :: (TypeName, [(Int, ValidValue)]) -> IO [(Int, ValidValue)]
-fethcByTypeName (typeName, ids) = do
+fetchByTypeName :: State Req -> (TypeName, [(Int, ValidValue)]) -> IO [(Int, ValidValue)]
+fetchByTypeName state (typeName, ids) = do
   let values = map snd ids
   let indexes = map fst ids
-  let handler = M.lookup typeName resMap
+  let handler = M.lookup typeName (resMap state)
   xs <- maybe (fail "handler not found") (\f -> f values) handler
   pure (zip indexes xs)
-
-type ResMap = M.Map TypeName ([ValidValue] -> IO [ValidValue])
-
-
