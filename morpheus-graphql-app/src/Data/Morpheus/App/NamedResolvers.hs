@@ -48,7 +48,7 @@ ref typeName = ResRef . pure . NamedResolverRef typeName . pure
 refs :: Applicative m => TypeName -> [ValidValue] -> ResolverValue m
 refs typeName = mkList . map (ref typeName)
 
-type NamedResolverFunction o e m = ValidValue -> Resolver o e m (ResultBuilder o e m)
+type NamedResolverFunction o e m = [ValidValue] -> Resolver o e m [ResultBuilder o e m]
 
 -- types
 object :: (LiftOperation o, Monad m) => [(FieldName, Resolver o e m (ResolverValue (Resolver o e m)))] -> Resolver o e m (ResultBuilder o e m)
@@ -68,15 +68,8 @@ data ResultBuilder o e m
 mkResolverMap :: (LiftOperation o, Monad m) => [(TypeName, NamedResolverFunction o e m)] -> ResolverMap (Resolver o e m)
 mkResolverMap = HM.fromList . map packRes
   where
-    packRes :: (LiftOperation o, Monad m) => (TypeName, ValidValue -> Resolver o e m (ResultBuilder o e m)) -> (TypeName, NamedResolver (Resolver o e m))
-    packRes (typeName, value) =
-      ( typeName,
-        NamedResolver
-          typeName
-          ( fmap mapValue
-              . value
-          )
-      )
+    packRes :: (LiftOperation o, Monad m) => (TypeName, NamedResolverFunction o e m) -> (TypeName, NamedResolver (Resolver o e m))
+    packRes (typeName, f) = (typeName, NamedResolver typeName (fmap (map mapValue) . f))
       where
         mapValue (Object x) = NamedObjectResolver (ObjectTypeResolver $ HM.fromList x)
-        mapValue (Union name x) = NamedUnionResolver (NamedResolverRef name x)
+        mapValue (Union name x) = NamedUnionResolver (NamedResolverRef name [x])
