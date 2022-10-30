@@ -51,88 +51,102 @@ resolverDeities :: Monad m => RootResolverValue e m
 resolverDeities =
   queryResolvers
     [ ( "Query",
-        const $
-          object
-            [ ("deity", ref "Deity" <$> getArgument "id"),
-              ("deities", pure $ refs "Deity" ["zeus", "morpheus"])
-            ]
+        traverse
+          ( const $
+              object
+                [ ("deity", ref "Deity" <$> getArgument "id"),
+                  ("deities", pure $ refs "Deity" ["zeus", "morpheus"])
+                ]
+          )
       ),
       ("Deity", deityResolver)
     ]
 
 deityResolver :: Monad m => NamedResolverFunction QUERY e m
-deityResolver "zeus" =
-  object
-    [ ("name", pure "Zeus"),
-      ("power", pure $ list [])
-    ]
-deityResolver _ =
-  object
-    [ ("name", pure "Morpheus"),
-      ("power", pure $ list [enum "Shapeshifting"])
-    ]
+deityResolver = traverse deityRes
+  where
+    deityRes "zeus" =
+      object
+        [ ("name", pure "Zeus"),
+          ("power", pure $ list [])
+        ]
+    deityRes _ =
+      object
+        [ ("name", pure "Morpheus"),
+          ("power", pure $ list [enum "Shapeshifting"])
+        ]
 
 -- REALMS
 resolverRealms :: Monad m => RootResolverValue e m
 resolverRealms =
   queryResolvers
     [ ( "Query",
-        const $
-          object
-            [ ("realm", ref "Realm" <$> getArgument "id"),
-              ("realms", pure $ refs "Realm" ["olympus", "dreams"])
-            ]
+        traverse
+          ( const $
+              object
+                [ ("realm", ref "Realm" <$> getArgument "id"),
+                  ("realms", pure $ refs "Realm" ["olympus", "dreams"])
+                ]
+          )
       ),
       ("Deity", deityResolverExt),
       ("Realm", realmResolver)
     ]
 
 deityResolverExt :: Monad m => NamedResolverFunction QUERY e m
-deityResolverExt "zeus" = object [("realm", pure $ ref "Realm" "olympus")]
-deityResolverExt "morpheus" = object [("realm", pure $ ref "Realm" "dreams")]
-deityResolverExt _ = object []
+deityResolverExt = traverse deityExt
+  where
+    deityExt "zeus" = object [("realm", pure $ ref "Realm" "olympus")]
+    deityExt "morpheus" = object [("realm", pure $ ref "Realm" "dreams")]
+    deityExt _ = object []
 
 realmResolver :: Monad m => NamedResolverFunction QUERY e m
-realmResolver "olympus" =
-  object
-    [ ("name", pure "Mount Olympus"),
-      ("owner", pure $ ref "Deity" "zeus")
-    ]
-realmResolver "dreams" =
-  object
-    [ ("name", pure "Fictional world of dreams"),
-      ("owner", pure $ ref "Deity" "morpheus")
-    ]
-realmResolver _ =
-  object
-    [ ("name", pure "None")
-    ]
+realmResolver = traverse realmResolver'
+  where
+    realmResolver' "olympus" =
+      object
+        [ ("name", pure "Mount Olympus"),
+          ("owner", pure $ ref "Deity" "zeus")
+        ]
+    realmResolver' "dreams" =
+      object
+        [ ("name", pure "Fictional world of dreams"),
+          ("owner", pure $ ref "Deity" "morpheus")
+        ]
+    realmResolver' _ =
+      object
+        [ ("name", pure "None")
+        ]
 
 -- ENTITIES
 resolverEntities :: Monad m => RootResolverValue e m
 resolverEntities =
   queryResolvers
     [ ( "Query",
-        const $
-          object
-            [ ("entity", ref "Entity" <$> getArgument "id"),
-              ( "entities",
-                pure $
-                  refs
-                    "Entity"
-                    ["zeus", "morpheus", "olympus", "dreams"]
-              )
-            ]
+        traverse
+          ( const $
+              object
+                [ ("entity", ref "Entity" <$> getArgument "id"),
+                  ( "entities",
+                    pure $
+                      refs
+                        "Entity"
+                        ["zeus", "morpheus", "olympus", "dreams"]
+                  )
+                ]
+          )
       ),
       ("Entity", resolveEntity)
     ]
 
 resolveEntity :: Monad m => NamedResolverFunction QUERY e m
-resolveEntity "zeus" = variant "Deity" "zeus"
-resolveEntity "morpheus" = variant "Deity" "morpheus"
-resolveEntity "olympus" = variant "Realm" "olympus"
-resolveEntity "dreams" = variant "Realm" "dreams"
-resolveEntity _ = object []
+resolveEntity = traverse resEntity
+  where
+    resEntity "zeus" = variant "Deity" "zeus"
+    resEntity "morpheus" = variant "Deity" "morpheus"
+    resEntity "olympus" = variant "Realm" "olympus"
+    resEntity "dreams" = variant "Realm" "dreams"
+    resEntity _ = object []
 
 getSchema :: String -> IO (Schema VALID)
 getSchema url = LBS.readFile url >>= resultOr (fail . show) pure . parseSchema

@@ -48,12 +48,14 @@ resolvers :: Monad m => RootResolverValue e m
 resolvers =
   queryResolvers
     [ ( "Query",
-        const $
-          object
-            [ ("success", pure "success"),
-              ("forbidden", pure "forbidden!"),
-              ("limited", pure "num <= 5")
-            ]
+        traverse
+          ( const $
+              object
+                [ ("success", pure "success"),
+                  ("forbidden", pure "forbidden!"),
+                  ("limited", pure "num <= 5")
+                ]
+          )
       )
     ]
 
