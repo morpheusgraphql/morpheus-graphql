@@ -13,9 +13,11 @@ module Data.Morpheus.App.Internal.Resolving.Haxl
   ( State (..),
     Haxl,
     Req (..),
-    getNamedIds,
-    getNamedResponseById,
+    getIds,
+    getResponseById,
     withHaxl,
+    NamedArg,
+    NamedResponse,
   )
 where
 
@@ -51,11 +53,11 @@ withHaxl state haxlApp = do
   environment <- initEnv stateStore ()
   runHaxl environment haxlApp
 
-getNamedIds :: Haxl [NamedArg]
-getNamedIds = dataFetch GetIds
+getIds :: Haxl [NamedArg]
+getIds = dataFetch GetIds
 
-getNamedResponseById :: NamedArg -> Haxl NamedResponse
-getNamedResponseById = dataFetch . GetValueById
+getResponseById :: NamedArg -> Haxl NamedResponse
+getResponseById = dataFetch . GetValueById
 
 type Haxl = GenHaxl () ()
 
@@ -89,18 +91,16 @@ deriving instance Show (Req a)
 instance ShowP Req where showp = show
 
 instance StateKey Req where
-  data State Req = ReqState {resMap :: M.Map TypeName ([ValidValue] -> IO [ValidValue])}
+  data State Req = ReqState
+    { resMap :: M.Map TypeName ([ValidValue] -> IO [ValidValue]),
+      allIds :: IO [NamedArg]
+    }
 
 instance DataSourceName Req where
   dataSourceName _ = "DeityDataSource"
 
 instance DataSource u Req where
   fetch state _ _ = BackgroundFetch (appFetch state)
-
-fetchAll :: Foldable t => t (ResultVar [NamedArg]) -> IO ()
-fetchAll allIdVars = do
-  allIds <- fetchDeityIds
-  mapM_ (`putSuccess` allIds) allIdVars
 
 handleBatched :: ([i] -> IO [a]) -> [(i, ResultVar a)] -> IO ()
 handleBatched f ls = unless (null ids) $ do
@@ -111,17 +111,14 @@ handleBatched f ls = unless (null ids) $ do
 
 appFetch :: State Req -> [BlockedFetch Req] -> IO ()
 appFetch state blockedFetches = do
-  unless (null allIdVars) (fetchAll allIdVars)
+  ids <- allIds state
+  unless (null allIdVars) (mapM_ (`putSuccess` ids) allIdVars)
   handleBatched (fetchValues state) [(uid, r) | BlockedFetch (GetValueById uid) r <- blockedFetches]
   where
     allIdVars :: [ResultVar [NamedArg]]
     allIdVars = [r | BlockedFetch GetIds r <- blockedFetches]
 
 -- Fetch
-fetchDeityIds :: IO [NamedArg]
-fetchDeityIds = do
-  print ("Fetch Ids" :: String)
-  pure [("", "Morpheus"), ("Zeus", Null), ("Ares", Null)]
 
 fetchValues :: State Req -> [NamedArg] -> IO [ValidValue]
 fetchValues state ids = do
