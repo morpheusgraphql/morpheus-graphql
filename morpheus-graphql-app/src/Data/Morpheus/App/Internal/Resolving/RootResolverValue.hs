@@ -114,8 +114,7 @@ runRootResolverValue
     selectByOperation operationType
     where
       selectByOperation Query = withIntrospection (runResolverMap Nothing "Query" queryResolverMap) ctx
-      -- TODO: support mutation and subscription
-      selectByOperation _ = throwError "mutation and subscription is not yet supported"
+      selectByOperation _ = throwError "mutation and subscription is not supported for namedResolvers"
 
 withIntrospection :: Monad m => (ResolverContext -> SelectionSet VALID -> ResponseStream event m ValidValue) -> ResolverContext -> ResponseStream event m ValidValue
 withIntrospection f ctx@ResolverContext {operation} = case splitSystemSelection (operationSelection operation) of
