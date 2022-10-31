@@ -23,6 +23,7 @@ import Data.Morpheus.NamedResolvers
   ( NamedResolverT,
     ResolveNamed (..),
     resolve,
+    useBatched,
   )
 import Data.Morpheus.Types
   ( App,
@@ -64,6 +65,7 @@ instance Monad m => ResolveNamed m Power where
 instance Monad m => ResolveNamed m (Deity (NamedResolverT m)) where
   type Dep (Deity (NamedResolverT m)) = ID
   resolveBatched = traverse getDeity
+  namedResolver = useBatched
 
 instance MonadError GQLError m => ResolveNamed m (Query (NamedResolverT m)) where
   type Dep (Query (NamedResolverT m)) = ()

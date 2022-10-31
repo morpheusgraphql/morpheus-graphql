@@ -23,11 +23,17 @@ module Data.Morpheus.Server.Resolvers
     ResolverQ,
     ResolverM,
     ResolverS,
+    useBatched,
   )
 where
 
 import Data.Morpheus.App.Internal.Resolving (PushEvents (pushEvents), Resolver, WithOperation)
 import Data.Morpheus.Server.NamedResolvers
+  ( NamedResolverT (..),
+    ResolveNamed (..),
+    resolve,
+    useBatched,
+  )
 import Data.Morpheus.Server.Types.Types
   ( Undefined (..),
   )

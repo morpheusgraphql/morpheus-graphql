@@ -12,6 +12,7 @@ module Data.Morpheus.Server.NamedResolvers
   ( ResolveNamed (..),
     NamedResolverT (..),
     resolve,
+    useBatched,
   )
 where
 
@@ -29,10 +30,17 @@ instance Monad m => ResolveNamed m Text where
   type Dep Text = Text
   resolveNamed = pure
 
+useBatched :: (ResolveNamed m a, MonadError GQLError m) => Dep a -> m a
+useBatched x = resolveBatched [x] >>= res
+  where
+    res [Just v] = pure v
+    res _ = throwError (internal "named resolver should return single value for single argument")
+
 class (ToJSON (Dep a)) => ResolveNamed (m :: Type -> Type) (a :: Type) where
   type Dep a :: Type
   resolveBatched :: Monad m => [Dep a] -> m [Maybe a]
   resolveBatched = traverse (fmap Just . resolveNamed)
+
   resolveNamed :: Monad m => Dep a -> m a
 
 instance (ResolveNamed m a, MonadError GQLError m) => ResolveNamed (m :: Type -> Type) [a] where
