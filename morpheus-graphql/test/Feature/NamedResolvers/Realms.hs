@@ -5,7 +5,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeFamilies ,FlexibleContexts#-}
 
 module Feature.NamedResolvers.Realms
   ( realmsApp,
@@ -14,6 +14,7 @@ module Feature.NamedResolvers.Realms
   )
 where
 
+import Control.Monad.Except
 import Data.Morpheus
   ( deriveApp,
   )
@@ -29,10 +30,12 @@ import Data.Morpheus.Types
   ( App,
     Arg (..),
     ID,
+    GQLError,
     NamedResolvers (..),
     Undefined,
   )
 import Data.Text (Text)
+import Control.Monad.Except
 
 importGQLDocument "test/Feature/NamedResolvers/realms.gql"
 
@@ -55,27 +58,30 @@ getRealm _ =
         owner = resolve (pure "none")
       }
 
+batched f = traverse (fmap Just . f)
+
 instance Monad m => ResolveNamed m (Realm (NamedResolverT m)) where
   type Dep (Realm (NamedResolverT m)) = ID
-  resolveNamed = traverse getRealm
+  resolveNamed = batched getRealm
 
 instance Monad m => ResolveNamed m (Deity (NamedResolverT m)) where
   type Dep (Deity (NamedResolverT m)) = ID
-  resolveNamed = traverse getDeity
+  resolveNamed = batched getDeity
 
 getDeity :: (Monad m, Applicative f) => ID -> f (Deity (NamedResolverT m))
 getDeity "zeus" = pure Deity {realm = resolve (pure "olympus")}
 getDeity "morpheus" = pure Deity {realm = resolve (pure "dreams")}
 getDeity x = pure Deity {realm = resolve (pure x)}
 
-instance Monad m => ResolveNamed m (Query (NamedResolverT m)) where
+instance MonadError GQLError m => ResolveNamed m (Query (NamedResolverT m)) where
   type Dep (Query (NamedResolverT m)) = ()
   resolveNamed _ =
     pure
-      [ Query
-          { realm = \(Arg arg) -> resolve (pure (Just arg)),
-            realms = resolve (pure ["olympus", "dreams"])
-          }
+      [ Just $
+          Query
+            { realm = \(Arg arg) -> resolve (pure (Just arg)),
+              realms = resolve (pure ["olympus", "dreams"])
+            }
       ]
 
 realmsApp :: App () IO

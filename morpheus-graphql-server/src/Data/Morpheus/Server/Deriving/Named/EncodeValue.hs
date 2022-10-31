@@ -37,6 +37,7 @@ import Data.Morpheus.App.Internal.Resolving
     mkList,
     mkNull,
   )
+import Data.Morpheus.Internal.Utils (empty)
 import Data.Morpheus.Server.Deriving.Decode
   ( Decode,
     decodeArguments,
@@ -91,10 +92,13 @@ import qualified GHC.Exts as HM
 import GHC.Generics
   ( Generic (..),
   )
-import Relude
+import Relude hiding (empty)
 
-encodeResolverValue :: (MonadError GQLError m, FieldConstraint m a) => [a] -> m [NamedResolverResult m]
-encodeResolverValue x = traverse (convertNamedNode (Identity x) . getFieldValues) x
+encodeResolverValue :: (MonadError GQLError m, FieldConstraint m a) => [Maybe a] -> m [NamedResolverResult m]
+encodeResolverValue x = traverse encodeNode x
+  where
+    encodeNode (Just v) = convertNamedNode (Identity x) (getFieldValues v)
+    encodeNode Nothing = pure $ NamedObjectResolver ObjectTypeResolver {objectFields = empty}
 
 type FieldConstraint m a =
   ( GQLType a,
@@ -187,11 +191,11 @@ convertNamedNode
     | null consFields = pure $ NamedEnumResolver consName
     | tyIsUnion = deriveUnion consFields
     | otherwise =
-        pure $
-          NamedObjectResolver
-            ObjectTypeResolver
-              { objectFields = HM.fromList (toFieldRes proxy <$> consFields)
-              }
+      pure $
+        NamedObjectResolver
+          ObjectTypeResolver
+            { objectFields = HM.fromList (toFieldRes proxy <$> consFields)
+            }
 
 deriveUnion :: (MonadError GQLError m) => [FieldRep (m (ResolverValue m))] -> m (NamedResolverResult m)
 deriveUnion [FieldRep {..}] =

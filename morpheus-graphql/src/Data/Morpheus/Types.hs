@@ -56,7 +56,8 @@ module Data.Morpheus.Types
     Deprecated (..),
     DropNamespace (..),
     Rename (..),
-    DefaultValue (..),
+    DefaultValue (..),    GQLError,
+
   )
 where
 

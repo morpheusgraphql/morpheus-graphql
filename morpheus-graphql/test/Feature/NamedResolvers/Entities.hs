@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -11,6 +12,7 @@ module Feature.NamedResolvers.Entities
   )
 where
 
+import Control.Monad.Except
 import Data.Morpheus (deriveApp)
 import Data.Morpheus.NamedResolvers
   ( NamedResolverT,
@@ -20,6 +22,7 @@ import Data.Morpheus.NamedResolvers
 import Data.Morpheus.Types
   ( App,
     Arg (..),
+    GQLError,
     GQLType (..),
     ID,
     NamedResolvers (..),
@@ -44,7 +47,7 @@ getEntity x = pure $ EntityRealm (resolve $ pure x)
 
 instance Monad m => ResolveNamed m (Entity (NamedResolverT m)) where
   type Dep (Entity (NamedResolverT m)) = ID
-  resolveNamed = traverse getEntity
+  resolveNamed = batched getEntity
 
 -- QUERY
 data Query m = Query
@@ -56,22 +59,25 @@ data Query m = Query
       GQLType
     )
 
-instance Monad m => ResolveNamed m (Query (NamedResolverT m)) where
+batched f = traverse (fmap Just . f)
+
+instance MonadError GQLError m => ResolveNamed m (Query (NamedResolverT m)) where
   type Dep (Query (NamedResolverT m)) = ()
   resolveNamed _ =
     pure
-      [ Query
-          { entities =
-              resolve
-                ( pure
-                    [ "zeus",
-                      "morpheus",
-                      "olympus",
-                      "dreams"
-                    ]
-                ),
-            entity = \(Arg uid) -> resolve (pure (Just uid))
-          }
+      [ Just $
+          Query
+            { entities =
+                resolve
+                  ( pure
+                      [ "zeus",
+                        "morpheus",
+                        "olympus",
+                        "dreams"
+                      ]
+                  ),
+              entity = \(Arg uid) -> resolve (pure (Just uid))
+            }
       ]
 
 entitiesApp :: App () IO

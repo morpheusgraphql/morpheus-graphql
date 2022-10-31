@@ -6,13 +6,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE NoImplicitPrelude,FlexibleContexts #-}
 
 module Feature.NamedResolvers.Deities
   ( deitiesApp,
   )
 where
 
+import Control.Monad.Except
 import Data.Morpheus (deriveApp)
 import Data.Morpheus.Document
   ( importGQLDocument,
@@ -25,6 +26,7 @@ import Data.Morpheus.NamedResolvers
 import Data.Morpheus.Types
   ( App,
     Arg (..),
+    GQLError,
     ID,
     NamedResolvers (..),
     Undefined,
@@ -57,22 +59,25 @@ getDeity _ =
         power = resolve (pure [])
       }
 
+batched f = traverse (fmap Just . f)
+
 instance Monad m => ResolveNamed m Power where
   type Dep Power = ID
-  resolveNamed = traverse getPower
+  resolveNamed = batched getPower
 
 instance Monad m => ResolveNamed m (Deity (NamedResolverT m)) where
   type Dep (Deity (NamedResolverT m)) = ID
-  resolveNamed = traverse getDeity
+  resolveNamed = batched getDeity
 
-instance Monad m => ResolveNamed m (Query (NamedResolverT m)) where
+instance MonadError GQLError m => ResolveNamed m (Query (NamedResolverT m)) where
   type Dep (Query (NamedResolverT m)) = ()
   resolveNamed _ =
     pure
-      [ Query
-          { deity = \(Arg uid) -> resolve (pure (Just uid)),
-            deities = resolve (pure ["zeus", "morpheus"])
-          }
+      [ Just $
+          Query
+            { deity = \(Arg uid) -> resolve (pure (Just uid)),
+              deities = resolve (pure ["zeus", "morpheus"])
+            }
       ]
 
 deitiesApp :: App () IO

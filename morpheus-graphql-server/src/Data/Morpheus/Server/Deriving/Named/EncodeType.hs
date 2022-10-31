@@ -93,7 +93,7 @@ instance
         }
     ]
     where
-      resolve :: [ValidValue] -> Resolver o e m [a]
+      resolve :: [ValidValue] -> Resolver o e m [Maybe a]
       resolve xs = traverse decodeArg xs >>= resolveNamed
 
       decodeArg :: ValidValue -> Resolver o e m (Dep a)

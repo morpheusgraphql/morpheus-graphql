@@ -2,8 +2,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -15,29 +15,31 @@ module Data.Morpheus.Server.NamedResolvers
   )
 where
 
+import Control.Monad.Except
 import Data.Aeson (ToJSON)
 import Data.Morpheus.Types.ID (ID)
+import Data.Morpheus.Types.Internal.AST (GQLError, internal)
 import Relude
 
-instance Monad m => ResolveNamed m ID where
+instance (Monad m) => ResolveNamed m ID where
   type Dep ID = ID
-  resolveNamed = pure
+  resolveNamed = pure . map pure
 
 instance Monad m => ResolveNamed m Text where
   type Dep Text = Text
-  resolveNamed = pure
+  resolveNamed = pure . map pure
 
 class (ToJSON (Dep a)) => ResolveNamed (m :: Type -> Type) (a :: Type) where
   type Dep a :: Type
-  resolveNamed :: Monad m => [Dep a] -> m [a]
+  resolveNamed :: Monad m => [Dep a] -> m [Maybe a]
 
-instance (ResolveNamed m a) => ResolveNamed (m :: Type -> Type) [a] where
+instance (ResolveNamed m a, MonadError GQLError m) => ResolveNamed (m :: Type -> Type) [a] where
   type Dep [a] = [Dep a]
-  resolveNamed = traverse resolveNamed
+  resolveNamed _ = throwError (internal "named resolver instance [a] should not be called")
 
-instance (ResolveNamed m a) => ResolveNamed (m :: Type -> Type) (Maybe a) where
+instance (ResolveNamed m a, MonadError GQLError m) => ResolveNamed (m :: Type -> Type) (Maybe a) where
   type Dep (Maybe a) = Maybe (Dep a)
-  resolveNamed = undefined
+  resolveNamed _ = throwError (internal "named resolver instance Maybe should not be called")
 
 data NamedResolverT (m :: Type -> Type) a where
   Ref :: ResolveNamed m a => m (Dep a) -> NamedResolverT m a
