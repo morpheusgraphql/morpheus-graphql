@@ -143,7 +143,8 @@ instance (MonadError GQLError m) => Stitching (NamedResolverResult m) where
   stitch NamedEnumResolver {} (NamedEnumResolver x) = pure (NamedEnumResolver x)
   stitch NamedUnionResolver {} (NamedUnionResolver x) = pure (NamedUnionResolver x)
   stitch (NamedObjectResolver t1) (NamedObjectResolver t2) = NamedObjectResolver <$> stitch t1 t2
-  stitch NamedNullResolver NamedNullResolver = pure NamedNullResolver
+  stitch NamedNullResolver x = pure x
+  stitch x NamedNullResolver = pure x
   stitch _ _ = throwError "ResolverMap must have same Kind"
 
 instance (MonadError GQLError m) => Stitching (NamedResolver m) where
