@@ -7,6 +7,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -68,7 +69,7 @@ data BatchEntry = BatchEntry
   }
 
 instance Show BatchEntry where
-  show (BatchEntry sel typename dep) = printSel sel <> ":" <> toString typename <> ":" <> show (map (unpack . render) dep)
+  show BatchEntry {..} = printSel batchedSelection <> ":" <> toString batchedType <> ":" <> show (map (unpack . render) batchedArguments)
 
 data CacheKey = CacheKey
   { cachedSel :: SelectionContent VALID,
