@@ -18,8 +18,7 @@ import Data.Morpheus.Document
   ( importGQLDocument,
   )
 import Data.Morpheus.NamedResolvers
-  ( Batched (..),
-    NamedResolverT,
+  ( NamedResolverT,
     ResolveNamed (..),
     resolve,
   )
@@ -60,22 +59,21 @@ getDeity _ =
 
 instance Monad m => ResolveNamed m Power where
   type Dep Power = ID
-  resolveNamed = fmap Batched . traverse getPower . runBatched
+  resolveNamed = traverse getPower
 
 instance Monad m => ResolveNamed m (Deity (NamedResolverT m)) where
   type Dep (Deity (NamedResolverT m)) = ID
-  resolveNamed = fmap Batched . traverse getDeity . runBatched
+  resolveNamed = traverse getDeity
 
 instance Monad m => ResolveNamed m (Query (NamedResolverT m)) where
   type Dep (Query (NamedResolverT m)) = ()
   resolveNamed _ =
-    pure $
-      Batched
-        [ Query
-            { deity = \(Arg uid) -> resolve (pure (Just uid)),
-              deities = resolve (pure ["zeus", "morpheus"])
-            }
-        ]
+    pure
+      [ Query
+          { deity = \(Arg uid) -> resolve (pure (Just uid)),
+            deities = resolve (pure ["zeus", "morpheus"])
+          }
+      ]
 
 deitiesApp :: App () IO
 deitiesApp =

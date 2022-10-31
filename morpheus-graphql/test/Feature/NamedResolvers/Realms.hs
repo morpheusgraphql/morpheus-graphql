@@ -21,8 +21,7 @@ import Data.Morpheus.Document
   ( importGQLDocument,
   )
 import Data.Morpheus.NamedResolvers
-  ( Batched (..),
-    NamedResolverT,
+  ( NamedResolverT,
     ResolveNamed (..),
     resolve,
   )
@@ -39,7 +38,7 @@ importGQLDocument "test/Feature/NamedResolvers/realms.gql"
 
 instance Monad m => ResolveNamed m (Realm (NamedResolverT m)) where
   type Dep (Realm (NamedResolverT m)) = ID
-  resolveNamed = fmap Batched . traverse (getRealm) . runBatched
+  resolveNamed = traverse getRealm
     where
       getRealm "olympus" =
         pure
@@ -62,8 +61,9 @@ instance Monad m => ResolveNamed m (Realm (NamedResolverT m)) where
 
 instance Monad m => ResolveNamed m (Deity (NamedResolverT m)) where
   type Dep (Deity (NamedResolverT m)) = ID
-  resolveNamed = fmap Batched . traverse getDeity . runBatched
+  resolveNamed = traverse getDeity
 
+getDeity :: (Monad m, Applicative f) => ID -> f (Deity (NamedResolverT m))
 getDeity "zeus" =
   pure
     Deity
@@ -83,13 +83,12 @@ getDeity x =
 instance Monad m => ResolveNamed m (Query (NamedResolverT m)) where
   type Dep (Query (NamedResolverT m)) = ()
   resolveNamed _ =
-    pure $
-      Batched
-        [ Query
-            { realm = \(Arg arg) -> resolve (pure (Just arg)),
-              realms = resolve (pure ["olympus", "dreams"])
-            }
-        ]
+    pure
+      [ Query
+          { realm = \(Arg arg) -> resolve (pure (Just arg)),
+            realms = resolve (pure ["olympus", "dreams"])
+          }
+      ]
 
 realmsApp :: App () IO
 realmsApp =
