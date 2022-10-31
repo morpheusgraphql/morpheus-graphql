@@ -56,21 +56,18 @@ getRealm "dreams" =
         }
 getRealm _ = pure Nothing
 
-batched :: (Traversable t, Applicative f) => (a1 -> f a2) -> t a1 -> f (t (Maybe a2))
-batched f = traverse (fmap Just . f)
-
 instance Monad m => ResolveNamed m (Realm (NamedResolverT m)) where
   type Dep (Realm (NamedResolverT m)) = ID
   resolveNamed = traverse getRealm
 
 instance Monad m => ResolveNamed m (Deity (NamedResolverT m)) where
   type Dep (Deity (NamedResolverT m)) = ID
-  resolveNamed = batched getDeity
+  resolveNamed = traverse getDeity
 
-getDeity :: (Monad m, Applicative f) => ID -> f (Deity (NamedResolverT m))
-getDeity "zeus" = pure Deity {realm = resolve (pure "olympus")}
-getDeity "morpheus" = pure Deity {realm = resolve (pure "dreams")}
-getDeity x = pure Deity {realm = resolve (pure x)}
+getDeity :: (Monad m, Applicative f) => ID -> f (Maybe (Deity (NamedResolverT m)))
+getDeity "zeus" = pure $ Just Deity {realm = resolve (pure "olympus")}
+getDeity "morpheus" = pure $ Just Deity {realm = resolve (pure "dreams")}
+getDeity _ = pure Nothing
 
 instance MonadError GQLError m => ResolveNamed m (Query (NamedResolverT m)) where
   type Dep (Query (NamedResolverT m)) = ()
