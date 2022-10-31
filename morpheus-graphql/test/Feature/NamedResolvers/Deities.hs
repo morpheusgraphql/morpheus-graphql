@@ -62,7 +62,7 @@ instance Monad m => ResolveNamed m Power where
 
 instance Monad m => ResolveNamed m (Deity (NamedResolverT m)) where
   type Dep (Deity (NamedResolverT m)) = ID
-  resolveNamed = fmap Batched . traverse (getDeity) . runBatched
+  resolveNamed = fmap Batched . traverse getDeity . runBatched
 
 instance Monad m => ResolveNamed m (Query (NamedResolverT m)) where
   type Dep (Query (NamedResolverT m)) = ()
