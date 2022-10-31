@@ -80,8 +80,4 @@ instance MonadError GQLError m => ResolveNamed m (Query (NamedResolverT m)) wher
       ]
 
 deitiesApp :: App () IO
-deitiesApp =
-  deriveApp
-    ( NamedResolvers ::
-        NamedResolvers IO () Query Undefined Undefined
-    )
+deitiesApp = deriveApp (NamedResolvers :: NamedResolvers IO () Query Undefined Undefined)

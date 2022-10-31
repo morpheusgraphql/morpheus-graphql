@@ -68,15 +68,7 @@ instance MonadError GQLError m => ResolveNamed m (Query (NamedResolverT m)) wher
     pure
       [ Just $
           Query
-            { entities =
-                resolve
-                  ( pure
-                      [ "zeus",
-                        "morpheus",
-                        "olympus",
-                        "dreams"
-                      ]
-                  ),
+            { entities = resolve (pure ["zeus", "morpheus", "olympus", "dreams"]),
               entity = \(Arg uid) -> resolve (pure (Just uid))
             }
       ]
