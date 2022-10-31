@@ -9,6 +9,7 @@
 module Data.Morpheus.App.Internal.Resolving.ResolveValue
   ( resolveRef,
     resolveObject,
+    ResolverMapContext (..),
   )
 where
 
@@ -64,7 +65,10 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Relude hiding (empty)
 
-type ResolverMapContext m = (LocalCache, ResolverMap m)
+data ResolverMapContext m = ResolverMapContext
+  { localCache :: LocalCache,
+    resolverMap :: ResolverMap m
+  }
 
 scanRefs :: (MonadError GQLError m, MonadReader ResolverContext m) => SelectionContent VALID -> ResolverValue m -> m [(SelectionContent VALID, NamedResolverRef)]
 scanRefs sel (ResList xs) = concat <$> traverse (scanRefs sel) xs
@@ -109,11 +113,11 @@ resolveSelection ::
   SelectionContent VALID ->
   m ValidValue
 resolveSelection rmap res selection = do
-  newRmap <- scanRefs selection res >>= buildCache rmap
+  newRmap <- uncurry ResolverMapContext <$> (scanRefs selection res >>= buildCache rmap)
   __resolveSelection newRmap res selection
 
 buildCache :: (MonadError GQLError m, MonadReader ResolverContext m) => ResolverMapContext m -> [(SelectionContent VALID, NamedResolverRef)] -> m (LocalCache, HashMap TypeName (NamedResolver m))
-buildCache (cache, rmap) entries = (,rmap) <$> buildCacheWith (resolveRefsCached (cache, rmap)) cache entries
+buildCache ctx@(ResolverMapContext cache rmap) entries = (,rmap) <$> buildCacheWith (resolveRefsCached ctx) cache entries
 
 __resolveSelection ::
   ( Monad m,
@@ -171,7 +175,7 @@ resolveRef ::
   ( MonadError GQLError m,
     MonadReader ResolverContext m
   ) =>
-  (LocalCache, ResolverMap m) ->
+  ResolverMapContext m ->
   NamedResolverRef ->
   SelectionContent VALID ->
   m ValidValue
@@ -189,16 +193,16 @@ resolveRefsCached ::
   NamedResolverRef ->
   SelectionContent VALID ->
   m [ValidValue]
-resolveRefsCached (cache, rmap) (NamedResolverRef name args) selection = do
+resolveRefsCached ctx (NamedResolverRef name args) selection = do
   let keys = map (CacheKey selection name) args
   let cached = map resolveCached keys
   let cachedMap = HM.fromList (mapMaybe unp cached)
-  notCachedMap <- resolveUncached (cache, rmap) name selection $ map fst $ filter (isNothing . snd) cached
+  notCachedMap <- resolveUncached ctx name selection $ map fst $ filter (isNothing . snd) cached
   traverse (useCached (cachedMap <> notCachedMap)) args
   where
     unp (_, Nothing) = Nothing
     unp (x, Just y) = Just (x, y)
-    resolveCached key = (cachedArg key, HM.lookup key cache)
+    resolveCached key = (cachedArg key, HM.lookup key $ localCache ctx)
 
 processResult ::
   (MonadError GQLError m, MonadReader ResolverContext m) =>
@@ -216,14 +220,14 @@ resolveUncached ::
   ( MonadError GQLError m,
     MonadReader ResolverContext m
   ) =>
-  (LocalCache, ResolverMap m) ->
+  ResolverMapContext m ->
   TypeName ->
   SelectionContent VALID ->
   [ValidValue] ->
   m (HashMap ValidValue ValidValue)
 resolveUncached _ _ _ [] = pure empty
-resolveUncached rmap typename selection xs = do
-  vs <- getNamedResolverBy (NamedResolverRef typename xs) (snd rmap) >>= traverse (processResult rmap typename selection)
+resolveUncached ctx typename selection xs = do
+  vs <- getNamedResolverBy (NamedResolverRef typename xs) (resolverMap ctx) >>= traverse (processResult ctx typename selection)
   pure $ HM.fromList (zip xs vs)
 
 getNamedResolverBy ::
@@ -239,12 +243,12 @@ resolveObject ::
   ( MonadReader ResolverContext m,
     MonadError GQLError m
   ) =>
-  (LocalCache, ResolverMap m) ->
+  ResolverMapContext m ->
   ObjectTypeResolver m ->
   Maybe (SelectionSet VALID) ->
   m ValidValue
 resolveObject rmap drv sel = do
-  newCache <- objectRefs drv sel >>= buildCache rmap
+  newCache <- uncurry ResolverMapContext <$> (objectRefs drv sel >>= buildCache rmap)
   Object <$> maybe (pure empty) (traverseCollection (resolver newCache)) sel
   where
     resolver newCache currentSelection = do
@@ -259,7 +263,7 @@ runFieldResolver ::
     MonadReader ResolverContext m,
     MonadError GQLError m
   ) =>
-  (LocalCache, ResolverMap m) ->
+  ResolverMapContext m ->
   Selection VALID ->
   ObjectTypeResolver m ->
   m ValidValue
