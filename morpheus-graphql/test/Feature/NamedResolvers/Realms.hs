@@ -26,6 +26,7 @@ import Data.Morpheus.NamedResolvers
   ( NamedResolverT,
     ResolveNamed (..),
     resolve,
+    useBatched,
   )
 import Data.Morpheus.Types
   ( App,
@@ -39,7 +40,7 @@ import Data.Text (Text)
 
 importGQLDocument "test/Feature/NamedResolvers/realms.gql"
 
-getRealm :: (Monad m) => ID -> m (Maybe (Realm (NamedResolverT m)))
+getRealm :: (MonadError GQLError m) => ID -> m (Maybe (Realm (NamedResolverT m)))
 getRealm "olympus" =
   pure $
     Just
@@ -56,15 +57,17 @@ getRealm "dreams" =
         }
 getRealm _ = pure Nothing
 
-instance Monad m => ResolveNamed m (Realm (NamedResolverT m)) where
+instance MonadError GQLError m => ResolveNamed m (Realm (NamedResolverT m)) where
   type Dep (Realm (NamedResolverT m)) = ID
   resolveBatched = traverse getRealm
+  resolveNamed = useBatched
 
-instance Monad m => ResolveNamed m (Deity (NamedResolverT m)) where
+instance (MonadError GQLError m) => ResolveNamed m (Deity (NamedResolverT m)) where
   type Dep (Deity (NamedResolverT m)) = ID
   resolveBatched = traverse getDeity
+  resolveNamed = useBatched
 
-getDeity :: (Monad m, Applicative f) => ID -> f (Maybe (Deity (NamedResolverT m)))
+getDeity :: (MonadError GQLError m) => ID -> m (Maybe (Deity (NamedResolverT m)))
 getDeity "zeus" = pure $ Just Deity {realm = resolve (pure "olympus")}
 getDeity "morpheus" = pure $ Just Deity {realm = resolve (pure "dreams")}
 getDeity _ = pure Nothing

@@ -62,10 +62,10 @@ instance Monad m => ResolveNamed m Power where
   type Dep Power = ID
   resolveNamed = getPower
 
-instance Monad m => ResolveNamed m (Deity (NamedResolverT m)) where
+instance MonadError GQLError m => ResolveNamed m (Deity (NamedResolverT m)) where
   type Dep (Deity (NamedResolverT m)) = ID
   resolveBatched = traverse getDeity
-  namedResolver = useBatched
+  resolveNamed = useBatched
 
 instance MonadError GQLError m => ResolveNamed m (Query (NamedResolverT m)) where
   type Dep (Query (NamedResolverT m)) = ()

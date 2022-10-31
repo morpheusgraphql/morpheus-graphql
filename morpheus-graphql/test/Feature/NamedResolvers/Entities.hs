@@ -40,12 +40,12 @@ data Entity m
       GQLType
     )
 
-getEntity :: (Monad m, Applicative f) => ID -> f (Entity (NamedResolverT m))
+getEntity :: (MonadError GQLError m) => ID -> m (Entity (NamedResolverT m))
 getEntity "zeus" = pure $ EntityDeity (resolve $ pure "zeus")
 getEntity "morpheus" = pure $ EntityDeity (resolve $ pure "morpheus")
 getEntity x = pure $ EntityRealm (resolve $ pure x)
 
-instance Monad m => ResolveNamed m (Entity (NamedResolverT m)) where
+instance (MonadError GQLError m) => ResolveNamed m (Entity (NamedResolverT m)) where
   type Dep (Entity (NamedResolverT m)) = ID
   resolveNamed = getEntity
 
