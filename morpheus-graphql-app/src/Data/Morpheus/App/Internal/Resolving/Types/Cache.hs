@@ -16,7 +16,6 @@
 module Data.Morpheus.App.Internal.Resolving.Types.Cache
   ( Cache,
     CacheKey (..),
-    BatchEntry (..),
     LocalCache,
     useCached,
     buildCacheWith,

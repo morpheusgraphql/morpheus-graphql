@@ -30,8 +30,7 @@ import Data.Morpheus.App.Internal.Resolving.Types
     mkUnion,
   )
 import Data.Morpheus.App.Internal.Resolving.Types.Cache
-  ( BatchEntry (..),
-    CacheKey (..),
+  ( CacheKey (..),
     LocalCache,
     buildCacheWith,
     useCached,
