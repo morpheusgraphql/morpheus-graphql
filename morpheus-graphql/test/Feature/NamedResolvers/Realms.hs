@@ -36,28 +36,28 @@ import Data.Text (Text)
 
 importGQLDocument "test/Feature/NamedResolvers/realms.gql"
 
-instance Monad m => ResolveNamed m (Realm (NamedResolverT m)) where
-  type Dep (Realm (NamedResolverT m)) = ID
+getRealm "olympus" =
+  pure
+    Realm
+      { name = resolve (pure "Mount Olympus"),
+        owner = resolve (pure "zeus")
+      }
+getRealm "dreams" =
+  pure
+    Realm
+      { name = resolve (pure "Fictional world of dreams"),
+        owner = resolve (pure "morpheus")
+      }
+getRealm _ =
+  pure
+    Realm
+      { name = resolve (pure "Unknown"),
+        owner = resolve (pure "none")
+      }
+
+instance Monad m => ResolveNamed m (Maybe (Realm (NamedResolverT m))) where
+  type Dep (Maybe (Realm (NamedResolverT m))) = Maybe ID
   resolveNamed = traverse getRealm
-    where
-      getRealm "olympus" =
-        pure
-          Realm
-            { name = resolve (pure "Mount Olympus"),
-              owner = resolve (pure "zeus")
-            }
-      getRealm "dreams" =
-        pure
-          Realm
-            { name = resolve (pure "Fictional world of dreams"),
-              owner = resolve (pure "morpheus")
-            }
-      getRealm _ =
-        pure
-          Realm
-            { name = resolve (pure "Unknown"),
-              owner = resolve (pure "none")
-            }
 
 instance Monad m => ResolveNamed m (Deity (NamedResolverT m)) where
   type Dep (Deity (NamedResolverT m)) = ID
@@ -73,7 +73,7 @@ instance Monad m => ResolveNamed m (Query (NamedResolverT m)) where
   resolveNamed _ =
     pure
       [ Query
-          { realm = \(Arg arg) -> resolve (pure (Just arg)),
+          { realm = \(Arg arg) -> resolve (pure arg),
             realms = resolve (pure ["olympus", "dreams"])
           }
       ]

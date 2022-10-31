@@ -31,15 +31,6 @@ class (ToJSON (Dep a)) => ResolveNamed (m :: Type -> Type) (a :: Type) where
   type Dep a :: Type
   resolveNamed :: Monad m => [Dep a] -> m [a]
 
-instance (ResolveNamed m a) => ResolveNamed (m :: Type -> Type) (Maybe a) where
-  type Dep (Maybe a) = Maybe (Dep a)
-  resolveNamed = traverse resolveNamed
-
--- resolveNamed (Batched xs) = travesre resolveMaybe
-
--- resolveMaybe x = Just <$> resolveNamed x
--- resolveMaybe Nothing = pure Nothing
-
 instance (ResolveNamed m a) => ResolveNamed (m :: Type -> Type) [a] where
   type Dep [a] = [Dep a]
   resolveNamed = traverse resolveNamed
