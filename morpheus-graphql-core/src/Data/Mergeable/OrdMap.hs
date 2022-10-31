@@ -1,4 +1,6 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -40,7 +42,9 @@ data OrdMap k a = OrdMap
     ( Show,
       Eq,
       Functor,
-      Traversable
+      Traversable,
+      Generic,
+      Hashable
     )
 
 instance Empty (OrdMap k a) where

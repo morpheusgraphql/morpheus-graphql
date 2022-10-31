@@ -1,4 +1,6 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -109,7 +111,7 @@ data Fragment (stage :: Stage) = Fragment
     fragmentSelection :: SelectionSet stage,
     fragmentDirectives :: Directives stage
   }
-  deriving (Show, Eq, Lift)
+  deriving (Show, Eq, Lift, Generic, Hashable)
 
 -- ERRORs
 instance NameCollision GQLError (Fragment s) where
@@ -130,6 +132,11 @@ data SelectionContent (s :: Stage) where
       conditionalSelections :: UnionSelection VALID
     } ->
     SelectionContent VALID
+
+instance Hashable (SelectionContent s) where
+  hashWithSalt s SelectionField = hashWithSalt s (1 :: Int)
+  hashWithSalt s (SelectionSet x) = hashWithSalt s (2 :: Int, x)
+  hashWithSalt s (UnionSelection x xs) = hashWithSalt s (3 :: Int, x, xs)
 
 renderSelectionSet :: SelectionSet VALID -> Rendering
 renderSelectionSet = renderObject . toList
@@ -157,11 +164,11 @@ instance
   merge oldC currentC
     | oldC == currentC = pure oldC
     | otherwise = do
-        path <- ask
-        throwError
-          ( msg (intercalate "." $ fmap refName path)
-              `atPositions` fmap refPosition path
-          )
+      path <- ask
+      throwError
+        ( msg (intercalate "." $ fmap refName path)
+            `atPositions` fmap refPosition path
+        )
 
 withMaybe :: (Merge f a, Monad f) => Maybe a -> Maybe a -> f (Maybe a)
 withMaybe (Just x) (Just y) = Just <$> merge x y
@@ -179,7 +186,7 @@ data UnionTag = UnionTag
   { unionTagName :: TypeName,
     unionTagSelection :: SelectionSet VALID
   }
-  deriving (Show, Eq, Lift)
+  deriving (Show, Eq, Lift, Generic, Hashable)
 
 instance KeyOf TypeName UnionTag where
   keyOf = unionTagName
@@ -239,6 +246,20 @@ data Selection (s :: Stage) where
     Selection s
   InlineFragment :: Fragment RAW -> Selection RAW
   Spread :: Directives RAW -> Ref FragmentName -> Selection RAW
+
+instance Hashable (Selection s) where
+  hashWithSalt s (InlineFragment x) = hashWithSalt s (1 :: Int, x)
+  hashWithSalt s (Spread x y) = hashWithSalt s (2 :: Int, x, refName y)
+  hashWithSalt s Selection {..} =
+    hashWithSalt
+      s
+      ( 3 :: Int,
+        selectionAlias,
+        selectionName,
+        selectionArguments,
+        selectionDirectives,
+        selectionContent
+      )
 
 instance RenderGQL (Selection VALID) where
   renderGQL
@@ -305,9 +326,9 @@ mergeSelection
       mergeArguments
         | selectionArguments old == selectionArguments current = pure $ selectionArguments current
         | otherwise =
-            mergeConflict $
-              ("they have differing arguments. " <> useDifferentAliases)
-                `atPositions` [pos1, pos2]
+          mergeConflict $
+            ("they have differing arguments. " <> useDifferentAliases)
+              `atPositions` [pos1, pos2]
 mergeSelection x y = mergeConflict ("INTERNAL: can't merge. " <> msgValue x <> msgValue y <> useDifferentAliases)
 
 msgValue :: Show a => a -> GQLError
@@ -326,14 +347,14 @@ mergeName ::
 mergeName pos old current
   | selectionName old == selectionName current = pure $ selectionName current
   | otherwise =
-      mergeConflict $
-        ( msg (selectionName old)
-            <> " and "
-            <> msg (selectionName current)
-            <> " are different fields. "
-            <> useDifferentAliases
-        )
-          `atPositions` pos
+    mergeConflict $
+      ( msg (selectionName old)
+          <> " and "
+          <> msg (selectionName current)
+          <> " are different fields. "
+          <> useDifferentAliases
+      )
+        `atPositions` pos
 
 deriving instance Show (Selection a)
 
