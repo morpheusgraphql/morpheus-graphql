@@ -64,6 +64,8 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Relude hiding (empty)
 
+type ResolverMapContext m = (LocalCache, ResolverMap m)
+
 scanRefs :: (MonadError GQLError m, MonadReader ResolverContext m) => SelectionContent VALID -> ResolverValue m -> m [(SelectionContent VALID, NamedResolverRef)]
 scanRefs sel (ResList xs) = concat <$> traverse (scanRefs sel) xs
 scanRefs sel (ResLazy x) = x >>= scanRefs sel
@@ -102,7 +104,7 @@ resolveSelection ::
     MonadReader ResolverContext m,
     MonadError GQLError m
   ) =>
-  (LocalCache, ResolverMap m) ->
+  ResolverMapContext m ->
   ResolverValue m ->
   SelectionContent VALID ->
   m ValidValue
@@ -110,13 +112,13 @@ resolveSelection rmap res selection = do
   newRmap <- scanRefs selection res >>= buildCache rmap . buildBatches
   __resolveSelection newRmap res selection
 
-buildCache :: (MonadError GQLError m, MonadReader ResolverContext m) => (LocalCache, ResolverMap m) -> [BatchEntry] -> m (LocalCache, ResolverMap m)
+buildCache :: (MonadError GQLError m, MonadReader ResolverContext m) => ResolverMapContext m -> [BatchEntry] -> m (LocalCache, ResolverMap m)
 buildCache (cache, rmap) entries = do
   caches <- traverse (resolveCacheEntry (cache, rmap)) entries
   let newCache = foldr (<>) cache caches
   pure $ dumpCache False (newCache, rmap)
 
-resolveCacheEntry :: (MonadError GQLError m, MonadReader ResolverContext m) => (LocalCache, ResolverMap m) -> BatchEntry -> m LocalCache
+resolveCacheEntry :: (MonadError GQLError m, MonadReader ResolverContext m) => ResolverMapContext m -> BatchEntry -> m LocalCache
 resolveCacheEntry rmap (BatchEntry sel name deps) = do
   res <- resolveRefsCached rmap (NamedResolverRef name deps) sel
   let keys = map (CacheKey sel name) deps
@@ -128,7 +130,7 @@ __resolveSelection ::
     MonadReader ResolverContext m,
     MonadError GQLError m
   ) =>
-  (LocalCache, ResolverMap m) ->
+  ResolverMapContext m ->
   ResolverValue m ->
   SelectionContent VALID ->
   m ValidValue
@@ -193,7 +195,7 @@ resolveRefsCached ::
   ( MonadError GQLError m,
     MonadReader ResolverContext m
   ) =>
-  (LocalCache, ResolverMap m) ->
+  ResolverMapContext m ->
   NamedResolverRef ->
   SelectionContent VALID ->
   m [ValidValue]
@@ -210,7 +212,7 @@ resolveRefsCached (cache, rmap) (NamedResolverRef name args) selection = do
 
 processResult ::
   (MonadError GQLError m, MonadReader ResolverContext m) =>
-  (LocalCache, ResolverMap m) ->
+  ResolverMapContext m ->
   TypeName ->
   SelectionContent VALID ->
   NamedResolverResult m ->
