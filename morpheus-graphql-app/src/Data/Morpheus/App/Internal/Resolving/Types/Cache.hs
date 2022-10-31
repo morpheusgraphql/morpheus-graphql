@@ -19,14 +19,14 @@ module Data.Morpheus.App.Internal.Resolving.Types.Cache
     CacheKey (..),
     BatchEntry (..),
     LocalCache,
-    dumpCache,
     useCached,
+    updateCache,
   )
 where
 
 import Control.Monad.Except (MonadError (throwError))
 import Data.ByteString.Lazy.Char8 (unpack)
-import Data.HashMap.Lazy qualified as HM
+import qualified Data.HashMap.Lazy as HM
 import Data.Morpheus.App.Internal.Resolving.Types (NamedResolverRef (..), NamedResolverResult)
 import Data.Morpheus.Core (RenderGQL, render)
 import Data.Morpheus.Types.Internal.AST
@@ -99,3 +99,18 @@ selectByEntity inputs (tSel, tName) = case filter areEq inputs of
   xs -> Just $ BatchEntry tSel tName (uniq $ concatMap (resolverArgument . snd) xs)
   where
     areEq (sel, v) = sel == tSel && tName == resolverTypeName v
+
+type ResolverFun m = NamedResolverRef -> SelectionContent VALID -> m [ValidValue]
+
+resolveBatched :: Monad m => ResolverFun m -> BatchEntry -> m LocalCache
+resolveBatched f (BatchEntry sel name deps) = do
+  res <- f (NamedResolverRef name deps) sel
+  let keys = map (CacheKey sel name) deps
+  let entries = zip keys res
+  pure $ HM.fromList entries
+
+updateCache :: (Monad m, Traversable t) => ResolverFun m -> LocalCache -> t BatchEntry -> m LocalCache
+updateCache f cache entries = do
+  caches <- traverse (resolveBatched f) entries
+  let newCache = foldr (<>) cache caches
+  pure $ dumpCache False newCache newCache

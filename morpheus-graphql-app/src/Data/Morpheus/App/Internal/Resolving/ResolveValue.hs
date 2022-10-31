@@ -13,7 +13,7 @@ module Data.Morpheus.App.Internal.Resolving.ResolveValue
 where
 
 import Control.Monad.Except (MonadError (throwError))
-import Data.HashMap.Lazy qualified as HM
+import qualified Data.HashMap.Lazy as HM
 import Data.Morpheus.App.Internal.Resolving.ResolverState
   ( ResolverContext (..),
     askFieldTypeName,
@@ -34,7 +34,7 @@ import Data.Morpheus.App.Internal.Resolving.Types.Cache
     CacheKey (..),
     LocalCache,
     buildBatches,
-    dumpCache,
+    updateCache,
     useCached,
   )
 import Data.Morpheus.Error (subfieldsNotSelected)
@@ -95,11 +95,11 @@ fieldRefs ::
 fieldRefs ObjectTypeResolver {..} currentSelection@Selection {..}
   | selectionName == "__typename" = pure []
   | otherwise = do
-      t <- askFieldTypeName selectionName
-      updateCurrentType t $
-        local (\ctx -> ctx {currentSelection}) $ do
-          x <- maybe (pure []) (fmap pure) (HM.lookup selectionName objectFields)
-          concat <$> traverse (scanRefs selectionContent) x
+    t <- askFieldTypeName selectionName
+    updateCurrentType t $
+      local (\ctx -> ctx {currentSelection}) $ do
+        x <- maybe (pure []) (fmap pure) (HM.lookup selectionName objectFields)
+        concat <$> traverse (scanRefs selectionContent) x
 
 resolveSelection ::
   ( Monad m,
@@ -115,17 +115,7 @@ resolveSelection rmap res selection = do
   __resolveSelection newRmap res selection
 
 buildCache :: (MonadError GQLError m, MonadReader ResolverContext m) => ResolverMapContext m -> [BatchEntry] -> m (LocalCache, ResolverMap m)
-buildCache (cache, rmap) entries = do
-  caches <- traverse (resolveCacheEntry (cache, rmap)) entries
-  let newCache = foldr (<>) cache caches
-  pure $ dumpCache False newCache (newCache, rmap)
-
-resolveCacheEntry :: (MonadError GQLError m, MonadReader ResolverContext m) => ResolverMapContext m -> BatchEntry -> m LocalCache
-resolveCacheEntry rmap (BatchEntry sel name deps) = do
-  res <- resolveRefsCached rmap (NamedResolverRef name deps) sel
-  let keys = map (CacheKey sel name) deps
-  let entries = zip keys res
-  pure $ HM.fromList entries
+buildCache (cache, rmap) entries = (,rmap) <$> updateCache (resolveRefsCached (cache, rmap)) cache entries
 
 __resolveSelection ::
   ( Monad m,
@@ -277,8 +267,8 @@ runFieldResolver ::
   m ValidValue
 runFieldResolver rmap Selection {selectionName, selectionContent}
   | selectionName == "__typename" =
-      const (Scalar . String . unpackName <$> asks (typeName . currentType))
+    const (Scalar . String . unpackName <$> asks (typeName . currentType))
   | otherwise =
-      maybe (pure Null) (>>= \x -> resolveSelection rmap x selectionContent)
-        . HM.lookup selectionName
-        . objectFields
+    maybe (pure Null) (>>= \x -> resolveSelection rmap x selectionContent)
+      . HM.lookup selectionName
+      . objectFields
