@@ -1,6 +1,6 @@
 bounds:
-  - 0.24.0
   - 0.25.0
+  - 0.26.0
 examples:
   - client
   - code-gen
@@ -156,4 +156,4 @@ rules:
   yaml:
     - 0.8.32
     - 1.0.0
-version: 0.24.3
+version: 0.25.0
