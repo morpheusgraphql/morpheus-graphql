@@ -23,7 +23,6 @@ module Data.Morpheus.Server.Resolvers
     ResolverQ,
     ResolverM,
     ResolverS,
-    Batched (..),
   )
 where
 
