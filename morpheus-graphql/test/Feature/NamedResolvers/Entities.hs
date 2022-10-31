@@ -25,7 +25,6 @@ import Data.Morpheus.Types
     GQLError,
     GQLType (..),
     ID,
-    MonadError,
     NamedResolvers (..),
     Undefined,
   )
@@ -59,9 +58,6 @@ data Query m = Query
     ( Generic,
       GQLType
     )
-
-batched :: (Traversable t, Applicative f) => (a1 -> f a2) -> t a1 -> f (t (Maybe a2))
-batched f = traverse (fmap Just . f)
 
 instance MonadError GQLError m => ResolveNamed m (Query (NamedResolverT m)) where
   type Dep (Query (NamedResolverT m)) = ()
