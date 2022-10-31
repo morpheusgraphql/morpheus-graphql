@@ -59,6 +59,7 @@ data Query m = Query
       GQLType
     )
 
+batched :: (Traversable t, Applicative f) => (a1 -> f a2) -> t a1 -> f (t (Maybe a2))
 batched f = traverse (fmap Just . f)
 
 instance MonadError GQLError m => ResolveNamed m (Query (NamedResolverT m)) where

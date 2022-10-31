@@ -1,12 +1,13 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE NoImplicitPrelude,FlexibleContexts #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Feature.NamedResolvers.Deities
   ( deitiesApp,
@@ -39,26 +40,24 @@ getPower :: (Eq a, IsString a, Applicative f) => a -> f Power
 getPower "sp" = pure Shapeshifting
 getPower _ = pure Thunderbolt
 
-getDeity :: (Eq a, Monad m, Applicative f, IsString a) => a -> f (Deity (NamedResolverT m))
+getDeity :: (Eq a, Monad m, Applicative f, IsString a) => a -> f (Maybe (Deity (NamedResolverT m)))
 getDeity "zeus" =
-  pure
-    Deity
-      { name = resolve (pure "Zeus"),
-        power = resolve (pure ["tb"])
-      }
+  pure $
+    Just
+      Deity
+        { name = resolve (pure "Zeus"),
+          power = resolve (pure ["tb"])
+        }
 getDeity "morpheus" =
-  pure
-    Deity
-      { name = resolve (pure "Morpheus"),
-        power = resolve (pure ["sp"])
-      }
-getDeity _ =
-  pure
-    Deity
-      { name = resolve (pure "Unknown"),
-        power = resolve (pure [])
-      }
+  pure $
+    Just
+      Deity
+        { name = resolve (pure "Morpheus"),
+          power = resolve (pure ["sp"])
+        }
+getDeity _ = pure Nothing
 
+batched :: (Traversable t, Applicative f) => (a1 -> f a2) -> t a1 -> f (t (Maybe a2))
 batched f = traverse (fmap Just . f)
 
 instance Monad m => ResolveNamed m Power where
@@ -67,7 +66,7 @@ instance Monad m => ResolveNamed m Power where
 
 instance Monad m => ResolveNamed m (Deity (NamedResolverT m)) where
   type Dep (Deity (NamedResolverT m)) = ID
-  resolveNamed = batched getDeity
+  resolveNamed = traverse getDeity
 
 instance MonadError GQLError m => ResolveNamed m (Query (NamedResolverT m)) where
   type Dep (Query (NamedResolverT m)) = ()

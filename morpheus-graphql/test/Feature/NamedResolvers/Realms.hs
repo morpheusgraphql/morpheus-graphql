@@ -1,11 +1,12 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies ,FlexibleContexts#-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Feature.NamedResolvers.Realms
   ( realmsApp,
@@ -29,40 +30,38 @@ import Data.Morpheus.NamedResolvers
 import Data.Morpheus.Types
   ( App,
     Arg (..),
-    ID,
     GQLError,
+    ID,
     NamedResolvers (..),
     Undefined,
   )
 import Data.Text (Text)
-import Control.Monad.Except
 
 importGQLDocument "test/Feature/NamedResolvers/realms.gql"
 
+getRealm :: (Monad m) => ID -> m (Maybe (Realm (NamedResolverT m)))
 getRealm "olympus" =
-  pure
-    Realm
-      { name = resolve (pure "Mount Olympus"),
-        owner = resolve (pure "zeus")
-      }
+  pure $
+    Just
+      Realm
+        { name = resolve (pure "Mount Olympus"),
+          owner = resolve (pure "zeus")
+        }
 getRealm "dreams" =
-  pure
-    Realm
-      { name = resolve (pure "Fictional world of dreams"),
-        owner = resolve (pure "morpheus")
-      }
-getRealm _ =
-  pure
-    Realm
-      { name = resolve (pure "Unknown"),
-        owner = resolve (pure "none")
-      }
+  pure $
+    Just
+      Realm
+        { name = resolve (pure "Fictional world of dreams"),
+          owner = resolve (pure "morpheus")
+        }
+getRealm _ = pure Nothing
 
+batched :: (Traversable t, Applicative f) => (a1 -> f a2) -> t a1 -> f (t (Maybe a2))
 batched f = traverse (fmap Just . f)
 
 instance Monad m => ResolveNamed m (Realm (NamedResolverT m)) where
   type Dep (Realm (NamedResolverT m)) = ID
-  resolveNamed = batched getRealm
+  resolveNamed = traverse getRealm
 
 instance Monad m => ResolveNamed m (Deity (NamedResolverT m)) where
   type Dep (Deity (NamedResolverT m)) = ID
