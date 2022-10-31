@@ -34,9 +34,11 @@ import Relude hiding (Undefined)
 
 importGQLDocument "test/Feature/NamedResolvers/deities.gql"
 
+getPower :: (Eq a, IsString a, Applicative f) => a -> f Power
 getPower "sp" = pure Shapeshifting
 getPower _ = pure Thunderbolt
 
+getDeity :: (Eq a, Monad m, Applicative f, IsString a) => a -> f (Deity (NamedResolverT m))
 getDeity "zeus" =
   pure
     Deity
