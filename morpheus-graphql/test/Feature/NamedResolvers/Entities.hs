@@ -25,6 +25,7 @@ import Data.Morpheus.Types
     GQLError,
     GQLType (..),
     ID,
+    MonadError,
     NamedResolvers (..),
     Undefined,
   )
@@ -47,7 +48,7 @@ getEntity x = pure $ EntityRealm (resolve $ pure x)
 
 instance Monad m => ResolveNamed m (Entity (NamedResolverT m)) where
   type Dep (Entity (NamedResolverT m)) = ID
-  resolveNamed = batched getEntity
+  resolveNamed = getEntity
 
 -- QUERY
 data Query m = Query
@@ -66,12 +67,10 @@ instance MonadError GQLError m => ResolveNamed m (Query (NamedResolverT m)) wher
   type Dep (Query (NamedResolverT m)) = ()
   resolveNamed _ =
     pure
-      [ Just $
-          Query
-            { entities = resolve (pure ["zeus", "morpheus", "olympus", "dreams"]),
-              entity = \(Arg uid) -> resolve (pure (Just uid))
-            }
-      ]
+      Query
+        { entities = resolve (pure ["zeus", "morpheus", "olympus", "dreams"]),
+          entity = \(Arg uid) -> resolve (pure (Just uid))
+        }
 
 entitiesApp :: App () IO
 entitiesApp =

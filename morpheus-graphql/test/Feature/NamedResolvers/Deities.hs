@@ -57,27 +57,22 @@ getDeity "morpheus" =
         }
 getDeity _ = pure Nothing
 
-batched :: (Traversable t, Applicative f) => (a1 -> f a2) -> t a1 -> f (t (Maybe a2))
-batched f = traverse (fmap Just . f)
-
 instance Monad m => ResolveNamed m Power where
   type Dep Power = ID
-  resolveNamed = batched getPower
+  resolveNamed = getPower
 
 instance Monad m => ResolveNamed m (Deity (NamedResolverT m)) where
   type Dep (Deity (NamedResolverT m)) = ID
-  resolveNamed = traverse getDeity
+  resolveBatched = traverse getDeity
 
 instance MonadError GQLError m => ResolveNamed m (Query (NamedResolverT m)) where
   type Dep (Query (NamedResolverT m)) = ()
   resolveNamed _ =
     pure
-      [ Just $
-          Query
-            { deity = \(Arg uid) -> resolve (pure (Just uid)),
-              deities = resolve (pure ["zeus", "morpheus"])
-            }
-      ]
+      Query
+        { deity = \(Arg uid) -> resolve (pure (Just uid)),
+          deities = resolve (pure ["zeus", "morpheus"])
+        }
 
 deitiesApp :: App () IO
 deitiesApp = deriveApp (NamedResolvers :: NamedResolvers IO () Query Undefined Undefined)

@@ -58,11 +58,11 @@ getRealm _ = pure Nothing
 
 instance Monad m => ResolveNamed m (Realm (NamedResolverT m)) where
   type Dep (Realm (NamedResolverT m)) = ID
-  resolveNamed = traverse getRealm
+  resolveBatched = traverse getRealm
 
 instance Monad m => ResolveNamed m (Deity (NamedResolverT m)) where
   type Dep (Deity (NamedResolverT m)) = ID
-  resolveNamed = traverse getDeity
+  resolveBatched = traverse getDeity
 
 getDeity :: (Monad m, Applicative f) => ID -> f (Maybe (Deity (NamedResolverT m)))
 getDeity "zeus" = pure $ Just Deity {realm = resolve (pure "olympus")}
@@ -73,12 +73,10 @@ instance MonadError GQLError m => ResolveNamed m (Query (NamedResolverT m)) wher
   type Dep (Query (NamedResolverT m)) = ()
   resolveNamed _ =
     pure
-      [ Just $
-          Query
-            { realm = \(Arg arg) -> resolve (pure (Just arg)),
-              realms = resolve (pure ["olympus", "dreams"])
-            }
-      ]
+      Query
+        { realm = \(Arg arg) -> resolve (pure (Just arg)),
+          realms = resolve (pure ["olympus", "dreams"])
+        }
 
 realmsApp :: App () IO
 realmsApp =

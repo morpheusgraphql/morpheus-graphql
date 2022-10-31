@@ -23,15 +23,17 @@ import Relude
 
 instance (Monad m) => ResolveNamed m ID where
   type Dep ID = ID
-  resolveNamed = pure . map pure
+  resolveNamed = pure
 
 instance Monad m => ResolveNamed m Text where
   type Dep Text = Text
-  resolveNamed = pure . map pure
+  resolveNamed = pure
 
 class (ToJSON (Dep a)) => ResolveNamed (m :: Type -> Type) (a :: Type) where
   type Dep a :: Type
-  resolveNamed :: Monad m => [Dep a] -> m [Maybe a]
+  resolveBatched :: Monad m => [Dep a] -> m [Maybe a]
+  resolveBatched = traverse (fmap Just . resolveNamed)
+  resolveNamed :: Monad m => Dep a -> m a
 
 instance (ResolveNamed m a, MonadError GQLError m) => ResolveNamed (m :: Type -> Type) [a] where
   type Dep [a] = [Dep a]
