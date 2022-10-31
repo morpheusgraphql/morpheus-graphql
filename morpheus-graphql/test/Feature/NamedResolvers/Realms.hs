@@ -64,21 +64,9 @@ instance Monad m => ResolveNamed m (Deity (NamedResolverT m)) where
   resolveNamed = traverse getDeity
 
 getDeity :: (Monad m, Applicative f) => ID -> f (Deity (NamedResolverT m))
-getDeity "zeus" =
-  pure
-    Deity
-      { realm = resolve (pure "olympus")
-      }
-getDeity "morpheus" =
-  pure
-    Deity
-      { realm = resolve (pure "dreams")
-      }
-getDeity x =
-  pure
-    Deity
-      { realm = resolve (pure x)
-      }
+getDeity "zeus" = pure Deity {realm = resolve (pure "olympus")}
+getDeity "morpheus" = pure Deity {realm = resolve (pure "dreams")}
+getDeity x = pure Deity {realm = resolve (pure x)}
 
 instance Monad m => ResolveNamed m (Query (NamedResolverT m)) where
   type Dep (Query (NamedResolverT m)) = ()

@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -32,6 +33,7 @@ class (ToJSON (Dep a)) => ResolveNamed (m :: Type -> Type) (a :: Type) where
 
 instance (ResolveNamed m a) => ResolveNamed (m :: Type -> Type) (Maybe a) where
   type Dep (Maybe a) = Maybe (Dep a)
+  resolveNamed = traverse resolveNamed
 
 -- resolveNamed (Batched xs) = travesre resolveMaybe
 
@@ -40,8 +42,7 @@ instance (ResolveNamed m a) => ResolveNamed (m :: Type -> Type) (Maybe a) where
 
 instance (ResolveNamed m a) => ResolveNamed (m :: Type -> Type) [a] where
   type Dep [a] = [Dep a]
-
--- resolveNamed = traverse resolveNamed
+  resolveNamed = traverse resolveNamed
 
 data NamedResolverT (m :: Type -> Type) a where
   Ref :: ResolveNamed m a => m (Dep a) -> NamedResolverT m a
