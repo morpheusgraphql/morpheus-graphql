@@ -45,7 +45,6 @@ where
 
 import Control.Monad.Except (MonadError (throwError))
 import Data.ByteString.Lazy.Char8 (unpack)
-import qualified Data.HashMap.Internal.Strict as Hm
 import qualified Data.HashMap.Lazy as HM
 import Data.Morpheus.Core (RenderGQL, render)
 import Data.Morpheus.Internal.Ext (Merge (..))
@@ -137,7 +136,7 @@ data NamedResolverRef = NamedResolverRef
   deriving (Show)
 
 uniq :: (Eq a, Hashable a) => [a] -> [a]
-uniq = Hm.keys . HM.fromList . map (,True)
+uniq = HM.keys . HM.fromList . map (,True)
 
 buildBatches :: [(SelectionContent VALID, NamedResolverRef)] -> [BatchEntry]
 buildBatches inputs =
