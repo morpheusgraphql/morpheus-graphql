@@ -35,6 +35,10 @@ instance (ResolveNamed m a) => ResolveNamed (m :: Type -> Type) [a] where
   type Dep [a] = [Dep a]
   resolveNamed = traverse resolveNamed
 
+instance (ResolveNamed m a) => ResolveNamed (m :: Type -> Type) (Maybe a) where
+  type Dep (Maybe a) = Maybe (Dep a)
+  resolveNamed = undefined
+
 data NamedResolverT (m :: Type -> Type) a where
   Ref :: ResolveNamed m a => m (Dep a) -> NamedResolverT m a
   Refs :: ResolveNamed m a => m [Dep a] -> NamedResolverT m [a]

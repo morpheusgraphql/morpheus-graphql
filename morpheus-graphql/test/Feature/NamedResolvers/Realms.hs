@@ -55,8 +55,8 @@ getRealm _ =
         owner = resolve (pure "none")
       }
 
-instance Monad m => ResolveNamed m (Maybe (Realm (NamedResolverT m))) where
-  type Dep (Maybe (Realm (NamedResolverT m))) = Maybe ID
+instance Monad m => ResolveNamed m (Realm (NamedResolverT m)) where
+  type Dep (Realm (NamedResolverT m)) = ID
   resolveNamed = traverse getRealm
 
 instance Monad m => ResolveNamed m (Deity (NamedResolverT m)) where
@@ -73,7 +73,7 @@ instance Monad m => ResolveNamed m (Query (NamedResolverT m)) where
   resolveNamed _ =
     pure
       [ Query
-          { realm = \(Arg arg) -> resolve (pure arg),
+          { realm = \(Arg arg) -> resolve (pure (Just arg)),
             realms = resolve (pure ["olympus", "dreams"])
           }
       ]
