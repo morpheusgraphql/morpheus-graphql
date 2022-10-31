@@ -13,7 +13,8 @@ where
 
 import Data.Morpheus (deriveApp)
 import Data.Morpheus.NamedResolvers
-  ( NamedResolverT,
+  ( Batched (..),
+    NamedResolverT,
     ResolveNamed (..),
     resolve,
   )
@@ -37,11 +38,13 @@ data Entity m
       GQLType
     )
 
+getEntity "zeus" = pure $ EntityDeity (resolve $ pure "zeus")
+getEntity "morpheus" = pure $ EntityDeity (resolve $ pure "morpheus")
+getEntity x = pure $ EntityRealm (resolve $ pure x)
+
 instance Monad m => ResolveNamed m (Entity (NamedResolverT m)) where
   type Dep (Entity (NamedResolverT m)) = ID
-  resolveNamed "zeus" = pure $ EntityDeity (resolve $ pure "zeus")
-  resolveNamed "morpheus" = pure $ EntityDeity (resolve $ pure "morpheus")
-  resolveNamed x = pure $ EntityRealm (resolve $ pure x)
+  resolveNamed = fmap Batched . traverse getEntity . runBatched
 
 -- QUERY
 data Query m = Query
@@ -55,20 +58,22 @@ data Query m = Query
 
 instance Monad m => ResolveNamed m (Query (NamedResolverT m)) where
   type Dep (Query (NamedResolverT m)) = ()
-  resolveNamed () =
-    pure
-      Query
-        { entities =
-            resolve
-              ( pure
-                  [ "zeus",
-                    "morpheus",
-                    "olympus",
-                    "dreams"
-                  ]
-              ),
-          entity = \(Arg uid) -> resolve (pure (Just uid))
-        }
+  resolveNamed _ =
+    pure $
+      Batched
+        [ Query
+            { entities =
+                resolve
+                  ( pure
+                      [ "zeus",
+                        "morpheus",
+                        "olympus",
+                        "dreams"
+                      ]
+                  ),
+              entity = \(Arg uid) -> resolve (pure (Just uid))
+            }
+        ]
 
 entitiesApp :: App () IO
 entitiesApp =

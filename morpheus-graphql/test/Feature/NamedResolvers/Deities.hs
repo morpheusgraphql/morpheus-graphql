@@ -18,7 +18,8 @@ import Data.Morpheus.Document
   ( importGQLDocument,
   )
 import Data.Morpheus.NamedResolvers
-  ( NamedResolverT,
+  ( Batched (..),
+    NamedResolverT,
     ResolveNamed (..),
     resolve,
   )
@@ -33,40 +34,46 @@ import Relude hiding (Undefined)
 
 importGQLDocument "test/Feature/NamedResolvers/deities.gql"
 
+getPower "sp" = pure Shapeshifting
+getPower _ = pure Thunderbolt
+
+getDeity "zeus" =
+  pure
+    Deity
+      { name = resolve (pure "Zeus"),
+        power = resolve (pure ["tb"])
+      }
+getDeity "morpheus" =
+  pure
+    Deity
+      { name = resolve (pure "Morpheus"),
+        power = resolve (pure ["sp"])
+      }
+getDeity _ =
+  pure
+    Deity
+      { name = resolve (pure "Unknown"),
+        power = resolve (pure [])
+      }
+
 instance Monad m => ResolveNamed m Power where
   type Dep Power = ID
-  resolveNamed "sp" = pure Shapeshifting
-  resolveNamed _ = pure Thunderbolt
+  resolveNamed = fmap Batched . traverse getPower . runBatched
 
 instance Monad m => ResolveNamed m (Deity (NamedResolverT m)) where
   type Dep (Deity (NamedResolverT m)) = ID
-  resolveNamed "zeus" =
-    pure
-      Deity
-        { name = resolve (pure "Zeus"),
-          power = resolve (pure ["tb"])
-        }
-  resolveNamed "morpheus" =
-    pure
-      Deity
-        { name = resolve (pure "Morpheus"),
-          power = resolve (pure ["sp"])
-        }
-  resolveNamed _ =
-    pure
-      Deity
-        { name = resolve (pure "Unknown"),
-          power = resolve (pure [])
-        }
+  resolveNamed = fmap Batched . traverse (getDeity) . runBatched
 
 instance Monad m => ResolveNamed m (Query (NamedResolverT m)) where
   type Dep (Query (NamedResolverT m)) = ()
-  resolveNamed () =
-    pure
-      Query
-        { deity = \(Arg uid) -> resolve (pure (Just uid)),
-          deities = resolve (pure ["zeus", "morpheus"])
-        }
+  resolveNamed _ =
+    pure $
+      Batched
+        [ Query
+            { deity = \(Arg uid) -> resolve (pure (Just uid)),
+              deities = resolve (pure ["zeus", "morpheus"])
+            }
+        ]
 
 deitiesApp :: App () IO
 deitiesApp =

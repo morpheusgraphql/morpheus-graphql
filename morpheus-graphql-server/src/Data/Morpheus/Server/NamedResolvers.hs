@@ -11,12 +11,15 @@ module Data.Morpheus.Server.NamedResolvers
   ( ResolveNamed (..),
     NamedResolverT (..),
     resolve,
+    Batched (..),
   )
 where
 
 import Data.Aeson (ToJSON)
 import Data.Morpheus.Types.ID (ID)
 import Relude
+
+newtype Batched a = Batched {runBatched :: [a]}
 
 instance Monad m => ResolveNamed m ID where
   type Dep ID = ID
@@ -28,16 +31,18 @@ instance Monad m => ResolveNamed m Text where
 
 class (ToJSON (Dep a)) => ResolveNamed (m :: Type -> Type) a where
   type Dep a :: Type
-  resolveNamed :: Monad m => Dep a -> m a
+  resolveNamed :: Monad m => Batched (Dep a) -> m (Batched a)
 
 instance (ResolveNamed m a) => ResolveNamed (m :: Type -> Type) (Maybe a) where
   type Dep (Maybe a) = Maybe (Dep a)
-  resolveNamed (Just x) = Just <$> resolveNamed x
-  resolveNamed Nothing = pure Nothing
+
+-- resolveNamed (Just x) = Just <$> resolveNamed x
+-- resolveNamed Nothing = pure Nothing
 
 instance (ResolveNamed m a) => ResolveNamed (m :: Type -> Type) [a] where
   type Dep [a] = [Dep a]
-  resolveNamed = traverse resolveNamed
+
+-- resolveNamed = traverse resolveNamed
 
 data NamedResolverT (m :: Type -> Type) a where
   Ref :: ResolveNamed m a => m (Dep a) -> NamedResolverT m a

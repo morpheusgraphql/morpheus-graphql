@@ -21,7 +21,8 @@ import Data.Morpheus.Document
   ( importGQLDocument,
   )
 import Data.Morpheus.NamedResolvers
-  ( NamedResolverT,
+  ( Batched (..),
+    NamedResolverT,
     ResolveNamed (..),
     resolve,
   )
@@ -38,51 +39,57 @@ importGQLDocument "test/Feature/NamedResolvers/realms.gql"
 
 instance Monad m => ResolveNamed m (Realm (NamedResolverT m)) where
   type Dep (Realm (NamedResolverT m)) = ID
-  resolveNamed "olympus" =
-    pure
-      Realm
-        { name = resolve (pure "Mount Olympus"),
-          owner = resolve (pure "zeus")
-        }
-  resolveNamed "dreams" =
-    pure
-      Realm
-        { name = resolve (pure "Fictional world of dreams"),
-          owner = resolve (pure "morpheus")
-        }
-  resolveNamed _ =
-    pure
-      Realm
-        { name = resolve (pure "Unknown"),
-          owner = resolve (pure "none")
-        }
+  resolveNamed = fmap Batched . traverse (getRealm) . runBatched
+    where
+      getRealm "olympus" =
+        pure
+          Realm
+            { name = resolve (pure "Mount Olympus"),
+              owner = resolve (pure "zeus")
+            }
+      getRealm "dreams" =
+        pure
+          Realm
+            { name = resolve (pure "Fictional world of dreams"),
+              owner = resolve (pure "morpheus")
+            }
+      getRealm _ =
+        pure
+          Realm
+            { name = resolve (pure "Unknown"),
+              owner = resolve (pure "none")
+            }
 
 instance Monad m => ResolveNamed m (Deity (NamedResolverT m)) where
   type Dep (Deity (NamedResolverT m)) = ID
-  resolveNamed "zeus" =
-    pure
-      Deity
-        { realm = resolve (pure "olympus")
-        }
-  resolveNamed "morpheus" =
-    pure
-      Deity
-        { realm = resolve (pure "dreams")
-        }
-  resolveNamed x =
-    pure
-      Deity
-        { realm = resolve (pure x)
-        }
+  resolveNamed = fmap Batched . traverse getDeity . runBatched
+
+getDeity "zeus" =
+  pure
+    Deity
+      { realm = resolve (pure "olympus")
+      }
+getDeity "morpheus" =
+  pure
+    Deity
+      { realm = resolve (pure "dreams")
+      }
+getDeity x =
+  pure
+    Deity
+      { realm = resolve (pure x)
+      }
 
 instance Monad m => ResolveNamed m (Query (NamedResolverT m)) where
   type Dep (Query (NamedResolverT m)) = ()
-  resolveNamed () =
-    pure
-      Query
-        { realm = \(Arg arg) -> resolve (pure (Just arg)),
-          realms = resolve (pure ["olympus", "dreams"])
-        }
+  resolveNamed _ =
+    pure $
+      Batched
+        [ Query
+            { realm = \(Arg arg) -> resolve (pure (Just arg)),
+              realms = resolve (pure ["olympus", "dreams"])
+            }
+        ]
 
 realmsApp :: App () IO
 realmsApp =

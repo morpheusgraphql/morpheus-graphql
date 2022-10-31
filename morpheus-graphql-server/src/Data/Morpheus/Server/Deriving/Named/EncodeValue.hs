@@ -93,8 +93,8 @@ import GHC.Generics
   )
 import Relude
 
-encodeResolverValue :: (MonadError GQLError m, FieldConstraint m a) => a -> m (NamedResolverResult m)
-encodeResolverValue x = convertNamedNode (Identity x) (getFieldValues x)
+encodeResolverValue :: (MonadError GQLError m, FieldConstraint m a) => [a] -> m [NamedResolverResult m]
+encodeResolverValue x = traverse (convertNamedNode (Identity x) . getFieldValues) x
 
 type FieldConstraint m a =
   ( GQLType a,
@@ -137,9 +137,12 @@ instance
       name :: TypeName
       name = getTypeName (Proxy @a)
       encodeRef :: Monad m => NamedResolverT m a -> m (ResolverValue m)
-      encodeRef (Ref x) = pure $ ResRef (NamedResolverRef name . replaceValue . toJSON <$> x)
+      encodeRef (Ref x) = pure $ ResRef $ packRef name <$> x
       encodeRef (Value value) = value >>= encodeField
-      encodeRef (Refs refs) = mkList . map (ResRef . pure . NamedResolverRef name . replaceValue . toJSON) <$> refs
+      encodeRef (Refs refs) = mkList . map (ResRef . pure . packRef name) <$> refs
+
+packRef :: ToJSON a => TypeName -> a -> NamedResolverRef
+packRef name v = NamedResolverRef name [replaceValue $ toJSON v]
 
 instance
   ( Decode a,
@@ -184,11 +187,11 @@ convertNamedNode
     | null consFields = pure $ NamedEnumResolver consName
     | tyIsUnion = deriveUnion consFields
     | otherwise =
-        pure $
-          NamedObjectResolver
-            ObjectTypeResolver
-              { objectFields = HM.fromList (toFieldRes proxy <$> consFields)
-              }
+      pure $
+        NamedObjectResolver
+          ObjectTypeResolver
+            { objectFields = HM.fromList (toFieldRes proxy <$> consFields)
+            }
 
 deriveUnion :: (MonadError GQLError m) => [FieldRep (m (ResolverValue m))] -> m (NamedResolverResult m)
 deriveUnion [FieldRep {..}] =
