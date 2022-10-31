@@ -33,8 +33,7 @@ import Data.Morpheus.App.Internal.Resolving.Types.Cache
   ( BatchEntry (..),
     CacheKey (..),
     LocalCache,
-    buildBatches,
-    updateCache,
+    buildCacheWith,
     useCached,
   )
 import Data.Morpheus.Error (subfieldsNotSelected)
@@ -111,11 +110,11 @@ resolveSelection ::
   SelectionContent VALID ->
   m ValidValue
 resolveSelection rmap res selection = do
-  newRmap <- scanRefs selection res >>= buildCache rmap . buildBatches
+  newRmap <- scanRefs selection res >>= buildCache rmap
   __resolveSelection newRmap res selection
 
-buildCache :: (MonadError GQLError m, MonadReader ResolverContext m) => ResolverMapContext m -> [BatchEntry] -> m (LocalCache, ResolverMap m)
-buildCache (cache, rmap) entries = (,rmap) <$> updateCache (resolveRefsCached (cache, rmap)) cache entries
+buildCache :: (MonadError GQLError m, MonadReader ResolverContext m) => ResolverMapContext m -> [(SelectionContent VALID, NamedResolverRef)] -> m (LocalCache, HashMap TypeName (NamedResolver m))
+buildCache (cache, rmap) entries = (,rmap) <$> buildCacheWith (resolveRefsCached (cache, rmap)) cache entries
 
 __resolveSelection ::
   ( Monad m,
@@ -246,7 +245,7 @@ resolveObject ::
   Maybe (SelectionSet VALID) ->
   m ValidValue
 resolveObject rmap drv sel = do
-  newCache <- objectRefs drv sel >>= buildCache rmap . buildBatches
+  newCache <- objectRefs drv sel >>= buildCache rmap
   Object <$> maybe (pure empty) (traverseCollection (resolver newCache)) sel
   where
     resolver newCache currentSelection = do

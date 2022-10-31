@@ -14,13 +14,12 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.App.Internal.Resolving.Types.Cache
-  ( buildBatches,
-    Cache,
+  ( Cache,
     CacheKey (..),
     BatchEntry (..),
     LocalCache,
     useCached,
-    updateCache,
+    buildCacheWith,
   )
 where
 
@@ -114,3 +113,6 @@ updateCache f cache entries = do
   caches <- traverse (resolveBatched f) entries
   let newCache = foldr (<>) cache caches
   pure $ dumpCache False newCache newCache
+
+buildCacheWith :: Monad m => ResolverFun m -> LocalCache -> [(SelectionContent VALID, NamedResolverRef)] -> m LocalCache
+buildCacheWith f cache entries = updateCache f cache (buildBatches entries)
