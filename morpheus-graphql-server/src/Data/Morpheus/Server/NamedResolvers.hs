@@ -29,15 +29,17 @@ instance Monad m => ResolveNamed m Text where
   type Dep Text = Text
   resolveNamed = pure
 
-class (ToJSON (Dep a)) => ResolveNamed (m :: Type -> Type) a where
+class (ToJSON (Dep a)) => ResolveNamed (m :: Type -> Type) (a :: Type) where
   type Dep a :: Type
   resolveNamed :: Monad m => Batched (Dep a) -> m (Batched a)
 
 instance (ResolveNamed m a) => ResolveNamed (m :: Type -> Type) (Maybe a) where
   type Dep (Maybe a) = Maybe (Dep a)
 
--- resolveNamed (Just x) = Just <$> resolveNamed x
--- resolveNamed Nothing = pure Nothing
+-- resolveNamed (Batched xs) = travesre resolveMaybe
+
+-- resolveMaybe x = Just <$> resolveNamed x
+-- resolveMaybe Nothing = pure Nothing
 
 instance (ResolveNamed m a) => ResolveNamed (m :: Type -> Type) [a] where
   type Dep [a] = [Dep a]
