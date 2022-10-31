@@ -62,9 +62,9 @@ main :: IO ()
 main =
   mainTest
     "App Tests"
-    [ -- deepScan runMergeTest (mkUrl "merge"),
-      --  deepScan runApiTest (mkUrl "api"),
-      --  deepScan (map . runNamedResolversTest) (mkUrl "named-resolvers"),
-      -- deepScan (map . runAPIConstraints) (mkUrl "api-constraints"),
+    [ deepScan runMergeTest (mkUrl "merge"),
+      deepScan runApiTest (mkUrl "api"),
+      deepScan (map . runNamedResolversTest) (mkUrl "named-resolvers"),
+      deepScan (map . runAPIConstraints) (mkUrl "api-constraints"),
       deepScan (map . runBatchingTest) (mkUrl "batching")
     ]
