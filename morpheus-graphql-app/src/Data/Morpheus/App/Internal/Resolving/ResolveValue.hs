@@ -13,26 +13,28 @@ module Data.Morpheus.App.Internal.Resolving.ResolveValue
 where
 
 import Control.Monad.Except (MonadError (throwError))
-import qualified Data.HashMap.Lazy as HM
+import Data.HashMap.Lazy qualified as HM
 import Data.Morpheus.App.Internal.Resolving.ResolverState
   ( ResolverContext (..),
     askFieldTypeName,
     updateCurrentType,
   )
 import Data.Morpheus.App.Internal.Resolving.Types
-  ( BatchEntry (..),
-    CacheKey (..),
-    LocalCache,
-    NamedResolver (..),
+  ( NamedResolver (..),
     NamedResolverRef (..),
     NamedResolverResult (..),
     ObjectTypeResolver (..),
     ResolverMap,
     ResolverValue (..),
-    buildBatches,
-    dumpCache,
     mkEnum,
     mkUnion,
+  )
+import Data.Morpheus.App.Internal.Resolving.Types.Cache
+  ( BatchEntry (..),
+    CacheKey (..),
+    LocalCache,
+    buildBatches,
+    dumpCache,
     useCached,
   )
 import Data.Morpheus.Error (subfieldsNotSelected)
@@ -116,7 +118,7 @@ buildCache :: (MonadError GQLError m, MonadReader ResolverContext m) => Resolver
 buildCache (cache, rmap) entries = do
   caches <- traverse (resolveCacheEntry (cache, rmap)) entries
   let newCache = foldr (<>) cache caches
-  pure $ dumpCache False (newCache, rmap)
+  pure $ dumpCache False newCache (newCache, rmap)
 
 resolveCacheEntry :: (MonadError GQLError m, MonadReader ResolverContext m) => ResolverMapContext m -> BatchEntry -> m LocalCache
 resolveCacheEntry rmap (BatchEntry sel name deps) = do

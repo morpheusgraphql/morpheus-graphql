@@ -127,6 +127,7 @@ library
       Data.Morpheus.App.Internal.Resolving.RootResolverValue
       Data.Morpheus.App.Internal.Resolving.SchemaAPI
       Data.Morpheus.App.Internal.Resolving.Types
+      Data.Morpheus.App.Internal.Resolving.Types.Cache
       Data.Morpheus.App.Internal.Resolving.Utils
       Data.Morpheus.App.Internal.Stitching
       Data.Morpheus.App.MapAPI
