@@ -53,6 +53,9 @@ data Position = Position
       Lift
     )
 
+instance Hashable Position where
+  hashWithSalt s _ = hashWithSalt s (0 :: Int)
+
 -- Positions 2 Value with same structure
 -- but different Positions should be Equal
 instance Eq Position where

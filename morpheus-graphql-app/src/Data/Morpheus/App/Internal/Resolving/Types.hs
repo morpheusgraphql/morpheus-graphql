@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
@@ -8,6 +9,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -30,29 +32,90 @@ module Data.Morpheus.App.Internal.Resolving.Types
     mkObject,
     mkObjectMaybe,
     mkUnion,
+    NamedResolverFun,
+    buildBatches,
+    Cache,
+    CacheKey (..),
+    BatchEntry (..),
+    LocalCache,
+    dumpCache,
+    useCached,
   )
 where
 
 import Control.Monad.Except (MonadError (throwError))
+import Data.ByteString.Lazy.Char8 (unpack)
 import qualified Data.HashMap.Lazy as HM
+import Data.Morpheus.Core (RenderGQL, render)
 import Data.Morpheus.Internal.Ext (Merge (..))
 import Data.Morpheus.Internal.Utils (KeyOf (keyOf))
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     GQLError,
     ScalarValue (..),
+    SelectionContent,
     TypeName,
+    VALID,
     ValidValue,
     internal,
   )
 import GHC.Show (Show (show))
 import Relude hiding (show)
 
+type LocalCache = HashMap CacheKey ValidValue
+
+useCached :: (Eq k, Hashable k, MonadError GQLError f) => HashMap k a -> k -> f a
+useCached mp v = case HM.lookup v mp of
+  Just x -> pure x
+  Nothing -> throwError (internal "TODO:")
+
+dumpCache :: Bool -> (LocalCache, ResolverMap m) -> (LocalCache, ResolverMap m)
+dumpCache enabled xs
+  | null (fst xs) || not enabled = xs
+  | otherwise = trace ("\nCACHE:\n" <> intercalate "\n" (map printKeyValue $ HM.toList $ fst xs) <> "\n") xs
+  where
+    printKeyValue (key, v) = " " <> show key <> ": " <> unpack (render v)
+
+printSel :: RenderGQL a => a -> [Char]
+printSel sel = map replace $ filter ignoreSpaces $ unpack (render sel)
+  where
+    ignoreSpaces x = x /= ' '
+    replace '\n' = ' '
+    replace x = x
+
+data BatchEntry = BatchEntry
+  { batchedSelection :: SelectionContent VALID,
+    batchedType :: TypeName,
+    batchedArguments :: [ValidValue]
+  }
+
+instance Show BatchEntry where
+  show (BatchEntry sel typename dep) = printSel sel <> ":" <> toString typename <> ":" <> show (map (unpack . render) dep)
+
+data CacheKey = CacheKey
+  { cachedSel :: SelectionContent VALID,
+    cachedTypeName :: TypeName,
+    cachedArg :: ValidValue
+  }
+  deriving (Eq, Generic)
+
+instance Show CacheKey where
+  show (CacheKey sel typename dep) = printSel sel <> ":" <> toString typename <> ":" <> unpack (render dep)
+
+instance Hashable CacheKey where
+  hashWithSalt s (CacheKey sel tyName arg) = hashWithSalt s (sel, tyName, render arg)
+
+type Cache m = HashMap CacheKey (NamedResolverResult m)
+
 type ResolverMap (m :: Type -> Type) = HashMap TypeName (NamedResolver m)
+
+type NamedResolverArg = [ValidValue]
+
+type NamedResolverFun m = NamedResolverArg -> m [NamedResolverResult m]
 
 data NamedResolver (m :: Type -> Type) = NamedResolver
   { resolverName :: TypeName,
-    resolver :: ValidValue -> m (NamedResolverResult m)
+    resolverFun :: NamedResolverFun m
   }
 
 instance Show (NamedResolver m) where
@@ -68,17 +131,39 @@ instance Show (ObjectTypeResolver m) where
 
 data NamedResolverRef = NamedResolverRef
   { resolverTypeName :: TypeName,
-    resolverArgument :: ValidValue
+    resolverArgument :: NamedResolverArg
   }
   deriving (Show)
+
+uniq :: (Eq a, Hashable a) => [a] -> [a]
+uniq = HM.keys . HM.fromList . map (,True)
+
+buildBatches :: [(SelectionContent VALID, NamedResolverRef)] -> [BatchEntry]
+buildBatches inputs =
+  let entityTypes = uniq $ map (second resolverTypeName) inputs
+   in mapMaybe (selectByEntity inputs) entityTypes
+
+selectByEntity :: [(SelectionContent VALID, NamedResolverRef)] -> (SelectionContent VALID, TypeName) -> Maybe BatchEntry
+selectByEntity inputs (tSel, tName) = case filter areEq inputs of
+  [] -> Nothing
+  xs -> Just $ BatchEntry tSel tName (uniq $ concatMap (resolverArgument . snd) xs)
+  where
+    areEq (sel, v) = sel == tSel && tName == resolverTypeName v
 
 data NamedResolverResult (m :: Type -> Type)
   = NamedObjectResolver (ObjectTypeResolver m)
   | NamedUnionResolver NamedResolverRef
   | NamedEnumResolver TypeName
+  | NamedNullResolver
 
 instance KeyOf TypeName (NamedResolver m) where
   keyOf = resolverName
+
+instance Show (NamedResolverResult m) where
+  show NamedObjectResolver {} = "NamedObjectResolver"
+  show NamedUnionResolver {} = "NamedUnionResolver"
+  show NamedEnumResolver {} = "NamedEnumResolver"
+  show NamedNullResolver {} = "NamedNullResolver"
 
 data ResolverValue (m :: Type -> Type)
   = ResNull
@@ -102,7 +187,13 @@ instance
       mergeFields a b = (,) <$> a <*> b >>= uncurry merge
 
 instance Show (ResolverValue m) where
-  show _ = "ResolverValue {}"
+  show ResNull = "ResNull"
+  show (ResScalar x) = "ResScalar:" <> show x
+  show (ResList xs) = "ResList:" <> show xs
+  show (ResEnum name) = "ResEnum:" <> show name
+  show (ResObject name _) = "ResObject:" <> show name
+  show ResRef {} = "ResRef {}"
+  show ResLazy {} = "ResLazy {}"
 
 instance IsString (ResolverValue m) where
   fromString = ResScalar . fromString

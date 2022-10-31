@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -14,6 +15,7 @@ module Feature.NamedResolvers.Realms
   )
 where
 
+import Control.Monad.Except
 import Data.Morpheus
   ( deriveApp,
   )
@@ -24,10 +26,12 @@ import Data.Morpheus.NamedResolvers
   ( NamedResolverT,
     ResolveNamed (..),
     resolve,
+    useBatched,
   )
 import Data.Morpheus.Types
   ( App,
     Arg (..),
+    GQLError,
     ID,
     NamedResolvers (..),
     Undefined,
@@ -36,48 +40,41 @@ import Data.Text (Text)
 
 importGQLDocument "test/Feature/NamedResolvers/realms.gql"
 
-instance Monad m => ResolveNamed m (Realm (NamedResolverT m)) where
-  type Dep (Realm (NamedResolverT m)) = ID
-  resolveNamed "olympus" =
-    pure
+getRealm :: (MonadError GQLError m) => ID -> m (Maybe (Realm (NamedResolverT m)))
+getRealm "olympus" =
+  pure $
+    Just
       Realm
         { name = resolve (pure "Mount Olympus"),
           owner = resolve (pure "zeus")
         }
-  resolveNamed "dreams" =
-    pure
+getRealm "dreams" =
+  pure $
+    Just
       Realm
         { name = resolve (pure "Fictional world of dreams"),
           owner = resolve (pure "morpheus")
         }
-  resolveNamed _ =
-    pure
-      Realm
-        { name = resolve (pure "Unknown"),
-          owner = resolve (pure "none")
-        }
+getRealm _ = pure Nothing
 
-instance Monad m => ResolveNamed m (Deity (NamedResolverT m)) where
+instance MonadError GQLError m => ResolveNamed m (Realm (NamedResolverT m)) where
+  type Dep (Realm (NamedResolverT m)) = ID
+  resolveBatched = traverse getRealm
+  resolveNamed = useBatched
+
+instance (MonadError GQLError m) => ResolveNamed m (Deity (NamedResolverT m)) where
   type Dep (Deity (NamedResolverT m)) = ID
-  resolveNamed "zeus" =
-    pure
-      Deity
-        { realm = resolve (pure "olympus")
-        }
-  resolveNamed "morpheus" =
-    pure
-      Deity
-        { realm = resolve (pure "dreams")
-        }
-  resolveNamed x =
-    pure
-      Deity
-        { realm = resolve (pure x)
-        }
+  resolveBatched = traverse getDeity
+  resolveNamed = useBatched
 
-instance Monad m => ResolveNamed m (Query (NamedResolverT m)) where
+getDeity :: (MonadError GQLError m) => ID -> m (Maybe (Deity (NamedResolverT m)))
+getDeity "zeus" = pure $ Just Deity {realm = resolve (pure "olympus")}
+getDeity "morpheus" = pure $ Just Deity {realm = resolve (pure "dreams")}
+getDeity _ = pure Nothing
+
+instance MonadError GQLError m => ResolveNamed m (Query (NamedResolverT m)) where
   type Dep (Query (NamedResolverT m)) = ()
-  resolveNamed () =
+  resolveNamed _ =
     pure
       Query
         { realm = \(Arg arg) -> resolve (pure (Just arg)),

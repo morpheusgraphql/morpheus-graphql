@@ -1,4 +1,6 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -109,7 +111,7 @@ data Fragment (stage :: Stage) = Fragment
     fragmentSelection :: SelectionSet stage,
     fragmentDirectives :: Directives stage
   }
-  deriving (Show, Eq, Lift)
+  deriving (Show, Eq, Lift, Generic, Hashable)
 
 -- ERRORs
 instance NameCollision GQLError (Fragment s) where
@@ -130,6 +132,11 @@ data SelectionContent (s :: Stage) where
       conditionalSelections :: UnionSelection VALID
     } ->
     SelectionContent VALID
+
+instance Hashable (SelectionContent s) where
+  hashWithSalt s SelectionField = hashWithSalt s (1 :: Int)
+  hashWithSalt s (SelectionSet x) = hashWithSalt s (2 :: Int, x)
+  hashWithSalt s (UnionSelection x xs) = hashWithSalt s (3 :: Int, x, xs)
 
 renderSelectionSet :: SelectionSet VALID -> Rendering
 renderSelectionSet = renderObject . toList
@@ -179,7 +186,7 @@ data UnionTag = UnionTag
   { unionTagName :: TypeName,
     unionTagSelection :: SelectionSet VALID
   }
-  deriving (Show, Eq, Lift)
+  deriving (Show, Eq, Lift, Generic, Hashable)
 
 instance KeyOf TypeName UnionTag where
   keyOf = unionTagName
@@ -239,6 +246,20 @@ data Selection (s :: Stage) where
     Selection s
   InlineFragment :: Fragment RAW -> Selection RAW
   Spread :: Directives RAW -> Ref FragmentName -> Selection RAW
+
+instance Hashable (Selection s) where
+  hashWithSalt s (InlineFragment x) = hashWithSalt s (1 :: Int, x)
+  hashWithSalt s (Spread x y) = hashWithSalt s (2 :: Int, x, refName y)
+  hashWithSalt s Selection {..} =
+    hashWithSalt
+      s
+      ( 3 :: Int,
+        selectionAlias,
+        selectionName,
+        selectionArguments,
+        selectionDirectives,
+        selectionContent
+      )
 
 instance RenderGQL (Selection VALID) where
   renderGQL

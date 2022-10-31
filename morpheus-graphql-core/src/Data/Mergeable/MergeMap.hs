@@ -48,7 +48,8 @@ newtype MergeMap (dups :: Bool) k a = MergeMap
       Eq,
       Functor,
       Foldable,
-      Traversable
+      Traversable,
+      Hashable
     )
 
 instance (Lift a, Lift k) => Lift (MergeMap dups k a) where

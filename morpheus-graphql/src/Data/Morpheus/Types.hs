@@ -57,6 +57,8 @@ module Data.Morpheus.Types
     DropNamespace (..),
     Rename (..),
     DefaultValue (..),
+    GQLError,
+    MonadError,
   )
 where
 

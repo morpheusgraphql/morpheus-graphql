@@ -1,0 +1,26 @@
+query {
+  deities {
+    name
+    power
+  }
+
+  heroes: deities {
+    name
+    power
+  }
+
+  cronos: deity(id: "cronos") {
+    name
+    power
+  }
+
+  poseidon: deity(id: "poseidon") {
+    name
+    power
+  }
+
+  morpheus: deity(id: "morpheus") {
+    name
+    power
+  }
+}

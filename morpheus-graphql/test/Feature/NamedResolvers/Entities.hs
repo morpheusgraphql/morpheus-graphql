@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -11,6 +12,7 @@ module Feature.NamedResolvers.Entities
   )
 where
 
+import Control.Monad.Except
 import Data.Morpheus (deriveApp)
 import Data.Morpheus.NamedResolvers
   ( NamedResolverT,
@@ -20,6 +22,7 @@ import Data.Morpheus.NamedResolvers
 import Data.Morpheus.Types
   ( App,
     Arg (..),
+    GQLError,
     GQLType (..),
     ID,
     NamedResolvers (..),
@@ -37,11 +40,14 @@ data Entity m
       GQLType
     )
 
-instance Monad m => ResolveNamed m (Entity (NamedResolverT m)) where
+getEntity :: (MonadError GQLError m) => ID -> m (Entity (NamedResolverT m))
+getEntity "zeus" = pure $ EntityDeity (resolve $ pure "zeus")
+getEntity "morpheus" = pure $ EntityDeity (resolve $ pure "morpheus")
+getEntity x = pure $ EntityRealm (resolve $ pure x)
+
+instance (MonadError GQLError m) => ResolveNamed m (Entity (NamedResolverT m)) where
   type Dep (Entity (NamedResolverT m)) = ID
-  resolveNamed "zeus" = pure $ EntityDeity (resolve $ pure "zeus")
-  resolveNamed "morpheus" = pure $ EntityDeity (resolve $ pure "morpheus")
-  resolveNamed x = pure $ EntityRealm (resolve $ pure x)
+  resolveNamed = getEntity
 
 -- QUERY
 data Query m = Query
@@ -53,20 +59,12 @@ data Query m = Query
       GQLType
     )
 
-instance Monad m => ResolveNamed m (Query (NamedResolverT m)) where
+instance MonadError GQLError m => ResolveNamed m (Query (NamedResolverT m)) where
   type Dep (Query (NamedResolverT m)) = ()
-  resolveNamed () =
+  resolveNamed _ =
     pure
       Query
-        { entities =
-            resolve
-              ( pure
-                  [ "zeus",
-                    "morpheus",
-                    "olympus",
-                    "dreams"
-                  ]
-              ),
+        { entities = resolve (pure ["zeus", "morpheus", "olympus", "dreams"]),
           entity = \(Arg uid) -> resolve (pure (Just uid))
         }
 

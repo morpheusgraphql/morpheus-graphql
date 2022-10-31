@@ -1,0 +1,36 @@
+{
+  "data": {
+    "poseidon": {
+      "name": "Morpheus",
+      "power": ["Shapeshifting"]
+    },
+    "morpheus": {
+      "name": "Morpheus",
+      "power": ["Shapeshifting"]
+    },
+    "heroes": [
+      {
+        "name": "Zeus",
+        "power": []
+      },
+      {
+        "name": "Morpheus",
+        "power": ["Shapeshifting"]
+      }
+    ],
+    "cronos": {
+      "name": "Morpheus",
+      "power": ["Shapeshifting"]
+    },
+    "deities": [
+      {
+        "name": "Zeus",
+        "power": []
+      },
+      {
+        "name": "Morpheus",
+        "power": ["Shapeshifting"]
+      }
+    ]
+  }
+}

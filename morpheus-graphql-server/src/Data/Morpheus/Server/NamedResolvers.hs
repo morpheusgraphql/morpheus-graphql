@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -11,14 +12,17 @@ module Data.Morpheus.Server.NamedResolvers
   ( ResolveNamed (..),
     NamedResolverT (..),
     resolve,
+    useBatched,
   )
 where
 
+import Control.Monad.Except
 import Data.Aeson (ToJSON)
 import Data.Morpheus.Types.ID (ID)
+import Data.Morpheus.Types.Internal.AST (GQLError, internal)
 import Relude
 
-instance Monad m => ResolveNamed m ID where
+instance (Monad m) => ResolveNamed m ID where
   type Dep ID = ID
   resolveNamed = pure
 
@@ -26,18 +30,26 @@ instance Monad m => ResolveNamed m Text where
   type Dep Text = Text
   resolveNamed = pure
 
-class (ToJSON (Dep a)) => ResolveNamed (m :: Type -> Type) a where
+useBatched :: (ResolveNamed m a, MonadError GQLError m) => Dep a -> m a
+useBatched x = resolveBatched [x] >>= res
+  where
+    res [Just v] = pure v
+    res _ = throwError (internal "named resolver should return single value for single argument")
+
+class (ToJSON (Dep a)) => ResolveNamed (m :: Type -> Type) (a :: Type) where
   type Dep a :: Type
+  resolveBatched :: Monad m => [Dep a] -> m [Maybe a]
+  resolveBatched = traverse (fmap Just . resolveNamed)
+
   resolveNamed :: Monad m => Dep a -> m a
 
-instance (ResolveNamed m a) => ResolveNamed (m :: Type -> Type) (Maybe a) where
-  type Dep (Maybe a) = Maybe (Dep a)
-  resolveNamed (Just x) = Just <$> resolveNamed x
-  resolveNamed Nothing = pure Nothing
-
-instance (ResolveNamed m a) => ResolveNamed (m :: Type -> Type) [a] where
+instance (ResolveNamed m a, MonadError GQLError m) => ResolveNamed (m :: Type -> Type) [a] where
   type Dep [a] = [Dep a]
-  resolveNamed = traverse resolveNamed
+  resolveNamed _ = throwError (internal "named resolver instance [a] should not be called")
+
+instance (ResolveNamed m a, MonadError GQLError m) => ResolveNamed (m :: Type -> Type) (Maybe a) where
+  type Dep (Maybe a) = Maybe (Dep a)
+  resolveNamed _ = throwError (internal "named resolver instance Maybe should not be called")
 
 data NamedResolverT (m :: Type -> Type) a where
   Ref :: ResolveNamed m a => m (Dep a) -> NamedResolverT m a

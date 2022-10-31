@@ -22,7 +22,6 @@ import Data.Morpheus.App.Internal.Resolving
   ( LiftOperation,
     NamedResolver (..),
     Resolver,
-    ResolverState,
     liftResolverState,
   )
 import Data.Morpheus.Server.Deriving.Decode
@@ -37,7 +36,7 @@ import Data.Morpheus.Server.Deriving.Named.EncodeValue
   )
 import Data.Morpheus.Server.Deriving.Utils.GTraversable
 import Data.Morpheus.Server.Deriving.Utils.Kinded (KindedProxy (KindedProxy))
-import Data.Morpheus.Server.NamedResolvers (NamedResolverT (..), ResolveNamed (Dep, resolveNamed))
+import Data.Morpheus.Server.NamedResolvers (NamedResolverT (..), ResolveNamed (..))
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType,
     KIND,
@@ -90,12 +89,15 @@ instance
   deriveNamedResolver _ =
     [ NamedResolver
         { resolverName = getTypeName (Proxy @a),
-          resolver = resolve >=> encodeResolverValue
+          resolverFun = resolve >=> encodeResolverValue
         }
     ]
     where
-      resolve :: ValidValue -> Resolver o e m a
-      resolve x = liftResolverState (decode x :: ResolverState (Dep a)) >>= resolveNamed
+      resolve :: [ValidValue] -> Resolver o e m [Maybe a]
+      resolve xs = traverse decodeArg xs >>= resolveBatched
+
+      decodeArg :: ValidValue -> Resolver o e m (Dep a)
+      decodeArg = liftResolverState . decode
 
 instance DeriveNamedResolver m (KIND a) a => DeriveNamedResolver m CUSTOM (NamedResolverT m a) where
   deriveNamedResolver _ = deriveNamedResolver (KindedProxy :: KindedProxy (KIND a) a)

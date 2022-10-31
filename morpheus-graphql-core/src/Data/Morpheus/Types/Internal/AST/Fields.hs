@@ -1,4 +1,6 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveLift #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -114,7 +116,7 @@ data Argument (valid :: Stage) = Argument
     argumentName :: FieldName,
     argumentValue :: Value valid
   }
-  deriving (Show, Eq, Lift)
+  deriving (Show, Eq, Lift, Generic, Hashable)
 
 instance KeyOf FieldName (Argument stage) where
   keyOf = argumentName
@@ -143,7 +145,7 @@ data Directive (s :: Stage) = Directive
     directiveName :: FieldName,
     directiveArgs :: Arguments s
   }
-  deriving (Show, Lift, Eq)
+  deriving (Show, Lift, Eq, Generic, Hashable)
 
 instance NameCollision GQLError (Directive s) where
   nameCollision Directive {directiveName} =

@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -23,8 +24,10 @@ import Data.Morpheus.NamedResolvers
 import Data.Morpheus.Types
   ( App,
     Arg (..),
+    GQLError,
     GQLType (..),
     ID,
+    MonadError,
     NamedResolvers (..),
     Undefined,
   )
@@ -92,7 +95,7 @@ data Query m = Query
       GQLType
     )
 
-instance Monad m => ResolveNamed m (Query (NamedResolverT m)) where
+instance MonadError GQLError m => ResolveNamed m (Query (NamedResolverT m)) where
   type Dep (Query (NamedResolverT m)) = ()
   resolveNamed () =
     pure

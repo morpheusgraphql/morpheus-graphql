@@ -288,3 +288,15 @@ mkObject :: [(FieldName, Value s)] -> Value s
 mkObject = Object . unsafeFromList . fmap toEntry
   where
     toEntry (key, value) = (key, ObjectEntry key value)
+
+instance Hashable (Value a) where
+  hashWithSalt s (Object x) = hashWithSalt s (0 :: Int, toList x)
+  hashWithSalt s (List x) = hashWithSalt s (1 :: Int, x)
+  hashWithSalt s (Enum x) = hashWithSalt s (2 :: Int, x)
+  hashWithSalt s (Scalar x) = hashWithSalt s (3 :: Int, show x :: String)
+  hashWithSalt s Null = hashWithSalt s (4 :: Int)
+  hashWithSalt s (ResolvedVariable _ _) = hashWithSalt s (5 :: Int)
+  hashWithSalt s (VariableValue Ref {refName}) = hashWithSalt s (6 :: Int, refName)
+
+instance Hashable (ObjectEntry s) where
+  hashWithSalt s (ObjectEntry name value) = hashWithSalt s (name, value)
