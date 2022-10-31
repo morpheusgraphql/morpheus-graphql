@@ -37,7 +37,6 @@ import Data.Morpheus.App.Internal.Resolving
     mkList,
     mkNull,
   )
-import Data.Morpheus.Internal.Utils (empty)
 import Data.Morpheus.Server.Deriving.Decode
   ( Decode,
     decodeArguments,
@@ -98,7 +97,7 @@ encodeResolverValue :: (MonadError GQLError m, FieldConstraint m a) => [Maybe a]
 encodeResolverValue x = traverse encodeNode x
   where
     encodeNode (Just v) = convertNamedNode (Identity x) (getFieldValues v)
-    encodeNode Nothing = pure $ NamedObjectResolver ObjectTypeResolver {objectFields = empty}
+    encodeNode Nothing = pure NamedNullResolver
 
 type FieldConstraint m a =
   ( GQLType a,

@@ -220,7 +220,7 @@ processResult ::
 processResult rmap typename selection (NamedObjectResolver res) = withObject (Just typename) (resolveObject rmap res) selection
 processResult rmap _ selection (NamedUnionResolver unionRef) = resolveSelection rmap (ResRef $ pure unionRef) selection
 processResult rmap _ selection (NamedEnumResolver value) = resolveSelection rmap (ResEnum value) selection
-processResult rmap _ selection NamedResolverNull = resolveSelection rmap ResNull selection
+processResult rmap _ selection NamedNullResolver = resolveSelection rmap ResNull selection
 
 resolveUncached ::
   ( MonadError GQLError m,
