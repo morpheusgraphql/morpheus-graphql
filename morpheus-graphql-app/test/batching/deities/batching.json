@@ -1,4 +1,4 @@
 {
-  "Deity": [["cronos", "poseidon", "morpheus", "zeus"]],
-  "QUERY": [["ROOT"]]
+  "Deity": ["cronos", "poseidon", "morpheus", "zeus"],
+  "Query": ["ROOT"]
 }

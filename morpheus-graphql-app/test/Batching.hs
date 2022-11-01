@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Batching
@@ -7,7 +8,9 @@ module Batching
 where
 
 import Control.Monad.Except (MonadError (throwError))
+import Data.Aeson (eitherDecode)
 import qualified Data.ByteString.Lazy.Char8 as LBS
+import Data.Map
 import Data.Morpheus.App
   ( App (..),
     mkApp,
@@ -32,7 +35,14 @@ import Data.Morpheus.Types.IO
   ( GQLRequest (..),
     GQLResponse,
   )
-import Data.Morpheus.Types.Internal.AST (QUERY, Schema, VALID, ValidValue)
+import Data.Morpheus.Types.Internal.AST
+  ( QUERY,
+    Schema,
+    TypeName,
+    VALID,
+    ValidValue,
+    unpackName,
+  )
 import Relude hiding (ByteString)
 import Test.Morpheus
   ( FileUrl,
@@ -44,15 +54,18 @@ import Test.Tasty
   )
 
 -- DEITIES
+type BatchingConstraints = Map Text [ValidValue]
 
-require :: Monad m => [ValidValue] -> NamedResolverFunction QUERY e m -> NamedResolverFunction QUERY e m
-require req f args
+typeConstraint :: Monad m => BatchingConstraints -> (TypeName, NamedResolverFunction QUERY e m) -> (TypeName, NamedResolverFunction QUERY e m)
+typeConstraint cons (name, f) = (name,) $ maybe f (require f) (lookup (unpackName name) cons)
+
+require :: Monad m => NamedResolverFunction QUERY e m -> [ValidValue] -> NamedResolverFunction QUERY e m
+require f req args
   | args == req = f args
   | otherwise = throwError ("was not batched" <> show args)
 
--- requires that all individual queries ar batched as a list
 deityResolver :: Monad m => NamedResolverFunction QUERY e m
-deityResolver = require ["cronos", "poseidon", "morpheus", "zeus"] (traverse getDeity)
+deityResolver = traverse getDeity
   where
     getDeity "zeus" =
       object
@@ -66,7 +79,7 @@ deityResolver = require ["cronos", "poseidon", "morpheus", "zeus"] (traverse get
         ]
 
 resolveQuery :: Monad m => NamedResolverFunction QUERY e m
-resolveQuery = require ["ROOT"] (traverse _resolveQuery)
+resolveQuery = traverse _resolveQuery
   where
     _resolveQuery _ =
       object
@@ -74,25 +87,29 @@ resolveQuery = require ["ROOT"] (traverse _resolveQuery)
           ("deities", pure $ refs "Deity" ["zeus", "morpheus"])
         ]
 
-resolvers :: Monad m => RootResolverValue e m
-resolvers =
-  queryResolvers
-    [ ("Query", resolveQuery),
-      ("Deity", deityResolver)
-    ]
+resolvers :: Monad m => BatchingConstraints -> RootResolverValue e m
+resolvers cons =
+  queryResolvers $
+    typeConstraint cons
+      <$> [ ("Query", resolveQuery),
+            ("Deity", deityResolver)
+          ]
 
 getSchema :: FileUrl -> IO (Schema VALID)
 getSchema url = LBS.readFile (toString url) >>= resultOr (fail . show) pure . parseSchema
 
-getApps :: FileUrl -> IO (App e IO)
-getApps x = do
-  schemaDeities <- getSchema (file x "schema.gql")
-  pure $ mkApp schemaDeities resolvers
+getBatchingConstraint :: FileUrl -> IO BatchingConstraints
+getBatchingConstraint url = LBS.readFile (toString (file url "batching.json")) >>= either (fail . show) pure . eitherDecode
 
-type BatchingMap = Map Text [[Text]]
+getApps :: BatchingConstraints -> FileUrl -> IO (App e IO)
+getApps con x = do
+  schemaDeities <- getSchema (file x "schema.gql")
+  pure $ mkApp schemaDeities (resolvers con)
 
 runBatchingTest :: FileUrl -> FileUrl -> TestTree
-runBatchingTest url = testApi api
+runBatchingTest url fileUrl = testApi api fileUrl
   where
     api :: GQLRequest -> IO GQLResponse
-    api req = getApps url >>= (`runApp` req)
+    api req = do
+      constraints <- getBatchingConstraint fileUrl
+      getApps constraints url >>= (`runApp` req)
