@@ -9,7 +9,6 @@ ignorePaths:
   - ./node_modules
   - ./docs/node_modules
   - ./examples
-  - packages/service/telemetry/src/common/signals/internal/incident.ts
 overrides:
   - filename: "**/docs/APIReference-*.md"
     ignoreRegExpList:
