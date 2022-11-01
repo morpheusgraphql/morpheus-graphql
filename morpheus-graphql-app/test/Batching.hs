@@ -1,4 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -17,7 +16,7 @@ import Data.Morpheus.App
     mkApp,
     runApp,
   )
-import Data.Morpheus.App.Internal.Resolving (resultOr)
+import Data.Morpheus.App.Internal.Resolving (ResolverValue, resultOr)
 import Data.Morpheus.App.NamedResolvers
   ( NamedResolverFunction,
     RootResolverValue,
@@ -69,10 +68,14 @@ require f req args
 gods :: [ValidValue]
 gods = ["poseidon", "morpheus", "zeus"]
 
+getName :: ValidValue -> ResolverValue m
 getName "zeus" = "Zeus"
 getName "morpheus" = "Morpheus"
 getName "poseidon" = "Zeus"
+getName "cronos" = "Cronos"
+getName _ = ""
 
+getPowers :: ValidValue -> [ResolverValue m]
 getPowers "zeus" = [enum "Thunderbolt"]
 getPowers "morpheus" = [enum "Shapeshifting"]
 getPowers _ = []
@@ -89,9 +92,9 @@ deityResolver = traverse getDeity
       | otherwise = nullRes
 
 resolveQuery :: Monad m => NamedResolverFunction QUERY e m
-resolveQuery = traverse _resolveQuery
+resolveQuery = traverse getQuery
   where
-    _resolveQuery _ =
+    getQuery _ =
       object
         [ ("deity", ref "Deity" <$> getArgument "id"),
           ("deities", pure $ refs "Deity" ["zeus", "morpheus"])
