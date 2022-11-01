@@ -123,22 +123,16 @@ __resolveSelection ::
   ResolverValue m ->
   SelectionContent VALID ->
   m ValidValue
-__resolveSelection rmap (ResLazy x) selection =
-  x >>= flip (resolveSelection rmap) selection
-__resolveSelection rmap (ResList xs) selection =
-  List <$> traverse (flip (resolveSelection rmap) selection) xs
--- Object -----------------
+__resolveSelection rmap (ResLazy x) selection = x >>= flip (resolveSelection rmap) selection
+__resolveSelection rmap (ResList xs) selection = List <$> traverse (flip (resolveSelection rmap) selection) xs
 __resolveSelection rmap (ResObject tyName obj) sel = withObject tyName (resolveObject rmap obj) sel
--- ENUM
 __resolveSelection _ (ResEnum name) SelectionField = pure $ Scalar $ String $ unpackName name
 __resolveSelection rmap (ResEnum name) unionSel@UnionSelection {} =
   resolveSelection rmap (mkUnion name [(unitFieldName, pure $ mkEnum unitTypeName)]) unionSel
 __resolveSelection _ ResEnum {} _ = throwError (internal "wrong selection on enum value")
--- SCALARS
 __resolveSelection _rmap ResNull _ = pure Null
 __resolveSelection _rmap (ResScalar x) SelectionField = pure $ Scalar x
-__resolveSelection _rmap ResScalar {} _ =
-  throwError (internal "scalar Resolver should only receive SelectionField")
+__resolveSelection _rmap ResScalar {} _ = throwError (internal "scalar Resolver should only receive SelectionField")
 __resolveSelection rmap (ResRef ref) sel = ref >>= flip (resolveRef rmap) sel
 
 withObject ::
