@@ -17,8 +17,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.App.Internal.Resolving.Batching
-  ( Cache,
-    CacheKey (..),
+  ( CacheKey (..),
     LocalCache,
     useCached,
     buildCacheWith,
@@ -31,7 +30,7 @@ where
 import Control.Monad.Except (MonadError (throwError))
 import Data.ByteString.Lazy.Char8 (unpack)
 import qualified Data.HashMap.Lazy as HM
-import Data.Morpheus.App.Internal.Resolving.Types (NamedResolverRef (..), NamedResolverResult, ResolverMap)
+import Data.Morpheus.App.Internal.Resolving.Types (NamedResolverRef (..), ResolverMap)
 import Data.Morpheus.Core (RenderGQL, render)
 import Data.Morpheus.Types.Internal.AST
   ( GQLError,
@@ -44,8 +43,6 @@ import Data.Morpheus.Types.Internal.AST
   )
 import GHC.Show (Show (show))
 import Relude hiding (show)
-
-type Cache m = HashMap CacheKey (NamedResolverResult m)
 
 type LocalCache = HashMap CacheKey ValidValue
 
