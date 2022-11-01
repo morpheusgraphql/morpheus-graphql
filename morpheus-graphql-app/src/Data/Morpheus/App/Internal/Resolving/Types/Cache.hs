@@ -35,6 +35,7 @@ import Data.Morpheus.App.Internal.Resolving.Types (NamedResolverRef (..), NamedR
 import Data.Morpheus.Core (RenderGQL, render)
 import Data.Morpheus.Types.Internal.AST
   ( GQLError,
+    Msg (..),
     SelectionContent,
     TypeName,
     VALID,
@@ -48,10 +49,10 @@ type Cache m = HashMap CacheKey (NamedResolverResult m)
 
 type LocalCache = HashMap CacheKey ValidValue
 
-useCached :: (Eq k, Hashable k, MonadError GQLError f) => HashMap k a -> k -> f a
+useCached :: (Eq k, Show k, Hashable k, MonadError GQLError f) => HashMap k a -> k -> f a
 useCached mp v = case HM.lookup v mp of
   Just x -> pure x
-  Nothing -> throwError (internal "TODO:")
+  Nothing -> throwError (internal $ "cache value could not found for key" <> msg (show v :: String))
 
 dumpCache :: Bool -> LocalCache -> a -> a
 dumpCache enabled xs a

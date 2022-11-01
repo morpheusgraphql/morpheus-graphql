@@ -27,7 +27,6 @@ import Data.Morpheus.App.NamedResolvers
   )
 import Data.Morpheus.Core
   ( parseSchema,
-    render,
   )
 import Data.Morpheus.Types.IO
   ( GQLRequest (..),
