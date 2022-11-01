@@ -36,6 +36,7 @@ import Data.Morpheus.Types.Internal.AST (QUERY, Schema, VALID, ValidValue)
 import Relude hiding (ByteString)
 import Test.Morpheus
   ( FileUrl,
+    file,
     testApi,
   )
 import Test.Tasty
@@ -80,13 +81,15 @@ resolvers =
       ("Deity", deityResolver)
     ]
 
-getSchema :: String -> IO (Schema VALID)
-getSchema url = LBS.readFile url >>= resultOr (fail . show) pure . parseSchema
+getSchema :: FileUrl -> IO (Schema VALID)
+getSchema url = LBS.readFile (toString url) >>= resultOr (fail . show) pure . parseSchema
 
 getApps :: FileUrl -> IO (App e IO)
-getApps _ = do
-  schemaDeities <- getSchema "test/named-resolvers/deities.gql"
+getApps x = do
+  schemaDeities <- getSchema (file x "schema.gql")
   pure $ mkApp schemaDeities resolvers
+
+type BatchingMap = Map Text [[Text]]
 
 runBatchingTest :: FileUrl -> FileUrl -> TestTree
 runBatchingTest url = testApi api
