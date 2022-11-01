@@ -174,9 +174,9 @@ resolveRef ::
   m ValidValue
 resolveRef rmap ref selection = resolveRefsCached rmap ref selection >>= toOne
 
-toOne :: (MonadError GQLError f) => [a] -> f a
+toOne :: (MonadError GQLError f, Show a) => [a] -> f a
 toOne [x] = pure x
-toOne _ = throwError (internal "TODO:")
+toOne x = throwError (internal ("expected only one resolved value for " <> msg (show x :: String)))
 
 resolveRefsCached ::
   ( MonadError GQLError m,
