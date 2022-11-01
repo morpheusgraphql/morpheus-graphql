@@ -1,0 +1,16 @@
+{
+  "data": {
+    "poseidon": {
+      "name": "Morpheus",
+      "power": ["Shapeshifting"]
+    },
+    "morpheus": {
+      "name": "Morpheus",
+      "power": ["Shapeshifting"]
+    },
+    "cronos": {
+      "name": "Morpheus",
+      "power": ["Shapeshifting"]
+    }
+  }
+}
