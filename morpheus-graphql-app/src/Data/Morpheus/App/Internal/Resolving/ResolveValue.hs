@@ -33,7 +33,9 @@ import Data.Morpheus.App.Internal.Resolving.Types
 import Data.Morpheus.App.Internal.Resolving.Types.Cache
   ( CacheKey (..),
     ResolverMapContext (..),
+    ResolverMapT,
     buildCacheWith,
+    runResMapT,
     useCached,
   )
 import Data.Morpheus.Error (subfieldsNotSelected)
@@ -103,13 +105,13 @@ resolveSelection ::
     MonadReader ResolverContext m,
     MonadError GQLError m
   ) =>
-  ResolverMapContext m ->
   ResolverValue m ->
   SelectionContent VALID ->
-  m ValidValue
-resolveSelection rmap res selection = do
-  newRmap <- scanRefs selection res >>= buildCache rmap
-  __resolveSelection newRmap res selection
+  ResolverMapT m ValidValue
+resolveSelection res selection = do
+  ctx <- ask
+  newRmap <- lift (scanRefs selection res >>= buildCache ctx)
+  local (const newRmap) (__resolveSelection res selection)
 
 buildCache :: (MonadError GQLError m, MonadReader ResolverContext m) => ResolverMapContext m -> [(SelectionContent VALID, NamedResolverRef)] -> m (ResolverMapContext m)
 buildCache ctx@(ResolverMapContext cache rmap) entries = (`ResolverMapContext` rmap) <$> buildCacheWith (resolveRefsCached ctx) cache entries
@@ -119,21 +121,23 @@ __resolveSelection ::
     MonadReader ResolverContext m,
     MonadError GQLError m
   ) =>
-  ResolverMapContext m ->
   ResolverValue m ->
   SelectionContent VALID ->
-  m ValidValue
-__resolveSelection rmap (ResLazy x) selection = x >>= flip (resolveSelection rmap) selection
-__resolveSelection rmap (ResList xs) selection = List <$> traverse (flip (resolveSelection rmap) selection) xs
-__resolveSelection rmap (ResObject tyName obj) sel = withObject tyName (resolveObject rmap obj) sel
-__resolveSelection _ (ResEnum name) SelectionField = pure $ Scalar $ String $ unpackName name
-__resolveSelection rmap (ResEnum name) unionSel@UnionSelection {} =
-  resolveSelection rmap (mkUnion name [(unitFieldName, pure $ mkEnum unitTypeName)]) unionSel
-__resolveSelection _ ResEnum {} _ = throwError (internal "wrong selection on enum value")
-__resolveSelection _rmap ResNull _ = pure Null
-__resolveSelection _rmap (ResScalar x) SelectionField = pure $ Scalar x
-__resolveSelection _rmap ResScalar {} _ = throwError (internal "scalar Resolver should only receive SelectionField")
-__resolveSelection rmap (ResRef ref) sel = ref >>= flip (resolveRef rmap) sel
+  ResolverMapT m ValidValue
+__resolveSelection (ResLazy x) selection = lift x >>= (`resolveSelection` selection)
+__resolveSelection (ResList xs) selection = List <$> traverse (`resolveSelection` selection) xs
+__resolveSelection (ResObject tyName obj) sel = do
+  ctx <- ask
+  lift $ withObject tyName (resolveObject ctx obj) sel
+__resolveSelection (ResEnum name) SelectionField = pure $ Scalar $ String $ unpackName name
+__resolveSelection (ResEnum name) unionSel@UnionSelection {} = resolveSelection (mkUnion name [(unitFieldName, pure $ mkEnum unitTypeName)]) unionSel
+__resolveSelection ResEnum {} _ = throwError (internal "wrong selection on enum value")
+__resolveSelection ResNull _ = pure Null
+__resolveSelection (ResScalar x) SelectionField = pure $ Scalar x
+__resolveSelection ResScalar {} _ = throwError (internal "scalar Resolver should only receive SelectionField")
+__resolveSelection (ResRef ref) sel = do
+  ctx <- ask
+  lift (ref >>= flip (resolveRef ctx) sel)
 
 withObject ::
   ( MonadError GQLError m,
@@ -186,7 +190,7 @@ resolveRefsCached ctx (NamedResolverRef name args) selection = do
   let keys = map (CacheKey selection name) args
   let cached = map resolveCached keys
   let cachedMap = HM.fromList (mapMaybe unp cached)
-  notCachedMap <- resolveUncached ctx name selection $ map fst $ filter (isNothing . snd) cached
+  notCachedMap <- runResMapT (resolveUncached name selection $ map fst $ filter (isNothing . snd) cached) ctx
   traverse (useCached (cachedMap <> notCachedMap)) args
   where
     unp (_, Nothing) = Nothing
@@ -195,28 +199,29 @@ resolveRefsCached ctx (NamedResolverRef name args) selection = do
 
 processResult ::
   (MonadError GQLError m, MonadReader ResolverContext m) =>
-  ResolverMapContext m ->
   TypeName ->
   SelectionContent VALID ->
   NamedResolverResult m ->
-  m ValidValue
-processResult rmap typename selection (NamedObjectResolver res) = withObject (Just typename) (resolveObject rmap res) selection
-processResult rmap _ selection (NamedUnionResolver unionRef) = resolveSelection rmap (ResRef $ pure unionRef) selection
-processResult rmap _ selection (NamedEnumResolver value) = resolveSelection rmap (ResEnum value) selection
-processResult rmap _ selection NamedNullResolver = resolveSelection rmap ResNull selection
+  ResolverMapT m ValidValue
+processResult typename selection (NamedObjectResolver res) = do
+  ctx <- ask
+  lift $ withObject (Just typename) (resolveObject ctx res) selection
+processResult _ selection (NamedUnionResolver unionRef) = resolveSelection (ResRef $ pure unionRef) selection
+processResult _ selection (NamedEnumResolver value) = resolveSelection (ResEnum value) selection
+processResult _ selection NamedNullResolver = resolveSelection ResNull selection
 
 resolveUncached ::
   ( MonadError GQLError m,
     MonadReader ResolverContext m
   ) =>
-  ResolverMapContext m ->
   TypeName ->
   SelectionContent VALID ->
   [ValidValue] ->
-  m (HashMap ValidValue ValidValue)
-resolveUncached _ _ _ [] = pure empty
-resolveUncached ctx typename selection xs = do
-  vs <- getNamedResolverBy (NamedResolverRef typename xs) (resolverMap ctx) >>= traverse (processResult ctx typename selection)
+  ResolverMapT m (HashMap ValidValue ValidValue)
+resolveUncached _ _ [] = pure empty
+resolveUncached typename selection xs = do
+  rmap <- asks resolverMap
+  vs <- lift (getNamedResolverBy (NamedResolverRef typename xs) rmap) >>= traverse (processResult typename selection)
   pure $ HM.fromList (zip xs vs)
 
 getNamedResolverBy ::
@@ -240,26 +245,25 @@ resolveObject rmap drv sel = do
   newCache <- objectRefs drv sel >>= buildCache rmap
   Object <$> maybe (pure empty) (traverseCollection (resolver newCache)) sel
   where
-    resolver newCache currentSelection = do
+    resolver cacheCTX currentSelection = do
       t <- askFieldTypeName (selectionName currentSelection)
       updateCurrentType t $
         local (\ctx -> ctx {currentSelection}) $
           ObjectEntry (keyOf currentSelection)
-            <$> runFieldResolver newCache currentSelection drv
+            <$> runResMapT (runFieldResolver currentSelection drv) cacheCTX
 
 runFieldResolver ::
   ( Monad m,
     MonadReader ResolverContext m,
     MonadError GQLError m
   ) =>
-  ResolverMapContext m ->
   Selection VALID ->
   ObjectTypeResolver m ->
-  m ValidValue
-runFieldResolver rmap Selection {selectionName, selectionContent}
+  ResolverMapT m ValidValue
+runFieldResolver Selection {selectionName, selectionContent}
   | selectionName == "__typename" =
-    const (Scalar . String . unpackName <$> asks (typeName . currentType))
+    const (Scalar . String . unpackName <$> lift (asks (typeName . currentType)))
   | otherwise =
-    maybe (pure Null) (>>= \x -> resolveSelection rmap x selectionContent)
+    maybe (pure Null) (lift >=> (`resolveSelection` selectionContent))
       . HM.lookup selectionName
       . objectFields

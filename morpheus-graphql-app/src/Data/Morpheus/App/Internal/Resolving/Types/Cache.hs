@@ -4,11 +4,13 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -21,6 +23,8 @@ module Data.Morpheus.App.Internal.Resolving.Types.Cache
     useCached,
     buildCacheWith,
     ResolverMapContext (..),
+    ResolverMapT (..),
+    runResMapT,
   )
 where
 
@@ -122,3 +126,21 @@ data ResolverMapContext m = ResolverMapContext
   { localCache :: LocalCache,
     resolverMap :: ResolverMap m
   }
+
+newtype ResolverMapT m a = ResolverMapT
+  { _runResMapT :: ReaderT (ResolverMapContext m) m a
+  }
+  deriving
+    ( Functor,
+      Applicative,
+      Monad,
+      MonadReader (ResolverMapContext m)
+    )
+
+instance MonadTrans ResolverMapT where
+  lift = ResolverMapT . lift
+
+deriving instance MonadError GQLError m => MonadError GQLError (ResolverMapT m)
+
+runResMapT :: ResolverMapT m a -> ResolverMapContext m -> m a
+runResMapT (ResolverMapT x) = runReaderT x
