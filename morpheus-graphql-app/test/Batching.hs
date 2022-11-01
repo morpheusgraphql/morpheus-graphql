@@ -6,7 +6,7 @@ module Batching
   )
 where
 
-import Data.ByteString.Lazy.Char8 (unpack)
+import Control.Monad.Except (MonadError (throwError))
 import qualified Data.ByteString.Lazy.Char8 as LBS
 import Data.Morpheus.App
   ( App (..),
@@ -33,7 +33,7 @@ import Data.Morpheus.Types.IO
   ( GQLRequest (..),
     GQLResponse,
   )
-import Data.Morpheus.Types.Internal.AST (QUERY, Schema, VALID)
+import Data.Morpheus.Types.Internal.AST (QUERY, Schema, VALID, ValidValue)
 import Relude hiding (ByteString)
 import Test.Morpheus
   ( FileUrl,
@@ -45,11 +45,14 @@ import Test.Tasty
 
 -- DEITIES
 
-debugArgs :: String -> NamedResolverFunction QUERY e m -> NamedResolverFunction QUERY e m
-debugArgs name f args = trace (name <> ":: " <> intercalate ", " (map (unpack . render) args)) (f args)
+require :: Monad m => [ValidValue] -> NamedResolverFunction QUERY e m -> NamedResolverFunction QUERY e m
+require req f args
+  | args == req = f args
+  | otherwise = throwError ("was not batched" <> show args)
 
+-- requires that all individual queries ar batched as a list
 deityResolver :: Monad m => NamedResolverFunction QUERY e m
-deityResolver = debugArgs "DEITY" (traverse getDeity)
+deityResolver = require ["cronos", "poseidon", "morpheus", "zeus"] (traverse getDeity)
   where
     getDeity "zeus" =
       object
@@ -63,7 +66,7 @@ deityResolver = debugArgs "DEITY" (traverse getDeity)
         ]
 
 resolveQuery :: Monad m => NamedResolverFunction QUERY e m
-resolveQuery = debugArgs "QUERY" (traverse _resolveQuery)
+resolveQuery = require ["ROOT"] (traverse _resolveQuery)
   where
     _resolveQuery _ =
       object
