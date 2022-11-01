@@ -15,6 +15,14 @@ where
 
 import Control.Monad.Except (MonadError (throwError))
 import qualified Data.HashMap.Lazy as HM
+import Data.Morpheus.App.Internal.Resolving.Batching
+  ( CacheKey (..),
+    ResolverMapContext (..),
+    ResolverMapT,
+    buildCacheWith,
+    runResMapT,
+    useCached,
+  )
 import Data.Morpheus.App.Internal.Resolving.ResolverState
   ( ResolverContext (..),
     askFieldTypeName,
@@ -29,14 +37,6 @@ import Data.Morpheus.App.Internal.Resolving.Types
     ResolverValue (..),
     mkEnum,
     mkUnion,
-  )
-import Data.Morpheus.App.Internal.Resolving.Types.Cache
-  ( CacheKey (..),
-    ResolverMapContext (..),
-    ResolverMapT,
-    buildCacheWith,
-    runResMapT,
-    useCached,
   )
 import Data.Morpheus.Error (subfieldsNotSelected)
 import Data.Morpheus.Internal.Utils

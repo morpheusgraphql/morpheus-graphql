@@ -16,7 +16,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.App.Internal.Resolving.Types.Cache
+module Data.Morpheus.App.Internal.Resolving.Batching
   ( Cache,
     CacheKey (..),
     LocalCache,
