@@ -20,13 +20,14 @@ module Data.Morpheus.App.Internal.Resolving.Types.Cache
     LocalCache,
     useCached,
     buildCacheWith,
+    ResolverMapContext (..),
   )
 where
 
 import Control.Monad.Except (MonadError (throwError))
 import Data.ByteString.Lazy.Char8 (unpack)
 import qualified Data.HashMap.Lazy as HM
-import Data.Morpheus.App.Internal.Resolving.Types (NamedResolverRef (..), NamedResolverResult)
+import Data.Morpheus.App.Internal.Resolving.Types (NamedResolverRef (..), NamedResolverResult, ResolverMap)
 import Data.Morpheus.Core (RenderGQL, render)
 import Data.Morpheus.Types.Internal.AST
   ( GQLError,
@@ -116,3 +117,8 @@ updateCache f cache entries = do
 
 buildCacheWith :: Monad m => ResolverFun m -> LocalCache -> [(SelectionContent VALID, NamedResolverRef)] -> m LocalCache
 buildCacheWith f cache entries = updateCache f cache (buildBatches entries)
+
+data ResolverMapContext m = ResolverMapContext
+  { localCache :: LocalCache,
+    resolverMap :: ResolverMap m
+  }

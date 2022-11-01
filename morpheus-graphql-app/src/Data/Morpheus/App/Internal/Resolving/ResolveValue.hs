@@ -32,7 +32,7 @@ import Data.Morpheus.App.Internal.Resolving.Types
   )
 import Data.Morpheus.App.Internal.Resolving.Types.Cache
   ( CacheKey (..),
-    LocalCache,
+    ResolverMapContext (..),
     buildCacheWith,
     useCached,
   )
@@ -64,11 +64,6 @@ import Data.Morpheus.Types.Internal.AST
     unpackName,
   )
 import Relude hiding (empty)
-
-data ResolverMapContext m = ResolverMapContext
-  { localCache :: LocalCache,
-    resolverMap :: ResolverMap m
-  }
 
 scanRefs :: (MonadError GQLError m, MonadReader ResolverContext m) => SelectionContent VALID -> ResolverValue m -> m [(SelectionContent VALID, NamedResolverRef)]
 scanRefs sel (ResList xs) = concat <$> traverse (scanRefs sel) xs
@@ -113,11 +108,11 @@ resolveSelection ::
   SelectionContent VALID ->
   m ValidValue
 resolveSelection rmap res selection = do
-  newRmap <- uncurry ResolverMapContext <$> (scanRefs selection res >>= buildCache rmap)
+  newRmap <- scanRefs selection res >>= buildCache rmap
   __resolveSelection newRmap res selection
 
-buildCache :: (MonadError GQLError m, MonadReader ResolverContext m) => ResolverMapContext m -> [(SelectionContent VALID, NamedResolverRef)] -> m (LocalCache, HashMap TypeName (NamedResolver m))
-buildCache ctx@(ResolverMapContext cache rmap) entries = (,rmap) <$> buildCacheWith (resolveRefsCached ctx) cache entries
+buildCache :: (MonadError GQLError m, MonadReader ResolverContext m) => ResolverMapContext m -> [(SelectionContent VALID, NamedResolverRef)] -> m (ResolverMapContext m)
+buildCache ctx@(ResolverMapContext cache rmap) entries = (`ResolverMapContext` rmap) <$> buildCacheWith (resolveRefsCached ctx) cache entries
 
 __resolveSelection ::
   ( Monad m,
@@ -164,7 +159,7 @@ withObject __typename f = updateCurrentType __typename . checkContent
       where
         fx (Just x) y = Just <$> (x <:> unionTagSelection y)
         fx Nothing y = pure $ Just $ unionTagSelection y
-    checkContent _ = noEmptySelection
+    checkContent SelectionField = noEmptySelection
 
 noEmptySelection :: (MonadError GQLError m, MonadReader ResolverContext m) => m value
 noEmptySelection = do
@@ -248,7 +243,7 @@ resolveObject ::
   Maybe (SelectionSet VALID) ->
   m ValidValue
 resolveObject rmap drv sel = do
-  newCache <- uncurry ResolverMapContext <$> (objectRefs drv sel >>= buildCache rmap)
+  newCache <- objectRefs drv sel >>= buildCache rmap
   Object <$> maybe (pure empty) (traverseCollection (resolver newCache)) sel
   where
     resolver newCache currentSelection = do
