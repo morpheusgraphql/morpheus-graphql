@@ -10,6 +10,7 @@ module Data.Morpheus.App.NamedResolvers
     NamedResolverFunction,
     RootResolverValue,
     ResultBuilder,
+    nullRes,
   )
 where
 
@@ -57,6 +58,9 @@ object = pure . Object
 variant :: (LiftOperation o, Monad m) => TypeName -> ValidValue -> Resolver o e m (ResultBuilder o e m)
 variant tName = pure . Union tName
 
+nullRes :: (LiftOperation o, Monad m) => Resolver o e m (ResultBuilder o e m)
+nullRes = pure Null
+
 queryResolvers :: Monad m => [(TypeName, NamedResolverFunction QUERY e m)] -> RootResolverValue e m
 queryResolvers = NamedResolversValue . mkResolverMap
 
@@ -64,6 +68,7 @@ queryResolvers = NamedResolversValue . mkResolverMap
 data ResultBuilder o e m
   = Object [(FieldName, Resolver o e m (ResolverValue (Resolver o e m)))]
   | Union TypeName ValidValue
+  | Null
 
 mkResolverMap :: (LiftOperation o, Monad m) => [(TypeName, NamedResolverFunction o e m)] -> ResolverMap (Resolver o e m)
 mkResolverMap = HM.fromList . map packRes
@@ -73,3 +78,4 @@ mkResolverMap = HM.fromList . map packRes
       where
         mapValue (Object x) = NamedObjectResolver (ObjectTypeResolver $ HM.fromList x)
         mapValue (Union name x) = NamedUnionResolver (NamedResolverRef name [x])
+        mapValue Null = NamedNullResolver

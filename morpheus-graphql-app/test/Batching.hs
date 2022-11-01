@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -23,6 +24,7 @@ import Data.Morpheus.App.NamedResolvers
     enum,
     getArgument,
     list,
+    nullRes,
     object,
     queryResolvers,
     ref,
@@ -64,19 +66,27 @@ require f req args
   | args == req = f args
   | otherwise = throwError ("was not batched" <> show args)
 
+gods :: [ValidValue]
+gods = ["poseidon", "morpheus", "zeus"]
+
+getName "zeus" = "Zeus"
+getName "morpheus" = "Morpheus"
+getName "poseidon" = "Zeus"
+
+getPowers "zeus" = [enum "Thunderbolt"]
+getPowers "morpheus" = [enum "Shapeshifting"]
+getPowers _ = []
+
 deityResolver :: Monad m => NamedResolverFunction QUERY e m
 deityResolver = traverse getDeity
   where
-    getDeity "zeus" =
-      object
-        [ ("name", pure "Zeus"),
-          ("power", pure $ list [])
-        ]
-    getDeity _ =
-      object
-        [ ("name", pure "Morpheus"),
-          ("power", pure $ list [enum "Shapeshifting"])
-        ]
+    getDeity name
+      | name `elem` gods =
+        object
+          [ ("name", pure $ getName name),
+            ("power", pure $ list $ getPowers name)
+          ]
+      | otherwise = nullRes
 
 resolveQuery :: Monad m => NamedResolverFunction QUERY e m
 resolveQuery = traverse _resolveQuery
