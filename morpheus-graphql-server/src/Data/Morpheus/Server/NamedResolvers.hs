@@ -6,6 +6,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.NamedResolvers
@@ -13,6 +14,8 @@ module Data.Morpheus.Server.NamedResolvers
     NamedResolverT (..),
     resolve,
     useBatched,
+    Dependency,
+    ignoreBatching,
   )
 where
 
@@ -22,59 +25,59 @@ import Data.Morpheus.Types.ID (ID)
 import Data.Morpheus.Types.Internal.AST (GQLError, internal)
 import Relude
 
-instance (Monad m) => ResolveNamed m ID where
-  type Dep ID = ID
-  resolveNamed = pure
+type family Target a :: Type where
+  Target [a] = a
+  Target (Maybe a) = a
+  Target a = a
 
-instance Monad m => ResolveNamed m Text where
-  type Dep Text = Text
-  resolveNamed = pure
+type family Dependency a :: Type where
+  Dependency [a] = Dependency a
+  Dependency (Maybe a) = Dependency a
+  Dependency ID = ID
+  Dependency Text = Text
+  Dependency a = Dep a
 
-useBatched :: (ResolveNamed m a, MonadError GQLError m) => Dep a -> m a
+ignoreBatching :: (Monad m) => (a -> m b) -> [a] -> m [Maybe b]
+ignoreBatching f = traverse (fmap Just . f)
+
+{-# DEPRECATED useBatched " this function is obsolete" #-}
+useBatched :: (ResolveNamed m a, MonadError GQLError m) => Dependency a -> m a
 useBatched x = resolveBatched [x] >>= res
   where
     res [Just v] = pure v
     res _ = throwError (internal "named resolver should return single value for single argument")
 
-class (ToJSON (Dep a)) => ResolveNamed (m :: Type -> Type) (a :: Type) where
+{-# DEPRECATED resolveNamed "use: resolveBatched" #-}
+
+class ToJSON (Dependency a) => ResolveNamed (m :: Type -> Type) (a :: Type) where
   type Dep a :: Type
-  resolveBatched :: Monad m => [Dep a] -> m [Maybe a]
-  resolveBatched = traverse (fmap Just . resolveNamed)
+  resolveBatched :: MonadError GQLError m => [Dependency a] -> m [Maybe a]
 
-  resolveNamed :: Monad m => Dep a -> m a
-
-instance (ResolveNamed m a, MonadError GQLError m) => ResolveNamed (m :: Type -> Type) [a] where
-  type Dep [a] = [Dep a]
-  resolveNamed _ = throwError (internal "named resolver instance [a] should not be called")
-
-instance (ResolveNamed m a, MonadError GQLError m) => ResolveNamed (m :: Type -> Type) (Maybe a) where
-  type Dep (Maybe a) = Maybe (Dep a)
-  resolveNamed _ = throwError (internal "named resolver instance Maybe should not be called")
+  resolveNamed :: MonadError GQLError m => Dependency a -> m a
+  resolveNamed = useBatched
 
 data NamedResolverT (m :: Type -> Type) a where
-  Ref :: ResolveNamed m a => m (Dep a) -> NamedResolverT m a
-  Refs :: ResolveNamed m a => m [Dep a] -> NamedResolverT m [a]
+  Ref :: ResolveNamed m (Target a) => m (Dependency a) -> NamedResolverT m a
+  Refs :: ResolveNamed m (Target a) => m [Dependency a] -> NamedResolverT m [a]
   Value :: m a -> NamedResolverT m a
 
--- RESOLVER TYPES
-data RES = VALUE | LIST | REF
+data RES = LIST | REF
 
-type family RES_TYPE a b :: RES where
-  RES_TYPE a a = 'VALUE
-  RES_TYPE [a] [b] = 'LIST
-  RES_TYPE a b = 'REF
+type family RES_TYPE b :: RES where
+  RES_TYPE [b] = 'LIST
+  RES_TYPE b = 'REF
 
-resolve :: forall m a b. (ResolveByType (RES_TYPE a b) m a b) => Monad m => m a -> NamedResolverT m b
-resolve = resolveByType (Proxy :: Proxy (RES_TYPE a b))
+instance MonadTrans NamedResolverT where
+  lift = Value
 
-class Dep b ~ a => ResolveByType (k :: RES) m a b where
+resolve :: forall m a b. (ResolveByType (RES_TYPE b) m a b) => Monad m => m a -> NamedResolverT m b
+resolve = resolveByType (Proxy :: Proxy (RES_TYPE b))
+
+class ResolveByType (k :: RES) m a b where
   resolveByType :: Monad m => f k -> m a -> NamedResolverT m b
 
-instance (ResolveNamed m a, Dep a ~ a) => ResolveByType 'VALUE m a a where
-  resolveByType _ = Value
-
-instance (ResolveNamed m b, Dep b ~ a) => ResolveByType 'LIST m [a] [b] where
+instance (ResolveNamed m (Target b), a ~ Dependency b) => ResolveByType 'LIST m [a] [b] where
   resolveByType _ = Refs
 
-instance (ResolveNamed m b, Dep b ~ a) => ResolveByType 'REF m a b where
+instance (ResolveNamed m (Target b), Dependency b ~ a) => ResolveByType 'REF m a b where
   resolveByType _ = Ref

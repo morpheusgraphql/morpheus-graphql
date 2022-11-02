@@ -115,20 +115,6 @@ data-files:
     test/Feature/Input/default-values/intorspection/input-simple/query.gql
     test/Feature/Input/default-values/resolving/compound/query.gql
     test/Feature/Input/default-values/resolving/simple/query.gql
-    test/Feature/NamedResolvers/deities.gql
-    test/Feature/NamedResolvers/realms.gql
-    test/Feature/NamedResolvers/tests/deities-ext/query.gql
-    test/Feature/NamedResolvers/tests/deities/query.gql
-    test/Feature/NamedResolvers/tests/deity-by-id/query.gql
-    test/Feature/NamedResolvers/tests/deity-ext-by-id/query.gql
-    test/Feature/NamedResolvers/tests/deity-simple/query.gql
-    test/Feature/NamedResolvers/tests/entities/query.gql
-    test/Feature/NamedResolvers/tests/entity-by-id/query.gql
-    test/Feature/NamedResolvers/tests/entity-ext-by-id/query.gql
-    test/Feature/NamedResolvers/tests/realm-by-id/query.gql
-    test/Feature/NamedResolvers/tests/realm-ext-by-id/query.gql
-    test/Feature/NamedResolvers/tests/realm-simple/query.gql
-    test/Feature/NamedResolvers/tests/realms/query.gql
     test/Rendering/schema.gql
     test/Subscription/schema.gql
     test/Feature/Holistic/holistic/arguments/nameConflict/response.json
@@ -224,18 +210,6 @@ data-files:
     test/Feature/Input/default-values/intorspection/input-simple/response.json
     test/Feature/Input/default-values/resolving/compound/response.json
     test/Feature/Input/default-values/resolving/simple/response.json
-    test/Feature/NamedResolvers/tests/deities-ext/response.json
-    test/Feature/NamedResolvers/tests/deities/response.json
-    test/Feature/NamedResolvers/tests/deity-by-id/response.json
-    test/Feature/NamedResolvers/tests/deity-ext-by-id/response.json
-    test/Feature/NamedResolvers/tests/deity-simple/response.json
-    test/Feature/NamedResolvers/tests/entities/response.json
-    test/Feature/NamedResolvers/tests/entity-by-id/response.json
-    test/Feature/NamedResolvers/tests/entity-ext-by-id/response.json
-    test/Feature/NamedResolvers/tests/realm-by-id/response.json
-    test/Feature/NamedResolvers/tests/realm-ext-by-id/response.json
-    test/Feature/NamedResolvers/tests/realm-simple/response.json
-    test/Feature/NamedResolvers/tests/realms/response.json
 
 source-repository head
   type: git
@@ -277,10 +251,6 @@ test-suite morpheus-graphql-test
   other-modules:
       Feature.Holistic.API
       Feature.Input.DefaultValues
-      Feature.NamedResolvers.API
-      Feature.NamedResolvers.Deities
-      Feature.NamedResolvers.Entities
-      Feature.NamedResolvers.Realms
       Rendering.Schema
       Rendering.TestSchemaRendering
       Subscription.API

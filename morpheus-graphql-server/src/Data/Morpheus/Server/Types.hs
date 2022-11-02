@@ -35,6 +35,7 @@ module Data.Morpheus.Server.Types
     render,
     TypeGuard (..),
     Arg (..),
+    GQLError,
 
     -- * GQL directives API
     Prefixes (..),
@@ -134,7 +135,8 @@ import Data.Morpheus.Types.IO
     GQLResponse (..),
   )
 import Data.Morpheus.Types.Internal.AST
-  ( MUTATION,
+  ( GQLError,
+    MUTATION,
     QUERY,
     SUBSCRIPTION,
     ScalarValue (..),

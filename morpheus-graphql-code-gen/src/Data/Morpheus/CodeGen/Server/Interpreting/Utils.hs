@@ -8,7 +8,7 @@
 
 module Data.Morpheus.CodeGen.Server.Interpreting.Utils
   ( CodeGenMonad (..),
-    TypeContext (..),
+    ServerCodeGenContext (..),
     CodeGenT,
     getFieldName,
     getEnumName,
@@ -57,9 +57,9 @@ import Language.Haskell.TH
   )
 import Relude hiding (ByteString, get)
 
-type CodeGenT m = ReaderT (TypeContext CONST) m
+type CodeGenT m = ReaderT (ServerCodeGenContext CONST) m
 
-data TypeContext s = TypeContext
+data ServerCodeGenContext s = ServerCodeGenContext
   { toArgsTypeName :: FieldName -> TypeName,
     typeDefinitions :: [TypeDefinition ANY s],
     directiveDefinitions :: [DirectiveDefinition s],
@@ -70,15 +70,15 @@ data TypeContext s = TypeContext
 
 getFieldName :: Monad m => FieldName -> CodeGenT m FieldName
 getFieldName fieldName = do
-  TypeContext {hasNamespace, currentTypeName} <- ask
+  ServerCodeGenContext {hasNamespace, currentTypeName} <- ask
   pure $
     if hasNamespace
       then maybe fieldName (`camelCaseFieldName` fieldName) currentTypeName
       else fieldName
 
-getEnumName :: MonadReader (TypeContext s) m => TypeName -> m CodeGenTypeName
+getEnumName :: MonadReader (ServerCodeGenContext s) m => TypeName -> m CodeGenTypeName
 getEnumName enumName = do
-  TypeContext {hasNamespace, currentTypeName} <- ask
+  ServerCodeGenContext {hasNamespace, currentTypeName} <- ask
   pure $
     if hasNamespace
       then CodeGenTypeName (map coerce $ maybeToList currentTypeName) [] enumName
@@ -122,7 +122,7 @@ isParametrizedResolverType name lib = case lookupWith typeName name lib of
   Just x -> pure (isResolverType x)
   Nothing -> lift (isParametrizedType name)
 
-isParamResolverType :: CodeGenMonad m => TypeName -> ReaderT (TypeContext CONST) m Bool
+isParamResolverType :: CodeGenMonad m => TypeName -> ReaderT (ServerCodeGenContext CONST) m Bool
 isParamResolverType typeConName =
   isParametrizedResolverType typeConName =<< asks typeDefinitions
 
@@ -149,5 +149,5 @@ isSubscription :: TypeKind -> Bool
 isSubscription (KindObject (Just Subscription)) = True
 isSubscription _ = False
 
-inType :: MonadReader (TypeContext s) m => Maybe TypeName -> m a -> m a
+inType :: MonadReader (ServerCodeGenContext s) m => Maybe TypeName -> m a -> m a
 inType name = local (\x -> x {currentTypeName = name, currentKind = Nothing})

@@ -37,7 +37,7 @@ import Data.Morpheus.CodeGen.Server.Internal.AST
     ServerMethod (..),
   )
 import Data.Morpheus.CodeGen.Server.Interpreting.Directive (dirRename, getDefaultValueDir, getDirs, getNamespaceDirs)
-import Data.Morpheus.CodeGen.Server.Interpreting.Utils (CodeGenMonad (printWarnings), CodeGenT, TypeContext (..), getEnumName, getFieldName, inType, isParamResolverType, isSubscription)
+import Data.Morpheus.CodeGen.Server.Interpreting.Utils (CodeGenMonad (printWarnings), CodeGenT, ServerCodeGenContext (..), getEnumName, getFieldName, inType, isParamResolverType, isSubscription)
 import Data.Morpheus.CodeGen.TH (ToName (..))
 import Data.Morpheus.CodeGen.Utils
   ( camelCaseTypeName,
@@ -95,7 +95,7 @@ toTHDefinitions namespace defs = concat <$> traverse generateTypes defs
     generateTypes (RawTypeDefinition typeDef) =
       runReaderT
         (genTypeDefinition typeDef)
-        TypeContext
+        ServerCodeGenContext
           { toArgsTypeName = mkArgsTypeName namespace (typeName typeDef),
             typeDefinitions,
             directiveDefinitions,
@@ -133,7 +133,7 @@ toTHDefinitions namespace defs = concat <$> traverse generateTypes defs
                     }
               ]
         )
-        TypeContext
+        ServerCodeGenContext
           { toArgsTypeName = coerce,
             typeDefinitions,
             currentTypeName = Just (coerce directiveDefinitionName),
@@ -362,29 +362,29 @@ genArgumentType
       fieldContent = Just (FieldArgs arguments)
     }
     | length arguments > 1 = do
-        tName <- (fieldName &) <$> asks toArgsTypeName
-        inType (Just tName) $ do
-          let argumentFields = argument <$> toList arguments
-          fields <- traverse renderDataField argumentFields
-          let typename = toHaskellTypeName tName
-          namespaceDirs <- getNamespaceDirs typename
-          dirs <- concat <$> traverse getDirs argumentFields
-          let cgTypeName = fromTypeName (packName typename)
-          defaultValueDirs <- concat <$> traverse getDefaultValueDir argumentFields
-          pure
-            [ DataType
-                CodeGenType
-                  { cgTypeName,
-                    cgConstructors = mkObjectCons tName fields,
-                    cgDerivations = derivesClasses False
-                  },
-              gqlTypeToInstance
-                GQLTypeDefinition
-                  { gqlTarget = cgTypeName,
-                    gqlKind = Type,
-                    gqlTypeDirectiveUses = namespaceDirs <> dirs <> defaultValueDirs
-                  }
-            ]
+      tName <- (fieldName &) <$> asks toArgsTypeName
+      inType (Just tName) $ do
+        let argumentFields = argument <$> toList arguments
+        fields <- traverse renderDataField argumentFields
+        let typename = toHaskellTypeName tName
+        namespaceDirs <- getNamespaceDirs typename
+        dirs <- concat <$> traverse getDirs argumentFields
+        let cgTypeName = fromTypeName (packName typename)
+        defaultValueDirs <- concat <$> traverse getDefaultValueDir argumentFields
+        pure
+          [ DataType
+              CodeGenType
+                { cgTypeName,
+                  cgConstructors = mkObjectCons tName fields,
+                  cgDerivations = derivesClasses False
+                },
+            gqlTypeToInstance
+              GQLTypeDefinition
+                { gqlTarget = cgTypeName,
+                  gqlKind = Type,
+                  gqlTypeDirectiveUses = namespaceDirs <> dirs <> defaultValueDirs
+                }
+          ]
 genArgumentType _ = pure []
 
 getInputFields :: TypeDefinition c s -> [FieldDefinition IN s]
