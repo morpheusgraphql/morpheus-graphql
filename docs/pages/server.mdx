@@ -506,17 +506,20 @@ resolveDeity DeityArgs { } = throwError ("db error" :: GQLError)
 Morpheus GraphQL provides two way of type resolving.
 
 1. **Values as resolvers**: In this approach, you specify values
-   for the type definitions, where the resolvers are regular functions.
-2. **Named resolvers**: In this approach, we use the type class `ResolveNamed` to define the
-   resolver for each type. More information on this approach can be
-   found in the next section.
+  for the type definitions, where the resolvers are regular functions. 
+  However, this approach can sometimes lead to the possibility of overwhelming 
+  the database with a huge amount of queries.  
+  For this reason, the second approach, which involves automatic batching, 
+  might be the more suitable solution for you.
 
-<Section id="named-resolvers" level={2}>
-  Named Resolvers
-</Section>
+2. **Named resolvers**: In this approach, we use the type class `ResolveNamed` to define the 
+ resolver function for each type that handles a batched list of dependencies. 
+ More information on this approach can be found in the next section.
+
+<Section id="named-resolvers" level={2}> Named Resolvers (Batching)</Section>
 
 As mentioned earlier, in this approach we use `ResolveNamed`
-to define the resolver function for each type. In this resolver definition,
+to define the resolver function (with batching) for each type. In this resolver definition,
 each type also defines its dependency (identifier), which is used by the
 compiler to provide a corresponding output resolution for certain input values.
 That is, if we want to resolve a type as a field of another type, we must
@@ -555,13 +558,19 @@ starting with type `Post`. The following instance specifies that for each unique
 we can resolve the corresponding `Post`, where the post `title` is retrieved by the post `ID`.
 
 ```haskell
-instance Monad m => ResolveNamed m (Post (NamedResolverT m)) where
+getPostTitles :: Monad m => [ID] -> m [Maybe Text]
+getPostTitles = <your db query>
+
+resolvePosts :: Monad m => [ID] -> m [Maybe (Post (NamedResolverT m))]
+resolvePosts ids = do
+  titles <- getPostTitles ids
+  pure (map (fmap toPost) titles)
+  where
+    toPost text = Post {title = lift (pure text)}
+
+instance ResolveNamed m (Post (NamedResolverT m)) where
   type Dep (Post (NamedResolverT m)) = ID
-  resolveNamed uid =
-    pure
-      Post
-        { title = resolve (getPostTitleById uid)
-        }
+  resolveBatched = resolvePosts
 ```
 
 Let's go to the next step and define a query resolver. Since the query does not
@@ -573,14 +582,19 @@ corresponding `Post` values by calling the `ResolveNamed`
 instance of the type `Post` with those ids.
 
 ```haskell
-instance Monad m => ResolveNamed m (Query (NamedResolverT m)) where
+allPostIds :: m [ID]
+allPostIds = <your db query>
+
+resolveQuery :: Monad m => Query (NamedResolverT m)
+resolveQuery =
+  Query
+    { posts = resolve allPostIds,
+      post = \(Arg arg) -> resolve (pure arg)
+    }
+
+instance ResolveNamed m (Query (NamedResolverT m)) where
   type Dep (Query (NamedResolverT m)) = ()
-  resolveNamed () =
-    pure
-      Query
-        { posts = resolve getPostIds,
-          post = \(Arg arg) -> resolve (pure (Just arg))
-        }
+  resolveBatched = pure . map (const $ Just resolveQuery)
 ```
 
 In the last step, we can derive the GraphQL application using
@@ -634,18 +648,39 @@ As you can see, we can query `authors`, with each `Author` having their fields `
 in the same manner as before, we can also provide their resolver implementation.
 
 ```haskell
-instance Monad m => ResolveNamed m (Author (NamedResolverT m)) where
-  type Dep (Author (NamedResolverT m)) = ID
-  resolveNamed uid =
-    pure
-      Author
-        { name = resolve (getAuthorName uid),
-          posts = resolve (getAuthorPosts uid)
-        }
+getAuthorPostIds :: Monad m => [ID] -> m [[ID]]
+getAuthorPostIds = <your db query>
 
-instance Monad m => ResolveNamed m (Query (NamedResolverT m)) where
+getAuthorNames :: Monad m => [ID] -> m [Text]
+getAuthorNames = <your db query>
+
+getAuthors :: Monad m => [ID] -> m [Maybe (Author (NamedResolverT m))]
+getAuthors ids = do
+  postIds <- getAuthorPostIds ids
+  names <- getAuthorNames ids
+  pure (zipWith toAuthor names postIds)
+
+toAuthor :: Monad m => Text -> [ID] -> Maybe (Author (NamedResolverT m))
+toAuthor authorName postId =
+  Just
+    Author
+      { name = lift (pure authorName),
+        posts = resolve (pure postId)
+      }
+
+instance ResolveNamed m (Author (NamedResolverT m)) where
+  type Dep (Author (NamedResolverT m)) = ID
+  resolveBatched = getAuthors
+
+getAllAuthorIds :: Monad m => m [ID]
+getAllAuthorIds = undefined
+
+resolveQuery :: Monad m => Query (NamedResolverT m)
+resolveQuery = Query {authors = resolve getAllAuthorIds}
+
+instance ResolveNamed m (Query (NamedResolverT m)) where
   type Dep (Query (NamedResolverT m)) = ()
-  resolveNamed () = pure Query { authors = resolve getAuthorIds }
+  resolveBatched = pure . map (const $ Just resolveQuery)
 ```
 
 At this stage, we have already implemented Authors and Query and now we can also
@@ -673,13 +708,19 @@ argument of the function does not match, one of the implementations
 will be unable to decode the argument during resolution and it will fail.
 
 ```haskell
-instance Monad m => ResolveNamed m (Post (NamedResolverT m)) where
+getPostAuthorIds :: Monad m => [ID] -> m [ID]
+getPostAuthorIds = <your db query>
+
+resolvePosts :: Monad m => [ID] -> m [Maybe (Post (NamedResolverT m))]
+resolvePosts ids = do
+  autors <- getPostAuthorIds ids
+  pure (map toPost autors)
+  where
+    toPost autorId = Just $ Post {author = resolve (pure autorId)}
+
+instance ResolveNamed m (Post (NamedResolverT m)) where
   type Dep (Post (NamedResolverT m)) = ID
-  resolveNamed uid =
-    pure
-      Post
-        { author = resolve (pure uid)
-        }
+  resolveBatched = resolvePosts
 ```
 
 Since all resolvers are implemented, we can also derive the application.
