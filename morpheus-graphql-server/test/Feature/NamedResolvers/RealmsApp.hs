@@ -3,7 +3,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
@@ -43,12 +42,12 @@ import Feature.NamedResolvers.Realms
 getRealm :: (Monad m) => ID -> m (Maybe (Realm (NamedResolverT m)))
 getRealm uid
   | uid `elem` allRealms =
-    pure $
-      Just
-        Realm
-          { name = lift (getRealmName uid),
-            owner = resolve (getOwner uid)
-          }
+      pure $
+        Just
+          Realm
+            { name = lift (getRealmName uid),
+              owner = resolve (getOwner uid)
+            }
 getRealm _ = pure Nothing
 
 instance ResolveNamed m (Realm (NamedResolverT m)) where
@@ -68,13 +67,13 @@ getDeity arg
 instance ResolveNamed m (Query (NamedResolverT m)) where
   type Dep (Query (NamedResolverT m)) = ()
   resolveBatched =
-    ignoreBatching
-      $const
-      $ pure
-        Query
-          { realm = \(Arg arg) -> resolve (pure arg),
-            realms = resolve (pure allRealms)
-          }
+    ignoreBatching $
+      const $
+        pure
+          Query
+            { realm = \(Arg arg) -> resolve (pure arg),
+              realms = resolve (pure allRealms)
+            }
 
 realmsApp :: App () IO
 realmsApp =

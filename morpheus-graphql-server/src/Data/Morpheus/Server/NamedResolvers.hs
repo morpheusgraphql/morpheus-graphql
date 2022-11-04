@@ -23,18 +23,35 @@ import Control.Monad.Except
 import Data.Aeson (ToJSON)
 import Data.Morpheus.Types.ID (ID)
 import Data.Morpheus.Types.Internal.AST (GQLError, internal)
+import Data.Vector (Vector)
+import GHC.TypeLits (Symbol)
 import Relude
 
 type family Target a :: Type where
-  Target [a] = a
   Target (Maybe a) = a
+  Target [a] = a
+  Target (Set a) = a
+  Target (NonEmpty a) = a
+  Target (Seq a) = a
+  Target (Vector a) = a
   Target a = a
 
 type family Dependency a :: Type where
-  Dependency [a] = Dependency a
-  Dependency (Maybe a) = Dependency a
-  Dependency ID = ID
+  -- scalars
+  Dependency Int = Int
+  Dependency Double = Double
+  Dependency Float = Float
   Dependency Text = Text
+  Dependency Bool = Bool
+  Dependency ID = ID
+  -- wrappers
+  Dependency (Maybe a) = Dependency a
+  Dependency [a] = Dependency a
+  Dependency (Set a) = Dependency a
+  Dependency (NonEmpty a) = Dependency a
+  Dependency (Seq a) = Dependency a
+  Dependency (Vector a) = Dependency a
+  -- custom
   Dependency a = Dep a
 
 ignoreBatching :: (Monad m) => (a -> m b) -> [a] -> m [Maybe b]
@@ -61,23 +78,33 @@ data NamedResolverT (m :: Type -> Type) a where
   Refs :: ResolveNamed m (Target a) => m [Dependency a] -> NamedResolverT m [a]
   Value :: m a -> NamedResolverT m a
 
-data RES = LIST | REF
+data TargetType = LIST | SINGLE | ERROR Symbol
 
-type family RES_TYPE b :: RES where
-  RES_TYPE [b] = 'LIST
-  RES_TYPE b = 'REF
+type family NamedResolverTarget b :: TargetType where
+  NamedResolverTarget [a] = 'LIST
+  NamedResolverTarget (Set a) = 'LIST
+  NamedResolverTarget (NonEmpty a) = 'LIST
+  NamedResolverTarget (Seq a) = 'LIST
+  NamedResolverTarget (Vector a) = 'LIST
+  NamedResolverTarget Int = 'ERROR "use lift, type Int can't have ResolveNamed instance"
+  NamedResolverTarget Double = 'ERROR "use lift, type Double can't have ResolveNamed instance"
+  NamedResolverTarget Float = 'ERROR "use lift, type Float can't have ResolveNamed instance"
+  NamedResolverTarget Text = 'ERROR "use lift, type Text can't have ResolveNamed instance"
+  NamedResolverTarget Bool = 'ERROR "use lift, type Bool can't have ResolveNamed instance"
+  NamedResolverTarget ID = 'ERROR "use lift, type ID can't have ResolveNamed instance"
+  NamedResolverTarget b = 'SINGLE
 
 instance MonadTrans NamedResolverT where
   lift = Value
 
-resolve :: forall m a b. (ResolveByType (RES_TYPE b) m a b) => Monad m => m a -> NamedResolverT m b
-resolve = resolveByType (Proxy :: Proxy (RES_TYPE b))
+resolve :: forall m a b. (ResolveRef (NamedResolverTarget b) m a b) => Monad m => m a -> NamedResolverT m b
+resolve = resolveRef (Proxy :: Proxy (NamedResolverTarget b))
 
-class ResolveByType (k :: RES) m a b where
-  resolveByType :: Monad m => f k -> m a -> NamedResolverT m b
+class ResolveRef (k :: TargetType) m a b where
+  resolveRef :: Monad m => f k -> m a -> NamedResolverT m b
 
-instance (ResolveNamed m (Target b), a ~ Dependency b) => ResolveByType 'LIST m [a] [b] where
-  resolveByType _ = Refs
+instance (ResolveNamed m (Target b), a ~ Dependency b) => ResolveRef 'LIST m [a] [b] where
+  resolveRef _ = Refs
 
-instance (ResolveNamed m (Target b), Dependency b ~ a) => ResolveByType 'REF m a b where
-  resolveByType _ = Ref
+instance (ResolveNamed m (Target b), Dependency b ~ a) => ResolveRef 'SINGLE m a b where
+  resolveRef _ = Ref

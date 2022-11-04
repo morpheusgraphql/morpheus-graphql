@@ -6,7 +6,6 @@ module Main
   )
 where
 
-import Data.Morpheus (runApp)
 import Data.Morpheus.Types (GQLRequest (..), GQLResponse (..))
 import qualified Feature.Holistic.API as Holistic
 import qualified Feature.Input.DefaultValues as DefaultValues

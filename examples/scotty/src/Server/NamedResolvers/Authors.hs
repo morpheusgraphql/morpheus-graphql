@@ -24,12 +24,11 @@ import Data.Morpheus.NamedResolvers
 import Data.Morpheus.Types
   ( App,
     Arg (..),
-    GQLError,
     GQLType (..),
     ID,
-    MonadError,
     NamedResolvers (..),
     Undefined,
+    lift,
   )
 import GHC.Generics (Generic)
 
@@ -42,10 +41,12 @@ data Role
       ToJSON
     )
 
-instance Monad m => ResolveNamed m Role where
+instance ResolveNamed m Role where
   type Dep Role = ID
-  resolveNamed "1325" = pure Admin
-  resolveNamed _ = pure Guest
+  resolveBatched = traverse getRole
+    where
+      getRole "1325" = pure (Just Admin)
+      getRole _ = pure (Just Guest)
 
 -- AUTHOR
 data Author m = Author
@@ -58,15 +59,18 @@ data Author m = Author
       GQLType
     )
 
-instance Monad m => ResolveNamed m (Author (NamedResolverT m)) where
+instance ResolveNamed m (Author (NamedResolverT m)) where
   type Dep (Author (NamedResolverT m)) = ID
-  resolveNamed uid =
-    pure
-      Author
-        { authorId = resolve (pure uid),
-          role = resolve (pure uid),
-          posts = resolve (pure ["2321", "2112"])
-        }
+  resolveBatched = traverse getAuthor
+    where
+      getAuthor uid =
+        pure $
+          Just
+            Author
+              { authorId = lift (pure uid),
+                role = resolve (pure uid),
+                posts = resolve (pure ["2321", "2112"])
+              }
 
 -- POST EXTENSION
 newtype Post m = Post
@@ -77,13 +81,16 @@ newtype Post m = Post
       GQLType
     )
 
-instance Monad m => ResolveNamed m (Post (NamedResolverT m)) where
+instance ResolveNamed m (Post (NamedResolverT m)) where
   type Dep (Post (NamedResolverT m)) = ID
-  resolveNamed uid =
-    pure
-      Post
-        { author = resolve (pure uid)
-        }
+  resolveBatched = traverse getPost
+    where
+      getPost uid =
+        pure $
+          Just
+            Post
+              { author = resolve (pure uid)
+              }
 
 -- QUERY
 data Query m = Query
@@ -95,14 +102,16 @@ data Query m = Query
       GQLType
     )
 
-instance MonadError GQLError m => ResolveNamed m (Query (NamedResolverT m)) where
+instance ResolveNamed m (Query (NamedResolverT m)) where
   type Dep (Query (NamedResolverT m)) = ()
-  resolveNamed () =
+  resolveBatched _ =
     pure
-      Query
-        { authors = resolve (pure ["1325", "2525"]),
-          authorById = \(Arg uid) -> resolve (pure (Just uid))
-        }
+      [ Just
+          Query
+            { authors = resolve (pure ["1325", "2525"]),
+              authorById = \(Arg uid) -> resolve (pure uid)
+            }
+      ]
 
 authorsApp :: App () IO
 authorsApp =

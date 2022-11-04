@@ -40,11 +40,14 @@ data Page m
       GQLType
     )
 
-instance Monad m => ResolveNamed m (Page (NamedResolverT m)) where
+getPage :: (Monad m) => ID -> m (Page (NamedResolverT m))
+getPage "1325" = pure $ PagePost (resolve $ pure "1325")
+getPage "2525" = pure $ PagePost (resolve $ pure "2525")
+getPage x = pure $ PageAuthor (resolve $ pure x)
+
+instance ResolveNamed m (Page (NamedResolverT m)) where
   type Dep (Page (NamedResolverT m)) = ID
-  resolveNamed "1325" = pure $ PagePost (resolve $ pure "1325")
-  resolveNamed "2525" = pure $ PagePost (resolve $ pure "2525")
-  resolveNamed x = pure $ PageAuthor (resolve $ pure x)
+  resolveBatched = traverse (fmap Just . getPage)
 
 -- QUERY
 data Query m = Query
@@ -58,12 +61,14 @@ data Query m = Query
 
 instance MonadError GQLError m => ResolveNamed m (Query (NamedResolverT m)) where
   type Dep (Query (NamedResolverT m)) = ()
-  resolveNamed () =
+  resolveBatched _ =
     pure
-      Query
-        { pages = resolve (pure ["1325", "2415"]),
-          pageById = \(Arg uid) -> resolve (pure (Just uid))
-        }
+      [ Just
+          Query
+            { pages = resolve (pure ["1325", "2415"]),
+              pageById = \(Arg uid) -> resolve (pure uid)
+            }
+      ]
 
 pagesApp :: App () IO
 pagesApp =

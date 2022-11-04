@@ -39,12 +39,12 @@ getPower _ = pure Nothing
 getDeity :: Monad m => ID -> m (Maybe (Deity (NamedResolverT m)))
 getDeity uid
   | uid `elem` allDeities =
-    pure $
-      Just
-        Deity
-          { name = lift (getDeityName uid),
-            power = resolve (getPowers uid)
-          }
+      pure $
+        Just
+          Deity
+            { name = lift (getDeityName uid),
+              power = resolve (getPowers uid)
+            }
 getDeity _ = pure Nothing
 
 instance ResolveNamed m Power where
@@ -58,13 +58,13 @@ instance ResolveNamed m (Deity (NamedResolverT m)) where
 instance ResolveNamed m (Query (NamedResolverT m)) where
   type Dep (Query (NamedResolverT m)) = ()
   resolveBatched =
-    ignoreBatching
-      $ const
-      $ pure
-        Query
-          { deity = \(Arg uid) -> resolve (pure uid),
-            deities = resolve (pure allDeities)
-          }
+    ignoreBatching $
+      const $
+        pure
+          Query
+            { deity = \(Arg uid) -> resolve (pure uid),
+              deities = resolve (pure allDeities)
+            }
 
 deitiesApp :: App () IO
 deitiesApp = deriveApp (NamedResolvers :: NamedResolvers IO () Query Undefined Undefined)
