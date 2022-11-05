@@ -6,11 +6,9 @@ module Main
   )
 where
 
-import Data.Morpheus (runApp)
 import Data.Morpheus.Types (GQLRequest (..), GQLResponse (..))
 import qualified Feature.Holistic.API as Holistic
 import qualified Feature.Input.DefaultValues as DefaultValues
-import qualified Feature.NamedResolvers.API as NamedResolvers
 import Relude
 import Rendering.TestSchemaRendering (testSchemaRendering)
 import Subscription.Test (testSubscriptions)
@@ -51,9 +49,6 @@ main =
         "Holistic"
         [ (Holistic.api, "holistic")
         ],
-      testFeatures
-        "NamedResolvers"
-        [(runApp NamedResolvers.app, "tests")],
       testSubscriptions,
       pure testSchemaRendering
     ]

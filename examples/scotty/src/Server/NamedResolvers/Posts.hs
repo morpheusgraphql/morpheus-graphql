@@ -27,6 +27,7 @@ import Data.Morpheus.Types
     MonadError,
     NamedResolvers (..),
     Undefined,
+    lift,
   )
 import Data.Semigroup (Semigroup ((<>)))
 import Data.Text (Text)
@@ -39,14 +40,18 @@ data Post m = Post
   }
   deriving (Generic, GQLType)
 
-instance Monad m => ResolveNamed m (Post (NamedResolverT m)) where
-  type Dep (Post (NamedResolverT m)) = ID
-  resolveNamed pid =
-    pure
+getPost :: (Monad m) => ID -> m (Maybe (Post (NamedResolverT m)))
+getPost pid =
+  pure $
+    Just $
       Post
-        { postID = resolve (pure pid),
-          title = resolve (pure $ "title for \"" <> unpackID pid <> "\"")
+        { postID = lift (pure pid),
+          title = lift (pure $ "title for \"" <> unpackID pid <> "\"")
         }
+
+instance ResolveNamed m (Post (NamedResolverT m)) where
+  type Dep (Post (NamedResolverT m)) = ID
+  resolveBatched = traverse getPost
 
 -- QUERY
 data Query m = Query
@@ -60,12 +65,14 @@ data Query m = Query
 
 instance MonadError GQLError m => ResolveNamed m (Query (NamedResolverT m)) where
   type Dep (Query (NamedResolverT m)) = ()
-  resolveNamed () =
+  resolveBatched _ =
     pure
-      Query
-        { posts = resolve (pure ["1325", "2525"]),
-          post = \(Arg arg) -> resolve (pure (Just arg))
-        }
+      [ Just
+          Query
+            { posts = resolve (pure ["1325", "2525"]),
+              post = \(Arg arg) -> resolve (pure arg)
+            }
+      ]
 
 postsApp :: App () IO
 postsApp =

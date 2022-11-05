@@ -1,0 +1,5 @@
+server:
+  - name: NamedResolvers
+    source: ./
+    includes:
+      - Feature/NamedResolvers/*.gql

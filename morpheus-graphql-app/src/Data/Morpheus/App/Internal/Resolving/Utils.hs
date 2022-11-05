@@ -22,6 +22,8 @@ where
 import Control.Monad.Except (MonadError (throwError))
 import qualified Data.Aeson as A
 import Data.Morpheus.App.Internal.Resolving.ResolverState
+  ( ResolverContext (..),
+  )
 import Data.Morpheus.App.Internal.Resolving.Types
   ( NamedResolverRef (..),
     ObjectTypeResolver (..),

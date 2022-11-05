@@ -24,6 +24,7 @@ module Data.Morpheus.Server.Resolvers
     ResolverM,
     ResolverS,
     useBatched,
+    ignoreBatching,
   )
 where
 
@@ -31,6 +32,7 @@ import Data.Morpheus.App.Internal.Resolving (PushEvents (pushEvents), Resolver, 
 import Data.Morpheus.Server.NamedResolvers
   ( NamedResolverT (..),
     ResolveNamed (..),
+    ignoreBatching,
     resolve,
     useBatched,
   )

@@ -37,7 +37,7 @@ import Data.Morpheus.CodeGen.Server.Internal.AST
     ServerMethod (..),
   )
 import Data.Morpheus.CodeGen.Server.Interpreting.Directive (dirRename, getDefaultValueDir, getDirs, getNamespaceDirs)
-import Data.Morpheus.CodeGen.Server.Interpreting.Utils (CodeGenMonad (printWarnings), CodeGenT, TypeContext (..), getEnumName, getFieldName, inType, isParamResolverType, isSubscription)
+import Data.Morpheus.CodeGen.Server.Interpreting.Utils (CodeGenMonad (printWarnings), CodeGenT, ServerCodeGenContext (..), getEnumName, getFieldName, inType, isParamResolverType, isSubscription)
 import Data.Morpheus.CodeGen.TH (ToName (..))
 import Data.Morpheus.CodeGen.Utils
   ( camelCaseTypeName,
@@ -95,7 +95,7 @@ toTHDefinitions namespace defs = concat <$> traverse generateTypes defs
     generateTypes (RawTypeDefinition typeDef) =
       runReaderT
         (genTypeDefinition typeDef)
-        TypeContext
+        ServerCodeGenContext
           { toArgsTypeName = mkArgsTypeName namespace (typeName typeDef),
             typeDefinitions,
             directiveDefinitions,
@@ -133,7 +133,7 @@ toTHDefinitions namespace defs = concat <$> traverse generateTypes defs
                     }
               ]
         )
-        TypeContext
+        ServerCodeGenContext
           { toArgsTypeName = coerce,
             typeDefinitions,
             currentTypeName = Just (coerce directiveDefinitionName),

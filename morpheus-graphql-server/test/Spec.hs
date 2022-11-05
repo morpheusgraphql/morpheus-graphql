@@ -26,6 +26,7 @@ import qualified Feature.Input.Enums as Enums
 import qualified Feature.Input.Objects as Objects
 import qualified Feature.Input.Scalars as Scalars
 import qualified Feature.Input.Variables as Variables
+import qualified Feature.NamedResolvers.API as NamedResolvers
 import Relude
 import Test.Morpheus
   ( FileUrl,
@@ -87,5 +88,8 @@ main =
           (EnumVisitor.api, "enum-visitor"),
           (FieldVisitor.api, "field-visitor"),
           (TypeVisitor.api, "type-visitor")
-        ]
+        ],
+      testFeatures
+        "NamedResolvers"
+        [(NamedResolvers.api, "tests")]
     ]

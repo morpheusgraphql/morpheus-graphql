@@ -4,31 +4,36 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
-module Feature.NamedResolvers.Entities
+module Feature.NamedResolvers.EntitiesApp
   ( entitiesApp,
   )
 where
 
 import Control.Monad.Except
-import Data.Morpheus (deriveApp)
-import Data.Morpheus.NamedResolvers
+import Data.Morpheus.Server (deriveApp)
+import Data.Morpheus.Server.Resolvers
   ( NamedResolverT,
+    NamedResolvers (..),
     ResolveNamed (..),
+    ignoreBatching,
     resolve,
   )
-import Data.Morpheus.Types
+import Data.Morpheus.Server.Types
   ( App,
     Arg (..),
     GQLError,
     GQLType (..),
     ID,
-    NamedResolvers (..),
     Undefined,
   )
-import Feature.NamedResolvers.Realms (Deity, Realm)
+import Feature.NamedResolvers.DB
+  ( allDeities,
+    allEntities,
+  )
+import Feature.NamedResolvers.RealmsApp (Deity, Realm)
 import GHC.Generics (Generic)
 
 -- Entity
@@ -41,13 +46,12 @@ data Entity m
     )
 
 getEntity :: (MonadError GQLError m) => ID -> m (Entity (NamedResolverT m))
-getEntity "zeus" = pure $ EntityDeity (resolve $ pure "zeus")
-getEntity "morpheus" = pure $ EntityDeity (resolve $ pure "morpheus")
-getEntity x = pure $ EntityRealm (resolve $ pure x)
+getEntity name | name `elem` allDeities = pure $ EntityDeity $ resolve $ pure name
+getEntity x = pure $ EntityRealm $ resolve $ pure x
 
-instance (MonadError GQLError m) => ResolveNamed m (Entity (NamedResolverT m)) where
+instance ResolveNamed m (Entity (NamedResolverT m)) where
   type Dep (Entity (NamedResolverT m)) = ID
-  resolveNamed = getEntity
+  resolveBatched = ignoreBatching getEntity
 
 -- QUERY
 data Query m = Query
@@ -59,14 +63,16 @@ data Query m = Query
       GQLType
     )
 
-instance MonadError GQLError m => ResolveNamed m (Query (NamedResolverT m)) where
+instance ResolveNamed m (Query (NamedResolverT m)) where
   type Dep (Query (NamedResolverT m)) = ()
-  resolveNamed _ =
-    pure
-      Query
-        { entities = resolve (pure ["zeus", "morpheus", "olympus", "dreams"]),
-          entity = \(Arg uid) -> resolve (pure (Just uid))
-        }
+  resolveBatched =
+    ignoreBatching $
+      const $
+        pure
+          Query
+            { entities = resolve (pure allEntities),
+              entity = \(Arg uid) -> resolve (pure uid)
+            }
 
 entitiesApp :: App () IO
 entitiesApp =

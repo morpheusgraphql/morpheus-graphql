@@ -57,8 +57,8 @@ import Data.Morpheus.Server.Deriving.Utils.DeriveGType
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
 import Data.Morpheus.Server.NamedResolvers
-  ( NamedResolverT (..),
-    ResolveNamed (..),
+  ( Dependency,
+    NamedResolverT (..),
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (__type),
@@ -131,7 +131,7 @@ instance
   ( Monad m,
     GQLType a,
     EncodeFieldKind (KIND a) m a,
-    ToJSON (Dep a)
+    ToJSON (Dependency a)
   ) =>
   EncodeFieldKind CUSTOM m (NamedResolverT m a)
   where

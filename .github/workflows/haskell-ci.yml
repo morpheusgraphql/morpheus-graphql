@@ -37,6 +37,7 @@ jobs:
         run: |
           stack install --fast morpheus-graphql-code-gen
           morpheus check examples/code-gen
+          morpheus check examples/code-gen-docs
 
   hlint:
     runs-on: ubuntu-latest

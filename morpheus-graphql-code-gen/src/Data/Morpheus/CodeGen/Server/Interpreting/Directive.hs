@@ -22,7 +22,7 @@ import Data.Morpheus.CodeGen.Internal.AST
 import Data.Morpheus.CodeGen.Server.Internal.AST (ServerDirectiveUsage (..), TypeValue (..), unpackName)
 import Data.Morpheus.CodeGen.Server.Interpreting.Utils
   ( CodeGenT,
-    TypeContext (..),
+    ServerCodeGenContext (..),
     getEnumName,
     getFieldName,
     inType,
@@ -67,7 +67,7 @@ getDefaultValueDir _ = pure []
 defValDirective :: Value CONST -> TypeValue
 defValDirective desc = TypeValueObject "DefaultValue" [("defaultValue", PrintableTypeValue $ PrintableValue desc)]
 
-getNamespaceDirs :: MonadReader (TypeContext s) m => Text -> m [ServerDirectiveUsage]
+getNamespaceDirs :: MonadReader (ServerCodeGenContext s) m => Text -> m [ServerDirectiveUsage]
 getNamespaceDirs genTypeName = do
   namespaces <- asks hasNamespace
   pure [TypeDirectiveUsage (dirDropNamespace genTypeName) | namespaces]
@@ -135,7 +135,7 @@ nativeDirectives = AST.directiveDefinitions internalSchema
 isUpperCase :: Name t -> Bool
 isUpperCase = isUpper . head . unpackName
 
-getDirective :: (MonadReader (TypeContext CONST) m, MonadFail m) => FieldName -> m (DirectiveDefinition CONST)
+getDirective :: (MonadReader (ServerCodeGenContext CONST) m, MonadFail m) => FieldName -> m (DirectiveDefinition CONST)
 getDirective directiveName = do
   dirs <- asks directiveDefinitions
   case find (\DirectiveDefinition {directiveDefinitionName} -> directiveDefinitionName == directiveName) dirs of
@@ -150,7 +150,7 @@ renderArgumentValue ::
   (IsMap FieldName c, MonadFail m) =>
   c (Argument CONST) ->
   ArgumentDefinition s ->
-  ReaderT (TypeContext CONST) m (FieldName, TypeValue)
+  ReaderT (ServerCodeGenContext CONST) m (FieldName, TypeValue)
 renderArgumentValue args ArgumentDefinition {..} = do
   let dirName = AST.fieldName argument
   gqlValue <- selectOr (pure AST.Null) (pure . argumentValue) dirName args

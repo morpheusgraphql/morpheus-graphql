@@ -92,7 +92,7 @@ runRootDataResolver
   selection =
     do
       root <- runResolverStateT (toResolverStateT res) ctx
-      runResolver channels (resolveObject mempty root (Just selection)) ctx
+      runResolver channels (resolveObject (ResolverMapContext mempty mempty) root (Just selection)) ctx
 
 runRootResolverValue :: Monad m => RootResolverValue e m -> ResolverContext -> ResponseStream e m (Value VALID)
 runRootResolverValue
@@ -118,7 +118,7 @@ runRootResolverValue
     where
       selectByOperation Query = withIntrospection (\sel -> runResolver Nothing (resolvedValue sel) ctx) ctx
         where
-          resolvedValue selection = resolveRef (empty, queryResolverMap) (NamedResolverRef "Query" ["ROOT"]) (SelectionSet selection)
+          resolvedValue selection = resolveRef (ResolverMapContext empty queryResolverMap) (NamedResolverRef "Query" ["ROOT"]) (SelectionSet selection)
       selectByOperation _ = throwError "mutation and subscription is not supported for namedResolvers"
 
 withIntrospection :: Monad m => (SelectionSet VALID -> ResponseStream event m ValidValue) -> ResolverContext -> ResponseStream event m ValidValue
@@ -131,7 +131,7 @@ withIntrospection f ctx@ResolverContext {operation} = case splitSystemSelection 
     mergeRoot y x
 
 introspection :: Monad m => SelectionSet VALID -> ResolverContext -> ResponseStream event m ValidValue
-introspection selection ctx@ResolverContext {schema} = runResolver Nothing (resolveObject mempty (schemaAPI schema) (Just selection)) ctx
+introspection selection ctx@ResolverContext {schema} = runResolver Nothing (resolveObject (ResolverMapContext mempty mempty) (schemaAPI schema) (Just selection)) ctx
 
 mergeRoot :: MonadError GQLError m => ValidValue -> ValidValue -> m ValidValue
 mergeRoot (Object x) (Object y) = Object <$> merge x y
