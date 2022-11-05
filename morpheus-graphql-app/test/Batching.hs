@@ -10,7 +10,8 @@ where
 import Control.Monad.Except (MonadError (throwError))
 import Data.Aeson (eitherDecode)
 import qualified Data.ByteString.Lazy.Char8 as LBS
-import Data.Map
+import Data.HashSet (fromList)
+import Data.Map (lookup)
 import Data.Morpheus.App
   ( App (..),
     mkApp,
@@ -44,7 +45,7 @@ import Data.Morpheus.Types.Internal.AST
     ValidValue,
     unpackName,
   )
-import Relude hiding (ByteString)
+import Relude hiding (ByteString, fromList)
 import Test.Morpheus
   ( FileUrl,
     file,
@@ -54,16 +55,17 @@ import Test.Tasty
   ( TestTree,
   )
 
--- DEITIES
-type BatchingConstraints = Map Text [ValidValue]
+type BatchedValues = (HashSet ValidValue)
+
+type BatchingConstraints = Map Text BatchedValues
 
 typeConstraint :: Monad m => BatchingConstraints -> (TypeName, NamedResolverFunction QUERY e m) -> (TypeName, NamedResolverFunction QUERY e m)
 typeConstraint cons (name, f) = (name,) $ maybe f (require f) (lookup (unpackName name) cons)
 
-require :: Monad m => NamedResolverFunction QUERY e m -> [ValidValue] -> NamedResolverFunction QUERY e m
+require :: Monad m => NamedResolverFunction QUERY e m -> BatchedValues -> NamedResolverFunction QUERY e m
 require f req args
-  | args == req = f args
-  | otherwise = throwError ("was not batched" <> show args)
+  | fromList args == req = f args
+  | otherwise = throwError ("was not batched! expected: " <> show req <> "got: " <> show args)
 
 gods :: [ValidValue]
 gods = ["poseidon", "morpheus", "zeus"]
@@ -85,10 +87,10 @@ deityResolver = traverse getDeity
   where
     getDeity name
       | name `elem` gods =
-          object
-            [ ("name", pure $ getName name),
-              ("power", pure $ list $ getPowers name)
-            ]
+        object
+          [ ("name", pure $ getName name),
+            ("power", pure $ list $ getPowers name)
+          ]
       | otherwise = nullRes
 
 resolveQuery :: Monad m => NamedResolverFunction QUERY e m
