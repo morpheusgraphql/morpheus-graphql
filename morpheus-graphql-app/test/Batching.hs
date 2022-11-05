@@ -87,10 +87,10 @@ deityResolver = traverse getDeity
   where
     getDeity name
       | name `elem` gods =
-        object
-          [ ("name", pure $ getName name),
-            ("power", pure $ list $ getPowers name)
-          ]
+          object
+            [ ("name", pure $ getName name),
+              ("power", pure $ list $ getPowers name)
+            ]
       | otherwise = nullRes
 
 resolveQuery :: Monad m => NamedResolverFunction QUERY e m
