@@ -118,7 +118,7 @@ runRootResolverValue
     where
       selectByOperation Query = withIntrospection (\sel -> runResolver Nothing (resolvedValue sel) ctx) ctx
         where
-          resolvedValue selection = traceShow (toList queryResolverMap) $ resolveRef (ResolverMapContext empty queryResolverMap) (NamedResolverRef "Query" ["ROOT"]) (SelectionSet selection)
+          resolvedValue selection = resolveRef (ResolverMapContext empty queryResolverMap) (NamedResolverRef "Query" ["ROOT"]) (SelectionSet selection)
       selectByOperation _ = throwError "mutation and subscription is not supported for namedResolvers"
 
 withIntrospection :: Monad m => (SelectionSet VALID -> ResponseStream event m ValidValue) -> ResolverContext -> ResponseStream event m ValidValue
