@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
@@ -24,17 +25,30 @@ import Data.Morpheus.Server.Resolvers
 import Data.Morpheus.Server.Types
   ( App,
     Arg (..),
+    DecodeScalar,
+    EncodeScalar,
     GQLError,
     GQLType (..),
     ID,
+    SCALAR,
     Undefined,
   )
+import Data.Text (Text)
 import Feature.NamedResolvers.DB
   ( allDeities,
     allEntities,
   )
 import Feature.NamedResolvers.RealmsApp (Deity, Realm)
 import GHC.Generics (Generic)
+
+newtype MyText = MyText Text
+
+instance GQLType MyText where
+  type KIND MyText = SCALAR
+
+instance EncodeScalar MyText
+
+instance DecodeScalar MyText
 
 -- Entity
 data Entity m
@@ -44,6 +58,10 @@ data Entity m
     ( Generic,
       GQLType
     )
+
+instance ResolveNamed m MyText where
+  type Dep MyText = ID
+  resolveBatched = pure . map (const $ Just $ MyText "x")
 
 getEntity :: (MonadError GQLError m) => ID -> m (Entity (NamedResolverT m))
 getEntity name | name `elem` allDeities = pure $ EntityDeity $ resolve $ pure name
@@ -56,7 +74,8 @@ instance ResolveNamed m (Entity (NamedResolverT m)) where
 -- QUERY
 data Query m = Query
   { entities :: m [Entity m],
-    entity :: Arg "id" ID -> m (Maybe (Entity m))
+    entity :: Arg "id" ID -> m (Maybe (Entity m)),
+    myText :: m MyText
   }
   deriving
     ( Generic,
@@ -71,7 +90,8 @@ instance ResolveNamed m (Query (NamedResolverT m)) where
         pure
           Query
             { entities = resolve (pure allEntities),
-              entity = \(Arg uid) -> resolve (pure uid)
+              entity = \(Arg uid) -> resolve (pure uid),
+              myText = resolve (pure ("" :: ID))
             }
 
 entitiesApp :: App () IO

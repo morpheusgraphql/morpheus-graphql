@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -37,25 +38,28 @@ type family Target a :: Type where
   Target a = a
 
 type family Dependency a :: Type where
-  -- scalars
+-- scalars
   Dependency Int = Int
   Dependency Double = Double
   Dependency Float = Float
   Dependency Text = Text
   Dependency Bool = Bool
   Dependency ID = ID
-  -- wrappers
+-- wrappers
   Dependency (Maybe a) = Dependency a
   Dependency [a] = Dependency a
   Dependency (Set a) = Dependency a
   Dependency (NonEmpty a) = Dependency a
   Dependency (Seq a) = Dependency a
   Dependency (Vector a) = Dependency a
-  -- custom
+-- custom
   Dependency a = Dep a
 
 ignoreBatching :: (Monad m) => (a -> m b) -> [a] -> m [Maybe b]
 ignoreBatching f = traverse (fmap Just . f)
+
+forward :: (Monad m, Dependency a ~ a) => [Dependency a] -> m [Maybe a]
+forward = pure . map Just
 
 {-# DEPRECATED useBatched " this function is obsolete" #-}
 useBatched :: (ResolveNamed m a, MonadError GQLError m) => Dependency a -> m a
@@ -65,6 +69,14 @@ useBatched x = resolveBatched [x] >>= res
     res _ = throwError (internal "named resolver should return single value for single argument")
 
 {-# DEPRECATED resolveNamed "use: resolveBatched" #-}
+
+instance ResolveNamed m Text where
+  type Dep Text = Text
+  resolveBatched = forward
+
+instance ResolveNamed m ID where
+  type Dep ID = ID
+  resolveBatched = forward
 
 class ToJSON (Dependency a) => ResolveNamed (m :: Type -> Type) (a :: Type) where
   type Dep a :: Type

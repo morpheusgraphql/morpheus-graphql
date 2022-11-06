@@ -20,4 +20,5 @@ query {
       power
     }
   }
+  myText
 }

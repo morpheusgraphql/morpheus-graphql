@@ -81,6 +81,7 @@ data NamedResolverResult (m :: Type -> Type)
   = NamedObjectResolver (ObjectTypeResolver m)
   | NamedUnionResolver NamedResolverRef
   | NamedEnumResolver TypeName
+  | NamedScalarResolver ScalarValue
   | NamedNullResolver
 
 instance KeyOf TypeName (NamedResolver m) where
@@ -91,6 +92,7 @@ instance Show (NamedResolverResult m) where
   show NamedUnionResolver {} = "NamedUnionResolver"
   show NamedEnumResolver {} = "NamedEnumResolver"
   show NamedNullResolver {} = "NamedNullResolver"
+  show NamedScalarResolver {} = "NamedScalarResolver"
 
 data ResolverValue (m :: Type -> Type)
   = ResNull

@@ -21,6 +21,7 @@ where
 import Data.Morpheus.App.Internal.Resolving
   ( LiftOperation,
     NamedResolver (..),
+    NamedResolverResult (..),
     Resolver,
     liftResolverState,
   )
@@ -48,6 +49,7 @@ import Data.Morpheus.Server.Types.Kind
     TYPE,
     WRAPPER,
   )
+import Data.Morpheus.Types.GQLScalar (EncodeScalar (..))
 import Data.Morpheus.Types.Internal.AST
   ( ValidValue,
   )
@@ -71,33 +73,51 @@ type EncodeTypeConstraint m a =
 class DeriveNamedResolver (m :: Type -> Type) (k :: DerivingKind) a where
   deriveNamedResolver :: f k a -> [NamedResolver m]
 
-instance DeriveNamedResolver m SCALAR a where
-  deriveNamedResolver _ = []
+instance
+  ( GQLType a,
+    DecodeValuesConstraint o e m a,
+    EncodeScalar a
+  ) =>
+  DeriveNamedResolver (Resolver o e m) SCALAR a
+  where
+  deriveNamedResolver _ =
+    [ NamedResolver
+        { resolverName = getTypeName proxy,
+          resolverFun = decodeValues proxy >=> pure . map (maybe NamedNullResolver (NamedScalarResolver . encodeScalar))
+        }
+    ]
+    where
+      proxy = Proxy @a
+
+type DecodeValuesConstraint o e m a =
+  ( LiftOperation o,
+    ResolveNamed (Resolver o e m) a,
+    Monad m,
+    Decode (Dependency a)
+  )
+
+decodeValues :: forall o e m a. DecodeValuesConstraint o e m a => Proxy a -> [ValidValue] -> Resolver o e m [Maybe a]
+decodeValues _ xs = traverse decodeArg xs >>= resolveBatched
+  where
+    decodeArg :: ValidValue -> Resolver o e m (Dependency a)
+    decodeArg = liftResolverState . decode
 
 instance
-  ( Monad m,
-    LiftOperation o,
-    Generic a,
-    GQLType a,
+  ( GQLType a,
+    DecodeValuesConstraint o e m a,
     EncodeFieldKind (KIND a) (Resolver o e m) a,
-    Decode (Dependency a),
-    ResolveNamed (Resolver o e m) a,
     FieldConstraint (Resolver o e m) a
   ) =>
   DeriveNamedResolver (Resolver o e m) TYPE (a :: Type)
   where
   deriveNamedResolver _ =
     [ NamedResolver
-        { resolverName = getTypeName (Proxy @a),
-          resolverFun = resolve >=> encodeResolverValue
+        { resolverName = getTypeName proxy,
+          resolverFun = decodeValues proxy >=> encodeResolverValue
         }
     ]
     where
-      resolve :: [ValidValue] -> Resolver o e m [Maybe a]
-      resolve xs = traverse decodeArg xs >>= resolveBatched
-
-      decodeArg :: ValidValue -> Resolver o e m (Dependency a)
-      decodeArg = liftResolverState . decode
+      proxy = Proxy @a
 
 instance DeriveNamedResolver m (KIND a) a => DeriveNamedResolver m CUSTOM (NamedResolverT m a) where
   deriveNamedResolver _ = deriveNamedResolver (KindedProxy :: KindedProxy (KIND a) a)
