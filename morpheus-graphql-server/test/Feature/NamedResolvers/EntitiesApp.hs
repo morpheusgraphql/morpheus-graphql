@@ -39,6 +39,7 @@ import Data.Text (Text)
 import Feature.NamedResolvers.DB
   ( allDeities,
     allEntities,
+    getDocsById,
     getDocsId,
   )
 import Feature.NamedResolvers.RealmsApp (Deity, Realm)
@@ -64,7 +65,7 @@ data Entity m
 
 instance ResolveNamed m Doc where
   type Dep Doc = ID
-  resolveBatched = pure . map (const $ Just $ Doc "x")
+  resolveBatched = traverse (fmap (fmap Doc) . getDocsById)
 
 getEntity :: (MonadError GQLError m) => ID -> m (Entity (NamedResolverT m))
 getEntity name | name `elem` allDeities = pure $ EntityDeity $ resolve $ pure name
