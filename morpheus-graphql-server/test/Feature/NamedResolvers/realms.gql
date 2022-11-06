@@ -1,6 +1,7 @@
 type Realm {
   name: String!
   owner: Deity!
+  description: Markdown!
 }
 
 type Deity {

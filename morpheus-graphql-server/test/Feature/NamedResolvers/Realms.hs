@@ -7,10 +7,12 @@ module Feature.NamedResolvers.Realms where
 
 import Data.Morpheus.Server.CodeGen.Internal
 import Data.Morpheus.Server.Types
+import Feature.NamedResolvers.Scalars
 
 data Realm m = Realm
   { name :: m Text,
-    owner :: m (Deity m)
+    owner :: m (Deity m),
+    description :: m Markdown
   }
   deriving (Generic)
 

@@ -34,10 +34,8 @@ import Data.Morpheus.Server.Types
 import Feature.NamedResolvers.DB
   ( allDeities,
     allEntities,
-    getDocsId,
   )
 import Feature.NamedResolvers.RealmsApp (Deity, Realm)
-import Feature.NamedResolvers.Scalars (Doc)
 import GHC.Generics (Generic)
 
 -- Entity
@@ -60,8 +58,7 @@ instance ResolveNamed m (Entity (NamedResolverT m)) where
 -- QUERY
 data Query m = Query
   { entities :: m [Entity m],
-    entity :: Arg "id" ID -> m (Maybe (Entity m)),
-    docs :: m Doc
+    entity :: Arg "id" ID -> m (Maybe (Entity m))
   }
   deriving
     ( Generic,
@@ -76,8 +73,7 @@ instance ResolveNamed m (Query (NamedResolverT m)) where
         pure
           Query
             { entities = resolve (pure allEntities),
-              entity = \(Arg uid) -> resolve (pure uid),
-              docs = resolve getDocsId
+              entity = \(Arg uid) -> resolve (pure uid)
             }
 
 entitiesApp :: App () IO

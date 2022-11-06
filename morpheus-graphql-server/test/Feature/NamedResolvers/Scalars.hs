@@ -1,16 +1,11 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# OPTIONS_GHC -Wno-orphans #-}
 
 module Feature.NamedResolvers.Scalars
-  ( Doc,
+  ( Markdown,
   )
 where
 
@@ -28,27 +23,16 @@ import Data.Text (Text)
 import Feature.NamedResolvers.DB
   ( getDocsById,
   )
-import Feature.NamedResolvers.RealmsApp (Deity, Realm)
-import GHC.Generics (Generic)
 
-newtype Doc = Doc Text
+newtype Markdown = Markdown Text
   deriving newtype
     ( DecodeScalar,
       EncodeScalar
     )
 
-instance GQLType Doc where
-  type KIND Doc = SCALAR
+instance GQLType Markdown where
+  type KIND Markdown = SCALAR
 
-instance ResolveNamed m Doc where
-  type Dep Doc = ID
-  resolveBatched = traverse (fmap (fmap Doc) . getDocsById)
-
--- Entity
-data Entity m
-  = EntityDeity (m (Deity m))
-  | EntityRealm (m (Realm m))
-  deriving
-    ( Generic,
-      GQLType
-    )
+instance ResolveNamed m Markdown where
+  type Dep Markdown = ID
+  resolveBatched = traverse (fmap (fmap Markdown) . getDocsById)
