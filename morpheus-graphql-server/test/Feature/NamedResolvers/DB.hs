@@ -39,3 +39,6 @@ getPlace :: (Monad m) => ID -> m ID
 getPlace "zeus" = pure "olympus"
 getPlace "morpheus" = pure "dreams"
 getPlace x = pure x
+
+getDocsId :: Monad m => m ID
+getDocsId = pure "doc"

@@ -39,18 +39,19 @@ import Data.Text (Text)
 import Feature.NamedResolvers.DB
   ( allDeities,
     allEntities,
+    getDocsId,
   )
 import Feature.NamedResolvers.RealmsApp (Deity, Realm)
 import GHC.Generics (Generic)
 
-newtype MyText = MyText Text
+newtype Doc = Doc Text
   deriving newtype
     ( DecodeScalar,
       EncodeScalar
     )
 
-instance GQLType MyText where
-  type KIND MyText = SCALAR
+instance GQLType Doc where
+  type KIND Doc = SCALAR
 
 -- Entity
 data Entity m
@@ -61,9 +62,9 @@ data Entity m
       GQLType
     )
 
-instance ResolveNamed m MyText where
-  type Dep MyText = ID
-  resolveBatched = pure . map (const $ Just $ MyText "x")
+instance ResolveNamed m Doc where
+  type Dep Doc = ID
+  resolveBatched = pure . map (const $ Just $ Doc "x")
 
 getEntity :: (MonadError GQLError m) => ID -> m (Entity (NamedResolverT m))
 getEntity name | name `elem` allDeities = pure $ EntityDeity $ resolve $ pure name
@@ -77,7 +78,7 @@ instance ResolveNamed m (Entity (NamedResolverT m)) where
 data Query m = Query
   { entities :: m [Entity m],
     entity :: Arg "id" ID -> m (Maybe (Entity m)),
-    myText :: m MyText
+    docs :: m Doc
   }
   deriving
     ( Generic,
@@ -93,12 +94,8 @@ instance ResolveNamed m (Query (NamedResolverT m)) where
           Query
             { entities = resolve (pure allEntities),
               entity = \(Arg uid) -> resolve (pure uid),
-              myText = resolve (pure ("" :: ID))
+              docs = resolve getDocsId
             }
 
 entitiesApp :: App () IO
-entitiesApp =
-  deriveApp
-    ( NamedResolvers ::
-        NamedResolvers IO () Query Undefined Undefined
-    )
+entitiesApp = deriveApp (NamedResolvers :: NamedResolvers IO () Query Undefined Undefined)
