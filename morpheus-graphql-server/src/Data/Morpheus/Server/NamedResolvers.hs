@@ -86,7 +86,7 @@ class ToJSON (Dependency a) => ResolveNamed (m :: Type -> Type) (a :: Type) wher
 
 data NamedResolverT (m :: Type -> Type) a where
   Ref :: ResolveNamed m (Target a) => m (Dependency a) -> NamedResolverT m a
-  Refs :: ResolveNamed m (Target a) => m [Dependency a] -> NamedResolverT m [a]
+  Refs :: ResolveNamed m (Target a) => m [Dependency a] -> NamedResolverT m a
   Value :: m a -> NamedResolverT m a
 
 data TargetType = LIST | SINGLE | ERROR Symbol
@@ -114,7 +114,7 @@ resolve = resolveRef (Proxy :: Proxy (NamedResolverTarget b))
 class ResolveRef (k :: TargetType) m a b where
   resolveRef :: Monad m => f k -> m a -> NamedResolverT m b
 
-instance (ResolveNamed m (Target b), a ~ Dependency b) => ResolveRef 'LIST m [a] [b] where
+instance (ResolveNamed m b, a ~ Dependency b) => ResolveRef 'LIST m [a] [b] where
   resolveRef _ = Refs
 
 instance (ResolveNamed m (Target b), Dependency b ~ a) => ResolveRef 'SINGLE m a b where
