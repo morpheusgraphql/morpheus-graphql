@@ -16,13 +16,14 @@ module Data.Morpheus.Server.NamedResolvers
     useBatched,
     Dependency,
     ignoreBatching,
+    NamedRef,
   )
 where
 
 import Control.Monad.Except
 import Data.Aeson (ToJSON)
 import Data.Morpheus.Types.ID (ID)
-import Data.Morpheus.Types.Internal.AST (FALSE, GQLError, TRUE, internal)
+import Data.Morpheus.Types.Internal.AST (GQLError, internal)
 import Data.Vector (Vector)
 import Relude
 
@@ -93,25 +94,16 @@ class ToJSON (Dependency a) => ResolveNamed (m :: Type -> Type) (a :: Type) wher
   resolveNamed = useBatched
 
 data NamedResolverT (m :: Type -> Type) a where
-  Ref :: ResolveNamed m (Target a) => m (Dependency a) -> NamedResolverT m a
-  Refs :: ResolveNamed m (Target a) => m [Dependency a] -> NamedResolverT m a
+  NamedResolverT :: ResolveNamed m (Target a) => m (NamedRef a) -> NamedResolverT m a
 
-type family IsCollection b :: Bool where
-  IsCollection [a] = TRUE
-  IsCollection (Set a) = TRUE
-  IsCollection (NonEmpty a) = TRUE
-  IsCollection (Seq a) = TRUE
-  IsCollection (Vector a) = TRUE
-  IsCollection b = FALSE
+type family NamedRef a :: Type where
+  NamedRef (Maybe a) = NamedRef a
+  NamedRef [a] = [NamedRef a]
+  NamedRef (Set a) = [NamedRef a]
+  NamedRef (NonEmpty a) = [NamedRef a]
+  NamedRef (Seq a) = [NamedRef a]
+  NamedRef (Vector a) = [NamedRef a]
+  NamedRef a = Dependency a
 
-resolve :: forall m a b. (ResolveRef (IsCollection b) m a b) => m a -> NamedResolverT m b
-resolve = resolveRef (Proxy :: Proxy (IsCollection b))
-
-class ResolveRef (isColl :: Bool) m a b where
-  resolveRef :: f isColl -> m a -> NamedResolverT m b
-
-instance (ResolveNamed m (Target b), a ~ Dependency b) => ResolveRef TRUE m [a] b where
-  resolveRef _ = Refs
-
-instance (ResolveNamed m (Target b), Dependency b ~ a) => ResolveRef FALSE m a b where
-  resolveRef _ = Ref
+resolve :: ResolveNamed m (Target a) => m (NamedRef a) -> NamedResolverT m a
+resolve = NamedResolverT

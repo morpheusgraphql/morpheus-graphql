@@ -24,7 +24,7 @@ module Data.Morpheus.Server.Deriving.Named.EncodeValue
 where
 
 import Control.Monad.Except (MonadError (..))
-import Data.Aeson (ToJSON (..))
+import Data.Aeson (ToJSON (..), Value)
 import Data.Morpheus.App.Internal.Resolving
   ( LiftOperation,
     NamedResolverRef (..),
@@ -57,7 +57,7 @@ import Data.Morpheus.Server.Deriving.Utils.DeriveGType
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
 import Data.Morpheus.Server.NamedResolvers
-  ( Dependency,
+  ( NamedRef,
     NamedResolverT (..),
   )
 import Data.Morpheus.Server.Types.GQLType
@@ -84,6 +84,8 @@ import Data.Morpheus.Types.Internal.AST
     OUT,
     TypeCategory (OUT),
     TypeName,
+    ValidValue,
+    Value (List),
     internal,
     replaceValue,
   )
@@ -131,7 +133,7 @@ instance
   ( Monad m,
     GQLType a,
     EncodeFieldKind (KIND a) m a,
-    ToJSON (Dependency a)
+    ToJSON (NamedRef a)
   ) =>
   EncodeFieldKind CUSTOM m (NamedResolverT m a)
   where
@@ -140,11 +142,14 @@ instance
       name :: TypeName
       name = getTypeName (Proxy @a)
       encodeRef :: Monad m => NamedResolverT m a -> m (ResolverValue m)
-      encodeRef (Ref x) = packRef name <$> x
-      encodeRef (Refs refs) = mkList . map (packRef name) <$> refs
+      encodeRef (NamedResolverT ref) = do
+        value <- replaceValue . toJSON <$> ref
+        case value of
+          (List ls) -> pure $ mkList $ map (packRef name) ls
+          _ -> pure $ packRef name value
 
-packRef :: (Monad m, ToJSON a) => TypeName -> a -> ResolverValue m
-packRef name v = ResRef $ pure $ NamedResolverRef name [replaceValue $ toJSON v]
+packRef :: Applicative m => TypeName -> ValidValue -> ResolverValue m
+packRef name v = ResRef $ pure $ NamedResolverRef name [v]
 
 instance
   ( Decode a,
