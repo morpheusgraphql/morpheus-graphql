@@ -37,14 +37,14 @@ type family Target a :: Type where
   Target a = a
 
 type family Dependency a :: Type where
-  -- wrappers
+-- wrappers
   Dependency (Maybe a) = Dependency a
   Dependency [a] = Dependency a
   Dependency (Set a) = Dependency a
   Dependency (NonEmpty a) = Dependency a
   Dependency (Seq a) = Dependency a
   Dependency (Vector a) = Dependency a
-  -- custom
+-- custom
   Dependency a = Dep a
 
 ignoreBatching :: (Monad m) => (a -> m b) -> [a] -> m [Maybe b]
@@ -97,12 +97,11 @@ data NamedResolverT (m :: Type -> Type) a where
   NamedResolverT :: ResolveNamed m (Target a) => m (NamedRef a) -> NamedResolverT m a
 
 type family NamedRef a :: Type where
-  NamedRef (Maybe a) = NamedRef a
-  NamedRef [a] = [NamedRef a]
-  NamedRef (Set a) = [NamedRef a]
-  NamedRef (NonEmpty a) = [NamedRef a]
-  NamedRef (Seq a) = [NamedRef a]
-  NamedRef (Vector a) = [NamedRef a]
+  NamedRef [a] = [Dependency a]
+  NamedRef (Set a) = [Dependency a]
+  NamedRef (NonEmpty a) = [Dependency a]
+  NamedRef (Seq a) = [Dependency a]
+  NamedRef (Vector a) = [Dependency a]
   NamedRef a = Dependency a
 
 resolve :: ResolveNamed m (Target a) => m (NamedRef a) -> NamedResolverT m a
