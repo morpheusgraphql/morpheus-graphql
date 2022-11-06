@@ -45,7 +45,7 @@ getRealm uid
     pure $
       Just
         Realm
-          { name = lift (getRealmName uid),
+          { name = resolve (getRealmName uid),
             owner = resolve (getOwner uid),
             description = resolve (pure uid)
           }

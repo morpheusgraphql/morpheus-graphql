@@ -140,12 +140,11 @@ instance
       name :: TypeName
       name = getTypeName (Proxy @a)
       encodeRef :: Monad m => NamedResolverT m a -> m (ResolverValue m)
-      encodeRef (Ref x) = pure $ ResRef $ packRef name <$> x
-      encodeRef (Value value) = value >>= encodeField
-      encodeRef (Refs refs) = mkList . map (ResRef . pure . packRef name) <$> refs
+      encodeRef (Ref x) = packRef name <$> x
+      encodeRef (Refs refs) = mkList . map (packRef name) <$> refs
 
-packRef :: ToJSON a => TypeName -> a -> NamedResolverRef
-packRef name v = NamedResolverRef name [replaceValue $ toJSON v]
+packRef :: (Monad m, ToJSON a) => TypeName -> a -> ResolverValue m
+packRef name v = ResRef $ pure $ NamedResolverRef name [replaceValue $ toJSON v]
 
 instance
   ( Decode a,

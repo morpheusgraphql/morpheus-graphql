@@ -24,7 +24,6 @@ import Data.Aeson (ToJSON)
 import Data.Morpheus.Types.ID (ID)
 import Data.Morpheus.Types.Internal.AST (GQLError, internal)
 import Data.Vector (Vector)
-import GHC.TypeLits (Symbol)
 import Relude
 
 type family Target a :: Type where
@@ -37,13 +36,6 @@ type family Target a :: Type where
   Target a = a
 
 type family Dependency a :: Type where
--- scalars
-  Dependency Int = Int
-  Dependency Double = Double
-  Dependency Float = Float
-  Dependency Text = Text
-  Dependency Bool = Bool
-  Dependency ID = ID
 -- wrappers
   Dependency (Maybe a) = Dependency a
   Dependency [a] = Dependency a
@@ -69,8 +61,24 @@ useBatched x = resolveBatched [x] >>= res
 
 {-# DEPRECATED resolveNamed "use: resolveBatched" #-}
 
+instance ResolveNamed m Int where
+  type Dep Int = Int
+  resolveBatched = forward
+
+instance ResolveNamed m Float where
+  type Dep Float = Float
+  resolveBatched = forward
+
+instance ResolveNamed m Double where
+  type Dep Double = Double
+  resolveBatched = forward
+
 instance ResolveNamed m Text where
   type Dep Text = Text
+  resolveBatched = forward
+
+instance ResolveNamed m Bool where
+  type Dep Bool = Bool
   resolveBatched = forward
 
 instance ResolveNamed m ID where
@@ -87,9 +95,8 @@ class ToJSON (Dependency a) => ResolveNamed (m :: Type -> Type) (a :: Type) wher
 data NamedResolverT (m :: Type -> Type) a where
   Ref :: ResolveNamed m (Target a) => m (Dependency a) -> NamedResolverT m a
   Refs :: ResolveNamed m (Target a) => m [Dependency a] -> NamedResolverT m a
-  Value :: m a -> NamedResolverT m a
 
-data TargetType = LIST | SINGLE | ERROR Symbol
+data TargetType = LIST | SINGLE
 
 type family NamedResolverTarget b :: TargetType where
   NamedResolverTarget [a] = 'LIST
@@ -97,18 +104,9 @@ type family NamedResolverTarget b :: TargetType where
   NamedResolverTarget (NonEmpty a) = 'LIST
   NamedResolverTarget (Seq a) = 'LIST
   NamedResolverTarget (Vector a) = 'LIST
-  NamedResolverTarget Int = 'ERROR "use lift, type Int can't have ResolveNamed instance"
-  NamedResolverTarget Double = 'ERROR "use lift, type Double can't have ResolveNamed instance"
-  NamedResolverTarget Float = 'ERROR "use lift, type Float can't have ResolveNamed instance"
-  NamedResolverTarget Text = 'ERROR "use lift, type Text can't have ResolveNamed instance"
-  NamedResolverTarget Bool = 'ERROR "use lift, type Bool can't have ResolveNamed instance"
-  NamedResolverTarget ID = 'ERROR "use lift, type ID can't have ResolveNamed instance"
   NamedResolverTarget b = 'SINGLE
 
-instance MonadTrans NamedResolverT where
-  lift = Value
-
-resolve :: forall m a b. (ResolveRef (NamedResolverTarget b) m a b) => Monad m => m a -> NamedResolverT m b
+resolve :: forall m a b. (ResolveRef (NamedResolverTarget b) m a b, Monad m) => m a -> NamedResolverT m b
 resolve = resolveRef (Proxy :: Proxy (NamedResolverTarget b))
 
 class ResolveRef (k :: TargetType) m a b where
