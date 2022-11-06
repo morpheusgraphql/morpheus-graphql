@@ -13,7 +13,6 @@ module Feature.NamedResolvers.RealmsApp
   )
 where
 
-import Control.Monad.Except
 import Data.Morpheus.Server
   ( deriveApp,
   )
@@ -42,13 +41,13 @@ import Feature.NamedResolvers.Realms
 getRealm :: (Monad m) => ID -> m (Maybe (Realm (NamedResolverT m)))
 getRealm uid
   | uid `elem` allRealms =
-      pure $
-        Just
-          Realm
-            { name = resolve (getRealmName uid),
-              owner = resolve (getOwner uid),
-              description = resolve (pure uid)
-            }
+    pure $
+      Just
+        Realm
+          { name = resolve (getRealmName uid),
+            owner = resolve (getOwner uid),
+            description = resolve (pure uid)
+          }
 getRealm _ = pure Nothing
 
 instance ResolveNamed m (Realm (NamedResolverT m)) where

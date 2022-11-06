@@ -24,7 +24,7 @@ module Data.Morpheus.Server.Deriving.Named.EncodeValue
 where
 
 import Control.Monad.Except (MonadError (..))
-import Data.Aeson (ToJSON (..), Value)
+import Data.Aeson (ToJSON (..))
 import Data.Morpheus.App.Internal.Resolving
   ( LiftOperation,
     NamedResolverRef (..),
@@ -193,11 +193,11 @@ convertNamedNode
     | null consFields = pure $ NamedEnumResolver consName
     | tyIsUnion = deriveUnion consFields
     | otherwise =
-        pure $
-          NamedObjectResolver
-            ObjectTypeResolver
-              { objectFields = HM.fromList (toFieldRes proxy <$> consFields)
-              }
+      pure $
+        NamedObjectResolver
+          ObjectTypeResolver
+            { objectFields = HM.fromList (toFieldRes proxy <$> consFields)
+            }
 
 deriveUnion :: (MonadError GQLError m) => [FieldRep (m (ResolverValue m))] -> m (NamedResolverResult m)
 deriveUnion [FieldRep {..}] =
