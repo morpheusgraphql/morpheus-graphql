@@ -42,12 +42,13 @@ import Feature.NamedResolvers.Realms
 getRealm :: (Monad m) => ID -> m (Maybe (Realm (NamedResolverT m)))
 getRealm uid
   | uid `elem` allRealms =
-      pure $
-        Just
-          Realm
-            { name = lift (getRealmName uid),
-              owner = resolve (getOwner uid)
-            }
+    pure $
+      Just
+        Realm
+          { name = lift (getRealmName uid),
+            owner = resolve (getOwner uid),
+            description = resolve (pure uid)
+          }
 getRealm _ = pure Nothing
 
 instance ResolveNamed m (Realm (NamedResolverT m)) where

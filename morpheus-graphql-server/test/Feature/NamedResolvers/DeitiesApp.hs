@@ -39,12 +39,13 @@ getPower _ = pure Nothing
 getDeity :: Monad m => ID -> m (Maybe (Deity (NamedResolverT m)))
 getDeity uid
   | uid `elem` allDeities =
-      pure $
-        Just
-          Deity
-            { name = lift (getDeityName uid),
-              power = resolve (getPowers uid)
-            }
+    pure $
+      Just
+        Deity
+          { name = lift (getDeityName uid),
+            power = resolve (getPowers uid),
+            description = resolve (pure uid)
+          }
 getDeity _ = pure Nothing
 
 instance ResolveNamed m Power where

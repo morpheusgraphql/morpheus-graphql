@@ -40,9 +40,7 @@ getPlace "zeus" = pure "olympus"
 getPlace "morpheus" = pure "dreams"
 getPlace x = pure x
 
-getDocsId :: Monad m => m ID
-getDocsId = pure "doc"
-
 getDocsById :: Monad m => ID -> m (Maybe Text)
-getDocsById "doc" = pure (Just "Test Docs")
+getDocsById "morpheus" = pure (Just "Test Docs")
+getDocsById "zeus" = pure (Just "Test Docs")
 getDocsById _ = pure Nothing
