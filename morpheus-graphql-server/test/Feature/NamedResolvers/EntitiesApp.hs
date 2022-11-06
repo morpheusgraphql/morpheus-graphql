@@ -27,32 +27,19 @@ import Data.Morpheus.Server.Resolvers
 import Data.Morpheus.Server.Types
   ( App,
     Arg (..),
-    DecodeScalar (..),
-    EncodeScalar (..),
     GQLError,
     GQLType (..),
     ID,
-    SCALAR,
     Undefined,
   )
-import Data.Text (Text)
 import Feature.NamedResolvers.DB
   ( allDeities,
     allEntities,
-    getDocsById,
     getDocsId,
   )
 import Feature.NamedResolvers.RealmsApp (Deity, Realm)
+import Feature.NamedResolvers.Scalars (Doc)
 import GHC.Generics (Generic)
-
-newtype Doc = Doc Text
-  deriving newtype
-    ( DecodeScalar,
-      EncodeScalar
-    )
-
-instance GQLType Doc where
-  type KIND Doc = SCALAR
 
 -- Entity
 data Entity m
@@ -62,10 +49,6 @@ data Entity m
     ( Generic,
       GQLType
     )
-
-instance ResolveNamed m Doc where
-  type Dep Doc = ID
-  resolveBatched = traverse (fmap (fmap Doc) . getDocsById)
 
 getEntity :: (MonadError GQLError m) => ID -> m (Entity (NamedResolverT m))
 getEntity name | name `elem` allDeities = pure $ EntityDeity $ resolve $ pure name

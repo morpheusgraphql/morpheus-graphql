@@ -391,6 +391,7 @@ test-suite morpheus-graphql-server-test
       Feature.NamedResolvers.EntitiesApp
       Feature.NamedResolvers.Realms
       Feature.NamedResolvers.RealmsApp
+      Feature.NamedResolvers.Scalars
       Paths_morpheus_graphql_server
   hs-source-dirs:
       test
