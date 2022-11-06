@@ -142,15 +142,16 @@ data-files:
     test/Feature/NamedResolvers/tests/deities/query.gql
     test/Feature/NamedResolvers/tests/deity-by-id/query.gql
     test/Feature/NamedResolvers/tests/deity-ext-by-id/query.gql
+    test/Feature/NamedResolvers/tests/deity-scalars/query.gql
     test/Feature/NamedResolvers/tests/deity-simple/query.gql
     test/Feature/NamedResolvers/tests/entities/query.gql
     test/Feature/NamedResolvers/tests/entity-by-id/query.gql
     test/Feature/NamedResolvers/tests/entity-ext-by-id/query.gql
     test/Feature/NamedResolvers/tests/realm-by-id/query.gql
     test/Feature/NamedResolvers/tests/realm-ext-by-id/query.gql
+    test/Feature/NamedResolvers/tests/realm-scalars/query.gql
     test/Feature/NamedResolvers/tests/realm-simple/query.gql
     test/Feature/NamedResolvers/tests/realms/query.gql
-    test/Feature/NamedResolvers/tests/scalars-docs/query.gql
     test/Feature/Collision/category-collision-fail/response.json
     test/Feature/Collision/category-collision-success/response.json
     test/Feature/Collision/name-collision/response.json
@@ -287,15 +288,16 @@ data-files:
     test/Feature/NamedResolvers/tests/deities/response.json
     test/Feature/NamedResolvers/tests/deity-by-id/response.json
     test/Feature/NamedResolvers/tests/deity-ext-by-id/response.json
+    test/Feature/NamedResolvers/tests/deity-scalars/response.json
     test/Feature/NamedResolvers/tests/deity-simple/response.json
     test/Feature/NamedResolvers/tests/entities/response.json
     test/Feature/NamedResolvers/tests/entity-by-id/response.json
     test/Feature/NamedResolvers/tests/entity-ext-by-id/response.json
     test/Feature/NamedResolvers/tests/realm-by-id/response.json
     test/Feature/NamedResolvers/tests/realm-ext-by-id/response.json
+    test/Feature/NamedResolvers/tests/realm-scalars/response.json
     test/Feature/NamedResolvers/tests/realm-simple/response.json
     test/Feature/NamedResolvers/tests/realms/response.json
-    test/Feature/NamedResolvers/tests/scalars-docs/response.json
 
 source-repository head
   type: git
