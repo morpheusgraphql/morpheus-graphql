@@ -22,7 +22,7 @@ where
 import Control.Monad.Except
 import Data.Aeson (ToJSON)
 import Data.Morpheus.Types.ID (ID)
-import Data.Morpheus.Types.Internal.AST (GQLError, internal)
+import Data.Morpheus.Types.Internal.AST (FALSE, GQLError, TRUE, internal)
 import Data.Vector (Vector)
 import Relude
 
@@ -96,24 +96,22 @@ data NamedResolverT (m :: Type -> Type) a where
   Ref :: ResolveNamed m (Target a) => m (Dependency a) -> NamedResolverT m a
   Refs :: ResolveNamed m (Target a) => m [Dependency a] -> NamedResolverT m a
 
-data TargetType = LIST | SINGLE
+type family IsCollection b :: Bool where
+  IsCollection [a] = TRUE
+  IsCollection (Set a) = TRUE
+  IsCollection (NonEmpty a) = TRUE
+  IsCollection (Seq a) = TRUE
+  IsCollection (Vector a) = TRUE
+  IsCollection b = FALSE
 
-type family NamedResolverTarget b :: TargetType where
-  NamedResolverTarget [a] = 'LIST
-  NamedResolverTarget (Set a) = 'LIST
-  NamedResolverTarget (NonEmpty a) = 'LIST
-  NamedResolverTarget (Seq a) = 'LIST
-  NamedResolverTarget (Vector a) = 'LIST
-  NamedResolverTarget b = 'SINGLE
+resolve :: forall m a b. (ResolveRef (IsCollection b) m a b) => m a -> NamedResolverT m b
+resolve = resolveRef (Proxy :: Proxy (IsCollection b))
 
-resolve :: forall m a b. (ResolveRef (NamedResolverTarget b) m a b, Monad m) => m a -> NamedResolverT m b
-resolve = resolveRef (Proxy :: Proxy (NamedResolverTarget b))
+class ResolveRef (isColl :: Bool) m a b where
+  resolveRef :: f isColl -> m a -> NamedResolverT m b
 
-class ResolveRef (k :: TargetType) m a b where
-  resolveRef :: Monad m => f k -> m a -> NamedResolverT m b
-
-instance (ResolveNamed m (Target b), a ~ Dependency b) => ResolveRef 'LIST m [a] b where
+instance (ResolveNamed m (Target b), a ~ Dependency b) => ResolveRef TRUE m [a] b where
   resolveRef _ = Refs
 
-instance (ResolveNamed m (Target b), Dependency b ~ a) => ResolveRef 'SINGLE m a b where
+instance (ResolveNamed m (Target b), Dependency b ~ a) => ResolveRef FALSE m a b where
   resolveRef _ = Ref
