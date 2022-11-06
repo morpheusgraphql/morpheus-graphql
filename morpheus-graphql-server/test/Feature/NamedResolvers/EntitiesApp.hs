@@ -1,8 +1,10 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -25,8 +27,8 @@ import Data.Morpheus.Server.Resolvers
 import Data.Morpheus.Server.Types
   ( App,
     Arg (..),
-    DecodeScalar,
-    EncodeScalar,
+    DecodeScalar (..),
+    EncodeScalar (..),
     GQLError,
     GQLType (..),
     ID,
@@ -42,13 +44,13 @@ import Feature.NamedResolvers.RealmsApp (Deity, Realm)
 import GHC.Generics (Generic)
 
 newtype MyText = MyText Text
+  deriving newtype
+    ( DecodeScalar,
+      EncodeScalar
+    )
 
 instance GQLType MyText where
   type KIND MyText = SCALAR
-
-instance EncodeScalar MyText
-
-instance DecodeScalar MyText
 
 -- Entity
 data Entity m
