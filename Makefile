@@ -14,3 +14,5 @@ build-th:
 
 doc:
 	stack build --haddock --no-haddock-deps
+
+# stack test --fast  morpheus-graphql-server  --ta '-p realm'
