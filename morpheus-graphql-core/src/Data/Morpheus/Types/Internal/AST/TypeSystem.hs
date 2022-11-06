@@ -174,7 +174,8 @@ newtype Typed (cat :: TypeCategory) (s :: Stage) a = Typed
 -- scalar
 ------------------------------------------------------------------
 newtype ScalarDefinition = ScalarDefinition
-  {validateValue :: Value VALID -> Either Token (Value VALID)}
+  { validateValue :: Value VALID -> Either Token (Value VALID)
+  }
 
 instance Eq ScalarDefinition where
   _ == _ = False

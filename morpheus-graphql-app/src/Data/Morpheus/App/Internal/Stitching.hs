@@ -111,6 +111,7 @@ instance Stitching (TypeDefinition cat s) where
       <*> prop stitch typeContent x y
 
 instance Stitching (TypeContent TRUE cat s) where
+  stitch (DataScalar _) (DataScalar x) = pure $ DataScalar x
   stitch (DataObject i1 fields1) (DataObject i2 fields2) =
     DataObject (i1 <> i2) <$> stitch fields1 fields2
   stitch x y
@@ -140,9 +141,12 @@ instance Stitching (R.ObjectTypeResolver m) where
   stitch t1 t2 = pure $ R.ObjectTypeResolver (R.objectFields t1 <> R.objectFields t2)
 
 instance (MonadError GQLError m) => Stitching (NamedResolverResult m) where
+  -- TODO: app level constraint ensures that they have same re4solver function
+  stitch NamedScalarResolver {} (NamedScalarResolver f) = pure (NamedScalarResolver f)
   stitch NamedEnumResolver {} (NamedEnumResolver x) = pure (NamedEnumResolver x)
   stitch NamedUnionResolver {} (NamedUnionResolver x) = pure (NamedUnionResolver x)
   stitch (NamedObjectResolver t1) (NamedObjectResolver t2) = NamedObjectResolver <$> stitch t1 t2
+  -- NUll
   stitch NamedNullResolver x = pure x
   stitch x NamedNullResolver = pure x
   stitch _ _ = throwError "ResolverMap must have same Kind"

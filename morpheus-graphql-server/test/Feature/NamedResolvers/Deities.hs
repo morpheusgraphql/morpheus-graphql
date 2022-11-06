@@ -7,6 +7,7 @@ module Feature.NamedResolvers.Deities where
 
 import Data.Morpheus.Server.CodeGen.Internal
 import Data.Morpheus.Server.Types
+import Feature.NamedResolvers.Scalars
 
 data Power
   = Shapeshifting
@@ -18,7 +19,8 @@ instance GQLType Power where
 
 data Deity m = Deity
   { name :: m Text,
-    power :: m [Power]
+    power :: m [Power],
+    description :: m Markdown
   }
   deriving (Generic)
 

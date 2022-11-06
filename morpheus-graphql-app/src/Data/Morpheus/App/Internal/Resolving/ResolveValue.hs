@@ -209,6 +209,7 @@ processResult typename selection (NamedObjectResolver res) = do
 processResult _ selection (NamedUnionResolver unionRef) = resolveSelection (ResRef $ pure unionRef) selection
 processResult _ selection (NamedEnumResolver value) = resolveSelection (ResEnum value) selection
 processResult _ selection NamedNullResolver = resolveSelection ResNull selection
+processResult _ selection (NamedScalarResolver v) = resolveSelection (ResScalar v) selection
 
 resolveUncached ::
   ( MonadError GQLError m,

@@ -42,8 +42,9 @@ getDeity uid
       pure $
         Just
           Deity
-            { name = lift (getDeityName uid),
-              power = resolve (getPowers uid)
+            { name = resolve (getDeityName uid),
+              power = resolve (getPowers uid),
+              description = resolve (pure uid)
             }
 getDeity _ = pure Nothing
 

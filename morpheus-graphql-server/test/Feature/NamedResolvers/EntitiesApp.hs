@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -75,8 +76,4 @@ instance ResolveNamed m (Query (NamedResolverT m)) where
             }
 
 entitiesApp :: App () IO
-entitiesApp =
-  deriveApp
-    ( NamedResolvers ::
-        NamedResolvers IO () Query Undefined Undefined
-    )
+entitiesApp = deriveApp (NamedResolvers :: NamedResolvers IO () Query Undefined Undefined)

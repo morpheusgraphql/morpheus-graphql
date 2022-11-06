@@ -3,3 +3,6 @@ server:
     source: ./
     includes:
       - Feature/NamedResolvers/*.gql
+    options:
+      globals:
+        - Feature.NamedResolvers.Scalars

@@ -13,7 +13,6 @@ module Feature.NamedResolvers.RealmsApp
   )
 where
 
-import Control.Monad.Except
 import Data.Morpheus.Server
   ( deriveApp,
   )
@@ -45,8 +44,9 @@ getRealm uid
       pure $
         Just
           Realm
-            { name = lift (getRealmName uid),
-              owner = resolve (getOwner uid)
+            { name = resolve (getRealmName uid),
+              owner = resolve (getOwner uid),
+              description = resolve (pure uid)
             }
 getRealm _ = pure Nothing
 

@@ -67,7 +67,7 @@ instance ResolveNamed m (Author (NamedResolverT m)) where
         pure $
           Just
             Author
-              { authorId = lift (pure uid),
+              { authorId = resolve (pure uid),
                 role = resolve (pure uid),
                 posts = resolve (pure ["2321", "2112"])
               }

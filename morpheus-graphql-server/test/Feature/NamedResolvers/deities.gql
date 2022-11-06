@@ -6,6 +6,7 @@ enum Power {
 type Deity {
   name: String!
   power: [Power!]!
+  description: Markdown!
 }
 
 type Query {

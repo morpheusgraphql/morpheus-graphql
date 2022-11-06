@@ -27,7 +27,6 @@ import Data.Morpheus.Types
     MonadError,
     NamedResolvers (..),
     Undefined,
-    lift,
   )
 import Data.Semigroup (Semigroup ((<>)))
 import Data.Text (Text)
@@ -45,8 +44,8 @@ getPost pid =
   pure $
     Just $
       Post
-        { postID = lift (pure pid),
-          title = lift (pure $ "title for \"" <> unpackID pid <> "\"")
+        { postID = resolve (pure pid),
+          title = resolve (pure $ "title for \"" <> unpackID pid <> "\"")
         }
 
 instance ResolveNamed m (Post (NamedResolverT m)) where
