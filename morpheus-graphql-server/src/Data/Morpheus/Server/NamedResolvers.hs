@@ -36,14 +36,14 @@ type family Target a :: Type where
   Target a = a
 
 type family Dependency a :: Type where
--- wrappers
+  -- wrappers
   Dependency (Maybe a) = Dependency a
   Dependency [a] = Dependency a
   Dependency (Set a) = Dependency a
   Dependency (NonEmpty a) = Dependency a
   Dependency (Seq a) = Dependency a
   Dependency (Vector a) = Dependency a
--- custom
+  -- custom
   Dependency a = Dep a
 
 ignoreBatching :: (Monad m) => (a -> m b) -> [a] -> m [Maybe b]
