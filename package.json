@@ -13,7 +13,8 @@
     "setup": "ts-node scripts/local.ts setup",
     "format": "ts-node scripts/local.ts format",
     "format:fix": "ts-node scripts/local.ts  format --fix=true",
-    "code-gen": "morpheus build morpheus-graphql-server/test",
+    "code-gen": "morpheus build morpheus-graphql-server/test examples/code-gen examples/code-gen-docs",
+    "code-gen:check": "morpheus check morpheus-graphql-server/test examples/code-gen examples/code-gen-docs",
     "lint": "curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s .",
     "test:server": "stack test --fast  morpheus-graphql-server  --ta"
   },

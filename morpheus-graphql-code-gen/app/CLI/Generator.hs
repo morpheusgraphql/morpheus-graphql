@@ -22,7 +22,9 @@ import Data.Morpheus.CodeGen
     parseServerTypeDefinitions,
   )
 import Data.Morpheus.CodeGen.Internal.AST
+import Data.Morpheus.CodeGen.Server (Flag (..))
 import Data.Morpheus.Internal.Ext (GQLResult)
+import qualified Data.Set as S
 import Prettyprinter
 import Relude hiding (ByteString, print)
 
@@ -33,9 +35,13 @@ data BuildConfig = BuildConfig
   }
   deriving (Show)
 
+getExtensions :: [Flag] -> [Text]
+getExtensions xs = [x | FlagLanguageExtension x <- xs]
+
 processServerDocument :: BuildConfig -> Text -> ByteString -> GQLResult ByteString
 processServerDocument BuildConfig {..} moduleName schema = do
-  types <- parseServerTypeDefinitions CodeGenConfig {namespace = namespaces} schema
+  (types, fs) <- parseServerTypeDefinitions CodeGenConfig {namespace = namespaces} schema
+  let flags = S.toList (S.fromList fs)
   pure $
     print $
       ModuleDefinition
@@ -46,12 +52,11 @@ processServerDocument BuildConfig {..} moduleName schema = do
             ]
               <> map (,["*"]) globalImports,
           extensions =
-            [ "DataKinds",
-              "DeriveGeneric",
+            [ "DeriveGeneric",
               "DuplicateRecordFields",
-              "OverloadedStrings",
               "TypeFamilies"
-            ],
+            ]
+              <> getExtensions flags,
           types
         }
 

@@ -1,13 +1,16 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.CodeGen.Server.Interpreting.Utils
   ( CodeGenMonad (..),
+    CodeGenM,
     ServerCodeGenContext (..),
     CodeGenT,
     getFieldName,
@@ -16,6 +19,10 @@ module Data.Morpheus.CodeGen.Server.Interpreting.Utils
     lookupFieldType,
     isSubscription,
     inType,
+    runCodeGenT,
+    Flags,
+    Flag (..),
+    langExtension,
   )
 where
 
@@ -57,18 +64,46 @@ import Language.Haskell.TH
   )
 import Relude hiding (ByteString, get)
 
-type CodeGenT m = ReaderT (ServerCodeGenContext CONST) m
+class (MonadReader ServerCodeGenContext m, Monad m, MonadFail m, CodeGenMonad m, MonadState Flags m) => CodeGenM m
 
-data ServerCodeGenContext s = ServerCodeGenContext
+instance CodeGenMonad m => CodeGenM (CodeGenT m)
+
+instance MonadTrans CodeGenT where
+  lift = CodeGenT . lift . lift
+
+data ServerCodeGenContext = ServerCodeGenContext
   { toArgsTypeName :: FieldName -> TypeName,
-    typeDefinitions :: [TypeDefinition ANY s],
-    directiveDefinitions :: [DirectiveDefinition s],
+    typeDefinitions :: [TypeDefinition ANY CONST],
+    directiveDefinitions :: [DirectiveDefinition CONST],
     currentTypeName :: Maybe TypeName,
     currentKind :: Maybe TypeKind,
     hasNamespace :: Bool
   }
 
-getFieldName :: Monad m => FieldName -> CodeGenT m FieldName
+type Flags = [Flag]
+
+newtype Flag = FlagLanguageExtension Text
+  deriving (Ord, Eq)
+
+langExtension :: MonadState Flags m => Text -> m ()
+langExtension ext = modify (FlagLanguageExtension ext :)
+
+newtype CodeGenT m a = CodeGenT
+  { _runCodeGenT :: ReaderT ServerCodeGenContext (StateT Flags m) a
+  }
+  deriving newtype
+    ( Functor,
+      Applicative,
+      Monad,
+      MonadFail,
+      MonadReader ServerCodeGenContext,
+      MonadState Flags
+    )
+
+runCodeGenT :: Monad m => CodeGenT m a -> ServerCodeGenContext -> m (a, Flags)
+runCodeGenT (CodeGenT m) ctx = runStateT (runReaderT m ctx) mempty
+
+getFieldName :: CodeGenM m => FieldName -> m FieldName
 getFieldName fieldName = do
   ServerCodeGenContext {hasNamespace, currentTypeName} <- ask
   pure $
@@ -76,7 +111,7 @@ getFieldName fieldName = do
       then maybe fieldName (`camelCaseFieldName` fieldName) currentTypeName
       else fieldName
 
-getEnumName :: MonadReader (ServerCodeGenContext s) m => TypeName -> m CodeGenTypeName
+getEnumName :: MonadReader ServerCodeGenContext m => TypeName -> m CodeGenTypeName
 getEnumName enumName = do
   ServerCodeGenContext {hasNamespace, currentTypeName} <- ask
   pure $
@@ -87,6 +122,10 @@ getEnumName enumName = do
 class (Monad m, MonadFail m) => CodeGenMonad m where
   isParametrizedType :: TypeName -> m Bool
   printWarnings :: [GQLError] -> m ()
+
+instance CodeGenMonad m => CodeGenMonad (CodeGenT m) where
+  isParametrizedType = lift . isParametrizedType
+  printWarnings = lift . printWarnings
 
 instance CodeGenMonad Q where
   isParametrizedType name = isParametrizedHaskellType <$> reify (toName name)
@@ -112,7 +151,7 @@ isParametrizedHaskellType :: Info -> Bool
 isParametrizedHaskellType (TyConI x) = not $ null $ getTypeVariables x
 isParametrizedHaskellType _ = False
 
-isParametrizedResolverType :: CodeGenMonad m => TypeName -> [TypeDefinition ANY s] -> CodeGenT m Bool
+isParametrizedResolverType :: CodeGenM m => TypeName -> [TypeDefinition ANY s] -> m Bool
 isParametrizedResolverType "__TypeKind" _ = pure False
 isParametrizedResolverType "Boolean" _ = pure False
 isParametrizedResolverType "String" _ = pure False
@@ -120,23 +159,23 @@ isParametrizedResolverType "Int" _ = pure False
 isParametrizedResolverType "Float" _ = pure False
 isParametrizedResolverType name lib = case lookupWith typeName name lib of
   Just x -> pure (isResolverType x)
-  Nothing -> lift (isParametrizedType name)
+  Nothing -> isParametrizedType name
 
-isParamResolverType :: CodeGenMonad m => TypeName -> ReaderT (ServerCodeGenContext CONST) m Bool
+isParamResolverType :: CodeGenM m => TypeName -> m Bool
 isParamResolverType typeConName =
   isParametrizedResolverType typeConName =<< asks typeDefinitions
 
 notFoundError :: MonadFail m => String -> String -> m a
 notFoundError name at = fail $ "can't found " <> name <> "at " <> at <> "!"
 
-lookupType :: MonadFail m => TypeName -> CodeGenT m (TypeDefinition ANY CONST)
+lookupType :: CodeGenM m => TypeName -> m (TypeDefinition ANY CONST)
 lookupType name = do
   types <- asks typeDefinitions
   case find (\t -> typeName t == name) types of
     Just x -> pure x
     Nothing -> notFoundError (show name) "type definitions"
 
-lookupFieldType :: MonadFail m => TypeName -> FieldName -> CodeGenT m TypeRef
+lookupFieldType :: CodeGenM m => TypeName -> FieldName -> m TypeRef
 lookupFieldType name fieldName = do
   TypeDefinition {typeContent} <- lookupType name
   case typeContent of
@@ -149,5 +188,5 @@ isSubscription :: TypeKind -> Bool
 isSubscription (KindObject (Just Subscription)) = True
 isSubscription _ = False
 
-inType :: MonadReader (ServerCodeGenContext s) m => Maybe TypeName -> m a -> m a
+inType :: MonadReader ServerCodeGenContext m => Maybe TypeName -> m a -> m a
 inType name = local (\x -> x {currentTypeName = name, currentKind = Nothing})

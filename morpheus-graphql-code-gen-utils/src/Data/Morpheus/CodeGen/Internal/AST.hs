@@ -200,7 +200,7 @@ data ModuleDefinition dec = ModuleDefinition
 instance Pretty dec => Pretty (ModuleDefinition dec) where
   pretty ModuleDefinition {..} =
     vsep
-      (map renderExtension extensions)
+      (map renderExtension (sort extensions))
       <> line
       <> line
       <> "module"

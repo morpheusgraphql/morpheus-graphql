@@ -1,7 +1,5 @@
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Server.Blog where
