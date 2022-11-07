@@ -51,7 +51,8 @@ import Data.Morpheus.CodeGen.Server.Interpreting.Utils
     inType,
     isParamResolverType,
     isSubscription,
-    runCodeGenT,langExtension
+    langExtension,
+    runCodeGenT,
   )
 import Data.Morpheus.CodeGen.TH (ToName (..))
 import Data.Morpheus.CodeGen.Utils
@@ -250,7 +251,7 @@ mkObjectField
           ..
         }
 
-mkFieldArguments :: m CodeGenField => FieldName -> (FieldName -> TypeName) -> [ArgumentDefinition s] -> m [FIELD_TYPE_WRAPPER]
+mkFieldArguments :: CodeGenM m => FieldName -> (FieldName -> TypeName) -> [ArgumentDefinition s] -> m [FIELD_TYPE_WRAPPER]
 mkFieldArguments _ _ [] = pure []
 mkFieldArguments
   _
