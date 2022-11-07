@@ -42,7 +42,7 @@ mkQuasiQuoter ctx =
 compileDocument :: CodeGenConfig -> ByteString -> Q [Dec]
 compileDocument config =
   parseServerTypeDefinitions config
-    >=> fmap concat . traverse printServerDec
+    >=> fmap concat . traverse printServerDec . fst
 
 printServerDec :: ServerDeclaration -> Q [Dec]
 printServerDec (InterfaceType interface) = pure <$> printDec interface

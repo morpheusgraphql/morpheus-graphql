@@ -33,11 +33,26 @@ import Data.Morpheus.CodeGen.Server.Internal.AST
     InterfaceDefinition (..),
     Kind (..),
     ServerDeclaration (..),
-    ServerDirectiveUsage (..),
     ServerMethod (..),
   )
-import Data.Morpheus.CodeGen.Server.Interpreting.Directive (dirRename, getDefaultValueDir, getDirs, getNamespaceDirs)
-import Data.Morpheus.CodeGen.Server.Interpreting.Utils (CodeGenMonad (printWarnings), CodeGenT, ServerCodeGenContext (..), getEnumName, getFieldName, inType, isParamResolverType, isSubscription)
+import Data.Morpheus.CodeGen.Server.Interpreting.Directive
+  ( getDefaultValueDir,
+    getDirectives,
+    getNamespaceDirs,
+    getRenameDir,
+  )
+import Data.Morpheus.CodeGen.Server.Interpreting.Utils
+  ( CodeGenM,
+    CodeGenMonad (printWarnings),
+    Flags,
+    ServerCodeGenContext (..),
+    getEnumName,
+    getFieldName,
+    inType,
+    isParamResolverType,
+    isSubscription,
+    runCodeGenT,langExtension
+  )
 import Data.Morpheus.CodeGen.TH (ToName (..))
 import Data.Morpheus.CodeGen.Utils
   ( camelCaseTypeName,
@@ -76,7 +91,7 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Relude hiding (ByteString, get)
 
-parseServerTypeDefinitions :: CodeGenMonad m => CodeGenConfig -> ByteString -> m [ServerDeclaration]
+parseServerTypeDefinitions :: CodeGenMonad m => CodeGenConfig -> ByteString -> m ([ServerDeclaration], Flags)
 parseServerTypeDefinitions ctx txt =
   case parseDefinitions txt of
     Failure errors -> fail (renderGQLErrors errors)
@@ -86,14 +101,16 @@ toTHDefinitions ::
   CodeGenMonad m =>
   Bool ->
   [RawTypeDefinition] ->
-  m [ServerDeclaration]
-toTHDefinitions namespace defs = concat <$> traverse generateTypes defs
+  m ([ServerDeclaration], Flags)
+toTHDefinitions namespace defs = do
+  (types, flags) <- unzip <$> traverse generateTypes defs
+  pure (concat types, concat flags)
   where
     typeDefinitions = [td | RawTypeDefinition td <- defs]
     directiveDefinitions = [td | RawDirectiveDefinition td <- defs]
-    generateTypes :: CodeGenMonad m => RawTypeDefinition -> m [ServerDeclaration]
+    generateTypes :: CodeGenMonad m => RawTypeDefinition -> m ([ServerDeclaration], Flags)
     generateTypes (RawTypeDefinition typeDef) =
-      runReaderT
+      runCodeGenT
         (genTypeDefinition typeDef)
         ServerCodeGenContext
           { toArgsTypeName = mkArgsTypeName namespace (typeName typeDef),
@@ -104,7 +121,7 @@ toTHDefinitions namespace defs = concat <$> traverse generateTypes defs
             hasNamespace = namespace
           }
     generateTypes (RawDirectiveDefinition DirectiveDefinition {..}) =
-      runReaderT
+      runCodeGenT
         ( do
             fields <- traverse renderDataField (argument <$> toList directiveDefinitionArgs)
             let typename = coerce directiveDefinitionName
@@ -141,7 +158,7 @@ toTHDefinitions namespace defs = concat <$> traverse generateTypes defs
             currentKind = Nothing,
             hasNamespace = namespace
           }
-    generateTypes _ = pure []
+    generateTypes _ = pure (mempty, mempty)
 
 mkInterfaceName :: TypeName -> TypeName
 mkInterfaceName = ("Interface" <>)
@@ -150,9 +167,9 @@ mkPossibleTypesName :: TypeName -> TypeName
 mkPossibleTypesName = ("PossibleTypes" <>)
 
 genTypeDefinition ::
-  CodeGenMonad m =>
+  CodeGenM m =>
   TypeDefinition ANY CONST ->
-  CodeGenT m [ServerDeclaration]
+  m [ServerDeclaration]
 genTypeDefinition
   typeDef@TypeDefinition {typeName = originalTypeName, typeContent} =
     case tKind of
@@ -167,11 +184,11 @@ genTypeDefinition
       tKind = kindOf typeDef
       hsTypeName = packName $ toHaskellTypeName typeName
       cgTypeName = CodeGenTypeName [] ["m" | isResolverType tKind] hsTypeName
-      renameDir = [TypeDirectiveUsage (dirRename originalTypeName) | originalTypeName /= hsTypeName]
       deriveGQL = do
         defaultValueDirs <- concat <$> traverse getDefaultValueDir (getInputFields typeDef)
         namespaceDirs <- getNamespaceDirs (unpackName hsTypeName)
-        dirs <- getDirs typeDef
+        dirs <- getDirectives typeDef
+        renameDir <- getRenameDir originalTypeName hsTypeName
         pure $
           gqlTypeToInstance
             GQLTypeDefinition
@@ -206,9 +223,9 @@ mkArgsTypeName namespace typeName fieldName
     argTName = camelCaseTypeName [fieldName] "Args"
 
 mkObjectField ::
-  CodeGenMonad m =>
+  CodeGenM m =>
   FieldDefinition OUT CONST ->
-  CodeGenT m CodeGenField
+  m CodeGenField
 mkObjectField
   FieldDefinition
     { fieldName = fName,
@@ -219,12 +236,13 @@ mkObjectField
     genName <- asks toArgsTypeName
     kind <- asks currentKind
     fieldName <- getFieldName fName
+    args <- mkFieldArguments fName genName (toArgList fieldContent)
     pure
       CodeGenField
         { fieldType = packName (toHaskellTypeName typeConName),
           fieldIsNullable = isNullable typeWrappers,
           wrappers =
-            mkFieldArguments fName genName (toArgList fieldContent)
+            args
               <> [SUBSCRIPTION ''SubscriptionField | fmap isSubscription kind == Just True]
               <> [MONAD]
               <> [GQL_WRAPPER typeWrappers]
@@ -232,14 +250,14 @@ mkObjectField
           ..
         }
 
-mkFieldArguments :: FieldName -> (FieldName -> TypeName) -> [ArgumentDefinition s] -> [FIELD_TYPE_WRAPPER]
-mkFieldArguments _ _ [] = []
+mkFieldArguments :: m CodeGenField => FieldName -> (FieldName -> TypeName) -> [ArgumentDefinition s] -> m [FIELD_TYPE_WRAPPER]
+mkFieldArguments _ _ [] = pure []
 mkFieldArguments
   _
   _
   [ ArgumentDefinition FieldDefinition {fieldName, fieldType}
-    ] = [TAGGED_ARG ''Arg fieldName fieldType]
-mkFieldArguments fName genName _ = [ARG (genName fName)]
+    ] = langExtension "DataKinds" $> [TAGGED_ARG ''Arg fieldName fieldType]
+mkFieldArguments fName genName _ = pure [ARG (genName fName)]
 
 toArgList :: Maybe (FieldContent bool cat s) -> [ArgumentDefinition s]
 toArgList (Just (FieldArgs args)) = toList args
@@ -264,7 +282,7 @@ gqlTypeToInstance GQLTypeDefinition {..} =
           ]
       }
 
-genInterfaceUnion :: Monad m => TypeName -> CodeGenT m [ServerDeclaration]
+genInterfaceUnion :: CodeGenM m => TypeName -> m [ServerDeclaration]
 genInterfaceUnion interfaceName =
   mkInterface . map typeName . mapMaybe (isPossibleInterfaceType interfaceName)
     <$> asks typeDefinitions
@@ -291,12 +309,12 @@ genInterfaceUnion interfaceName =
     mkGuardWithPossibleType = InterfaceType . InterfaceDefinition interfaceName (mkInterfaceName interfaceName)
     tName = mkPossibleTypesName interfaceName
 
-mkConsEnum :: Monad m => DataEnumValue CONST -> CodeGenT m CodeGenConstructor
+mkConsEnum :: CodeGenM m => DataEnumValue CONST -> m CodeGenConstructor
 mkConsEnum DataEnumValue {enumName} = do
   constructorName <- getEnumName enumName
   pure CodeGenConstructor {constructorName, constructorFields = []}
 
-renderDataField :: Monad m => FieldDefinition c CONST -> CodeGenT m CodeGenField
+renderDataField :: CodeGenM m => FieldDefinition c CONST -> m CodeGenField
 renderDataField FieldDefinition {fieldType = TypeRef {typeConName, typeWrappers}, fieldName = fName} = do
   fieldName <- getFieldName fName
   let wrappers = [GQL_WRAPPER typeWrappers]
@@ -304,11 +322,7 @@ renderDataField FieldDefinition {fieldType = TypeRef {typeConName, typeWrappers}
   let fieldIsNullable = isNullable typeWrappers
   pure CodeGenField {..}
 
-genTypeContent ::
-  CodeGenMonad m =>
-  TypeName ->
-  TypeContent TRUE ANY CONST ->
-  CodeGenT m BuildPlan
+genTypeContent :: CodeGenM m => TypeName -> TypeContent TRUE ANY CONST -> m BuildPlan
 genTypeContent _ DataScalar {} = pure (ConsIN [])
 genTypeContent _ (DataEnum tags) = ConsIN <$> traverse mkConsEnum tags
 genTypeContent typeName (DataInputObject fields) =
@@ -352,39 +366,39 @@ mkUnionFieldDefinition typeName memberName =
   where
     constructorName = CodeGenTypeName [coerce typeName] [] memberName
 
-genArgumentTypes :: MonadFail m => FieldsDefinition OUT CONST -> CodeGenT m [ServerDeclaration]
+genArgumentTypes :: CodeGenM m => FieldsDefinition OUT CONST -> m [ServerDeclaration]
 genArgumentTypes = fmap concat . traverse genArgumentType . toList
 
-genArgumentType :: MonadFail m => FieldDefinition OUT CONST -> CodeGenT m [ServerDeclaration]
+genArgumentType :: CodeGenM m => FieldDefinition OUT CONST -> m [ServerDeclaration]
 genArgumentType
   FieldDefinition
     { fieldName,
       fieldContent = Just (FieldArgs arguments)
     }
     | length arguments > 1 = do
-        tName <- (fieldName &) <$> asks toArgsTypeName
-        inType (Just tName) $ do
-          let argumentFields = argument <$> toList arguments
-          fields <- traverse renderDataField argumentFields
-          let typename = toHaskellTypeName tName
-          namespaceDirs <- getNamespaceDirs typename
-          dirs <- concat <$> traverse getDirs argumentFields
-          let cgTypeName = fromTypeName (packName typename)
-          defaultValueDirs <- concat <$> traverse getDefaultValueDir argumentFields
-          pure
-            [ DataType
-                CodeGenType
-                  { cgTypeName,
-                    cgConstructors = mkObjectCons tName fields,
-                    cgDerivations = derivesClasses False
-                  },
-              gqlTypeToInstance
-                GQLTypeDefinition
-                  { gqlTarget = cgTypeName,
-                    gqlKind = Type,
-                    gqlTypeDirectiveUses = namespaceDirs <> dirs <> defaultValueDirs
-                  }
-            ]
+      tName <- (fieldName &) <$> asks toArgsTypeName
+      inType (Just tName) $ do
+        let argumentFields = argument <$> toList arguments
+        fields <- traverse renderDataField argumentFields
+        let typename = toHaskellTypeName tName
+        namespaceDirs <- getNamespaceDirs typename
+        dirs <- concat <$> traverse getDirectives argumentFields
+        let cgTypeName = fromTypeName (packName typename)
+        defaultValueDirs <- concat <$> traverse getDefaultValueDir argumentFields
+        pure
+          [ DataType
+              CodeGenType
+                { cgTypeName,
+                  cgConstructors = mkObjectCons tName fields,
+                  cgDerivations = derivesClasses False
+                },
+            gqlTypeToInstance
+              GQLTypeDefinition
+                { gqlTarget = cgTypeName,
+                  gqlKind = Type,
+                  gqlTypeDirectiveUses = namespaceDirs <> dirs <> defaultValueDirs
+                }
+          ]
 genArgumentType _ = pure []
 
 getInputFields :: TypeDefinition c s -> [FieldDefinition IN s]
