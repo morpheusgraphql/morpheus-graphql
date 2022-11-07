@@ -1,12 +1,6 @@
 - ignore:
     {
       name: Unused LANGUAGE pragma,
-      within:
-        [
-          Client.Queries.GetUsers,
-          Client.Queries.GetPosts,
-          Client.Blog,
-          Server.Blog,
-        ],
+      within: [Client.Queries.GetUsers, Client.Queries.GetPosts, Client.Blog],
     }
 - ignore: { name: Use camelCase, within: [Namespaces.Cases] }
