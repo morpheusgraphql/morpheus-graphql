@@ -23,6 +23,7 @@ module Data.Morpheus.CodeGen.Internal.AST
   )
 where
 
+import qualified Data.HashMap.Lazy as HM
 import Data.Morpheus.CodeGen.Internal.Name (camelCaseTypeName)
 import Data.Morpheus.CodeGen.Printer
 import Data.Morpheus.Types.Internal.AST
@@ -33,6 +34,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeWrapper,
     unpackName,
   )
+import qualified Data.Set as S
 import qualified Data.Text as T
 import Language.Haskell.TH.Syntax (Lift)
 import qualified Language.Haskell.TH.Syntax as TH
@@ -208,7 +210,7 @@ instance Pretty dec => Pretty (ModuleDefinition dec) where
       <+> "where"
         <> line
         <> line
-        <> vsep (map renderImport $ sortWith fst imports)
+        <> vsep (map renderImport $ organizeImports imports)
         <> line
         <> line
         <> vsep (filter notEmpty $ map pretty types)
@@ -220,6 +222,17 @@ renderExtension :: Text -> Doc ann
 renderExtension txt
   | T.isPrefixOf "{-#" txt = pretty txt
   | otherwise = "{-#" <+> "LANGUAGE" <+> pretty txt <+> "#-}"
+
+organizeImports :: [(Text, [Text])] -> [(Text, [Text])]
+organizeImports xs = sortWith fst $ HM.toList $ fmap (sort . toList) (groupImports xs)
+
+groupImports :: [(Text, [Text])] -> HashMap Text (Set Text)
+groupImports = foldr insertImport mempty
+
+insertImport :: (Text, [Text]) -> HashMap Text (Set Text) -> HashMap Text (Set Text)
+insertImport (moduleName, names) = HM.alter f moduleName
+  where
+    f x = Just (S.fromList names <> fromMaybe mempty x)
 
 renderImport :: (Text, [Text]) -> Doc ann
 renderImport (src, ls) = "import" <+> pretty src <> renderImportList ls

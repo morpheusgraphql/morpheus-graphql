@@ -25,7 +25,7 @@ import Data.Morpheus.Internal.Utils
     selectOr,
     startHistory,
   )
-import Data.Morpheus.Types.Internal.AST.DirectiveLocation (DirectiveLocation (FRAGMENT_SPREAD, INLINE_FRAGMENT))
+import Data.Morpheus.Types.Internal.AST.DirectiveLocation (DirectiveLocation (..))
 import Data.Morpheus.Types.Internal.AST.Name (TypeName)
 import Data.Morpheus.Types.Internal.AST.Selection
   ( Fragment (..),
@@ -72,10 +72,10 @@ splitFragment ::
   FragmentValidator s (Either UnionTag (Selection RAW))
 splitFragment _ _ x@Selection {} = pure (Right x)
 splitFragment f types (Spread dirs ref) = do
-  _ <- validateDirectives FRAGMENT_SPREAD dirs
+  _ <- validateDirectives LOCATION_FRAGMENT_SPREAD dirs
   Left <$> validateSpread f (typeName <$> types) ref
 splitFragment f types (InlineFragment fragment@Fragment {..}) = do
-  _ <- validateDirectives INLINE_FRAGMENT fragmentDirectives
+  _ <- validateDirectives LOCATION_INLINE_FRAGMENT fragmentDirectives
   Left . UnionTag fragmentType
     <$> (castFragmentType Nothing fragmentPosition (typeName <$> types) fragment >>= f)
 

@@ -15,12 +15,23 @@ module Fraxl.FakeDB
   )
 where
 
-import Data.Foldable (fold)
 import Data.Functor.Identity (Identity (..), runIdentity)
 import Data.Map (Map)
 import qualified Data.Map as M
 import Data.Set (Set, toList)
 import Data.Text (Text)
+import Prelude
+  ( Applicative (..),
+    Functor (..),
+    Int,
+    Monad (..),
+    Ord (..),
+    elem,
+    filter,
+    foldMap,
+    (.),
+    (==),
+  )
 
 data Band = Band
   { name :: Text,

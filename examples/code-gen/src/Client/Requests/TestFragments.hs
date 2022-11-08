@@ -8,13 +8,12 @@ module Client.Requests.TestFragments where
 
 import Client.Schema
 import Data.Morpheus.Client.CodeGen.Internal
-import Globals.GQLScalars
 
 instance RequestType TestFragments where
   type RequestArgs TestFragments = ()
   __name _ = "TestFragments"
   __query _ = "query TestFragments {\n  character {\n    ...DEITY\n    ...HERO\n  }\n  newTypes: character {\n    lastName\n    ...DEITY\n    ...HERO\n  }\n  person: character {\n    ...Person\n  }\n  heros: character {\n    ...HERO\n  }\n  superheros: character {\n    ...HERO\n  }\n}\n\nfragment Person on Character {\n  __typename\n  name\n  lastName\n}\n\nfragment DEITY on Deity {\n  __typename\n  name\n  power\n}\n\nfragment HERO on Hero {\n  __typename\n  name\n  hobby\n}"
-  __type _ = Query
+  __type _ = OPERATION_QUERY
 
 data TestFragments = TestFragments
   { character :: [TestFragmentsCharacter],

@@ -83,7 +83,7 @@ parseAnonymousQuery = label "AnonymousQuery" $ do
   pure
     ( Operation
         { operationName = Nothing,
-          operationType = Query,
+          operationType = OPERATION_QUERY,
           operationArguments = empty,
           operationDirectives = empty,
           ..

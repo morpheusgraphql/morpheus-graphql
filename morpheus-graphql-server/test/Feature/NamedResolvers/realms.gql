@@ -1,3 +1,5 @@
+scalar Markdown
+
 type Realm {
   name: String!
   owner: Deity!

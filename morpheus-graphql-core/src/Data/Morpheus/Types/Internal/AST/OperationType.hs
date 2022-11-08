@@ -11,10 +11,10 @@ module Data.Morpheus.Types.Internal.AST.OperationType
     MUTATION,
     SUBSCRIPTION,
     toOperationType,
+    isOperationType,
   )
 where
 
-import Data.Char (toLower)
 import Data.Morpheus.Rendering.RenderGQL
   ( RenderGQL (..),
   )
@@ -25,39 +25,51 @@ import Language.Haskell.TH.Syntax
   )
 import Relude hiding
   ( ByteString,
+    Show,
     decodeUtf8,
     intercalate,
+    show,
   )
+import Prelude (Show (..))
 
-type QUERY = 'Query
+type QUERY = 'OPERATION_QUERY
 
-type MUTATION = 'Mutation
+type MUTATION = 'OPERATION_MUTATION
 
-type SUBSCRIPTION = 'Subscription
+type SUBSCRIPTION = 'OPERATION_SUBSCRIPTION
 
 data OperationType
-  = Query
-  | Subscription
-  | Mutation
+  = OPERATION_QUERY
+  | OPERATION_SUBSCRIPTION
+  | OPERATION_MUTATION
   deriving
-    ( Show,
-      Eq,
+    ( Eq,
       Lift,
       Generic,
-      Hashable
+      Hashable,
+      Show
     )
 
 instance RenderGQL OperationType where
-  renderGQL = fromString . fmap toLower . show
+  renderGQL OPERATION_QUERY = "query"
+  renderGQL OPERATION_MUTATION = "mutation"
+  renderGQL OPERATION_SUBSCRIPTION = "subscription"
+
+isOperationType :: OperationType -> TypeName -> Bool
+isOperationType OPERATION_QUERY "Query" = True
+isOperationType OPERATION_MUTATION "Mutation" = True
+isOperationType OPERATION_SUBSCRIPTION "Subscription" = True
+isOperationType _ _ = False
+{-# INLINE isOperationType #-}
 
 toOperationType :: TypeName -> Maybe OperationType
-toOperationType "Subscription" = Just Subscription
-toOperationType "Mutation" = Just Mutation
-toOperationType "Query" = Just Query
+toOperationType "Subscription" = Just OPERATION_SUBSCRIPTION
+toOperationType "Mutation" = Just OPERATION_MUTATION
+toOperationType "Query" = Just OPERATION_QUERY
 toOperationType _ = Nothing
 {-# INLINE toOperationType #-}
 
 instance Msg OperationType where
-  msg Query = msg ("query" :: TypeName)
-  msg Mutation = msg ("mutation" :: TypeName)
-  msg Subscription = msg ("subscription" :: TypeName)
+  msg OPERATION_QUERY = msg ("query" :: TypeName)
+  msg OPERATION_MUTATION = msg ("mutation" :: TypeName)
+  msg OPERATION_SUBSCRIPTION = msg ("subscription" :: TypeName)

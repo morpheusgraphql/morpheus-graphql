@@ -81,6 +81,7 @@ import Data.Morpheus.Rendering.RenderGQL
     Rendering,
     intercalate,
     newline,
+    render,
     renderEntry,
     renderMembers,
     renderObject,
@@ -104,10 +105,10 @@ import Data.Morpheus.Types.Internal.AST.Fields
 import Data.Morpheus.Types.Internal.AST.Name
   ( TypeName,
     isNotSystemTypeName,
-    unpackName,
   )
 import Data.Morpheus.Types.Internal.AST.OperationType
   ( OperationType (..),
+    isOperationType,
     toOperationType,
   )
 import Data.Morpheus.Types.Internal.AST.Stage
@@ -143,7 +144,6 @@ import Data.Morpheus.Types.Internal.AST.Union
 import Data.Morpheus.Types.Internal.AST.Value
   ( Value (..),
   )
-import qualified Data.Text as T
 import Instances.TH.Lift ()
 import Language.Haskell.TH.Syntax (Lift (..))
 import Relude hiding
@@ -312,9 +312,9 @@ mkSchema :: (Monad m, MonadError GQLError m) => [TypeDefinition ANY s] -> m (Sch
 mkSchema types =
   traverse3
     (popByKey types)
-    ( RootOperationTypeDefinition Query "Query",
-      RootOperationTypeDefinition Mutation "Mutation",
-      RootOperationTypeDefinition Subscription "Subscription"
+    ( RootOperationTypeDefinition OPERATION_QUERY "Query",
+      RootOperationTypeDefinition OPERATION_MUTATION "Mutation",
+      RootOperationTypeDefinition OPERATION_SUBSCRIPTION "Subscription"
     )
     >>= defineSchemaWith types
 
@@ -362,7 +362,7 @@ buildSchema ::
   m (Schema s)
 buildSchema (Nothing, types, dirs) = mkSchema types >>= withDirectives dirs
 buildSchema (Just schemaDef, types, dirs) =
-  traverse3 selectOp (Query, Mutation, Subscription)
+  traverse3 selectOp (OPERATION_QUERY, OPERATION_MUTATION, OPERATION_SUBSCRIPTION)
     >>= defineSchemaWith types
     >>= withDirectives dirs
   where
@@ -626,13 +626,13 @@ isLeaf _ = False
 kindOf :: TypeDefinition a s -> TypeKind
 kindOf TypeDefinition {typeName, typeContent} = __kind typeContent
   where
-    __kind DataScalar {} = KindScalar
-    __kind DataEnum {} = KindEnum
-    __kind DataInputObject {} = KindInputObject
-    __kind DataObject {} = KindObject (toOperationType typeName)
-    __kind DataUnion {} = KindUnion
-    __kind DataInputUnion {} = KindInputUnion
-    __kind DataInterface {} = KindInterface
+    __kind DataScalar {} = KIND_SCALAR
+    __kind DataEnum {} = KIND_ENUM
+    __kind DataInputObject {} = KIND_INPUT_OBJECT
+    __kind DataObject {} = KIND_OBJECT (toOperationType typeName)
+    __kind DataUnion {} = KIND_UNION
+    __kind DataInputUnion {} = KIND_INPUT_UNION
+    __kind DataInterface {} = KIND_INTERFACE
 
 defineType ::
   ( Monad m,
@@ -669,7 +669,7 @@ popByKey types (RootOperationTypeDefinition opType name) = case lookupWith typeN
     pure (fromAny dt)
   Just {} ->
     throwError $
-      msg (show opType)
+      msg (render opType)
         <> " root type must be Object type if provided, it cannot be "
         <> msg name
   _ -> pure Nothing
@@ -683,7 +683,7 @@ hasDefaultOperationName
   RootOperationTypeDefinition
     { rootOperationType,
       rootOperationTypeDefinitionName = name
-    } = show rootOperationType == T.unpack (unpackName name)
+    } = isOperationType rootOperationType name
 
 instance RenderGQL (Schema s) where
   renderGQL schema@Schema {..} =
@@ -695,9 +695,9 @@ instance RenderGQL (Schema s) where
         | otherwise = [renderSchemaDefinition entries]
       entries =
         catMaybes
-          [ RootOperationTypeDefinition Query . typeName <$> Just query,
-            RootOperationTypeDefinition Mutation . typeName <$> mutation,
-            RootOperationTypeDefinition Subscription . typeName <$> subscription
+          [ RootOperationTypeDefinition OPERATION_QUERY . typeName <$> Just query,
+            RootOperationTypeDefinition OPERATION_MUTATION . typeName <$> mutation,
+            RootOperationTypeDefinition OPERATION_SUBSCRIPTION . typeName <$> subscription
           ]
       visibleTypes =
         renderGQL

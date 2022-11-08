@@ -11,7 +11,9 @@ module CLI.Generator
   )
 where
 
+import CLI.Config (ServiceOptions (..))
 import Data.ByteString.Lazy.Char8 (ByteString, pack)
+import Data.HashMap.Lazy (lookup)
 import Data.Morpheus.Client
   ( SchemaSource,
     parseClientTypeDeclarations,
@@ -22,26 +24,37 @@ import Data.Morpheus.CodeGen
     parseServerTypeDefinitions,
   )
 import Data.Morpheus.CodeGen.Internal.AST
-import Data.Morpheus.CodeGen.Server (Flag (..))
+import Data.Morpheus.CodeGen.Utils (Flag (..))
 import Data.Morpheus.Internal.Ext (GQLResult)
+import Data.Morpheus.Types.Internal.AST (unpackName)
 import qualified Data.Set as S
 import Prettyprinter
 import Relude hiding (ByteString, print)
 
 data BuildConfig = BuildConfig
   { root :: String,
-    namespaces :: Bool,
-    globalImports :: [Text]
+    buildOptions :: ServiceOptions
   }
   deriving (Show)
 
 getExtensions :: [Flag] -> [Text]
 getExtensions xs = [x | FlagLanguageExtension x <- xs]
 
+resolveExternal :: ServiceOptions -> Text -> Maybe (Text, [Text])
+resolveExternal ServiceOptions {optionExternals} name = (,[name]) <$> name `lookup` optionExternals
+
+collectExternals :: ServiceOptions -> [Text] -> [(Text, [Text])]
+collectExternals buildOptions exts = mapMaybe (resolveExternal buildOptions) (S.toList $ S.fromList exts)
+
+getImports :: ServiceOptions -> [Flag] -> [(Text, [Text])]
+getImports buildOptions flags = collectExternals buildOptions [x | FlagExternal x <- flags]
+
+uniq :: Ord a => [a] -> [a]
+uniq = S.toList . S.fromList
+
 processServerDocument :: BuildConfig -> Text -> ByteString -> GQLResult ByteString
 processServerDocument BuildConfig {..} moduleName schema = do
-  (types, fs) <- parseServerTypeDefinitions CodeGenConfig {namespace = namespaces} schema
-  let flags = S.toList (S.fromList fs)
+  (types, flags) <- second uniq <$> parseServerTypeDefinitions CodeGenConfig {namespace = optionNamespace buildOptions} schema
   pure $
     print $
       ModuleDefinition
@@ -50,7 +63,8 @@ processServerDocument BuildConfig {..} moduleName schema = do
             [ ("Data.Morpheus.Server.CodeGen.Internal", ["*"]),
               ("Data.Morpheus.Server.Types", ["*"])
             ]
-              <> map (,["*"]) globalImports,
+              <> map (,["*"]) (optionImports buildOptions)
+              <> getImports buildOptions flags,
           extensions =
             [ "DeriveGeneric",
               "DuplicateRecordFields",
@@ -60,34 +74,42 @@ processServerDocument BuildConfig {..} moduleName schema = do
           types
         }
 
-notScalars :: ClientDeclaration -> Bool
-notScalars (InstanceDeclaration SCALAR_MODE _) = False
-notScalars _ = True
+isScalars :: ClientDeclaration -> Bool
+isScalars (InstanceDeclaration SCALAR_MODE _) = True
+isScalars _ = False
 
 processClientDocument ::
   BuildConfig ->
   SchemaSource ->
   Maybe Text ->
   Text ->
-  GQLResult ByteString
+  GQLResult (Maybe ByteString)
 processClientDocument BuildConfig {..} schema query moduleName = do
-  types <- filter notScalars <$> parseClientTypeDeclarations schema query
-  let moduleDef =
-        ModuleDefinition
-          { moduleName,
-            imports =
-              [("Data.Morpheus.Client.CodeGen.Internal", ["*"])]
-                <> map (,["*"]) globalImports,
-            extensions =
-              [ "DeriveGeneric",
-                "DuplicateRecordFields",
-                "LambdaCase",
-                "OverloadedStrings",
-                "TypeFamilies"
-              ],
-            types
-          }
-  pure $ print moduleDef
+  (allTypes, flags) <- second uniq <$> parseClientTypeDeclarations schema query
+  let externalImports = collectExternals buildOptions [unpackName $ getFullName (typeClassTarget x) | InstanceDeclaration SCALAR_MODE x <- allTypes]
+  let types = filter (not . isScalars) allTypes
+  if null types
+    then pure Nothing
+    else
+      pure $
+        Just $
+          print
+            ModuleDefinition
+              { moduleName,
+                imports =
+                  [("Data.Morpheus.Client.CodeGen.Internal", ["*"])]
+                    <> map (,["*"]) (optionImports buildOptions)
+                    <> externalImports
+                    <> getImports buildOptions flags,
+                extensions =
+                  [ "DeriveGeneric",
+                    "DuplicateRecordFields",
+                    "OverloadedStrings",
+                    "TypeFamilies"
+                  ]
+                    <> getExtensions flags,
+                types
+              }
 
 print :: Pretty a => a -> ByteString
 print = pack . show . pretty

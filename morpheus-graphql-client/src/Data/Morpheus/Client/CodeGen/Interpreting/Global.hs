@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -27,6 +28,7 @@ import Data.Morpheus.CodeGen.Internal.AST
     FIELD_TYPE_WRAPPER (..),
     fromTypeName,
   )
+import Data.Morpheus.CodeGen.Utils (Flag (FlagLanguageExtension), Flags)
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
@@ -48,18 +50,18 @@ import Relude hiding (empty)
 
 toClientDeclarations :: ClientTypeDefinition -> [ClientPreDeclaration]
 toClientDeclarations def@ClientTypeDefinition {clientKind}
-  | KindScalar == clientKind = [FromJSONClass SCALAR_MODE cgType, ToJSONClass SCALAR_MODE cgType]
-  | KindEnum == clientKind = [ClientType cgType, FromJSONClass ENUM_MODE cgType, ToJSONClass ENUM_MODE cgType]
+  | KIND_SCALAR == clientKind = [FromJSONClass SCALAR_MODE cgType, ToJSONClass SCALAR_MODE cgType]
+  | KIND_ENUM == clientKind = [ClientType cgType, FromJSONClass ENUM_MODE cgType, ToJSONClass ENUM_MODE cgType]
   | otherwise = [ClientType cgType, ToJSONClass TYPE_MODE cgType]
   where
     cgType = printClientType def
 
-toGlobalDefinitions :: (TypeName -> Bool) -> Schema VALID -> GQLResult [ClientDeclaration]
-toGlobalDefinitions f Schema {types} =
-  traverse mapPreDeclarations $
-    concatMap toClientDeclarations $
-      mapMaybe generateGlobalType $
-        filter shouldInclude (sortWith typeName $ toList types)
+toGlobalDefinitions :: (TypeName -> Bool) -> Schema VALID -> GQLResult ([ClientDeclaration], Flags)
+toGlobalDefinitions f Schema {types} = do
+  let tyDefs = mapMaybe generateGlobalType $ filter shouldInclude (sortWith typeName $ toList types)
+  decs <- traverse mapPreDeclarations $ concatMap toClientDeclarations tyDefs
+  let hasEnums = not $ null [x | x@ClientTypeDefinition {clientKind = KIND_ENUM} <- tyDefs]
+  pure (decs, [FlagLanguageExtension "LambdaCase" | hasEnums])
   where
     shouldInclude t =
       not (isResolverType t)
@@ -79,15 +81,15 @@ generateGlobalType TypeDefinition {typeName, typeContent} = do
     genContent :: TypeContent TRUE ANY VALID -> Maybe (TypeKind, [CodeGenConstructor])
     genContent (DataInputObject inputFields) =
       pure
-        ( KindInputObject,
+        ( KIND_INPUT_OBJECT,
           [ CodeGenConstructor
               { constructorName = fromTypeName typeName,
                 constructorFields = toCodeGenField <$> toList inputFields
               }
           ]
         )
-    genContent (DataEnum enumTags) = pure (KindEnum, mkConsEnum typeName <$> enumTags)
-    genContent DataScalar {} = pure (KindScalar, [])
+    genContent (DataEnum enumTags) = pure (KIND_ENUM, mkConsEnum typeName <$> enumTags)
+    genContent DataScalar {} = pure (KIND_SCALAR, [])
     genContent _ = Nothing
 
 toCodeGenField :: FieldDefinition a b -> CodeGenField

@@ -48,7 +48,7 @@ import Data.Morpheus.Types.Internal.AST
     msg,
     unpackName,
   )
-import Data.Morpheus.Types.Internal.AST.Type (TypeKind (KindObject))
+import Data.Morpheus.Types.Internal.AST.Type (TypeKind (KIND_OBJECT))
 import Data.Morpheus.Types.Internal.AST.TypeSystem (Schema)
 import Data.Morpheus.Types.Internal.Config (Config)
 import Data.Morpheus.Types.Internal.Validation (Scope (..), ScopeKind (TYPE), runValidator)
@@ -110,7 +110,7 @@ initialScope =
   Scope
     { position = Nothing,
       currentTypeName = "Root",
-      currentTypeKind = KindObject Nothing,
+      currentTypeKind = KIND_OBJECT Nothing,
       currentTypeWrappers = mkBaseType,
       kind = TYPE,
       fieldName = "Root",

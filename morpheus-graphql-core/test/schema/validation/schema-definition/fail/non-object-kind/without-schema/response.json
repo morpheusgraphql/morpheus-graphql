@@ -1,11 +1,11 @@
 [
   {
-    "message": "Mutation root type must be Object type if provided, it cannot be \"Mutation\""
+    "message": "mutation root type must be Object type if provided, it cannot be \"Mutation\""
   },
   {
-    "message": "Query root type must be Object type if provided, it cannot be \"Query\""
+    "message": "query root type must be Object type if provided, it cannot be \"Query\""
   },
   {
-    "message": "Subscription root type must be Object type if provided, it cannot be \"Subscription\""
+    "message": "subscription root type must be Object type if provided, it cannot be \"Subscription\""
   }
 ]

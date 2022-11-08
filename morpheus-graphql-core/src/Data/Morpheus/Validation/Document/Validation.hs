@@ -136,13 +136,13 @@ checkName name
   | otherwise = throwError ("Invalid Name:" <> msg name)
 
 typeDirectiveLocation :: TypeContent a b c -> DirectiveLocation
-typeDirectiveLocation DataObject {} = OBJECT
-typeDirectiveLocation DataInputObject {} = INPUT_OBJECT
-typeDirectiveLocation DataScalar {} = SCALAR
-typeDirectiveLocation DataEnum {} = ENUM
-typeDirectiveLocation DataInputUnion {} = OBJECT
-typeDirectiveLocation DataUnion {} = UNION
-typeDirectiveLocation DataInterface {} = INTERFACE
+typeDirectiveLocation DataObject {} = LOCATION_OBJECT
+typeDirectiveLocation DataInputObject {} = LOCATION_INPUT_OBJECT
+typeDirectiveLocation DataScalar {} = LOCATION_SCALAR
+typeDirectiveLocation DataEnum {} = LOCATION_ENUM
+typeDirectiveLocation DataInputUnion {} = LOCATION_OBJECT
+typeDirectiveLocation DataUnion {} = LOCATION_UNION
+typeDirectiveLocation DataInterface {} = LOCATION_INTERFACE
 
 instance TypeCheck (TypeContent TRUE cat) where
   type TypeContext (TypeContent TRUE cat) = TypeEntity ON_TYPE
@@ -180,10 +180,10 @@ class FieldDirectiveLocation (cat :: TypeCategory) where
   directiveLocation :: Proxy cat -> DirectiveLocation
 
 instance FieldDirectiveLocation OUT where
-  directiveLocation _ = FIELD_DEFINITION
+  directiveLocation _ = LOCATION_FIELD_DEFINITION
 
 instance FieldDirectiveLocation IN where
-  directiveLocation _ = INPUT_FIELD_DEFINITION
+  directiveLocation _ = LOCATION_INPUT_FIELD_DEFINITION
 
 instance TypeCheck DirectiveDefinition where
   typeCheck DirectiveDefinition {directiveDefinitionArgs = arguments, ..} =
@@ -201,7 +201,7 @@ instance TypeCheck ArgumentDefinition where
               fieldName
               fieldType
               <$> traverse checkArgumentDefaultValue fieldContent
-              <*> validateDirectives ARGUMENT_DEFINITION fieldDirectives
+              <*> validateDirectives LOCATION_ARGUMENT_DEFINITION fieldDirectives
           )
     where
       checkArgumentDefaultValue (DefaultInputValue value) =
@@ -221,7 +221,7 @@ instance TypeCheck DataEnumValue where
   type TypeContext DataEnumValue = TypeEntity ON_TYPE
   typeCheck DataEnumValue {enumDirectives = directives, ..} =
     DataEnumValue enumDescription enumName
-      <$> validateDirectives ENUM_VALUE directives
+      <$> validateDirectives LOCATION_ENUM_VALUE directives
 
 instance TypeCheck (UnionMember cat) where
   type TypeContext (UnionMember cat) = TypeEntity ON_TYPE

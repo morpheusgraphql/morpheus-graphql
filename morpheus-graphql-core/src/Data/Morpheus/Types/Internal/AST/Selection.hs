@@ -392,8 +392,8 @@ getOperationName :: Maybe FieldName -> TypeName
 getOperationName = maybe "AnonymousOperation" coerce
 
 getOperationDataType :: MonadError GQLError m => Operation s -> Schema VALID -> m (TypeDefinition OBJECT VALID)
-getOperationDataType Operation {operationType = Query} lib = pure (query lib)
-getOperationDataType Operation {operationType = Mutation, operationPosition} lib =
+getOperationDataType Operation {operationType = OPERATION_QUERY} lib = pure (query lib)
+getOperationDataType Operation {operationType = OPERATION_MUTATION, operationPosition} lib =
   maybe (throwError $ mutationIsNotDefined operationPosition) pure (mutation lib)
-getOperationDataType Operation {operationType = Subscription, operationPosition} lib =
+getOperationDataType Operation {operationType = OPERATION_SUBSCRIPTION, operationPosition} lib =
   maybe (throwError $ subscriptionIsNotDefined operationPosition) pure (subscription lib)

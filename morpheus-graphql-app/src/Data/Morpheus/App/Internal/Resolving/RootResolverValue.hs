@@ -105,18 +105,18 @@ runRootResolverValue
   ctx@ResolverContext {operation = Operation {operationType, operationSelection}} =
     selectByOperation operationType
     where
-      selectByOperation Query =
+      selectByOperation OPERATION_QUERY =
         withIntrospection (runRootDataResolver channelMap queryResolver ctx) ctx
-      selectByOperation Mutation =
+      selectByOperation OPERATION_MUTATION =
         runRootDataResolver channelMap mutationResolver ctx operationSelection
-      selectByOperation Subscription =
+      selectByOperation OPERATION_SUBSCRIPTION =
         runRootDataResolver channelMap subscriptionResolver ctx operationSelection
 runRootResolverValue
   NamedResolversValue {queryResolverMap}
   ctx@ResolverContext {operation = Operation {operationType}} =
     selectByOperation operationType
     where
-      selectByOperation Query = withIntrospection (\sel -> runResolver Nothing (resolvedValue sel) ctx) ctx
+      selectByOperation OPERATION_QUERY = withIntrospection (\sel -> runResolver Nothing (resolvedValue sel) ctx) ctx
         where
           resolvedValue selection = resolveRef (ResolverMapContext empty queryResolverMap) (NamedResolverRef "Query" ["ROOT"]) (SelectionSet selection)
       selectByOperation _ = throwError "mutation and subscription is not supported for namedResolvers"

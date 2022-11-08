@@ -158,13 +158,15 @@ root =
                       { interfaceAccountName = pure "myName"
                       }
                   ),
-                ResolveType (PossibleTypesAccountUser user),
+                ResolveType (PossibleTypesAccountUser (pure user)),
                 ResolveType
                   ( PossibleTypesAccountCompany
-                      Company
-                        { companyName =
-                            pure "MY Company Name"
-                        }
+                      ( pure
+                          Company
+                            { companyName =
+                                pure "MY Company Name"
+                            }
+                      )
                   )
               ],
           queryTestInput = pure . pack . show
@@ -272,20 +274,24 @@ getDBUser _ = do
           userEntity =
             pure
               [ MyUnionAddress
-                  Address
-                    { addressCity = pure "City",
-                      addressStreet = pure "street",
-                      addressHouseNumber = pure 1
-                    },
+                  ( pure
+                      Address
+                        { addressCity = pure "City",
+                          addressStreet = pure "street",
+                          addressHouseNumber = pure 1
+                        }
+                  ),
                 MyUnionUser
-                  User
-                    { userName = pure name,
-                      userEmail = pure email,
-                      userAddress = const $ lift (getDBAddress (Content 12)),
-                      userOffice = constRes Nothing,
-                      userHome = pure CityIDHH,
-                      userEntity = pure []
-                    }
+                  ( pure
+                      User
+                        { userName = pure name,
+                          userEmail = pure email,
+                          userAddress = const $ lift (getDBAddress (Content 12)),
+                          userOffice = constRes Nothing,
+                          userHome = pure CityIDHH,
+                          userEntity = pure []
+                        }
+                  )
               ]
         }
 

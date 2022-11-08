@@ -28,7 +28,6 @@ import Data.Morpheus.Types
     ID,
     NamedResolvers (..),
     Undefined,
-    lift,
   )
 import GHC.Generics (Generic)
 

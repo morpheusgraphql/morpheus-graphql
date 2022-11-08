@@ -1,6 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -9,7 +8,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Client.CodeGen.Interpreting.Core
-  ( LocalM (..),
+  ( LocalM,
     compileError,
     getType,
     typeFrom,
@@ -18,7 +17,6 @@ module Data.Morpheus.Client.CodeGen.Interpreting.Core
     defaultDerivations,
     warning,
     LocalContext (..),
-    runLocalM,
     withPosition,
     getNameByPath,
     registerFragment,
@@ -26,6 +24,7 @@ module Data.Morpheus.Client.CodeGen.Interpreting.Core
     removeDuplicates,
     clientConfig,
     lookupField,
+    lookupType,
   )
 where
 
@@ -41,10 +40,12 @@ import Data.Morpheus.CodeGen.Internal.AST
     TypeClassInstance (..),
     fromTypeName,
   )
+import Data.Morpheus.CodeGen.Utils
+  ( CodeGenT,
+  )
 import Data.Morpheus.Core (Config (..), VALIDATION_MODE (WITHOUT_VARIABLES))
 import Data.Morpheus.Internal.Ext
-  ( GQLResult,
-    Result (..),
+  ( Result (..),
   )
 import Data.Morpheus.Internal.Utils
   ( empty,
@@ -70,11 +71,11 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
     VariableDefinitions,
     internal,
+    lookupDataType,
     lookupDeprecated,
     lookupDeprecatedReason,
     mkTypeRef,
     msg,
-    typeDefinitions,
   )
 import Data.Set (insert, member)
 import Relude hiding (empty)
@@ -107,34 +108,21 @@ registerFragment name = local (\ctx -> ctx {ctxFragments = insert name (ctxFragm
 existFragment :: FragmentName -> LocalM Bool
 existFragment name = (name `member`) <$> asks ctxFragments
 
-runLocalM :: LocalContext -> LocalM a -> GQLResult a
-runLocalM context = flip runReaderT context . _runLocalM
-
 withPosition :: Position -> LocalM a -> LocalM a
 withPosition pos = local (\ctx -> ctx {ctxPosition = Just pos})
 
-newtype LocalM a = LocalM
-  { _runLocalM ::
-      ReaderT
-        LocalContext
-        GQLResult
-        a
-  }
-  deriving
-    ( Functor,
-      Applicative,
-      Monad,
-      MonadReader LocalContext,
-      MonadError GQLError
-    )
+type LocalM a = CodeGenT LocalContext (Result GQLError) a
 
 compileError :: GQLError -> GQLError
 compileError x = internal $ "Unhandled Compile Time Error: \"" <> x <> "\" ;"
 
+lookupType :: TypeName -> LocalM (Maybe (TypeDefinition ANY VALID))
+lookupType name = asks (lookupDataType name . ctxSchema)
+
 getType :: TypeName -> LocalM (TypeDefinition ANY VALID)
-getType typename =
-  asks (typeDefinitions . ctxSchema)
-    >>= selectBy (compileError $ " can't find Type" <> msg typename) typename
+getType name = do
+  x <- lookupType name
+  maybe (throwError $ compileError $ " can't find Type" <> msg name) pure x
 
 typeFrom :: [FieldName] -> TypeDefinition a VALID -> CodeGenTypeName
 typeFrom path TypeDefinition {typeName, typeContent} = __typeFrom typeContent
@@ -153,7 +141,7 @@ deprecationWarning :: (Maybe Description -> GQLError) -> Directives s -> LocalM 
 deprecationWarning f = traverse_ warning . toList . fmap (f . lookupDeprecatedReason) . lookupDeprecated
 
 warning :: GQLError -> LocalM ()
-warning w = LocalM $ lift $ Success {result = (), warnings = [w]}
+warning w = lift $ Success {result = (), warnings = [w]}
 
 defaultDerivations :: [DerivingClass]
 defaultDerivations = [GENERIC, SHOW, CLASS_EQ]

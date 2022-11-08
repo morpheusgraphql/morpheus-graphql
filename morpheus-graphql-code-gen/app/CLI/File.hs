@@ -38,18 +38,21 @@ printWarnings warnings = traverse_ (putStr . ("    " <>) . printWarning) warning
 cliError :: GQLError -> IO ()
 cliError = putStr . ("    " <>) . printError "error" "\x1b[31m"
 
-checkGenerated :: FilePath -> ByteString -> IO Bool
+lookupFile :: FilePath -> IO (Maybe ByteString)
+lookupFile x = fmap Just (readFile x) <|> pure Nothing
+
+checkGenerated :: FilePath -> Maybe ByteString -> IO Bool
 checkGenerated path result = do
-  file <- readFile path
+  file <- lookupFile path
   let isOutdated = file /= result
   traverse_ cliError ["outdated: " <> msg path | isOutdated]
   pure $ not isOutdated
 
-processDocument :: Bool -> FilePath -> GQLResult ByteString -> IO Bool
+processDocument :: Bool -> FilePath -> GQLResult (Maybe ByteString) -> IO Bool
 processDocument _ _ (Failure errors) = traverse_ cliError (toList errors) $> False
 processDocument check path Success {result, warnings}
   | check = printWarnings warnings >> checkGenerated path result
-  | otherwise = printWarnings warnings >> writeFile path result $> True
+  | otherwise = printWarnings warnings >> maybe (pure ()) (writeFile path) result $> True
 
 getModuleNameByPath :: FilePath -> FilePath -> Text
 getModuleNameByPath root path = pack . intercalate "." $ splitDirectories $ dropExtensions $ makeRelative root path

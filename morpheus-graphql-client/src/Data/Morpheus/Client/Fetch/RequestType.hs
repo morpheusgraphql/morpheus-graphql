@@ -40,7 +40,7 @@ import Data.Morpheus.Types.IO
   )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
-    OperationType (Subscription),
+    OperationType (..),
   )
 import Data.Text
   ( pack,
@@ -80,4 +80,4 @@ class RequestType a where
 newtype Request (a :: Type) = Request {requestArgs :: RequestArgs a}
 
 isSubscription :: RequestType a => Request a -> Bool
-isSubscription x = __type x == Subscription
+isSubscription x = __type x == OPERATION_SUBSCRIPTION

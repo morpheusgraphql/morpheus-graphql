@@ -113,9 +113,9 @@ mkSchemaDef
     SchemaDefinition empty
       <$> fromElems
         ( catMaybes
-            [ Just (RootOperationTypeDefinition Query $ Ref.name queryType),
-              RootOperationTypeDefinition Mutation . Ref.name <$> mutationType,
-              RootOperationTypeDefinition Subscription . Ref.name <$> subscriptionType
+            [ Just (RootOperationTypeDefinition OPERATION_QUERY $ Ref.name queryType),
+              RootOperationTypeDefinition OPERATION_MUTATION . Ref.name <$> mutationType,
+              RootOperationTypeDefinition OPERATION_SUBSCRIPTION . Ref.name <$> subscriptionType
             ]
         )
 

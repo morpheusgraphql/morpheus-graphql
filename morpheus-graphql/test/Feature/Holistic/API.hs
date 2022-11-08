@@ -61,8 +61,6 @@ import Prelude
     ($),
     (*),
     (+),
-    (.),
-    (<$>),
   )
 
 data TestScalar
@@ -100,7 +98,7 @@ root =
         Query
           { queryUser,
             queryTestUnion =
-              Just . TestUnionUser <$> queryUser,
+              pure $ Just (TestUnionUser queryUser),
             queryPerson =
               pure
                 ( ResolveType

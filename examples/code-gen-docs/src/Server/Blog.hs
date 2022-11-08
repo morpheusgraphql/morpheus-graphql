@@ -6,7 +6,7 @@ module Server.Blog where
 
 import Data.Morpheus.Server.CodeGen.Internal
 import Data.Morpheus.Server.Types
-import Scalars
+import Scalars (Markdown)
 
 data Post m = Post
   { title :: m Text,

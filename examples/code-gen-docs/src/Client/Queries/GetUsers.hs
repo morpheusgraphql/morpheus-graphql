@@ -1,20 +1,18 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Client.Queries.GetUsers where
 
-import Client.Blog
 import Data.Morpheus.Client.CodeGen.Internal
-import Scalars
+import Scalars (Markdown)
 
 instance RequestType GetUsers where
   type RequestArgs GetUsers = ()
   __name _ = "GetUsers"
   __query _ = "query GetUsers {\n  getUsers {\n    name\n    posts {\n      title\n      body\n    }\n  }\n}\n"
-  __type _ = Query
+  __type _ = OPERATION_QUERY
 
 newtype GetUsers = GetUsers
   { getUsers :: [GetUsersGetUsers]

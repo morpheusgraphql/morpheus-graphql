@@ -5,7 +5,6 @@ module Data.Morpheus.CodeGen.Server
     PrinterConfig (..),
     gqlDocument,
     importServerTypeDefinitions,
-    Flag (..),
   )
 where
 
@@ -15,9 +14,6 @@ import Data.ByteString.Lazy.Char8
 import Data.FileEmbed (makeRelativeToProject)
 import Data.Morpheus.CodeGen.Server.Internal.AST
   ( CodeGenConfig (..),
-  )
-import Data.Morpheus.CodeGen.Server.Interpreting.Utils
-  ( Flag (..),
   )
 import Data.Morpheus.CodeGen.Server.Printing.TH
   ( compileDocument,

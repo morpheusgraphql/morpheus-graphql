@@ -45,6 +45,19 @@ import Web.Scotty
     post,
     raw,
   )
+import Prelude
+  ( Applicative (..),
+    Int,
+    Monad (..),
+    String,
+    flip,
+    mempty,
+    traverse,
+    ($),
+    (.),
+    (<$>),
+    (=<<),
+  )
 
 -- This file contains an example of how to use the `fraxl` library to address
 -- the N+1 queries problem, a common problem with implementing GraphQL APIs.

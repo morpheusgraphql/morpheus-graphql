@@ -7,7 +7,7 @@ module Operation.Query where
 
 import Data.Morpheus.Server.CodeGen.Internal
 import Data.Morpheus.Server.Types
-import Globals.GQLScalars
+import Globals.GQLScalars (ScalarPower)
 
 data Query m = Query
   { deity :: DeityArgs -> m (Deity m),
@@ -39,8 +39,8 @@ instance GQLType CharacterArgs where
   type KIND CharacterArgs = TYPE
 
 data Character m
-  = CharacterCreature (Creature m)
-  | CharacterDeity (Deity m)
+  = CharacterCreature (m (Creature m))
+  | CharacterDeity (m (Deity m))
   deriving (Generic)
 
 instance (Typeable m) => GQLType (Character m) where

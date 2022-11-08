@@ -8,13 +8,12 @@ module Client.Requests.GetInterfaceTypes where
 
 import Client.Schema
 import Data.Morpheus.Client.CodeGen.Internal
-import Globals.GQLScalars
 
 instance RequestType GetCharacters where
   type RequestArgs GetCharacters = ()
   __name _ = "GetCharacters"
   __query _ = "query GetCharacters {\n  character {\n    name\n    ...DEITY\n    ...HERO\n  }\n  anonymous: character {\n    name1: name\n    name\n  }\n  heros: character {\n    ...HERO\n    ... on Character {\n      name2: name\n    }\n  }\n  superheros: character {\n    ...HERO\n  }\n}\n\nfragment DEITY on Deity {\n  power\n}\n\nfragment HERO on Hero {\n  __typename\n  hobby\n}"
-  __type _ = Query
+  __type _ = OPERATION_QUERY
 
 data GetCharacters = GetCharacters
   { character :: [GetCharactersCharacter],

@@ -44,12 +44,12 @@ data Prefixes = Prefixes
 instance GQLDirective Prefixes where
   type
     DIRECTIVE_LOCATIONS Prefixes =
-      '[ 'OBJECT,
-         'ENUM,
-         'INPUT_OBJECT,
-         'UNION,
-         'SCALAR,
-         'INTERFACE
+      '[ 'LOCATION_OBJECT,
+         'LOCATION_ENUM,
+         'LOCATION_INPUT_OBJECT,
+         'LOCATION_UNION,
+         'LOCATION_SCALAR,
+         'LOCATION_INTERFACE
        ]
 
 instance VisitType Prefixes where
@@ -73,8 +73,8 @@ instance GQLType Deprecated where
 instance GQLDirective Deprecated where
   type
     DIRECTIVE_LOCATIONS Deprecated =
-      '[ 'FIELD_DEFINITION,
-         'ENUM_VALUE
+      '[ 'LOCATION_FIELD_DEFINITION,
+         'LOCATION_ENUM_VALUE
        ]
 
 newtype Describe = Describe {text :: Text}
@@ -86,16 +86,16 @@ newtype Describe = Describe {text :: Text}
 instance GQLDirective Describe where
   type
     DIRECTIVE_LOCATIONS Describe =
-      '[ 'ENUM_VALUE,
-         'FIELD_DEFINITION,
-         'INPUT_FIELD_DEFINITION,
-         'OBJECT,
-         'ENUM,
-         'INPUT_OBJECT,
-         'UNION,
-         'SCALAR,
-         'INTERFACE,
-         'ARGUMENT_DEFINITION
+      '[ 'LOCATION_ENUM_VALUE,
+         'LOCATION_FIELD_DEFINITION,
+         'LOCATION_INPUT_FIELD_DEFINITION,
+         'LOCATION_OBJECT,
+         'LOCATION_ENUM,
+         'LOCATION_INPUT_OBJECT,
+         'LOCATION_UNION,
+         'LOCATION_SCALAR,
+         'LOCATION_INTERFACE,
+         'LOCATION_ARGUMENT_DEFINITION
        ]
 
 instance VisitEnum Describe where
@@ -119,15 +119,15 @@ instance GQLDirective Rename where
   excludeFromSchema _ = True
   type
     DIRECTIVE_LOCATIONS Rename =
-      '[ 'OBJECT,
-         'ENUM,
-         'INPUT_OBJECT,
-         'UNION,
-         'SCALAR,
-         'INTERFACE,
-         'ENUM_VALUE,
-         'FIELD_DEFINITION,
-         'INPUT_FIELD_DEFINITION
+      '[ 'LOCATION_OBJECT,
+         'LOCATION_ENUM,
+         'LOCATION_INPUT_OBJECT,
+         'LOCATION_UNION,
+         'LOCATION_SCALAR,
+         'LOCATION_INTERFACE,
+         'LOCATION_ENUM_VALUE,
+         'LOCATION_FIELD_DEFINITION,
+         'LOCATION_INPUT_FIELD_DEFINITION
        ]
 
 instance VisitType Rename where
@@ -152,12 +152,12 @@ newtype DropNamespace = DropNamespace
 instance GQLDirective DropNamespace where
   type
     DIRECTIVE_LOCATIONS DropNamespace =
-      '[ 'OBJECT,
-         'ENUM,
-         'INPUT_OBJECT,
-         'UNION,
-         'SCALAR,
-         'INTERFACE
+      '[ 'LOCATION_OBJECT,
+         'LOCATION_ENUM,
+         'LOCATION_INPUT_OBJECT,
+         'LOCATION_UNION,
+         'LOCATION_SCALAR,
+         'LOCATION_INTERFACE
        ]
   excludeFromSchema _ = True
 
@@ -174,7 +174,7 @@ newtype DefaultValue = DefaultValue
     )
 
 instance GQLDirective DefaultValue where
-  type DIRECTIVE_LOCATIONS DefaultValue = '[ 'INPUT_FIELD_DEFINITION]
+  type DIRECTIVE_LOCATIONS DefaultValue = '[ 'LOCATION_INPUT_FIELD_DEFINITION]
   excludeFromSchema _ = True
 
 instance VisitField DefaultValue where

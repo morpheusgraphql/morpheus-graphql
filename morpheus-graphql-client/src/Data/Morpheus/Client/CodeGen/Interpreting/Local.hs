@@ -21,7 +21,7 @@ import Data.Morpheus.Client.CodeGen.AST
 import Data.Morpheus.Client.CodeGen.Interpreting.Arguments (genArguments)
 import Data.Morpheus.Client.CodeGen.Interpreting.Core
   ( LocalContext (..),
-    LocalM (..),
+    LocalM,
     clientConfig,
     defaultDerivations,
     deprecationWarning,
@@ -29,16 +29,30 @@ import Data.Morpheus.Client.CodeGen.Interpreting.Core
     getNameByPath,
     getType,
     lookupField,
+    lookupType,
     registerFragment,
     removeDuplicates,
-    runLocalM,
     typeFrom,
     warning,
   )
 import Data.Morpheus.Client.CodeGen.Interpreting.PreDeclarations
   ( mapPreDeclarations,
   )
-import Data.Morpheus.CodeGen.Internal.AST (CodeGenConstructor (..), CodeGenField (..), CodeGenType (..), CodeGenTypeName (..), FIELD_TYPE_WRAPPER (..), fromTypeName, getFullName)
+import Data.Morpheus.CodeGen.Internal.AST
+  ( CodeGenConstructor (..),
+    CodeGenField (..),
+    CodeGenType (..),
+    CodeGenTypeName (..),
+    FIELD_TYPE_WRAPPER (..),
+    fromTypeName,
+    getFullName,
+  )
+import Data.Morpheus.CodeGen.Utils
+  ( Flags,
+    langExtension,
+    requireExternal,
+    runCodeGenT,
+  )
 import Data.Morpheus.Core (validateRequest)
 import Data.Morpheus.Error (deprecatedField)
 import Data.Morpheus.Internal.Ext
@@ -62,6 +76,7 @@ import Data.Morpheus.Types.Internal.AST
     SelectionContent (..),
     SelectionSet,
     TypeDefinition (..),
+    TypeKind (..),
     TypeName,
     TypeRef (..),
     UnionTag (..),
@@ -70,6 +85,7 @@ import Data.Morpheus.Types.Internal.AST
     getOperationDataType,
     getOperationName,
     isNullable,
+    kindOf,
     msg,
     toAny,
     unpackName,
@@ -79,7 +95,7 @@ import qualified Data.Set as S
 import qualified Data.Text as T
 import Relude hiding (empty, show)
 
-toLocalDefinitions :: (Text, ExecutableDocument) -> Schema VALID -> GQLResult [ClientDeclaration]
+toLocalDefinitions :: (Text, ExecutableDocument) -> Schema VALID -> GQLResult ([ClientDeclaration], Flags)
 toLocalDefinitions (query, request) ctxSchema = do
   validOperation <- validateRequest clientConfig ctxSchema request
   let context =
@@ -89,8 +105,9 @@ toLocalDefinitions (query, request) ctxSchema = do
             ctxPosition = Nothing,
             ctxFragments = mempty
           }
-  x <- runLocalM context $ genLocalDeclarations query validOperation
-  removeDuplicates <$> traverse mapPreDeclarations x
+  (t, flags) <- runCodeGenT (genLocalDeclarations query validOperation) context
+  types <- removeDuplicates <$> traverse mapPreDeclarations t
+  pure (types, flags)
 
 genLocalDeclarations :: Text -> Operation VALID -> LocalM [ClientPreDeclaration]
 genLocalDeclarations query op@Operation {operationName, operationSelection, operationType} = do
@@ -124,7 +141,11 @@ subTypesBySelection ::
   TypeDefinition ANY VALID ->
   Selection VALID ->
   LocalM (CodeGenTypeName, [ClientPreDeclaration])
-subTypesBySelection name _ _ Selection {selectionContent = SelectionField} = pure (fromTypeName name, [])
+subTypesBySelection name _ _ Selection {selectionContent = SelectionField} = do
+  kind <- fmap kindOf <$> lookupType name
+  if null kind || kind == Just KIND_SCALAR
+    then requireExternal (unpackName name) $> (fromTypeName name, [])
+    else pure (fromTypeName name, [])
 subTypesBySelection _ path dType Selection {selectionContent = SelectionSet selectionSet} =
   genLocalTypes path (getFullName $ typeFrom [] dType) dType selectionSet
 subTypesBySelection _ namespace dType Selection {selectionPosition, selectionContent = UnionSelection interface unionSelections} =
@@ -135,6 +156,7 @@ subTypesBySelection _ namespace dType Selection {selectionPosition, selectionCon
     (cons, subTypes) <- unzip <$> traverse (getVariant namespace) variants
     (fallbackCons, fallBackTypes) <- maybe (getEmptyFallback cgTypeName) (getVariant namespace . UnionTag (typeName dType)) interface
     let typeDef = CodeGenType {cgTypeName, cgConstructors = map buildVariantConstructor (cons <> [fallbackCons]), cgDerivations = defaultDerivations}
+    langExtension "LambdaCase"
     pure (cgTypeName, [ClientType typeDef, FromJSONUnionClass cgTypeName (map tagConstructor cons <> [(UVar "_fallback", mapFallback fallbackCons)])] <> concat subTypes <> fallBackTypes)
   where
     tagConstructor (name, x) = (UString $ typename name, (name, fmap (const "v") x))

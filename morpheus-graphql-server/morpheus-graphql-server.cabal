@@ -137,6 +137,7 @@ data-files:
     test/Feature/Input/variables/valueNotProvided/nonNullVariableWithDefaultValue/query.gql
     test/Feature/Input/variables/valueNotProvided/nullableVariable/query.gql
     test/Feature/NamedResolvers/deities.gql
+    test/Feature/NamedResolvers/entities.gql
     test/Feature/NamedResolvers/realms.gql
     test/Feature/NamedResolvers/tests/deities-ext/query.gql
     test/Feature/NamedResolvers/tests/deities/query.gql
@@ -390,6 +391,7 @@ test-suite morpheus-graphql-server-test
       Feature.NamedResolvers.DB
       Feature.NamedResolvers.Deities
       Feature.NamedResolvers.DeitiesApp
+      Feature.NamedResolvers.Entities
       Feature.NamedResolvers.EntitiesApp
       Feature.NamedResolvers.Realms
       Feature.NamedResolvers.RealmsApp

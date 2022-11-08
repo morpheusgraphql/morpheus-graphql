@@ -64,36 +64,36 @@ class ToLocation (l :: DirectiveLocation) where
   toLocation :: f l -> DirectiveLocation
 
 -- types
-instance ToLocation 'OBJECT where
-  toLocation = const OBJECT
+instance ToLocation 'LOCATION_OBJECT where
+  toLocation = const LOCATION_OBJECT
 
-instance ToLocation 'ENUM where
-  toLocation = const ENUM
+instance ToLocation 'LOCATION_ENUM where
+  toLocation = const LOCATION_ENUM
 
-instance ToLocation 'INPUT_OBJECT where
-  toLocation = const INPUT_OBJECT
+instance ToLocation 'LOCATION_INPUT_OBJECT where
+  toLocation = const LOCATION_INPUT_OBJECT
 
-instance ToLocation 'UNION where
-  toLocation = const UNION
+instance ToLocation 'LOCATION_UNION where
+  toLocation = const LOCATION_UNION
 
-instance ToLocation 'SCALAR where
-  toLocation = const SCALAR
+instance ToLocation 'LOCATION_SCALAR where
+  toLocation = const LOCATION_SCALAR
 
-instance ToLocation 'INTERFACE where
-  toLocation = const INTERFACE
+instance ToLocation 'LOCATION_INTERFACE where
+  toLocation = const LOCATION_INTERFACE
 
 -- fields, values
-instance ToLocation 'INPUT_FIELD_DEFINITION where
-  toLocation = const INPUT_FIELD_DEFINITION
+instance ToLocation 'LOCATION_INPUT_FIELD_DEFINITION where
+  toLocation = const LOCATION_INPUT_FIELD_DEFINITION
 
-instance ToLocation 'ARGUMENT_DEFINITION where
-  toLocation = const ARGUMENT_DEFINITION
+instance ToLocation 'LOCATION_ARGUMENT_DEFINITION where
+  toLocation = const LOCATION_ARGUMENT_DEFINITION
 
-instance ToLocation 'FIELD_DEFINITION where
-  toLocation = const FIELD_DEFINITION
+instance ToLocation 'LOCATION_FIELD_DEFINITION where
+  toLocation = const LOCATION_FIELD_DEFINITION
 
-instance ToLocation 'ENUM_VALUE where
-  toLocation = const ENUM_VALUE
+instance ToLocation 'LOCATION_ENUM_VALUE where
+  toLocation = const LOCATION_ENUM_VALUE
 
 class ToLocations (k :: [DirectiveLocation]) where
   toLocations :: f k -> [DirectiveLocation]
@@ -113,11 +113,11 @@ type WITH_VISITOR (a :: Type) (f :: Type -> Bool -> Constraint) (l :: [Directive
 
 -- types
 
-type TYPE_VISITOR_KIND = '[ 'OBJECT, 'ENUM, 'INPUT_OBJECT, 'UNION, 'SCALAR, 'INTERFACE]
+type TYPE_VISITOR_KIND = '[ 'LOCATION_OBJECT, 'LOCATION_ENUM, 'LOCATION_INPUT_OBJECT, 'LOCATION_UNION, 'LOCATION_SCALAR, 'LOCATION_INTERFACE]
 
-type FIELD_VISITOR_KIND = '[ 'INPUT_FIELD_DEFINITION, 'FIELD_DEFINITION]
+type FIELD_VISITOR_KIND = '[ 'LOCATION_INPUT_FIELD_DEFINITION, 'LOCATION_FIELD_DEFINITION]
 
-type ENUM_VISITOR_KIND = '[ 'ENUM_VALUE]
+type ENUM_VISITOR_KIND = '[ 'LOCATION_ENUM_VALUE]
 
 __directiveName :: GQLDirective a => f a -> FieldName
 __directiveName = coerce . getTypename
