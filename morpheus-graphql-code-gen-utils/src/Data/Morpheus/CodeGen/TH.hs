@@ -49,13 +49,13 @@ import Data.Morpheus.CodeGen.Utils
     toHaskellTypeName,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( FieldName,
+  ( DirectiveLocation (..),
+    FieldName,
     TypeName,
     TypeRef (..),
     TypeWrapper (..),
     unpackName,
   )
-import qualified Data.Morpheus.Types.Internal.AST as AST
 import qualified Data.Text as T
 import Language.Haskell.TH
 import Relude hiding
@@ -295,25 +295,25 @@ instance ToName CodeGenTypeName where
 instance PrintType CodeGenTypeName where
   printType name = applyVars (toName name) (map toName $ typeParameters name)
 
-instance ToName AST.DirectiveLocation where
-  toName AST.QUERY = 'AST.QUERY
-  toName AST.MUTATION = 'AST.MUTATION
-  toName AST.SUBSCRIPTION = 'AST.SUBSCRIPTION
-  toName AST.FIELD = 'AST.FIELD
-  toName AST.FRAGMENT_DEFINITION = 'AST.FRAGMENT_DEFINITION
-  toName AST.FRAGMENT_SPREAD = 'AST.FRAGMENT_SPREAD
-  toName AST.INLINE_FRAGMENT = 'AST.INLINE_FRAGMENT
-  toName AST.SCHEMA = 'AST.SCHEMA
-  toName AST.SCALAR = 'AST.SCALAR
-  toName AST.OBJECT = 'AST.OBJECT
-  toName AST.FIELD_DEFINITION = 'AST.FIELD_DEFINITION
-  toName AST.ARGUMENT_DEFINITION = 'AST.ARGUMENT_DEFINITION
-  toName AST.INTERFACE = 'AST.INTERFACE
-  toName AST.UNION = 'AST.UNION
-  toName AST.ENUM = 'AST.ENUM
-  toName AST.ENUM_VALUE = 'AST.ENUM_VALUE
-  toName AST.INPUT_OBJECT = 'AST.INPUT_OBJECT
-  toName AST.INPUT_FIELD_DEFINITION = 'AST.INPUT_FIELD_DEFINITION
+instance ToName DirectiveLocation where
+  toName LOCATION_QUERY = 'LOCATION_QUERY
+  toName LOCATION_MUTATION = 'LOCATION_MUTATION
+  toName LOCATION_SUBSCRIPTION = 'LOCATION_SUBSCRIPTION
+  toName LOCATION_FIELD = 'LOCATION_FIELD
+  toName LOCATION_FRAGMENT_DEFINITION = 'LOCATION_FRAGMENT_DEFINITION
+  toName LOCATION_FRAGMENT_SPREAD = 'LOCATION_FRAGMENT_SPREAD
+  toName LOCATION_INLINE_FRAGMENT = 'LOCATION_INLINE_FRAGMENT
+  toName LOCATION_SCHEMA = 'LOCATION_SCHEMA
+  toName LOCATION_SCALAR = 'LOCATION_SCALAR
+  toName LOCATION_OBJECT = 'LOCATION_OBJECT
+  toName LOCATION_FIELD_DEFINITION = 'LOCATION_FIELD_DEFINITION
+  toName LOCATION_ARGUMENT_DEFINITION = 'LOCATION_ARGUMENT_DEFINITION
+  toName LOCATION_INTERFACE = 'LOCATION_INTERFACE
+  toName LOCATION_UNION = 'LOCATION_UNION
+  toName LOCATION_ENUM = 'LOCATION_ENUM
+  toName LOCATION_ENUM_VALUE = 'LOCATION_ENUM_VALUE
+  toName LOCATION_INPUT_OBJECT = 'LOCATION_INPUT_OBJECT
+  toName LOCATION_INPUT_FIELD_DEFINITION = 'LOCATION_INPUT_FIELD_DEFINITION
 
 instance PrintType AssociatedType where
   printType (AssociatedLocations xs) = pure $ foldr (AppT . AppT PromotedConsT . PromotedT . toName) PromotedNilT xs

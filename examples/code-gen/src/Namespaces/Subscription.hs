@@ -7,7 +7,7 @@ module Namespaces.Subscription where
 
 import Data.Morpheus.Server.CodeGen.Internal
 import Data.Morpheus.Server.Types
-import Globals.GQLScalars
+import Globals.GQLScalars (ScalarPower)
 
 data Query m = Query
   { queryDeity :: QueryDeityArgs -> m (Deity m),
@@ -88,9 +88,9 @@ instance (Typeable m) => GQLType (Subscription m) where
     typeDirective DropNamespace {dropNamespace = "Subscription"}
 
 data Character m
-  = CharacterCreature (Creature m)
-  | CharacterDeity (Deity m)
-  | CharacterHuman (Human m)
+  = CharacterCreature (m (Creature m))
+  | CharacterDeity (m (Deity m))
+  | CharacterHuman (m (Human m))
   deriving (Generic)
 
 instance (Typeable m) => GQLType (Character m) where

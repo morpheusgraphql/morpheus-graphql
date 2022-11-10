@@ -24,6 +24,7 @@ import Data.Morpheus.CodeGen.Internal.AST
     MethodArgument (..),
     TypeClassInstance (..),
     fromTypeName,
+    getFullName,
   )
 import Data.Morpheus.CodeGen.Server.Internal.AST
   ( CodeGenConfig (..),
@@ -44,19 +45,22 @@ import Data.Morpheus.CodeGen.Server.Interpreting.Directive
 import Data.Morpheus.CodeGen.Server.Interpreting.Utils
   ( CodeGenM,
     CodeGenMonad (printWarnings),
-    Flags,
     ServerCodeGenContext (..),
+    checkTypeExistence,
     getEnumName,
     getFieldName,
+    getFieldTypeName,
     inType,
     isParamResolverType,
     isSubscription,
-    langExtension,
-    runCodeGenT,
   )
 import Data.Morpheus.CodeGen.TH (ToName (..))
 import Data.Morpheus.CodeGen.Utils
-  ( camelCaseTypeName,
+  ( Flag (..),
+    Flags,
+    camelCaseTypeName,
+    langExtension,
+    runCodeGenT,
     toHaskellTypeName,
   )
 import Data.Morpheus.Core (parseDefinitions)
@@ -98,14 +102,19 @@ parseServerTypeDefinitions ctx txt =
     Failure errors -> fail (renderGQLErrors errors)
     Success {result, warnings} -> printWarnings warnings >> toTHDefinitions (namespace ctx) result
 
+getExternals :: [ServerDeclaration] -> Flags
+getExternals xs =
+  [FlagExternal scalarTypeName | ScalarType {scalarTypeName} <- xs]
+    <> [FlagExternal (unpackName $ getFullName $ typeClassTarget v) | GQLTypeInstance Scalar v <- xs]
+
 toTHDefinitions ::
   CodeGenMonad m =>
   Bool ->
   [RawTypeDefinition] ->
   m ([ServerDeclaration], Flags)
 toTHDefinitions namespace defs = do
-  (types, flags) <- unzip <$> traverse generateTypes defs
-  pure (concat types, concat flags)
+  (types, flags) <- bimap concat concat . unzip <$> traverse generateTypes defs
+  pure (types, flags <> getExternals types)
   where
     typeDefinitions = [td | RawTypeDefinition td <- defs]
     directiveDefinitions = [td | RawDirectiveDefinition td <- defs]
@@ -174,13 +183,13 @@ genTypeDefinition ::
 genTypeDefinition
   typeDef@TypeDefinition {typeName = originalTypeName, typeContent} =
     case tKind of
-      KindScalar -> do
+      KIND_SCALAR -> do
         scalarGQLType <- deriveGQL
         pure [ScalarType (toHaskellTypeName typeName), scalarGQLType]
       _ -> genTypeContent originalTypeName typeContent >>= withType
     where
       typeName
-        | tKind == KindInterface = mkInterfaceName originalTypeName
+        | tKind == KIND_INTERFACE = mkInterfaceName originalTypeName
         | otherwise = originalTypeName
       tKind = kindOf typeDef
       hsTypeName = packName $ toHaskellTypeName typeName
@@ -207,7 +216,7 @@ genTypeDefinition
         pure (DataType CodeGenType {..} : gqlType : others)
 
 derivingKind :: TypeKind -> Kind
-derivingKind KindScalar = Scalar
+derivingKind KIND_SCALAR = Scalar
 derivingKind _ = Type
 
 derivesClasses :: Bool -> [DerivingClass]
@@ -238,9 +247,10 @@ mkObjectField
     kind <- asks currentKind
     fieldName <- getFieldName fName
     args <- mkFieldArguments fName genName (toArgList fieldContent)
+    fieldType <- getFieldTypeName typeConName
     pure
       CodeGenField
-        { fieldType = packName (toHaskellTypeName typeConName),
+        { fieldType,
           fieldIsNullable = isNullable typeWrappers,
           wrappers =
             args
@@ -257,7 +267,9 @@ mkFieldArguments
   _
   _
   [ ArgumentDefinition FieldDefinition {fieldName, fieldType}
-    ] = langExtension "DataKinds" $> [TAGGED_ARG ''Arg fieldName fieldType]
+    ] =
+    checkTypeExistence (typeConName fieldType)
+      >> langExtension "DataKinds" $> [TAGGED_ARG ''Arg fieldName fieldType]
 mkFieldArguments fName genName _ = pure [ARG (genName fName)]
 
 toArgList :: Maybe (FieldContent bool cat s) -> [ArgumentDefinition s]
@@ -285,26 +297,27 @@ gqlTypeToInstance GQLTypeDefinition {..} =
 
 genInterfaceUnion :: CodeGenM m => TypeName -> m [ServerDeclaration]
 genInterfaceUnion interfaceName =
-  mkInterface . map typeName . mapMaybe (isPossibleInterfaceType interfaceName)
-    <$> asks typeDefinitions
+  asks typeDefinitions >>= mkInterface . map typeName . mapMaybe (isPossibleInterfaceType interfaceName)
   where
-    mkInterface [] = []
-    mkInterface [possibleTypeName] = [mkGuardWithPossibleType possibleTypeName]
-    mkInterface members =
-      [ mkGuardWithPossibleType tName,
-        DataType
-          CodeGenType
-            { cgTypeName = possTypeName,
-              cgConstructors = map (mkUnionFieldDefinition tName) members,
-              cgDerivations = derivesClasses True
-            },
-        gqlTypeToInstance
-          GQLTypeDefinition
-            { gqlTarget = possTypeName,
-              gqlKind = Type,
-              gqlTypeDirectiveUses = empty
-            }
-      ]
+    mkInterface [] = pure []
+    mkInterface [possibleTypeName] = pure [mkGuardWithPossibleType possibleTypeName]
+    mkInterface members = do
+      cgConstructors <- traverse (mkUnionFieldDefinition tName) members
+      pure
+        [ mkGuardWithPossibleType tName,
+          DataType
+            CodeGenType
+              { cgTypeName = possTypeName,
+                cgConstructors,
+                cgDerivations = derivesClasses True
+              },
+          gqlTypeToInstance
+            GQLTypeDefinition
+              { gqlTarget = possTypeName,
+                gqlKind = Type,
+                gqlTypeDirectiveUses = empty
+              }
+        ]
       where
         possTypeName = CodeGenTypeName [] ["m"] (packName $ toHaskellTypeName tName)
     mkGuardWithPossibleType = InterfaceType . InterfaceDefinition interfaceName (mkInterfaceName interfaceName)
@@ -319,7 +332,7 @@ renderDataField :: CodeGenM m => FieldDefinition c CONST -> m CodeGenField
 renderDataField FieldDefinition {fieldType = TypeRef {typeConName, typeWrappers}, fieldName = fName} = do
   fieldName <- getFieldName fName
   let wrappers = [GQL_WRAPPER typeWrappers]
-  let fieldType = packName (toHaskellTypeName typeConName)
+  fieldType <- getFieldTypeName typeConName
   let fieldIsNullable = isNullable typeWrappers
   pure CodeGenField {..}
 
@@ -346,24 +359,26 @@ genTypeContent typeName DataObject {objectFields} =
     <*> ( mkObjectCons typeName
             <$> traverse mkObjectField (toList objectFields)
         )
-genTypeContent typeName (DataUnion members) =
-  pure $ ConsOUT [] (unionCon <$> toList members)
+genTypeContent typeName (DataUnion members) = do
+  ConsOUT [] <$> traverse unionCon (toList members)
   where
     unionCon UnionMember {memberName} = mkUnionFieldDefinition typeName memberName
 
-mkUnionFieldDefinition :: TypeName -> TypeName -> CodeGenConstructor
-mkUnionFieldDefinition typeName memberName =
-  CodeGenConstructor
-    { constructorName,
-      constructorFields =
-        [ CodeGenField
-            { fieldName = "_",
-              fieldType = packName (toHaskellTypeName memberName),
-              wrappers = [PARAMETRIZED],
-              fieldIsNullable = False
-            }
-        ]
-    }
+mkUnionFieldDefinition :: CodeGenM m => TypeName -> TypeName -> m CodeGenConstructor
+mkUnionFieldDefinition typeName memberName = do
+  fieldType <- getFieldTypeName memberName
+  pure $
+    CodeGenConstructor
+      { constructorName,
+        constructorFields =
+          [ CodeGenField
+              { fieldName = "_",
+                fieldType,
+                wrappers = [MONAD, PARAMETRIZED],
+                fieldIsNullable = False
+              }
+          ]
+      }
   where
     constructorName = CodeGenTypeName [coerce typeName] [] memberName
 

@@ -7,7 +7,7 @@
 module Client.Schema where
 
 import Data.Morpheus.Client.CodeGen.Internal
-import Globals.GQLScalars
+import Globals.GQLScalars (Euro)
 
 newtype Bird = Bird
   { name :: Maybe String

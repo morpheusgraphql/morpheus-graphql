@@ -37,6 +37,23 @@ import Haxl.Core
 import HaxlAPI.Schema
   ( Deity (..),
   )
+import Prelude
+  ( Eq (..),
+    Foldable (..),
+    IO,
+    Int,
+    Maybe (..),
+    Show (..),
+    String,
+    const,
+    map,
+    print,
+    pure,
+    uncurry,
+    unzip,
+    zip,
+    ($),
+  )
 
 type Haxl = GenHaxl () ()
 

@@ -15,6 +15,7 @@ import Data.Kind (Type)
 import Data.Morpheus.Server (interpreter)
 import Data.Morpheus.Server.Types
   ( Deprecated (..),
+    DirectiveLocation (..),
     GQLDirective (..),
     GQLRequest,
     GQLResponse,
@@ -27,9 +28,6 @@ import Data.Morpheus.Server.Types
     enumDirective',
     fieldDirective',
     typeDirective,
-  )
-import Data.Morpheus.Types.Internal.AST
-  ( DirectiveLocation (..),
   )
 import Data.Text (Text)
 import GHC.Generics (Generic)
@@ -48,7 +46,7 @@ data Power = Power
   deriving (GQLType, Generic)
 
 instance GQLDirective Power where
-  type DIRECTIVE_LOCATIONS Power = '[ 'OBJECT]
+  type DIRECTIVE_LOCATIONS Power = '[ 'LOCATION_OBJECT]
 
 instance VisitType Power where
   visitTypeName _ _ = id

@@ -2,16 +2,14 @@ server:
   - name: Server API # Name of the service
     source: ./src # root folder for haskell source files
     includes:
-      - Server/**/*.gql # list of gql sources
-    options:
-      globals:
-        - Scalars # imports Markdown type declatation from Scalars.hs
+      - path: Server/**/*.gql # list of gql sources
+        externals:
+          Markdown: Scalars # imports Markdown type declatation from Scalars.hs
 client:
   - name: Client API # Name of the service
     source: ./src # root folder for haskell source files
     schema: Client/Blog.gql
     includes:
-      - Client/Queries/**/*.gql # list of gql sources
-    options:
-      globals:
-        - Scalars # imports Markdown type declatation from Scalars.hs
+      - path: Client/Queries/**/*.gql # list of gql sources
+        externals:
+          Markdown: Scalars # imports Markdown type declatation from Scalars.hs

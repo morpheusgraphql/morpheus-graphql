@@ -1,3 +1,5 @@
+scalar Markdown
+
 enum Power {
   Shapeshifting
   Thunderbolt

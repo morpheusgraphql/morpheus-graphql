@@ -36,6 +36,7 @@ import Data.Morpheus.Client.Schema.Parse (parseSchema)
 import Data.Morpheus.CodeGen.TH
   ( PrintDec (printDec),
   )
+import Data.Morpheus.CodeGen.Utils
 import Data.Morpheus.Core (parseRequest)
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Types.IO (GQLRequest (..))
@@ -57,9 +58,9 @@ internalLegacyLocalDeclareTypes schemaSrc query = do
   clientTypeDeclarations schemaText (Just query)
 
 globalTypeDeclarations :: SchemaSource -> (TypeName -> Bool) -> Q [Dec]
-globalTypeDeclarations src f = handleResult (parseSchema src >>= toGlobalDefinitions f) printDeclarations
+globalTypeDeclarations src f = handleResult (parseSchema src >>= fmap fst . toGlobalDefinitions f) printDeclarations
 
-parseClientTypeDeclarations :: SchemaSource -> Maybe Text -> GQLResult [ClientDeclaration]
+parseClientTypeDeclarations :: SchemaSource -> Maybe Text -> GQLResult ([ClientDeclaration], Flags)
 parseClientTypeDeclarations schemaText (Just query) = do
   schemaDoc <- parseSchema schemaText
   executableDoc <-
@@ -78,7 +79,7 @@ clientTypeDeclarations ::
   SchemaSource ->
   Maybe ExecutableSource ->
   Q [Dec]
-clientTypeDeclarations src x = handleResult (parseClientTypeDeclarations src x) printDeclarations
+clientTypeDeclarations src x = handleResult (fmap fst (parseClientTypeDeclarations src x)) printDeclarations
 
 {- ORMOLU_DISABLE -}
 -- | declares input, enum and scalar types for specified schema

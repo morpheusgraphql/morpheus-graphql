@@ -18,6 +18,7 @@ import CLI.Config
   ( Config (..),
     Service (..),
     ServiceOptions (..),
+    Source (..),
     readConfig,
   )
 import CLI.File (getModuleNameByPath, processDocument, processFileName)
@@ -30,6 +31,7 @@ import qualified Data.ByteString.Lazy as L
   ( readFile,
   )
 import Data.Morpheus.Client (readSchemaSource)
+import Data.Morpheus.Internal.Ext (resultOr)
 import qualified Data.Text.IO as TIO
 import Data.Version (showVersion)
 import qualified Paths_morpheus_graphql_code_gen as CLI
@@ -75,70 +77,78 @@ scan ctx = do
   pure $ and (servers <> clients)
 
 getImports :: Maybe ServiceOptions -> [Text]
-getImports = concat . maybeToList . (>>= globals)
+getImports = concatMap optionImports . maybeToList
 
-parseServiceData :: Context -> Service -> IO (FilePath, Bool, [FilePath], [Text])
+expandSource :: FilePath -> Source -> IO [Source]
+expandSource root (Source p o) = do
+  files <- glob $ normalise (root </> p)
+  pure $ map (`Source` o) files
+
+parseServiceData :: Context -> Service -> IO (FilePath, [Source], ServiceOptions)
 parseServiceData ctx Service {source, includes, options} = do
   let root = normalise (configDir ctx </> source)
-  let namespaces = fromMaybe False (options >>= namespace)
-  let patterns = map (normalise . (root </>)) includes
-  files <- concat <$> traverse glob patterns
+  let namespaces = maybe False optionNamespace options
+  let externals = maybe mempty optionExternals options
+  files <- concat <$> traverse (expandSource root) includes
   pure
     ( root,
-      namespaces,
       files,
-      getImports options
+      ServiceOptions namespaces (getImports options) externals
     )
 
-getSchemaPath :: MonadFail m => FilePath -> String -> Maybe FilePath -> m FilePath
-getSchemaPath root name schema = do
-  schemaPath <- maybe (fail $ "client service " <> name <> " should provide schema!") pure schema
-  pure $ normalise $ root </> schemaPath
+getSchemaPath :: FilePath -> String -> Maybe Source -> IO Source
+getSchemaPath root _ (Just Source {..}) = do
+  pure Source {sourcePath = normalise $ root </> sourcePath, ..}
+getSchemaPath _ name _ = fail $ "client service " <> name <> " should provide schema!"
 
 handleClientService :: Context -> Service -> IO CommandResult
 handleClientService ctx s@Service {name, schema} = do
-  (root, namespaces, files, globalImports) <- parseServiceData ctx s
+  (root, files, buildOptions) <- parseServiceData ctx s
   putStrLn ("\n build:" <> name)
   schemaPath <- getSchemaPath root name schema
   let config = BuildConfig {..}
-  globals <- buildClientGlobals ctx config schemaPath
-  and . (globals :) <$> traverse (buildClientQuery ctx config schemaPath) files
+  (imports, globals) <- buildClientGlobals ctx config schemaPath
+  let newConfig = config {buildOptions = buildOptions {optionImports = imports <> optionImports buildOptions}}
+  and . (globals :) <$> traverse (buildClientQuery ctx newConfig schemaPath) files
 
-buildClientGlobals :: Context -> BuildConfig -> FilePath -> IO CommandResult
-buildClientGlobals ctx options schemaPath = do
-  putStr ("  - " <> schemaPath <> "\n")
-  schemaDoc <- readSchemaSource schemaPath
-  let hsPath = processFileName schemaPath
-  let moduleName = getModuleNameByPath (root options) hsPath
-  let result = processClientDocument options schemaDoc Nothing moduleName
-  processDocument (isCheck ctx) hsPath result
+buildClientGlobals :: Context -> BuildConfig -> Source -> IO ([Text], CommandResult)
+buildClientGlobals ctx config src@Source {sourcePath} = do
+  putStr ("  - " <> sourcePath <> "\n")
+  schemaDoc <- readSchemaSource sourcePath
+  let hsPath = processFileName sourcePath
+  let moduleName = getModuleNameByPath (root config) hsPath
+  let result = processClientDocument (localConfig config src) schemaDoc Nothing moduleName
+  res <- processDocument (isCheck ctx) hsPath result
+  pure ([moduleName | resultOr (const False) isJust result], res)
 
-getSchemaImports :: BuildConfig -> FilePath -> [Text]
-getSchemaImports options schemaPath = [getModuleNameByPath (root options) (processFileName schemaPath)]
-
-buildClientQuery :: Context -> BuildConfig -> FilePath -> FilePath -> IO CommandResult
-buildClientQuery ctx options schemaPath queryPath = do
+buildClientQuery :: Context -> BuildConfig -> Source -> Source -> IO CommandResult
+buildClientQuery ctx config schemaPath querySrc = do
+  let queryPath = sourcePath querySrc
   putStr ("  - " <> queryPath <> "\n")
   file <- TIO.readFile queryPath
-  schemaDoc <- readSchemaSource schemaPath
+  schemaDoc <- readSchemaSource (sourcePath schemaPath)
   let hsPath = processFileName queryPath
-  let moduleName = getModuleNameByPath (root options) hsPath
-  let imports = getSchemaImports options schemaPath <> globalImports options
-  let result = processClientDocument (options {globalImports = imports}) schemaDoc (Just file) moduleName
+  let moduleName = getModuleNameByPath (root config) hsPath
+  let result = processClientDocument (localConfig config querySrc) schemaDoc (Just file) moduleName
   processDocument (isCheck ctx) hsPath result
 
 handleServerService :: Context -> Service -> IO CommandResult
 handleServerService ctx s@Service {name} = do
-  (root, namespaces, files, globalImports) <- parseServiceData ctx s
+  (root, files, buildOptions) <- parseServiceData ctx s
   putStrLn ("\n build:" <> name)
-  and <$> traverse (buildServer ctx (BuildConfig {..}) {root, namespaces}) files
+  and <$> traverse (buildServer ctx BuildConfig {..}) files
 
-buildServer :: Context -> BuildConfig -> FilePath -> IO CommandResult
-buildServer ctx options path = do
+buildServer :: Context -> BuildConfig -> Source -> IO CommandResult
+buildServer ctx config src = do
+  let path = sourcePath src
+  let hsPath = processFileName path
   putStr ("  - " <> path <> "\n")
   file <- L.readFile path
-  let moduleName = getModuleNameByPath (root options) hsPath
-  let result = processServerDocument options moduleName file
-  processDocument (isCheck ctx) hsPath result
-  where
-    hsPath = processFileName path
+  let moduleName = getModuleNameByPath (root config) hsPath
+  let result = processServerDocument (localConfig config src) moduleName file
+  processDocument (isCheck ctx) hsPath (Just <$> result)
+
+localConfig :: BuildConfig -> Source -> BuildConfig
+localConfig (BuildConfig root ops) src =
+  let options = sconcat (ops :| maybeToList (sourceOptions src))
+   in BuildConfig root options

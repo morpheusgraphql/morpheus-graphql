@@ -106,7 +106,7 @@ validateRequest
         Scope
           { kind = SELECTION,
             currentTypeName = "Root",
-            currentTypeKind = KindObject Nothing,
+            currentTypeKind = KIND_OBJECT Nothing,
             currentTypeWrappers = mkBaseType,
             fieldName = "Root",
             position = Just operationPosition,

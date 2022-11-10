@@ -8,13 +8,12 @@ module Client.Requests.GetUsers where
 
 import Client.Schema
 import Data.Morpheus.Client.CodeGen.Internal
-import Globals.GQLScalars
 
 instance RequestType GetUser where
   type RequestArgs GetUser = GetUserArgs
   __name _ = "GetUser"
   __query _ = "# Query Hero with Compile time Validation\nquery GetUser($coordinates: Coordinates!) {\n  myUser: user {\n    name\n    aliasEmail: email\n    address(coordinates: $coordinates) {\n      city\n    }\n    aliasAdress: address(coordinates: $coordinates) {\n      city\n    }\n  }\n  user {\n    email\n    name\n    entity {\n      ... on User {\n        __typename\n        name\n      }\n    }\n  }\n  character {\n    ... on Deity {\n      __typename\n      power\n    }\n  }\n}\n"
-  __type _ = Query
+  __type _ = OPERATION_QUERY
 
 data GetUser = GetUser
   { myUser :: GetUserMyUser,

@@ -432,23 +432,28 @@ These directive definitions should implement `GQLType`, `Generic` and `GQLDirect
 depending on `GQLDirective.DIRECTIVE_LOCATIONS` API requires implementation of one of the following
 visitor typeclass instances: `VisitType`, `VisitField`, `VisitEnum`.
 
-The following example demonstrates the RemovePrefix directive definition, which
+The following example demonstrates the `RemovePrefix`` directive definition, which
 removes prefixes from GQL objects and input objects.
 
 ```hs
-data RemovePrefix = RemovePrefix {prefix :: Text}
+import Data.Morpheus ()
+import Data.Morpheus.Types
+import Data.Text (Text)
+import qualified Data.Text as T
+import GHC.Generics (Generic)
+
+newtype RemovePrefix = RemovePrefix {prefix :: Text}
   deriving (Generic, GQLType)
 
 instance GQLDirective RemovePrefix where
   type
     DIRECTIVE_LOCATIONS RemovePrefix =
-      '[ 'OBJECT,
-         'INPUT_OBJECT
+      '[ 'LOCATION_OBJECT,
+         'LOCATION_INPUT_OBJECT
        ]
 
 instance VisitType RemovePrefix where
-  visitTypeName RemovePrefix {prefix} = T.drop (T.length prefix)
-  visitTypeDescription _ = id
+  visitTypeName RemovePrefix {prefix} _ = T.drop (T.length prefix)
 ```
 
 now we can apply this directive on type `MythologyDeity` to remove prefix `Mythology`.
@@ -506,17 +511,19 @@ resolveDeity DeityArgs { } = throwError ("db error" :: GQLError)
 Morpheus GraphQL provides two way of type resolving.
 
 1. **Values as resolvers**: In this approach, you specify values
-  for the type definitions, where the resolvers are regular functions. 
-  However, this approach can sometimes lead to the possibility of overwhelming 
-  the database with a huge amount of queries.  
-  For this reason, the second approach, which involves automatic batching, 
-  might be the more suitable solution for you.
+   for the type definitions, where the resolvers are regular functions.
+   However, this approach can sometimes lead to the possibility of overwhelming
+   the database with a huge amount of queries.  
+   For this reason, the second approach, which involves automatic batching,
+   might be the more suitable solution for you.
 
-2. **Named resolvers**: In this approach, we use the type class `ResolveNamed` to define the 
- resolver function for each type that handles a batched list of dependencies. 
- More information on this approach can be found in the next section.
+2. **Named resolvers**: In this approach, we use the type class `ResolveNamed` to define the
+   resolver function for each type that handles a batched list of dependencies.
+   More information on this approach can be found in the next section.
 
-<Section id="named-resolvers" level={2}> Named Resolvers (Batching)</Section>
+<Section id="named-resolvers" level={2}>
+  Named Resolvers (Batching)
+</Section>
 
 As mentioned earlier, in this approach we use `ResolveNamed`
 to define the resolver function (with batching) for each type. In this resolver definition,

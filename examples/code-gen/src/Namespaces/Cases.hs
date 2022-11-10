@@ -7,7 +7,6 @@ module Namespaces.Cases where
 
 import Data.Morpheus.Server.CodeGen.Internal
 import Data.Morpheus.Server.Types
-import Globals.GQLScalars
 
 data TestUnderscoredType = TestUnderscoredType_TestUnderscoredType
   deriving (Generic, Show)

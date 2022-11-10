@@ -8,7 +8,6 @@ module Domains.Users.Users where
 
 import Data.Morpheus.Server.CodeGen.Internal
 import Data.Morpheus.Server.Types
-import Globals.GQLScalars
 
 data User m = User
   { id :: m ID,

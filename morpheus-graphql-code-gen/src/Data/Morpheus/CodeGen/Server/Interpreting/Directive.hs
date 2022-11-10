@@ -26,9 +26,9 @@ import Data.Morpheus.CodeGen.Server.Interpreting.Utils
     getEnumName,
     getFieldName,
     inType,
-    langExtension,
     lookupFieldType,
   )
+import Data.Morpheus.CodeGen.Utils (langExtension)
 import Data.Morpheus.Core (internalSchema, render)
 import Data.Morpheus.Internal.Utils (IsMap, selectOr)
 import Data.Morpheus.Types.Internal.AST

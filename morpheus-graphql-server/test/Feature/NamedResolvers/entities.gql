@@ -1,0 +1,6 @@
+union Entity = Deity | Realm
+
+type Query {
+  entities: [Entity!]!
+  entity(id: ID!): Entity
+}

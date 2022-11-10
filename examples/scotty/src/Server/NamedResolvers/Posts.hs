@@ -6,6 +6,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Server.NamedResolvers.Posts
   ( postsApp,
@@ -31,6 +32,14 @@ import Data.Morpheus.Types
 import Data.Semigroup (Semigroup ((<>)))
 import Data.Text (Text)
 import GHC.Generics (Generic)
+import Prelude
+  ( IO,
+    Maybe (..),
+    Monad (..),
+    pure,
+    traverse,
+    ($),
+  )
 
 -- POST
 data Post m = Post

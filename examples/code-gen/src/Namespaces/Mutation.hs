@@ -7,7 +7,7 @@ module Namespaces.Mutation where
 
 import Data.Morpheus.Server.CodeGen.Internal
 import Data.Morpheus.Server.Types
-import Globals.GQLScalars
+import Globals.GQLScalars (ScalarPower)
 
 data Query m = Query
   { queryDeity :: QueryDeityArgs -> m (Deity m),
@@ -77,9 +77,9 @@ instance GQLType MutationCreateCharacterArgs where
     typeDirective DropNamespace {dropNamespace = "MutationCreateCharacterArgs"}
 
 data Character m
-  = CharacterCreature (Creature m)
-  | CharacterDeity (Deity m)
-  | CharacterHuman (Human m)
+  = CharacterCreature (m (Creature m))
+  | CharacterDeity (m (Deity m))
+  | CharacterHuman (m (Human m))
   deriving (Generic)
 
 instance (Typeable m) => GQLType (Character m) where

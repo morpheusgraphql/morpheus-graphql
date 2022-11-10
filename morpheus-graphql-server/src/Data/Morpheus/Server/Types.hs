@@ -53,7 +53,7 @@ module Data.Morpheus.Server.Types
     Deprecated (..),
     Describe (..),
     SCALAR,
-    DerivingKind (..),
+    DerivingKind,
     TYPE,
     CUSTOM,
     WRAPPER,
@@ -64,6 +64,7 @@ module Data.Morpheus.Server.Types
     DropNamespace (..),
     DefaultValue (..),
     Value (..),
+    DirectiveLocation (..),
   )
 where
 
@@ -106,7 +107,7 @@ import Data.Morpheus.Server.Types.GQLType
   )
 import Data.Morpheus.Server.Types.Kind
   ( CUSTOM,
-    DerivingKind (..),
+    DerivingKind,
     SCALAR,
     TYPE,
     WRAPPER,
@@ -135,7 +136,8 @@ import Data.Morpheus.Types.IO
     GQLResponse (..),
   )
 import Data.Morpheus.Types.Internal.AST
-  ( GQLError,
+  ( DirectiveLocation (..),
+    GQLError,
     MUTATION,
     QUERY,
     SUBSCRIPTION,

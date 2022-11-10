@@ -6,7 +6,7 @@
 -- | associating types to GraphQL Kinds
 module Data.Morpheus.Server.Types.Kind
   ( SCALAR,
-    DerivingKind (..),
+    DerivingKind,
     TYPE,
     CUSTOM,
     WRAPPER,
@@ -16,19 +16,19 @@ where
 import Relude
 
 data DerivingKind
-  = SCALAR
-  | TYPE
-  | WRAPPER
-  | CUSTOM
+  = DERIVING_SCALAR
+  | DERIVING_TYPE
+  | DERIVING_WRAPPER
+  | DERIVING_CUSTOM
   deriving (Show)
 
--- | GraphQL input, type, union , enum
-type TYPE = 'TYPE
-
 -- | GraphQL Scalar: Int, Float, String, Boolean or any user defined custom Scalar type
-type SCALAR = 'SCALAR
+type SCALAR = 'DERIVING_SCALAR
+
+-- | GraphQL input, type, union , enum
+type TYPE = 'DERIVING_TYPE
 
 -- | GraphQL Arrays , Resolvers and NonNull fields
-type WRAPPER = 'WRAPPER
+type WRAPPER = 'DERIVING_WRAPPER
 
-type CUSTOM = 'CUSTOM
+type CUSTOM = 'DERIVING_CUSTOM

@@ -27,7 +27,7 @@ enum CityID {
   temporary multiline Test for Enum field descripions
   """
   Paris
-  BLN @deprecated(reason: "some reason")
+  BLN 
   "temporary singleline Test for Enum field descripions"
   HH @deprecated(reason: "just for test")
 }
@@ -55,7 +55,7 @@ type Address {
   """
   temporary multiline Test for Enum field descripions
   """
-  city: String! @deprecated(reason: "some reason")
+  city: String!
   street: String!
   "temporary singleline Test for input object field descripions"
   houseNumber: Int! @deprecated

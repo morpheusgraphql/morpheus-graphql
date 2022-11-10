@@ -24,7 +24,6 @@ source-repository head
 executable code-gen-docs-server
   main-is: Main.hs
   other-modules:
-      Client.Blog
       Client.Queries.GetPosts
       Client.Queries.GetUsers
       Scalars

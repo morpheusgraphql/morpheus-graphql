@@ -30,8 +30,10 @@ where
 import Control.Monad.Except (MonadError (throwError))
 import Data.ByteString.Lazy.Char8 (unpack)
 import qualified Data.HashMap.Lazy as HM
-import Data.Morpheus.App.Internal.Resolving.Types (NamedResolverRef (..), ResolverMap)
-import Data.Morpheus.Core (RenderGQL, render)
+import Data.Morpheus.App.Internal.Resolving.ResolverState (config)
+import Data.Morpheus.App.Internal.Resolving.Types (ResolverMap)
+import Data.Morpheus.App.Internal.Resolving.Utils
+import Data.Morpheus.Core (Config (..), RenderGQL, render)
 import Data.Morpheus.Types.Internal.AST
   ( GQLError,
     Msg (..),
@@ -41,8 +43,9 @@ import Data.Morpheus.Types.Internal.AST
     ValidValue,
     internal,
   )
+import Debug.Trace (trace)
 import GHC.Show (Show (show))
-import Relude hiding (show)
+import Relude hiding (show, trace)
 
 type LocalCache = HashMap CacheKey ValidValue
 
@@ -51,10 +54,13 @@ useCached mp v = case HM.lookup v mp of
   Just x -> pure x
   Nothing -> throwError (internal $ "cache value could not found for key" <> msg (show v :: String))
 
-dumpCache :: Bool -> LocalCache -> a -> a
-dumpCache enabled xs a
-  | null xs || not enabled = a
-  | otherwise = trace ("\nCACHE:\n" <> intercalate "\n" (map printKeyValue $ HM.toList xs) <> "\n") a
+dumpCache :: Bool -> LocalCache -> LocalCache
+dumpCache enabled cache
+  | null cache || not enabled = cache
+  | otherwise = trace ("\nCACHE:\n" <> printCache cache) cache
+
+printCache :: LocalCache -> [Char]
+printCache cache = intercalate "\n" (map printKeyValue $ HM.toList cache) <> "\n"
   where
     printKeyValue (key, v) = " " <> show key <> ": " <> unpack (render v)
 
@@ -111,13 +117,14 @@ resolveBatched f (BatchEntry sel name deps) = do
   let entries = zip keys res
   pure $ HM.fromList entries
 
-updateCache :: (Monad m, Traversable t) => ResolverFun m -> LocalCache -> t BatchEntry -> m LocalCache
+updateCache :: (ResolverMonad m, Traversable t) => ResolverFun m -> LocalCache -> t BatchEntry -> m LocalCache
 updateCache f cache entries = do
   caches <- traverse (resolveBatched f) entries
   let newCache = foldr (<>) cache caches
-  pure $ dumpCache False newCache newCache
+  enabled <- asks (debug . config)
+  pure $ dumpCache enabled newCache
 
-buildCacheWith :: Monad m => ResolverFun m -> LocalCache -> [(SelectionContent VALID, NamedResolverRef)] -> m LocalCache
+buildCacheWith :: ResolverMonad m => ResolverFun m -> LocalCache -> [(SelectionContent VALID, NamedResolverRef)] -> m LocalCache
 buildCacheWith f cache entries = updateCache f cache (buildBatches entries)
 
 data ResolverMapContext m = ResolverMapContext

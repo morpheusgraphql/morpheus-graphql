@@ -163,21 +163,21 @@ instance RenderIntrospection (TypeDefinition cat VALID) where
           ) =>
           TypeContent bool a VALID ->
           ResolverValue m
-        renderContent DataScalar {} = __type KindScalar []
-        renderContent (DataEnum enums) = __type KindEnum [("enumValues", render enums)]
+        renderContent DataScalar {} = __type KIND_SCALAR []
+        renderContent (DataEnum enums) = __type KIND_ENUM [("enumValues", render enums)]
         renderContent (DataInputObject inputFields) =
           __type
-            KindInputObject
+            KIND_INPUT_OBJECT
             [("inputFields", render inputFields)]
         renderContent DataObject {objectImplements, objectFields} =
           createObjectType typeName typeDescription objectImplements objectFields
         renderContent (DataUnion union) =
           __type
-            KindUnion
+            KIND_UNION
             [("possibleTypes", render $ toList union)]
         renderContent (DataInputUnion members) =
           mkType
-            KindInputObject
+            KIND_INPUT_OBJECT
             typeName
             ( Just
                 ( "Note! This input is an exclusive object,\n"
@@ -191,7 +191,7 @@ instance RenderIntrospection (TypeDefinition cat VALID) where
             ]
         renderContent (DataInterface fields) =
           __type
-            KindInterface
+            KIND_INTERFACE
             [ ("fields", render fields),
               ("possibleTypes", renderPossibleTypes typeName)
             ]
@@ -261,7 +261,7 @@ instance RenderIntrospection TypeRef where
           withNonNull isNonNull $
             mkObject
               "__Type"
-              [ renderKind KindList,
+              [ renderKind KIND_LIST,
                 ("ofType", renderWrapper nextWrapper)
               ]
       renderWrapper (BaseType isNonNull) =
@@ -279,7 +279,7 @@ withNonNull ::
 withNonNull True contentType =
   mkObject
     "__Type"
-    [ renderKind KindNonNull,
+    [ renderKind KIND_NON_NULL,
       ("ofType", pure contentType)
     ]
 withNonNull False contentType = contentType
@@ -341,7 +341,7 @@ createObjectType ::
   FieldsDefinition OUT VALID ->
   ResolverValue m
 createObjectType name desc interfaces fields =
-  mkType (KindObject Nothing) name desc [("fields", render fields), ("interfaces", mkList <$> traverse implementedInterface interfaces)]
+  mkType (KIND_OBJECT Nothing) name desc [("fields", render fields), ("interfaces", mkList <$> traverse implementedInterface interfaces)]
 
 implementedInterface ::
   (Monad m, WithSchema m) =>

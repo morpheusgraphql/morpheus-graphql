@@ -1,28 +1,26 @@
 server:
-  - name: Server API
+  - name: Server Domains
     source: ./src
     includes:
       - Domains/**/*.gql
-      - Operation/**/*.gql
-    options:
-      globals:
-        - Globals.GQLScalars
 
-  - name: Server API (Namespaces)
+  - name: Server API
     source: ./src
     includes:
-      - Namespaces/**/*.gql
+      - Operation/**/*.gql
+      - path: Namespaces/**/*.gql
+        namespace: true
     options:
-      namespace: true
-      globals:
-        - Globals.GQLScalars
+      externals:
+        TestScalar: Globals.GQLScalars
+        ScalarPower: Globals.GQLScalars
 
 client:
   - name: Client API
     source: ./src
-    schema: Client/schema.gql
+    schema:
+      path: Client/schema.gql
+      externals:
+        Euro: Globals.GQLScalars
     includes:
       - Client/Requests/**/*.gql
-    options:
-      globals:
-        - Globals.GQLScalars

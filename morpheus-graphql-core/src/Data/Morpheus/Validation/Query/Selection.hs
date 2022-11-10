@@ -32,7 +32,7 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( Arguments,
-    DirectiveLocation (FIELD, FRAGMENT_SPREAD, INLINE_FRAGMENT, MUTATION, QUERY, SUBSCRIPTION),
+    DirectiveLocation (..),
     Directives,
     FieldDefinition (..),
     FieldName,
@@ -95,7 +95,7 @@ selectionsWithoutTypename :: SelectionSet VALID -> [Selection VALID]
 selectionsWithoutTypename = filter (("__typename" /=) . keyOf) . toList
 
 singleTopLevelSelection :: Operation RAW -> SelectionSet VALID -> SelectionValidator ()
-singleTopLevelSelection Operation {operationType = Subscription, operationName} selSet =
+singleTopLevelSelection Operation {operationType = OPERATION_SUBSCRIPTION, operationName} selSet =
   case selectionsWithoutTypename selSet of
     (_ : (x : xs)) -> throwErrors $ fmap (singleTopLevelSelectionError operationName) (x :| xs)
     _ -> pure ()
@@ -139,9 +139,9 @@ validateOperation
           }
 
 toDirectiveLocation :: OperationType -> DirectiveLocation
-toDirectiveLocation Subscription = SUBSCRIPTION
-toDirectiveLocation Mutation = MUTATION
-toDirectiveLocation Query = QUERY
+toDirectiveLocation OPERATION_SUBSCRIPTION = LOCATION_SUBSCRIPTION
+toDirectiveLocation OPERATION_MUTATION = LOCATION_MUTATION
+toDirectiveLocation OPERATION_QUERY = LOCATION_QUERY
 
 processSelectionDirectives ::
   DirectiveLocation ->
@@ -180,7 +180,7 @@ validateSelectionSet typeDef =
 validateSelection :: ValidateFragmentSelection s => TypeDefinition IMPLEMENTABLE VALID -> Selection RAW -> FragmentValidator s (Maybe (SelectionSet VALID))
 validateSelection typeDef Selection {..} =
   withScope (setSelection typeDef selectionRef) $
-    processSelectionDirectives FIELD selectionDirectives validateContent
+    processSelectionDirectives LOCATION_FIELD selectionDirectives validateContent
   where
     selectionRef = Ref selectionName selectionPosition
     validateContent directives = do
@@ -194,11 +194,11 @@ validateSelection typeDef Selection {..} =
               }
       pure $ singleton (keyOf selection) selection
 validateSelection typeDef (Spread dirs ref) =
-  processSelectionDirectives FRAGMENT_SPREAD dirs $
+  processSelectionDirectives LOCATION_FRAGMENT_SPREAD dirs $
     const $
       validateSpreadSelection typeDef ref
 validateSelection typeDef (InlineFragment fragment@Fragment {fragmentDirectives}) =
-  processSelectionDirectives INLINE_FRAGMENT fragmentDirectives $
+  processSelectionDirectives LOCATION_INLINE_FRAGMENT fragmentDirectives $
     const $
       validateInlineFragmentSelection typeDef fragment
 
@@ -218,7 +218,7 @@ validateInlineFragmentSelection ::
   FragmentValidator s (SelectionSet VALID)
 validateInlineFragmentSelection typeDef x = do
   types <- possibleTypes typeDef <$> asks schema
-  fragmentSelection <$> validateFragment INLINE_FRAGMENT validateFragmentSelection types x
+  fragmentSelection <$> validateFragment LOCATION_INLINE_FRAGMENT validateFragmentSelection types x
 
 selectSelectionField ::
   Ref FieldName ->

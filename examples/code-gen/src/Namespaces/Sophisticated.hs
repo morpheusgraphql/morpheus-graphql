@@ -8,7 +8,7 @@ module Namespaces.Sophisticated where
 
 import Data.Morpheus.Server.CodeGen.Internal
 import Data.Morpheus.Server.Types
-import Globals.GQLScalars
+import Globals.GQLScalars (TestScalar)
 
 data TestEnum
   = TestEnumEnumA
@@ -106,8 +106,8 @@ instance GQLType AddressStreetArgs where
       <> fieldDirective "addressStreetArgsArgInputObject" Describe {text = "\n    argument Description: inputObject\n    "}
 
 data TestUnion m
-  = TestUnionUser (User m)
-  | TestUnionAddress (Address m)
+  = TestUnionUser (m (User m))
+  | TestUnionAddress (m (Address m))
   deriving (Generic)
 
 instance (Typeable m) => GQLType (TestUnion m) where

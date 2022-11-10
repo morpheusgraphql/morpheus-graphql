@@ -198,9 +198,9 @@ typeDeclaration kind = keyword kind *> parseTypeName
 parseOperationType :: Parser OperationType
 parseOperationType =
   label "OperationType" $
-    ( (string "query" $> Query)
-        <|> (string "mutation" $> Mutation)
-        <|> (string "subscription" $> Subscription)
+    ( (string "query" $> OPERATION_QUERY)
+        <|> (string "mutation" $> OPERATION_MUTATION)
+        <|> (string "subscription" $> OPERATION_SUBSCRIPTION)
     )
       <* ignoredTokens
 {-# INLINEABLE parseOperationType #-}
@@ -211,24 +211,24 @@ parseDirectiveLocation =
     "DirectiveLocation"
     ( choice $
         toKeyword
-          <$> [ FIELD_DEFINITION,
-                FRAGMENT_DEFINITION,
-                FRAGMENT_SPREAD,
-                INLINE_FRAGMENT,
-                ARGUMENT_DEFINITION,
-                INTERFACE,
-                ENUM_VALUE,
-                INPUT_OBJECT,
-                INPUT_FIELD_DEFINITION,
-                SCHEMA,
-                SCALAR,
-                OBJECT,
-                QUERY,
-                MUTATION,
-                SUBSCRIPTION,
-                UNION,
-                ENUM,
-                FIELD
+          <$> [ LOCATION_FIELD_DEFINITION,
+                LOCATION_FRAGMENT_DEFINITION,
+                LOCATION_FRAGMENT_SPREAD,
+                LOCATION_INLINE_FRAGMENT,
+                LOCATION_ARGUMENT_DEFINITION,
+                LOCATION_INTERFACE,
+                LOCATION_ENUM_VALUE,
+                LOCATION_INPUT_OBJECT,
+                LOCATION_INPUT_FIELD_DEFINITION,
+                LOCATION_SCHEMA,
+                LOCATION_SCALAR,
+                LOCATION_OBJECT,
+                LOCATION_QUERY,
+                LOCATION_MUTATION,
+                LOCATION_SUBSCRIPTION,
+                LOCATION_UNION,
+                LOCATION_ENUM,
+                LOCATION_FIELD
               ]
     )
     <* ignoredTokens

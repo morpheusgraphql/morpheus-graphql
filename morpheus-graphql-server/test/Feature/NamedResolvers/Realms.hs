@@ -7,7 +7,7 @@ module Feature.NamedResolvers.Realms where
 
 import Data.Morpheus.Server.CodeGen.Internal
 import Data.Morpheus.Server.Types
-import Feature.NamedResolvers.Scalars
+import Feature.NamedResolvers.Scalars (Markdown)
 
 data Realm m = Realm
   { name :: m Text,

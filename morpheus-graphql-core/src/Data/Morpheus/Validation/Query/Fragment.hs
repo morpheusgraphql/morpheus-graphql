@@ -86,7 +86,7 @@ validateFragment loc validate allowedTypes fragment@Fragment {fragmentPosition} 
 validateFragments ::
   (Fragment RAW -> FragmentValidator RAW (SelectionSet VALID)) ->
   FragmentValidator RAW (Fragments VALID)
-validateFragments f = askFragments >>= traverse (onlyValidateFrag FRAGMENT_DEFINITION f)
+validateFragments f = askFragments >>= traverse (onlyValidateFrag LOCATION_FRAGMENT_DEFINITION f)
 
 onlyValidateFrag ::
   DirectiveLocation ->

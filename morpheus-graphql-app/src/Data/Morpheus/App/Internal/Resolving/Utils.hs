@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -16,6 +17,7 @@ module Data.Morpheus.App.Internal.Resolving.Utils
     ObjectTypeResolver,
     lookupResJSON,
     mkValue,
+    ResolverMonad,
   )
 where
 
@@ -49,11 +51,10 @@ import Data.Text (breakOnEnd, splitOn)
 import qualified Data.Vector as V
 import Relude hiding (break)
 
+type ResolverMonad m = (MonadError GQLError m, MonadReader ResolverContext m)
+
 lookupResJSON ::
-  ( MonadError GQLError f,
-    MonadReader ResolverContext f,
-    MonadReader ResolverContext m
-  ) =>
+  (ResolverMonad f, MonadReader ResolverContext m) =>
   FieldName ->
   A.Value ->
   f (ObjectTypeResolver m)

@@ -29,16 +29,19 @@ executable generated-server
       Client.Requests.NewUsers
       Client.Requests.TestFragments
       Client.Schema
+      Domains.API
       Domains.Posts.Posts
       Domains.Posts.Resolver
       Domains.Users.Resolver
       Domains.Users.Users
       Globals.GQLScalars
+      Namespaces.API
       Namespaces.Cases
       Namespaces.Mutation
       Namespaces.Query
       Namespaces.Sophisticated
       Namespaces.Subscription
+      Operation.API
       Operation.Mutation
       Operation.Query
       Operation.Subscription

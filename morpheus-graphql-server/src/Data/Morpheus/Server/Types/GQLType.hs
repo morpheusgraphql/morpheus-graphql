@@ -445,12 +445,12 @@ instance GQLDirective InputTypeNamespace where
   excludeFromSchema _ = True
   type
     DIRECTIVE_LOCATIONS InputTypeNamespace =
-      '[ 'OBJECT,
-         'ENUM,
-         'INPUT_OBJECT,
-         'UNION,
-         'SCALAR,
-         'INTERFACE
+      '[ 'LOCATION_OBJECT,
+         'LOCATION_ENUM,
+         'LOCATION_INPUT_OBJECT,
+         'LOCATION_UNION,
+         'LOCATION_SCALAR,
+         'LOCATION_INTERFACE
        ]
 
 instance VisitType InputTypeNamespace where

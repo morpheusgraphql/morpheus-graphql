@@ -59,6 +59,7 @@ module Data.Morpheus.Types
     DefaultValue (..),
     GQLError,
     MonadError,
+    DirectiveLocation (..),
   )
 where
 
@@ -72,6 +73,7 @@ import Data.Morpheus.Server.Types
     DefaultValue (..),
     Deprecated (..),
     Describe (..),
+    DirectiveLocation (..),
     DropNamespace (..),
     EncodeScalar (..),
     EncodeWrapper (..),

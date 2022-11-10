@@ -1,3 +1,5 @@
+scalar TestScalar
+
 """
 type Description: TestEnum
 

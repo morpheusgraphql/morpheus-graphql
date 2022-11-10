@@ -46,27 +46,27 @@ import Relude hiding
 -- Kind
 -----------------------------------------------------------------------------------
 data TypeKind
-  = KindScalar
-  | KindObject (Maybe OperationType)
-  | KindUnion
-  | KindEnum
-  | KindInputObject
-  | KindList
-  | KindNonNull
-  | KindInputUnion
-  | KindInterface
+  = KIND_SCALAR
+  | KIND_ENUM
+  | KIND_OBJECT (Maybe OperationType)
+  | KIND_INPUT_OBJECT
+  | KIND_UNION
+  | KIND_INPUT_UNION
+  | KIND_LIST
+  | KIND_NON_NULL
+  | KIND_INTERFACE
   deriving (Eq, Show, Lift)
 
 instance RenderGQL TypeKind where
-  renderGQL KindScalar = "SCALAR"
-  renderGQL KindObject {} = "OBJECT"
-  renderGQL KindUnion = "UNION"
-  renderGQL KindInputUnion = "INPUT_OBJECT"
-  renderGQL KindEnum = "ENUM"
-  renderGQL KindInputObject = "INPUT_OBJECT"
-  renderGQL KindList = "LIST"
-  renderGQL KindNonNull = "NON_NULL"
-  renderGQL KindInterface = "INTERFACE"
+  renderGQL KIND_SCALAR = "SCALAR"
+  renderGQL KIND_ENUM = "ENUM"
+  renderGQL KIND_OBJECT {} = "OBJECT"
+  renderGQL KIND_INPUT_OBJECT = "INPUT_OBJECT"
+  renderGQL KIND_UNION = "UNION"
+  renderGQL KIND_INPUT_UNION = "INPUT_OBJECT"
+  renderGQL KIND_LIST = "LIST"
+  renderGQL KIND_NON_NULL = "NON_NULL"
+  renderGQL KIND_INTERFACE = "INTERFACE"
 
 --  Definitions:
 --     Strictness:
@@ -78,9 +78,9 @@ class Strictness t where
   isResolverType :: t -> Bool
 
 instance Strictness TypeKind where
-  isResolverType (KindObject _) = True
-  isResolverType KindUnion = True
-  isResolverType KindInterface = True
+  isResolverType (KIND_OBJECT _) = True
+  isResolverType KIND_UNION = True
+  isResolverType KIND_INTERFACE = True
   isResolverType _ = False
 
 -- TypeWrappers

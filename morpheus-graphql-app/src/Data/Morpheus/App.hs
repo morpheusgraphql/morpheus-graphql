@@ -63,7 +63,7 @@ import Data.Morpheus.Types.Internal.AST
   ( GQLError,
     GQLErrors,
     Operation (..),
-    OperationType (Mutation, Query, Subscription),
+    OperationType (..),
     Schema (..),
     Selection (..),
     SelectionContent (..),
@@ -172,9 +172,9 @@ validateReq constraints inputSchema config request = ResultT $
         )
 
 rootType :: OperationType -> Schema s -> Maybe (AST.TypeDefinition AST.OBJECT s)
-rootType Query = Just . AST.query
-rootType Mutation = mutation
-rootType Subscription = subscription
+rootType OPERATION_QUERY = Just . AST.query
+rootType OPERATION_MUTATION = mutation
+rootType OPERATION_SUBSCRIPTION = subscription
 
 stateless ::
   Functor m =>

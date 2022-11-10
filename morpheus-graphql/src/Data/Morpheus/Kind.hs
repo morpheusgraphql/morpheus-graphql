@@ -7,7 +7,7 @@
 module Data.Morpheus.Kind
   ( SCALAR,
     WRAPPER,
-    DerivingKind (..),
+    DerivingKind,
     TYPE,
     CUSTOM,
   )
@@ -15,7 +15,7 @@ where
 
 import Data.Morpheus.Server.Types
   ( CUSTOM,
-    DerivingKind (..),
+    DerivingKind,
     SCALAR,
     TYPE,
     WRAPPER,

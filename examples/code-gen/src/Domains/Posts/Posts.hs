@@ -8,7 +8,6 @@ module Domains.Posts.Posts where
 
 import Data.Morpheus.Server.CodeGen.Internal
 import Data.Morpheus.Server.Types
-import Globals.GQLScalars
 
 data Post m = Post
   { id :: m ID,

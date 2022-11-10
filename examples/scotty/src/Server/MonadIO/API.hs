@@ -22,7 +22,7 @@
 module Server.MonadIO.API where
 
 import Control.Concurrent.STM
-import Control.Monad.Except (ExceptT, MonadError, runExceptT)
+import Control.Monad.Except (ExceptT, runExceptT)
 import Control.Monad.Reader (MonadReader, asks, runReaderT)
 import Control.Monad.Trans (MonadIO, liftIO)
 import Control.Monad.Trans.Reader (ReaderT)

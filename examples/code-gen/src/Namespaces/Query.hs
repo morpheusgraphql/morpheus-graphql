@@ -7,7 +7,7 @@ module Namespaces.Query where
 
 import Data.Morpheus.Server.CodeGen.Internal
 import Data.Morpheus.Server.Types
-import Globals.GQLScalars
+import Globals.GQLScalars (ScalarPower)
 
 data Query m = Query
   { queryDeity :: QueryDeityArgs -> m (Deity m),
@@ -44,8 +44,8 @@ instance GQLType QueryCharacterArgs where
     typeDirective DropNamespace {dropNamespace = "QueryCharacterArgs"}
 
 data Character m
-  = CharacterCreature (Creature m)
-  | CharacterDeity (Deity m)
+  = CharacterCreature (m (Creature m))
+  | CharacterDeity (m (Deity m))
   deriving (Generic)
 
 instance (Typeable m) => GQLType (Character m) where

@@ -4,5 +4,7 @@ server:
     includes:
       - Feature/NamedResolvers/*.gql
     options:
-      globals:
-        - Feature.NamedResolvers.Scalars
+      externals:
+        Markdown: Feature.NamedResolvers.Scalars
+        Deity: Feature.NamedResolvers.Realms
+        Realm: Feature.NamedResolvers.Realms
