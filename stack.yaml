@@ -1,14 +1,15 @@
-allow-newer: true
-resolver: nightly-2022-10-10
+resolver: lts-18.10
 save-hackage-creds: false
 packages:
   - examples/client
   - examples/code-gen
   - examples/code-gen-docs
   - examples/scotty
+  - examples/scotty-fraxl
   - examples/scotty-haxl
   - examples/scotty-freer-simple
   - examples/servant
+  - morpheus-graphql-benchmarks
   - morpheus-graphql-tests
   - morpheus-graphql-core
   - morpheus-graphql-code-gen-utils
@@ -19,6 +20,10 @@ packages:
   - morpheus-graphql-server
   - morpheus-graphql
 extra-deps:
+  - dependent-map-0.2.4.0
+  - dependent-sum-0.4
+  - fastsum-0.1.1.1
   - fraxl-0.3.0.0
+  - graphql-0.11.1.0
   - haxl-2.4.0.0
   - type-aligned-0.9.6

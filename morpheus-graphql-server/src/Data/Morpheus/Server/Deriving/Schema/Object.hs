@@ -36,7 +36,7 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
     outputType,
   )
-import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType, useTypename)
+import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (..))
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
     insertType,

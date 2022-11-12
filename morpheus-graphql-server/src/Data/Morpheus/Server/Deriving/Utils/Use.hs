@@ -6,10 +6,8 @@
 
 module Data.Morpheus.Server.Deriving.Utils.Use
   ( UseDirective (..),
-    UseDeriveType (..),
     UseArguments (..),
     UseGQLType (..),
-    useTypename,
   )
 where
 
@@ -29,18 +27,15 @@ import Data.Morpheus.Types.Internal.AST
     ArgumentsDefinition,
     CONST,
     OUT,
-    TypeCategory (..),
     TypeName,
   )
 
-useTypename :: (gqlType a) => UseGQLType gqlType -> CatType c a -> TypeName
-useTypename gql proxy@InputType = __useTypename gql IN proxy
-useTypename gql proxy@OutputType = __useTypename gql OUT proxy
-
 data UseGQLType gql = UseGQLType
-  { __useFingerprint :: forall f a. gql a => TypeCategory -> f a -> TypeFingerprint,
-    __useTypename :: forall f a. gql a => TypeCategory -> f a -> TypeName,
-    __useTypeData :: forall f a. gql a => f a -> TypeCategory -> TypeData
+  { useFingerprint :: forall c a. gql a => CatType c a -> TypeFingerprint,
+    useTypename :: forall c a. gql a => CatType c a -> TypeName,
+    useTypeData :: forall c a. gql a => CatType c a -> TypeData,
+    useDeriveType :: forall c a. gql a => CatType c a -> SchemaT c (),
+    useDeriveContent :: forall c a. gql a => CatType c a -> TyContentM c
   }
 
 data UseArguments args = UseArguments
@@ -52,9 +47,4 @@ data UseDirective gql args = UseDirective
   { __directives :: forall f a. gql a => f a -> GDirectiveUsages gql args,
     dirArgs :: UseArguments args,
     dirGQL :: UseGQLType gql
-  }
-
-data UseDeriveType derive = UseDeriveType
-  { useDeriveType :: forall c a. derive c a => CatType c a -> SchemaT c (),
-    useDeriveContent :: forall c a. derive c a => CatType c a -> TyContentM c
   }
