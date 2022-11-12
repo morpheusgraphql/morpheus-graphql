@@ -10,6 +10,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -30,7 +31,6 @@ module Data.Morpheus.Server.Types.GQLType
     withGQL,
     withDir,
     withDeriveType,
-    DeriveType,
   )
 where
 
@@ -93,6 +93,7 @@ import Data.Morpheus.Types.Internal.AST
     OUT,
     ObjectEntry (..),
     Position (..),
+    QUERY,
     TypeCategory (..),
     TypeName,
     TypeWrapper (..),
@@ -122,6 +123,7 @@ deriveFingerprint :: (GQLType a) => CatType cat a -> TypeFingerprint
 deriveFingerprint proxy = gqlFingerprint $ __typeData proxy
 
 deriveTypeData ::
+  forall f (a :: Type).
   Typeable a =>
   f a ->
   DirectiveUsages ->
@@ -165,6 +167,35 @@ class GQLType a where
   default __type :: Typeable a => f a -> TypeCategory -> TypeData
   __type proxy = deriveTypeData proxy (directives proxy)
 
+  deriveType :: CatType c a -> SchemaT c ()
+
+  deriveContent :: CatType c a -> TyContentM c
+
+  default deriveType :: DeriveKindedType GQLType GQLType DeriveDirective c (KIND a) (PARAM (KIND a) a) => CatType c a -> SchemaT c ()
+  deriveType = deriveKindedType withDir withDeriveType . liftPARAM
+
+  default deriveContent :: DeriveKindedType GQLType GQLType DeriveDirective c (KIND a) (PARAM (KIND a) a) => CatType c a -> TyContentM c
+  deriveContent = deriveKindedContent withDir withDeriveType . liftPARAM
+
+liftPARAM :: CatType cat a -> CatType cat (f (KIND a) (PARAM (KIND a) a))
+liftPARAM InputType = InputType
+liftPARAM OutputType = OutputType
+
+data Deity (m :: Type -> Type) = Deity
+  { name :: m Text,
+    age :: Int
+  }
+  deriving (Generic, GQLType)
+
+newtype Query (m :: Type -> Type) = Query
+  { deity :: m (Deity m)
+  }
+  deriving (Generic, GQLType)
+
+type family PARAM k a where
+  PARAM TYPE (t m) = t (Resolver QUERY () Maybe)
+  PARAM k a = a
+
 instance GQLType Int where
   type KIND Int = SCALAR
   __type _ = mkTypeData "Int"
@@ -201,6 +232,9 @@ instance Typeable m => GQLType (Undefined m) where
   type KIND (Undefined m) = CUSTOM
   __type _ = mkTypeData __typenameUndefined
 
+  deriveType = undefined
+  deriveContent = undefined
+
 instance GQLType a => GQLType (Maybe a) where
   type KIND (Maybe a) = WRAPPER
   __type _ = wrapper toNullable . __type (Proxy @a)
@@ -234,7 +268,7 @@ instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (Pair a b) wh
 
 -- Manual
 
-instance GQLType b => GQLType (a -> b) where
+instance (GQLType b, EncodeKind (KIND a) a, DeriveArgs GQLType GQLType (KIND a) a) => GQLType (a -> b) where
   type KIND (a -> b) = CUSTOM
   __type _ = __type $ Proxy @b
 
@@ -254,17 +288,26 @@ instance (GQLType value) => GQLType (Arg name value) where
   type KIND (Arg name value) = CUSTOM
   __type _ = __type (Proxy @value)
 
-instance (GQLType interface) => GQLType (TypeGuard interface possibleTypes) where
-  type KIND (TypeGuard interface possibleTypes) = CUSTOM
-  __type _ = __type (Proxy @interface)
+  deriveType = undefined
+  deriveContent = undefined
+
+instance (GQLType i, GQLType p) => GQLType (TypeGuard i p) where
+  type KIND (TypeGuard i p) = CUSTOM
+  __type _ = __type (Proxy @i)
+  deriveType = undefined
+  deriveContent = undefined
 
 instance (GQLType a) => GQLType (Proxy a) where
   type KIND (Proxy a) = KIND a
   __type _ = __type (Proxy @a)
+  deriveType = undefined
+  deriveContent = undefined
 
 instance (GQLType a) => GQLType (NamedResolverT m a) where
   type KIND (NamedResolverT m a) = CUSTOM
   __type _ = __type (Proxy :: Proxy a)
+  deriveType = undefined
+  deriveContent = undefined
 
 type EncodeValue a = EncodeKind (KIND a) a
 
@@ -342,11 +385,11 @@ type EncodeConstraint a =
   )
 
 -- DIRECTIVES
-type DeriveArguments a = DeriveArgs GQLType DeriveType (KIND a) a
+type DeriveArguments a = DeriveArgs GQLType GQLType (KIND a) a
 
 type DirectiveUsages = GDirectiveUsages GQLType DeriveDirective
 
-deriveArguments :: DeriveArgs GQLType DeriveType k a => f k a -> SchemaT OUT (ArgumentsDefinition CONST)
+deriveArguments :: DeriveArgs GQLType GQLType k a => f k a -> SchemaT OUT (ArgumentsDefinition CONST)
 deriveArguments = withInput . deriveArgs withDir withDeriveType
 
 class (EncodeValue a, DeriveArguments a) => DeriveDirective a
@@ -401,7 +444,7 @@ withDir =
 withKind :: f a -> KindedProxy (KIND a) a
 withKind _ = KindedProxy
 
-withDeriveType :: UseDeriveType DeriveType
+withDeriveType :: UseDeriveType GQLType
 withDeriveType =
   UseDeriveType
     { useDeriveType = deriveType,
@@ -411,14 +454,6 @@ withDeriveType =
 -- DERIVE TYPE
 
 -- |  Generates internal GraphQL Schema for query validation and introspection rendering
-class DeriveType (c :: TypeCategory) (a :: Type) where
-  deriveType :: CatType c a -> SchemaT c ()
-  deriveContent :: CatType c a -> TyContentM c
-
-instance (GQLType a, DeriveKindedType GQLType DeriveType DeriveDirective cat (KIND a) a) => DeriveType cat a where
-  deriveType = deriveKindedType withDir withDeriveType . liftKind
-  deriveContent = deriveKindedContent withDir withDeriveType . liftKind
-
 liftKind :: CatType cat a -> CatType cat (f (KIND a) a)
 liftKind InputType = InputType
 liftKind OutputType = OutputType

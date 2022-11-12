@@ -55,6 +55,6 @@ data UseDirective gql args = UseDirective
   }
 
 data UseDeriveType derive = UseDeriveType
-  { useDeriveType :: forall c a. derive c a => CatType c a -> SchemaT c (),
-    useDeriveContent :: forall c a. derive c a => CatType c a -> TyContentM c
+  { useDeriveType :: forall c a. derive a => CatType c a -> SchemaT c (),
+    useDeriveContent :: forall c a. derive a => CatType c a -> TyContentM c
   }
