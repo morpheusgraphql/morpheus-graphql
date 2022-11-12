@@ -24,9 +24,11 @@ import Data.Morpheus.Types
   ( DecodeScalar (..),
     DefaultValue (..),
     DropNamespace (..),
+    EncodeScalar (..),
     ID,
     Rename (..),
     RootResolver,
+    ScalarValue (..),
     Undefined,
     VisitType,
   )
@@ -36,6 +38,9 @@ data TestScalar = TestScalar deriving (Show)
 
 instance DecodeScalar TestScalar where
   decodeScalar _ = pure TestScalar
+
+instance EncodeScalar TestScalar where
+  encodeScalar _ = String "TestScalar"
 
 importGQLDocumentWithNamespace "test/Rendering/schema.gql"
 

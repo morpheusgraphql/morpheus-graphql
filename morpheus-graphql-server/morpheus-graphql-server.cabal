@@ -319,6 +319,7 @@ library
       Data.Morpheus.Server.Deriving.Named.EncodeType
       Data.Morpheus.Server.Deriving.Named.EncodeValue
       Data.Morpheus.Server.Deriving.Schema
+      Data.Morpheus.Server.Deriving.Schema.DeriveKinded
       Data.Morpheus.Server.Deriving.Schema.Directive
       Data.Morpheus.Server.Deriving.Schema.Enum
       Data.Morpheus.Server.Deriving.Schema.Internal
@@ -332,6 +333,7 @@ library
       Data.Morpheus.Server.Deriving.Utils.Kinded
       Data.Morpheus.Server.Deriving.Utils.Proxy
       Data.Morpheus.Server.Deriving.Utils.Types
+      Data.Morpheus.Server.Deriving.Utils.Use
       Data.Morpheus.Server.NamedResolvers
       Data.Morpheus.Server.Playground
       Data.Morpheus.Server.Types.DirectiveDefinitions

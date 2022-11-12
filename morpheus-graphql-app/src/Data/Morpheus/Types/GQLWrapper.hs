@@ -140,3 +140,6 @@ class EncodeWrapperValue (f :: Type -> Type) where
 
 instance EncodeWrapperValue Maybe where
   encodeWrapperValue = maybe (pure Null)
+
+instance EncodeWrapperValue [] where
+  encodeWrapperValue f xs = List <$> traverse f xs

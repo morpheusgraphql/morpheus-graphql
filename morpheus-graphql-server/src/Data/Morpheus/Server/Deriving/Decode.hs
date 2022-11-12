@@ -45,13 +45,12 @@ import Data.Morpheus.Server.Deriving.Utils.Decode
     withScalar,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
-  ( KindedProxy (..),
+  ( CatType (..),
   )
 import Data.Morpheus.Server.Types.GQLType
-  ( GQLType
-      ( KIND
-      ),
+  ( GQLType (..),
     deriveTypename,
+    withDir,
   )
 import Data.Morpheus.Server.Types.Kind
   ( CUSTOM,
@@ -72,7 +71,6 @@ import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
     Arguments,
     IN,
-    LEAF,
     Object,
     ObjectEntry (..),
     TypeName,
@@ -104,24 +102,18 @@ class DecodeKind (kind :: DerivingKind) a where
 
 -- SCALAR
 instance (DecodeScalar a, GQLType a) => DecodeKind SCALAR a where
-  decodeKind _ = withScalar (deriveTypename (KindedProxy :: KindedProxy LEAF a)) decodeScalar
+  decodeKind _ = withScalar (deriveTypename (InputType :: CatType IN a)) decodeScalar
 
 -- INPUT_OBJECT and  INPUT_UNION
-instance
-  ( Generic a,
-    GQLType a,
-    DecodeRep (Rep a)
-  ) =>
-  DecodeKind TYPE a
-  where
+instance (Generic a, GQLType a, DecodeRep (Rep a)) => DecodeKind TYPE a where
   decodeKind _ = fmap to . (`runReaderT` context) . decodeRep
     where
       context =
         Context
           { isVariantRef = False,
-            typeName = deriveTypename (KindedProxy :: KindedProxy IN a),
-            enumVisitor = visitEnumName proxy,
-            fieldVisitor = visitFieldName proxy
+            typeName = deriveTypename (InputType :: CatType IN a),
+            enumVisitor = visitEnumName withDir proxy,
+            fieldVisitor = visitFieldName withDir proxy
           }
         where
           proxy = Proxy @a

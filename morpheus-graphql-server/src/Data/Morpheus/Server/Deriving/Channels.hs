@@ -42,8 +42,8 @@ import Data.Morpheus.Server.Deriving.Utils.DeriveGType
     DeriveWith,
     deriveValue,
   )
-import Data.Morpheus.Server.Deriving.Utils.Kinded (KindedProxy (..), kinded)
-import Data.Morpheus.Server.Types.GQLType (GQLType, deriveTypename, __typeData)
+import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (..), outputType)
+import Data.Morpheus.Server.Types.GQLType (GQLType, deriveTypename, withDir, __typeData)
 import Data.Morpheus.Server.Types.Types (Undefined)
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
@@ -132,23 +132,19 @@ type family IsUndefined a :: Bool where
 class ExploreChannels (t :: Bool) e a where
   exploreChannels :: f t -> a -> HashMap FieldName (ChannelRes e)
 
-class (GQLType a, GetChannel e a) => ChannelConstraint e a
-
-instance (GetChannel e a, GQLType a) => ChannelConstraint e a
-
-instance (GQLType a, Generic a, DeriveWith (ChannelConstraint e) (ChannelRes e) (Rep a)) => ExploreChannels 'False e a where
+instance (GQLType a, Generic a, DeriveWith GQLType (GetChannel e) (ChannelRes e) (Rep a)) => ExploreChannels 'False e a where
   exploreChannels _ =
     HM.fromList
-      . map (toFieldRes (Proxy @a))
+      . map (toFieldRes withDir (Proxy @a))
       . consFields
       . tyCons
       . deriveValue
         ( DeriveValueOptions
             { __valueApply = getChannel,
-              __valueTypeName = deriveTypename (KindedProxy :: KindedProxy OUT a),
-              __valueGetType = __typeData . kinded (Proxy @OUT)
+              __valueTypeName = deriveTypename (OutputType :: CatType OUT a),
+              __valueGetType = __typeData . outputType
             } ::
-            DeriveValueOptions OUT (ChannelConstraint e) (ChannelRes e)
+            DeriveValueOptions OUT GQLType (GetChannel e) (ChannelRes e)
         )
 
 instance ExploreChannels 'True e (Undefined m) where

@@ -32,7 +32,7 @@ import Data.Morpheus.Internal.Utils
   ( selectOr,
   )
 import Data.Morpheus.Server.Deriving.Utils (conNameProxy)
-import Data.Morpheus.Server.Deriving.Utils.Kinded (KindedProxy (..))
+import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (..))
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType,
     deriveTypename,
@@ -183,7 +183,7 @@ instance (DescribeFields f, DescribeFields g) => DescribeFields (f :*: g) where
   countFields _ = countFields (Proxy @f) + countFields (Proxy @g)
 
 instance (Selector s, GQLType a) => DescribeFields (M1 S s (K1 i a)) where
-  refType _ = Just $ deriveTypename (KindedProxy :: KindedProxy IN a)
+  refType _ = Just $ deriveTypename (InputType :: CatType IN a)
   countFields _ = 1
 
 instance DescribeFields U1 where

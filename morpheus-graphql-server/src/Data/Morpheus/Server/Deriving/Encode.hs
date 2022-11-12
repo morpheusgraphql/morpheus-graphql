@@ -57,7 +57,10 @@ import Data.Morpheus.Server.Deriving.Utils.DeriveGType
     DeriveWith,
     deriveValue,
   )
-import Data.Morpheus.Server.Deriving.Utils.Kinded (KindedProxy (KindedProxy), kinded)
+import Data.Morpheus.Server.Deriving.Utils.Kinded
+  ( CatType (..),
+    inputType,
+  )
 import Data.Morpheus.Server.Resolvers
   ( RootResolver (..),
   )
@@ -65,6 +68,7 @@ import Data.Morpheus.Server.Types.GQLType
   ( GQLType,
     KIND,
     deriveTypename,
+    withDir,
     __isEmptyType,
     __typeData,
   )
@@ -184,19 +188,16 @@ convertNode
       encodeTypeFields ::
         [FieldRep (m (ResolverValue m))] ->
         ResolverValue m
-      encodeTypeFields [] = mkEnum (visitEnumName proxy consName)
+      encodeTypeFields [] = mkEnum (visitEnumName withDir proxy consName)
       encodeTypeFields fields
-        | not tyIsUnion = mkObject dataTypeName (toFieldRes proxy <$> fields)
+        | not tyIsUnion = mkObject dataTypeName (toFieldRes withDir proxy <$> fields)
       -- Type References --------------------------------------------------------------
       encodeTypeFields [FieldRep {fieldTypeRef, fieldValue}]
         | isUnionRef dataTypeName cons = ResLazy (ResObject (Just (typeConName fieldTypeRef)) <$> (fieldValue >>= requireObject))
       -- Inline Union Types ----------------------------------------------------------------------------
-      encodeTypeFields fields = mkUnion consName (toFieldRes proxy <$> fields)
+      encodeTypeFields fields = mkUnion consName (toFieldRes withDir proxy <$> fields)
 
 -- Types & Constrains -------------------------------------------------------
-class (Encode m a, GQLType a) => ExplorerConstraint m a
-
-instance (Encode m a, GQLType a) => ExplorerConstraint m a
 
 exploreResolvers ::
   forall m a.
@@ -210,10 +211,10 @@ exploreResolvers =
     . deriveValue
       ( DeriveValueOptions
           { __valueApply = encode,
-            __valueTypeName = deriveTypename (KindedProxy :: KindedProxy IN a),
-            __valueGetType = __typeData . kinded (Proxy @IN)
+            __valueTypeName = deriveTypename (InputType :: CatType IN a),
+            __valueGetType = __typeData . inputType
           } ::
-          DeriveValueOptions IN (ExplorerConstraint m) (m (ResolverValue m))
+          DeriveValueOptions IN GQLType (Encode m) (m (ResolverValue m))
       )
 
 ----- HELPERS ----------------------------
@@ -228,7 +229,7 @@ objectResolvers value = requireObject (exploreResolvers value)
 type EncodeConstraint (m :: Type -> Type) a =
   ( GQLType a,
     Generic a,
-    DeriveWith (ExplorerConstraint m) (m (ResolverValue m)) (Rep a)
+    DeriveWith GQLType (Encode m) (m (ResolverValue m)) (Rep a)
   )
 
 type EncodeObjectConstraint (o :: OperationType) e (m :: Type -> Type) a =

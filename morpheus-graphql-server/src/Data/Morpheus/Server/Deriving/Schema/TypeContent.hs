@@ -1,24 +1,29 @@
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Data.Morpheus.Server.Deriving.Schema.TypeContent
   ( buildTypeContent,
     insertTypeContent,
     deriveTypeContentWith,
+    deriveFieldsWith,
   )
 where
 
-import Data.Morpheus.Server.Deriving.Schema.Directive (deriveTypeDirectives, visitTypeDescription)
+import Data.Morpheus.Server.Deriving.Schema.Directive (UseDirective (..), deriveTypeDirectives, visitTypeDescription)
 import Data.Morpheus.Server.Deriving.Schema.Enum
   ( buildEnumTypeContent,
   )
 import Data.Morpheus.Server.Deriving.Schema.Internal
-  ( KindedType (..),
+  ( CatType,
     TyContent,
   )
 import Data.Morpheus.Server.Deriving.Schema.Object
   ( buildObjectTypeContent,
+    withObject,
   )
 import Data.Morpheus.Server.Deriving.Schema.Union (buildUnionTypeContent)
 import Data.Morpheus.Server.Deriving.Utils
@@ -29,13 +34,9 @@ import Data.Morpheus.Server.Deriving.Utils
     isEmptyConstraint,
     unpackMonad,
   )
-import Data.Morpheus.Server.Deriving.Utils.Kinded
-  ( CategoryValue (..),
-  )
-import Data.Morpheus.Server.Types.GQLType
-  ( GQLType (..),
-    deriveFingerprint,
-    deriveTypename,
+import Data.Morpheus.Server.Deriving.Utils.Kinded (typeCat)
+import Data.Morpheus.Server.Deriving.Utils.Use
+  ( UseGQLType (..),
   )
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
@@ -45,45 +46,59 @@ import Data.Morpheus.Types.Internal.AST
 import GHC.Generics (Rep)
 
 buildTypeContent ::
-  (GQLType a, CategoryValue kind) =>
-  KindedType kind a ->
+  (gql a) =>
+  UseDirective gql args ->
+  CatType kind a ->
   [ConsRep (TyContent kind)] ->
   SchemaT kind (TypeContent TRUE kind CONST)
-buildTypeContent scope cons | all isEmptyConstraint cons = buildEnumTypeContent scope (consName <$> cons)
-buildTypeContent scope [ConsRep {consFields}] = buildObjectTypeContent scope consFields
-buildTypeContent scope cons = buildUnionTypeContent scope cons
+buildTypeContent options scope cons | all isEmptyConstraint cons = buildEnumTypeContent options scope (consName <$> cons)
+buildTypeContent options scope [ConsRep {consFields}] = buildObjectTypeContent options scope consFields
+buildTypeContent options scope cons = buildUnionTypeContent (dirGQL options) scope cons
 
 insertTypeContent ::
-  (GQLType a, CategoryValue kind) =>
-  (f kind a -> SchemaT c (TypeContent TRUE kind CONST)) ->
-  f kind a ->
-  SchemaT c ()
-insertTypeContent f proxy =
+  forall k gql args a.
+  (gql a) =>
+  UseDirective gql args ->
+  (CatType k a -> SchemaT k (TypeContent TRUE k CONST)) ->
+  CatType k a ->
+  SchemaT k ()
+insertTypeContent options@UseDirective {dirGQL = UseGQLType {..}} f proxy =
   updateSchema
-    (deriveFingerprint proxy)
+    (__useFingerprint category proxy)
     deriveD
     proxy
   where
+    category = typeCat proxy
     deriveD x = do
       content <- f x
-      dirs <- deriveTypeDirectives proxy
+      dirs <- deriveTypeDirectives options proxy
       pure $
         TypeDefinition
-          (visitTypeDescription proxy Nothing)
-          (deriveTypename proxy)
+          (visitTypeDescription options proxy Nothing)
+          (__useTypename category proxy)
           dirs
           content
 
 deriveTypeContentWith ::
-  ( CategoryValue kind,
-    DeriveWith c (SchemaT kind (TyContent kind)) (Rep a),
-    GQLType a
+  ( DeriveWith gql derive (SchemaT kind (TyContent kind)) (Rep a),
+    gql a
   ) =>
-  DeriveTypeOptions kind c (SchemaT kind (TyContent kind)) ->
-  KindedType kind a ->
+  UseDirective gql args ->
+  DeriveTypeOptions kind gql derive (SchemaT kind (TyContent kind)) ->
+  CatType kind a ->
   SchemaT kind (TypeContent TRUE kind CONST)
-deriveTypeContentWith x kindedProxy =
+deriveTypeContentWith options x kindedProxy =
   unpackMonad
     ( deriveTypeWith x kindedProxy
     )
-    >>= buildTypeContent kindedProxy
+    >>= buildTypeContent options kindedProxy
+
+deriveFieldsWith ::
+  ( gql a,
+    DeriveWith gql derive (SchemaT cat (TyContent cat)) (Rep a)
+  ) =>
+  UseDirective gql args ->
+  DeriveTypeOptions cat gql derive (SchemaT cat (TyContent cat)) ->
+  CatType cat a ->
+  SchemaT cat (FieldsDefinition cat CONST)
+deriveFieldsWith dirs cont kindedType = deriveTypeContentWith dirs cont kindedType >>= withObject (dirGQL dirs) kindedType

@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RecordWildCards #-}
 
@@ -8,15 +9,13 @@ module Data.Morpheus.Server.Deriving.Schema.Enum
 where
 
 import Data.Morpheus.Server.Deriving.Schema.Directive
-  ( deriveEnumDirectives,
+  ( UseDirective,
+    deriveEnumDirectives,
     visitEnumName,
     visitEnumValueDescription,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
-  ( KindedType (..),
-  )
-import Data.Morpheus.Server.Types.GQLType
-  ( GQLType,
+  ( CatType (..),
   )
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
@@ -35,17 +34,17 @@ import Data.Morpheus.Types.Internal.AST
     unitTypeName,
   )
 
-buildEnumTypeContent :: GQLType a => KindedType kind a -> [TypeName] -> SchemaT c (TypeContent TRUE kind CONST)
-buildEnumTypeContent p@InputType enumCons = DataEnum <$> traverse (mkEnumValue p) enumCons
-buildEnumTypeContent p@OutputType enumCons = DataEnum <$> traverse (mkEnumValue p) enumCons
+buildEnumTypeContent :: gql a => UseDirective gql args -> CatType kind a -> [TypeName] -> SchemaT k (TypeContent TRUE kind CONST)
+buildEnumTypeContent options p@InputType enumCons = DataEnum <$> traverse (mkEnumValue options p) enumCons
+buildEnumTypeContent options p@OutputType enumCons = DataEnum <$> traverse (mkEnumValue options p) enumCons
 
-mkEnumValue :: GQLType a => f a -> TypeName -> SchemaT c (DataEnumValue CONST)
-mkEnumValue proxy enumName = do
-  enumDirectives <- deriveEnumDirectives proxy enumName
+mkEnumValue :: gql a => UseDirective gql args -> f a -> TypeName -> SchemaT k (DataEnumValue CONST)
+mkEnumValue options proxy enumName = do
+  enumDirectives <- deriveEnumDirectives options proxy enumName
   pure
     DataEnumValue
-      { enumName = visitEnumName proxy enumName,
-        enumDescription = visitEnumValueDescription proxy enumName Nothing,
+      { enumName = visitEnumName options proxy enumName,
+        enumDescription = visitEnumValueDescription options proxy enumName Nothing,
         ..
       }
 
