@@ -31,9 +31,14 @@ _stack.yml_
 resolver: lts-16.2
 
 extra-deps:
-  - morpheus-graphql-0.19.0
-  - morpheus-graphql-app-0.19.0
-  - morpheus-graphql-core-0.19.0
+- morpheus-graphql-0.26.0
+- morpheus-graphql-core-0.26.0
+- morpheus-graphql-app-0.26.0
+- morpheus-graphql-code-gen-0.26.0
+- morpheus-graphql-server-0.26.0
+- morpheus-graphql-client-0.26.0
+- morpheus-graphql-subscriptions-0.26.0
+- morpheus-graphql-code-gen-utils-0.26.0
 ```
 
 ### Building your first GraphQL API
