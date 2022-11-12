@@ -7,6 +7,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -142,6 +143,29 @@ list = flip TypeList True
 wrapper :: (TypeWrapper -> TypeWrapper) -> TypeData -> TypeData
 wrapper f TypeData {..} = TypeData {gqlWrappers = f gqlWrappers, ..}
 
+type Lifted a = (PARAM (KIND a) a)
+
+lifted :: CatType cat a -> CatType cat (f (KIND a) (Lifted a))
+lifted InputType = InputType
+lifted OutputType = OutputType
+
+-- lifts monadic object types with specific monad
+type family PARAM k a where
+  PARAM TYPE (t m) = t (Resolver QUERY () Maybe)
+  PARAM k a = a
+
+type DERIVE c a = (DeriveKindedType GQLType GQLType DeriveDirective c (KIND a) (Lifted a))
+
+type DERIVE_WITH c a = (DeriveWith GQLType GQLType (TyContentM c) (Rep a))
+
+deriveOutputType :: (GQLType a, DERIVE OUT a) => CatType c a -> SchemaT c ()
+deriveOutputType x@OutputType = deriveKindedType withDir withDeriveType (lifted x)
+deriveOutputType InputType = throwError (internal "TODO:")
+
+deriveOutputContent :: (GQLType a, DERIVE OUT a) => CatType c a -> TyContentM c
+deriveOutputContent x@OutputType = deriveKindedContent withDir withDeriveType (lifted x)
+deriveOutputContent InputType = throwError (internal "TODO:")
+
 -- | GraphQL type, every graphQL type should have an instance of 'GHC.Generics.Generic' and 'GQLType'.
 --
 --  @
@@ -171,33 +195,11 @@ class GQLType a where
 
   deriveContent :: CatType c a -> TyContentM c
 
-  default deriveType :: DeriveKindedType GQLType GQLType DeriveDirective c (KIND a) (Lifted a) => CatType c a -> SchemaT c ()
+  default deriveType :: DERIVE c a => CatType c a -> SchemaT c ()
   deriveType = deriveKindedType withDir withDeriveType . lifted
 
-  default deriveContent :: DeriveKindedType GQLType GQLType DeriveDirective c (KIND a) (Lifted a) => CatType c a -> TyContentM c
+  default deriveContent :: DERIVE c a => CatType c a -> TyContentM c
   deriveContent = deriveKindedContent withDir withDeriveType . lifted
-
-type Lifted a = (PARAM (KIND a) a)
-
-lifted :: CatType cat a -> CatType cat (f (KIND a) (Lifted a))
-lifted InputType = InputType
-lifted OutputType = OutputType
-
--- lifts monadic object types with specific monad
-type family PARAM k a where
-  PARAM TYPE (t m) = t (Resolver QUERY () Maybe)
-  PARAM k a = a
-
-data Deity (m :: Type -> Type) = Deity
-  { name :: m Text,
-    age :: Int
-  }
-  deriving (Generic, GQLType)
-
-newtype Query (m :: Type -> Type) = Query
-  { deity :: m (Deity m)
-  }
-  deriving (Generic, GQLType)
 
 instance GQLType Int where
   type KIND Int = SCALAR
@@ -234,9 +236,8 @@ instance GQLType () where
 instance Typeable m => GQLType (Undefined m) where
   type KIND (Undefined m) = CUSTOM
   __type _ = mkTypeData __typenameUndefined
-
-  deriveType = undefined
-  deriveContent = undefined
+  deriveType _ = pure ()
+  deriveContent _ = pure Nothing
 
 instance GQLType a => GQLType (Maybe a) where
   type KIND (Maybe a) = WRAPPER
@@ -287,16 +288,17 @@ instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (a, b) where
   __type _ = __type $ Proxy @(Pair a b)
   directives _ = typeDirective InputTypeNamespace {inputTypeNamespace = "Input"}
 
-instance (GQLType value) => GQLType (Arg name value) where
+instance (DERIVE OUT (Arg name value), GQLType value) => GQLType (Arg name value) where
   type KIND (Arg name value) = CUSTOM
   __type _ = __type (Proxy @value)
+  deriveType = deriveOutputType
+  deriveContent = deriveOutputContent
 
-  deriveType = undefined
-  deriveContent = undefined
-
-instance (GQLType i, GQLType p) => GQLType (TypeGuard i p) where
-  type KIND (TypeGuard i p) = CUSTOM
+instance (GQLType i, DERIVE_WITH OUT i, GQLType u, DERIVE_WITH OUT u) => GQLType (TypeGuard i u) where
+  type KIND (TypeGuard i u) = CUSTOM
   __type _ = __type (Proxy @i)
+  deriveType = deriveOutputType
+  deriveContent = deriveOutputContent
 
 instance (GQLType a) => GQLType (NamedResolverT m a) where
   type KIND (NamedResolverT m a) = CUSTOM
