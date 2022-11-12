@@ -64,6 +64,7 @@ import Data.Morpheus.Server.Types.GQLType
   ( GQLType (__type),
     KIND,
     deriveTypename,
+    withDir,
     __typeData,
   )
 import Data.Morpheus.Server.Types.Internal
@@ -104,7 +105,7 @@ encodeResolverValue x = traverse encodeNode x
 type FieldConstraint m a =
   ( GQLType a,
     Generic a,
-    DeriveWith (GValueMapConstraint m) (m (ResolverValue m)) (Rep a)
+    DeriveWith GQLType (Encode m) (m (ResolverValue m)) (Rep a)
   )
 
 class Encode (m :: Type -> Type) res where
@@ -164,19 +165,15 @@ instance
       >>= liftResolverState . decodeArguments
       >>= encodeField . f
 
-class (Encode m a, GQLType a) => GValueMapConstraint m a
-
-instance (Encode m a, GQLType a) => GValueMapConstraint m a
-
 getFieldValues :: forall m a. FieldConstraint m a => a -> DataType (m (ResolverValue m))
 getFieldValues =
   deriveValue
     ( DeriveValueOptions
         { __valueApply = encodeField,
-          __valueTypeName = deriveTypename (KindedProxy :: KindedProxy OUT a),
-          __valueGetType = __typeData . kinded (Proxy @OUT)
+          __valueTypeName = deriveTypename (OutputType :: CatType OUT a),
+          __valueGetType = __typeData . outputType
         } ::
-        DeriveValueOptions OUT (GValueMapConstraint m) (m (ResolverValue m))
+        DeriveValueOptions OUT GQLType (Encode m) (m (ResolverValue m))
     )
 
 convertNamedNode ::
@@ -196,7 +193,7 @@ convertNamedNode
         pure $
           NamedObjectResolver
             ObjectTypeResolver
-              { objectFields = HM.fromList (toFieldRes proxy <$> consFields)
+              { objectFields = HM.fromList (toFieldRes withDir proxy <$> consFields)
               }
 
 deriveUnion :: (MonadError GQLError m) => [FieldRep (m (ResolverValue m))] -> m (NamedResolverResult m)

@@ -19,7 +19,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.Schema.Internal
-  ( KindedType (..),
+  ( CatType (..),
     TyContentM,
     TyContent,
     fromSchema,
@@ -33,7 +33,7 @@ import Data.Morpheus.Internal.Ext
     Result (Failure, Success, errors),
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
-  ( KindedType (..),
+  ( CatType (..),
   )
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,

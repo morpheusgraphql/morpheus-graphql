@@ -16,19 +16,26 @@ module Data.Morpheus.Server.Types.Directives
   ( GQLDirective (..),
     ToLocations (..),
     getLocations,
-    -- visitors
-    visitEnumDescription',
-    visitEnumName',
-    visitEnumNames',
-    visitFieldDefaultValue',
-    visitFieldDescription',
-    visitFieldName',
-    visitFieldNames',
-    visitTypeDescription',
-    visitTypeName',
+    GDirectiveUsage (..),
+    GDirectiveUsages (..),
+    applyTypeName,
+    applyTypeDescription,
+    applyEnumName,
+    applyEnumDescription,
+    applyFieldName,
+    applyFieldDescription,
+    applyFieldDefaultValue,
+    applyTypeFieldNames,
+    applyTypeEnumNames,
+    typeDirective,
+    fieldDirective,
+    fieldDirective',
+    enumDirective,
+    enumDirective',
   )
 where
 
+import qualified Data.HashMap.Strict as M
 import Data.Morpheus.Server.Types.TypeName (getTypename)
 import qualified Data.Morpheus.Server.Types.Visitors as Visitors
 import Data.Morpheus.Types.Internal.AST
@@ -43,6 +50,7 @@ import Data.Morpheus.Types.Internal.AST
     packName,
     unpackName,
   )
+import qualified Language.Haskell.TH as TH
 import Relude
 
 type family OR (a :: Bool) (b :: Bool) where
@@ -123,7 +131,8 @@ __directiveName :: GQLDirective a => f a -> FieldName
 __directiveName = coerce . getTypename
 
 class
-  ( Typeable a,
+  ( ToLocations (DIRECTIVE_LOCATIONS a),
+    Typeable a,
     WITH_VISITOR a VISIT_TYPE TYPE_VISITOR_KIND,
     WITH_VISITOR a VISIT_FIELD FIELD_VISITOR_KIND,
     WITH_VISITOR a VISIT_ENUM ENUM_VISITOR_KIND
@@ -211,3 +220,72 @@ instance VISIT_ENUM a FALSE where
 instance Visitors.VisitEnum a => VISIT_ENUM a TRUE where
   __visitEnumName _ x name = packName $ Visitors.visitEnumName x (unpackName name)
   __visitEnumDescription _ = Visitors.visitEnumDescription
+
+data GDirectiveUsage (gql :: Type -> Constraint) (args :: Type -> Constraint) where
+  GDirectiveUsage :: (GQLDirective a, gql a, args a) => a -> GDirectiveUsage gql args
+
+-- apply
+
+applyTypeName :: GDirectiveUsage gql args -> Bool -> TypeName -> TypeName
+applyTypeName (GDirectiveUsage x) = visitTypeName' x
+
+applyTypeFieldNames :: GDirectiveUsage gql args -> FieldName -> FieldName
+applyTypeFieldNames (GDirectiveUsage x) = visitFieldNames' x
+
+applyTypeEnumNames :: GDirectiveUsage gql args -> TypeName -> TypeName
+applyTypeEnumNames (GDirectiveUsage x) = visitEnumNames' x
+
+applyEnumDescription :: GDirectiveUsage gql args -> Maybe Description -> Maybe Description
+applyEnumDescription (GDirectiveUsage x) = visitEnumDescription' x
+
+applyEnumName :: GDirectiveUsage gql args -> TypeName -> TypeName
+applyEnumName (GDirectiveUsage x) = visitEnumName' x
+
+applyFieldName :: GDirectiveUsage gql args -> FieldName -> FieldName
+applyFieldName (GDirectiveUsage x) = visitFieldName' x
+
+applyFieldDescription :: GDirectiveUsage gql args -> Maybe Description -> Maybe Description
+applyFieldDescription (GDirectiveUsage x) = visitFieldDescription' x
+
+applyFieldDefaultValue :: GDirectiveUsage gql args -> Maybe (Value CONST) -> Maybe (Value CONST)
+applyFieldDefaultValue (GDirectiveUsage x) = visitFieldDefaultValue' x
+
+applyTypeDescription :: GDirectiveUsage gql args -> Maybe Description -> Maybe Description
+applyTypeDescription (GDirectiveUsage x) = visitTypeDescription' x
+
+data GDirectiveUsages gql args = GDirectiveUsages
+  { typeDirectives :: [GDirectiveUsage gql args],
+    fieldDirectives :: M.HashMap FieldName [GDirectiveUsage gql args],
+    enumValueDirectives :: M.HashMap TypeName [GDirectiveUsage gql args]
+  }
+
+instance Monoid (GDirectiveUsages gql args) where
+  mempty = GDirectiveUsages mempty mempty mempty
+
+instance Semigroup (GDirectiveUsages gql args) where
+  GDirectiveUsages td1 fd1 ed1 <> GDirectiveUsages td2 fd2 ed2 =
+    GDirectiveUsages (td1 <> td2) (mergeDirs fd1 fd2) (mergeDirs ed1 ed2)
+
+mergeDirs :: (Eq k, Hashable k, Semigroup v) => HashMap k v -> HashMap k v -> HashMap k v
+mergeDirs a b = update a (M.toList b)
+  where
+    update m [] = m
+    update m (x : xs) = update (upsert x m) xs
+
+upsert :: (Eq k, Hashable k, Semigroup v) => (k, v) -> HashMap k v -> HashMap k v
+upsert (k, v) = M.alter (Just . maybe v (v <>)) k
+
+typeDirective :: (GQLDirective a, gql a, args a) => a -> GDirectiveUsages gql args
+typeDirective x = GDirectiveUsages [GDirectiveUsage x] mempty mempty
+
+fieldDirective :: (GQLDirective a, gql a, args a) => FieldName -> a -> GDirectiveUsages gql args
+fieldDirective name x = GDirectiveUsages mempty (M.singleton name [GDirectiveUsage x]) mempty
+
+fieldDirective' :: (GQLDirective a, gql a, args a) => TH.Name -> a -> GDirectiveUsages gql args
+fieldDirective' name = fieldDirective (packName name)
+
+enumDirective :: (GQLDirective a, gql a, args a) => TypeName -> a -> GDirectiveUsages gql args
+enumDirective name x = GDirectiveUsages mempty mempty (M.singleton name [GDirectiveUsage x])
+
+enumDirective' :: (GQLDirective a, gql a, args a) => TH.Name -> a -> GDirectiveUsages gql args
+enumDirective' name = enumDirective (packName name)

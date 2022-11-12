@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE GADTs #-}
 
 module Data.Morpheus.Server.Deriving.Schema.Union
@@ -20,10 +21,9 @@ import Data.Morpheus.Server.Deriving.Utils
     isUnionRef,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
-  ( CategoryValue,
-    KindedType (..),
+  ( CatType (..),
   )
-import Data.Morpheus.Server.Types.GQLType (GQLType, deriveTypename)
+import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (..), useTypename)
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
   )
@@ -41,20 +41,18 @@ import Data.Morpheus.Types.Internal.AST
 import Relude
 
 buildUnionTypeContent ::
-  ( GQLType a,
-    CategoryValue kind
-  ) =>
-  KindedType kind a ->
+  (gql a) =>
+  UseGQLType gql ->
+  CatType kind a ->
   [ConsRep (Maybe (FieldContent TRUE kind CONST))] ->
-  SchemaT c (TypeContent TRUE kind CONST)
-buildUnionTypeContent scope cons = mkUnionType scope unionRef unionCons
+  SchemaT k (TypeContent TRUE kind CONST)
+buildUnionTypeContent gql scope cons = mkUnionType scope unionRef unionCons
   where
     unionRef = fieldTypeName <$> concatMap consFields unionRefRep
-    (unionRefRep, unionCons) = partition (isUnionRef (deriveTypename scope)) cons
+    (unionRefRep, unionCons) = partition (isUnionRef (useTypename gql scope)) cons
 
 mkUnionType ::
-  GQLType a =>
-  KindedType kind a ->
+  CatType kind a ->
   [TypeName] ->
   [ConsRep (Maybe (FieldContent TRUE kind CONST))] ->
   SchemaT c (TypeContent TRUE kind CONST)
@@ -76,7 +74,7 @@ mkUnionType p@OutputType unionRef unionCons =
   DataUnion <$> (buildUnions p unionCons >>= fromElems . map mkUnionMember . (unionRef <>))
 
 buildUnions ::
-  KindedType kind a ->
+  CatType kind a ->
   [ConsRep (Maybe (FieldContent TRUE kind CONST))] ->
   SchemaT c [TypeName]
 buildUnions proxy cons =

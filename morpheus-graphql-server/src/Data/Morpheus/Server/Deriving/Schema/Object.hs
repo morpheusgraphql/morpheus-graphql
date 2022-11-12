@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
@@ -20,7 +21,8 @@ import Data.Morpheus.Internal.Utils
     singleton,
   )
 import Data.Morpheus.Server.Deriving.Schema.Directive
-  ( deriveFieldDirectives,
+  ( UseDirective,
+    deriveFieldDirectives,
     visitFieldContent,
     visitFieldDescription,
     visitFieldName,
@@ -31,14 +33,10 @@ import Data.Morpheus.Server.Deriving.Utils
     FieldRep (..),
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
-  ( CategoryValue (..),
-    KindedType (..),
+  ( CatType (..),
     outputType,
   )
-import Data.Morpheus.Server.Types.GQLType
-  ( GQLType,
-    deriveTypename,
-  )
+import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType, useTypename)
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
     insertType,
@@ -51,7 +49,6 @@ import Data.Morpheus.Types.Internal.AST
     OBJECT,
     OUT,
     TRUE,
-    TypeCategory,
     TypeContent (..),
     TypeDefinition,
     mkField,
@@ -65,7 +62,7 @@ import Data.Morpheus.Types.Internal.AST
 import Relude hiding (empty)
 
 defineObjectType ::
-  KindedType kind a ->
+  CatType kind a ->
   ConsRep (Maybe (FieldContent TRUE kind CONST)) ->
   SchemaT cat ()
 defineObjectType proxy ConsRep {consName, consFields} = insertType . mkType consName . mkObjectTypeContent proxy =<< fields
@@ -78,12 +75,13 @@ mkFieldUnit :: FieldDefinition cat s
 mkFieldUnit = mkField Nothing unitFieldName (mkTypeRef unitTypeName)
 
 buildObjectTypeContent ::
-  GQLType a =>
-  KindedType cat a ->
+  gql a =>
+  UseDirective gql args ->
+  CatType cat a ->
   [FieldRep (Maybe (FieldContent TRUE cat CONST))] ->
-  SchemaT c (TypeContent TRUE cat CONST)
-buildObjectTypeContent scope consFields = do
-  xs <- traverse (setGQLTypeProps scope . repToFieldDefinition) consFields
+  SchemaT k (TypeContent TRUE cat CONST)
+buildObjectTypeContent options scope consFields = do
+  xs <- traverse (setGQLTypeProps options scope . repToFieldDefinition) consFields
   pure $ mkObjectTypeContent scope $ unsafeFromFields xs
 
 repToFieldDefinition ::
@@ -103,36 +101,37 @@ repToFieldDefinition
       }
 
 asObjectType ::
-  (GQLType a) =>
+  (gql a) =>
+  UseGQLType gql ->
   (f a -> SchemaT kind (FieldsDefinition OUT CONST)) ->
   f a ->
   SchemaT kind (TypeDefinition OBJECT CONST)
-asObjectType f proxy =
+asObjectType gql f proxy =
   mkType
-    (deriveTypename (outputType proxy))
+    (useTypename gql (outputType proxy))
     . DataObject []
     <$> f proxy
 
-withObject :: (GQLType a, CategoryValue c) => KindedType c a -> TypeContent TRUE any s -> SchemaT c (FieldsDefinition c s)
-withObject InputType DataInputObject {inputObjectFields} = pure inputObjectFields
-withObject OutputType DataObject {objectFields} = pure objectFields
-withObject x _ = failureOnlyObject x
+withObject :: (gql a) => UseGQLType gql -> CatType c a -> TypeContent TRUE any s -> SchemaT c (FieldsDefinition c s)
+withObject _ InputType DataInputObject {inputObjectFields} = pure inputObjectFields
+withObject _ OutputType DataObject {objectFields} = pure objectFields
+withObject gql x _ = failureOnlyObject gql x
 
-failureOnlyObject :: forall (c :: TypeCategory) a b. (GQLType a, CategoryValue c) => KindedType c a -> SchemaT c b
-failureOnlyObject proxy = throwError $ msg (deriveTypename proxy) <> " should have only one nonempty constructor"
+failureOnlyObject :: (gql a) => UseGQLType gql -> CatType c a -> SchemaT c b
+failureOnlyObject gql proxy = throwError $ msg (useTypename gql proxy) <> " should have only one nonempty constructor"
 
-mkObjectTypeContent :: KindedType kind a -> FieldsDefinition kind CONST -> TypeContent TRUE kind CONST
+mkObjectTypeContent :: CatType kind a -> FieldsDefinition kind CONST -> TypeContent TRUE kind CONST
 mkObjectTypeContent InputType = DataInputObject
 mkObjectTypeContent OutputType = DataObject []
 
-setGQLTypeProps :: GQLType a => KindedType kind a -> FieldDefinition kind CONST -> SchemaT c (FieldDefinition kind CONST)
-setGQLTypeProps proxy FieldDefinition {..} = do
-  dirs <- deriveFieldDirectives proxy fieldName
+setGQLTypeProps :: gql a => UseDirective gql args -> CatType kind a -> FieldDefinition kind CONST -> SchemaT k (FieldDefinition kind CONST)
+setGQLTypeProps options proxy FieldDefinition {..} = do
+  dirs <- deriveFieldDirectives options proxy fieldName
   pure
     FieldDefinition
-      { fieldName = visitFieldName proxy fieldName,
-        fieldDescription = visitFieldDescription proxy fieldName Nothing,
-        fieldContent = visitFieldContent proxy fieldName fieldContent,
+      { fieldName = visitFieldName options proxy fieldName,
+        fieldDescription = visitFieldDescription options proxy fieldName Nothing,
+        fieldContent = visitFieldContent options proxy fieldName fieldContent,
         fieldDirectives = dirs,
         ..
       }

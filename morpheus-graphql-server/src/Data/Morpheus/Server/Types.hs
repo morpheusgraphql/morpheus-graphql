@@ -11,7 +11,10 @@
 
 -- | GQL Types
 module Data.Morpheus.Server.Types
-  ( GQLType (KIND, directives),
+  ( GQLType
+      ( KIND,
+        directives
+      ),
     EncodeScalar (..),
     EncodeWrapper (..),
     DecodeScalar (..),
@@ -95,15 +98,17 @@ import Data.Morpheus.Server.Types.DirectiveDefinitions
     Prefixes (..),
     Rename (..),
   )
-import Data.Morpheus.Server.Types.Directives (GQLDirective (..))
-import Data.Morpheus.Server.Types.GQLType
-  ( GQLType (..),
-    InputTypeNamespace (..),
+import Data.Morpheus.Server.Types.Directives
+  ( GQLDirective (..),
     enumDirective,
     enumDirective',
     fieldDirective,
     fieldDirective',
     typeDirective,
+  )
+import Data.Morpheus.Server.Types.GQLType
+  ( GQLType (..),
+    InputTypeNamespace (..),
   )
 import Data.Morpheus.Server.Types.Kind
   ( CUSTOM,
