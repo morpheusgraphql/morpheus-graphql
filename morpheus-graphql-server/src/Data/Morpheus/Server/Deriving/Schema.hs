@@ -111,7 +111,7 @@ deriveSchema _ = toSchema schemaT
 deriveMaybeRoot :: DERIVE_TYPE GQLType OUT a => f a -> SchemaT OUT (Maybe (TypeDefinition OBJECT CONST))
 deriveMaybeRoot proxy
   | __isEmptyType proxy = pure Nothing
-  | otherwise = Just <$> asObjectType withGQL (deriveFieldsWith withDir (toFieldContent OutputContext withDir withGQL) . outputType) proxy
+  | otherwise = Just <$> asObjectType withGQL (deriveFieldsWith withDir (toFieldContent OutputContext withDir) . outputType) proxy
 
 deriveRoot :: DERIVE_TYPE GQLType OUT a => f a -> SchemaT OUT (TypeDefinition OBJECT CONST)
-deriveRoot = asObjectType withGQL (deriveFieldsWith withDir (toFieldContent OutputContext withDir withGQL) . outputType)
+deriveRoot = asObjectType withGQL (deriveFieldsWith withDir (toFieldContent OutputContext withDir) . outputType)

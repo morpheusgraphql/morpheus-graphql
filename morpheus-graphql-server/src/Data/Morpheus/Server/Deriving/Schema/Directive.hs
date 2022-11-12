@@ -131,7 +131,7 @@ insertDirective ::
   (CatType IN a -> SchemaT k (DirectiveDefinition CONST)) ->
   a ->
   SchemaT k ()
-insertDirective ops f _ = insertDirectiveDefinition (__useFingerprint (dirGQL ops) proxy) f proxy
+insertDirective ops f _ = insertDirectiveDefinition (useFingerprint (dirGQL ops) proxy) f proxy
   where
     proxy = InputType :: CatType IN a
 
@@ -200,4 +200,4 @@ toFieldRes :: gql a => UseDirective gql args -> f a -> FieldRep v -> (FieldName,
 toFieldRes options proxy FieldRep {..} = (visitFieldName options proxy fieldSelector, fieldValue)
 
 deriveDirectiveName :: gql a => UseGQLType gql -> f a -> FieldName
-deriveDirectiveName options = coerce . __useTypename options . inputType
+deriveDirectiveName options = coerce . useTypename options . inputType

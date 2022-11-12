@@ -63,7 +63,7 @@ insertTypeContent ::
   SchemaT k ()
 insertTypeContent options@UseDirective {dirGQL = UseGQLType {..}} f proxy =
   updateSchema
-    (__useFingerprint proxy)
+    (useFingerprint proxy)
     deriveD
     proxy
   where
@@ -73,7 +73,7 @@ insertTypeContent options@UseDirective {dirGQL = UseGQLType {..}} f proxy =
       pure $
         TypeDefinition
           (visitTypeDescription options proxy Nothing)
-          (__useTypename proxy)
+          (useTypename proxy)
           dirs
           content
 

@@ -85,6 +85,7 @@ import Data.Morpheus.Types.Internal.AST
     DirectiveLocation (..),
     GQLError,
     IN,
+    Msg (msg),
     OUT,
     ObjectEntry (..),
     Position (..),
@@ -146,13 +147,16 @@ type DERIVE c a = (DeriveKindedType GQLType DeriveDirective c (KIND a) (Lifted a
 
 type DERIVE_WITH c a = (DeriveWith GQLType GQLType (TyContentM c) (Rep a))
 
+noInputError :: (MonadError GQLError m, GQLType a) => CatType cat a -> m b
+noInputError proxy = throwError $ internal $ "type " <> msg (deriveTypename proxy) <> "can't be a input type"
+
 deriveOutputType :: (GQLType a, DERIVE OUT a) => CatType c a -> SchemaT c ()
-deriveOutputType x@OutputType = deriveKindedType withDir withGQL (lifted x)
-deriveOutputType InputType = throwError (internal "TODO:")
+deriveOutputType p@OutputType = deriveKindedType withDir (lifted p)
+deriveOutputType p@InputType = noInputError p
 
 deriveOutputContent :: (GQLType a, DERIVE OUT a) => CatType c a -> TyContentM c
-deriveOutputContent x@OutputType = deriveKindedContent withDir withGQL (lifted x)
-deriveOutputContent InputType = throwError (internal "TODO:")
+deriveOutputContent p@OutputType = deriveKindedContent withDir (lifted p)
+deriveOutputContent p@InputType = noInputError p
 
 -- | GraphQL type, every graphQL type should have an instance of 'GHC.Generics.Generic' and 'GQLType'.
 --
@@ -181,11 +185,11 @@ class GQLType a where
 
   __deriveType :: CatType c a -> SchemaT c ()
   default __deriveType :: DERIVE c a => CatType c a -> SchemaT c ()
-  __deriveType = deriveKindedType withDir withGQL . lifted
+  __deriveType = deriveKindedType withDir . lifted
 
   __deriveContent :: CatType c a -> TyContentM c
   default __deriveContent :: DERIVE c a => CatType c a -> TyContentM c
-  __deriveContent = deriveKindedContent withDir withGQL . lifted
+  __deriveContent = deriveKindedContent withDir . lifted
 
 instance GQLType Int where
   type KIND Int = SCALAR
@@ -375,7 +379,7 @@ type DeriveArguments a = DeriveArgs GQLType (KIND a) a
 type DirectiveUsages = GDirectiveUsages GQLType DeriveDirective
 
 deriveArguments :: DeriveArgs GQLType k a => f k a -> SchemaT OUT (ArgumentsDefinition CONST)
-deriveArguments = withInput . deriveArgs withDir withGQL
+deriveArguments = withInput . deriveArgs withDir
 
 class (EncodeValue a, DeriveArguments a) => DeriveDirective a
 
@@ -413,9 +417,9 @@ withArgs =
 withGQL :: UseGQLType GQLType
 withGQL =
   UseGQLType
-    { __useFingerprint = gqlFingerprint . __type,
-      __useTypename = gqlTypeName . __type,
-      __useTypeData = __type,
+    { useFingerprint = gqlFingerprint . __type,
+      useTypename = gqlTypeName . __type,
+      useTypeData = __type,
       useDeriveType = __deriveType,
       useDeriveContent = __deriveContent
     }

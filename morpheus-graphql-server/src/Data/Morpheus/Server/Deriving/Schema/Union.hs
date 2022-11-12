@@ -23,7 +23,7 @@ import Data.Morpheus.Server.Deriving.Utils
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
   )
-import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (..), __useTypename)
+import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (..), useTypename)
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
   )
@@ -49,7 +49,7 @@ buildUnionTypeContent ::
 buildUnionTypeContent gql scope cons = mkUnionType scope unionRef unionCons
   where
     unionRef = fieldTypeName <$> concatMap consFields unionRefRep
-    (unionRefRep, unionCons) = partition (isUnionRef (__useTypename gql scope)) cons
+    (unionRefRep, unionCons) = partition (isUnionRef (useTypename gql scope)) cons
 
 mkUnionType ::
   CatType kind a ->

@@ -94,36 +94,36 @@ import Relude
 
 type DERIVE_TYPE gql k a = (gql a, DeriveWith gql gql (TyContentM k) (Rep a))
 
-toFieldContent :: CatContext cat -> UseDirective gql dir -> UseGQLType derive -> DeriveTypeOptions cat gql derive (TyContentM cat)
-toFieldContent ctx UseDirective {..} ops =
+toFieldContent :: CatContext cat -> UseDirective gql dir -> DeriveTypeOptions cat gql gql (TyContentM cat)
+toFieldContent ctx UseDirective {..} =
   DeriveTypeOptions
-    { __typeGetType = __useTypeData dirGQL . addContext ctx,
-      __typeApply = \proxy -> useDeriveType ops (addContext ctx proxy) *> useDeriveContent ops (addContext ctx proxy)
+    { __typeGetType = useTypeData dirGQL . addContext ctx,
+      __typeApply = \proxy -> useDeriveType dirGQL (addContext ctx proxy) *> useDeriveContent dirGQL (addContext ctx proxy)
     }
 
 -- | DeriveType With specific Kind: 'kind': object, scalar, enum ...
 class DeriveKindedType gql dir (cat :: TypeCategory) (kind :: DerivingKind) a where
-  deriveKindedType :: UseDirective gql dir -> UseGQLType gql -> CatType cat (f kind a) -> SchemaT cat ()
-  deriveKindedContent :: UseDirective gql dir -> UseGQLType gql -> CatType cat (f kind a) -> TyContentM cat
-  deriveKindedContent _ _ _ = pure Nothing
+  deriveKindedType :: UseDirective gql dir -> CatType cat (f kind a) -> SchemaT cat ()
+  deriveKindedContent :: UseDirective gql dir -> CatType cat (f kind a) -> TyContentM cat
+  deriveKindedContent _ _ = pure Nothing
 
 instance (gql a) => DeriveKindedType gql dir cat WRAPPER (f a) where
-  deriveKindedType _ UseGQLType {..} = useDeriveType . catMap (Proxy @a)
+  deriveKindedType UseDirective {..} = useDeriveType dirGQL . catMap (Proxy @a)
 
 instance (DecodeScalar a, gql a) => DeriveKindedType gql dir cat SCALAR a where
-  deriveKindedType dirs _ proxy = insertTypeContent dirs (pure . mkScalar proxy . scalarValidator) (unliftKind proxy)
+  deriveKindedType dirs proxy = insertTypeContent dirs (pure . mkScalar proxy . scalarValidator) (unliftKind proxy)
 
 instance DERIVE_TYPE gql cat a => DeriveKindedType gql dir cat TYPE a where
-  deriveKindedType dirs ops proxy = insertTypeContent dirs (deriveTypeContentWith dirs (toFieldContent (getCatContext proxy) dirs ops)) (unliftKind proxy)
+  deriveKindedType dirs proxy = insertTypeContent dirs (deriveTypeContentWith dirs (toFieldContent (getCatContext proxy) dirs)) (unliftKind proxy)
 
 instance (gql a) => DeriveKindedType gql dir cat CUSTOM (Resolver o e m a) where
-  deriveKindedType _ UseGQLType {..} = useDeriveType . catMap (Proxy @a)
+  deriveKindedType UseDirective {..} = useDeriveType dirGQL . catMap (Proxy @a)
 
 instance (gql (Value CONST)) => DeriveKindedType gql dir cat CUSTOM (Value CONST) where
-  deriveKindedType dirs _ proxy = insertTypeContent dirs (const $ pure $ mkScalar proxy $ ScalarDefinition pure) (unliftKind proxy)
+  deriveKindedType dirs proxy = insertTypeContent dirs (const $ pure $ mkScalar proxy $ ScalarDefinition pure) (unliftKind proxy)
 
 instance (gql [(k, v)]) => DeriveKindedType gql dir cat CUSTOM (Map k v) where
-  deriveKindedType _ UseGQLType {..} = useDeriveType . catMap (Proxy @[(k, v)])
+  deriveKindedType UseDirective {..} = useDeriveType dirGQL . catMap (Proxy @[(k, v)])
 
 instance
   ( DERIVE_TYPE gql OUT interface,
@@ -131,45 +131,45 @@ instance
   ) =>
   DeriveKindedType gql dir OUT CUSTOM (TypeGuard interface union)
   where
-  deriveKindedType dir ops OutputType = do
-    insertTypeContent dir (fmap DataInterface . deriveFieldsWith dir (toFieldContent OutputContext dir ops) . outputType) interfaceProxy
-    content <- deriveTypeContentWith dir (toFieldContent OutputContext dir ops) (OutputType :: CatType OUT union)
+  deriveKindedType dir OutputType = do
+    insertTypeContent dir (fmap DataInterface . deriveFieldsWith dir (toFieldContent OutputContext dir) . outputType) interfaceProxy
+    content <- deriveTypeContentWith dir (toFieldContent OutputContext dir) (OutputType :: CatType OUT union)
     unionNames <- getUnionNames content
     extendImplements interfaceName unionNames
     where
       interfaceName :: TypeName
-      interfaceName = __useTypename (dirGQL dir) interfaceProxy
+      interfaceName = useTypename (dirGQL dir) interfaceProxy
       interfaceProxy :: CatType OUT interface
       interfaceProxy = OutputType
       unionProxy :: CatType OUT union
       unionProxy = OutputType
       getUnionNames :: TypeContent TRUE OUT CONST -> SchemaT OUT [TypeName]
       getUnionNames DataUnion {unionMembers} = pure $ toList $ memberName <$> unionMembers
-      getUnionNames DataObject {} = pure [__useTypename (dirGQL dir) unionProxy]
+      getUnionNames DataObject {} = pure [useTypename (dirGQL dir) unionProxy]
       getUnionNames _ = throwError "guarded type must be an union or object"
 
 instance (gql b, dir a) => DeriveKindedType gql dir OUT CUSTOM (a -> b) where
-  deriveKindedContent dir UseGQLType {..} OutputType = do
-    a <- useDeriveArguments (dirArgs dir) (Proxy @a)
-    b <- useDeriveContent (OutputType :: CatType OUT b)
+  deriveKindedContent UseDirective {..} OutputType = do
+    a <- useDeriveArguments dirArgs (Proxy @a)
+    b <- useDeriveContent dirGQL (OutputType :: CatType OUT b)
     case b of
       Just (FieldArgs x) -> Just . FieldArgs <$> (a <:> x)
       Nothing -> pure $ Just (FieldArgs a)
-  deriveKindedType _ UseGQLType {..} OutputType = useDeriveType (outputType $ Proxy @b)
+  deriveKindedType UseDirective {..} OutputType = useDeriveType dirGQL (outputType $ Proxy @b)
 
 class DeriveArgs gql (k :: DerivingKind) a where
-  deriveArgs :: UseDirective gql dir -> UseGQLType gql -> f k a -> SchemaT IN (ArgumentsDefinition CONST)
+  deriveArgs :: UseDirective gql dir -> f k a -> SchemaT IN (ArgumentsDefinition CONST)
 
 instance (DERIVE_TYPE gql IN a) => DeriveArgs gql TYPE a where
-  deriveArgs dir ops = fmap fieldsToArguments . deriveFieldsWith dir (toFieldContent InputContext dir ops) . inputType
+  deriveArgs dir = fmap fieldsToArguments . deriveFieldsWith dir (toFieldContent InputContext dir) . inputType
 
 instance (KnownSymbol name, gql a) => DeriveArgs gql CUSTOM (Arg name a) where
-  deriveArgs dir ops _ = do
-    useDeriveType ops proxy
+  deriveArgs UseDirective {..} _ = do
+    useDeriveType dirGQL proxy
     pure $ fieldsToArguments $ singleton argName $ mkField Nothing argName argTypeRef
     where
       proxy :: CatType IN a
       proxy = InputType
       argName = symbolName (Proxy @name)
       argTypeRef = TypeRef {typeConName = gqlTypeName, typeWrappers = gqlWrappers}
-      TypeData {gqlTypeName, gqlWrappers} = __useTypeData (dirGQL dir) proxy
+      TypeData {gqlTypeName, gqlWrappers} = useTypeData dirGQL proxy

@@ -108,7 +108,7 @@ asObjectType ::
   SchemaT kind (TypeDefinition OBJECT CONST)
 asObjectType gql f proxy =
   mkType
-    (__useTypename gql (outputType proxy))
+    (useTypename gql (outputType proxy))
     . DataObject []
     <$> f proxy
 
@@ -118,7 +118,7 @@ withObject _ OutputType DataObject {objectFields} = pure objectFields
 withObject gql x _ = failureOnlyObject gql x
 
 failureOnlyObject :: (gql a) => UseGQLType gql -> CatType c a -> SchemaT c b
-failureOnlyObject gql proxy = throwError $ msg (__useTypename gql proxy) <> " should have only one nonempty constructor"
+failureOnlyObject gql proxy = throwError $ msg (useTypename gql proxy) <> " should have only one nonempty constructor"
 
 mkObjectTypeContent :: CatType kind a -> FieldsDefinition kind CONST -> TypeContent TRUE kind CONST
 mkObjectTypeContent InputType = DataInputObject
