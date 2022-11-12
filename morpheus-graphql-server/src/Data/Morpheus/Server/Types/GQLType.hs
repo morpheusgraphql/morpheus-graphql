@@ -49,7 +49,7 @@ import Data.Morpheus.Server.Deriving.Schema.Directive (UseDirective (..))
 import Data.Morpheus.Server.Deriving.Schema.Internal
 import Data.Morpheus.Server.Deriving.Utils (ConsRep (..), DataType (..), DeriveWith, FieldRep (..))
 import Data.Morpheus.Server.Deriving.Utils.DeriveGType (DeriveValueOptions (..), deriveValue)
-import Data.Morpheus.Server.Deriving.Utils.Kinded (KindedProxy (KindedProxy), inputType)
+import Data.Morpheus.Server.Deriving.Utils.Kinded (KindedProxy (KindedProxy), catMap, inputType)
 import Data.Morpheus.Server.Deriving.Utils.Proxy (ContextValue (..))
 import Data.Morpheus.Server.Deriving.Utils.Use (UseArguments (..), UseDeriveType (..), UseGQLType (..))
 import Data.Morpheus.Server.NamedResolvers (NamedResolverT (..))
@@ -303,8 +303,8 @@ instance (GQLType i, DERIVE_WITH OUT i, GQLType u, DERIVE_WITH OUT u) => GQLType
 instance (GQLType a) => GQLType (NamedResolverT m a) where
   type KIND (NamedResolverT m a) = CUSTOM
   __type _ = __type (Proxy :: Proxy a)
-  deriveType = undefined
-  deriveContent = undefined
+  deriveType = deriveType . catMap (Proxy @a)
+  deriveContent = deriveContent . catMap (Proxy @a)
 
 type EncodeValue a = EncodeKind (KIND a) a
 
