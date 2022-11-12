@@ -43,7 +43,7 @@ import Data.Morpheus.Server.Deriving.Utils.DeriveGType
     deriveValue,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (..), outputType)
-import Data.Morpheus.Server.Types.GQLType (GQLType, deriveTypename, withDir, __typeData)
+import Data.Morpheus.Server.Types.GQLType (GQLType (..), deriveTypename, withDir)
 import Data.Morpheus.Server.Types.Types (Undefined)
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
@@ -142,7 +142,7 @@ instance (GQLType a, Generic a, DeriveWith GQLType (GetChannel e) (ChannelRes e)
         ( DeriveValueOptions
             { __valueApply = getChannel,
               __valueTypeName = deriveTypename (OutputType :: CatType OUT a),
-              __valueGetType = __typeData . outputType
+              __valueGetType = __type . outputType
             } ::
             DeriveValueOptions OUT GQLType (GetChannel e) (ChannelRes e)
         )

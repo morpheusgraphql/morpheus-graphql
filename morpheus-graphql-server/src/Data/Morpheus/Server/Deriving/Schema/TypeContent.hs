@@ -34,7 +34,6 @@ import Data.Morpheus.Server.Deriving.Utils
     isEmptyConstraint,
     unpackMonad,
   )
-import Data.Morpheus.Server.Deriving.Utils.Kinded (typeCat)
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseGQLType (..),
   )
@@ -64,18 +63,17 @@ insertTypeContent ::
   SchemaT k ()
 insertTypeContent options@UseDirective {dirGQL = UseGQLType {..}} f proxy =
   updateSchema
-    (__useFingerprint category proxy)
+    (useFingerprint proxy)
     deriveD
     proxy
   where
-    category = typeCat proxy
     deriveD x = do
       content <- f x
       dirs <- deriveTypeDirectives options proxy
       pure $
         TypeDefinition
           (visitTypeDescription options proxy Nothing)
-          (__useTypename category proxy)
+          (useTypename proxy)
           dirs
           content
 

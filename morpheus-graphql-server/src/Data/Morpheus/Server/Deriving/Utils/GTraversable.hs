@@ -26,7 +26,6 @@ import Data.Morpheus.Server.Types.Internal
   )
 import Data.Morpheus.Server.Types.Kind
 import Data.Morpheus.Server.Types.SchemaT (TypeFingerprint)
-import Data.Morpheus.Types.Internal.AST
 import GHC.Generics
 import Relude hiding (Undefined)
 
@@ -53,7 +52,7 @@ scanner ::
 scanner c@(Mappable f) lib =
   Mappable
     ( \proxy -> do
-        let typeInfo = __type proxy OUT
+        let typeInfo = __type (outputType proxy)
         let fingerprint = gqlFingerprint typeInfo
         if M.member fingerprint lib
           then lib

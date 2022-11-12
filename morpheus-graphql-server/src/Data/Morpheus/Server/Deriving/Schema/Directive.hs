@@ -35,7 +35,7 @@ import Data.Morpheus.Internal.Ext (unsafeFromList)
 import Data.Morpheus.Internal.Utils (Empty (..), fromElems)
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
-    KindedProxy (..),
+    inputType,
   )
 import Data.Morpheus.Server.Deriving.Utils.Types (FieldRep (..))
 import Data.Morpheus.Server.Deriving.Utils.Use
@@ -74,7 +74,6 @@ import Data.Morpheus.Types.Internal.AST
     IN,
     Position (Position),
     TRUE,
-    TypeCategory (..),
     TypeName,
     Value,
   )
@@ -129,12 +128,12 @@ insertDirective ::
   forall gql args a k.
   gql a =>
   UseDirective gql args ->
-  (KindedProxy IN a -> SchemaT k (DirectiveDefinition CONST)) ->
+  (CatType IN a -> SchemaT k (DirectiveDefinition CONST)) ->
   a ->
   SchemaT k ()
-insertDirective ops f _ = insertDirectiveDefinition (__useFingerprint (dirGQL ops) IN (Proxy :: Proxy a)) f proxy
+insertDirective ops f _ = insertDirectiveDefinition (useFingerprint (dirGQL ops) proxy) f proxy
   where
-    proxy = KindedProxy :: KindedProxy IN a
+    proxy = InputType :: CatType IN a
 
 getDirHM :: (Ord k, Hashable k, Empty a) => k -> HashMap k a -> a
 getDirHM name xs = fromMaybe empty $ name `HM.lookup` xs
@@ -201,4 +200,4 @@ toFieldRes :: gql a => UseDirective gql args -> f a -> FieldRep v -> (FieldName,
 toFieldRes options proxy FieldRep {..} = (visitFieldName options proxy fieldSelector, fieldValue)
 
 deriveDirectiveName :: gql a => UseGQLType gql -> f a -> FieldName
-deriveDirectiveName options proxy = coerce $ __useTypename options IN proxy
+deriveDirectiveName options = coerce . useTypename options . inputType

@@ -65,7 +65,6 @@ import Data.Morpheus.Server.Types.GQLType
     KIND,
     deriveTypename,
     withDir,
-    __typeData,
   )
 import Data.Morpheus.Server.Types.Internal
   ( TypeData (gqlTypeName),
@@ -83,7 +82,6 @@ import Data.Morpheus.Types.GQLScalar
 import Data.Morpheus.Types.Internal.AST
   ( GQLError,
     OUT,
-    TypeCategory (OUT),
     TypeName,
     ValidValue,
     Value (List),
@@ -171,7 +169,7 @@ getFieldValues =
     ( DeriveValueOptions
         { __valueApply = encodeField,
           __valueTypeName = deriveTypename (OutputType :: CatType OUT a),
-          __valueGetType = __typeData . outputType
+          __valueGetType = __type . outputType
         } ::
         DeriveValueOptions OUT GQLType (Encode m) (m (ResolverValue m))
     )
@@ -206,4 +204,4 @@ getRef (ResRef x) = x
 getRef _ = throwError "only resolver references are supported!"
 
 getTypeName :: GQLType a => f a -> TypeName
-getTypeName proxy = gqlTypeName $ __type proxy OUT
+getTypeName = gqlTypeName . __type . outputType
