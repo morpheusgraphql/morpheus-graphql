@@ -36,7 +36,7 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
     outputType,
   )
-import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType, useTypename)
+import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (..))
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
     insertType,
@@ -108,7 +108,7 @@ asObjectType ::
   SchemaT kind (TypeDefinition OBJECT CONST)
 asObjectType gql f proxy =
   mkType
-    (useTypename gql (outputType proxy))
+    (__useTypename gql (outputType proxy))
     . DataObject []
     <$> f proxy
 
@@ -118,7 +118,7 @@ withObject _ OutputType DataObject {objectFields} = pure objectFields
 withObject gql x _ = failureOnlyObject gql x
 
 failureOnlyObject :: (gql a) => UseGQLType gql -> CatType c a -> SchemaT c b
-failureOnlyObject gql proxy = throwError $ msg (useTypename gql proxy) <> " should have only one nonempty constructor"
+failureOnlyObject gql proxy = throwError $ msg (__useTypename gql proxy) <> " should have only one nonempty constructor"
 
 mkObjectTypeContent :: CatType kind a -> FieldsDefinition kind CONST -> TypeContent TRUE kind CONST
 mkObjectTypeContent InputType = DataInputObject

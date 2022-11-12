@@ -16,13 +16,12 @@ module Data.Morpheus.Server.Deriving.Utils.Kinded
     inputType,
     outputType,
     CatContext (..),
-    getCat,
-    typeCat,
     unliftKind,
     catMap,
     addContext,
     getCatContext,
     mkScalar,
+    isIN,
   )
 where
 
@@ -34,7 +33,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeCategory (..),
     TypeContent (..),
   )
-import Prelude (Show)
+import Prelude (Bool (..), Show)
 
 -- | context , like Proxy with multiple parameters
 -- * 'kind': object, scalar, enum ...
@@ -83,14 +82,6 @@ catMap :: f a -> CatType cat b -> CatType cat a
 catMap _ InputType = InputType
 catMap _ OutputType = OutputType
 
-getCat :: CatContext c -> TypeCategory
-getCat InputContext = IN
-getCat OutputContext = OUT
-
-typeCat :: CatType c a -> TypeCategory
-typeCat InputType = IN
-typeCat OutputType = OUT
-
 addContext :: CatContext c -> f a -> CatType c a
 addContext InputContext _ = InputType
 addContext OutputContext _ = OutputType
@@ -102,3 +93,7 @@ getCatContext OutputType = OutputContext
 mkScalar :: CatType c a -> ScalarDefinition -> TypeContent TRUE c s
 mkScalar InputType f = DataScalar f
 mkScalar OutputType f = DataScalar f
+
+isIN :: CatType c a -> Bool
+isIN InputType = True
+isIN _ = False

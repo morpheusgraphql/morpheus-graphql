@@ -65,12 +65,11 @@ import Data.Morpheus.Server.Resolvers
   ( RootResolver (..),
   )
 import Data.Morpheus.Server.Types.GQLType
-  ( GQLType,
+  ( GQLType (..),
     KIND,
     deriveTypename,
     withDir,
     __isEmptyType,
-    __typeData,
   )
 import Data.Morpheus.Server.Types.Kind
   ( CUSTOM,
@@ -212,7 +211,7 @@ exploreResolvers =
       ( DeriveValueOptions
           { __valueApply = encode,
             __valueTypeName = deriveTypename (InputType :: CatType IN a),
-            __valueGetType = __typeData . inputType
+            __valueGetType = __type . inputType
           } ::
           DeriveValueOptions IN GQLType (Encode m) (m (ResolverValue m))
       )

@@ -44,7 +44,6 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
     CatType (..),
     addContext,
     catMap,
-    getCat,
     getCatContext,
     inputType,
     mkScalar,
@@ -80,7 +79,7 @@ import Data.Morpheus.Types.Internal.AST
     OUT,
     ScalarDefinition (..),
     TRUE,
-    TypeCategory (IN),
+    TypeCategory,
     TypeContent (..),
     TypeName,
     TypeRef (..),
@@ -95,11 +94,11 @@ import Relude
 
 type DERIVE_TYPE gql k a = (gql a, DeriveWith gql gql (TyContentM k) (Rep a))
 
-toFieldContent :: CatContext kind -> UseDirective gql dir -> UseDeriveType derive -> DeriveTypeOptions kind gql derive (TyContentM kind)
-toFieldContent catCtx UseDirective {..} ops =
+toFieldContent :: CatContext cat -> UseDirective gql dir -> UseDeriveType derive -> DeriveTypeOptions cat gql derive (TyContentM cat)
+toFieldContent ctx UseDirective {..} ops =
   DeriveTypeOptions
-    { __typeGetType = \x -> __useTypeData dirGQL x (getCat catCtx),
-      __typeApply = \proxy -> useDeriveType ops (addContext catCtx proxy) *> useDeriveContent ops (addContext catCtx proxy)
+    { __typeGetType = __useTypeData dirGQL . addContext ctx,
+      __typeApply = \proxy -> useDeriveType ops (addContext ctx proxy) *> useDeriveContent ops (addContext ctx proxy)
     }
 
 -- | DeriveType With specific Kind: 'kind': object, scalar, enum ...
@@ -139,14 +138,14 @@ instance
     extendImplements interfaceName unionNames
     where
       interfaceName :: TypeName
-      interfaceName = useTypename (dirGQL dir) interfaceProxy
+      interfaceName = __useTypename (dirGQL dir) interfaceProxy
       interfaceProxy :: CatType OUT interface
       interfaceProxy = OutputType
       unionProxy :: CatType OUT union
       unionProxy = OutputType
       getUnionNames :: TypeContent TRUE OUT CONST -> SchemaT OUT [TypeName]
       getUnionNames DataUnion {unionMembers} = pure $ toList $ memberName <$> unionMembers
-      getUnionNames DataObject {} = pure [useTypename (dirGQL dir) unionProxy]
+      getUnionNames DataObject {} = pure [__useTypename (dirGQL dir) unionProxy]
       getUnionNames _ = throwError "guarded type must be an union or object"
 
 instance (gql b, dir a) => DeriveKindedType gql dir OUT CUSTOM (a -> b) where
@@ -173,4 +172,4 @@ instance (KnownSymbol name, gql a) => DeriveArgs gql CUSTOM (Arg name a) where
       proxy = InputType
       argName = symbolName (Proxy @name)
       argTypeRef = TypeRef {typeConName = gqlTypeName, typeWrappers = gqlWrappers}
-      TypeData {gqlTypeName, gqlWrappers} = __useTypeData (dirGQL dir) proxy IN
+      TypeData {gqlTypeName, gqlWrappers} = __useTypeData (dirGQL dir) proxy

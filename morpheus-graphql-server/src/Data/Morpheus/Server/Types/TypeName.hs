@@ -23,12 +23,13 @@ import Data.Data (tyConFingerprint)
 import Data.Morpheus.App.Internal.Resolving
   ( Resolver,
   )
+import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (..))
 import Data.Morpheus.Server.NamedResolvers (NamedResolverT (..))
 import Data.Morpheus.Server.Types.Types
   ( Pair,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( TypeCategory,
+  ( TypeCategory (..),
     TypeName,
     packName,
   )
@@ -82,5 +83,6 @@ ignoreResolver (con, _) | con == typeRepTyCon (typeRep $ Proxy @NamedResolverT) 
 ignoreResolver (con, args) =
   con : concatMap (ignoreResolver . splitTyConApp) args
 
-getFingerprint :: Typeable a => TypeCategory -> f a -> TypeFingerprint
-getFingerprint category = TypeableFingerprint category . fmap tyConFingerprint . getTypeConstructors
+getFingerprint :: Typeable a => CatType c a -> TypeFingerprint
+getFingerprint p@InputType = TypeableFingerprint IN $ tyConFingerprint <$> getTypeConstructors p
+getFingerprint p@OutputType = TypeableFingerprint OUT $ tyConFingerprint <$> getTypeConstructors p

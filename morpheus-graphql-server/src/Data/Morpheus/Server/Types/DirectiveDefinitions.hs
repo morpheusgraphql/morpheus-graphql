@@ -68,7 +68,7 @@ newtype Deprecated = Deprecated
     )
 
 instance GQLType Deprecated where
-  __type _ = mkTypeData "deprecated"
+  __type = mkTypeData "deprecated"
 
 instance GQLDirective Deprecated where
   type

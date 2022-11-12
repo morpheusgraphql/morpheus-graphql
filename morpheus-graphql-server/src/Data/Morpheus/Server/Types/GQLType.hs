@@ -24,7 +24,6 @@ module Data.Morpheus.Server.Types.GQLType
     deriveTypename,
     encodeArguments,
     __isEmptyType,
-    __typeData,
     withGQL,
     withDir,
     withDeriveType,
@@ -45,7 +44,7 @@ import Data.Morpheus.Server.Deriving.Schema.Directive (UseDirective (..))
 import Data.Morpheus.Server.Deriving.Schema.Internal
 import Data.Morpheus.Server.Deriving.Utils (ConsRep (..), DataType (..), DeriveWith, FieldRep (..))
 import Data.Morpheus.Server.Deriving.Utils.DeriveGType (DeriveValueOptions (..), deriveValue)
-import Data.Morpheus.Server.Deriving.Utils.Kinded (KindedProxy (KindedProxy), catMap, inputType)
+import Data.Morpheus.Server.Deriving.Utils.Kinded (KindedProxy (KindedProxy), catMap, inputType, isIN)
 import Data.Morpheus.Server.Deriving.Utils.Proxy (ContextValue (..))
 import Data.Morpheus.Server.Deriving.Utils.Use (UseArguments (..), UseDeriveType (..), UseGQLType (..))
 import Data.Morpheus.Server.NamedResolvers (NamedResolverT (..))
@@ -91,7 +90,6 @@ import Data.Morpheus.Types.Internal.AST
     ObjectEntry (..),
     Position (..),
     QUERY,
-    TypeCategory (..),
     TypeName,
     TypeWrapper (..),
     Value (..),
@@ -109,28 +107,23 @@ import Relude hiding (Seq, Undefined, fromList, intercalate)
 __isEmptyType :: forall f a. GQLType a => f a -> Bool
 __isEmptyType _ = deriveFingerprint (OutputType :: CatType OUT a) == InternalFingerprint __typenameUndefined
 
-__typeData :: (GQLType a) => CatType cat a -> TypeData
-__typeData proxy@InputType = __type proxy IN
-__typeData proxy@OutputType = __type proxy OUT
-
 deriveTypename :: (GQLType a) => CatType cat a -> TypeName
-deriveTypename proxy = gqlTypeName $ __typeData proxy
+deriveTypename = gqlTypeName . __type
 
 deriveFingerprint :: (GQLType a) => CatType cat a -> TypeFingerprint
-deriveFingerprint proxy = gqlFingerprint $ __typeData proxy
+deriveFingerprint = gqlFingerprint . __type
 
 deriveTypeData ::
-  forall f (a :: Type).
+  forall c (a :: Type).
   Typeable a =>
-  f a ->
+  CatType c a ->
   DirectiveUsages ->
-  TypeCategory ->
   TypeData
-deriveTypeData proxy GDirectiveUsages {typeDirectives} cat =
+deriveTypeData proxy GDirectiveUsages {typeDirectives} =
   TypeData
-    { gqlTypeName = foldr (`applyTypeName` (cat == IN)) (getTypename proxy) typeDirectives,
+    { gqlTypeName = foldr (`applyTypeName` isIN proxy) (getTypename (Proxy @a)) typeDirectives,
       gqlWrappers = mkBaseType,
-      gqlFingerprint = getFingerprint cat proxy
+      gqlFingerprint = getFingerprint proxy
     }
 
 list :: TypeWrapper -> TypeWrapper
@@ -183,8 +176,8 @@ class GQLType a where
   directives :: f a -> DirectiveUsages
   directives _ = mempty
 
-  __type :: f a -> TypeCategory -> TypeData
-  default __type :: Typeable a => f a -> TypeCategory -> TypeData
+  __type :: CatType cat a -> TypeData
+  default __type :: Typeable a => CatType cat a -> TypeData
   __type proxy = deriveTypeData proxy (directives proxy)
 
   __deriveType :: CatType c a -> SchemaT c ()
@@ -197,69 +190,69 @@ class GQLType a where
 
 instance GQLType Int where
   type KIND Int = SCALAR
-  __type _ = mkTypeData "Int"
+  __type = mkTypeData "Int"
 
 instance GQLType Double where
   type KIND Double = SCALAR
-  __type _ = mkTypeData "Float"
+  __type = mkTypeData "Float"
 
 instance GQLType Float where
   type KIND Float = SCALAR
-  __type _ = mkTypeData "Float32"
+  __type = mkTypeData "Float32"
 
 instance GQLType Text where
   type KIND Text = SCALAR
-  __type _ = mkTypeData "String"
+  __type = mkTypeData "String"
 
 instance GQLType Bool where
   type KIND Bool = SCALAR
-  __type _ = mkTypeData "Boolean"
+  __type = mkTypeData "Boolean"
 
 instance GQLType ID where
   type KIND ID = SCALAR
-  __type _ = mkTypeData "ID"
+  __type = mkTypeData "ID"
 
 instance GQLType (Value CONST) where
   type KIND (Value CONST) = CUSTOM
-  __type _ = mkTypeData "INTERNAL_VALUE"
+  __type = mkTypeData "INTERNAL_VALUE"
 
 -- WRAPPERS
 instance GQLType () where
-  __type _ = mkTypeData unitTypeName
+  __type = mkTypeData unitTypeName
 
 instance Typeable m => GQLType (Undefined m) where
   type KIND (Undefined m) = CUSTOM
-  __type _ = mkTypeData __typenameUndefined
+  __type = mkTypeData __typenameUndefined
   __deriveType _ = pure ()
   __deriveContent _ = pure Nothing
 
 instance GQLType a => GQLType (Maybe a) where
   type KIND (Maybe a) = WRAPPER
-  __type _ = wrapper toNullable . __type (Proxy @a)
+  __type = wrapper toNullable . __type . catMap (Proxy @a)
 
 instance GQLType a => GQLType [a] where
   type KIND [a] = WRAPPER
-  __type _ = wrapper list . __type (Proxy @a)
+  __type = wrapper list . __type . catMap (Proxy @a)
 
 instance GQLType a => GQLType (Set a) where
   type KIND (Set a) = WRAPPER
-  __type _ = __type $ Proxy @[a]
+  __type = __type . catMap (Proxy @[a])
 
 instance GQLType a => GQLType (NonEmpty a) where
   type KIND (NonEmpty a) = WRAPPER
-  __type _ = __type $ Proxy @[a]
+  __type = __type . catMap (Proxy @[a])
 
 instance GQLType a => GQLType (Seq a) where
   type KIND (Seq a) = WRAPPER
-  __type _ = __type $ Proxy @[a]
+  __type = __type . catMap (Proxy @[a])
 
 instance GQLType a => GQLType (Vector a) where
   type KIND (Vector a) = WRAPPER
-  __type _ = __type $ Proxy @[a]
+  __type = __type . catMap (Proxy @[a])
 
 instance GQLType a => GQLType (SubscriptionField a) where
   type KIND (SubscriptionField a) = WRAPPER
-  __type _ = __type $ Proxy @a
+  __type = __type . catMap (Proxy @a)
 
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (Pair a b) where
   directives _ = typeDirective InputTypeNamespace {inputTypeNamespace = "Input"}
@@ -268,37 +261,37 @@ instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (Pair a b) wh
 
 instance (GQLType b, EncodeKind (KIND a) a, DeriveArgs GQLType (KIND a) a) => GQLType (a -> b) where
   type KIND (a -> b) = CUSTOM
-  __type _ = __type $ Proxy @b
+  __type = __type . catMap (Proxy @b)
   __deriveType = deriveOutputType
   __deriveContent = deriveOutputContent
 
 instance (GQLType k, GQLType v, Typeable k, Typeable v) => GQLType (Map k v) where
   type KIND (Map k v) = CUSTOM
-  __type _ = __type $ Proxy @[Pair k v]
+  __type = __type . catMap (Proxy @[Pair k v])
 
 instance GQLType a => GQLType (Resolver o e m a) where
   type KIND (Resolver o e m a) = CUSTOM
-  __type _ = __type $ Proxy @a
+  __type = __type . catMap (Proxy @a)
 
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (a, b) where
-  __type _ = __type $ Proxy @(Pair a b)
+  __type = __type . catMap (Proxy @(Pair a b))
   directives _ = typeDirective InputTypeNamespace {inputTypeNamespace = "Input"}
 
 instance (DERIVE OUT (Arg name value), GQLType value) => GQLType (Arg name value) where
   type KIND (Arg name value) = CUSTOM
-  __type _ = __type (Proxy @value)
+  __type = __type . catMap (Proxy @value)
   __deriveType = deriveOutputType
   __deriveContent = deriveOutputContent
 
 instance (GQLType i, DERIVE_WITH OUT i, GQLType u, DERIVE_WITH OUT u) => GQLType (TypeGuard i u) where
   type KIND (TypeGuard i u) = CUSTOM
-  __type _ = __type (Proxy @i)
+  __type = __type . catMap (Proxy @i)
   __deriveType = deriveOutputType
   __deriveContent = deriveOutputContent
 
 instance (GQLType a) => GQLType (NamedResolverT m a) where
   type KIND (NamedResolverT m a) = CUSTOM
-  __type _ = __type (Proxy :: Proxy a)
+  __type = __type . catMap (Proxy :: Proxy a)
   __deriveType = __deriveType . catMap (Proxy @a)
   __deriveContent = __deriveContent . catMap (Proxy @a)
 
@@ -366,7 +359,7 @@ exploreResolvers =
       ( DeriveValueOptions
           { __valueApply = encode,
             __valueTypeName = deriveTypename (InputType :: CatType IN a),
-            __valueGetType = __typeData . inputType
+            __valueGetType = __type . inputType
           } ::
           DeriveValueOptions IN GQLType ExplorerConstraint (GQLResult (Value CONST))
       )
@@ -421,8 +414,8 @@ withArgs =
 withGQL :: UseGQLType GQLType
 withGQL =
   UseGQLType
-    { __useFingerprint = \c v -> gqlFingerprint (__type v c),
-      __useTypename = \c v -> gqlTypeName (__type v c),
+    { __useFingerprint = gqlFingerprint . __type,
+      __useTypename = gqlTypeName . __type,
       __useTypeData = __type
     }
 

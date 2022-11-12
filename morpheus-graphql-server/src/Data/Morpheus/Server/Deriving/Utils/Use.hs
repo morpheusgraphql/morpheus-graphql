@@ -9,7 +9,6 @@ module Data.Morpheus.Server.Deriving.Utils.Use
     UseDeriveType (..),
     UseArguments (..),
     UseGQLType (..),
-    useTypename,
   )
 where
 
@@ -29,18 +28,13 @@ import Data.Morpheus.Types.Internal.AST
     ArgumentsDefinition,
     CONST,
     OUT,
-    TypeCategory (..),
     TypeName,
   )
 
-useTypename :: (gqlType a) => UseGQLType gqlType -> CatType c a -> TypeName
-useTypename gql proxy@InputType = __useTypename gql IN proxy
-useTypename gql proxy@OutputType = __useTypename gql OUT proxy
-
 data UseGQLType gql = UseGQLType
-  { __useFingerprint :: forall f a. gql a => TypeCategory -> f a -> TypeFingerprint,
-    __useTypename :: forall f a. gql a => TypeCategory -> f a -> TypeName,
-    __useTypeData :: forall f a. gql a => f a -> TypeCategory -> TypeData
+  { __useFingerprint :: forall c a. gql a => CatType c a -> TypeFingerprint,
+    __useTypename :: forall c a. gql a => CatType c a -> TypeName,
+    __useTypeData :: forall c a. gql a => CatType c a -> TypeData
   }
 
 data UseArguments args = UseArguments
