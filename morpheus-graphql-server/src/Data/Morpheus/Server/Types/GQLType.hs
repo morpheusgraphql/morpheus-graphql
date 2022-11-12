@@ -26,7 +26,6 @@ module Data.Morpheus.Server.Types.GQLType
     __isEmptyType,
     withGQL,
     withDir,
-    withDeriveType,
   )
 where
 
@@ -46,7 +45,7 @@ import Data.Morpheus.Server.Deriving.Utils (ConsRep (..), DataType (..), DeriveW
 import Data.Morpheus.Server.Deriving.Utils.DeriveGType (DeriveValueOptions (..), deriveValue)
 import Data.Morpheus.Server.Deriving.Utils.Kinded (KindedProxy (KindedProxy), catMap, inputType, isIN)
 import Data.Morpheus.Server.Deriving.Utils.Proxy (ContextValue (..))
-import Data.Morpheus.Server.Deriving.Utils.Use (UseArguments (..), UseDeriveType (..), UseGQLType (..))
+import Data.Morpheus.Server.Deriving.Utils.Use (UseArguments (..), UseGQLType (..))
 import Data.Morpheus.Server.NamedResolvers (NamedResolverT (..))
 import Data.Morpheus.Server.Types.Directives
   ( GDirectiveUsages (..),
@@ -148,11 +147,11 @@ type DERIVE c a = (DeriveKindedType GQLType DeriveDirective c (KIND a) (Lifted a
 type DERIVE_WITH c a = (DeriveWith GQLType GQLType (TyContentM c) (Rep a))
 
 deriveOutputType :: (GQLType a, DERIVE OUT a) => CatType c a -> SchemaT c ()
-deriveOutputType x@OutputType = deriveKindedType withDir withDeriveType (lifted x)
+deriveOutputType x@OutputType = deriveKindedType withDir withGQL (lifted x)
 deriveOutputType InputType = throwError (internal "TODO:")
 
 deriveOutputContent :: (GQLType a, DERIVE OUT a) => CatType c a -> TyContentM c
-deriveOutputContent x@OutputType = deriveKindedContent withDir withDeriveType (lifted x)
+deriveOutputContent x@OutputType = deriveKindedContent withDir withGQL (lifted x)
 deriveOutputContent InputType = throwError (internal "TODO:")
 
 -- | GraphQL type, every graphQL type should have an instance of 'GHC.Generics.Generic' and 'GQLType'.
@@ -182,11 +181,11 @@ class GQLType a where
 
   __deriveType :: CatType c a -> SchemaT c ()
   default __deriveType :: DERIVE c a => CatType c a -> SchemaT c ()
-  __deriveType = deriveKindedType withDir withDeriveType . lifted
+  __deriveType = deriveKindedType withDir withGQL . lifted
 
   __deriveContent :: CatType c a -> TyContentM c
   default __deriveContent :: DERIVE c a => CatType c a -> TyContentM c
-  __deriveContent = deriveKindedContent withDir withDeriveType . lifted
+  __deriveContent = deriveKindedContent withDir withGQL . lifted
 
 instance GQLType Int where
   type KIND Int = SCALAR
@@ -376,7 +375,7 @@ type DeriveArguments a = DeriveArgs GQLType (KIND a) a
 type DirectiveUsages = GDirectiveUsages GQLType DeriveDirective
 
 deriveArguments :: DeriveArgs GQLType k a => f k a -> SchemaT OUT (ArgumentsDefinition CONST)
-deriveArguments = withInput . deriveArgs withDir withDeriveType
+deriveArguments = withInput . deriveArgs withDir withGQL
 
 class (EncodeValue a, DeriveArguments a) => DeriveDirective a
 
@@ -416,7 +415,9 @@ withGQL =
   UseGQLType
     { __useFingerprint = gqlFingerprint . __type,
       __useTypename = gqlTypeName . __type,
-      __useTypeData = __type
+      __useTypeData = __type,
+      useDeriveType = __deriveType,
+      useDeriveContent = __deriveContent
     }
 
 withDir :: UseDirective GQLType DeriveDirective
@@ -429,10 +430,3 @@ withDir =
 
 withKind :: f a -> KindedProxy (KIND a) a
 withKind _ = KindedProxy
-
-withDeriveType :: UseDeriveType GQLType
-withDeriveType =
-  UseDeriveType
-    { useDeriveType = __deriveType,
-      useDeriveContent = __deriveContent
-    }
