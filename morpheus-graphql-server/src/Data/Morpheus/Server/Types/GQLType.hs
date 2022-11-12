@@ -271,7 +271,7 @@ type EncodeValue a = EncodeKind (KIND a) a
 encodeArguments :: forall m a. (MonadError GQLError m, EncodeValue a) => a -> m (Arguments CONST)
 encodeArguments x = resultOr (const $ throwError err) pure (encode x) >>= unpackValue
   where
-    err = internal "could not encode arguments!"
+    err = internal "could not encode arguments. Arguments should be an object like type!"
     unpackValue (Object v) = pure $ fmap toArgument v
     unpackValue _ = throwError err
     toArgument ObjectEntry {..} = Argument (Position 0 0) entryName entryValue
