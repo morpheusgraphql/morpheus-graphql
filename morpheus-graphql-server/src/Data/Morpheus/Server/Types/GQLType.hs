@@ -171,15 +171,22 @@ class GQLType a where
 
   deriveContent :: CatType c a -> TyContentM c
 
-  default deriveType :: DeriveKindedType GQLType GQLType DeriveDirective c (KIND a) (PARAM (KIND a) a) => CatType c a -> SchemaT c ()
-  deriveType = deriveKindedType withDir withDeriveType . liftPARAM
+  default deriveType :: DeriveKindedType GQLType GQLType DeriveDirective c (KIND a) (Lifted a) => CatType c a -> SchemaT c ()
+  deriveType = deriveKindedType withDir withDeriveType . lifted
 
-  default deriveContent :: DeriveKindedType GQLType GQLType DeriveDirective c (KIND a) (PARAM (KIND a) a) => CatType c a -> TyContentM c
-  deriveContent = deriveKindedContent withDir withDeriveType . liftPARAM
+  default deriveContent :: DeriveKindedType GQLType GQLType DeriveDirective c (KIND a) (Lifted a) => CatType c a -> TyContentM c
+  deriveContent = deriveKindedContent withDir withDeriveType . lifted
 
-liftPARAM :: CatType cat a -> CatType cat (f (KIND a) (PARAM (KIND a) a))
-liftPARAM InputType = InputType
-liftPARAM OutputType = OutputType
+type Lifted a = (PARAM (KIND a) a)
+
+lifted :: CatType cat a -> CatType cat (f (KIND a) (Lifted a))
+lifted InputType = InputType
+lifted OutputType = OutputType
+
+-- lifts monadic object types with specific monad
+type family PARAM k a where
+  PARAM TYPE (t m) = t (Resolver QUERY () Maybe)
+  PARAM k a = a
 
 data Deity (m :: Type -> Type) = Deity
   { name :: m Text,
@@ -191,10 +198,6 @@ newtype Query (m :: Type -> Type) = Query
   { deity :: m (Deity m)
   }
   deriving (Generic, GQLType)
-
-type family PARAM k a where
-  PARAM TYPE (t m) = t (Resolver QUERY () Maybe)
-  PARAM k a = a
 
 instance GQLType Int where
   type KIND Int = SCALAR
@@ -294,14 +297,6 @@ instance (GQLType value) => GQLType (Arg name value) where
 instance (GQLType i, GQLType p) => GQLType (TypeGuard i p) where
   type KIND (TypeGuard i p) = CUSTOM
   __type _ = __type (Proxy @i)
-  deriveType = undefined
-  deriveContent = undefined
-
-instance (GQLType a) => GQLType (Proxy a) where
-  type KIND (Proxy a) = KIND a
-  __type _ = __type (Proxy @a)
-  deriveType = undefined
-  deriveContent = undefined
 
 instance (GQLType a) => GQLType (NamedResolverT m a) where
   type KIND (NamedResolverT m a) = CUSTOM
@@ -450,10 +445,3 @@ withDeriveType =
     { useDeriveType = deriveType,
       useDeriveContent = deriveContent
     }
-
--- DERIVE TYPE
-
--- |  Generates internal GraphQL Schema for query validation and introspection rendering
-liftKind :: CatType cat a -> CatType cat (f (KIND a) a)
-liftKind InputType = InputType
-liftKind OutputType = OutputType
