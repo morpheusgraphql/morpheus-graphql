@@ -65,9 +65,9 @@ import Language.Haskell.TH (Exp, Q)
 import Relude
 
 type SchemaConstraints event (m :: Type -> Type) query mutation subscription =
-  ( DERIVE_TYPE GQLType GQLType OUT (query (Resolver QUERY event m)),
-    DERIVE_TYPE GQLType GQLType OUT (mutation (Resolver MUTATION event m)),
-    DERIVE_TYPE GQLType GQLType OUT (subscription (Resolver SUBSCRIPTION event m))
+  ( DERIVE_TYPE GQLType OUT (query (Resolver QUERY event m)),
+    DERIVE_TYPE GQLType OUT (mutation (Resolver MUTATION event m)),
+    DERIVE_TYPE GQLType OUT (subscription (Resolver SUBSCRIPTION event m))
   )
 
 -- | normal morpheus server validates schema at runtime (after the schema derivation).
@@ -109,10 +109,10 @@ deriveSchema _ = toSchema schemaT
 
 --
 
-deriveMaybeRoot :: DERIVE_TYPE GQLType GQLType OUT a => f a -> SchemaT OUT (Maybe (TypeDefinition OBJECT CONST))
+deriveMaybeRoot :: DERIVE_TYPE GQLType OUT a => f a -> SchemaT OUT (Maybe (TypeDefinition OBJECT CONST))
 deriveMaybeRoot proxy
   | __isEmptyType proxy = pure Nothing
   | otherwise = Just <$> asObjectType withGQL (deriveFieldsWith withDir (toFieldContent OutputContext withDir withDeriveType) . outputType) proxy
 
-deriveRoot :: DERIVE_TYPE GQLType GQLType OUT a => f a -> SchemaT OUT (TypeDefinition OBJECT CONST)
+deriveRoot :: DERIVE_TYPE GQLType OUT a => f a -> SchemaT OUT (TypeDefinition OBJECT CONST)
 deriveRoot = asObjectType withGQL (deriveFieldsWith withDir (toFieldContent OutputContext withDir withDeriveType) . outputType)
