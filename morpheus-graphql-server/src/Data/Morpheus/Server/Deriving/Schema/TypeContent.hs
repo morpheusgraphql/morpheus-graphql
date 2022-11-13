@@ -91,6 +91,21 @@ deriveTypeContentWith options x kindedProxy =
     )
     >>= buildTypeContent options kindedProxy
 
+deriveTypeDefinition ::
+  ( gql a,
+    DeriveWith gql gql (SchemaT c (TyContent c)) (Rep a)
+  ) =>
+  UseDirective gql args ->
+  DeriveTypeOptions c gql gql (SchemaT c (TyContent c)) ->
+  CatType c a ->
+  SchemaT c (TypeDefinition c CONST)
+deriveTypeDefinition dir@UseDirective {dirGQL} ctx proxy = do
+  content <- deriveTypeContentWith dir ctx proxy
+  dirs <- deriveTypeDirectives dir proxy
+  let description = visitTypeDescription dir proxy Nothing
+  let typename = useTypename dirGQL proxy
+  pure (TypeDefinition description typename dirs content)
+
 deriveFieldsWith ::
   ( gql a,
     DeriveWith gql derive (SchemaT cat (TyContent cat)) (Rep a)
