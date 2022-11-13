@@ -19,6 +19,7 @@ module Data.Morpheus.Server.Deriving.Schema.DeriveKinded
   ( DeriveKindedType (..),
     DeriveArgs (..),
     DERIVE_TYPE,
+    DeriveKindedContent (..),
   )
 where
 
@@ -97,9 +98,6 @@ type DERIVE_TYPE gql k a = (gql a, DeriveWith gql gql (TyContentM k) (Rep a))
 
 -- | DeriveType With specific Kind: 'kind': object, scalar, enum ...
 class DeriveKindedType gql dir (cat :: TypeCategory) (kind :: DerivingKind) a where
-  deriveKindedContent :: UseDirective gql dir -> CatType cat (f kind a) -> TyContentM cat
-  deriveKindedContent _ _ = pure Nothing
-
   deriveKindedType :: UseDirective gql dir -> CatType cat (f kind a) -> SchemaT cat (TypeDefinition cat CONST)
 
 instance (gql a) => DeriveKindedType gql dir cat WRAPPER (f a) where
@@ -135,13 +133,35 @@ instance
       union = OutputType :: CatType OUT union
 
 instance (gql b, dir a) => DeriveKindedType gql dir OUT CUSTOM (a -> b) where
+  deriveKindedType UseDirective {..} OutputType = useDeriveType dirGQL (outputType $ Proxy @b)
+
+-- derive Content: only useful for deriving GQL arguments
+
+class DeriveKindedContent gql dir (cat :: TypeCategory) (kind :: DerivingKind) a where
+  deriveKindedContent :: UseDirective gql dir -> CatType cat (f kind a) -> TyContentM cat
+  deriveKindedContent _ _ = pure Nothing
+
+instance DeriveKindedContent gql dir c SCALAR a
+
+instance DeriveKindedContent gql dir c TYPE a
+
+instance DeriveKindedContent gql dir c WRAPPER a
+
+instance DeriveKindedContent gql dir c CUSTOM (Map k v)
+
+instance DeriveKindedContent gql dir c CUSTOM (Resolver o e m a)
+
+instance DeriveKindedContent gql dir c CUSTOM (TypeGuard i u)
+
+instance DeriveKindedContent gql dir c CUSTOM (Value x)
+
+instance (gql b, dir a) => DeriveKindedContent gql dir OUT CUSTOM (a -> b) where
   deriveKindedContent UseDirective {..} OutputType = do
     a <- useDeriveArguments dirArgs (Proxy @a)
     b <- useDeriveContent dirGQL (OutputType :: CatType OUT b)
     case b of
       Just (FieldArgs x) -> Just . FieldArgs <$> (a <:> x)
       Nothing -> pure $ Just (FieldArgs a)
-  deriveKindedType UseDirective {..} OutputType = useDeriveType dirGQL (outputType $ Proxy @b)
 
 class DeriveArgs gql (k :: DerivingKind) a where
   deriveArgs :: UseDirective gql dir -> f k a -> SchemaT IN (ArgumentsDefinition CONST)

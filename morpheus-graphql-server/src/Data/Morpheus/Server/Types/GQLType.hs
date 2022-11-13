@@ -144,7 +144,10 @@ type family PARAM k a where
   PARAM TYPE (t m) = t (Resolver QUERY () Maybe)
   PARAM k a = a
 
-type DERIVE c a = (DeriveKindedType GQLType DeriveDirective c (KIND a) (Lifted a))
+type DERIVE c a =
+  ( DeriveKindedType GQLType DeriveDirective c (KIND a) (Lifted a),
+    DeriveKindedContent GQLType DeriveDirective c (KIND a) (Lifted a)
+  )
 
 type DERIVE_WITH c a = (DeriveWith GQLType GQLType (TyContentM c) (Rep a))
 
