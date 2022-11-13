@@ -18,35 +18,43 @@
 module Data.Morpheus.Server.Deriving.Schema.DeriveKinded
   ( DeriveKindedType (..),
     DeriveArgs (..),
-    toFieldContent,
     DERIVE_TYPE,
   )
 where
 
-import Control.Monad.Except (throwError)
 import Data.Morpheus.App.Internal.Resolving
   ( Resolver,
   )
-import Data.Morpheus.Internal.Ext
+import Data.Morpheus.Internal.Ext ((<:>))
 import Data.Morpheus.Internal.Utils (singleton)
 import Data.Morpheus.Server.Deriving.Schema.Internal
   ( CatType,
     TyContentM,
   )
 import Data.Morpheus.Server.Deriving.Schema.TypeContent
-import Data.Morpheus.Server.Deriving.Utils
+  ( deriveFields,
+    deriveInterfaceDefinition,
+    deriveScalarDefinition,
+    deriveTypeDefinition,
+    deriveTypeGuardUnions,
+    insertType,
+  )
+import Data.Morpheus.Server.Deriving.Utils.DeriveGType
   ( DeriveWith,
-    symbolName,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
-  ( CatContext (..),
-    CatType (..),
+  ( CatType (..),
     catMap,
     inputType,
     outputType,
     unliftKind,
   )
+import Data.Morpheus.Server.Deriving.Utils.Proxy (symbolName)
 import Data.Morpheus.Server.Deriving.Utils.Use
+  ( UseArguments (..),
+    UseDirective (..),
+    UseGQLType (..),
+  )
 import Data.Morpheus.Server.Types.Internal (TypeData (..))
 import Data.Morpheus.Server.Types.Kind
   ( CUSTOM,
@@ -74,12 +82,8 @@ import Data.Morpheus.Types.Internal.AST
     IN,
     OUT,
     ScalarDefinition (..),
-    TRUE,
     TypeCategory,
-    TypeContent (..),
-    TypeName,
     TypeRef (..),
-    UnionMember (memberName),
     Value,
     fieldsToArguments,
     mkField,
@@ -121,21 +125,12 @@ instance
   DeriveKindedType gql dir OUT CUSTOM (TypeGuard interface union)
   where
   deriveKindedType dir OutputType = do
-    insertType dir deriveInterfaceDefinition interfaceProxy
-    content <- deriveTypeContentWith dir (toFieldContent OutputContext dir) (OutputType :: CatType OUT union)
-    unionNames <- getUnionNames content
-    extendImplements interfaceName unionNames
+    insertType dir deriveInterfaceDefinition interface
+    unionNames <- deriveTypeGuardUnions dir union
+    extendImplements (useTypename (dirGQL dir) interface) unionNames
     where
-      interfaceName :: TypeName
-      interfaceName = useTypename (dirGQL dir) interfaceProxy
-      interfaceProxy :: CatType OUT interface
-      interfaceProxy = OutputType
-      unionProxy :: CatType OUT union
-      unionProxy = OutputType
-      getUnionNames :: TypeContent TRUE OUT CONST -> SchemaT OUT [TypeName]
-      getUnionNames DataUnion {unionMembers} = pure $ toList $ memberName <$> unionMembers
-      getUnionNames DataObject {} = pure [useTypename (dirGQL dir) unionProxy]
-      getUnionNames _ = throwError "guarded type must be an union or object"
+      interface = OutputType :: CatType OUT interface
+      union = OutputType :: CatType OUT union
 
 instance (gql b, dir a) => DeriveKindedType gql dir OUT CUSTOM (a -> b) where
   deriveKindedContent UseDirective {..} OutputType = do
@@ -150,15 +145,14 @@ class DeriveArgs gql (k :: DerivingKind) a where
   deriveArgs :: UseDirective gql dir -> f k a -> SchemaT IN (ArgumentsDefinition CONST)
 
 instance (DERIVE_TYPE gql IN a) => DeriveArgs gql TYPE a where
-  deriveArgs dir = fmap fieldsToArguments . deriveFieldsWith dir (toFieldContent InputContext dir) . inputType
+  deriveArgs dir = fmap fieldsToArguments . deriveFields dir . inputType
 
 instance (KnownSymbol name, gql a) => DeriveArgs gql CUSTOM (Arg name a) where
   deriveArgs UseDirective {..} _ = do
     useDeriveType dirGQL proxy
     pure $ fieldsToArguments $ singleton argName $ mkField Nothing argName argTypeRef
     where
-      proxy :: CatType IN a
-      proxy = InputType
+      proxy = InputType :: CatType IN a
       argName = symbolName (Proxy @name)
       argTypeRef = TypeRef {typeConName = gqlTypeName, typeWrappers = gqlWrappers}
       TypeData {gqlTypeName, gqlWrappers} = useTypeData dirGQL proxy
