@@ -100,25 +100,25 @@ class DeriveKindedType gql dir (cat :: TypeCategory) (kind :: DerivingKind) a wh
   deriveKindedContent :: UseDirective gql dir -> CatType cat (f kind a) -> TyContentM cat
   deriveKindedContent _ _ = pure Nothing
 
-  deriveTypeV :: UseDirective gql dir -> CatType cat (f kind a) -> SchemaT cat (TypeDefinition cat CONST)
+  deriveKindedType :: UseDirective gql dir -> CatType cat (f kind a) -> SchemaT cat (TypeDefinition cat CONST)
 
 instance (gql a) => DeriveKindedType gql dir cat WRAPPER (f a) where
-  deriveTypeV UseDirective {..} = useDeriveType dirGQL . catMap (Proxy @a)
+  deriveKindedType UseDirective {..} = useDeriveType dirGQL . catMap (Proxy @a)
 
 instance (DecodeScalar a, gql a) => DeriveKindedType gql dir cat SCALAR a where
-  deriveTypeV dir = deriveScalarDefinition scalarValidator dir . unliftKind
+  deriveKindedType dir = deriveScalarDefinition scalarValidator dir . unliftKind
 
 instance DERIVE_TYPE gql cat a => DeriveKindedType gql dir cat TYPE a where
-  deriveTypeV dir = deriveTypeDefinition dir . unliftKind
+  deriveKindedType dir = deriveTypeDefinition dir . unliftKind
 
 instance (gql a) => DeriveKindedType gql dir cat CUSTOM (Resolver o e m a) where
-  deriveTypeV UseDirective {..} = useDeriveType dirGQL . catMap (Proxy @a)
+  deriveKindedType UseDirective {..} = useDeriveType dirGQL . catMap (Proxy @a)
 
 instance (gql (Value CONST)) => DeriveKindedType gql dir cat CUSTOM (Value CONST) where
-  deriveTypeV dir = deriveScalarDefinition (const $ ScalarDefinition pure) dir . unliftKind
+  deriveKindedType dir = deriveScalarDefinition (const $ ScalarDefinition pure) dir . unliftKind
 
 instance (gql [(k, v)]) => DeriveKindedType gql dir cat CUSTOM (Map k v) where
-  deriveTypeV UseDirective {..} = useDeriveType dirGQL . catMap (Proxy @[(k, v)])
+  deriveKindedType UseDirective {..} = useDeriveType dirGQL . catMap (Proxy @[(k, v)])
 
 instance
   ( DERIVE_TYPE gql OUT interface,
@@ -126,7 +126,7 @@ instance
   ) =>
   DeriveKindedType gql dir OUT CUSTOM (TypeGuard interface union)
   where
-  deriveTypeV dir OutputType = do
+  deriveKindedType dir OutputType = do
     unionNames <- deriveTypeGuardUnions dir union
     extendImplements (useTypename (dirGQL dir) interface) unionNames
     deriveInterfaceDefinition dir interface
@@ -141,7 +141,7 @@ instance (gql b, dir a) => DeriveKindedType gql dir OUT CUSTOM (a -> b) where
     case b of
       Just (FieldArgs x) -> Just . FieldArgs <$> (a <:> x)
       Nothing -> pure $ Just (FieldArgs a)
-  deriveTypeV UseDirective {..} OutputType = useDeriveType dirGQL (outputType $ Proxy @b)
+  deriveKindedType UseDirective {..} OutputType = useDeriveType dirGQL (outputType $ Proxy @b)
 
 class DeriveArgs gql (k :: DerivingKind) a where
   deriveArgs :: UseDirective gql dir -> f k a -> SchemaT IN (ArgumentsDefinition CONST)

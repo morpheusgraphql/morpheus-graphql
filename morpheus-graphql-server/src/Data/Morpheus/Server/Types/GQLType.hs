@@ -152,7 +152,7 @@ noInputError :: (MonadError GQLError m, GQLType a) => CatType cat a -> m b
 noInputError proxy = throwError $ internal $ "type " <> msg (deriveTypename proxy) <> "can't be a input type"
 
 deriveOutputType :: (GQLType a, DERIVE OUT a) => CatType c a -> SchemaT c (TypeDefinition c CONST)
-deriveOutputType p@OutputType = deriveTypeV withDir (lifted p)
+deriveOutputType p@OutputType = deriveKindedType withDir (lifted p)
 deriveOutputType p@InputType = noInputError p
 
 deriveOutputContent :: (GQLType a, DERIVE OUT a) => CatType c a -> TyContentM c
@@ -186,7 +186,7 @@ class GQLType a where
 
   __deriveType :: CatType c a -> SchemaT c (TypeDefinition c CONST)
   default __deriveType :: DERIVE c a => CatType c a -> SchemaT c (TypeDefinition c CONST)
-  __deriveType = deriveTypeV withDir . lifted
+  __deriveType = deriveKindedType withDir . lifted
 
   __deriveContent :: CatType c a -> TyContentM c
   default __deriveContent :: DERIVE c a => CatType c a -> TyContentM c
