@@ -26,10 +26,7 @@ where
 
 import Data.Morpheus.Internal.Ext ((<:>))
 import Data.Morpheus.Internal.Utils (singleton)
-import Data.Morpheus.Server.Deriving.Schema.Internal
-  ( CatType,
-    TyContentM,
-  )
+import Data.Morpheus.Server.Deriving.Schema.Internal (CatType)
 import Data.Morpheus.Server.Deriving.Schema.TypeContent
   ( deriveFields,
     deriveInterfaceDefinition,
@@ -78,7 +75,6 @@ import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition,
     CONST,
     FALSE,
-    FieldContent (..),
     IN,
     OUT,
     ScalarDefinition (..),
@@ -94,7 +90,7 @@ import GHC.Generics
 import GHC.TypeLits
 import Relude
 
-type DERIVE_TYPE gql k a = (gql a, DeriveWith gql gql (TyContentM k) (Rep a))
+type DERIVE_TYPE gql c a = (gql a, DeriveWith gql gql (SchemaT c (Maybe (ArgumentsDefinition CONST))) (Rep a))
 
 -- | DeriveType With specific Kind: 'kind': object, scalar, enum ...
 class DeriveKindedType gql dir (cat :: TypeCategory) (kind :: DerivingKind) a where
@@ -134,13 +130,13 @@ type family HasArguments a where
   HasArguments b = FALSE
 
 class DeriveFieldArguments gql dir (k :: Bool) a where
-  deriveKindedContent :: UseDirective gql dir -> f k a -> TyContentM OUT
+  deriveFieldArguments :: UseDirective gql dir -> f k a -> SchemaT OUT (Maybe (ArgumentsDefinition CONST))
 
 instance DeriveFieldArguments gql dir FALSE a where
-  deriveKindedContent _ _ = pure Nothing
+  deriveFieldArguments _ _ = pure Nothing
 
 instance (gql b, dir a) => DeriveFieldArguments gql dir TRUE (a -> b) where
-  deriveKindedContent UseDirective {..} _ = do
+  deriveFieldArguments UseDirective {..} _ = do
     a <- useDeriveArguments dirArgs (Proxy @a)
     b <- useDeriveFieldArguments dirGQL (OutputType :: CatType OUT b)
     case b of

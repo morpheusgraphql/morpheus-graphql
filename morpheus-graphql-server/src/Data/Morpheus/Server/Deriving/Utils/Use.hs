@@ -36,7 +36,7 @@ data UseGQLType gql = UseGQLType
     useTypename :: forall c a. gql a => CatType c a -> TypeName,
     useTypeData :: forall c a. gql a => CatType c a -> TypeData,
     useDeriveType :: forall c a. gql a => CatType c a -> SchemaT c (TypeDefinition c CONST),
-    useDeriveFieldArguments :: forall c a. gql a => CatType c a -> TyContentM c
+    useDeriveFieldArguments :: forall c a. gql a => CatType c a -> SchemaT c (Maybe (ArgumentsDefinition CONST))
   }
 
 data UseArguments args = UseArguments

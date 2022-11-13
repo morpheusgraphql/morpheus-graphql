@@ -25,7 +25,6 @@ import Data.Morpheus.Server.Deriving.Schema.Enum
   )
 import Data.Morpheus.Server.Deriving.Schema.Internal
   ( CatType,
-    TyContentM,
   )
 import Data.Morpheus.Server.Deriving.Schema.Object
   ( buildObjectTypeContent,
@@ -143,7 +142,7 @@ deriveFields ::
   SchemaT cat (FieldsDefinition cat CONST)
 deriveFields dirs kindedType = deriveTypeContentWith dirs kindedType >>= withObject (dirGQL dirs) kindedType
 
-toFieldContent :: CatContext cat -> UseDirective gql dir -> DeriveTypeOptions cat gql gql (TyContentM cat)
+toFieldContent :: CatContext cat -> UseDirective gql dir -> DeriveTypeOptions cat gql gql (SchemaT cat (Maybe (ArgumentsDefinition CONST)))
 toFieldContent ctx dir@UseDirective {..} =
   DeriveTypeOptions
     { __typeGetType = useTypeData dirGQL . addContext ctx,

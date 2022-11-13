@@ -146,9 +146,7 @@ type family PARAM k a where
 
 type DERIVE_T c a = (DeriveKindedType GQLType DeriveDirective c (KIND a) (Lifted a))
 
-type DERIVE_A a = (DeriveFieldArguments GQLType DeriveDirective (HasArguments a) a)
-
-type DERIVE_WITH c a = (DeriveWith GQLType GQLType (TyContentM c) (Rep a))
+type DERIVE_WITH c a = (DeriveWith GQLType GQLType (SchemaT c (Maybe (ArgumentsDefinition CONST))) (Rep a))
 
 noInputError :: (MonadError GQLError m, GQLType a) => CatType cat a -> m b
 noInputError proxy = throwError $ internal $ "type " <> msg (deriveTypename proxy) <> "can't be a input type"
@@ -156,10 +154,6 @@ noInputError proxy = throwError $ internal $ "type " <> msg (deriveTypename prox
 deriveOutputType :: (GQLType a, DERIVE_T OUT a) => CatType c a -> SchemaT c (TypeDefinition c CONST)
 deriveOutputType p@OutputType = deriveKindedType withDir (lifted p)
 deriveOutputType p@InputType = noInputError p
-
-deriveOutputContent :: forall a c. (GQLType a, DERIVE_A a) => CatType c a -> TyContentM c
-deriveOutputContent OutputType = deriveKindedContent withDir (KindedProxy :: KindedProxy (HasArguments a) a)
-deriveOutputContent InputType = pure Nothing
 
 -- | GraphQL type, every graphQL type should have an instance of 'GHC.Generics.Generic' and 'GQLType'.
 --
@@ -190,9 +184,13 @@ class GQLType a where
   default __deriveType :: DERIVE_T c a => CatType c a -> SchemaT c (TypeDefinition c CONST)
   __deriveType = deriveKindedType withDir . lifted
 
-  __deriveContent :: CatType c a -> TyContentM c
-  default __deriveContent :: DERIVE_A a => CatType c a -> TyContentM c
-  __deriveContent = deriveOutputContent
+  __deriveFieldArguments :: CatType c a -> SchemaT c (Maybe (ArgumentsDefinition CONST))
+  default __deriveFieldArguments ::
+    (DeriveFieldArguments GQLType DeriveDirective (HasArguments a) a) =>
+    CatType c a ->
+    SchemaT c (Maybe (ArgumentsDefinition CONST))
+  __deriveFieldArguments OutputType = deriveFieldArguments withDir (KindedProxy :: KindedProxy (HasArguments a) a)
+  __deriveFieldArguments InputType = pure Nothing
 
 instance GQLType Int where
   type KIND Int = SCALAR
@@ -297,7 +295,7 @@ instance (GQLType a) => GQLType (NamedResolverT m a) where
   type KIND (NamedResolverT m a) = CUSTOM
   __type = __type . catMap (Proxy :: Proxy a)
   __deriveType = __deriveType . catMap (Proxy @a)
-  __deriveContent = __deriveContent . catMap (Proxy @a)
+  __deriveFieldArguments = __deriveFieldArguments . catMap (Proxy @a)
 
 type EncodeValue a = EncodeKind (KIND a) a
 
@@ -422,7 +420,7 @@ withGQL =
       useTypename = gqlTypeName . __type,
       useTypeData = __type,
       useDeriveType = __deriveType,
-      useDeriveFieldArguments = __deriveContent
+      useDeriveFieldArguments = __deriveFieldArguments
     }
 
 withDir :: UseDirective GQLType DeriveDirective

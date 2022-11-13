@@ -20,7 +20,6 @@
 
 module Data.Morpheus.Server.Deriving.Schema.Internal
   ( CatType (..),
-    TyContentM,
     fromSchema,
   )
 where
@@ -34,13 +33,8 @@ import Data.Morpheus.Internal.Ext
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
   )
-import Data.Morpheus.Server.Types.SchemaT
-  ( SchemaT,
-  )
 import Data.Morpheus.Types.Internal.AST
-  ( ArgumentsDefinition,
-    CONST,
-    Schema (..),
+  ( Schema (..),
     VALID,
   )
 import Language.Haskell.TH (Exp, Q)
@@ -49,5 +43,3 @@ import Relude hiding (empty)
 fromSchema :: GQLResult (Schema VALID) -> Q Exp
 fromSchema Success {} = [|()|]
 fromSchema Failure {errors} = fail (show errors)
-
-type TyContentM kind = SchemaT kind (Maybe (ArgumentsDefinition CONST))
