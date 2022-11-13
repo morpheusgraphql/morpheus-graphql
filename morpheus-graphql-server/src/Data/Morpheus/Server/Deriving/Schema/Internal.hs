@@ -21,7 +21,6 @@
 module Data.Morpheus.Server.Deriving.Schema.Internal
   ( CatType (..),
     TyContentM,
-    TyContent,
     fromSchema,
   )
 where
@@ -39,10 +38,9 @@ import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( CONST,
-    FieldContent (..),
+  ( ArgumentsDefinition,
+    CONST,
     Schema (..),
-    TRUE,
     VALID,
   )
 import Language.Haskell.TH (Exp, Q)
@@ -52,6 +50,4 @@ fromSchema :: GQLResult (Schema VALID) -> Q Exp
 fromSchema Success {} = [|()|]
 fromSchema Failure {errors} = fail (show errors)
 
-type TyContentM kind = SchemaT kind (TyContent kind)
-
-type TyContent kind = Maybe (FieldContent TRUE kind CONST)
+type TyContentM kind = SchemaT kind (Maybe (ArgumentsDefinition CONST))

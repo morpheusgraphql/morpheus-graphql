@@ -25,7 +25,6 @@ import Data.Morpheus.Server.Deriving.Schema.Enum
   )
 import Data.Morpheus.Server.Deriving.Schema.Internal
   ( CatType,
-    TyContent,
     TyContentM,
   )
 import Data.Morpheus.Server.Deriving.Schema.Object
@@ -56,14 +55,14 @@ buildTypeContent ::
   (gql a) =>
   UseDirective gql args ->
   CatType kind a ->
-  [ConsRep (TyContent kind)] ->
+  [ConsRep (Maybe (ArgumentsDefinition CONST))] ->
   SchemaT kind (TypeContent TRUE kind CONST)
 buildTypeContent options scope cons | all isEmptyConstraint cons = buildEnumTypeContent options scope (consName <$> cons)
 buildTypeContent options scope [ConsRep {consFields}] = buildObjectTypeContent options scope consFields
 buildTypeContent options scope cons = buildUnionTypeContent (dirGQL options) scope cons
 
 deriveTypeContentWith ::
-  (gql a, DeriveWith gql gql (SchemaT kind (TyContent kind)) (Rep a)) =>
+  (gql a, DeriveWith gql gql (SchemaT kind (Maybe (ArgumentsDefinition CONST))) (Rep a)) =>
   UseDirective gql args ->
   CatType kind a ->
   SchemaT kind (TypeContent TRUE kind CONST)
@@ -73,7 +72,7 @@ deriveTypeContentWith dir proxy =
 
 deriveTypeGuardUnions ::
   ( gql a,
-    DeriveWith gql gql (SchemaT OUT (TyContent OUT)) (Rep a)
+    DeriveWith gql gql (SchemaT OUT (Maybe (ArgumentsDefinition CONST))) (Rep a)
   ) =>
   UseDirective gql args ->
   CatType OUT a ->
@@ -105,14 +104,14 @@ deriveScalarDefinition ::
 deriveScalarDefinition f dir p = fillTypeContent dir p (mkScalar p (f p))
 
 deriveTypeDefinition ::
-  (gql a, DeriveWith gql gql (SchemaT c (TyContent c)) (Rep a)) =>
+  (gql a, DeriveWith gql gql (SchemaT c (Maybe (ArgumentsDefinition CONST))) (Rep a)) =>
   UseDirective gql args ->
   CatType c a ->
   SchemaT c (TypeDefinition c CONST)
 deriveTypeDefinition dir proxy = deriveTypeContentWith dir proxy >>= fillTypeContent dir proxy
 
 deriveInterfaceDefinition ::
-  (gql a, DeriveWith gql gql (SchemaT OUT (TyContent OUT)) (Rep a)) =>
+  (gql a, DeriveWith gql gql (SchemaT OUT (Maybe (ArgumentsDefinition CONST))) (Rep a)) =>
   UseDirective gql args ->
   CatType OUT a ->
   SchemaT OUT (TypeDefinition OUT CONST)
@@ -137,7 +136,7 @@ fillTypeContent options@UseDirective {dirGQL = UseGQLType {..}} proxy content = 
 
 deriveFields ::
   ( gql a,
-    DeriveWith gql gql (SchemaT cat (TyContent cat)) (Rep a)
+    DeriveWith gql gql (SchemaT cat (Maybe (ArgumentsDefinition CONST))) (Rep a)
   ) =>
   UseDirective gql args ->
   CatType cat a ->

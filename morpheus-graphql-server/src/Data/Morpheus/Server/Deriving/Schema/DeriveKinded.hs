@@ -144,8 +144,8 @@ instance (gql b, dir a) => DeriveFieldArguments gql dir TRUE (a -> b) where
     a <- useDeriveArguments dirArgs (Proxy @a)
     b <- useDeriveFieldArguments dirGQL (OutputType :: CatType OUT b)
     case b of
-      Just (FieldArgs x) -> Just . FieldArgs <$> (a <:> x)
-      Nothing -> pure $ Just (FieldArgs a)
+      Just x -> Just <$> (a <:> x)
+      Nothing -> pure $ Just a
 
 class DeriveArgs gql (k :: DerivingKind) a where
   deriveArgs :: UseDirective gql dir -> f k a -> SchemaT IN (ArgumentsDefinition CONST)
