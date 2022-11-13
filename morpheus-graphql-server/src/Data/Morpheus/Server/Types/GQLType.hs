@@ -148,12 +148,12 @@ type family PARAM k a where
 
 type DERIVE_T c a = (DeriveKindedType GQLType DeriveDirective c (KIND a) (Lifted a))
 
-noInputError :: (MonadError GQLError m, GQLType a) => CatType cat a -> m b
-noInputError proxy = throwError $ internal $ "type " <> msg (deriveTypename proxy) <> "can't be a input type"
+cantBeInputType :: (MonadError GQLError m, GQLType a) => CatType cat a -> m b
+cantBeInputType proxy = throwError $ internal $ "type " <> msg (deriveTypename proxy) <> "can't be a input type"
 
 deriveOutputType :: (GQLType a, DERIVE_T OUT a) => CatType c a -> SchemaT c (TypeDefinition c CONST)
 deriveOutputType p@OutputType = deriveKindedType withDir (lifted p)
-deriveOutputType p@InputType = noInputError p
+deriveOutputType p@InputType = cantBeInputType p
 
 -- | GraphQL type, every graphQL type should have an instance of 'GHC.Generics.Generic' and 'GQLType'.
 --
@@ -267,7 +267,7 @@ instance (GQLType b, EncodeKind (KIND a) a, DeriveArgs GQLType (KIND a) a) => GQ
   type KIND (a -> b) = CUSTOM
   __type = __type . catMap (Proxy @b)
   __deriveType OutputType = __deriveType (OutputType :: CatType OUT b)
-  __deriveType proxy = noInputError proxy
+  __deriveType proxy = cantBeInputType proxy
 
 instance (GQLType k, GQLType v, Typeable k, Typeable v) => GQLType (Map k v) where
   type KIND (Map k v) = CUSTOM
@@ -298,7 +298,7 @@ instance (DERIVE_TYPE GQLType OUT i, DERIVE_TYPE GQLType OUT u) => GQLType (Type
     where
       interface = OutputType :: CatType OUT i
       union = OutputType :: CatType OUT u
-  __deriveType proxy = noInputError proxy
+  __deriveType proxy = cantBeInputType proxy
 
 instance (GQLType a) => GQLType (NamedResolverT m a) where
   type KIND (NamedResolverT m a) = CUSTOM
