@@ -115,9 +115,6 @@ instance (gql a) => DeriveKindedType gql dir cat CUSTOM (Resolver o e m a) where
 instance (gql (Value CONST)) => DeriveKindedType gql dir cat CUSTOM (Value CONST) where
   deriveKindedType dir = deriveScalarDefinition (const $ ScalarDefinition pure) dir . unliftKind
 
-instance (gql [(k, v)]) => DeriveKindedType gql dir cat CUSTOM (Map k v) where
-  deriveKindedType UseDirective {..} = useDeriveType dirGQL . catMap (Proxy @[(k, v)])
-
 instance
   ( DERIVE_TYPE gql OUT interface,
     DERIVE_TYPE gql OUT union
@@ -146,8 +143,6 @@ instance DeriveKindedContent gql dir c SCALAR a
 instance DeriveKindedContent gql dir c TYPE a
 
 instance DeriveKindedContent gql dir c WRAPPER a
-
-instance DeriveKindedContent gql dir c CUSTOM (Map k v)
 
 instance DeriveKindedContent gql dir c CUSTOM (Resolver o e m a)
 

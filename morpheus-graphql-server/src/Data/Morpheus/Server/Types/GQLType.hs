@@ -275,6 +275,8 @@ instance (GQLType b, EncodeKind (KIND a) a, DeriveArgs GQLType (KIND a) a) => GQ
 instance (GQLType k, GQLType v, Typeable k, Typeable v) => GQLType (Map k v) where
   type KIND (Map k v) = CUSTOM
   __type = __type . catMap (Proxy @[Pair k v])
+  __deriveType = __deriveType . catMap (Proxy @[(k, v)])
+  __deriveContent _ = pure Nothing
 
 instance GQLType a => GQLType (Resolver o e m a) where
   type KIND (Resolver o e m a) = CUSTOM
