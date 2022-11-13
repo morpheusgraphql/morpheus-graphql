@@ -10,6 +10,8 @@ module Data.Morpheus.Server.Deriving.Schema.TypeContent
     insertTypeContent,
     deriveTypeContentWith,
     deriveFieldsWith,
+    deriveTypeDefinition,
+    insertType,
   )
 where
 
@@ -90,6 +92,15 @@ deriveTypeContentWith options x kindedProxy =
     ( deriveTypeWith x kindedProxy
     )
     >>= buildTypeContent options kindedProxy
+
+insertType ::
+  forall c gql a.
+  (gql a) =>
+  UseGQLType gql ->
+  (CatType c a -> SchemaT c (TypeDefinition c CONST)) ->
+  CatType c a ->
+  SchemaT c ()
+insertType gql f proxy = updateSchema (useFingerprint gql proxy) f proxy
 
 deriveTypeDefinition ::
   ( gql a,
