@@ -13,6 +13,7 @@ module Data.Morpheus.Server.Deriving.Schema.TypeContent
     deriveTypeDefinition,
     insertType,
     toFieldContent,
+    deriveScalarDefinition,
   )
 where
 
@@ -38,7 +39,7 @@ import Data.Morpheus.Server.Deriving.Utils
     isEmptyConstraint,
     unpackMonad,
   )
-import Data.Morpheus.Server.Deriving.Utils.Kinded (CatContext, addContext, getCatContext)
+import Data.Morpheus.Server.Deriving.Utils.Kinded (CatContext, addContext, getCatContext, mkScalar)
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseGQLType (..),
   )
@@ -105,17 +106,37 @@ insertType ::
   SchemaT c ()
 insertType gql f proxy = updateSchema (useFingerprint gql proxy) f proxy
 
+deriveScalarDefinition ::
+  gql a =>
+  UseDirective gql args ->
+  (CatType cat a -> ScalarDefinition) ->
+  CatType cat a ->
+  SchemaT kind (TypeDefinition cat CONST)
+deriveScalarDefinition dir f p = fillTypeContent dir p (mkScalar p (f p))
+
 deriveTypeDefinition ::
   (gql a, DeriveWith gql gql (SchemaT c (TyContent c)) (Rep a)) =>
   UseDirective gql args ->
   CatType c a ->
   SchemaT c (TypeDefinition c CONST)
-deriveTypeDefinition dir proxy = do
-  content <- deriveTypeContentWith dir (toFieldContent (getCatContext proxy) dir) proxy
-  dirs <- deriveTypeDirectives dir proxy
-  let description = visitTypeDescription dir proxy Nothing
-  let typename = useTypename (dirGQL dir) proxy
-  pure (TypeDefinition description typename dirs content)
+deriveTypeDefinition dir proxy =
+  deriveTypeContentWith dir (toFieldContent (getCatContext proxy) dir) proxy
+    >>= fillTypeContent dir proxy
+
+fillTypeContent ::
+  gql a =>
+  UseDirective gql args ->
+  CatType c a ->
+  TypeContent TRUE cat CONST ->
+  SchemaT kind (TypeDefinition cat CONST)
+fillTypeContent options@UseDirective {dirGQL = UseGQLType {..}} proxy content = do
+  dirs <- deriveTypeDirectives options proxy
+  pure $
+    TypeDefinition
+      (visitTypeDescription options proxy Nothing)
+      (useTypename proxy)
+      dirs
+      content
 
 deriveFieldsWith ::
   ( gql a,

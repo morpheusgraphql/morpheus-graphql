@@ -101,10 +101,10 @@ instance (gql a) => DeriveKindedType gql dir cat WRAPPER (f a) where
   deriveKindedType UseDirective {..} = useDeriveType dirGQL . catMap (Proxy @a)
 
 instance (DecodeScalar a, gql a) => DeriveKindedType gql dir cat SCALAR a where
-  deriveKindedType dirs proxy = insertTypeContent dirs (pure . mkScalar proxy . scalarValidator) (unliftKind proxy)
+  deriveKindedType dir proxy = insertType (dirGQL dir) (deriveScalarDefinition dir scalarValidator) (unliftKind proxy)
 
 instance DERIVE_TYPE gql cat a => DeriveKindedType gql dir cat TYPE a where
-  deriveKindedType dirs proxy = insertType (dirGQL dirs) (deriveTypeDefinition dirs) (unliftKind proxy)
+  deriveKindedType dir proxy = insertType (dirGQL dir) (deriveTypeDefinition dir) (unliftKind proxy)
 
 instance (gql a) => DeriveKindedType gql dir cat CUSTOM (Resolver o e m a) where
   deriveKindedType UseDirective {..} = useDeriveType dirGQL . catMap (Proxy @a)
