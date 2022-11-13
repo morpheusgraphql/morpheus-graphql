@@ -43,7 +43,6 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
     CatType (..),
     catMap,
     inputType,
-    mkScalar,
     outputType,
     unliftKind,
   )
@@ -101,16 +100,16 @@ instance (gql a) => DeriveKindedType gql dir cat WRAPPER (f a) where
   deriveKindedType UseDirective {..} = useDeriveType dirGQL . catMap (Proxy @a)
 
 instance (DecodeScalar a, gql a) => DeriveKindedType gql dir cat SCALAR a where
-  deriveKindedType dir proxy = insertType (dirGQL dir) (deriveScalarDefinition dir scalarValidator) (unliftKind proxy)
+  deriveKindedType dir proxy = insertType dir (deriveScalarDefinition scalarValidator) (unliftKind proxy)
 
 instance DERIVE_TYPE gql cat a => DeriveKindedType gql dir cat TYPE a where
-  deriveKindedType dir proxy = insertType (dirGQL dir) (deriveTypeDefinition dir) (unliftKind proxy)
+  deriveKindedType dir proxy = insertType dir deriveTypeDefinition (unliftKind proxy)
 
 instance (gql a) => DeriveKindedType gql dir cat CUSTOM (Resolver o e m a) where
   deriveKindedType UseDirective {..} = useDeriveType dirGQL . catMap (Proxy @a)
 
 instance (gql (Value CONST)) => DeriveKindedType gql dir cat CUSTOM (Value CONST) where
-  deriveKindedType dirs proxy = insertTypeContent dirs (const $ pure $ mkScalar proxy $ ScalarDefinition pure) (unliftKind proxy)
+  deriveKindedType dir proxy = insertType dir (deriveScalarDefinition (const $ ScalarDefinition pure)) (unliftKind proxy)
 
 instance (gql [(k, v)]) => DeriveKindedType gql dir cat CUSTOM (Map k v) where
   deriveKindedType UseDirective {..} = useDeriveType dirGQL . catMap (Proxy @[(k, v)])

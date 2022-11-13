@@ -98,21 +98,21 @@ deriveTypeContentWith options x kindedProxy =
     >>= buildTypeContent options kindedProxy
 
 insertType ::
-  forall c gql a.
+  forall c gql a args.
   (gql a) =>
-  UseGQLType gql ->
-  (CatType c a -> SchemaT c (TypeDefinition c CONST)) ->
+  UseDirective gql args ->
+  (UseDirective gql args -> CatType c a -> SchemaT c (TypeDefinition c CONST)) ->
   CatType c a ->
   SchemaT c ()
-insertType gql f proxy = updateSchema (useFingerprint gql proxy) f proxy
+insertType dir f proxy = updateSchema (useFingerprint (dirGQL dir) proxy) (f dir) proxy
 
 deriveScalarDefinition ::
   gql a =>
-  UseDirective gql args ->
   (CatType cat a -> ScalarDefinition) ->
+  UseDirective gql args ->
   CatType cat a ->
   SchemaT kind (TypeDefinition cat CONST)
-deriveScalarDefinition dir f p = fillTypeContent dir p (mkScalar p (f p))
+deriveScalarDefinition f dir p = fillTypeContent dir p (mkScalar p (f p))
 
 deriveTypeDefinition ::
   (gql a, DeriveWith gql gql (SchemaT c (TyContent c)) (Rep a)) =>
