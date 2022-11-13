@@ -23,9 +23,6 @@ module Data.Morpheus.Server.Deriving.Schema.DeriveKinded
   )
 where
 
-import Data.Morpheus.App.Internal.Resolving
-  ( Resolver,
-  )
 import Data.Morpheus.Internal.Ext ((<:>))
 import Data.Morpheus.Internal.Utils (singleton)
 import Data.Morpheus.Server.Deriving.Schema.Internal
@@ -109,16 +106,11 @@ instance (DecodeScalar a, gql a) => DeriveKindedType gql dir cat SCALAR a where
 instance DERIVE_TYPE gql cat a => DeriveKindedType gql dir cat TYPE a where
   deriveKindedType dir = deriveTypeDefinition dir . unliftKind
 
-instance (gql a) => DeriveKindedType gql dir cat CUSTOM (Resolver o e m a) where
-  deriveKindedType UseDirective {..} = useDeriveType dirGQL . catMap (Proxy @a)
-
 instance (gql (Value CONST)) => DeriveKindedType gql dir cat CUSTOM (Value CONST) where
   deriveKindedType dir = deriveScalarDefinition (const $ ScalarDefinition pure) dir . unliftKind
 
 instance
-  ( DERIVE_TYPE gql OUT interface,
-    DERIVE_TYPE gql OUT union
-  ) =>
+  (DERIVE_TYPE gql OUT interface, DERIVE_TYPE gql OUT union) =>
   DeriveKindedType gql dir OUT CUSTOM (TypeGuard interface union)
   where
   deriveKindedType dir OutputType = do
@@ -143,8 +135,6 @@ instance DeriveKindedContent gql dir c SCALAR a
 instance DeriveKindedContent gql dir c TYPE a
 
 instance DeriveKindedContent gql dir c WRAPPER a
-
-instance DeriveKindedContent gql dir c CUSTOM (Resolver o e m a)
 
 instance DeriveKindedContent gql dir c CUSTOM (TypeGuard i u)
 

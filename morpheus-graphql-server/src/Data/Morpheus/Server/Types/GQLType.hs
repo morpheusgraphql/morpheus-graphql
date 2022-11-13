@@ -281,6 +281,8 @@ instance (GQLType k, GQLType v, Typeable k, Typeable v) => GQLType (Map k v) whe
 instance GQLType a => GQLType (Resolver o e m a) where
   type KIND (Resolver o e m a) = CUSTOM
   __type = __type . catMap (Proxy @a)
+  __deriveType = __deriveType . catMap (Proxy @a)
+  __deriveContent _ = pure Nothing
 
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (a, b) where
   __type = __type . catMap (Proxy @(Pair a b))
