@@ -142,7 +142,7 @@ instance DeriveFieldArguments gql dir FALSE a where
 instance (gql b, dir a) => DeriveFieldArguments gql dir TRUE (a -> b) where
   deriveKindedContent UseDirective {..} _ = do
     a <- useDeriveArguments dirArgs (Proxy @a)
-    b <- useDeriveContent dirGQL (OutputType :: CatType OUT b)
+    b <- useDeriveFieldArguments dirGQL (OutputType :: CatType OUT b)
     case b of
       Just (FieldArgs x) -> Just . FieldArgs <$> (a <:> x)
       Nothing -> pure $ Just (FieldArgs a)

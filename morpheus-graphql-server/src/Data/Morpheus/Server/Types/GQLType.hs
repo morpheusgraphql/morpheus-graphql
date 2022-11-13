@@ -422,7 +422,7 @@ withGQL =
       useTypename = gqlTypeName . __type,
       useTypeData = __type,
       useDeriveType = __deriveType,
-      useDeriveContent = __deriveContent
+      useDeriveFieldArguments = __deriveContent
     }
 
 withDir :: UseDirective GQLType DeriveDirective

@@ -148,7 +148,7 @@ toFieldContent :: CatContext cat -> UseDirective gql dir -> DeriveTypeOptions ca
 toFieldContent ctx dir@UseDirective {..} =
   DeriveTypeOptions
     { __typeGetType = useTypeData dirGQL . addContext ctx,
-      __typeApply = \proxy -> injectType dir (addContext ctx proxy) *> useDeriveContent dirGQL (addContext ctx proxy)
+      __typeApply = \proxy -> injectType dir (addContext ctx proxy) *> useDeriveFieldArguments dirGQL (addContext ctx proxy)
     }
 
 injectType :: gql a => UseDirective gql args -> CatType c a -> SchemaT c ()
