@@ -12,6 +12,7 @@ module Data.Morpheus.Server.Deriving.Schema.TypeContent
     deriveFieldsWith,
     deriveTypeDefinition,
     insertType,
+    toFieldContent,
   )
 where
 
@@ -22,6 +23,7 @@ import Data.Morpheus.Server.Deriving.Schema.Enum
 import Data.Morpheus.Server.Deriving.Schema.Internal
   ( CatType,
     TyContent,
+    TyContentM,
   )
 import Data.Morpheus.Server.Deriving.Schema.Object
   ( buildObjectTypeContent,
@@ -30,12 +32,13 @@ import Data.Morpheus.Server.Deriving.Schema.Object
 import Data.Morpheus.Server.Deriving.Schema.Union (buildUnionTypeContent)
 import Data.Morpheus.Server.Deriving.Utils
   ( ConsRep (..),
-    DeriveTypeOptions,
+    DeriveTypeOptions (..),
     DeriveWith,
     deriveTypeWith,
     isEmptyConstraint,
     unpackMonad,
   )
+import Data.Morpheus.Server.Deriving.Utils.Kinded (CatContext, addContext, getCatContext)
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseGQLType (..),
   )
@@ -103,18 +106,15 @@ insertType ::
 insertType gql f proxy = updateSchema (useFingerprint gql proxy) f proxy
 
 deriveTypeDefinition ::
-  ( gql a,
-    DeriveWith gql gql (SchemaT c (TyContent c)) (Rep a)
-  ) =>
+  (gql a, DeriveWith gql gql (SchemaT c (TyContent c)) (Rep a)) =>
   UseDirective gql args ->
-  DeriveTypeOptions c gql gql (SchemaT c (TyContent c)) ->
   CatType c a ->
   SchemaT c (TypeDefinition c CONST)
-deriveTypeDefinition dir@UseDirective {dirGQL} ctx proxy = do
-  content <- deriveTypeContentWith dir ctx proxy
+deriveTypeDefinition dir proxy = do
+  content <- deriveTypeContentWith dir (toFieldContent (getCatContext proxy) dir) proxy
   dirs <- deriveTypeDirectives dir proxy
   let description = visitTypeDescription dir proxy Nothing
-  let typename = useTypename dirGQL proxy
+  let typename = useTypename (dirGQL dir) proxy
   pure (TypeDefinition description typename dirs content)
 
 deriveFieldsWith ::
@@ -126,3 +126,10 @@ deriveFieldsWith ::
   CatType cat a ->
   SchemaT cat (FieldsDefinition cat CONST)
 deriveFieldsWith dirs cont kindedType = deriveTypeContentWith dirs cont kindedType >>= withObject (dirGQL dirs) kindedType
+
+toFieldContent :: CatContext cat -> UseDirective gql dir -> DeriveTypeOptions cat gql gql (TyContentM cat)
+toFieldContent ctx UseDirective {..} =
+  DeriveTypeOptions
+    { __typeGetType = useTypeData dirGQL . addContext ctx,
+      __typeApply = \proxy -> useDeriveType dirGQL (addContext ctx proxy) *> useDeriveContent dirGQL (addContext ctx proxy)
+    }
