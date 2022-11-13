@@ -19,7 +19,8 @@ module Data.Morpheus.Server.Deriving.Schema.DeriveKinded
   ( DeriveKindedType (..),
     DeriveArgs (..),
     DERIVE_TYPE,
-    DeriveKindedContent (..),
+    DeriveFieldArguments (..),
+    HasArguments,
   )
 where
 
@@ -76,10 +77,12 @@ import Data.Morpheus.Types.GQLScalar
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition,
     CONST,
+    FALSE,
     FieldContent (..),
     IN,
     OUT,
     ScalarDefinition (..),
+    TRUE,
     TypeCategory,
     TypeDefinition (..),
     TypeRef (..),
@@ -126,22 +129,18 @@ instance (gql b, dir a) => DeriveKindedType gql dir OUT CUSTOM (a -> b) where
 
 -- derive Content: only useful for deriving GQL arguments
 
-class DeriveKindedContent gql dir (cat :: TypeCategory) (kind :: DerivingKind) a where
-  deriveKindedContent :: UseDirective gql dir -> CatType cat (f kind a) -> TyContentM cat
+type family HasArguments a where
+  HasArguments (a -> b) = TRUE
+  HasArguments b = FALSE
+
+class DeriveFieldArguments gql dir (k :: Bool) a where
+  deriveKindedContent :: UseDirective gql dir -> f k a -> TyContentM OUT
+
+instance DeriveFieldArguments gql dir FALSE a where
   deriveKindedContent _ _ = pure Nothing
 
-instance DeriveKindedContent gql dir c SCALAR a
-
-instance DeriveKindedContent gql dir c TYPE a
-
-instance DeriveKindedContent gql dir c WRAPPER a
-
-instance DeriveKindedContent gql dir c CUSTOM (TypeGuard i u)
-
-instance DeriveKindedContent gql dir c CUSTOM (Value x)
-
-instance (gql b, dir a) => DeriveKindedContent gql dir OUT CUSTOM (a -> b) where
-  deriveKindedContent UseDirective {..} OutputType = do
+instance (gql b, dir a) => DeriveFieldArguments gql dir TRUE (a -> b) where
+  deriveKindedContent UseDirective {..} _ = do
     a <- useDeriveArguments dirArgs (Proxy @a)
     b <- useDeriveContent dirGQL (OutputType :: CatType OUT b)
     case b of
