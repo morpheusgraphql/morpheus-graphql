@@ -29,10 +29,8 @@ import Data.Morpheus.Internal.Utils (singleton)
 import Data.Morpheus.Server.Deriving.Schema.Internal (CatType)
 import Data.Morpheus.Server.Deriving.Schema.TypeContent
   ( deriveFields,
-    deriveInterfaceDefinition,
     deriveScalarDefinition,
     deriveTypeDefinition,
-    deriveTypeGuardUnions,
     injectType,
   )
 import Data.Morpheus.Server.Deriving.Utils.DeriveGType
@@ -42,7 +40,6 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
     catMap,
     inputType,
-    outputType,
     unliftKind,
   )
 import Data.Morpheus.Server.Deriving.Utils.Proxy (symbolName)
@@ -61,11 +58,9 @@ import Data.Morpheus.Server.Types.Kind
   )
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
-    extendImplements,
   )
 import Data.Morpheus.Server.Types.Types
   ( Arg (..),
-    TypeGuard,
   )
 import Data.Morpheus.Types.GQLScalar
   ( DecodeScalar (..),
@@ -77,12 +72,10 @@ import Data.Morpheus.Types.Internal.AST
     FALSE,
     IN,
     OUT,
-    ScalarDefinition (..),
     TRUE,
     TypeCategory,
     TypeDefinition (..),
     TypeRef (..),
-    Value,
     fieldsToArguments,
     mkField,
   )
@@ -104,26 +97,6 @@ instance (DecodeScalar a, gql a) => DeriveKindedType gql dir cat SCALAR a where
 
 instance DERIVE_TYPE gql cat a => DeriveKindedType gql dir cat TYPE a where
   deriveKindedType dir = deriveTypeDefinition dir . unliftKind
-
-instance (gql (Value CONST)) => DeriveKindedType gql dir cat CUSTOM (Value CONST) where
-  deriveKindedType dir = deriveScalarDefinition (const $ ScalarDefinition pure) dir . unliftKind
-
-instance
-  (DERIVE_TYPE gql OUT interface, DERIVE_TYPE gql OUT union) =>
-  DeriveKindedType gql dir OUT CUSTOM (TypeGuard interface union)
-  where
-  deriveKindedType dir OutputType = do
-    unionNames <- deriveTypeGuardUnions dir union
-    extendImplements (useTypename (dirGQL dir) interface) unionNames
-    deriveInterfaceDefinition dir interface
-    where
-      interface = OutputType :: CatType OUT interface
-      union = OutputType :: CatType OUT union
-
-instance (gql b, dir a) => DeriveKindedType gql dir OUT CUSTOM (a -> b) where
-  deriveKindedType UseDirective {..} OutputType = useDeriveType dirGQL (outputType $ Proxy @b)
-
--- derive Content: only useful for deriving GQL arguments
 
 type family HasArguments a where
   HasArguments (a -> b) = TRUE
