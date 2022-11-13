@@ -121,7 +121,7 @@ instance
   DeriveKindedType gql dir OUT CUSTOM (TypeGuard interface union)
   where
   deriveKindedType dir OutputType = do
-    insertTypeContent dir (fmap DataInterface . deriveFieldsWith dir (toFieldContent OutputContext dir) . outputType) interfaceProxy
+    insertType dir deriveInterfaceDefinition interfaceProxy
     content <- deriveTypeContentWith dir (toFieldContent OutputContext dir) (OutputType :: CatType OUT union)
     unionNames <- getUnionNames content
     extendImplements interfaceName unionNames

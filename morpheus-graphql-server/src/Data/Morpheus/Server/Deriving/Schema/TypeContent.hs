@@ -7,13 +7,13 @@
 
 module Data.Morpheus.Server.Deriving.Schema.TypeContent
   ( buildTypeContent,
-    insertTypeContent,
     deriveTypeContentWith,
     deriveFieldsWith,
     deriveTypeDefinition,
     insertType,
     toFieldContent,
     deriveScalarDefinition,
+    deriveInterfaceDefinition,
   )
 where
 
@@ -39,7 +39,7 @@ import Data.Morpheus.Server.Deriving.Utils
     isEmptyConstraint,
     unpackMonad,
   )
-import Data.Morpheus.Server.Deriving.Utils.Kinded (CatContext, addContext, getCatContext, mkScalar)
+import Data.Morpheus.Server.Deriving.Utils.Kinded (CatContext (OutputContext), addContext, getCatContext, mkScalar)
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseGQLType (..),
   )
@@ -59,29 +59,6 @@ buildTypeContent ::
 buildTypeContent options scope cons | all isEmptyConstraint cons = buildEnumTypeContent options scope (consName <$> cons)
 buildTypeContent options scope [ConsRep {consFields}] = buildObjectTypeContent options scope consFields
 buildTypeContent options scope cons = buildUnionTypeContent (dirGQL options) scope cons
-
-insertTypeContent ::
-  forall k gql args a.
-  (gql a) =>
-  UseDirective gql args ->
-  (CatType k a -> SchemaT k (TypeContent TRUE k CONST)) ->
-  CatType k a ->
-  SchemaT k ()
-insertTypeContent options@UseDirective {dirGQL = UseGQLType {..}} f proxy =
-  updateSchema
-    (useFingerprint proxy)
-    deriveD
-    proxy
-  where
-    deriveD x = do
-      content <- f x
-      dirs <- deriveTypeDirectives options proxy
-      pure $
-        TypeDefinition
-          (visitTypeDescription options proxy Nothing)
-          (useTypename proxy)
-          dirs
-          content
 
 deriveTypeContentWith ::
   ( DeriveWith gql derive (SchemaT kind (TyContent kind)) (Rep a),
@@ -122,6 +99,15 @@ deriveTypeDefinition ::
 deriveTypeDefinition dir proxy =
   deriveTypeContentWith dir (toFieldContent (getCatContext proxy) dir) proxy
     >>= fillTypeContent dir proxy
+
+deriveInterfaceDefinition ::
+  (gql a, DeriveWith gql gql (SchemaT OUT (TyContent OUT)) (Rep a)) =>
+  UseDirective gql args ->
+  CatType OUT a ->
+  SchemaT OUT (TypeDefinition OUT CONST)
+deriveInterfaceDefinition dir proxy = do
+  fields <- deriveFieldsWith dir (toFieldContent OutputContext dir) proxy
+  fillTypeContent dir proxy (DataInterface fields)
 
 fillTypeContent ::
   gql a =>
