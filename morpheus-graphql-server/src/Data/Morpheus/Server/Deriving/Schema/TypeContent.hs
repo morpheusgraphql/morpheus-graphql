@@ -8,12 +8,12 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Data.Morpheus.Server.Deriving.Schema.TypeContent
-  ( insertType,
-    deriveFields,
+  ( deriveFields,
     deriveTypeDefinition,
     deriveScalarDefinition,
     deriveInterfaceDefinition,
     deriveTypeGuardUnions,
+    injectType,
   )
 where
 
@@ -145,8 +145,11 @@ deriveFields ::
 deriveFields dirs kindedType = deriveTypeContentWith dirs kindedType >>= withObject (dirGQL dirs) kindedType
 
 toFieldContent :: CatContext cat -> UseDirective gql dir -> DeriveTypeOptions cat gql gql (TyContentM cat)
-toFieldContent ctx UseDirective {..} =
+toFieldContent ctx dir@UseDirective {..} =
   DeriveTypeOptions
     { __typeGetType = useTypeData dirGQL . addContext ctx,
-      __typeApply = \proxy -> useDeriveType dirGQL (addContext ctx proxy) *> useDeriveContent dirGQL (addContext ctx proxy)
+      __typeApply = \proxy -> injectType dir (addContext ctx proxy) *> useDeriveContent dirGQL (addContext ctx proxy)
     }
+
+injectType :: gql a => UseDirective gql args -> CatType c a -> SchemaT c ()
+injectType dir = insertType dir (\_ y -> useDeriveType (dirGQL dir) y)

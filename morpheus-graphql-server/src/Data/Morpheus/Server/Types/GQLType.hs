@@ -90,6 +90,7 @@ import Data.Morpheus.Types.Internal.AST
     ObjectEntry (..),
     Position (..),
     QUERY,
+    TypeDefinition (..),
     TypeName,
     TypeWrapper (..),
     Value (..),
@@ -150,8 +151,8 @@ type DERIVE_WITH c a = (DeriveWith GQLType GQLType (TyContentM c) (Rep a))
 noInputError :: (MonadError GQLError m, GQLType a) => CatType cat a -> m b
 noInputError proxy = throwError $ internal $ "type " <> msg (deriveTypename proxy) <> "can't be a input type"
 
-deriveOutputType :: (GQLType a, DERIVE OUT a) => CatType c a -> SchemaT c ()
-deriveOutputType p@OutputType = deriveKindedType withDir (lifted p)
+deriveOutputType :: (GQLType a, DERIVE OUT a) => CatType c a -> SchemaT c (TypeDefinition c CONST)
+deriveOutputType p@OutputType = deriveTypeV withDir (lifted p)
 deriveOutputType p@InputType = noInputError p
 
 deriveOutputContent :: (GQLType a, DERIVE OUT a) => CatType c a -> TyContentM c
@@ -183,9 +184,9 @@ class GQLType a where
   default __type :: Typeable a => CatType cat a -> TypeData
   __type proxy = deriveTypeData proxy (directives proxy)
 
-  __deriveType :: CatType c a -> SchemaT c ()
-  default __deriveType :: DERIVE c a => CatType c a -> SchemaT c ()
-  __deriveType = deriveKindedType withDir . lifted
+  __deriveType :: CatType c a -> SchemaT c (TypeDefinition c CONST)
+  default __deriveType :: DERIVE c a => CatType c a -> SchemaT c (TypeDefinition c CONST)
+  __deriveType = deriveTypeV withDir . lifted
 
   __deriveContent :: CatType c a -> TyContentM c
   default __deriveContent :: DERIVE c a => CatType c a -> TyContentM c
@@ -226,7 +227,7 @@ instance GQLType () where
 instance Typeable m => GQLType (Undefined m) where
   type KIND (Undefined m) = CUSTOM
   __type = mkTypeData __typenameUndefined
-  __deriveType _ = pure ()
+  __deriveType _ = undefined
   __deriveContent _ = pure Nothing
 
 instance GQLType a => GQLType (Maybe a) where

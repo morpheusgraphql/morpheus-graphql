@@ -27,6 +27,7 @@ import Data.Morpheus.Types.Internal.AST
     ArgumentsDefinition,
     CONST,
     OUT,
+    TypeDefinition (..),
     TypeName,
   )
 
@@ -34,7 +35,7 @@ data UseGQLType gql = UseGQLType
   { useFingerprint :: forall c a. gql a => CatType c a -> TypeFingerprint,
     useTypename :: forall c a. gql a => CatType c a -> TypeName,
     useTypeData :: forall c a. gql a => CatType c a -> TypeData,
-    useDeriveType :: forall c a. gql a => CatType c a -> SchemaT c (),
+    useDeriveType :: forall c a. gql a => CatType c a -> SchemaT c (TypeDefinition c CONST),
     useDeriveContent :: forall c a. gql a => CatType c a -> TyContentM c
   }
 
