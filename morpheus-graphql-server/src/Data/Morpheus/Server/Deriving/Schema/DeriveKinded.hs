@@ -5,7 +5,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -18,39 +17,36 @@
 module Data.Morpheus.Server.Deriving.Schema.DeriveKinded
   ( DeriveKindedType (..),
     DeriveArgs (..),
-    toFieldContent,
     DERIVE_TYPE,
+    DeriveFieldArguments (..),
+    HasArguments,
   )
 where
 
-import Control.Monad.Except (throwError)
-import Data.Morpheus.App.Internal.Resolving
-  ( Resolver,
-  )
-import Data.Morpheus.Internal.Ext
+import Data.Morpheus.Internal.Ext ((<:>))
 import Data.Morpheus.Internal.Utils (singleton)
-import Data.Morpheus.Server.Deriving.Schema.Internal
-  ( CatType,
-    TyContentM,
-  )
+import Data.Morpheus.Server.Deriving.Schema.Internal (CatType)
 import Data.Morpheus.Server.Deriving.Schema.TypeContent
-import Data.Morpheus.Server.Deriving.Utils
-  ( DeriveTypeOptions (..),
-    DeriveWith,
-    symbolName,
+  ( deriveFields,
+    deriveScalarDefinition,
+    deriveTypeDefinition,
+    injectType,
+  )
+import Data.Morpheus.Server.Deriving.Utils.DeriveGType
+  ( DeriveWith,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
-  ( CatContext (..),
-    CatType (..),
-    addContext,
+  ( CatType (..),
     catMap,
-    getCatContext,
     inputType,
-    mkScalar,
-    outputType,
     unliftKind,
   )
+import Data.Morpheus.Server.Deriving.Utils.Proxy (symbolName)
 import Data.Morpheus.Server.Deriving.Utils.Use
+  ( UseArguments (..),
+    UseDirective (..),
+    UseGQLType (..),
+  )
 import Data.Morpheus.Server.Types.Internal (TypeData (..))
 import Data.Morpheus.Server.Types.Kind
   ( CUSTOM,
@@ -61,11 +57,9 @@ import Data.Morpheus.Server.Types.Kind
   )
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
-    extendImplements,
   )
 import Data.Morpheus.Server.Types.Types
   ( Arg (..),
-    TypeGuard,
   )
 import Data.Morpheus.Types.GQLScalar
   ( DecodeScalar (..),
@@ -74,17 +68,13 @@ import Data.Morpheus.Types.GQLScalar
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition,
     CONST,
-    FieldContent (..),
+    FALSE,
     IN,
     OUT,
-    ScalarDefinition (..),
     TRUE,
     TypeCategory,
-    TypeContent (..),
-    TypeName,
+    TypeDefinition (..),
     TypeRef (..),
-    UnionMember (memberName),
-    Value,
     fieldsToArguments,
     mkField,
   )
@@ -92,84 +82,51 @@ import GHC.Generics
 import GHC.TypeLits
 import Relude
 
-type DERIVE_TYPE gql k a = (gql a, DeriveWith gql gql (TyContentM k) (Rep a))
-
-toFieldContent :: CatContext cat -> UseDirective gql dir -> DeriveTypeOptions cat gql gql (TyContentM cat)
-toFieldContent ctx UseDirective {..} =
-  DeriveTypeOptions
-    { __typeGetType = useTypeData dirGQL . addContext ctx,
-      __typeApply = \proxy -> useDeriveType dirGQL (addContext ctx proxy) *> useDeriveContent dirGQL (addContext ctx proxy)
-    }
+type DERIVE_TYPE gql c a = (gql a, DeriveWith gql gql (SchemaT c (Maybe (ArgumentsDefinition CONST))) (Rep a))
 
 -- | DeriveType With specific Kind: 'kind': object, scalar, enum ...
 class DeriveKindedType gql dir (cat :: TypeCategory) (kind :: DerivingKind) a where
-  deriveKindedType :: UseDirective gql dir -> CatType cat (f kind a) -> SchemaT cat ()
-  deriveKindedContent :: UseDirective gql dir -> CatType cat (f kind a) -> TyContentM cat
-  deriveKindedContent _ _ = pure Nothing
+  deriveKindedType :: UseDirective gql dir -> CatType cat (f kind a) -> SchemaT cat (TypeDefinition cat CONST)
 
 instance (gql a) => DeriveKindedType gql dir cat WRAPPER (f a) where
   deriveKindedType UseDirective {..} = useDeriveType dirGQL . catMap (Proxy @a)
 
 instance (DecodeScalar a, gql a) => DeriveKindedType gql dir cat SCALAR a where
-  deriveKindedType dirs proxy = insertTypeContent dirs (pure . mkScalar proxy . scalarValidator) (unliftKind proxy)
+  deriveKindedType dir = deriveScalarDefinition scalarValidator dir . unliftKind
 
 instance DERIVE_TYPE gql cat a => DeriveKindedType gql dir cat TYPE a where
-  deriveKindedType dirs proxy = insertTypeContent dirs (deriveTypeContentWith dirs (toFieldContent (getCatContext proxy) dirs)) (unliftKind proxy)
+  deriveKindedType dir = deriveTypeDefinition dir . unliftKind
 
-instance (gql a) => DeriveKindedType gql dir cat CUSTOM (Resolver o e m a) where
-  deriveKindedType UseDirective {..} = useDeriveType dirGQL . catMap (Proxy @a)
+type family HasArguments a where
+  HasArguments (a -> b) = TRUE
+  HasArguments b = FALSE
 
-instance (gql (Value CONST)) => DeriveKindedType gql dir cat CUSTOM (Value CONST) where
-  deriveKindedType dirs proxy = insertTypeContent dirs (const $ pure $ mkScalar proxy $ ScalarDefinition pure) (unliftKind proxy)
+class DeriveFieldArguments gql dir (k :: Bool) a where
+  deriveFieldArguments :: UseDirective gql dir -> f k a -> SchemaT OUT (Maybe (ArgumentsDefinition CONST))
 
-instance (gql [(k, v)]) => DeriveKindedType gql dir cat CUSTOM (Map k v) where
-  deriveKindedType UseDirective {..} = useDeriveType dirGQL . catMap (Proxy @[(k, v)])
+instance DeriveFieldArguments gql dir FALSE a where
+  deriveFieldArguments _ _ = pure Nothing
 
-instance
-  ( DERIVE_TYPE gql OUT interface,
-    DERIVE_TYPE gql OUT union
-  ) =>
-  DeriveKindedType gql dir OUT CUSTOM (TypeGuard interface union)
-  where
-  deriveKindedType dir OutputType = do
-    insertTypeContent dir (fmap DataInterface . deriveFieldsWith dir (toFieldContent OutputContext dir) . outputType) interfaceProxy
-    content <- deriveTypeContentWith dir (toFieldContent OutputContext dir) (OutputType :: CatType OUT union)
-    unionNames <- getUnionNames content
-    extendImplements interfaceName unionNames
-    where
-      interfaceName :: TypeName
-      interfaceName = useTypename (dirGQL dir) interfaceProxy
-      interfaceProxy :: CatType OUT interface
-      interfaceProxy = OutputType
-      unionProxy :: CatType OUT union
-      unionProxy = OutputType
-      getUnionNames :: TypeContent TRUE OUT CONST -> SchemaT OUT [TypeName]
-      getUnionNames DataUnion {unionMembers} = pure $ toList $ memberName <$> unionMembers
-      getUnionNames DataObject {} = pure [useTypename (dirGQL dir) unionProxy]
-      getUnionNames _ = throwError "guarded type must be an union or object"
-
-instance (gql b, dir a) => DeriveKindedType gql dir OUT CUSTOM (a -> b) where
-  deriveKindedContent UseDirective {..} OutputType = do
+instance (gql b, dir a) => DeriveFieldArguments gql dir TRUE (a -> b) where
+  deriveFieldArguments UseDirective {..} _ = do
     a <- useDeriveArguments dirArgs (Proxy @a)
-    b <- useDeriveContent dirGQL (OutputType :: CatType OUT b)
+    b <- useDeriveFieldArguments dirGQL (OutputType :: CatType OUT b)
     case b of
-      Just (FieldArgs x) -> Just . FieldArgs <$> (a <:> x)
-      Nothing -> pure $ Just (FieldArgs a)
-  deriveKindedType UseDirective {..} OutputType = useDeriveType dirGQL (outputType $ Proxy @b)
+      Just x -> Just <$> (a <:> x)
+      Nothing -> pure $ Just a
 
 class DeriveArgs gql (k :: DerivingKind) a where
   deriveArgs :: UseDirective gql dir -> f k a -> SchemaT IN (ArgumentsDefinition CONST)
 
 instance (DERIVE_TYPE gql IN a) => DeriveArgs gql TYPE a where
-  deriveArgs dir = fmap fieldsToArguments . deriveFieldsWith dir (toFieldContent InputContext dir) . inputType
+  deriveArgs dir = fmap fieldsToArguments . deriveFields dir . inputType
 
 instance (KnownSymbol name, gql a) => DeriveArgs gql CUSTOM (Arg name a) where
-  deriveArgs UseDirective {..} _ = do
-    useDeriveType dirGQL proxy
+  deriveArgs dir@UseDirective {..} _ = do
+    injectType dir proxy
     pure $ fieldsToArguments $ singleton argName $ mkField Nothing argName argTypeRef
     where
-      proxy :: CatType IN a
-      proxy = InputType
+      proxy = InputType :: CatType IN a
       argName = symbolName (Proxy @name)
       argTypeRef = TypeRef {typeConName = gqlTypeName, typeWrappers = gqlWrappers}
       TypeData {gqlTypeName, gqlWrappers} = useTypeData dirGQL proxy

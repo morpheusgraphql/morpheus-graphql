@@ -41,6 +41,7 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Server.Deriving.Schema.DeriveKinded
 import Data.Morpheus.Server.Deriving.Schema.Directive (UseDirective (..))
 import Data.Morpheus.Server.Deriving.Schema.Internal
+import Data.Morpheus.Server.Deriving.Schema.TypeContent
 import Data.Morpheus.Server.Deriving.Utils (ConsRep (..), DataType (..), DeriveWith, FieldRep (..))
 import Data.Morpheus.Server.Deriving.Utils.DeriveGType (DeriveValueOptions (..), deriveValue)
 import Data.Morpheus.Server.Deriving.Utils.Kinded (KindedProxy (KindedProxy), catMap, inputType, isIN)
@@ -64,7 +65,7 @@ import Data.Morpheus.Server.Types.Kind
     TYPE,
     WRAPPER,
   )
-import Data.Morpheus.Server.Types.SchemaT (SchemaT, withInput)
+import Data.Morpheus.Server.Types.SchemaT (SchemaT, extendImplements, withInput)
 import Data.Morpheus.Server.Types.TypeName (TypeFingerprint (..), getFingerprint, getTypename)
 import Data.Morpheus.Server.Types.Types
   ( Arg,
@@ -90,6 +91,8 @@ import Data.Morpheus.Types.Internal.AST
     ObjectEntry (..),
     Position (..),
     QUERY,
+    ScalarDefinition (..),
+    TypeDefinition (..),
     TypeName,
     TypeWrapper (..),
     Value (..),
@@ -143,20 +146,14 @@ type family PARAM k a where
   PARAM TYPE (t m) = t (Resolver QUERY () Maybe)
   PARAM k a = a
 
-type DERIVE c a = (DeriveKindedType GQLType DeriveDirective c (KIND a) (Lifted a))
+type DERIVE_T c a = (DeriveKindedType GQLType DeriveDirective c (KIND a) (Lifted a))
 
-type DERIVE_WITH c a = (DeriveWith GQLType GQLType (TyContentM c) (Rep a))
+cantBeInputType :: (MonadError GQLError m, GQLType a) => CatType cat a -> m b
+cantBeInputType proxy = throwError $ internal $ "type " <> msg (deriveTypename proxy) <> "can't be a input type"
 
-noInputError :: (MonadError GQLError m, GQLType a) => CatType cat a -> m b
-noInputError proxy = throwError $ internal $ "type " <> msg (deriveTypename proxy) <> "can't be a input type"
-
-deriveOutputType :: (GQLType a, DERIVE OUT a) => CatType c a -> SchemaT c ()
+deriveOutputType :: (GQLType a, DERIVE_T OUT a) => CatType c a -> SchemaT c (TypeDefinition c CONST)
 deriveOutputType p@OutputType = deriveKindedType withDir (lifted p)
-deriveOutputType p@InputType = noInputError p
-
-deriveOutputContent :: (GQLType a, DERIVE OUT a) => CatType c a -> TyContentM c
-deriveOutputContent p@OutputType = deriveKindedContent withDir (lifted p)
-deriveOutputContent p@InputType = noInputError p
+deriveOutputType p@InputType = cantBeInputType p
 
 -- | GraphQL type, every graphQL type should have an instance of 'GHC.Generics.Generic' and 'GQLType'.
 --
@@ -183,13 +180,17 @@ class GQLType a where
   default __type :: Typeable a => CatType cat a -> TypeData
   __type proxy = deriveTypeData proxy (directives proxy)
 
-  __deriveType :: CatType c a -> SchemaT c ()
-  default __deriveType :: DERIVE c a => CatType c a -> SchemaT c ()
+  __deriveType :: CatType c a -> SchemaT c (TypeDefinition c CONST)
+  default __deriveType :: DERIVE_T c a => CatType c a -> SchemaT c (TypeDefinition c CONST)
   __deriveType = deriveKindedType withDir . lifted
 
-  __deriveContent :: CatType c a -> TyContentM c
-  default __deriveContent :: DERIVE c a => CatType c a -> TyContentM c
-  __deriveContent = deriveKindedContent withDir . lifted
+  __deriveFieldArguments :: CatType c a -> SchemaT c (Maybe (ArgumentsDefinition CONST))
+  default __deriveFieldArguments ::
+    (DeriveFieldArguments GQLType DeriveDirective (HasArguments a) a) =>
+    CatType c a ->
+    SchemaT c (Maybe (ArgumentsDefinition CONST))
+  __deriveFieldArguments OutputType = deriveFieldArguments withDir (KindedProxy :: KindedProxy (HasArguments a) a)
+  __deriveFieldArguments InputType = pure Nothing
 
 instance GQLType Int where
   type KIND Int = SCALAR
@@ -218,6 +219,7 @@ instance GQLType ID where
 instance GQLType (Value CONST) where
   type KIND (Value CONST) = CUSTOM
   __type = mkTypeData "INTERNAL_VALUE"
+  __deriveType = deriveScalarDefinition (const $ ScalarDefinition pure) withDir
 
 -- WRAPPERS
 instance GQLType () where
@@ -226,8 +228,7 @@ instance GQLType () where
 instance Typeable m => GQLType (Undefined m) where
   type KIND (Undefined m) = CUSTOM
   __type = mkTypeData __typenameUndefined
-  __deriveType _ = pure ()
-  __deriveContent _ = pure Nothing
+  __deriveType _ = undefined
 
 instance GQLType a => GQLType (Maybe a) where
   type KIND (Maybe a) = WRAPPER
@@ -245,7 +246,7 @@ instance GQLType a => GQLType (NonEmpty a) where
   type KIND (NonEmpty a) = WRAPPER
   __type = __type . catMap (Proxy @[a])
 
-instance GQLType a => GQLType (Seq a) where
+instance (GQLType a) => GQLType (Seq a) where
   type KIND (Seq a) = WRAPPER
   __type = __type . catMap (Proxy @[a])
 
@@ -265,38 +266,45 @@ instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (Pair a b) wh
 instance (GQLType b, EncodeKind (KIND a) a, DeriveArgs GQLType (KIND a) a) => GQLType (a -> b) where
   type KIND (a -> b) = CUSTOM
   __type = __type . catMap (Proxy @b)
-  __deriveType = deriveOutputType
-  __deriveContent = deriveOutputContent
+  __deriveType OutputType = __deriveType (OutputType :: CatType OUT b)
+  __deriveType proxy = cantBeInputType proxy
 
 instance (GQLType k, GQLType v, Typeable k, Typeable v) => GQLType (Map k v) where
   type KIND (Map k v) = CUSTOM
   __type = __type . catMap (Proxy @[Pair k v])
+  __deriveType = __deriveType . catMap (Proxy @[(k, v)])
 
 instance GQLType a => GQLType (Resolver o e m a) where
   type KIND (Resolver o e m a) = CUSTOM
   __type = __type . catMap (Proxy @a)
+  __deriveType = __deriveType . catMap (Proxy @a)
 
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (a, b) where
   __type = __type . catMap (Proxy @(Pair a b))
   directives _ = typeDirective InputTypeNamespace {inputTypeNamespace = "Input"}
 
-instance (DERIVE OUT (Arg name value), GQLType value) => GQLType (Arg name value) where
+instance (DERIVE_T OUT (Arg name value), GQLType value) => GQLType (Arg name value) where
   type KIND (Arg name value) = CUSTOM
   __type = __type . catMap (Proxy @value)
   __deriveType = deriveOutputType
-  __deriveContent = deriveOutputContent
 
-instance (GQLType i, DERIVE_WITH OUT i, GQLType u, DERIVE_WITH OUT u) => GQLType (TypeGuard i u) where
+instance (DERIVE_TYPE GQLType OUT i, DERIVE_TYPE GQLType OUT u) => GQLType (TypeGuard i u) where
   type KIND (TypeGuard i u) = CUSTOM
   __type = __type . catMap (Proxy @i)
-  __deriveType = deriveOutputType
-  __deriveContent = deriveOutputContent
+  __deriveType OutputType = do
+    unions <- deriveTypeGuardUnions withDir union
+    extendImplements (useTypename withGQL interface) unions
+    deriveInterfaceDefinition withDir interface
+    where
+      interface = OutputType :: CatType OUT i
+      union = OutputType :: CatType OUT u
+  __deriveType proxy = cantBeInputType proxy
 
 instance (GQLType a) => GQLType (NamedResolverT m a) where
   type KIND (NamedResolverT m a) = CUSTOM
   __type = __type . catMap (Proxy :: Proxy a)
   __deriveType = __deriveType . catMap (Proxy @a)
-  __deriveContent = __deriveContent . catMap (Proxy @a)
+  __deriveFieldArguments = __deriveFieldArguments . catMap (Proxy @a)
 
 type EncodeValue a = EncodeKind (KIND a) a
 
@@ -421,7 +429,7 @@ withGQL =
       useTypename = gqlTypeName . __type,
       useTypeData = __type,
       useDeriveType = __deriveType,
-      useDeriveContent = __deriveContent
+      useDeriveFieldArguments = __deriveFieldArguments
     }
 
 withDir :: UseDirective GQLType DeriveDirective

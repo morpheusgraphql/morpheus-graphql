@@ -28,8 +28,8 @@ import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( CONST,
-    FieldContent (..),
+  ( ArgumentsDefinition,
+    CONST,
     IN,
     TRUE,
     TypeContent (..),
@@ -44,7 +44,7 @@ buildUnionTypeContent ::
   (gql a) =>
   UseGQLType gql ->
   CatType kind a ->
-  [ConsRep (Maybe (FieldContent TRUE kind CONST))] ->
+  [ConsRep (Maybe (ArgumentsDefinition CONST))] ->
   SchemaT k (TypeContent TRUE kind CONST)
 buildUnionTypeContent gql scope cons = mkUnionType scope unionRef unionCons
   where
@@ -54,7 +54,7 @@ buildUnionTypeContent gql scope cons = mkUnionType scope unionRef unionCons
 mkUnionType ::
   CatType kind a ->
   [TypeName] ->
-  [ConsRep (Maybe (FieldContent TRUE kind CONST))] ->
+  [ConsRep (Maybe (ArgumentsDefinition CONST))] ->
   SchemaT c (TypeContent TRUE kind CONST)
 mkUnionType p@InputType unionRef unionCons = DataInputUnion <$> (typeMembers >>= fromElems)
   where
@@ -75,7 +75,7 @@ mkUnionType p@OutputType unionRef unionCons =
 
 buildUnions ::
   CatType kind a ->
-  [ConsRep (Maybe (FieldContent TRUE kind CONST))] ->
+  [ConsRep (Maybe (ArgumentsDefinition CONST))] ->
   SchemaT c [TypeName]
 buildUnions proxy cons =
   traverse_ (defineObjectType proxy) cons $> fmap consName cons
