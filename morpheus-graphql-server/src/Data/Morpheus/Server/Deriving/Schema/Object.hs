@@ -41,35 +41,18 @@ import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
     insertType,
   )
-import Data.Morpheus.Types.Internal.AST
-  ( CONST,
-    FieldContent (..),
-    FieldDefinition (..),
-    FieldsDefinition,
-    OBJECT,
-    OUT,
-    TRUE,
-    TypeContent (..),
-    TypeDefinition,
-    mkField,
-    mkType,
-    mkTypeRef,
-    msg,
-    unitFieldName,
-    unitTypeName,
-    unsafeFromFields,
-  )
+import Data.Morpheus.Types.Internal.AST (ArgumentsDefinition, CONST, FieldContent (..), FieldDefinition (..), FieldsDefinition, OBJECT, OUT, TRUE, TypeContent (..), TypeDefinition, mkField, mkType, mkTypeRef, msg, unitFieldName, unitTypeName, unsafeFromFields)
 import Relude hiding (empty)
 
 defineObjectType ::
   CatType kind a ->
-  ConsRep (Maybe (FieldContent TRUE kind CONST)) ->
+  ConsRep (Maybe (ArgumentsDefinition CONST)) ->
   SchemaT cat ()
 defineObjectType proxy ConsRep {consName, consFields} = insertType . mkType consName . mkObjectTypeContent proxy =<< fields
   where
     fields
       | null consFields = defineEnumUnit $> singleton unitFieldName mkFieldUnit
-      | otherwise = pure $ unsafeFromFields $ map repToFieldDefinition consFields
+      | otherwise = pure $ unsafeFromFields $ map (repToFieldDefinition proxy) consFields
 
 mkFieldUnit :: FieldDefinition cat s
 mkFieldUnit = mkField Nothing unitFieldName (mkTypeRef unitTypeName)
@@ -78,16 +61,18 @@ buildObjectTypeContent ::
   gql a =>
   UseDirective gql args ->
   CatType cat a ->
-  [FieldRep (Maybe (FieldContent TRUE cat CONST))] ->
+  [FieldRep (Maybe (ArgumentsDefinition CONST))] ->
   SchemaT k (TypeContent TRUE cat CONST)
 buildObjectTypeContent options scope consFields = do
-  xs <- traverse (setGQLTypeProps options scope . repToFieldDefinition) consFields
+  xs <- traverse (setGQLTypeProps options scope . repToFieldDefinition scope) consFields
   pure $ mkObjectTypeContent scope $ unsafeFromFields xs
 
 repToFieldDefinition ::
-  FieldRep (Maybe (FieldContent TRUE kind CONST)) ->
-  FieldDefinition kind CONST
+  CatType c a ->
+  FieldRep (Maybe (ArgumentsDefinition CONST)) ->
+  FieldDefinition c CONST
 repToFieldDefinition
+  x
   FieldRep
     { fieldSelector = fieldName,
       fieldTypeRef = fieldType,
@@ -96,9 +81,13 @@ repToFieldDefinition
     FieldDefinition
       { fieldDescription = mempty,
         fieldDirectives = empty,
-        fieldContent = fieldValue,
+        fieldContent = toFieldContent x fieldValue,
         ..
       }
+
+toFieldContent :: CatType c a -> Maybe (ArgumentsDefinition CONST) -> Maybe (FieldContent TRUE c CONST)
+toFieldContent OutputType (Just x) = Just (FieldArgs x)
+toFieldContent _ _ = Nothing
 
 asObjectType ::
   (gql a) =>

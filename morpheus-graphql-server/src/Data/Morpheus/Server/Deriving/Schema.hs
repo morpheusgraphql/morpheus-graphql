@@ -25,10 +25,7 @@ import Data.Morpheus.App.Internal.Resolving
   )
 import Data.Morpheus.Core (defaultConfig, validateSchema)
 import Data.Morpheus.Internal.Ext
-import Data.Morpheus.Server.Deriving.Schema.DeriveKinded
-  ( DERIVE_TYPE,
-    toFieldContent,
-  )
+import Data.Morpheus.Server.Deriving.Schema.DeriveKinded (DERIVE_TYPE)
 import Data.Morpheus.Server.Deriving.Schema.Internal
   ( fromSchema,
   )
@@ -36,10 +33,7 @@ import Data.Morpheus.Server.Deriving.Schema.Object
   ( asObjectType,
   )
 import Data.Morpheus.Server.Deriving.Schema.TypeContent
-import Data.Morpheus.Server.Deriving.Utils.Kinded
-  ( CatContext (OutputContext),
-    outputType,
-  )
+import Data.Morpheus.Server.Deriving.Utils.Kinded (outputType)
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     withDir,
@@ -111,7 +105,7 @@ deriveSchema _ = toSchema schemaT
 deriveMaybeRoot :: DERIVE_TYPE GQLType OUT a => f a -> SchemaT OUT (Maybe (TypeDefinition OBJECT CONST))
 deriveMaybeRoot proxy
   | __isEmptyType proxy = pure Nothing
-  | otherwise = Just <$> asObjectType withGQL (deriveFieldsWith withDir (toFieldContent OutputContext withDir) . outputType) proxy
+  | otherwise = Just <$> asObjectType withGQL (deriveFields withDir . outputType) proxy
 
 deriveRoot :: DERIVE_TYPE GQLType OUT a => f a -> SchemaT OUT (TypeDefinition OBJECT CONST)
-deriveRoot = asObjectType withGQL (deriveFieldsWith withDir (toFieldContent OutputContext withDir) . outputType)
+deriveRoot = asObjectType withGQL (deriveFields withDir . outputType)
