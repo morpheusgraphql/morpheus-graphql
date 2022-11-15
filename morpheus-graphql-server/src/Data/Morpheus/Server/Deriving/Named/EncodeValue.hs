@@ -37,14 +37,8 @@ import Data.Morpheus.App.Internal.Resolving
     mkList,
     mkNull,
   )
-import Data.Morpheus.Server.Deriving.Decode
-  ( Decode,
-    decodeArguments,
-  )
-import Data.Morpheus.Server.Deriving.Encode
-  ( ContextValue (..),
-  )
-import Data.Morpheus.Server.Deriving.Schema.Directive (toFieldRes)
+import Data.Morpheus.Server.Deriving.Internal.Schema.Directive (toFieldRes)
+import Data.Morpheus.Server.Deriving.Kinded.Value (KindedValue)
 import Data.Morpheus.Server.Deriving.Utils
   ( ConsRep (..),
     DataType (..),
@@ -62,7 +56,9 @@ import Data.Morpheus.Server.NamedResolvers
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (__type),
+    GQLValue,
     KIND,
+    decodeArguments,
     deriveTypename,
     withDir,
   )
@@ -151,10 +147,10 @@ packRef :: Applicative m => TypeName -> ValidValue -> ResolverValue m
 packRef name v = ResRef $ pure $ NamedResolverRef name [v]
 
 instance
-  ( Decode a,
-    Monad m,
+  ( Monad m,
     Encode (Resolver o e m) b,
-    LiftOperation o
+    LiftOperation o,
+    KindedValue GQLType GQLValue (KIND a) a
   ) =>
   EncodeFieldKind CUSTOM (Resolver o e m) (a -> b)
   where
@@ -188,11 +184,11 @@ convertNamedNode
     | null consFields = pure $ NamedEnumResolver consName
     | tyIsUnion = deriveUnion consFields
     | otherwise =
-        pure $
-          NamedObjectResolver
-            ObjectTypeResolver
-              { objectFields = HM.fromList (toFieldRes withDir proxy <$> consFields)
-              }
+      pure $
+        NamedObjectResolver
+          ObjectTypeResolver
+            { objectFields = HM.fromList (toFieldRes withDir proxy <$> consFields)
+            }
 
 deriveUnion :: (MonadError GQLError m) => [FieldRep (m (ResolverValue m))] -> m (NamedResolverResult m)
 deriveUnion [FieldRep {..}] =

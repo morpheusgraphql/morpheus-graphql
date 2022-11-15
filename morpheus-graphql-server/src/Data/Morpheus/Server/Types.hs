@@ -85,7 +85,6 @@ import Data.Morpheus.Core
   ( RenderGQL,
     render,
   )
-import Data.Morpheus.Server.Deriving.Encode ()
 import Data.Morpheus.Server.Resolvers
   ( RootResolver (..),
     defaultRootResolver,

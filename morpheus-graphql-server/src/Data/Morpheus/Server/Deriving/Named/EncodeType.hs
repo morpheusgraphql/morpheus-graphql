@@ -25,10 +25,6 @@ import Data.Morpheus.App.Internal.Resolving
     Resolver,
     liftResolverState,
   )
-import Data.Morpheus.Server.Deriving.Decode
-  ( Decode,
-    decode,
-  )
 import Data.Morpheus.Server.Deriving.Named.EncodeValue
   ( EncodeFieldKind,
     FieldConstraint,
@@ -40,6 +36,7 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded (KindedProxy (KindedProxy))
 import Data.Morpheus.Server.NamedResolvers (Dependency, NamedResolverT (..), ResolveNamed (..))
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType,
+    GQLValue (..),
     KIND,
   )
 import Data.Morpheus.Server.Types.Kind
@@ -93,14 +90,14 @@ type DecodeValuesConstraint o e m a =
   ( LiftOperation o,
     ResolveNamed (Resolver o e m) a,
     Monad m,
-    Decode (Dependency a)
+    GQLValue (Dependency a)
   )
 
 decodeValues :: forall o e m a. DecodeValuesConstraint o e m a => Proxy a -> [ValidValue] -> Resolver o e m [Maybe a]
 decodeValues _ xs = traverse decodeArg xs >>= resolveBatched
   where
     decodeArg :: ValidValue -> Resolver o e m (Dependency a)
-    decodeArg = liftResolverState . decode
+    decodeArg = liftResolverState . decodeValue
 
 instance
   ( GQLType a,

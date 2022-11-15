@@ -1,6 +1,8 @@
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
@@ -9,7 +11,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Server.Deriving.Utils.Decode
+module Data.Morpheus.Server.Deriving.Internal.Decode.Utils
   ( withInputObject,
     withEnum,
     withInputUnion,
@@ -22,26 +24,28 @@ module Data.Morpheus.Server.Deriving.Utils.Decode
     Context (..),
     getUnionInfos,
     DescribeCons,
-    DescribeFields (countFields),
+    CountFields (..),
+    RefType (..),
+    repValue,
   )
 where
 
 import Control.Monad.Except (MonadError (throwError))
 import Data.Morpheus.App.Internal.Resolving (ResolverState)
+import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Internal.Utils
-  ( selectOr,
+  ( fromElems,
+    selectOr,
   )
-import Data.Morpheus.Server.Deriving.Utils (conNameProxy)
+import Data.Morpheus.Server.Deriving.Utils (ConsRep (..), DataType (..), FieldRep (..), conNameProxy)
 import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (..))
-import Data.Morpheus.Server.Types.GQLType
-  ( GQLType,
-    deriveTypename,
-  )
+import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (useTypename))
 import Data.Morpheus.Types.GQLScalar
   ( toScalar,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( FieldName,
+  ( CONST,
+    FieldName,
     GQLError,
     IN,
     Msg (msg),
@@ -58,6 +62,26 @@ import Data.Morpheus.Types.Internal.AST
   )
 import GHC.Generics
 import Relude
+
+repValue ::
+  DataType (GQLResult (Value CONST)) ->
+  GQLResult (Value CONST)
+repValue
+  DataType
+    { tyIsUnion,
+      tyCons = ConsRep {consFields, consName}
+    } = encodeTypeFields consFields
+    where
+      encodeTypeFields ::
+        [FieldRep (GQLResult (Value CONST))] -> GQLResult (Value CONST)
+      encodeTypeFields [] = pure $ Enum consName
+      encodeTypeFields fields | not tyIsUnion = Object <$> (traverse fromField fields >>= fromElems)
+        where
+          fromField FieldRep {fieldSelector, fieldValue} = do
+            entryValue <- fieldValue
+            pure ObjectEntry {entryName = fieldSelector, entryValue}
+      -- Type References --------------------------------------------------------------
+      encodeTypeFields _ = throwError (internal "input unions are not supported")
 
 withInputObject ::
   MonadError GQLError m =>
@@ -141,17 +165,17 @@ type DecoderT = ReaderT Context ResolverState
 setVariantRef :: Bool -> DecoderT a -> DecoderT a
 setVariantRef isVariantRef = local (\ctx -> ctx {isVariantRef})
 
-class DescribeCons (f :: Type -> Type) where
-  tags :: Proxy f -> Context -> Info
+class DescribeCons gql (f :: Type -> Type) where
+  tags :: UseGQLType gql -> Proxy f -> Context -> Info
 
-instance (Datatype d, DescribeCons f) => DescribeCons (M1 D d f) where
-  tags _ = tags (Proxy @f)
+instance (Datatype d, DescribeCons gql f) => DescribeCons gql (M1 D d f) where
+  tags ctx _ = tags ctx (Proxy @f)
 
-instance (DescribeCons a, DescribeCons b) => DescribeCons (a :+: b) where
-  tags _ = tags (Proxy @a) <> tags (Proxy @b)
+instance (DescribeCons gql a, DescribeCons gql b) => DescribeCons gql (a :+: b) where
+  tags ctx _ = tags ctx (Proxy @a) <> tags ctx (Proxy @b)
 
-instance (Constructor c, DescribeFields a) => DescribeCons (M1 C c a) where
-  tags _ Context {typeName} = getTag (refType (Proxy @a))
+instance (Constructor c, CountFields a, RefType gql a) => DescribeCons gql (M1 C c a) where
+  tags ctx _ Context {typeName} = getTag (refType ctx (Proxy @a))
     where
       getTag (Just memberRef)
         | isUnionRef memberRef = Info {kind = VariantRef, tagName = [memberRef]}
@@ -163,29 +187,38 @@ instance (Constructor c, DescribeFields a) => DescribeCons (M1 C c a) where
       isUnionRef x = typeName <> x == consName
 
 getUnionInfos ::
-  forall f a b.
-  (DescribeCons a, DescribeCons b) =>
+  forall f a b gql.
+  (DescribeCons gql a, DescribeCons gql b) =>
+  UseGQLType gql ->
   f (a :+: b) ->
   DecoderT (Bool, ([TypeName], [TypeName]))
-getUnionInfos _ = do
+getUnionInfos ctx _ = do
   context <- ask
-  let l = tags (Proxy @a) context
-  let r = tags (Proxy @b) context
+  let l = tags ctx (Proxy @a) context
+  let r = tags ctx (Proxy @b) context
   let k = kind (l <> r)
   pure (k == VariantRef, (tagName l, tagName r))
 
-class DescribeFields (f :: Type -> Type) where
-  refType :: Proxy f -> Maybe TypeName
+class RefType gql (f :: Type -> Type) where
+  refType :: UseGQLType gql -> Proxy f -> Maybe TypeName
+
+instance (RefType gql f, RefType gql g) => RefType gql (f :*: g) where
+  refType _ _ = Nothing
+
+instance (Selector s, gql a) => RefType gql (M1 S s (K1 i a)) where
+  refType dir _ = Just $ useTypename dir (InputType :: CatType IN a)
+
+instance RefType gql U1 where
+  refType _ _ = Nothing
+
+class CountFields (f :: Type -> Type) where
   countFields :: Proxy f -> Int
 
-instance (DescribeFields f, DescribeFields g) => DescribeFields (f :*: g) where
-  refType _ = Nothing
+instance (CountFields f, CountFields g) => CountFields (f :*: g) where
   countFields _ = countFields (Proxy @f) + countFields (Proxy @g)
 
-instance (Selector s, GQLType a) => DescribeFields (M1 S s (K1 i a)) where
-  refType _ = Just $ deriveTypename (InputType :: CatType IN a)
+instance (Selector s) => CountFields (M1 S s (K1 i a)) where
   countFields _ = 1
 
-instance DescribeFields U1 where
-  refType _ = Nothing
+instance CountFields U1 where
   countFields _ = 0

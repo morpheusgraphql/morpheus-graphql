@@ -22,9 +22,12 @@ module Data.Morpheus.Server.Deriving.Utils.Kinded
     getCatContext,
     mkScalar,
     isIN,
+    ForAll (..),
+    ContextValue (..),
   )
 where
 
+import Data.Morpheus.Server.Types.Kind (DerivingKind)
 import Data.Morpheus.Types.Internal.AST
   ( IN,
     OUT,
@@ -97,3 +100,9 @@ mkScalar OutputType f = DataScalar f
 isIN :: CatType c a -> Bool
 isIN InputType = True
 isIN _ = False
+
+newtype ForAll a = ForAll a
+
+newtype ContextValue (kind :: DerivingKind) a = ContextValue
+  { unContextValue :: a
+  }

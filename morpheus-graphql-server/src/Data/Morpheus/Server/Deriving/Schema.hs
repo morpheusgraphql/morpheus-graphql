@@ -25,14 +25,16 @@ import Data.Morpheus.App.Internal.Resolving
   )
 import Data.Morpheus.Core (defaultConfig, validateSchema)
 import Data.Morpheus.Internal.Ext
-import Data.Morpheus.Server.Deriving.Schema.DeriveKinded (DERIVE_TYPE)
-import Data.Morpheus.Server.Deriving.Schema.Internal
+import Data.Morpheus.Server.Deriving.Internal.Schema.Internal
   ( fromSchema,
   )
-import Data.Morpheus.Server.Deriving.Schema.Object
+import Data.Morpheus.Server.Deriving.Internal.Schema.Object
   ( asObjectType,
   )
-import Data.Morpheus.Server.Deriving.Schema.TypeContent
+import Data.Morpheus.Server.Deriving.Internal.Schema.TypeContent
+import Data.Morpheus.Server.Deriving.Kinded.Type
+  ( DERIVE_TYPE,
+  )
 import Data.Morpheus.Server.Deriving.Utils.Kinded (outputType)
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),

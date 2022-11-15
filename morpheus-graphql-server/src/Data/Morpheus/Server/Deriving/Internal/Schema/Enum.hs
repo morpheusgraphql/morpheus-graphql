@@ -2,14 +2,14 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module Data.Morpheus.Server.Deriving.Schema.Enum
+module Data.Morpheus.Server.Deriving.Internal.Schema.Enum
   ( buildEnumTypeContent,
     defineEnumUnit,
   )
 where
 
-import Data.Morpheus.Server.Deriving.Schema.Directive
-  ( UseDirective,
+import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
+  ( UseDeriving,
     deriveEnumDirectives,
     visitEnumName,
     visitEnumValueDescription,
@@ -34,11 +34,11 @@ import Data.Morpheus.Types.Internal.AST
     unitTypeName,
   )
 
-buildEnumTypeContent :: gql a => UseDirective gql args -> CatType kind a -> [TypeName] -> SchemaT k (TypeContent TRUE kind CONST)
+buildEnumTypeContent :: gql a => UseDeriving gql args -> CatType kind a -> [TypeName] -> SchemaT k (TypeContent TRUE kind CONST)
 buildEnumTypeContent options p@InputType enumCons = DataEnum <$> traverse (mkEnumValue options p) enumCons
 buildEnumTypeContent options p@OutputType enumCons = DataEnum <$> traverse (mkEnumValue options p) enumCons
 
-mkEnumValue :: gql a => UseDirective gql args -> f a -> TypeName -> SchemaT k (DataEnumValue CONST)
+mkEnumValue :: gql a => UseDeriving gql args -> f a -> TypeName -> SchemaT k (DataEnumValue CONST)
 mkEnumValue options proxy enumName = do
   enumDirectives <- deriveEnumDirectives options proxy enumName
   pure

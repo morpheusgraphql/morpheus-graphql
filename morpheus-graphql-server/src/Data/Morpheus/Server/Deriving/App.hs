@@ -22,13 +22,13 @@ import Data.Morpheus.App
 import Data.Morpheus.App.Internal.Resolving
   ( resultOr,
   )
-import Data.Morpheus.Server.Deriving.Encode
-  ( EncodeConstraints,
-    deriveModel,
-  )
 import Data.Morpheus.Server.Deriving.Named.Encode
   ( EncodeNamedConstraints,
     deriveNamedModel,
+  )
+import Data.Morpheus.Server.Deriving.Resolver
+  ( EncodeConstraints,
+    deriveResolvers,
   )
 import Data.Morpheus.Server.Deriving.Schema
   ( SchemaConstraints,
@@ -66,7 +66,7 @@ class
 instance RootResolverConstraint m e query mut sub => DeriveApp RootResolver m e query mut sub where
   deriveApp root =
     resultOr FailApp (uncurry mkApp) $
-      (,) <$> deriveSchema (Identity root) <*> deriveModel root
+      (,) <$> deriveSchema (Identity root) <*> deriveResolvers root
 
 instance NamedResolversConstraint m e query mut sub => DeriveApp NamedResolvers m e query mut sub where
   deriveApp root =

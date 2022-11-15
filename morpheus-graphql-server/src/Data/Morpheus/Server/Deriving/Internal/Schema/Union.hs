@@ -1,17 +1,17 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE GADTs #-}
 
-module Data.Morpheus.Server.Deriving.Schema.Union
+module Data.Morpheus.Server.Deriving.Internal.Schema.Union
   ( buildUnionTypeContent,
   )
 where
 
 import Data.List (partition)
 import Data.Morpheus.Internal.Utils (fromElems)
-import Data.Morpheus.Server.Deriving.Schema.Enum
+import Data.Morpheus.Server.Deriving.Internal.Schema.Enum
   ( defineEnumUnit,
   )
-import Data.Morpheus.Server.Deriving.Schema.Object
+import Data.Morpheus.Server.Deriving.Internal.Schema.Object
   ( defineObjectType,
   )
 import Data.Morpheus.Server.Deriving.Utils

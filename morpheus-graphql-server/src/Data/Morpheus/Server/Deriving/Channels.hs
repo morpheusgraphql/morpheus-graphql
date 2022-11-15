@@ -28,11 +28,8 @@ import Data.Morpheus.App.Internal.Resolving
 import Data.Morpheus.Internal.Utils
   ( selectBy,
   )
-import Data.Morpheus.Server.Deriving.Decode
-  ( Decode,
-    decodeArguments,
-  )
-import Data.Morpheus.Server.Deriving.Schema.Directive (toFieldRes)
+import Data.Morpheus.Server.Deriving.Internal.Schema.Directive (toFieldRes)
+import Data.Morpheus.Server.Deriving.Kinded.Value (KindedValue)
 import Data.Morpheus.Server.Deriving.Utils
   ( ConsRep (..),
     DataType (..),
@@ -43,7 +40,13 @@ import Data.Morpheus.Server.Deriving.Utils.DeriveGType
     deriveValue,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (..), outputType)
-import Data.Morpheus.Server.Types.GQLType (GQLType (..), deriveTypename, withDir)
+import Data.Morpheus.Server.Types.GQLType
+  ( GQLType (..),
+    GQLValue,
+    decodeArguments,
+    deriveTypename,
+    withDir,
+  )
 import Data.Morpheus.Server.Types.Types (Undefined)
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
@@ -114,10 +117,7 @@ class GetChannel e a | a -> e where
 instance GetChannel e (SubscriptionField (Resolver SUBSCRIPTION e m a)) where
   getChannel x = const $ pure $ DerivedChannel $ channel x
 
-instance
-  Decode arg =>
-  GetChannel e (arg -> SubscriptionField (Resolver SUBSCRIPTION e m a))
-  where
+instance (KindedValue GQLType GQLValue (KIND arg) arg) => GetChannel e (arg -> SubscriptionField (Resolver SUBSCRIPTION e m a)) where
   getChannel f sel@Selection {selectionArguments} =
     decodeArguments selectionArguments
       >>= (`getChannel` sel)

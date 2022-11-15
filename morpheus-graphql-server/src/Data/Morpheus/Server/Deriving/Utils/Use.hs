@@ -5,13 +5,16 @@
 {-# LANGUAGE RankNTypes #-}
 
 module Data.Morpheus.Server.Deriving.Utils.Use
-  ( UseDirective (..),
-    UseArguments (..),
+  ( UseDeriving (..),
     UseGQLType (..),
+    UseValue (..),
+    UseResolver (..),
   )
 where
 
-import Data.Morpheus.Server.Deriving.Schema.Internal
+import Data.Morpheus.App.Internal.Resolving (ResolverState, ResolverValue)
+import Data.Morpheus.Internal.Ext (GQLResult)
+import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType)
 import Data.Morpheus.Server.Types.Directives
   ( GDirectiveUsages (..),
   )
@@ -23,12 +26,12 @@ import Data.Morpheus.Server.Types.TypeName
   ( TypeFingerprint,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( Arguments,
-    ArgumentsDefinition,
+  ( ArgumentsDefinition,
     CONST,
-    OUT,
     TypeDefinition (..),
     TypeName,
+    ValidValue,
+    Value,
   )
 
 data UseGQLType gql = UseGQLType
@@ -39,13 +42,17 @@ data UseGQLType gql = UseGQLType
     useDeriveFieldArguments :: forall c a. gql a => CatType c a -> SchemaT c (Maybe (ArgumentsDefinition CONST))
   }
 
-data UseArguments args = UseArguments
-  { useDeriveArguments :: forall f a. args a => f a -> SchemaT OUT (ArgumentsDefinition CONST),
-    useEncodeArguments :: forall k a. args a => a -> SchemaT k (Arguments CONST)
+data UseValue val = UseValue
+  { useEncodeValue :: forall a. val a => a -> GQLResult (Value CONST),
+    useDecodeValue :: forall a. val a => ValidValue -> ResolverState a
   }
 
-data UseDirective gql args = UseDirective
-  { __directives :: forall f a. gql a => f a -> GDirectiveUsages gql args,
-    dirArgs :: UseArguments args,
+newtype UseResolver res = UseResolver
+  { useEncodeResolver :: forall a m. res m a => a -> m (ResolverValue m)
+  }
+
+data UseDeriving gql val = UseDeriving
+  { __directives :: forall f a. gql a => f a -> GDirectiveUsages gql val,
+    dirArgs :: UseValue val,
     dirGQL :: UseGQLType gql
   }

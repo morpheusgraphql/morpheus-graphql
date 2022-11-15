@@ -313,21 +313,25 @@ library
   other-modules:
       Data.Morpheus.Server.Deriving.App
       Data.Morpheus.Server.Deriving.Channels
-      Data.Morpheus.Server.Deriving.Decode
-      Data.Morpheus.Server.Deriving.Encode
+      Data.Morpheus.Server.Deriving.Internal.Decode.Rep
+      Data.Morpheus.Server.Deriving.Internal.Decode.Utils
+      Data.Morpheus.Server.Deriving.Internal.Resolve.Explore
+      Data.Morpheus.Server.Deriving.Internal.Schema.Directive
+      Data.Morpheus.Server.Deriving.Internal.Schema.Enum
+      Data.Morpheus.Server.Deriving.Internal.Schema.Internal
+      Data.Morpheus.Server.Deriving.Internal.Schema.Object
+      Data.Morpheus.Server.Deriving.Internal.Schema.TypeContent
+      Data.Morpheus.Server.Deriving.Internal.Schema.Union
+      Data.Morpheus.Server.Deriving.Kinded.Arguments
+      Data.Morpheus.Server.Deriving.Kinded.Resolver
+      Data.Morpheus.Server.Deriving.Kinded.Type
+      Data.Morpheus.Server.Deriving.Kinded.Value
       Data.Morpheus.Server.Deriving.Named.Encode
       Data.Morpheus.Server.Deriving.Named.EncodeType
       Data.Morpheus.Server.Deriving.Named.EncodeValue
+      Data.Morpheus.Server.Deriving.Resolver
       Data.Morpheus.Server.Deriving.Schema
-      Data.Morpheus.Server.Deriving.Schema.DeriveKinded
-      Data.Morpheus.Server.Deriving.Schema.Directive
-      Data.Morpheus.Server.Deriving.Schema.Enum
-      Data.Morpheus.Server.Deriving.Schema.Internal
-      Data.Morpheus.Server.Deriving.Schema.Object
-      Data.Morpheus.Server.Deriving.Schema.TypeContent
-      Data.Morpheus.Server.Deriving.Schema.Union
       Data.Morpheus.Server.Deriving.Utils
-      Data.Morpheus.Server.Deriving.Utils.Decode
       Data.Morpheus.Server.Deriving.Utils.DeriveGType
       Data.Morpheus.Server.Deriving.Utils.GTraversable
       Data.Morpheus.Server.Deriving.Utils.Kinded
