@@ -39,17 +39,22 @@ import Data.Morpheus.App.Internal.Resolving
   )
 import Data.Morpheus.Server.Deriving.Internal.Schema.Directive (toFieldRes)
 import Data.Morpheus.Server.Deriving.Kinded.Value (KindedValue)
-import Data.Morpheus.Server.Deriving.Utils
+import Data.Morpheus.Server.Deriving.Utils.DeriveGType
+  ( DeriveWith,
+    DerivingOptions (..),
+    deriveValue,
+  )
+import Data.Morpheus.Server.Deriving.Utils.Kinded
+  ( outputType,
+  )
+import Data.Morpheus.Server.Deriving.Utils.Proxy
+  ( ContextValue (..),
+  )
+import Data.Morpheus.Server.Deriving.Utils.Types
   ( ConsRep (..),
     DataType (..),
     FieldRep (..),
   )
-import Data.Morpheus.Server.Deriving.Utils.DeriveGType
-  ( DeriveValueOptions (..),
-    DeriveWith,
-    deriveValue,
-  )
-import Data.Morpheus.Server.Deriving.Utils.Kinded
 import Data.Morpheus.Server.NamedResolvers
   ( NamedRef,
     NamedResolverT (..),
@@ -59,7 +64,6 @@ import Data.Morpheus.Server.Types.GQLType
     GQLValue,
     KIND,
     decodeArguments,
-    deriveTypename,
     withDir,
   )
 import Data.Morpheus.Server.Types.Internal
@@ -77,7 +81,6 @@ import Data.Morpheus.Types.GQLScalar
   )
 import Data.Morpheus.Types.Internal.AST
   ( GQLError,
-    OUT,
     TypeName,
     ValidValue,
     Value (List),
@@ -162,12 +165,11 @@ instance
 getFieldValues :: forall m a. FieldConstraint m a => a -> DataType (m (ResolverValue m))
 getFieldValues =
   deriveValue
-    ( DeriveValueOptions
-        { __valueApply = encodeField,
-          __valueTypeName = deriveTypename (OutputType :: CatType OUT a),
-          __valueGetType = __type . outputType
+    ( DerivingOptions
+        { optApply = encodeField . runIdentity,
+          optTypeData = __type . outputType
         } ::
-        DeriveValueOptions OUT GQLType (Encode m) (m (ResolverValue m))
+        DerivingOptions GQLType (Encode m) Identity (m (ResolverValue m))
     )
 
 convertNamedNode ::
@@ -191,8 +193,7 @@ convertNamedNode
             }
 
 deriveUnion :: (MonadError GQLError m) => [FieldRep (m (ResolverValue m))] -> m (NamedResolverResult m)
-deriveUnion [FieldRep {..}] =
-  NamedUnionResolver <$> (fieldValue >>= getRef)
+deriveUnion [FieldRep {..}] = NamedUnionResolver <$> (fieldValue >>= getRef)
 deriveUnion _ = throwError "only union references are supported!"
 
 getRef :: MonadError GQLError m => ResolverValue m -> m NamedResolverRef

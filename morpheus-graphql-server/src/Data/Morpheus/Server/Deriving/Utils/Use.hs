@@ -47,8 +47,9 @@ data UseValue val = UseValue
     useDecodeValue :: forall a. val a => ValidValue -> ResolverState a
   }
 
-newtype UseResolver res = UseResolver
-  { useEncodeResolver :: forall a m. res m a => a -> m (ResolverValue m)
+data UseResolver res gql val = UseResolver
+  { useEncodeResolver :: forall a m. res m a => a -> m (ResolverValue m),
+    resDrv :: UseDeriving gql val
   }
 
 data UseDeriving gql val = UseDeriving

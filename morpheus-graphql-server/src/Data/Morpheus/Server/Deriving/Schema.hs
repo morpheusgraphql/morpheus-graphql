@@ -38,9 +38,9 @@ import Data.Morpheus.Server.Deriving.Kinded.Type
 import Data.Morpheus.Server.Deriving.Utils.Kinded (outputType)
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
+    ignoreUndefined,
     withDir,
     withGQL,
-    __isEmptyType,
   )
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
@@ -87,27 +87,13 @@ deriveSchema ::
   ) =>
   proxy (root m e query mut subs) ->
   GQLResult (Schema CONST)
-deriveSchema _ = toSchema schemaT
-  where
-    schemaT ::
-      SchemaT
-        OUT
-        ( TypeDefinition OBJECT CONST,
-          Maybe (TypeDefinition OBJECT CONST),
-          Maybe (TypeDefinition OBJECT CONST)
-        )
-    schemaT =
-      (,,)
+deriveSchema _ =
+  toSchema
+    ( (,,)
         <$> deriveRoot (Proxy @(query (Resolver QUERY e m)))
-        <*> deriveMaybeRoot (Proxy @(mut (Resolver MUTATION e m)))
-        <*> deriveMaybeRoot (Proxy @(subs (Resolver SUBSCRIPTION e m)))
-
---
-
-deriveMaybeRoot :: DERIVE_TYPE GQLType OUT a => f a -> SchemaT OUT (Maybe (TypeDefinition OBJECT CONST))
-deriveMaybeRoot proxy
-  | __isEmptyType proxy = pure Nothing
-  | otherwise = Just <$> asObjectType withGQL (deriveFields withDir . outputType) proxy
+        <*> traverse deriveRoot (ignoreUndefined (Proxy @(mut (Resolver MUTATION e m))))
+        <*> traverse deriveRoot (ignoreUndefined (Proxy @(subs (Resolver SUBSCRIPTION e m))))
+    )
 
 deriveRoot :: DERIVE_TYPE GQLType OUT a => f a -> SchemaT OUT (TypeDefinition OBJECT CONST)
 deriveRoot = asObjectType withGQL (deriveFields withDir . outputType)

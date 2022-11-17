@@ -23,11 +23,10 @@ module Data.Morpheus.Server.Deriving.Utils.Kinded
     mkScalar,
     isIN,
     ForAll (..),
-    ContextValue (..),
+    unForAll,
   )
 where
 
-import Data.Morpheus.Server.Types.Kind (DerivingKind)
 import Data.Morpheus.Types.Internal.AST
   ( IN,
     OUT,
@@ -36,6 +35,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeCategory (..),
     TypeContent (..),
   )
+import Data.Proxy (Proxy (..))
 import Prelude (Bool (..), Show)
 
 -- | context , like Proxy with multiple parameters
@@ -103,6 +103,5 @@ isIN _ = False
 
 newtype ForAll a = ForAll a
 
-newtype ContextValue (kind :: DerivingKind) a = ContextValue
-  { unContextValue :: a
-  }
+unForAll :: f (ForAll a) -> Proxy a
+unForAll _ = Proxy

@@ -33,14 +33,18 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
   ( toFieldRes,
     visitEnumName,
   )
-import Data.Morpheus.Server.Deriving.Utils
+import Data.Morpheus.Server.Deriving.Utils.DeriveGType
+  ( DeriveWith,
+    DerivingOptions (..),
+    deriveValue,
+  )
+import Data.Morpheus.Server.Deriving.Utils.Kinded (inputType)
+import Data.Morpheus.Server.Deriving.Utils.Types
   ( ConsRep (..),
     DataType (..),
     FieldRep (..),
     isUnionRef,
   )
-import Data.Morpheus.Server.Deriving.Utils.DeriveGType (DeriveValueOptions (..), DeriveWith, deriveValue)
-import Data.Morpheus.Server.Deriving.Utils.Kinded (inputType)
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseDeriving (..),
     UseGQLType (..),
@@ -48,7 +52,6 @@ import Data.Morpheus.Server.Deriving.Utils.Use
   )
 import Data.Morpheus.Types.Internal.AST
   ( GQLError,
-    IN,
     TypeRef (..),
   )
 import GHC.Generics (Generic (Rep))
@@ -81,31 +84,25 @@ convertNode
       -- Inline Union Types ----------------------------------------------------------------------------
       encodeTypeFields fields = mkUnion consName (toFieldRes drv proxy <$> fields)
 
-toOptions ::
-  gql a =>
-  UseResolver res ->
-  UseDeriving gql val ->
-  f a ->
-  DeriveValueOptions IN gql (res m) (m (ResolverValue m))
-toOptions UseResolver {..} drv proxy =
-  DeriveValueOptions
-    { __valueApply = useEncodeResolver,
-      __valueTypeName = useTypename (dirGQL drv) (inputType proxy),
-      __valueGetType = useTypeData (dirGQL drv) . inputType
+toOptions :: UseResolver res gql val -> DerivingOptions gql (res m) Identity (m (ResolverValue m))
+toOptions UseResolver {..} =
+  DerivingOptions
+    { optApply = useEncodeResolver . runIdentity,
+      optTypeData = useTypeData (dirGQL resDrv) . inputType
     }
 
 useExploreResolvers ::
   (MonadError GQLError m, EXPLORE gql res m a) =>
-  (UseResolver res, UseDeriving gql val) ->
+  UseResolver res gql val ->
   a ->
   ResolverValue m
-useExploreResolvers (res, drv) v = convertNode drv proxy (deriveValue (toOptions res drv proxy) v)
+useExploreResolvers res v = convertNode (resDrv res) proxy (deriveValue (toOptions res) v)
   where
     proxy = Identity v
 
 useObjectResolvers ::
   (MonadError GQLError m, EXPLORE gql res m a) =>
-  (UseResolver res, UseDeriving gql val) ->
+  UseResolver res gql val ->
   a ->
   ResolverState (ObjectTypeResolver m)
 useObjectResolvers ctx value = requireObject (useExploreResolvers ctx value)

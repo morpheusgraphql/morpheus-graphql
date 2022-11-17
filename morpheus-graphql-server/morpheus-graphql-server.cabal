@@ -331,7 +331,7 @@ library
       Data.Morpheus.Server.Deriving.Named.EncodeValue
       Data.Morpheus.Server.Deriving.Resolver
       Data.Morpheus.Server.Deriving.Schema
-      Data.Morpheus.Server.Deriving.Utils
+      Data.Morpheus.Server.Deriving.Utils.AST
       Data.Morpheus.Server.Deriving.Utils.DeriveGType
       Data.Morpheus.Server.Deriving.Utils.GTraversable
       Data.Morpheus.Server.Deriving.Utils.Kinded

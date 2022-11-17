@@ -24,14 +24,16 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
     visitFieldDescription,
     visitFieldName,
   )
-import Data.Morpheus.Server.Deriving.Internal.Schema.Enum (defineEnumUnit)
-import Data.Morpheus.Server.Deriving.Utils
-  ( ConsRep (..),
-    FieldRep (..),
+import Data.Morpheus.Server.Deriving.Internal.Schema.Enum
+  ( defineEnumUnit,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
     outputType,
+  )
+import Data.Morpheus.Server.Deriving.Utils.Types
+  ( ConsRep (..),
+    FieldRep (..),
   )
 import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (..))
 import Data.Morpheus.Server.Types.SchemaT

@@ -21,11 +21,13 @@ module Data.Morpheus.Server.Types.GQLType
     GQLValue (..),
     InputTypeNamespace (..),
     deriveTypename,
-    __isEmptyType,
+    ignoreUndefined,
     withGQL,
     withDir,
     withValue,
     decodeArguments,
+    GQLResolver (..),
+    withRes,
   )
 where
 
@@ -35,15 +37,20 @@ import Control.Monad.Except (MonadError (throwError))
 import Data.Morpheus.App.Internal.Resolving
   ( Resolver,
     ResolverState,
+    ResolverValue,
     SubscriptionField,
   )
 import Data.Morpheus.Internal.Ext (GQLResult)
+import Data.Morpheus.Internal.Utils (singleton)
+import Data.Morpheus.Server.Deriving.Internal.Schema.TypeContent
+  ( fillTypeContent,
+    injectType,
+  )
 import Data.Morpheus.Server.Deriving.Kinded.Arguments
-  ( DeriveArgs,
-    DeriveFieldArguments (..),
-    ForArgs,
+  ( DeriveFieldArguments (..),
     HasArguments,
   )
+import Data.Morpheus.Server.Deriving.Kinded.Resolver (KindedResolver (..))
 import Data.Morpheus.Server.Deriving.Kinded.Type
   ( DERIVE_TYPE,
     DeriveKindedType (..),
@@ -52,9 +59,10 @@ import Data.Morpheus.Server.Deriving.Kinded.Type
     deriveTypeGuardUnions,
   )
 import Data.Morpheus.Server.Deriving.Kinded.Value (KindedValue (..))
+import Data.Morpheus.Server.Deriving.Utils.AST (argumentsToObject)
 import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (..), catMap, isIN)
-import Data.Morpheus.Server.Deriving.Utils.Proxy (ContextValue (..))
-import Data.Morpheus.Server.Deriving.Utils.Use (UseDeriving (..), UseGQLType (..), UseValue (..))
+import Data.Morpheus.Server.Deriving.Utils.Proxy (ContextValue (..), symbolName)
+import Data.Morpheus.Server.Deriving.Utils.Use (UseDeriving (..), UseGQLType (..), UseResolver (..), UseValue (..))
 import Data.Morpheus.Server.NamedResolvers (NamedResolverT (..))
 import Data.Morpheus.Server.Types.Directives
   ( GDirectiveUsages (..),
@@ -85,34 +93,41 @@ import Data.Morpheus.Server.Types.Types
 import Data.Morpheus.Server.Types.Visitors (VisitType (..))
 import Data.Morpheus.Types.ID (ID)
 import Data.Morpheus.Types.Internal.AST
-  ( Argument (..),
-    Arguments,
+  ( Arguments,
     ArgumentsDefinition,
     CONST,
     DirectiveLocation (..),
+    FieldDefinition,
     GQLError,
+    IN,
     Msg (msg),
     OUT,
-    ObjectEntry (..),
     QUERY,
     ScalarDefinition (..),
+    TRUE,
+    TypeContent (..),
     TypeDefinition (..),
     TypeName,
+    TypeRef (..),
     TypeWrapper (..),
     VALID,
     Value (..),
     internal,
     mkBaseType,
+    mkField,
     toNullable,
     unitTypeName,
   )
 import Data.Sequence (Seq)
 import Data.Vector (Vector)
 import GHC.Generics
+import GHC.TypeLits (KnownSymbol)
 import Relude hiding (Seq, Undefined, fromList, intercalate)
 
-__isEmptyType :: forall f a. GQLType a => f a -> Bool
-__isEmptyType _ = gqlFingerprint (__type (OutputType :: CatType OUT a)) == InternalFingerprint __typenameUndefined
+ignoreUndefined :: forall f a. GQLType a => f a -> Maybe (f a)
+ignoreUndefined proxy
+  | gqlFingerprint (__type (OutputType :: CatType OUT a)) == InternalFingerprint __typenameUndefined = Just proxy
+  | otherwise = Nothing
 
 deriveTypename :: (GQLType a) => CatType cat a -> TypeName
 deriveTypename = gqlTypeName . __type
@@ -151,10 +166,6 @@ type DERIVE_T c a = (DeriveKindedType GQLType GQLValue c (KIND a) (Lifted a))
 
 cantBeInputType :: (MonadError GQLError m, GQLType a) => CatType cat a -> m b
 cantBeInputType proxy = throwError $ internal $ "type " <> msg (deriveTypename proxy) <> "can't be a input type"
-
-deriveOutputType :: (GQLType a, DERIVE_T OUT a) => CatType c a -> SchemaT c (TypeDefinition c CONST)
-deriveOutputType p@OutputType = deriveKindedType withDir (lifted p)
-deriveOutputType p@InputType = cantBeInputType p
 
 -- | GraphQL type, every graphQL type should have an instance of 'GHC.Generics.Generic' and 'GQLType'.
 --
@@ -262,7 +273,7 @@ instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (Pair a b) wh
 
 -- Manual
 
-instance (GQLType b, DeriveArgs GQLType (ForArgs a)) => GQLType (a -> b) where
+instance (GQLType b, GQLType a) => GQLType (a -> b) where
   type KIND (a -> b) = CUSTOM
   __type = __type . catMap (Proxy @b)
   __deriveType OutputType = __deriveType (OutputType :: CatType OUT b)
@@ -282,10 +293,21 @@ instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (a, b) where
   __type = __type . catMap (Proxy @(Pair a b))
   directives _ = typeDirective InputTypeNamespace {inputTypeNamespace = "Input"}
 
-instance (DERIVE_T OUT (Arg name value), GQLType value) => GQLType (Arg name value) where
+instance (KnownSymbol name, GQLType value) => GQLType (Arg name value) where
   type KIND (Arg name value) = CUSTOM
   __type = __type . catMap (Proxy @value)
-  __deriveType = deriveOutputType
+  __deriveType OutputType = cantBeInputType (OutputType :: CatType OUT (Arg name value))
+  __deriveType p@InputType = do
+    injectType withDir proxy
+    fillTypeContent withDir p content
+    where
+      content :: TypeContent TRUE IN CONST
+      content = DataInputObject (singleton argName field)
+      proxy = InputType :: CatType IN value
+      argName = symbolName (Proxy @name)
+      field :: FieldDefinition IN CONST
+      field = mkField Nothing argName (TypeRef gqlTypeName gqlWrappers)
+      TypeData {gqlTypeName, gqlWrappers} = useTypeData withGQL proxy
 
 instance (DERIVE_TYPE GQLType OUT i, DERIVE_TYPE GQLType OUT u) => GQLType (TypeGuard i u) where
   type KIND (TypeGuard i u) = CUSTOM
@@ -355,9 +377,7 @@ withDir =
     }
 
 decodeArguments :: forall a. KindedValue GQLType GQLValue (KIND a) a => Arguments VALID -> ResolverState a
-decodeArguments = decodeKindedValue withDir (Proxy @(KIND a)) . Object . fmap toEntry
-  where
-    toEntry Argument {..} = ObjectEntry argumentName argumentValue
+decodeArguments = decodeKindedValue withDir (Proxy @(KIND a)) . argumentsToObject
 
 class GQLType a => GQLValue a where
   decodeValue :: Value VALID -> ResolverState a
@@ -366,3 +386,16 @@ class GQLType a => GQLValue a where
 instance (GQLType a, KindedValue GQLType GQLValue (KIND a) a) => GQLValue a where
   encodeValue value = encodeKindedValue withDir (ContextValue value :: ContextValue (KIND a) a)
   decodeValue = decodeKindedValue withDir (Proxy @(KIND a))
+
+class GQLResolver (m :: Type -> Type) resolver where
+  deriveResolver :: resolver -> m (ResolverValue m)
+
+instance (KindedResolver GQLType GQLResolver GQLValue (KIND a) m a) => GQLResolver m a where
+  deriveResolver resolver = kindedResolver withRes (ContextValue resolver :: ContextValue (KIND a) a)
+
+withRes :: UseResolver GQLResolver GQLType GQLValue
+withRes =
+  UseResolver
+    { useEncodeResolver = deriveResolver,
+      resDrv = withDir
+    }

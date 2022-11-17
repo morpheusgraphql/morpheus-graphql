@@ -9,6 +9,7 @@
 
 module Data.Morpheus.Server.Deriving.Internal.Schema.TypeContent
   ( deriveFields,
+    fillTypeContent,
     deriveTypeDefinition,
     deriveScalarDefinition,
     deriveInterfaceDefinition,
@@ -35,15 +36,17 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Object
   ( buildObjectTypeContent,
   )
 import Data.Morpheus.Server.Deriving.Internal.Schema.Union (buildUnionTypeContent)
-import Data.Morpheus.Server.Deriving.Utils
-  ( ConsRep (..),
-    DeriveTypeOptions (..),
-    DeriveWith,
+import Data.Morpheus.Server.Deriving.Utils.DeriveGType
+  ( DeriveWith,
+    DerivingOptions (..),
     deriveTypeWith,
+  )
+import Data.Morpheus.Server.Deriving.Utils.Kinded (CatContext, addContext, getCatContext, mkScalar)
+import Data.Morpheus.Server.Deriving.Utils.Types
+  ( ConsRep (..),
     isEmptyConstraint,
     unpackMonad,
   )
-import Data.Morpheus.Server.Deriving.Utils.Kinded (CatContext, addContext, getCatContext, mkScalar)
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseGQLType (..),
   )
@@ -53,6 +56,7 @@ import Data.Morpheus.Server.Types.SchemaT
   )
 import Data.Morpheus.Types.Internal.AST
 import GHC.Generics (Rep)
+import Relude
 
 buildTypeContent ::
   (gql a) =>
@@ -146,11 +150,11 @@ deriveFields ::
   SchemaT cat (FieldsDefinition cat CONST)
 deriveFields dirs kindedType = deriveTypeContentWith dirs kindedType >>= withObject (dirGQL dirs) kindedType
 
-toFieldContent :: CatContext cat -> UseDeriving gql dir -> DeriveTypeOptions cat gql gql (SchemaT cat (Maybe (ArgumentsDefinition CONST)))
+toFieldContent :: CatContext cat -> UseDeriving gql dir -> DerivingOptions gql gql Proxy (SchemaT cat (Maybe (ArgumentsDefinition CONST)))
 toFieldContent ctx dir@UseDeriving {..} =
-  DeriveTypeOptions
-    { __typeGetType = useTypeData dirGQL . addContext ctx,
-      __typeApply = \proxy -> injectType dir (addContext ctx proxy) *> useDeriveFieldArguments dirGQL (addContext ctx proxy)
+  DerivingOptions
+    { optTypeData = useTypeData dirGQL . addContext ctx,
+      optApply = \proxy -> injectType dir (addContext ctx proxy) *> useDeriveFieldArguments dirGQL (addContext ctx proxy)
     }
 
 injectType :: gql a => UseDeriving gql args -> CatType c a -> SchemaT c ()

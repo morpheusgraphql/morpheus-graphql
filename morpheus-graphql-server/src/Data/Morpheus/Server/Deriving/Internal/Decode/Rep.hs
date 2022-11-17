@@ -27,7 +27,7 @@ import Data.Morpheus.Server.Deriving.Internal.Decode.Utils
     withInputObject,
     withInputUnion,
   )
-import Data.Morpheus.Server.Deriving.Utils
+import Data.Morpheus.Server.Deriving.Utils.Proxy
   ( selNameProxy,
   )
 import Data.Morpheus.Server.Deriving.Utils.Use

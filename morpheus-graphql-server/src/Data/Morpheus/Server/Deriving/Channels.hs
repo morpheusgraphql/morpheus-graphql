@@ -30,27 +30,25 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Server.Deriving.Internal.Schema.Directive (toFieldRes)
 import Data.Morpheus.Server.Deriving.Kinded.Value (KindedValue)
-import Data.Morpheus.Server.Deriving.Utils
+import Data.Morpheus.Server.Deriving.Utils.DeriveGType
+  ( DeriveWith,
+    DerivingOptions (..),
+    deriveValue,
+  )
+import Data.Morpheus.Server.Deriving.Utils.Kinded (outputType)
+import Data.Morpheus.Server.Deriving.Utils.Types
   ( ConsRep (..),
     DataType (..),
   )
-import Data.Morpheus.Server.Deriving.Utils.DeriveGType
-  ( DeriveValueOptions (..),
-    DeriveWith,
-    deriveValue,
-  )
-import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (..), outputType)
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     GQLValue,
     decodeArguments,
-    deriveTypename,
     withDir,
   )
 import Data.Morpheus.Server.Types.Types (Undefined)
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
-    OUT,
     SUBSCRIPTION,
     Selection (..),
     SelectionContent (..),
@@ -139,12 +137,11 @@ instance (GQLType a, Generic a, DeriveWith GQLType (GetChannel e) (ChannelRes e)
       . consFields
       . tyCons
       . deriveValue
-        ( DeriveValueOptions
-            { __valueApply = getChannel,
-              __valueTypeName = deriveTypename (OutputType :: CatType OUT a),
-              __valueGetType = __type . outputType
+        ( DerivingOptions
+            { optApply = getChannel . runIdentity,
+              optTypeData = __type . outputType
             } ::
-            DeriveValueOptions OUT GQLType (GetChannel e) (ChannelRes e)
+            DerivingOptions GQLType (GetChannel e) Identity (ChannelRes e)
         )
 
 instance ExploreChannels 'True e (Undefined m) where

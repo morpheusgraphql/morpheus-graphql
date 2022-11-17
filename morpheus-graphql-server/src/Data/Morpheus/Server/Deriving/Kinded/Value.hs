@@ -16,13 +16,19 @@ module Data.Morpheus.Server.Deriving.Kinded.Value
   )
 where
 
-import Control.Monad.Except (MonadError (throwError))
+import Control.Monad.Except
+  ( MonadError (throwError),
+  )
 import qualified Data.Map as M
 import Data.Morpheus.App.Internal.Resolving
   ( ResolverState,
   )
-import Data.Morpheus.Internal.Ext (GQLResult)
-import Data.Morpheus.Server.Deriving.Internal.Decode.Rep (DecodeRep (..))
+import Data.Morpheus.Internal.Ext
+  ( GQLResult,
+  )
+import Data.Morpheus.Server.Deriving.Internal.Decode.Rep
+  ( DecodeRep (..),
+  )
 import Data.Morpheus.Server.Deriving.Internal.Decode.Utils
   ( Context (..),
     decodeFieldWith,
@@ -31,16 +37,24 @@ import Data.Morpheus.Server.Deriving.Internal.Decode.Utils
     withInputObject,
     withScalar,
   )
-import Data.Morpheus.Server.Deriving.Internal.Schema.Directive (visitEnumName, visitFieldName)
-import Data.Morpheus.Server.Deriving.Utils
-  ( symbolName,
+import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
+  ( visitEnumName,
+    visitFieldName,
   )
-import Data.Morpheus.Server.Deriving.Utils.DeriveGType (DeriveValueOptions (..), DeriveWith, deriveValue)
+import Data.Morpheus.Server.Deriving.Utils.DeriveGType
+  ( DeriveWith,
+    DerivingOptions (..),
+    deriveValue,
+  )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
     inputType,
   )
-import Data.Morpheus.Server.Deriving.Utils.Proxy (ContextValue, unContextValue)
+import Data.Morpheus.Server.Deriving.Utils.Proxy
+  ( ContextValue,
+    symbolName,
+    unContextValue,
+  )
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseDeriving (..),
     UseGQLType (..),
@@ -93,12 +107,11 @@ instance (gql a, Generic a, DecodeRep gql args (Rep a), DeriveWith gql args (GQL
   encodeKindedValue UseDeriving {..} =
     repValue
       . deriveValue
-        ( DeriveValueOptions
-            { __valueApply = useEncodeValue dirArgs,
-              __valueTypeName = useTypename dirGQL (InputType :: CatType IN a),
-              __valueGetType = useTypeData dirGQL . inputType
+        ( DerivingOptions
+            { optApply = useEncodeValue dirArgs . runIdentity,
+              optTypeData = useTypeData dirGQL . inputType
             } ::
-            DeriveValueOptions IN gql args (GQLResult (Value CONST))
+            DerivingOptions gql args Identity (GQLResult (Value CONST))
         )
       . unContextValue
   decodeKindedValue dir _ = fmap to . (`runReaderT` context) . decodeRep dir

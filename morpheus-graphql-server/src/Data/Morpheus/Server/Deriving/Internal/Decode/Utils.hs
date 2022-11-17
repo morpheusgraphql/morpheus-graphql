@@ -37,8 +37,17 @@ import Data.Morpheus.Internal.Utils
   ( fromElems,
     selectOr,
   )
-import Data.Morpheus.Server.Deriving.Utils (ConsRep (..), DataType (..), FieldRep (..), conNameProxy)
-import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (..))
+import Data.Morpheus.Server.Deriving.Utils.Kinded
+  ( CatType (..),
+  )
+import Data.Morpheus.Server.Deriving.Utils.Proxy
+  ( conNameProxy,
+  )
+import Data.Morpheus.Server.Deriving.Utils.Types
+  ( ConsRep (..),
+    DataType (..),
+    FieldRep (..),
+  )
 import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (useTypename))
 import Data.Morpheus.Types.GQLScalar
   ( toScalar,
