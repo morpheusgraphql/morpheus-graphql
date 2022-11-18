@@ -126,8 +126,8 @@ import Relude hiding (Seq, Undefined, fromList, intercalate)
 
 ignoreUndefined :: forall f a. GQLType a => f a -> Maybe (f a)
 ignoreUndefined proxy
-  | gqlFingerprint (__type (OutputType :: CatType OUT a)) == InternalFingerprint __typenameUndefined = Just proxy
-  | otherwise = Nothing
+  | gqlFingerprint (__type (OutputType :: CatType OUT a)) == InternalFingerprint __typenameUndefined = Nothing
+  | otherwise = Just proxy
 
 deriveTypename :: (GQLType a) => CatType cat a -> TypeName
 deriveTypename = gqlTypeName . __type
