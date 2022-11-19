@@ -312,7 +312,6 @@ library
       Data.Morpheus.Server.Types
   other-modules:
       Data.Morpheus.Server.Deriving.App
-      Data.Morpheus.Server.Deriving.Channels
       Data.Morpheus.Server.Deriving.Internal.Decode.Rep
       Data.Morpheus.Server.Deriving.Internal.Decode.Utils
       Data.Morpheus.Server.Deriving.Internal.Resolve.Explore
@@ -323,6 +322,7 @@ library
       Data.Morpheus.Server.Deriving.Internal.Schema.Type
       Data.Morpheus.Server.Deriving.Internal.Schema.Union
       Data.Morpheus.Server.Deriving.Kinded.Arguments
+      Data.Morpheus.Server.Deriving.Kinded.Channels
       Data.Morpheus.Server.Deriving.Kinded.Resolver
       Data.Morpheus.Server.Deriving.Kinded.Type
       Data.Morpheus.Server.Deriving.Kinded.Value

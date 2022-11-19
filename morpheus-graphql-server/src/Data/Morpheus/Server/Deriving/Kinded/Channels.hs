@@ -11,9 +11,9 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Server.Deriving.Channels
-  ( channelResolver,
-    ChannelsConstraint,
+module Data.Morpheus.Server.Deriving.Kinded.Channels
+  ( resolverChannels,
+    CHANNELS,
   )
 where
 
@@ -28,8 +28,8 @@ import Data.Morpheus.App.Internal.Resolving
 import Data.Morpheus.Internal.Utils
   ( selectBy,
   )
-import Data.Morpheus.Server.Deriving.Internal.Schema.Directive (toFieldRes)
-import Data.Morpheus.Server.Deriving.Kinded.Value (KindedValue)
+import Data.Morpheus.Server.Deriving.Internal.Decode.Utils (useDecodeArguments)
+import Data.Morpheus.Server.Deriving.Internal.Schema.Directive (UseDeriving (..), toFieldRes)
 import Data.Morpheus.Server.Deriving.Utils.DeriveGType
   ( DeriveWith,
     DerivingOptions (..),
@@ -40,22 +40,19 @@ import Data.Morpheus.Server.Deriving.Utils.Types
   ( ConsRep (..),
     DataType (..),
   )
-import Data.Morpheus.Server.Types.GQLType
-  ( GQLType (..),
-    GQLValue,
-    decodeArguments,
-    withDir,
-  )
+import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (useTypeData))
 import Data.Morpheus.Server.Types.Types (Undefined)
 import Data.Morpheus.Types.Internal.AST
-  ( FieldName,
+  ( FALSE,
+    FieldName,
     SUBSCRIPTION,
     Selection (..),
     SelectionContent (..),
+    TRUE,
     VALID,
     internal,
   )
-import GHC.Generics
+import GHC.Generics (Rep)
 import Relude hiding (Undefined)
 
 newtype DerivedChannel e = DerivedChannel
@@ -64,16 +61,17 @@ newtype DerivedChannel e = DerivedChannel
 
 type ChannelRes (e :: Type) = Selection VALID -> ResolverState (DerivedChannel e)
 
-type ChannelsConstraint e m (subs :: (Type -> Type) -> Type) =
-  ExploreChannels (IsUndefined (subs (Resolver SUBSCRIPTION e m))) e (subs (Resolver SUBSCRIPTION e m))
+type CHANNELS gql val e m (subs :: (Type -> Type) -> Type) =
+  ExploreChannels gql val (IsUndefined (subs (Resolver SUBSCRIPTION e m))) e (subs (Resolver SUBSCRIPTION e m))
 
-channelResolver ::
-  forall e m subs.
-  ChannelsConstraint e m subs =>
+resolverChannels ::
+  forall e m subs gql val.
+  CHANNELS gql val e m subs =>
+  UseDeriving gql val ->
   subs (Resolver SUBSCRIPTION e m) ->
   Selection VALID ->
   ResolverState (Channel e)
-channelResolver value = fmap _unpackChannel . channelSelector
+resolverChannels drv value = fmap _unpackChannel . channelSelector
   where
     channelSelector ::
       Selection VALID ->
@@ -81,6 +79,7 @@ channelResolver value = fmap _unpackChannel . channelSelector
     channelSelector =
       selectBySelection
         ( exploreChannels
+            drv
             (Proxy @(IsUndefined (subs (Resolver SUBSCRIPTION e m))))
             value
         )
@@ -109,40 +108,39 @@ withSubscriptionSelection Selection {selectionContent = SelectionSet selSet} =
     _ -> throwError (internal "invalid subscription: there can be only one top level selection")
 withSubscriptionSelection _ = throwError (internal "invalid subscription: expected selectionSet")
 
-class GetChannel e a | a -> e where
-  getChannel :: a -> ChannelRes e
+class GetChannel val e a | a -> e where
+  getChannel :: UseDeriving gql val -> a -> ChannelRes e
 
-instance GetChannel e (SubscriptionField (Resolver SUBSCRIPTION e m a)) where
-  getChannel x = const $ pure $ DerivedChannel $ channel x
+instance GetChannel val e (SubscriptionField (Resolver SUBSCRIPTION e m a)) where
+  getChannel _ x = const $ pure $ DerivedChannel $ channel x
 
-instance (KindedValue GQLType GQLValue (KIND arg) arg) => GetChannel e (arg -> SubscriptionField (Resolver SUBSCRIPTION e m a)) where
-  getChannel f sel@Selection {selectionArguments} =
-    decodeArguments selectionArguments
-      >>= (`getChannel` sel)
-        . f
+instance (val arg) => GetChannel val e (arg -> SubscriptionField (Resolver SUBSCRIPTION e m a)) where
+  getChannel drv f sel@Selection {selectionArguments} =
+    useDecodeArguments drv selectionArguments
+      >>= flip (getChannel drv) sel . f
 
 ------------------------------------------------------
 
 type family IsUndefined a :: Bool where
-  IsUndefined (Undefined m) = 'True
-  IsUndefined a = 'False
+  IsUndefined (Undefined m) = TRUE
+  IsUndefined a = FALSE
 
-class ExploreChannels (t :: Bool) e a where
-  exploreChannels :: f t -> a -> HashMap FieldName (ChannelRes e)
+class ExploreChannels gql val (t :: Bool) e a where
+  exploreChannels :: UseDeriving gql val -> f t -> a -> HashMap FieldName (ChannelRes e)
 
-instance (GQLType a, Generic a, DeriveWith GQLType (GetChannel e) (ChannelRes e) (Rep a)) => ExploreChannels 'False e a where
-  exploreChannels _ =
+instance (gql a, Generic a, DeriveWith gql (GetChannel val e) (ChannelRes e) (Rep a)) => ExploreChannels gql val FALSE e a where
+  exploreChannels drv _ =
     HM.fromList
-      . map (toFieldRes withDir (Proxy @a))
+      . map (toFieldRes drv (Proxy @a))
       . consFields
       . tyCons
       . deriveValue
         ( DerivingOptions
-            { optApply = getChannel . runIdentity,
-              optTypeData = __type . outputType
+            { optApply = getChannel drv . runIdentity,
+              optTypeData = useTypeData (dirGQL drv) . outputType
             } ::
-            DerivingOptions GQLType (GetChannel e) Identity (ChannelRes e)
+            DerivingOptions gql (GetChannel val e) Identity (ChannelRes e)
         )
 
-instance ExploreChannels 'True e (Undefined m) where
-  exploreChannels _ = pure HM.empty
+instance ExploreChannels drv val TRUE e (Undefined m) where
+  exploreChannels _ _ = pure HM.empty

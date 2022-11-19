@@ -27,6 +27,7 @@ module Data.Morpheus.Server.Deriving.Internal.Decode.Utils
     CountFields (..),
     RefType (..),
     repValue,
+    useDecodeArguments,
   )
 where
 
@@ -37,6 +38,7 @@ import Data.Morpheus.Internal.Utils
   ( fromElems,
     selectOr,
   )
+import Data.Morpheus.Server.Deriving.Utils.AST (argumentsToObject)
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
   )
@@ -48,12 +50,13 @@ import Data.Morpheus.Server.Deriving.Utils.Types
     DataType (..),
     FieldRep (..),
   )
-import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (useTypename))
+import Data.Morpheus.Server.Deriving.Utils.Use (UseDeriving, UseGQLType (useTypename), UseValue (..), dirArgs)
 import Data.Morpheus.Types.GQLScalar
   ( toScalar,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( CONST,
+  ( Arguments,
+    CONST,
     FieldName,
     GQLError,
     IN,
@@ -231,3 +234,6 @@ instance (Selector s) => CountFields (M1 S s (K1 i a)) where
 
 instance CountFields U1 where
   countFields _ = 0
+
+useDecodeArguments :: val a => UseDeriving gql val -> Arguments VALID -> ResolverState a
+useDecodeArguments drv = useDecodeValue (dirArgs drv) . argumentsToObject
