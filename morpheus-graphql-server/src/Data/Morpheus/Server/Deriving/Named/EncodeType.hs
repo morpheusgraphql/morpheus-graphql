@@ -26,7 +26,7 @@ import Data.Morpheus.App.Internal.Resolving
     ResolverValue,
     liftResolverState,
   )
-import Data.Morpheus.Server.Deriving.Named.EncodeValue
+import Data.Morpheus.Server.Deriving.Kinded.NamedResolverFun
   ( KindedNamedFunValue (..),
     deriveNamedResolverFun,
   )

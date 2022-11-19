@@ -323,11 +323,11 @@ library
       Data.Morpheus.Server.Deriving.Internal.Schema.Union
       Data.Morpheus.Server.Deriving.Kinded.Arguments
       Data.Morpheus.Server.Deriving.Kinded.Channels
+      Data.Morpheus.Server.Deriving.Kinded.NamedResolverFun
       Data.Morpheus.Server.Deriving.Kinded.Resolver
       Data.Morpheus.Server.Deriving.Kinded.Type
       Data.Morpheus.Server.Deriving.Kinded.Value
       Data.Morpheus.Server.Deriving.Named.EncodeType
-      Data.Morpheus.Server.Deriving.Named.EncodeValue
       Data.Morpheus.Server.Deriving.Resolver
       Data.Morpheus.Server.Deriving.Schema
       Data.Morpheus.Server.Deriving.Utils.AST
