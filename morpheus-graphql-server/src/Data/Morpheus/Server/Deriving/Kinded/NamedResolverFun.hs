@@ -52,7 +52,11 @@ import Data.Morpheus.Server.Deriving.Utils.Types
     DataType (..),
     FieldRep (..),
   )
-import Data.Morpheus.Server.Deriving.Utils.Use (UseDeriving (..), UseGQLType (..), UseNamedResolver (..))
+import Data.Morpheus.Server.Deriving.Utils.Use
+  ( UseDeriving (..),
+    UseGQLType (..),
+    UseNamedResolver (..),
+  )
 import Data.Morpheus.Server.NamedResolvers
   ( NamedRef,
     NamedResolverT (..),
@@ -89,7 +93,7 @@ deriveNamedResolverFun ::
     MonadError GQLError m,
     DeriveWith gql (res m) (m (ResolverValue m)) (Rep a)
   ) =>
-  UseNamedResolver res gql val ->
+  UseNamedResolver namedRes res gql val ->
   [Maybe a] ->
   m [NamedResolverResult m]
 deriveNamedResolverFun ctx x = traverse encodeNode x
@@ -98,7 +102,7 @@ deriveNamedResolverFun ctx x = traverse encodeNode x
     encodeNode Nothing = pure NamedNullResolver
 
 class KindedNamedFunValue res gql val (k :: DerivingKind) (m :: Type -> Type) (a :: Type) where
-  kindedNamedFunValue :: UseNamedResolver res gql val -> ContextValue k a -> m (ResolverValue m)
+  kindedNamedFunValue :: UseNamedResolver namedRes res gql val -> ContextValue k a -> m (ResolverValue m)
 
 instance (EncodeScalar a, Monad m) => KindedNamedFunValue res gql val SCALAR m a where
   kindedNamedFunValue _ = pure . ResScalar . encodeScalar . unContextValue
@@ -134,7 +138,7 @@ instance (Monad m, LiftOperation o, val a, res (Resolver o e m) b) => KindedName
       >>= liftResolverState . useDecodeArguments (namedDrv ctx)
       >>= useNamedFieldResolver ctx . f
 
-getOptions :: UseNamedResolver res gql val -> DerivingOptions gql (res m) Identity (m (ResolverValue m))
+getOptions :: UseNamedResolver namedRes res gql val -> DerivingOptions gql (res m) Identity (m (ResolverValue m))
 getOptions UseNamedResolver {..} =
   DerivingOptions
     { optApply = useNamedFieldResolver . runIdentity,

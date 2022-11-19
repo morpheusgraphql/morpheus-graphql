@@ -45,7 +45,7 @@ type RootResolverConstraint m e query mutation subscription =
   )
 
 type NamedResolversConstraint m e query mutation subscription =
-  ( DERIVE_NAMED_RESOLVERS e m query mutation subscription,
+  ( DERIVE_NAMED_RESOLVERS e m query,
     SCHEMA e m query mutation subscription,
     Monad m
   )

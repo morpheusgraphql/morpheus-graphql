@@ -21,7 +21,7 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.Map as M
 import Data.Morpheus.Server.Deriving.Utils.Kinded
 import Data.Morpheus.Server.NamedResolvers (NamedResolverT)
-import Data.Morpheus.Server.Types.GQLType (GQLType (KIND, __type))
+import Data.Morpheus.Server.Types.GQLType (GQLType (..))
 import Data.Morpheus.Server.Types.Internal
   ( TypeData (gqlFingerprint),
   )

@@ -34,13 +34,12 @@ import Data.Morpheus.Server.Deriving.Kinded.Channels
   ( CHANNELS,
     resolverChannels,
   )
-import Data.Morpheus.Server.Deriving.Kinded.NamedResolverFun (KindedNamedFunValue (..))
-import Data.Morpheus.Server.Deriving.NamedResolver
-  ( EncodeTypeConstraint,
-    KindedNamedResolver,
+import Data.Morpheus.Server.Deriving.Kinded.NamedResolver
+  ( KindedNamedResolver,
     kindedNamedResolver,
   )
-import Data.Morpheus.Server.Deriving.Utils.GTraversable (Mappable (..), buildMap)
+import Data.Morpheus.Server.Deriving.Kinded.NamedResolverFun (KindedNamedFunValue (..))
+import Data.Morpheus.Server.Deriving.Utils.GTraversable (GFmap, Mappable (..), ScanConstraint, buildMap)
 import Data.Morpheus.Server.Deriving.Utils.Kinded (KindedProxy (..))
 import Data.Morpheus.Server.Deriving.Utils.Proxy
 import Data.Morpheus.Server.Deriving.Utils.Use (UseNamedResolver (..))
@@ -66,19 +65,23 @@ import Data.Morpheus.Types.Internal.AST
 import Relude
 
 class GQLNamedResolverFun (m :: Type -> Type) res where
-  namedResolverFun :: res -> m (ResolverValue m)
+  deriveNamedResFun :: res -> m (ResolverValue m)
+
+class GQLNamedResolver (m :: Type -> Type) a where
+  deriveNamedRes :: f a -> [NamedResolver m]
 
 instance KindedNamedFunValue GQLNamedResolverFun GQLType GQLValue (KIND a) m a => GQLNamedResolverFun m a where
-  namedResolverFun resolver = kindedNamedFunValue withNamed (ContextValue resolver :: ContextValue (KIND a) a)
+  deriveNamedResFun resolver = kindedNamedFunValue withNamed (ContextValue resolver :: ContextValue (KIND a) a)
 
-withNamed :: UseNamedResolver GQLNamedResolverFun GQLType GQLValue
+withNamed :: UseNamedResolver GQLNamedResolver GQLNamedResolverFun GQLType GQLValue
 withNamed =
   UseNamedResolver
     { namedDrv = withDir,
-      useNamedFieldResolver = namedResolverFun
+      useNamedFieldResolver = deriveNamedResFun,
+      useDeriveNamedResolvers = deriveNamedRes
     }
 
-deriveNamedResolver :: Mappable (KindedNamedResolver GQLNamedResolverFun GQLType GQLValue m) [NamedResolver m] KindedProxy
+deriveNamedResolver :: Mappable (KindedNamedResolver GQLNamedResolver GQLNamedResolverFun GQLType GQLValue m) [NamedResolver m] KindedProxy
 deriveNamedResolver = Mappable (kindedNamedResolver withNamed)
 
 type ROOT (o :: OperationType) e (m :: Type -> Type) a = EXPLORE GQLType GQLResolver (Resolver o e m) (a (Resolver o e m))
@@ -90,7 +93,29 @@ type DERIVE_RESOLVERS e m query mut sub =
     ROOT SUBSCRIPTION e m sub
   )
 
-type DERIVE_NAMED_RESOLVERS e m query mut sub = (EncodeTypeConstraint GQLNamedResolverFun GQLType GQLValue (Resolver QUERY e m) query)
+type DERIVE_NAMED_RESOLVERS e m query =
+  ( GQLType (query (NamedResolverT (Resolver QUERY e m))),
+    KindedNamedResolver
+      GQLNamedResolver
+      GQLNamedResolverFun
+      GQLType
+      GQLValue
+      (Resolver QUERY e m)
+      (KIND (query (NamedResolverT (Resolver QUERY e m))))
+      (query (NamedResolverT (Resolver QUERY e m))),
+    GFmap
+      ( ScanConstraint
+          ( KindedNamedResolver
+              GQLNamedResolver
+              GQLNamedResolverFun
+              GQLType
+              GQLValue
+              (Resolver QUERY e m)
+          )
+      )
+      (KIND (query (NamedResolverT (Resolver QUERY e m))))
+      (query (NamedResolverT (Resolver QUERY e m)))
+  )
 
 deriveResolvers ::
   (Monad m, DERIVE_RESOLVERS e m query mut sub) =>
@@ -109,7 +134,7 @@ deriveResolvers RootResolver {..} =
 
 deriveNamedResolvers ::
   forall e m query mut sub.
-  (Monad m, DERIVE_NAMED_RESOLVERS e m query mut sub) =>
+  (Monad m, DERIVE_NAMED_RESOLVERS e m query) =>
   NamedResolvers m e query mut sub ->
   RootResolverValue e m
 deriveNamedResolvers NamedResolvers =
