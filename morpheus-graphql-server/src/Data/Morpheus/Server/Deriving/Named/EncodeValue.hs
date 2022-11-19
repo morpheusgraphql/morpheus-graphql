@@ -54,7 +54,7 @@ import Data.Morpheus.Server.Deriving.Utils.Types
     DataType (..),
     FieldRep (..),
   )
-import Data.Morpheus.Server.Deriving.Utils.Use (UseDeriving (..), UseGQLType (..))
+import Data.Morpheus.Server.Deriving.Utils.Use (UseDeriving (..), UseGQLType (..), UseNamedResolver (..))
 import Data.Morpheus.Server.NamedResolvers
   ( NamedRef,
     NamedResolverT (..),
@@ -109,30 +109,37 @@ type FieldConstraint gql m a =
 class EncodeField (m :: Type -> Type) res where
   encodeField :: res -> m (ResolverValue m)
 
-instance EncodeFieldKind GQLType GQLValue (KIND a) m a => EncodeField m a where
-  encodeField resolver = encodeFieldKind withDir (ContextValue resolver :: ContextValue (KIND a) a)
+withNamed :: UseNamedResolver EncodeField GQLType GQLValue
+withNamed =
+  UseNamedResolver
+    { namedDrv = withDir,
+      useNamedFieldResolver = encodeField
+    }
 
-class EncodeFieldKind gql val (k :: DerivingKind) (m :: Type -> Type) (a :: Type) where
-  encodeFieldKind :: UseDeriving gql val -> ContextValue k a -> m (ResolverValue m)
+instance EncodeFieldKind EncodeField GQLType GQLValue (KIND a) m a => EncodeField m a where
+  encodeField resolver = encodeFieldKind withNamed (ContextValue resolver :: ContextValue (KIND a) a)
 
-instance (EncodeScalar a, Monad m) => EncodeFieldKind gql val SCALAR m a where
+class EncodeFieldKind res gql val (k :: DerivingKind) (m :: Type -> Type) (a :: Type) where
+  encodeFieldKind :: UseNamedResolver res gql val -> ContextValue k a -> m (ResolverValue m)
+
+instance (EncodeScalar a, Monad m) => EncodeFieldKind res gql val SCALAR m a where
   encodeFieldKind _ = pure . ResScalar . encodeScalar . unContextValue
 
-instance (MonadError GQLError m) => EncodeFieldKind gql val TYPE m a where
+instance (MonadError GQLError m) => EncodeFieldKind res gql val TYPE m a where
   encodeFieldKind _ (ContextValue _) = throwError (internal "types are resolved by Refs")
 
-instance (Applicative m, EncodeFieldKind GQLType GQLValue (KIND a) m a) => EncodeFieldKind gql val WRAPPER m [a] where
-  encodeFieldKind _ = fmap ResList . traverse encodeField . unContextValue
+instance (Applicative m, res m a) => EncodeFieldKind res gql val WRAPPER m [a] where
+  encodeFieldKind ctx = fmap ResList . traverse (useNamedFieldResolver ctx) . unContextValue
 
-instance (gql a, EncodeFieldKind GQLType GQLValue (KIND a) m a, Applicative m) => EncodeFieldKind gql val WRAPPER m (Maybe a) where
-  encodeFieldKind _ (ContextValue (Just x)) = encodeField x
+instance (gql a, res m a, Applicative m) => EncodeFieldKind res gql val WRAPPER m (Maybe a) where
+  encodeFieldKind ctx (ContextValue (Just x)) = useNamedFieldResolver ctx x
   encodeFieldKind _ (ContextValue Nothing) = pure mkNull
 
-instance (Monad m, gql a, ToJSON (NamedRef a)) => EncodeFieldKind gql val CUSTOM m (NamedResolverT m a) where
-  encodeFieldKind drv = encodeRef . unContextValue
+instance (Monad m, gql a, ToJSON (NamedRef a)) => EncodeFieldKind res gql val CUSTOM m (NamedResolverT m a) where
+  encodeFieldKind ctx = encodeRef . unContextValue
     where
       name :: TypeName
-      name = useTypename (dirGQL drv) (OutputType :: CatType OUT a)
+      name = useTypename (dirGQL (namedDrv ctx)) (OutputType :: CatType OUT a)
       encodeRef :: Monad m => NamedResolverT m a -> m (ResolverValue m)
       encodeRef (NamedResolverT ref) = do
         value <- replaceValue . toJSON <$> ref
@@ -149,11 +156,11 @@ instance
     LiftOperation o,
     val a
   ) =>
-  EncodeFieldKind gql val CUSTOM (Resolver o e m) (a -> b)
+  EncodeFieldKind res gql val CUSTOM (Resolver o e m) (a -> b)
   where
   encodeFieldKind drv (ContextValue f) =
     getArguments
-      >>= liftResolverState . useDecodeArguments drv
+      >>= liftResolverState . useDecodeArguments (namedDrv drv)
       >>= encodeField . f
 
 getOptions :: UseGQLType gql -> DerivingOptions gql (EncodeField m) Identity (m (ResolverValue m))
