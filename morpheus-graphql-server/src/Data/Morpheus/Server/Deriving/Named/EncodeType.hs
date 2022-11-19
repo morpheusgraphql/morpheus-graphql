@@ -61,18 +61,18 @@ import Data.Morpheus.Types.Internal.AST
 import GHC.Generics (Rep)
 import Relude
 
-class EncodeField (m :: Type -> Type) res where
-  encodeField :: res -> m (ResolverValue m)
+class GQLNamedResolverFun (m :: Type -> Type) res where
+  namedResolverFun :: res -> m (ResolverValue m)
 
-withNamed :: UseNamedResolver EncodeField GQLType GQLValue
+withNamed :: UseNamedResolver GQLNamedResolverFun GQLType GQLValue
 withNamed =
   UseNamedResolver
     { namedDrv = withDir,
-      useNamedFieldResolver = encodeField
+      useNamedFieldResolver = namedResolverFun
     }
 
-instance KindedNamedFunValue EncodeField GQLType GQLValue (KIND a) m a => EncodeField m a where
-  encodeField resolver = kindedNamedFunValue withNamed (ContextValue resolver :: ContextValue (KIND a) a)
+instance KindedNamedFunValue GQLNamedResolverFun GQLType GQLValue (KIND a) m a => GQLNamedResolverFun m a where
+  namedResolverFun resolver = kindedNamedFunValue withNamed (ContextValue resolver :: ContextValue (KIND a) a)
 
 deriveResolver :: Mappable (DeriveNamedResolver m) [NamedResolver m] KindedProxy
 deriveResolver = Mappable deriveNamedResolver
@@ -125,7 +125,7 @@ instance
   ( GQLType a,
     DecodeValuesConstraint o e m a,
     Generic a,
-    DeriveWith GQLType (EncodeField (Resolver o e m)) (Resolver o e m (ResolverValue (Resolver o e m))) (Rep a)
+    DeriveWith GQLType (GQLNamedResolverFun (Resolver o e m)) (Resolver o e m (ResolverValue (Resolver o e m))) (Rep a)
   ) =>
   DeriveNamedResolver (Resolver o e m) TYPE (a :: Type)
   where
