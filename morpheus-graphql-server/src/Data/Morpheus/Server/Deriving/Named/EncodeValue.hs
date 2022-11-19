@@ -15,9 +15,9 @@
 
 module Data.Morpheus.Server.Deriving.Named.EncodeValue
   ( EncodeFieldKind,
-    Encode,
     encodeResolverValue,
     FieldConstraint,
+    EncodeField,
   )
 where
 
@@ -90,7 +90,7 @@ encodeResolverValue ::
     gql [Maybe a],
     gql a,
     MonadError GQLError m,
-    DeriveWith gql (Encode m) (m (ResolverValue m)) (Rep a)
+    DeriveWith gql (EncodeField m) (m (ResolverValue m)) (Rep a)
   ) =>
   UseDeriving gql val ->
   [Maybe a] ->
@@ -103,13 +103,13 @@ encodeResolverValue drv x = traverse encodeNode x
 type FieldConstraint gql m a =
   ( gql a,
     Generic a,
-    DeriveWith gql (Encode m) (m (ResolverValue m)) (Rep a)
+    DeriveWith gql (EncodeField m) (m (ResolverValue m)) (Rep a)
   )
 
-class Encode (m :: Type -> Type) res where
+class EncodeField (m :: Type -> Type) res where
   encodeField :: res -> m (ResolverValue m)
 
-instance EncodeFieldKind GQLType GQLValue (KIND a) m a => Encode m a where
+instance EncodeFieldKind GQLType GQLValue (KIND a) m a => EncodeField m a where
   encodeField resolver = encodeFieldKind withDir (ContextValue resolver :: ContextValue (KIND a) a)
 
 class EncodeFieldKind gql val (k :: DerivingKind) (m :: Type -> Type) (a :: Type) where
@@ -145,7 +145,7 @@ packRef name v = ResRef $ pure $ NamedResolverRef name [v]
 
 instance
   ( Monad m,
-    Encode (Resolver o e m) b,
+    EncodeField (Resolver o e m) b,
     LiftOperation o,
     val a
   ) =>
@@ -156,7 +156,7 @@ instance
       >>= liftResolverState . useDecodeArguments drv
       >>= encodeField . f
 
-getOptions :: UseGQLType gql -> DerivingOptions gql (Encode m) Identity (m (ResolverValue m))
+getOptions :: UseGQLType gql -> DerivingOptions gql (EncodeField m) Identity (m (ResolverValue m))
 getOptions UseGQLType {..} =
   DerivingOptions
     { optApply = encodeField . runIdentity,

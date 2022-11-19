@@ -27,7 +27,7 @@ import Data.Morpheus.App.Internal.Resolving
     liftResolverState,
   )
 import Data.Morpheus.Server.Deriving.Named.EncodeValue
-  ( Encode,
+  ( EncodeField,
     encodeResolverValue,
   )
 import Data.Morpheus.Server.Deriving.Utils.DeriveGType (DeriveWith)
@@ -107,7 +107,7 @@ instance
   ( GQLType a,
     DecodeValuesConstraint o e m a,
     Generic a,
-    DeriveWith GQLType (Encode (Resolver o e m)) (Resolver o e m (ResolverValue (Resolver o e m))) (Rep a)
+    DeriveWith GQLType (EncodeField (Resolver o e m)) (Resolver o e m (ResolverValue (Resolver o e m))) (Rep a)
   ) =>
   DeriveNamedResolver (Resolver o e m) TYPE (a :: Type)
   where
