@@ -27,13 +27,18 @@ import Data.Morpheus.App.Internal.Resolving
     liftResolverState,
   )
 import Data.Morpheus.Server.Deriving.Named.EncodeValue
-  ( EncodeField,
-    encodeResolverValue,
+  ( KindedNamedFunValue (..),
+    deriveNamedResolverFun,
   )
 import Data.Morpheus.Server.Deriving.Utils.DeriveGType (DeriveWith)
 import Data.Morpheus.Server.Deriving.Utils.GTraversable
+  ( GFmap,
+    Mappable (Mappable),
+    ScanConstraint,
+  )
 import Data.Morpheus.Server.Deriving.Utils.Kinded (KindedProxy (KindedProxy), outputType)
-import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (useTypename))
+import Data.Morpheus.Server.Deriving.Utils.Proxy (ContextValue (..))
+import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (useTypename), UseNamedResolver (..))
 import Data.Morpheus.Server.NamedResolvers (Dependency, NamedResolverT (..), ResolveNamed (..))
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType,
@@ -55,6 +60,19 @@ import Data.Morpheus.Types.Internal.AST
   )
 import GHC.Generics (Rep)
 import Relude
+
+class EncodeField (m :: Type -> Type) res where
+  encodeField :: res -> m (ResolverValue m)
+
+withNamed :: UseNamedResolver EncodeField GQLType GQLValue
+withNamed =
+  UseNamedResolver
+    { namedDrv = withDir,
+      useNamedFieldResolver = encodeField
+    }
+
+instance KindedNamedFunValue EncodeField GQLType GQLValue (KIND a) m a => EncodeField m a where
+  encodeField resolver = kindedNamedFunValue withNamed (ContextValue resolver :: ContextValue (KIND a) a)
 
 deriveResolver :: Mappable (DeriveNamedResolver m) [NamedResolver m] KindedProxy
 deriveResolver = Mappable deriveNamedResolver
@@ -114,7 +132,7 @@ instance
   deriveNamedResolver _ =
     [ NamedResolver
         { resolverName = useTypename withGQL (outputType proxy),
-          resolverFun = decodeValues proxy >=> encodeResolverValue withDir
+          resolverFun = decodeValues proxy >=> deriveNamedResolverFun withNamed
         }
     ]
     where

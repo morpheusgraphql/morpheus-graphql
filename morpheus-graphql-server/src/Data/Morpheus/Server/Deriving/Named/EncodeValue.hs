@@ -14,10 +14,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.Named.EncodeValue
-  ( EncodeFieldKind,
-    encodeResolverValue,
-    FieldConstraint,
-    EncodeField,
+  ( deriveNamedResolverFun,
+    KindedNamedFunValue (..),
   )
 where
 
@@ -59,7 +57,6 @@ import Data.Morpheus.Server.NamedResolvers
   ( NamedRef,
     NamedResolverT (..),
   )
-import Data.Morpheus.Server.Types.GQLType (GQLType, GQLValue, KIND, withDir)
 import Data.Morpheus.Server.Types.Kind
   ( CUSTOM,
     DerivingKind,
@@ -85,58 +82,39 @@ import GHC.Generics
   )
 import Relude hiding (empty)
 
-encodeResolverValue ::
+deriveNamedResolverFun ::
   ( Generic a,
     gql [Maybe a],
     gql a,
     MonadError GQLError m,
-    DeriveWith gql (EncodeField m) (m (ResolverValue m)) (Rep a)
+    DeriveWith gql (res m) (m (ResolverValue m)) (Rep a)
   ) =>
-  UseDeriving gql val ->
+  UseNamedResolver res gql val ->
   [Maybe a] ->
   m [NamedResolverResult m]
-encodeResolverValue drv x = traverse encodeNode x
+deriveNamedResolverFun ctx x = traverse encodeNode x
   where
-    encodeNode (Just v) = convertNamedNode drv (Identity x) (deriveValue (getOptions $ dirGQL drv) v)
+    encodeNode (Just v) = convertNamedNode (namedDrv ctx) (Identity x) (deriveValue (getOptions ctx) v)
     encodeNode Nothing = pure NamedNullResolver
 
-type FieldConstraint gql m a =
-  ( gql a,
-    Generic a,
-    DeriveWith gql (EncodeField m) (m (ResolverValue m)) (Rep a)
-  )
+class KindedNamedFunValue res gql val (k :: DerivingKind) (m :: Type -> Type) (a :: Type) where
+  kindedNamedFunValue :: UseNamedResolver res gql val -> ContextValue k a -> m (ResolverValue m)
 
-class EncodeField (m :: Type -> Type) res where
-  encodeField :: res -> m (ResolverValue m)
+instance (EncodeScalar a, Monad m) => KindedNamedFunValue res gql val SCALAR m a where
+  kindedNamedFunValue _ = pure . ResScalar . encodeScalar . unContextValue
 
-withNamed :: UseNamedResolver EncodeField GQLType GQLValue
-withNamed =
-  UseNamedResolver
-    { namedDrv = withDir,
-      useNamedFieldResolver = encodeField
-    }
+instance (MonadError GQLError m) => KindedNamedFunValue res gql val TYPE m a where
+  kindedNamedFunValue _ (ContextValue _) = throwError (internal "types are resolved by Refs")
 
-instance EncodeFieldKind EncodeField GQLType GQLValue (KIND a) m a => EncodeField m a where
-  encodeField resolver = encodeFieldKind withNamed (ContextValue resolver :: ContextValue (KIND a) a)
+instance (Applicative m, res m a) => KindedNamedFunValue res gql val WRAPPER m [a] where
+  kindedNamedFunValue ctx = fmap ResList . traverse (useNamedFieldResolver ctx) . unContextValue
 
-class EncodeFieldKind res gql val (k :: DerivingKind) (m :: Type -> Type) (a :: Type) where
-  encodeFieldKind :: UseNamedResolver res gql val -> ContextValue k a -> m (ResolverValue m)
+instance (gql a, res m a, Applicative m) => KindedNamedFunValue res gql val WRAPPER m (Maybe a) where
+  kindedNamedFunValue ctx (ContextValue (Just x)) = useNamedFieldResolver ctx x
+  kindedNamedFunValue _ (ContextValue Nothing) = pure mkNull
 
-instance (EncodeScalar a, Monad m) => EncodeFieldKind res gql val SCALAR m a where
-  encodeFieldKind _ = pure . ResScalar . encodeScalar . unContextValue
-
-instance (MonadError GQLError m) => EncodeFieldKind res gql val TYPE m a where
-  encodeFieldKind _ (ContextValue _) = throwError (internal "types are resolved by Refs")
-
-instance (Applicative m, res m a) => EncodeFieldKind res gql val WRAPPER m [a] where
-  encodeFieldKind ctx = fmap ResList . traverse (useNamedFieldResolver ctx) . unContextValue
-
-instance (gql a, res m a, Applicative m) => EncodeFieldKind res gql val WRAPPER m (Maybe a) where
-  encodeFieldKind ctx (ContextValue (Just x)) = useNamedFieldResolver ctx x
-  encodeFieldKind _ (ContextValue Nothing) = pure mkNull
-
-instance (Monad m, gql a, ToJSON (NamedRef a)) => EncodeFieldKind res gql val CUSTOM m (NamedResolverT m a) where
-  encodeFieldKind ctx = encodeRef . unContextValue
+instance (Monad m, gql a, ToJSON (NamedRef a)) => KindedNamedFunValue res gql val CUSTOM m (NamedResolverT m a) where
+  kindedNamedFunValue ctx = encodeRef . unContextValue
     where
       name :: TypeName
       name = useTypename (dirGQL (namedDrv ctx)) (OutputType :: CatType OUT a)
@@ -150,24 +128,17 @@ instance (Monad m, gql a, ToJSON (NamedRef a)) => EncodeFieldKind res gql val CU
 packRef :: Applicative m => TypeName -> ValidValue -> ResolverValue m
 packRef name v = ResRef $ pure $ NamedResolverRef name [v]
 
-instance
-  ( Monad m,
-    EncodeField (Resolver o e m) b,
-    LiftOperation o,
-    val a
-  ) =>
-  EncodeFieldKind res gql val CUSTOM (Resolver o e m) (a -> b)
-  where
-  encodeFieldKind drv (ContextValue f) =
+instance (Monad m, LiftOperation o, val a, res (Resolver o e m) b) => KindedNamedFunValue res gql val CUSTOM (Resolver o e m) (a -> b) where
+  kindedNamedFunValue ctx (ContextValue f) =
     getArguments
-      >>= liftResolverState . useDecodeArguments (namedDrv drv)
-      >>= encodeField . f
+      >>= liftResolverState . useDecodeArguments (namedDrv ctx)
+      >>= useNamedFieldResolver ctx . f
 
-getOptions :: UseGQLType gql -> DerivingOptions gql (EncodeField m) Identity (m (ResolverValue m))
-getOptions UseGQLType {..} =
+getOptions :: UseNamedResolver res gql val -> DerivingOptions gql (res m) Identity (m (ResolverValue m))
+getOptions UseNamedResolver {..} =
   DerivingOptions
-    { optApply = encodeField . runIdentity,
-      optTypeData = useTypeData . outputType
+    { optApply = useNamedFieldResolver . runIdentity,
+      optTypeData = useTypeData (dirGQL namedDrv) . outputType
     }
 
 convertNamedNode ::
