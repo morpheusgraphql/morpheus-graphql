@@ -12,8 +12,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.NamedResolver
-  ( deriveNamedResolver,
-    EncodeTypeConstraint,
+  ( EncodeTypeConstraint,
     KindedNamedResolver (..),
   )
 where
@@ -27,24 +26,18 @@ import Data.Morpheus.App.Internal.Resolving
     liftResolverState,
   )
 import Data.Morpheus.Server.Deriving.Kinded.NamedResolverFun
-  ( KindedNamedFunValue (..),
-    deriveNamedResolverFun,
+  ( deriveNamedResolverFun,
   )
 import Data.Morpheus.Server.Deriving.Utils.DeriveGType (DeriveWith)
 import Data.Morpheus.Server.Deriving.Utils.GTraversable
   ( GFmap,
-    Mappable (Mappable),
     ScanConstraint,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded (KindedProxy (KindedProxy), outputType)
-import Data.Morpheus.Server.Deriving.Utils.Proxy (ContextValue (..))
 import Data.Morpheus.Server.Deriving.Utils.Use (UseDeriving (..), UseGQLType (useTypename), UseNamedResolver (..), UseValue (useDecodeValue))
 import Data.Morpheus.Server.NamedResolvers (Dependency, NamedResolverT (..), ResolveNamed (..))
 import Data.Morpheus.Server.Types.GQLType
-  ( GQLType,
-    GQLValue,
-    KIND,
-    withDir,
+  ( KIND,
   )
 import Data.Morpheus.Server.Types.Kind
   ( CUSTOM,
@@ -60,22 +53,6 @@ import Data.Morpheus.Types.Internal.AST
 import GHC.Generics (Rep)
 import Relude
 
-class GQLNamedResolverFun (m :: Type -> Type) res where
-  namedResolverFun :: res -> m (ResolverValue m)
-
-withNamed :: UseNamedResolver GQLNamedResolverFun GQLType GQLValue
-withNamed =
-  UseNamedResolver
-    { namedDrv = withDir,
-      useNamedFieldResolver = namedResolverFun
-    }
-
-instance KindedNamedFunValue GQLNamedResolverFun GQLType GQLValue (KIND a) m a => GQLNamedResolverFun m a where
-  namedResolverFun resolver = kindedNamedFunValue withNamed (ContextValue resolver :: ContextValue (KIND a) a)
-
-deriveNamedResolver :: Mappable (KindedNamedResolver GQLType GQLValue m) [NamedResolver m] KindedProxy
-deriveNamedResolver = Mappable (kindedNamedResolver withNamed)
-
 decodeValues :: forall gql val o e m a. DecodeValuesConstraint val o e m a => UseDeriving gql val -> Proxy a -> [ValidValue] -> Resolver o e m [Maybe a]
 decodeValues ctx _ xs = traverse decodeArg xs >>= resolveBatched
   where
@@ -89,14 +66,14 @@ type DecodeValuesConstraint val o e m a =
     val (Dependency a)
   )
 
-type EncodeTypeConstraint gql val m a =
-  ( GFmap (ScanConstraint (KindedNamedResolver gql val m)) (KIND (a (NamedResolverT m))) (a (NamedResolverT m)),
-    KindedNamedResolver gql val m (KIND (a (NamedResolverT m))) (a (NamedResolverT m)),
+type EncodeTypeConstraint res gql val m a =
+  ( GFmap (ScanConstraint (KindedNamedResolver res gql val m)) (KIND (a (NamedResolverT m))) (a (NamedResolverT m)),
+    KindedNamedResolver res gql val m (KIND (a (NamedResolverT m))) (a (NamedResolverT m)),
     gql (a (NamedResolverT m))
   )
 
-class KindedNamedResolver gql val (m :: Type -> Type) (k :: DerivingKind) a where
-  kindedNamedResolver :: UseNamedResolver GQLNamedResolverFun gql val -> f k a -> [NamedResolver m]
+class KindedNamedResolver res gql val (m :: Type -> Type) (k :: DerivingKind) a where
+  kindedNamedResolver :: UseNamedResolver res gql val -> f k a -> [NamedResolver m]
 
 instance
   ( DecodeValuesConstraint gql o e m a,
@@ -104,7 +81,7 @@ instance
     val (Dependency a),
     gql a
   ) =>
-  KindedNamedResolver gql val (Resolver o e m) SCALAR a
+  KindedNamedResolver res gql val (Resolver o e m) SCALAR a
   where
   kindedNamedResolver ctx _ =
     [ NamedResolver
@@ -121,9 +98,9 @@ instance
     gql a,
     gql [Maybe a],
     val (Dependency a),
-    DeriveWith gql (GQLNamedResolverFun (Resolver o e m)) (Resolver o e m (ResolverValue (Resolver o e m))) (Rep a)
+    DeriveWith gql (res (Resolver o e m)) (Resolver o e m (ResolverValue (Resolver o e m))) (Rep a)
   ) =>
-  KindedNamedResolver gql val (Resolver o e m) TYPE (a :: Type)
+  KindedNamedResolver res gql val (Resolver o e m) TYPE (a :: Type)
   where
   kindedNamedResolver ctx _ =
     [ NamedResolver
@@ -134,11 +111,11 @@ instance
     where
       proxy = Proxy @a
 
-instance KindedNamedResolver gql val m (KIND a) a => KindedNamedResolver gql val m CUSTOM (NamedResolverT m a) where
+instance KindedNamedResolver res gql val m (KIND a) a => KindedNamedResolver res gql val m CUSTOM (NamedResolverT m a) where
   kindedNamedResolver ctx _ = kindedNamedResolver ctx (KindedProxy :: KindedProxy (KIND a) a)
 
-instance KindedNamedResolver gql val m (KIND a) a => KindedNamedResolver gql val m CUSTOM (input -> a) where
+instance KindedNamedResolver res gql val m (KIND a) a => KindedNamedResolver res gql val m CUSTOM (input -> a) where
   kindedNamedResolver ctx _ = kindedNamedResolver ctx (KindedProxy :: KindedProxy (KIND a) a)
 
-instance KindedNamedResolver gql val m (KIND a) a => KindedNamedResolver gql val m WRAPPER (f a) where
+instance KindedNamedResolver res gql val m (KIND a) a => KindedNamedResolver res gql val m WRAPPER (f a) where
   kindedNamedResolver ctx _ = kindedNamedResolver ctx (KindedProxy :: KindedProxy (KIND a) a)
