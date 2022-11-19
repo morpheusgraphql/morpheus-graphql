@@ -71,7 +71,7 @@ type DERIVE_RESOLVERS e m query mut sub =
     ROOT SUBSCRIPTION e m sub
   )
 
-type DERIVE_NAMED_RESOLVERS e m query mut sub = (EncodeTypeConstraint (Resolver QUERY e m) query)
+type DERIVE_NAMED_RESOLVERS e m query mut sub = (EncodeTypeConstraint GQLType (Resolver QUERY e m) query)
 
 deriveResolvers ::
   (Monad m, DERIVE_RESOLVERS e m query mut sub) =>

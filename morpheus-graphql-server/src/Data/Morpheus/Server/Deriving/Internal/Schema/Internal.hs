@@ -28,7 +28,7 @@ where
 
 -- MORPHEUS
 
-import Control.Monad.Except
+import Control.Monad.Except (throwError)
 import Data.Morpheus.Internal.Ext
   ( GQLResult,
     Result (Failure, Success, errors),
