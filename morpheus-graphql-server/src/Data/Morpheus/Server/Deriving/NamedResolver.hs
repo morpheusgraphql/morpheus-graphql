@@ -12,9 +12,9 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.NamedResolver
-  ( deriveResolver,
+  ( deriveNamedResolver,
     EncodeTypeConstraint,
-    DeriveNamedResolver (..),
+    KindedNamedResolver (..),
   )
 where
 
@@ -73,26 +73,26 @@ withNamed =
 instance KindedNamedFunValue GQLNamedResolverFun GQLType GQLValue (KIND a) m a => GQLNamedResolverFun m a where
   namedResolverFun resolver = kindedNamedFunValue withNamed (ContextValue resolver :: ContextValue (KIND a) a)
 
-deriveResolver :: Mappable (DeriveNamedResolver GQLType m) [NamedResolver m] KindedProxy
-deriveResolver = Mappable (deriveNamedResolver withNamed)
+deriveNamedResolver :: Mappable (KindedNamedResolver GQLType m) [NamedResolver m] KindedProxy
+deriveNamedResolver = Mappable (kindedNamedResolver withNamed)
 
 type EncodeTypeConstraint gql m a =
-  ( GFmap (ScanConstraint (DeriveNamedResolver gql m)) (KIND (a (NamedResolverT m))) (a (NamedResolverT m)),
-    DeriveNamedResolver gql m (KIND (a (NamedResolverT m))) (a (NamedResolverT m)),
+  ( GFmap (ScanConstraint (KindedNamedResolver gql m)) (KIND (a (NamedResolverT m))) (a (NamedResolverT m)),
+    KindedNamedResolver gql m (KIND (a (NamedResolverT m))) (a (NamedResolverT m)),
     gql (a (NamedResolverT m))
   )
 
-class DeriveNamedResolver gql (m :: Type -> Type) (k :: DerivingKind) a where
-  deriveNamedResolver :: UseNamedResolver GQLNamedResolverFun gql val -> f k a -> [NamedResolver m]
+class KindedNamedResolver gql (m :: Type -> Type) (k :: DerivingKind) a where
+  kindedNamedResolver :: UseNamedResolver GQLNamedResolverFun gql val -> f k a -> [NamedResolver m]
 
 instance
   ( DecodeValuesConstraint o e m a,
     EncodeScalar a,
     gql a
   ) =>
-  DeriveNamedResolver gql (Resolver o e m) SCALAR a
+  KindedNamedResolver gql (Resolver o e m) SCALAR a
   where
-  deriveNamedResolver ctx _ =
+  kindedNamedResolver ctx _ =
     [ NamedResolver
         { resolverName = useTypename (dirGQL $ namedDrv ctx) (outputType proxy),
           resolverFun = decodeValues proxy >=> pure . map (maybe NamedNullResolver (NamedScalarResolver . encodeScalar))
@@ -121,9 +121,9 @@ instance
     gql [Maybe a],
     DeriveWith gql (GQLNamedResolverFun (Resolver o e m)) (Resolver o e m (ResolverValue (Resolver o e m))) (Rep a)
   ) =>
-  DeriveNamedResolver gql (Resolver o e m) TYPE (a :: Type)
+  KindedNamedResolver gql (Resolver o e m) TYPE (a :: Type)
   where
-  deriveNamedResolver ctx _ =
+  kindedNamedResolver ctx _ =
     [ NamedResolver
         { resolverName = useTypename (dirGQL $ namedDrv ctx) (outputType proxy),
           resolverFun = decodeValues proxy >=> deriveNamedResolverFun ctx
@@ -132,11 +132,11 @@ instance
     where
       proxy = Proxy @a
 
-instance DeriveNamedResolver gql m (KIND a) a => DeriveNamedResolver gql m CUSTOM (NamedResolverT m a) where
-  deriveNamedResolver ctx _ = deriveNamedResolver ctx (KindedProxy :: KindedProxy (KIND a) a)
+instance KindedNamedResolver gql m (KIND a) a => KindedNamedResolver gql m CUSTOM (NamedResolverT m a) where
+  kindedNamedResolver ctx _ = kindedNamedResolver ctx (KindedProxy :: KindedProxy (KIND a) a)
 
-instance DeriveNamedResolver gql m (KIND a) a => DeriveNamedResolver gql m CUSTOM (input -> a) where
-  deriveNamedResolver ctx _ = deriveNamedResolver ctx (KindedProxy :: KindedProxy (KIND a) a)
+instance KindedNamedResolver gql m (KIND a) a => KindedNamedResolver gql m CUSTOM (input -> a) where
+  kindedNamedResolver ctx _ = kindedNamedResolver ctx (KindedProxy :: KindedProxy (KIND a) a)
 
-instance DeriveNamedResolver gql m (KIND a) a => DeriveNamedResolver gql m WRAPPER (f a) where
-  deriveNamedResolver ctx _ = deriveNamedResolver ctx (KindedProxy :: KindedProxy (KIND a) a)
+instance KindedNamedResolver gql m (KIND a) a => KindedNamedResolver gql m WRAPPER (f a) where
+  kindedNamedResolver ctx _ = kindedNamedResolver ctx (KindedProxy :: KindedProxy (KIND a) a)

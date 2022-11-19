@@ -17,6 +17,7 @@
 
 module Data.Morpheus.Server.Deriving.Utils.GTraversable where
 
+import qualified Data.HashMap.Strict as HM
 import qualified Data.Map as M
 import Data.Morpheus.Server.Deriving.Utils.Kinded
 import Data.Morpheus.Server.NamedResolvers (NamedResolverT)
@@ -28,6 +29,19 @@ import Data.Morpheus.Server.Types.Kind
 import Data.Morpheus.Server.Types.SchemaT (TypeFingerprint)
 import GHC.Generics
 import Relude hiding (Undefined)
+
+buildMap ::
+  (c (KIND a) a, Hashable k, Eq k, GFmap (ScanConstraint c) (KIND a) a, GQLType a) =>
+  (b -> k) ->
+  Mappable c [b] KindedProxy ->
+  Proxy a ->
+  HashMap k b
+buildMap keyF f xs =
+  HM.fromList $
+    map (\x -> (keyF x, x)) $
+      join $
+        toList $
+          traverseTypes f xs
 
 traverseTypes ::
   (GFmap (ScanConstraint c) (KIND a) a, c (KIND a) a, GQLType a) =>

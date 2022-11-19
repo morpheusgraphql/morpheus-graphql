@@ -35,11 +35,9 @@ import Data.Morpheus.Server.Deriving.Kinded.Channels
   )
 import Data.Morpheus.Server.Deriving.NamedResolver
   ( EncodeTypeConstraint,
-    deriveResolver,
+    deriveNamedResolver,
   )
-import Data.Morpheus.Server.Deriving.Utils.GTraversable
-  ( traverseTypes,
-  )
+import Data.Morpheus.Server.Deriving.Utils.GTraversable (buildMap)
 import Data.Morpheus.Server.Resolvers
   ( NamedResolverT (..),
     NamedResolvers (..),
@@ -59,7 +57,6 @@ import Data.Morpheus.Types.Internal.AST
     QUERY,
     SUBSCRIPTION,
   )
-import qualified GHC.Exts as HM
 import Relude
 
 type ROOT (o :: OperationType) e (m :: Type -> Type) a = EXPLORE GQLType GQLResolver (Resolver o e m) (a (Resolver o e m))
@@ -95,8 +92,7 @@ deriveNamedResolvers ::
   RootResolverValue e m
 deriveNamedResolvers NamedResolvers =
   NamedResolversValue $
-    HM.fromList $
-      map (\x -> (resolverName x, x)) $
-        join $
-          toList $
-            traverseTypes deriveResolver (Proxy @(query (NamedResolverT (Resolver QUERY e m))))
+    buildMap
+      resolverName
+      deriveNamedResolver
+      (Proxy @(query (NamedResolverT (Resolver QUERY e m))))
