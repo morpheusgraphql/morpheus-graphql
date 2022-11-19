@@ -42,7 +42,7 @@ import Data.Morpheus.App.Internal.Resolving
   )
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Internal.Utils (singleton)
-import Data.Morpheus.Server.Deriving.Internal.Schema.TypeContent
+import Data.Morpheus.Server.Deriving.Internal.Schema.Type
   ( fillTypeContent,
     injectType,
   )

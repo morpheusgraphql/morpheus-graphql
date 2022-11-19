@@ -24,22 +24,16 @@ import Data.Morpheus.App.Internal.Resolving
   ( Resolver,
   )
 import Data.Morpheus.Core (defaultConfig, validateSchema)
-import Data.Morpheus.Internal.Ext
+import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Internal
   ( fromSchema,
   )
-import Data.Morpheus.Server.Deriving.Internal.Schema.Object
-  ( asObjectType,
+import Data.Morpheus.Server.Deriving.Internal.Schema.Type
+  ( useDeriveObject,
   )
-import Data.Morpheus.Server.Deriving.Internal.Schema.TypeContent
-import Data.Morpheus.Server.Deriving.Kinded.Type
-  ( DERIVE_TYPE,
-  )
-import Data.Morpheus.Server.Deriving.Utils.Kinded (outputType)
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
     ignoreUndefined,
-    withDir,
     withGQL,
   )
 import Data.Morpheus.Server.Types.SchemaT
@@ -49,20 +43,17 @@ import Data.Morpheus.Server.Types.SchemaT
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
     MUTATION,
-    OBJECT,
-    OUT,
     QUERY,
     SUBSCRIPTION,
     Schema (..),
-    TypeDefinition (..),
   )
 import Language.Haskell.TH (Exp, Q)
 import Relude
 
 type SchemaConstraints event (m :: Type -> Type) query mutation subscription =
-  ( DERIVE_TYPE GQLType OUT (query (Resolver QUERY event m)),
-    DERIVE_TYPE GQLType OUT (mutation (Resolver MUTATION event m)),
-    DERIVE_TYPE GQLType OUT (subscription (Resolver SUBSCRIPTION event m))
+  ( GQLType (query (Resolver QUERY event m)),
+    GQLType (mutation (Resolver MUTATION event m)),
+    GQLType (subscription (Resolver SUBSCRIPTION event m))
   )
 
 -- | normal morpheus server validates schema at runtime (after the schema derivation).
@@ -90,10 +81,7 @@ deriveSchema ::
 deriveSchema _ =
   toSchema
     ( (,,)
-        <$> deriveRoot (Proxy @(query (Resolver QUERY e m)))
-        <*> traverse deriveRoot (ignoreUndefined (Proxy @(mut (Resolver MUTATION e m))))
-        <*> traverse deriveRoot (ignoreUndefined (Proxy @(subs (Resolver SUBSCRIPTION e m))))
+        <$> useDeriveObject withGQL (Proxy @(query (Resolver QUERY e m)))
+        <*> traverse (useDeriveObject withGQL) (ignoreUndefined (Proxy @(mut (Resolver MUTATION e m))))
+        <*> traverse (useDeriveObject withGQL) (ignoreUndefined (Proxy @(subs (Resolver SUBSCRIPTION e m))))
     )
-
-deriveRoot :: DERIVE_TYPE GQLType OUT a => f a -> SchemaT OUT (TypeDefinition OBJECT CONST)
-deriveRoot = asObjectType withGQL (deriveFields withDir . outputType)

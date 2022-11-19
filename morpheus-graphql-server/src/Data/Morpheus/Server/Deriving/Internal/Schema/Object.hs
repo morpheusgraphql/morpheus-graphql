@@ -7,8 +7,7 @@
 {-# LANGUAGE RecordWildCards #-}
 
 module Data.Morpheus.Server.Deriving.Internal.Schema.Object
-  ( asObjectType,
-    buildObjectTypeContent,
+  ( buildObjectTypeContent,
     defineObjectType,
   )
 where
@@ -87,18 +86,6 @@ repToFieldDefinition
 toFieldContent :: CatType c a -> Maybe (ArgumentsDefinition CONST) -> Maybe (FieldContent TRUE c CONST)
 toFieldContent OutputType (Just x) = Just (FieldArgs x)
 toFieldContent _ _ = Nothing
-
-asObjectType ::
-  (gql a) =>
-  UseGQLType gql ->
-  (f a -> SchemaT kind (FieldsDefinition OUT CONST)) ->
-  f a ->
-  SchemaT kind (TypeDefinition OBJECT CONST)
-asObjectType gql f proxy =
-  mkType
-    (useTypename gql (outputType proxy))
-    . DataObject []
-    <$> f proxy
 
 mkObjectTypeContent :: CatType kind a -> FieldsDefinition kind CONST -> TypeContent TRUE kind CONST
 mkObjectTypeContent InputType = DataInputObject

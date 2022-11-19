@@ -7,14 +7,14 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Data.Morpheus.Server.Deriving.Internal.Schema.TypeContent
-  ( deriveFields,
-    fillTypeContent,
+module Data.Morpheus.Server.Deriving.Internal.Schema.Type
+  ( fillTypeContent,
     deriveTypeDefinition,
     deriveScalarDefinition,
     deriveInterfaceDefinition,
     deriveTypeGuardUnions,
     injectType,
+    useDeriveObject,
   )
 where
 
@@ -41,7 +41,7 @@ import Data.Morpheus.Server.Deriving.Utils.DeriveGType
     DerivingOptions (..),
     deriveTypeWith,
   )
-import Data.Morpheus.Server.Deriving.Utils.Kinded (CatContext, addContext, getCatContext, mkScalar)
+import Data.Morpheus.Server.Deriving.Utils.Kinded (CatContext, addContext, getCatContext, mkScalar, outputType)
 import Data.Morpheus.Server.Deriving.Utils.Types
   ( ConsRep (..),
     isEmptyConstraint,
@@ -159,3 +159,10 @@ toFieldContent ctx dir@UseDeriving {..} =
 
 injectType :: gql a => UseDeriving gql args -> CatType c a -> SchemaT c ()
 injectType dir = insertType dir (\_ y -> useDeriveType (dirGQL dir) y)
+
+useDeriveObject :: gql a => UseGQLType gql -> f a -> SchemaT OUT (TypeDefinition OBJECT CONST)
+useDeriveObject gql pr = do
+  fields <- useDeriveType gql proxy >>= withObject gql proxy . typeContent
+  pure $ mkType (useTypename gql (outputType proxy)) (DataObject [] fields)
+  where
+    proxy = outputType pr

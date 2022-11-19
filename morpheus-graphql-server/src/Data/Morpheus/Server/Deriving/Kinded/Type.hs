@@ -22,7 +22,7 @@ module Data.Morpheus.Server.Deriving.Kinded.Type
   )
 where
 
-import Data.Morpheus.Server.Deriving.Internal.Schema.TypeContent
+import Data.Morpheus.Server.Deriving.Internal.Schema.Type
   ( deriveInterfaceDefinition,
     deriveScalarDefinition,
     deriveTypeDefinition,
