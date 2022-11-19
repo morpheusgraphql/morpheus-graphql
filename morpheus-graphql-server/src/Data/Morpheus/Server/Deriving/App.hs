@@ -31,7 +31,7 @@ import Data.Morpheus.Server.Deriving.Resolver
     deriveResolvers,
   )
 import Data.Morpheus.Server.Deriving.Schema
-  ( SchemaConstraints,
+  ( SCHEMA,
     deriveSchema,
   )
 import Data.Morpheus.Server.Resolvers
@@ -42,13 +42,13 @@ import Relude
 
 type RootResolverConstraint m e query mutation subscription =
   ( EncodeConstraints e m query mutation subscription,
-    SchemaConstraints e m query mutation subscription,
+    SCHEMA e m query mutation subscription,
     Monad m
   )
 
 type NamedResolversConstraint m e query mutation subscription =
   ( EncodeNamedConstraints e m query mutation subscription,
-    SchemaConstraints e m query mutation subscription,
+    SCHEMA e m query mutation subscription,
     Monad m
   )
 

@@ -15,7 +15,6 @@
 module Data.Morpheus.Server.Deriving.Schema
   ( compileTimeSchemaValidation,
     deriveSchema,
-    SchemaConstraints,
     SchemaT,
   )
 where
@@ -50,7 +49,7 @@ import Data.Morpheus.Types.Internal.AST
 import Language.Haskell.TH (Exp, Q)
 import Relude
 
-type SchemaConstraints event (m :: Type -> Type) query mutation subscription =
+type SCHEMA event (m :: Type -> Type) query mutation subscription =
   ( GQLType (query (Resolver QUERY event m)),
     GQLType (mutation (Resolver MUTATION event m)),
     GQLType (subscription (Resolver SUBSCRIPTION event m))
@@ -59,29 +58,17 @@ type SchemaConstraints event (m :: Type -> Type) query mutation subscription =
 -- | normal morpheus server validates schema at runtime (after the schema derivation).
 --   this method allows you to validate it at compile time.
 compileTimeSchemaValidation ::
-  (SchemaConstraints event m qu mu su) =>
+  (SCHEMA event m qu mu su) =>
   proxy (root m event qu mu su) ->
   Q Exp
 compileTimeSchemaValidation =
   fromSchema . (deriveSchema >=> validateSchema True defaultConfig)
 
-deriveSchema ::
-  forall
-    root
-    proxy
-    m
-    e
-    query
-    mut
-    subs.
-  ( SchemaConstraints e m query mut subs
-  ) =>
-  proxy (root m e query mut subs) ->
-  GQLResult (Schema CONST)
+deriveSchema :: forall root f m e qu mu su. SCHEMA e m qu mu su => f (root m e qu mu su) -> GQLResult (Schema CONST)
 deriveSchema _ =
   toSchema
     ( (,,)
-        <$> useDeriveObject withGQL (Proxy @(query (Resolver QUERY e m)))
-        <*> traverse (useDeriveObject withGQL) (ignoreUndefined (Proxy @(mut (Resolver MUTATION e m))))
-        <*> traverse (useDeriveObject withGQL) (ignoreUndefined (Proxy @(subs (Resolver SUBSCRIPTION e m))))
+        <$> useDeriveObject withGQL (Proxy @(qu (Resolver QUERY e m)))
+        <*> traverse (useDeriveObject withGQL) (ignoreUndefined (Proxy @(mu (Resolver MUTATION e m))))
+        <*> traverse (useDeriveObject withGQL) (ignoreUndefined (Proxy @(su (Resolver SUBSCRIPTION e m))))
     )
