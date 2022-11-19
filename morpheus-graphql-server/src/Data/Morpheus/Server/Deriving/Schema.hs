@@ -15,7 +15,7 @@
 module Data.Morpheus.Server.Deriving.Schema
   ( compileTimeSchemaValidation,
     deriveSchema,
-    SchemaT,
+    SCHEMA,
   )
 where
 
@@ -36,8 +36,7 @@ import Data.Morpheus.Server.Types.GQLType
     withGQL,
   )
 import Data.Morpheus.Server.Types.SchemaT
-  ( SchemaT,
-    toSchema,
+  ( toSchema,
   )
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
@@ -57,12 +56,8 @@ type SCHEMA event (m :: Type -> Type) query mutation subscription =
 
 -- | normal morpheus server validates schema at runtime (after the schema derivation).
 --   this method allows you to validate it at compile time.
-compileTimeSchemaValidation ::
-  (SCHEMA event m qu mu su) =>
-  proxy (root m event qu mu su) ->
-  Q Exp
-compileTimeSchemaValidation =
-  fromSchema . (deriveSchema >=> validateSchema True defaultConfig)
+compileTimeSchemaValidation :: (SCHEMA event m qu mu su) => proxy (root m event qu mu su) -> Q Exp
+compileTimeSchemaValidation = fromSchema . (deriveSchema >=> validateSchema True defaultConfig)
 
 deriveSchema :: forall root f m e qu mu su. SCHEMA e m qu mu su => f (root m e qu mu su) -> GQLResult (Schema CONST)
 deriveSchema _ =
