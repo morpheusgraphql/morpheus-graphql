@@ -86,10 +86,10 @@ import GHC.Generics
 import Relude hiding (empty)
 
 encodeResolverValue ::
-  ( MonadError GQLError m,
-    Generic a,
+  ( Generic a,
     gql [Maybe a],
     gql a,
+    MonadError GQLError m,
     DeriveWith gql (Encode m) (m (ResolverValue m)) (Rep a)
   ) =>
   UseDeriving gql val ->

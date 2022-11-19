@@ -23,18 +23,24 @@ import Data.Morpheus.App.Internal.Resolving
     NamedResolver (..),
     NamedResolverResult (..),
     Resolver,
+    ResolverValue,
     liftResolverState,
   )
 import Data.Morpheus.Server.Deriving.Named.EncodeValue
-  ( encodeResolverValue,
+  ( Encode,
+    encodeResolverValue,
   )
+import Data.Morpheus.Server.Deriving.Utils.DeriveGType (DeriveWith)
 import Data.Morpheus.Server.Deriving.Utils.GTraversable
-import Data.Morpheus.Server.Deriving.Utils.Kinded (KindedProxy (KindedProxy))
+import Data.Morpheus.Server.Deriving.Utils.Kinded (KindedProxy (KindedProxy), outputType)
+import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (useTypename))
 import Data.Morpheus.Server.NamedResolvers (Dependency, NamedResolverT (..), ResolveNamed (..))
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType,
     GQLValue (..),
     KIND,
+    withDir,
+    withGQL,
   )
 import Data.Morpheus.Server.Types.Kind
   ( CUSTOM,
@@ -47,6 +53,7 @@ import Data.Morpheus.Types.GQLScalar (EncodeScalar (..))
 import Data.Morpheus.Types.Internal.AST
   ( ValidValue,
   )
+import GHC.Generics (Rep)
 import Relude
 
 deriveResolver :: Mappable (DeriveNamedResolver m) [NamedResolver m] KindedProxy
@@ -76,7 +83,7 @@ instance
   where
   deriveNamedResolver _ =
     [ NamedResolver
-        { resolverName = getTypeName proxy,
+        { resolverName = useTypename withGQL (outputType proxy),
           resolverFun = decodeValues proxy >=> pure . map (maybe NamedNullResolver (NamedScalarResolver . encodeScalar))
         }
     ]
@@ -98,14 +105,16 @@ decodeValues _ xs = traverse decodeArg xs >>= resolveBatched
 
 instance
   ( GQLType a,
-    DecodeValuesConstraint o e m a
+    DecodeValuesConstraint o e m a,
+    Generic a,
+    DeriveWith GQLType (Encode (Resolver o e m)) (Resolver o e m (ResolverValue (Resolver o e m))) (Rep a)
   ) =>
   DeriveNamedResolver (Resolver o e m) TYPE (a :: Type)
   where
   deriveNamedResolver _ =
     [ NamedResolver
-        { resolverName = getTypeName proxy,
-          resolverFun = decodeValues proxy >=> encodeResolverValue
+        { resolverName = useTypename withGQL (outputType proxy),
+          resolverFun = decodeValues proxy >=> encodeResolverValue withDir
         }
     ]
     where
