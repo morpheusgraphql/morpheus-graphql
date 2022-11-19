@@ -22,12 +22,10 @@ import Data.Morpheus.App
 import Data.Morpheus.App.Internal.Resolving
   ( resultOr,
   )
-import Data.Morpheus.Server.Deriving.Named.Encode
-  ( EncodeNamedConstraints,
-    deriveNamedModel,
-  )
 import Data.Morpheus.Server.Deriving.Resolver
-  ( EncodeConstraints,
+  ( DERIVE_NAMED_RESOLVERS,
+    DERIVE_RESOLVERS,
+    deriveNamedResolvers,
     deriveResolvers,
   )
 import Data.Morpheus.Server.Deriving.Schema
@@ -41,13 +39,13 @@ import Data.Morpheus.Server.Resolvers
 import Relude
 
 type RootResolverConstraint m e query mutation subscription =
-  ( EncodeConstraints e m query mutation subscription,
+  ( DERIVE_RESOLVERS e m query mutation subscription,
     SCHEMA e m query mutation subscription,
     Monad m
   )
 
 type NamedResolversConstraint m e query mutation subscription =
-  ( EncodeNamedConstraints e m query mutation subscription,
+  ( DERIVE_NAMED_RESOLVERS e m query mutation subscription,
     SCHEMA e m query mutation subscription,
     Monad m
   )
@@ -65,10 +63,8 @@ class
 
 instance RootResolverConstraint m e query mut sub => DeriveApp RootResolver m e query mut sub where
   deriveApp root =
-    resultOr FailApp (uncurry mkApp) $
-      (,) <$> deriveSchema (Identity root) <*> deriveResolvers root
+    resultOr FailApp (uncurry mkApp) $ (,) <$> deriveSchema (Identity root) <*> deriveResolvers root
 
 instance NamedResolversConstraint m e query mut sub => DeriveApp NamedResolvers m e query mut sub where
   deriveApp root =
-    resultOr FailApp (uncurry mkApp) $
-      (,deriveNamedModel root) <$> deriveSchema (Identity root)
+    resultOr FailApp (uncurry mkApp) $ (,deriveNamedResolvers root) <$> deriveSchema (Identity root)
