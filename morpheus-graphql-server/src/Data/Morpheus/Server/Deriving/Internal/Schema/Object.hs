@@ -28,18 +28,16 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Enum
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
-    outputType,
   )
 import Data.Morpheus.Server.Deriving.Utils.Types
   ( ConsRep (..),
     FieldRep (..),
   )
-import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (..))
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
     insertType,
   )
-import Data.Morpheus.Types.Internal.AST (ArgumentsDefinition, CONST, FieldContent (..), FieldDefinition (..), FieldsDefinition, OBJECT, OUT, TRUE, TypeContent (..), TypeDefinition, mkField, mkType, mkTypeRef, unitFieldName, unitTypeName, unsafeFromFields)
+import Data.Morpheus.Types.Internal.AST (ArgumentsDefinition, CONST, FieldContent (..), FieldDefinition (..), FieldsDefinition, TRUE, TypeContent (..), mkField, mkType, mkTypeRef, unitFieldName, unitTypeName, unsafeFromFields)
 import Relude hiding (empty)
 
 defineObjectType ::

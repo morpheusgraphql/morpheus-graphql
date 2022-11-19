@@ -13,8 +13,8 @@ module Data.Morpheus.Server.Deriving.Internal.Schema.Type
     deriveScalarDefinition,
     deriveInterfaceDefinition,
     deriveTypeGuardUnions,
-    injectType,
     useDeriveObject,
+    injectType,
   )
 where
 
