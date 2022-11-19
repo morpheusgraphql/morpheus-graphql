@@ -9,6 +9,7 @@ module Data.Morpheus.Server.Deriving.Utils.Use
     UseGQLType (..),
     UseValue (..),
     UseResolver (..),
+    UseNamedResolver (..),
   )
 where
 
@@ -56,4 +57,9 @@ data UseDeriving gql val = UseDeriving
   { __directives :: forall f a. gql a => f a -> GDirectiveUsages gql val,
     dirArgs :: UseValue val,
     dirGQL :: UseGQLType gql
+  }
+
+data UseNamedResolver res gql val = UseNamedResolver
+  { useNamedFieldResolver :: forall a m. res m a => a -> m (ResolverValue m),
+    namedDrv :: UseDeriving gql val
   }

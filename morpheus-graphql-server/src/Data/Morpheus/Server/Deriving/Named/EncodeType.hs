@@ -26,10 +26,7 @@ import Data.Morpheus.App.Internal.Resolving
     liftResolverState,
   )
 import Data.Morpheus.Server.Deriving.Named.EncodeValue
-  ( EncodeFieldKind,
-    FieldConstraint,
-    encodeResolverValue,
-    getTypeName,
+  ( encodeResolverValue,
   )
 import Data.Morpheus.Server.Deriving.Utils.GTraversable
 import Data.Morpheus.Server.Deriving.Utils.Kinded (KindedProxy (KindedProxy))
@@ -101,9 +98,7 @@ decodeValues _ xs = traverse decodeArg xs >>= resolveBatched
 
 instance
   ( GQLType a,
-    DecodeValuesConstraint o e m a,
-    EncodeFieldKind (KIND a) (Resolver o e m) a,
-    FieldConstraint (Resolver o e m) a
+    DecodeValuesConstraint o e m a
   ) =>
   DeriveNamedResolver (Resolver o e m) TYPE (a :: Type)
   where

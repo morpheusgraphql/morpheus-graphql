@@ -10,14 +10,12 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.Named.EncodeValue
   ( EncodeFieldKind,
     Encode,
-    getTypeName,
     encodeResolverValue,
     FieldConstraint,
   )
@@ -37,15 +35,16 @@ import Data.Morpheus.App.Internal.Resolving
     mkList,
     mkNull,
   )
-import Data.Morpheus.Server.Deriving.Internal.Schema.Directive (toFieldRes)
-import Data.Morpheus.Server.Deriving.Kinded.Value (KindedValue)
+import Data.Morpheus.Server.Deriving.Internal.Decode.Utils (useDecodeArguments)
+import Data.Morpheus.Server.Deriving.Internal.Schema.Directive (UseDeriving, toFieldRes)
 import Data.Morpheus.Server.Deriving.Utils.DeriveGType
   ( DeriveWith,
     DerivingOptions (..),
     deriveValue,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
-  ( outputType,
+  ( CatType (..),
+    outputType,
   )
 import Data.Morpheus.Server.Deriving.Utils.Proxy
   ( ContextValue (..),
@@ -55,20 +54,12 @@ import Data.Morpheus.Server.Deriving.Utils.Types
     DataType (..),
     FieldRep (..),
   )
+import Data.Morpheus.Server.Deriving.Utils.Use (UseDeriving (..), UseGQLType (..))
 import Data.Morpheus.Server.NamedResolvers
   ( NamedRef,
     NamedResolverT (..),
   )
-import Data.Morpheus.Server.Types.GQLType
-  ( GQLType (__type),
-    GQLValue,
-    KIND,
-    decodeArguments,
-    withDir,
-  )
-import Data.Morpheus.Server.Types.Internal
-  ( TypeData (gqlTypeName),
-  )
+import Data.Morpheus.Server.Types.GQLType (GQLType, GQLValue, KIND, withDir)
 import Data.Morpheus.Server.Types.Kind
   ( CUSTOM,
     DerivingKind,
@@ -81,6 +72,7 @@ import Data.Morpheus.Types.GQLScalar
   )
 import Data.Morpheus.Types.Internal.AST
   ( GQLError,
+    OUT,
     TypeName,
     ValidValue,
     Value (List),
@@ -93,52 +85,54 @@ import GHC.Generics
   )
 import Relude hiding (empty)
 
-encodeResolverValue :: (MonadError GQLError m, FieldConstraint m a) => [Maybe a] -> m [NamedResolverResult m]
-encodeResolverValue x = traverse encodeNode x
+encodeResolverValue ::
+  ( MonadError GQLError m,
+    Generic a,
+    gql [Maybe a],
+    gql a,
+    DeriveWith gql (Encode m) (m (ResolverValue m)) (Rep a)
+  ) =>
+  UseDeriving gql val ->
+  [Maybe a] ->
+  m [NamedResolverResult m]
+encodeResolverValue drv x = traverse encodeNode x
   where
-    encodeNode (Just v) = convertNamedNode (Identity x) (getFieldValues v)
+    encodeNode (Just v) = convertNamedNode drv (Identity x) (deriveValue (getOptions $ dirGQL drv) v)
     encodeNode Nothing = pure NamedNullResolver
 
-type FieldConstraint m a =
-  ( GQLType a,
+type FieldConstraint gql m a =
+  ( gql a,
     Generic a,
-    DeriveWith GQLType (Encode m) (m (ResolverValue m)) (Rep a)
+    DeriveWith gql (Encode m) (m (ResolverValue m)) (Rep a)
   )
 
 class Encode (m :: Type -> Type) res where
   encodeField :: res -> m (ResolverValue m)
 
-instance (EncodeFieldKind (KIND a) m a) => Encode m a where
-  encodeField resolver = encodeFieldKind (ContextValue resolver :: ContextValue (KIND a) a)
+instance EncodeFieldKind GQLType GQLValue (KIND a) m a => Encode m a where
+  encodeField resolver = encodeFieldKind withDir (ContextValue resolver :: ContextValue (KIND a) a)
 
-class EncodeFieldKind (k :: DerivingKind) (m :: Type -> Type) (a :: Type) where
-  encodeFieldKind :: ContextValue k a -> m (ResolverValue m)
+class EncodeFieldKind gql val (k :: DerivingKind) (m :: Type -> Type) (a :: Type) where
+  encodeFieldKind :: UseDeriving gql val -> ContextValue k a -> m (ResolverValue m)
 
-instance (EncodeScalar a, Monad m) => EncodeFieldKind SCALAR m a where
-  encodeFieldKind = pure . ResScalar . encodeScalar . unContextValue
+instance (EncodeScalar a, Monad m) => EncodeFieldKind gql val SCALAR m a where
+  encodeFieldKind _ = pure . ResScalar . encodeScalar . unContextValue
 
-instance (FieldConstraint m a, MonadError GQLError m) => EncodeFieldKind TYPE m a where
-  encodeFieldKind (ContextValue _) = throwError (internal "types are resolved by Refs")
+instance (MonadError GQLError m) => EncodeFieldKind gql val TYPE m a where
+  encodeFieldKind _ (ContextValue _) = throwError (internal "types are resolved by Refs")
 
-instance (GQLType a, Applicative m, EncodeFieldKind (KIND a) m a) => EncodeFieldKind WRAPPER m [a] where
-  encodeFieldKind = fmap ResList . traverse encodeField . unContextValue
+instance (Applicative m, EncodeFieldKind GQLType GQLValue (KIND a) m a) => EncodeFieldKind gql val WRAPPER m [a] where
+  encodeFieldKind _ = fmap ResList . traverse encodeField . unContextValue
 
-instance (GQLType a, EncodeFieldKind (KIND a) m a, Applicative m) => EncodeFieldKind WRAPPER m (Maybe a) where
-  encodeFieldKind (ContextValue (Just x)) = encodeField x
-  encodeFieldKind (ContextValue Nothing) = pure mkNull
+instance (gql a, EncodeFieldKind GQLType GQLValue (KIND a) m a, Applicative m) => EncodeFieldKind gql val WRAPPER m (Maybe a) where
+  encodeFieldKind _ (ContextValue (Just x)) = encodeField x
+  encodeFieldKind _ (ContextValue Nothing) = pure mkNull
 
-instance
-  ( Monad m,
-    GQLType a,
-    EncodeFieldKind (KIND a) m a,
-    ToJSON (NamedRef a)
-  ) =>
-  EncodeFieldKind CUSTOM m (NamedResolverT m a)
-  where
-  encodeFieldKind = encodeRef . unContextValue
+instance (Monad m, gql a, ToJSON (NamedRef a)) => EncodeFieldKind gql val CUSTOM m (NamedResolverT m a) where
+  encodeFieldKind drv = encodeRef . unContextValue
     where
       name :: TypeName
-      name = getTypeName (Proxy @a)
+      name = useTypename (dirGQL drv) (OutputType :: CatType OUT a)
       encodeRef :: Monad m => NamedResolverT m a -> m (ResolverValue m)
       encodeRef (NamedResolverT ref) = do
         value <- replaceValue . toJSON <$> ref
@@ -153,31 +147,30 @@ instance
   ( Monad m,
     Encode (Resolver o e m) b,
     LiftOperation o,
-    KindedValue GQLType GQLValue (KIND a) a
+    val a
   ) =>
-  EncodeFieldKind CUSTOM (Resolver o e m) (a -> b)
+  EncodeFieldKind gql val CUSTOM (Resolver o e m) (a -> b)
   where
-  encodeFieldKind (ContextValue f) =
+  encodeFieldKind drv (ContextValue f) =
     getArguments
-      >>= liftResolverState . decodeArguments
+      >>= liftResolverState . useDecodeArguments drv
       >>= encodeField . f
 
-getFieldValues :: forall m a. FieldConstraint m a => a -> DataType (m (ResolverValue m))
-getFieldValues =
-  deriveValue
-    ( DerivingOptions
-        { optApply = encodeField . runIdentity,
-          optTypeData = __type . outputType
-        } ::
-        DerivingOptions GQLType (Encode m) Identity (m (ResolverValue m))
-    )
+getOptions :: UseGQLType gql -> DerivingOptions gql (Encode m) Identity (m (ResolverValue m))
+getOptions UseGQLType {..} =
+  DerivingOptions
+    { optApply = encodeField . runIdentity,
+      optTypeData = useTypeData . outputType
+    }
 
 convertNamedNode ::
-  (GQLType a, MonadError GQLError m) =>
+  (gql a, MonadError GQLError m) =>
+  UseDeriving gql val ->
   f a ->
   DataType (m (ResolverValue m)) ->
   m (NamedResolverResult m)
 convertNamedNode
+  drv
   proxy
   DataType
     { tyIsUnion,
@@ -186,11 +179,11 @@ convertNamedNode
     | null consFields = pure $ NamedEnumResolver consName
     | tyIsUnion = deriveUnion consFields
     | otherwise =
-        pure $
-          NamedObjectResolver
-            ObjectTypeResolver
-              { objectFields = HM.fromList (toFieldRes withDir proxy <$> consFields)
-              }
+      pure $
+        NamedObjectResolver
+          ObjectTypeResolver
+            { objectFields = HM.fromList (toFieldRes drv proxy <$> consFields)
+            }
 
 deriveUnion :: (MonadError GQLError m) => [FieldRep (m (ResolverValue m))] -> m (NamedResolverResult m)
 deriveUnion [FieldRep {..}] = NamedUnionResolver <$> (fieldValue >>= getRef)
@@ -199,6 +192,3 @@ deriveUnion _ = throwError "only union references are supported!"
 getRef :: MonadError GQLError m => ResolverValue m -> m NamedResolverRef
 getRef (ResRef x) = x
 getRef _ = throwError "only resolver references are supported!"
-
-getTypeName :: GQLType a => f a -> TypeName
-getTypeName = gqlTypeName . __type . outputType
