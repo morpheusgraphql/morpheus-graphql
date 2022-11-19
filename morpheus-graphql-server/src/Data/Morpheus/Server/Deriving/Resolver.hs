@@ -33,8 +33,13 @@ import Data.Morpheus.Server.Deriving.Kinded.Channels
   ( CHANNELS,
     resolverChannels,
   )
-import Data.Morpheus.Server.Deriving.Named.EncodeType (EncodeTypeConstraint, deriveResolver)
-import Data.Morpheus.Server.Deriving.Utils.GTraversable (traverseTypes)
+import Data.Morpheus.Server.Deriving.NamedResolver
+  ( EncodeTypeConstraint,
+    deriveResolver,
+  )
+import Data.Morpheus.Server.Deriving.Utils.GTraversable
+  ( traverseTypes,
+  )
 import Data.Morpheus.Server.Resolvers
   ( NamedResolverT (..),
     NamedResolvers (..),

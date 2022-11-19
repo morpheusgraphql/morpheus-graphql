@@ -327,7 +327,7 @@ library
       Data.Morpheus.Server.Deriving.Kinded.Resolver
       Data.Morpheus.Server.Deriving.Kinded.Type
       Data.Morpheus.Server.Deriving.Kinded.Value
-      Data.Morpheus.Server.Deriving.Named.EncodeType
+      Data.Morpheus.Server.Deriving.NamedResolver
       Data.Morpheus.Server.Deriving.Resolver
       Data.Morpheus.Server.Deriving.Schema
       Data.Morpheus.Server.Deriving.Utils.AST

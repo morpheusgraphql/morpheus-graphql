@@ -11,7 +11,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Server.Deriving.Named.EncodeType
+module Data.Morpheus.Server.Deriving.NamedResolver
   ( deriveResolver,
     EncodeTypeConstraint,
     DeriveNamedResolver (..),
