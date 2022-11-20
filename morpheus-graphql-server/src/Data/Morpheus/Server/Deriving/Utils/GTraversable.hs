@@ -27,7 +27,7 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.Map as M
 import Data.Morpheus.Server.Deriving.Utils.Kinded
 import Data.Morpheus.Server.NamedResolvers (NamedResolverT)
-import Data.Morpheus.Server.Types.GQLType (GQLType (..))
+import Data.Morpheus.Server.Types.GQLType (GQLType (..), kindedProxy)
 import Data.Morpheus.Server.Types.Internal
   ( TypeData (gqlFingerprint),
   )
@@ -68,14 +68,14 @@ scanner c@Mappable {..} lib =
           then lib
           else do
             let newLib = M.insert fingerprint (mappableFun proxy) lib
-            gfmap (scanner c newLib) proxy
+            gfmap (scanner c newLib) (kindedProxy proxy)
     )
 
 withDerivable :: proxy a -> KindedProxy (KIND a) a
 withDerivable _ = KindedProxy
 
 newtype Mappable (c :: Type -> Constraint) (v :: Type) = Mappable
-  { mappableFun :: forall a. (GQLType a, c a) => KindedProxy (KIND a) a -> v
+  { mappableFun :: forall f a. (GQLType a, c a) => f a -> v
   }
 
 -- Map
