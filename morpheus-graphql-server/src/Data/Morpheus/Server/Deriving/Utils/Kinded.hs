@@ -22,6 +22,8 @@ module Data.Morpheus.Server.Deriving.Utils.Kinded
     getCatContext,
     mkScalar,
     isIN,
+    ForAll (..),
+    unForAll,
   )
 where
 
@@ -33,6 +35,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeCategory (..),
     TypeContent (..),
   )
+import Data.Proxy (Proxy (..))
 import Prelude (Bool (..), Show)
 
 -- | context , like Proxy with multiple parameters
@@ -97,3 +100,8 @@ mkScalar OutputType f = DataScalar f
 isIN :: CatType c a -> Bool
 isIN InputType = True
 isIN _ = False
+
+newtype ForAll a = ForAll a
+
+unForAll :: f (ForAll a) -> Proxy a
+unForAll _ = Proxy
