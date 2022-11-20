@@ -93,11 +93,8 @@ withNamed =
       useDeriveNamedResolvers = deriveNamedRes
     }
 
-deriveNamedResolver :: Mappable (KindedNamedResolver GQLNamedResolver GQLNamedResolverFun GQLType GQLValue m) [NamedResolver m]
-deriveNamedResolver =
-  Mappable
-    { mappableFun = kindedNamedResolver withNamed
-    }
+deriveNamedResolver :: Mappable (GQLNamedResolver m) [NamedResolver m]
+deriveNamedResolver = Mappable {mappableFun = deriveNamedRes}
 
 type ROOT (o :: OperationType) e (m :: Type -> Type) a = EXPLORE GQLType GQLResolver (Resolver o e m) (a (Resolver o e m))
 
@@ -110,24 +107,9 @@ type DERIVE_RESOLVERS e m query mut sub =
 
 type DERIVE_NAMED_RESOLVERS e m query =
   ( GQLType (query (NamedResolverT (Resolver QUERY e m))),
-    KindedNamedResolver
-      GQLNamedResolver
-      GQLNamedResolverFun
-      GQLType
-      GQLValue
-      (Resolver QUERY e m)
-      (KIND (query (NamedResolverT (Resolver QUERY e m))))
-      (query (NamedResolverT (Resolver QUERY e m))),
+    GQLNamedResolver (Resolver QUERY e m) (query (NamedResolverT (Resolver QUERY e m))),
     GFmap
-      ( ScanConstraint
-          ( KindedNamedResolver
-              GQLNamedResolver
-              GQLNamedResolverFun
-              GQLType
-              GQLValue
-              (Resolver QUERY e m)
-          )
-      )
+      (ScanConstraint (GQLNamedResolver (Resolver QUERY e m)))
       (KIND (query (NamedResolverT (Resolver QUERY e m))))
       (query (NamedResolverT (Resolver QUERY e m)))
   )

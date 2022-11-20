@@ -38,7 +38,7 @@ import GHC.Generics
 import Relude hiding (Undefined)
 
 buildMap ::
-  (Hashable k, Eq k, GFmap (ScanConstraint c) (KIND a) a, GQLType a, c (KIND a) a) =>
+  (Hashable k, Eq k, GFmap (ScanConstraint c) (KIND a) a, GQLType a, c a) =>
   (b -> k) ->
   Mappable c [b] ->
   Proxy a ->
@@ -51,20 +51,15 @@ buildMap keyF f xs =
           traverseTypes f xs
 
 traverseTypes ::
-  (GFmap (ScanConstraint c) (KIND a) a, c (KIND a) a, GQLType a) =>
+  (GFmap (ScanConstraint c) (KIND a) a, c a, GQLType a) =>
   Mappable c v ->
   Proxy a ->
   Map TypeFingerprint v
 traverseTypes f = mappableFun (scanner f mempty) . withDerivable
 
-class
-  (GFmap (ScanConstraint c) (KIND a) a, c (KIND a) a) =>
-  ScanConstraint
-    (c :: DerivingKind -> Type -> Constraint)
-    (k :: DerivingKind)
-    (a :: Type)
+class (GFmap (ScanConstraint c) (KIND a) a, c a) => ScanConstraint (c :: Type -> Constraint) (a :: Type)
 
-instance (GFmap (ScanConstraint c) (KIND a) a, c (KIND a) a) => ScanConstraint c k a
+instance (GFmap (ScanConstraint c) (KIND a) a, c a) => ScanConstraint c a
 
 scanner ::
   Mappable c v ->
@@ -84,18 +79,18 @@ scanner c@Mappable {..} lib =
 withDerivable :: proxy a -> KindedProxy (KIND a) a
 withDerivable _ = KindedProxy
 
-newtype Mappable (c :: DerivingKind -> Type -> Constraint) (v :: Type) = Mappable
-  { mappableFun :: forall a. (GQLType a, c (KIND a) a) => KindedProxy (KIND a) a -> v
+newtype Mappable (c :: Type -> Constraint) (v :: Type) = Mappable
+  { mappableFun :: forall a. (GQLType a, c a) => KindedProxy (KIND a) a -> v
   }
 
 -- Map
-class GFmap (c :: DerivingKind -> Type -> Constraint) (t :: DerivingKind) a where
+class GFmap (c :: Type -> Constraint) (t :: DerivingKind) a where
   gfmap :: (Monoid v, Semigroup v) => Mappable c v -> kinded t a -> v
 
-instance (GQLType a, c (KIND a) a) => GFmap c SCALAR a where
+instance (GQLType a, c a) => GFmap c SCALAR a where
   gfmap Mappable {..} _ = mappableFun (KindedProxy :: KindedProxy (KIND a) a)
 
-instance (GQLType a, c (KIND a) a, GFunctor c (Rep a)) => GFmap c TYPE a where
+instance (GQLType a, c a, GFunctor c (Rep a)) => GFmap c TYPE a where
   gfmap f@Mappable {..} _ = mappableFun (KindedProxy :: KindedProxy (KIND a) a) <> genericMap f (Proxy @(Rep a))
 
 instance GFmap c (KIND a) a => GFmap c WRAPPER (f a) where
@@ -112,7 +107,7 @@ instance GFmap c (KIND a) a => GFmap c CUSTOM (NamedResolverT m a) where
 -- GFunctor
 --
 --
-class GFunctor (c :: DerivingKind -> Type -> Constraint) a where
+class GFunctor (c :: Type -> Constraint) a where
   genericMap :: (Monoid v, Semigroup v) => Mappable c v -> proxy a -> v
 
 instance (Datatype d, GFunctor c a) => GFunctor c (M1 D d a) where
@@ -127,7 +122,7 @@ instance (GFunctor c a, GFunctor c b) => GFunctor c (a :+: b) where
 instance (GFunctor c a, GFunctor c b) => GFunctor c (a :*: b) where
   genericMap fun _ = genericMap fun (Proxy @a) <> genericMap fun (Proxy @b)
 
-instance (GQLType a, c (KIND a) a) => GFunctor c (M1 S s (K1 x a)) where
+instance (GQLType a, c a) => GFunctor c (M1 S s (K1 x a)) where
   genericMap Mappable {..} _ = mappableFun (KindedProxy :: KindedProxy (KIND a) a)
 
 instance GFunctor c U1 where
