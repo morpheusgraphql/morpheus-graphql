@@ -35,8 +35,7 @@ import Data.Morpheus.Server.Deriving.Kinded.Channels
     resolverChannels,
   )
 import Data.Morpheus.Server.Deriving.Kinded.NamedResolver
-  ( KindedNamedResolver,
-    kindedNamedResolver,
+  ( KindedNamedResolver (..),
   )
 import Data.Morpheus.Server.Deriving.Kinded.NamedResolverFun (KindedNamedFunValue (..))
 import Data.Morpheus.Server.Deriving.Utils.GTraversable (GFmap, Mappable (..), ScanConstraint, buildMap)
@@ -53,6 +52,7 @@ import Data.Morpheus.Server.Types.GQLType
     GQLType (..),
     GQLValue,
     ignoreUndefined,
+    kindedProxy,
     withDir,
     withRes,
   )
@@ -69,6 +69,12 @@ class GQLNamedResolverFun (m :: Type -> Type) res where
 
 class GQLNamedResolver (m :: Type -> Type) a where
   deriveNamedRes :: f a -> [NamedResolver m]
+
+instance
+  KindedNamedResolver GQLNamedResolver GQLNamedResolverFun GQLType GQLValue m (KIND a) a =>
+  GQLNamedResolver m a
+  where
+  deriveNamedRes = kindedNamedResolver withNamed . kindedProxy
 
 instance KindedNamedFunValue GQLNamedResolverFun GQLType GQLValue (KIND a) m a => GQLNamedResolverFun m a where
   deriveNamedResFun resolver = kindedNamedFunValue withNamed (ContextValue resolver :: ContextValue (KIND a) a)

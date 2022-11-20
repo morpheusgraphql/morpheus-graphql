@@ -28,6 +28,7 @@ module Data.Morpheus.Server.Types.GQLType
     decodeArguments,
     GQLResolver (..),
     withRes,
+    kindedProxy,
   )
 where
 
@@ -60,7 +61,7 @@ import Data.Morpheus.Server.Deriving.Kinded.Type
   )
 import Data.Morpheus.Server.Deriving.Kinded.Value (KindedValue (..))
 import Data.Morpheus.Server.Deriving.Utils.AST (argumentsToObject)
-import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (..), catMap, isIN)
+import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (..), KindedProxy (KindedProxy), catMap, isIN)
 import Data.Morpheus.Server.Deriving.Utils.Proxy (ContextValue (..), symbolName)
 import Data.Morpheus.Server.Deriving.Utils.Use (UseDeriving (..), UseGQLType (..), UseResolver (..), UseValue (..))
 import Data.Morpheus.Server.NamedResolvers (NamedResolverT (..))
@@ -152,6 +153,9 @@ wrapper :: (TypeWrapper -> TypeWrapper) -> TypeData -> TypeData
 wrapper f TypeData {..} = TypeData {gqlWrappers = f gqlWrappers, ..}
 
 type Lifted a = (PARAM (KIND a) a)
+
+kindedProxy :: f a -> KindedProxy (KIND a) a
+kindedProxy _ = KindedProxy
 
 lifted :: CatType cat a -> CatType cat (f (KIND a) (Lifted a))
 lifted InputType = InputType
