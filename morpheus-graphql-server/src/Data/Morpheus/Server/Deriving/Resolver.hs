@@ -38,9 +38,15 @@ import Data.Morpheus.Server.Deriving.Kinded.NamedResolver
   ( KindedNamedResolver (..),
   )
 import Data.Morpheus.Server.Deriving.Kinded.NamedResolverFun (KindedNamedFunValue (..))
-import Data.Morpheus.Server.Deriving.Utils.GTraversable (GFmap, Mappable (..), ScanConstraint, buildMap)
-import Data.Morpheus.Server.Deriving.Utils.Kinded (KindedProxy (..))
+import Data.Morpheus.Server.Deriving.Utils.GTraversable
+  ( GFmap,
+    Mappable (..),
+    ScanConstraint,
+    buildMap,
+  )
 import Data.Morpheus.Server.Deriving.Utils.Proxy
+  ( ContextValue (..),
+  )
 import Data.Morpheus.Server.Deriving.Utils.Use (UseNamedResolver (..))
 import Data.Morpheus.Server.Resolvers
   ( NamedResolverT (..),
@@ -88,7 +94,10 @@ withNamed =
     }
 
 deriveNamedResolver :: Mappable (KindedNamedResolver GQLNamedResolver GQLNamedResolverFun GQLType GQLValue m) [NamedResolver m]
-deriveNamedResolver = Mappable (kindedNamedResolver withNamed)
+deriveNamedResolver =
+  Mappable
+    { mappableFun = kindedNamedResolver withNamed
+    }
 
 type ROOT (o :: OperationType) e (m :: Type -> Type) a = EXPLORE GQLType GQLResolver (Resolver o e m) (a (Resolver o e m))
 
