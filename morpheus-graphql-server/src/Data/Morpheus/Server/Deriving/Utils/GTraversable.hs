@@ -17,10 +17,9 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.Utils.GTraversable
-  ( GFmap,
-    Mappable (..),
-    ScanConstraint,
-    buildMap,
+  ( Mappable (..),
+    scan,
+    SCAN,
   )
 where
 
@@ -37,34 +36,30 @@ import Data.Morpheus.Server.Types.SchemaT (TypeFingerprint)
 import GHC.Generics
 import Relude hiding (Undefined)
 
-buildMap ::
-  (Hashable k, Eq k, GFmap (ScanConstraint c) (KIND a) a, GQLType a, c a) =>
+scan ::
+  (Hashable k, Eq k, GFmap (SCAN c) (KIND a) a, GQLType a, c a) =>
   (b -> k) ->
   Mappable c [b] ->
   Proxy a ->
   HashMap k b
-buildMap keyF f xs =
+scan keyF f xs =
   HM.fromList $
     map (\x -> (keyF x, x)) $
       join $
         toList $
           traverseTypes f xs
 
-traverseTypes ::
-  (GFmap (ScanConstraint c) (KIND a) a, c a, GQLType a) =>
-  Mappable c v ->
-  Proxy a ->
-  Map TypeFingerprint v
+traverseTypes :: (SCAN c a, c a, GQLType a) => Mappable c v -> Proxy a -> Map TypeFingerprint v
 traverseTypes f = mappableFun (scanner f mempty) . withDerivable
 
-class (GFmap (ScanConstraint c) (KIND a) a, c a) => ScanConstraint (c :: Type -> Constraint) (a :: Type)
+class (GFmap (SCAN c) (KIND a) a, c a) => SCAN (c :: Type -> Constraint) (a :: Type)
 
-instance (GFmap (ScanConstraint c) (KIND a) a, c a) => ScanConstraint c a
+instance (GFmap (SCAN c) (KIND a) a, c a) => SCAN c a
 
 scanner ::
   Mappable c v ->
   Map TypeFingerprint v ->
-  Mappable (ScanConstraint c) (Map TypeFingerprint v)
+  Mappable (SCAN c) (Map TypeFingerprint v)
 scanner c@Mappable {..} lib =
   Mappable
     ( \proxy -> do

@@ -39,10 +39,9 @@ import Data.Morpheus.Server.Deriving.Kinded.NamedResolver
   )
 import Data.Morpheus.Server.Deriving.Kinded.NamedResolverFun (KindedNamedFunValue (..))
 import Data.Morpheus.Server.Deriving.Utils.GTraversable
-  ( GFmap,
-    Mappable (..),
-    ScanConstraint,
-    buildMap,
+  ( Mappable (..),
+    SCAN,
+    scan,
   )
 import Data.Morpheus.Server.Deriving.Utils.Proxy
   ( ContextValue (..),
@@ -108,10 +107,7 @@ type DERIVE_RESOLVERS e m query mut sub =
 type DERIVE_NAMED_RESOLVERS e m query =
   ( GQLType (query (NamedResolverT (Resolver QUERY e m))),
     GQLNamedResolver (Resolver QUERY e m) (query (NamedResolverT (Resolver QUERY e m))),
-    GFmap
-      (ScanConstraint (GQLNamedResolver (Resolver QUERY e m)))
-      (KIND (query (NamedResolverT (Resolver QUERY e m))))
-      (query (NamedResolverT (Resolver QUERY e m)))
+    SCAN (GQLNamedResolver (Resolver QUERY e m)) (query (NamedResolverT (Resolver QUERY e m)))
   )
 
 deriveResolvers ::
@@ -136,7 +132,7 @@ deriveNamedResolvers ::
   RootResolverValue e m
 deriveNamedResolvers NamedResolvers =
   NamedResolversValue $
-    buildMap
+    scan
       resolverName
       deriveNamedResolver
       (Proxy @(query (NamedResolverT (Resolver QUERY e m))))
