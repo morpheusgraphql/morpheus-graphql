@@ -143,3 +143,15 @@ instance EncodeWrapperValue Maybe where
 
 instance EncodeWrapperValue [] where
   encodeWrapperValue f xs = List <$> traverse f xs
+
+instance EncodeWrapperValue Set where
+  encodeWrapperValue f = encodeWrapperValue f . toList
+
+instance EncodeWrapperValue NonEmpty where
+  encodeWrapperValue f = encodeWrapperValue f . toList
+
+instance EncodeWrapperValue Seq where
+  encodeWrapperValue f = encodeWrapperValue f . toList
+
+instance EncodeWrapperValue Vector where
+  encodeWrapperValue f = encodeWrapperValue f . toList

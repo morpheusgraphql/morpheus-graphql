@@ -3,45 +3,41 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module Data.Morpheus.Server.Deriving.Schema.Object
-  ( asObjectType,
-    withObject,
-    buildObjectTypeContent,
+module Data.Morpheus.Server.Deriving.Internal.Schema.Object
+  ( buildObjectTypeContent,
     defineObjectType,
   )
 where
 
-import Control.Monad.Except (throwError)
 import Data.Morpheus.Internal.Utils
   ( empty,
     singleton,
   )
-import Data.Morpheus.Server.Deriving.Schema.Directive
-  ( UseDirective,
+import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
+  ( UseDeriving,
     deriveFieldDirectives,
     visitFieldContent,
     visitFieldDescription,
     visitFieldName,
   )
-import Data.Morpheus.Server.Deriving.Schema.Enum (defineEnumUnit)
-import Data.Morpheus.Server.Deriving.Utils
-  ( ConsRep (..),
-    FieldRep (..),
+import Data.Morpheus.Server.Deriving.Internal.Schema.Enum
+  ( defineEnumUnit,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
-    outputType,
   )
-import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (..))
+import Data.Morpheus.Server.Deriving.Utils.Types
+  ( ConsRep (..),
+    FieldRep (..),
+  )
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,
     insertType,
   )
-import Data.Morpheus.Types.Internal.AST (ArgumentsDefinition, CONST, FieldContent (..), FieldDefinition (..), FieldsDefinition, OBJECT, OUT, TRUE, TypeContent (..), TypeDefinition, mkField, mkType, mkTypeRef, msg, unitFieldName, unitTypeName, unsafeFromFields)
+import Data.Morpheus.Types.Internal.AST (ArgumentsDefinition, CONST, FieldContent (..), FieldDefinition (..), FieldsDefinition, TRUE, TypeContent (..), mkField, mkType, mkTypeRef, unitFieldName, unitTypeName, unsafeFromFields)
 import Relude hiding (empty)
 
 defineObjectType ::
@@ -59,7 +55,7 @@ mkFieldUnit = mkField Nothing unitFieldName (mkTypeRef unitTypeName)
 
 buildObjectTypeContent ::
   gql a =>
-  UseDirective gql args ->
+  UseDeriving gql args ->
   CatType cat a ->
   [FieldRep (Maybe (ArgumentsDefinition CONST))] ->
   SchemaT k (TypeContent TRUE cat CONST)
@@ -89,31 +85,11 @@ toFieldContent :: CatType c a -> Maybe (ArgumentsDefinition CONST) -> Maybe (Fie
 toFieldContent OutputType (Just x) = Just (FieldArgs x)
 toFieldContent _ _ = Nothing
 
-asObjectType ::
-  (gql a) =>
-  UseGQLType gql ->
-  (f a -> SchemaT kind (FieldsDefinition OUT CONST)) ->
-  f a ->
-  SchemaT kind (TypeDefinition OBJECT CONST)
-asObjectType gql f proxy =
-  mkType
-    (useTypename gql (outputType proxy))
-    . DataObject []
-    <$> f proxy
-
-withObject :: (gql a) => UseGQLType gql -> CatType c a -> TypeContent TRUE any s -> SchemaT c (FieldsDefinition c s)
-withObject _ InputType DataInputObject {inputObjectFields} = pure inputObjectFields
-withObject _ OutputType DataObject {objectFields} = pure objectFields
-withObject gql x _ = failureOnlyObject gql x
-
-failureOnlyObject :: (gql a) => UseGQLType gql -> CatType c a -> SchemaT c b
-failureOnlyObject gql proxy = throwError $ msg (useTypename gql proxy) <> " should have only one nonempty constructor"
-
 mkObjectTypeContent :: CatType kind a -> FieldsDefinition kind CONST -> TypeContent TRUE kind CONST
 mkObjectTypeContent InputType = DataInputObject
 mkObjectTypeContent OutputType = DataObject []
 
-setGQLTypeProps :: gql a => UseDirective gql args -> CatType kind a -> FieldDefinition kind CONST -> SchemaT k (FieldDefinition kind CONST)
+setGQLTypeProps :: gql a => UseDeriving gql args -> CatType kind a -> FieldDefinition kind CONST -> SchemaT k (FieldDefinition kind CONST)
 setGQLTypeProps options proxy FieldDefinition {..} = do
   dirs <- deriveFieldDirectives options proxy fieldName
   pure
