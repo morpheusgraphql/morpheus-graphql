@@ -87,7 +87,7 @@ withNamed =
       useDeriveNamedResolvers = deriveNamedRes
     }
 
-deriveNamedResolver :: Mappable (KindedNamedResolver GQLNamedResolver GQLNamedResolverFun GQLType GQLValue m) [NamedResolver m] KindedProxy
+deriveNamedResolver :: Mappable (KindedNamedResolver GQLNamedResolver GQLNamedResolverFun GQLType GQLValue m) [NamedResolver m]
 deriveNamedResolver = Mappable (kindedNamedResolver withNamed)
 
 type ROOT (o :: OperationType) e (m :: Type -> Type) a = EXPLORE GQLType GQLResolver (Resolver o e m) (a (Resolver o e m))

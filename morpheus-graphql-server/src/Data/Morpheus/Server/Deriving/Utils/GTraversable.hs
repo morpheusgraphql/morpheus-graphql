@@ -33,7 +33,7 @@ import Relude hiding (Undefined)
 buildMap ::
   (c (KIND a) a, Hashable k, Eq k, GFmap (ScanConstraint c) (KIND a) a, GQLType a) =>
   (b -> k) ->
-  Mappable c [b] KindedProxy ->
+  Mappable c [b] ->
   Proxy a ->
   HashMap k b
 buildMap keyF f xs =
@@ -45,7 +45,7 @@ buildMap keyF f xs =
 
 traverseTypes ::
   (GFmap (ScanConstraint c) (KIND a) a, c (KIND a) a, GQLType a) =>
-  Mappable c v KindedProxy ->
+  Mappable c v ->
   Proxy a ->
   Map TypeFingerprint v
 traverseTypes f = runMappable (scanner f mempty) . withDerivable
@@ -60,9 +60,9 @@ class
 instance (GFmap (ScanConstraint c) (KIND a) a, c (KIND a) a) => ScanConstraint c k a
 
 scanner ::
-  Mappable c v KindedProxy ->
+  Mappable c v ->
   Map TypeFingerprint v ->
-  Mappable (ScanConstraint c) (Map TypeFingerprint v) KindedProxy
+  Mappable (ScanConstraint c) (Map TypeFingerprint v)
 scanner c@(Mappable f) lib =
   Mappable
     ( \proxy -> do
@@ -78,13 +78,13 @@ scanner c@(Mappable f) lib =
 withDerivable :: proxy a -> KindedProxy (KIND a) a
 withDerivable _ = KindedProxy
 
-newtype Mappable (c :: DerivingKind -> Type -> Constraint) (v :: Type) (f :: DerivingKind -> Type -> Type) = Mappable
+newtype Mappable (c :: DerivingKind -> Type -> Constraint) (v :: Type) = Mappable
   { runMappable :: forall a. (GQLType a, c (KIND a) a) => KindedProxy (KIND a) a -> v
   }
 
 -- Map
 class GFmap (c :: DerivingKind -> Type -> Constraint) (t :: DerivingKind) a where
-  gfmap :: (Monoid v, Semigroup v) => Mappable c v KindedProxy -> kinded t a -> v
+  gfmap :: (Monoid v, Semigroup v) => Mappable c v -> kinded t a -> v
 
 instance (GQLType a, c (KIND a) a) => GFmap c SCALAR a where
   gfmap (Mappable f) _ = f (KindedProxy :: KindedProxy (KIND a) a)
@@ -107,7 +107,7 @@ instance GFmap c (KIND a) a => GFmap c CUSTOM (NamedResolverT m a) where
 --
 --
 class GFunctor (c :: DerivingKind -> Type -> Constraint) a where
-  genericMap :: (Monoid v, Semigroup v) => Mappable c v p -> proxy a -> v
+  genericMap :: (Monoid v, Semigroup v) => Mappable c v -> proxy a -> v
 
 instance (Datatype d, GFunctor c a) => GFunctor c (M1 D d a) where
   genericMap fun _ = genericMap fun (Proxy @a)
