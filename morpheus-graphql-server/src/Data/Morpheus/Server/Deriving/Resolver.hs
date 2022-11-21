@@ -40,14 +40,15 @@ import Data.Morpheus.Server.Deriving.Kinded.NamedResolver
 import Data.Morpheus.Server.Deriving.Kinded.NamedResolverFun (KindedNamedFunValue (..))
 import Data.Morpheus.Server.Deriving.Utils.GTraversable
   ( Gmap,
-    Mappable (..),
+    GmapCTX (..),
     Scanner (..),
     scan,
   )
+import Data.Morpheus.Server.Deriving.Utils.Kinded (outputType)
 import Data.Morpheus.Server.Deriving.Utils.Proxy
   ( ContextValue (..),
   )
-import Data.Morpheus.Server.Deriving.Utils.Use (UseNamedResolver (..))
+import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (useFingerprint), UseNamedResolver (..))
 import Data.Morpheus.Server.Resolvers
   ( NamedResolverT (..),
     NamedResolvers (..),
@@ -60,6 +61,7 @@ import Data.Morpheus.Server.Types.GQLType
     ignoreUndefined,
     kindedProxy,
     withDir,
+    withGQL,
     withRes,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -70,14 +72,14 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Relude
 
-class GQLNamedResolverFun (m :: Type -> Type) res where
-  deriveNamedResFun :: res -> m (ResolverValue m)
+class GQLNamedResolverFun (m :: Type -> Type) a where
+  deriveNamedResFun :: a -> m (ResolverValue m)
 
-class GQLNamedResolver (m :: Type -> Type) a where
+class GQLType a => GQLNamedResolver (m :: Type -> Type) a where
   deriveNamedRes :: f a -> [NamedResolver m]
 
 instance
-  KindedNamedResolver GQLNamedResolver GQLNamedResolverFun GQLType GQLValue m (KIND a) a =>
+  (GQLType a, KindedNamedResolver GQLNamedResolver GQLNamedResolverFun GQLType GQLValue m (KIND a) a) =>
   GQLNamedResolver m a
   where
   deriveNamedRes = kindedNamedResolver withNamed . kindedProxy
@@ -93,8 +95,12 @@ withNamed =
       useDeriveNamedResolvers = deriveNamedRes
     }
 
-deriveNamedResolver :: Mappable (GQLNamedResolver m) [NamedResolver m]
-deriveNamedResolver = Mappable {mappableFun = deriveNamedRes}
+deriveNamedResolver :: GmapCTX (GQLNamedResolver m) [NamedResolver m]
+deriveNamedResolver =
+  GmapCTX
+    { gmapFun = deriveNamedRes,
+      gmapKey = useFingerprint withGQL . outputType
+    }
 
 type ROOT (o :: OperationType) e (m :: Type -> Type) a = EXPLORE GQLType GQLResolver (Resolver o e m) (a (Resolver o e m))
 
