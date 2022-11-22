@@ -37,8 +37,8 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Object
   )
 import Data.Morpheus.Server.Deriving.Internal.Schema.Union (buildUnionTypeContent)
 import Data.Morpheus.Server.Deriving.Utils.GRep
-  ( DerivingOptions (..),
-    GRep,
+  ( GRep,
+    RepContext (..),
     deriveTypeWith,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded (CatContext, addContext, getCatContext, mkScalar, outputType)
@@ -150,9 +150,9 @@ deriveFields ::
   SchemaT cat (FieldsDefinition cat CONST)
 deriveFields dirs kindedType = deriveTypeContentWith dirs kindedType >>= withObject (dirGQL dirs) kindedType
 
-toFieldContent :: CatContext cat -> UseDeriving gql dir -> DerivingOptions gql gql Proxy (SchemaT cat (Maybe (ArgumentsDefinition CONST)))
+toFieldContent :: CatContext cat -> UseDeriving gql dir -> RepContext gql gql Proxy (SchemaT cat (Maybe (ArgumentsDefinition CONST)))
 toFieldContent ctx dir@UseDeriving {..} =
-  DerivingOptions
+  RepContext
     { optTypeData = useTypeData dirGQL . addContext ctx,
       optApply = \proxy -> injectType dir (addContext ctx proxy) *> useDeriveFieldArguments dirGQL (addContext ctx proxy)
     }

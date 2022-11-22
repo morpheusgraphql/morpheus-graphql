@@ -36,8 +36,8 @@ import Data.Morpheus.App.Internal.Resolving
 import Data.Morpheus.Server.Deriving.Internal.Decode.Utils (useDecodeArguments)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Directive (UseDeriving, toFieldRes)
 import Data.Morpheus.Server.Deriving.Utils.GRep
-  ( DerivingOptions (..),
-    GRep,
+  ( GRep,
+    RepContext (..),
     deriveValue,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
@@ -138,9 +138,9 @@ instance (Monad m, LiftOperation o, val a, res (Resolver o e m) b) => KindedName
       >>= liftResolverState . useDecodeArguments (namedDrv ctx)
       >>= useNamedFieldResolver ctx . f
 
-getOptions :: UseNamedResolver namedRes res gql val -> DerivingOptions gql (res m) Identity (m (ResolverValue m))
+getOptions :: UseNamedResolver namedRes res gql val -> RepContext gql (res m) Identity (m (ResolverValue m))
 getOptions UseNamedResolver {..} =
-  DerivingOptions
+  RepContext
     { optApply = useNamedFieldResolver . runIdentity,
       optTypeData = useTypeData (dirGQL namedDrv) . outputType
     }

@@ -43,8 +43,8 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
     visitFieldName,
   )
 import Data.Morpheus.Server.Deriving.Utils.GRep
-  ( DerivingOptions (..),
-    GRep,
+  ( GRep,
+    RepContext (..),
     deriveValue,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
@@ -108,11 +108,11 @@ instance (gql a, Generic a, DecodeRep gql args (Rep a), GRep gql args (GQLResult
   encodeKindedValue UseDeriving {..} =
     repValue
       . deriveValue
-        ( DerivingOptions
+        ( RepContext
             { optApply = useEncodeValue dirArgs . runIdentity,
               optTypeData = useTypeData dirGQL . inputType
             } ::
-            DerivingOptions gql args Identity (GQLResult (Value CONST))
+            RepContext gql args Identity (GQLResult (Value CONST))
         )
       . unContextValue
   decodeKindedValue dir _ = fmap to . (`runReaderT` context) . decodeRep dir

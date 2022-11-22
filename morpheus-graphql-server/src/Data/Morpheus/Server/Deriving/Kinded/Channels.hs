@@ -31,8 +31,8 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Server.Deriving.Internal.Decode.Utils (useDecodeArguments)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Directive (UseDeriving (..), toFieldRes)
 import Data.Morpheus.Server.Deriving.Utils.GRep
-  ( DerivingOptions (..),
-    GRep,
+  ( GRep,
+    RepContext (..),
     deriveValue,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded (outputType)
@@ -135,11 +135,11 @@ instance (gql a, Generic a, GRep gql (GetChannel val e) (ChannelRes e) (Rep a)) 
       . consFields
       . tyCons
       . deriveValue
-        ( DerivingOptions
+        ( RepContext
             { optApply = getChannel drv . runIdentity,
               optTypeData = useTypeData (dirGQL drv) . outputType
             } ::
-            DerivingOptions gql (GetChannel val e) Identity (ChannelRes e)
+            RepContext gql (GetChannel val e) Identity (ChannelRes e)
         )
 
 instance ExploreChannels drv val TRUE e (Undefined m) where

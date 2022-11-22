@@ -34,8 +34,8 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
     visitEnumName,
   )
 import Data.Morpheus.Server.Deriving.Utils.GRep
-  ( DerivingOptions (..),
-    GRep,
+  ( GRep,
+    RepContext (..),
     deriveValue,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded (inputType)
@@ -84,9 +84,9 @@ convertNode
       -- Inline Union Types ----------------------------------------------------------------------------
       encodeTypeFields fields = mkUnion consName (toFieldRes drv proxy <$> fields)
 
-toOptions :: UseResolver res gql val -> DerivingOptions gql (res m) Identity (m (ResolverValue m))
+toOptions :: UseResolver res gql val -> RepContext gql (res m) Identity (m (ResolverValue m))
 toOptions UseResolver {..} =
-  DerivingOptions
+  RepContext
     { optApply = useEncodeResolver . runIdentity,
       optTypeData = useTypeData (dirGQL resDrv) . inputType
     }
