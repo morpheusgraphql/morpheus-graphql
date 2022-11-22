@@ -43,11 +43,10 @@ import Data.Morpheus.Server.Deriving.Utils.GScan
     Scanner (..),
     scan,
   )
-import Data.Morpheus.Server.Deriving.Utils.Kinded (outputType)
 import Data.Morpheus.Server.Deriving.Utils.Proxy
   ( ContextValue (..),
   )
-import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (useFingerprint), UseNamedResolver (..))
+import Data.Morpheus.Server.Deriving.Utils.Use (UseNamedResolver (..))
 import Data.Morpheus.Server.Resolvers
   ( NamedResolverT (..),
     NamedResolvers (..),
@@ -60,7 +59,6 @@ import Data.Morpheus.Server.Types.GQLType
     ignoreUndefined,
     kindedProxy,
     withDir,
-    withGQL,
     withRes,
   )
 import Data.Morpheus.Types.Internal.AST
@@ -98,11 +96,7 @@ withNamed =
     }
 
 deriveNamedResolver :: Scanner (GQLNamedResolver m) (NamedResolver m)
-deriveNamedResolver =
-  Scanner
-    { scannerFun = deriveNamedRes,
-      scannerRefs = maybeToList . deriveNamedRefs
-    }
+deriveNamedResolver = Scanner {scannerFun = deriveNamedRes, scannerRefs = deriveNamedRefs}
 
 type ROOT (o :: OperationType) e (m :: Type -> Type) a = EXPLORE GQLType GQLResolver (Resolver o e m) (a (Resolver o e m))
 
