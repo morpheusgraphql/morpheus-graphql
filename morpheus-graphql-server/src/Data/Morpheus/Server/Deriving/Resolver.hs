@@ -7,6 +7,7 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -38,10 +39,10 @@ import Data.Morpheus.Server.Deriving.Kinded.NamedResolver
   ( KindedNamedResolver (..),
   )
 import Data.Morpheus.Server.Deriving.Kinded.NamedResolverFun (KindedNamedFunValue (..))
+import Data.Morpheus.Server.Deriving.Utils.GFunctor (GFunctor)
 import Data.Morpheus.Server.Deriving.Utils.GTraversable
   ( GmapCTX (..),
-    KindedGmap,
-    Scanner (..),
+    GmapProxy,
     scan,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded (outputType)
@@ -70,13 +71,14 @@ import Data.Morpheus.Types.Internal.AST
     QUERY,
     SUBSCRIPTION,
   )
+import GHC.Generics (Rep)
 import Relude
 
 class GQLNamedResolverFun (m :: Type -> Type) a where
   deriveNamedResFun :: a -> m (ResolverValue m)
 
 class GQLType a => GQLNamedResolver (m :: Type -> Type) a where
-  deriveNamedRes :: f a -> [NamedResolver m]
+  deriveNamedRes :: f a -> ([NamedResolver m], [GmapProxy (GQLNamedResolver m)])
 
 instance
   (GQLType a, KindedNamedResolver GQLNamedResolver GQLNamedResolverFun GQLType GQLValue m (KIND a) a) =>
@@ -95,7 +97,7 @@ withNamed =
       useDeriveNamedResolvers = deriveNamedRes
     }
 
-deriveNamedResolver :: GmapCTX (GQLNamedResolver m) [NamedResolver m]
+deriveNamedResolver :: GmapCTX (GQLNamedResolver m) (NamedResolver m)
 deriveNamedResolver =
   GmapCTX
     { gmapFun = deriveNamedRes,
@@ -113,10 +115,6 @@ type DERIVE_RESOLVERS e m query mut sub =
 
 type DERIVE_NAMED_RESOLVERS e m query =
   ( GQLType (query (NamedResolverT (Resolver QUERY e m))),
-    KindedGmap
-      (Scanner (GQLNamedResolver (Resolver QUERY e m)))
-      (KIND (query (NamedResolverT (Resolver QUERY e m))))
-      (query (NamedResolverT (Resolver QUERY e m))),
     KindedNamedResolver
       GQLNamedResolver
       GQLNamedResolverFun
@@ -124,7 +122,8 @@ type DERIVE_NAMED_RESOLVERS e m query =
       GQLValue
       (Resolver QUERY e m)
       (KIND (query (NamedResolverT (Resolver QUERY e m))))
-      (query (NamedResolverT (Resolver QUERY e m)))
+      (query (NamedResolverT (Resolver QUERY e m))),
+    GFunctor (GQLNamedResolver (Resolver QUERY e m)) (Rep (query (NamedResolverT (Resolver QUERY e m))))
   )
 
 deriveResolvers ::
@@ -149,7 +148,8 @@ deriveNamedResolvers ::
   RootResolverValue e m
 deriveNamedResolvers NamedResolvers =
   NamedResolversValue $
-    scan
-      resolverName
-      deriveNamedResolver
-      (Proxy @(query (NamedResolverT (Resolver QUERY e m))))
+    traceShowId $
+      scan
+        resolverName
+        deriveNamedResolver
+        (Proxy @(query (NamedResolverT (Resolver QUERY e m))))

@@ -28,8 +28,10 @@ import Data.Morpheus.Server.Deriving.Kinded.NamedResolverFun
   ( deriveNamedResolverFun,
   )
 import Data.Morpheus.Server.Deriving.Utils.DeriveGType (DeriveWith)
+import Data.Morpheus.Server.Deriving.Utils.GFunctor
+import Data.Morpheus.Server.Deriving.Utils.GTraversable (GmapProxy (..))
 import Data.Morpheus.Server.Deriving.Utils.Kinded (outputType)
-import Data.Morpheus.Server.Deriving.Utils.Use (UseDeriving (..), UseGQLType (useTypename), UseNamedResolver (..), UseValue (useDecodeValue))
+import Data.Morpheus.Server.Deriving.Utils.Use (UseDeriving (..), UseGQLType (useFingerprint, useTypename), UseNamedResolver (..), UseValue (useDecodeValue))
 import Data.Morpheus.Server.NamedResolvers (Dependency, NamedResolverT (..), ResolveNamed (..))
 import Data.Morpheus.Server.Types.Kind
   ( CUSTOM,
@@ -59,7 +61,7 @@ type DecodeValuesConstraint val o e m a =
   )
 
 class KindedNamedResolver namedRes resFun gql val (m :: Type -> Type) (k :: DerivingKind) a where
-  kindedNamedResolver :: UseNamedResolver namedRes resFun gql val -> f k a -> [NamedResolver m]
+  kindedNamedResolver :: UseNamedResolver namedRes resFun gql val -> f k a -> ([NamedResolver m], [GmapProxy (namedRes m)])
 
 instance
   ( DecodeValuesConstraint gql o e m a,
@@ -70,11 +72,13 @@ instance
   KindedNamedResolver namedRes resFun gql val (Resolver o e m) SCALAR a
   where
   kindedNamedResolver ctx _ =
-    [ NamedResolver
-        { resolverName = useTypename (dirGQL $ namedDrv ctx) (outputType proxy),
-          resolverFun = decodeValues (namedDrv ctx) proxy >=> pure . map (maybe NamedNullResolver (NamedScalarResolver . encodeScalar))
-        }
-    ]
+    ( [ NamedResolver
+          { resolverName = useTypename (dirGQL $ namedDrv ctx) (outputType proxy),
+            resolverFun = decodeValues (namedDrv ctx) proxy >=> pure . map (maybe NamedNullResolver (NamedScalarResolver . encodeScalar))
+          }
+      ],
+      []
+    )
     where
       proxy = Proxy @a
 
@@ -84,16 +88,20 @@ instance
     gql a,
     gql [Maybe a],
     val (Dependency a),
-    DeriveWith gql (resFun (Resolver o e m)) (Resolver o e m (ResolverValue (Resolver o e m))) (Rep a)
+    DeriveWith gql (resFun (Resolver o e m)) (Resolver o e m (ResolverValue (Resolver o e m))) (Rep a),
+    GFunctor (namedRes (Resolver o e m)) (Rep a),
+    namedRes (Resolver o e m) a
   ) =>
   KindedNamedResolver namedRes resFun gql val (Resolver o e m) TYPE (a :: Type)
   where
   kindedNamedResolver ctx _ =
-    [ NamedResolver
-        { resolverName = useTypename (dirGQL $ namedDrv ctx) (outputType proxy),
-          resolverFun = decodeValues (namedDrv ctx) proxy >=> deriveNamedResolverFun ctx
-        }
-    ]
+    ( [ NamedResolver
+          { resolverName = useTypename (dirGQL $ namedDrv ctx) (outputType proxy),
+            resolverFun = decodeValues (namedDrv ctx) proxy >=> deriveNamedResolverFun ctx
+          }
+      ],
+      [GmapProxy (useFingerprint (dirGQL $ namedDrv ctx) (outputType proxy)) proxy]
+    )
     where
       proxy = Proxy @a
 

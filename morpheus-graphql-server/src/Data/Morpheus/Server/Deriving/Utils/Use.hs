@@ -15,6 +15,7 @@ where
 
 import Data.Morpheus.App.Internal.Resolving (NamedResolver (..), ResolverState, ResolverValue)
 import Data.Morpheus.Internal.Ext (GQLResult)
+import Data.Morpheus.Server.Deriving.Utils.GTraversable (GmapProxy)
 import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType)
 import Data.Morpheus.Server.Types.Directives
   ( GDirectiveUsages (..),
@@ -61,6 +62,6 @@ data UseDeriving gql val = UseDeriving
 
 data UseNamedResolver namedRes resFun gql val = UseNamedResolver
   { useNamedFieldResolver :: forall a m. resFun m a => a -> m (ResolverValue m),
-    useDeriveNamedResolvers :: forall f a m. namedRes m a => f a -> [NamedResolver m],
+    useDeriveNamedResolvers :: forall f a m. namedRes m a => f a -> ([NamedResolver m], [GmapProxy (namedRes m)]),
     namedDrv :: UseDeriving gql val
   }
