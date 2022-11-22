@@ -55,7 +55,7 @@ instance (Gmap c a, Gmap c b) => Gmap c (a :*: b) where
   gfmap _ = liftA2 (<>) (gfmap (Proxy @a)) (gfmap (Proxy @b))
 
 instance (c a) => Gmap c (M1 S s (K1 x a)) where
-  gfmap _ = ((Proxy @a) &) <$> asks gmapFun
+  gfmap _ = ((Proxy @a) &) . gmapFun <$> ask
 
 instance Gmap c U1 where
   gfmap _ = pure mempty
