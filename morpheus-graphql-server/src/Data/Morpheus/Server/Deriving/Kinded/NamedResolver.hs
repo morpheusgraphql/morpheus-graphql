@@ -32,7 +32,6 @@ import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef (..))
 import Data.Morpheus.Server.Deriving.Utils.Gmap (Gmap)
 import Data.Morpheus.Server.Deriving.Utils.Kinded (outputType)
 import Data.Morpheus.Server.Deriving.Utils.Use (UseDeriving (..), UseGQLType (useFingerprint, useTypename), UseNamedResolver (..), UseValue (useDecodeValue))
-import Data.Morpheus.Server.NamedResolvers (Dependency, NamedResolverT (..), ResolveNamed (..))
 import Data.Morpheus.Server.Types.Kind
   ( CUSTOM,
     DerivingKind,
@@ -40,6 +39,7 @@ import Data.Morpheus.Server.Types.Kind
     TYPE,
     WRAPPER,
   )
+import Data.Morpheus.Server.Types.NamedResolvers (Dependency, NamedResolverT (..), ResolveNamed (..))
 import Data.Morpheus.Types.GQLScalar (EncodeScalar (..))
 import Data.Morpheus.Types.Internal.AST
   ( ValidValue,

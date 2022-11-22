@@ -24,7 +24,7 @@ import Data.Morpheus.App.Internal.Resolving
   ( Resolver,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (..))
-import Data.Morpheus.Server.NamedResolvers (NamedResolverT (..))
+import Data.Morpheus.Server.Types.NamedResolvers (NamedResolverT (..))
 import Data.Morpheus.Server.Types.Types
   ( Pair,
   )

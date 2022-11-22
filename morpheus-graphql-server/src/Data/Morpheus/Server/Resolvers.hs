@@ -29,7 +29,7 @@ module Data.Morpheus.Server.Resolvers
 where
 
 import Data.Morpheus.App.Internal.Resolving (PushEvents (pushEvents), Resolver, WithOperation)
-import Data.Morpheus.Server.NamedResolvers
+import Data.Morpheus.Server.Types.NamedResolvers
   ( NamedResolverT (..),
     ResolveNamed (..),
     ignoreBatching,

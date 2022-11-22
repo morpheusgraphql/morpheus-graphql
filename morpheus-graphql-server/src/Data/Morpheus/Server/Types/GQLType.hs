@@ -64,7 +64,6 @@ import Data.Morpheus.Server.Deriving.Utils.AST (argumentsToObject)
 import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (..), KindedProxy (KindedProxy), catMap, isIN)
 import Data.Morpheus.Server.Deriving.Utils.Proxy (ContextValue (..), symbolName)
 import Data.Morpheus.Server.Deriving.Utils.Use (UseDeriving (..), UseGQLType (..), UseResolver (..), UseValue (..))
-import Data.Morpheus.Server.NamedResolvers (NamedResolverT (..))
 import Data.Morpheus.Server.Types.Directives
   ( GDirectiveUsages (..),
     GQLDirective (..),
@@ -82,6 +81,7 @@ import Data.Morpheus.Server.Types.Kind
     TYPE,
     WRAPPER,
   )
+import Data.Morpheus.Server.Types.NamedResolvers (NamedResolverT (..))
 import Data.Morpheus.Server.Types.SchemaT (SchemaT, extendImplements)
 import Data.Morpheus.Server.Types.TypeName (TypeFingerprint (..), getFingerprint, getTypename)
 import Data.Morpheus.Server.Types.Types
