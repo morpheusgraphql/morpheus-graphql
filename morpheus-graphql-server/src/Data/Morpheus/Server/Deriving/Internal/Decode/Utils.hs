@@ -39,16 +39,16 @@ import Data.Morpheus.Internal.Utils
     selectOr,
   )
 import Data.Morpheus.Server.Deriving.Utils.AST (argumentsToObject)
+import Data.Morpheus.Server.Deriving.Utils.GRep
+  ( ConsRep (..),
+    FieldRep (..),
+    TypeRep (..),
+  )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
   )
 import Data.Morpheus.Server.Deriving.Utils.Proxy
   ( conNameProxy,
-  )
-import Data.Morpheus.Server.Deriving.Utils.Types
-  ( ConsRep (..),
-    FieldRep (..),
-    TypeRep (..),
   )
 import Data.Morpheus.Server.Deriving.Utils.Use (UseDeriving, UseGQLType (useTypename), UseValue (..), dirArgs)
 import Data.Morpheus.Types.GQLScalar

@@ -36,8 +36,11 @@ import Data.Morpheus.App.Internal.Resolving
 import Data.Morpheus.Server.Deriving.Internal.Decode.Utils (useDecodeArguments)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Directive (UseDeriving, toFieldRes)
 import Data.Morpheus.Server.Deriving.Utils.GRep
-  ( GRep,
+  ( ConsRep (..),
+    FieldRep (..),
+    GRep,
     RepContext (..),
+    TypeRep (..),
     deriveValue,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
@@ -46,11 +49,6 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
   )
 import Data.Morpheus.Server.Deriving.Utils.Proxy
   ( ContextValue (..),
-  )
-import Data.Morpheus.Server.Deriving.Utils.Types
-  ( ConsRep (..),
-    FieldRep (..),
-    TypeRep (..),
   )
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseDeriving (..),

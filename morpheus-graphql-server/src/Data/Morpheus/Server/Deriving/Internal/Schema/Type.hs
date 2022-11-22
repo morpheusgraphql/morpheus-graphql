@@ -37,16 +37,14 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Object
   )
 import Data.Morpheus.Server.Deriving.Internal.Schema.Union (buildUnionTypeContent)
 import Data.Morpheus.Server.Deriving.Utils.GRep
-  ( GRep,
+  ( ConsRep (..),
+    GRep,
     RepContext (..),
     deriveTypeWith,
-  )
-import Data.Morpheus.Server.Deriving.Utils.Kinded (CatContext, addContext, getCatContext, mkScalar, outputType)
-import Data.Morpheus.Server.Deriving.Utils.Types
-  ( ConsRep (..),
     isEmptyConstraint,
     unpackMonad,
   )
+import Data.Morpheus.Server.Deriving.Utils.Kinded (CatContext, addContext, getCatContext, mkScalar, outputType)
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseGQLType (..),
   )

@@ -14,14 +14,14 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Enum
 import Data.Morpheus.Server.Deriving.Internal.Schema.Object
   ( defineObjectType,
   )
-import Data.Morpheus.Server.Deriving.Utils.Kinded
-  ( CatType (..),
-  )
-import Data.Morpheus.Server.Deriving.Utils.Types
+import Data.Morpheus.Server.Deriving.Utils.GRep
   ( ConsRep (..),
     fieldTypeName,
     isEmptyConstraint,
     isUnionRef,
+  )
+import Data.Morpheus.Server.Deriving.Utils.Kinded
+  ( CatType (..),
   )
 import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (..), useTypename)
 import Data.Morpheus.Server.Types.SchemaT

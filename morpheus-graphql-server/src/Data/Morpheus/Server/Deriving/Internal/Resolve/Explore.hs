@@ -34,17 +34,15 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
     visitEnumName,
   )
 import Data.Morpheus.Server.Deriving.Utils.GRep
-  ( GRep,
-    RepContext (..),
-    deriveValue,
-  )
-import Data.Morpheus.Server.Deriving.Utils.Kinded (inputType)
-import Data.Morpheus.Server.Deriving.Utils.Types
   ( ConsRep (..),
     FieldRep (..),
+    GRep,
+    RepContext (..),
     TypeRep (..),
+    deriveValue,
     isUnionRef,
   )
+import Data.Morpheus.Server.Deriving.Utils.Kinded (inputType)
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseDeriving (..),
     UseGQLType (..),

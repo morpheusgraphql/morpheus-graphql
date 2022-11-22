@@ -31,15 +31,13 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Server.Deriving.Internal.Decode.Utils (useDecodeArguments)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Directive (UseDeriving (..), toFieldRes)
 import Data.Morpheus.Server.Deriving.Utils.GRep
-  ( GRep,
+  ( ConsRep (..),
+    GRep,
     RepContext (..),
+    TypeRep (..),
     deriveValue,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded (outputType)
-import Data.Morpheus.Server.Deriving.Utils.Types
-  ( ConsRep (..),
-    TypeRep (..),
-  )
 import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (useTypeData))
 import Data.Morpheus.Server.Types.Types (Undefined)
 import Data.Morpheus.Types.Internal.AST
