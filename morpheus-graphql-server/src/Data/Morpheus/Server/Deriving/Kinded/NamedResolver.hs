@@ -58,12 +58,6 @@ type DecodeValuesConstraint val o e m a =
     val (Dependency a)
   )
 
--- type EncodeTypeConstraint res gql val m a =
---   ( GFmap (ScanConstraint (KindedNamedResolver namedRes resFun gql val m)) (KIND (a (NamedResolverT m))) (a (NamedResolverT m)),
---     KindedNamedResolver namedRes resFun gql val m (KIND (a (NamedResolverT m))) (a (NamedResolverT m)),
---     gql (a (NamedResolverT m))
---   )
-
 class KindedNamedResolver namedRes resFun gql val (m :: Type -> Type) (k :: DerivingKind) a where
   kindedNamedResolver :: UseNamedResolver namedRes resFun gql val -> f k a -> [NamedResolver m]
 

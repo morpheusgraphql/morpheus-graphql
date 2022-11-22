@@ -19,7 +19,6 @@ module Data.Morpheus.Server.Deriving.Utils.GTraversable
   ( GmapCTX (..),
     Scanner (..),
     AND,
-    Gmap,
     KindedGmap,
   )
 where
@@ -43,11 +42,12 @@ import Data.Morpheus.Server.Types.TypeName (TypeFingerprint)
 import GHC.Generics (Generic (Rep))
 import Relude hiding (Undefined)
 
-class Gmap c a where
-  gmap :: (Monoid v, Semigroup v) => GmapCTX c v -> f a -> v
+class f (KIND a) a => UseKind (f :: DerivingKind -> Type -> Constraint) a
 
-instance KindedGmap c (KIND a) a => Gmap c a where
-  gmap ctx = kindedGmap ctx . kindedProxy
+instance f (KIND a) a => UseKind f a
+
+gmap :: (UseKind (KindedGmap c) a, Monoid v) => GmapCTX c v -> f a -> v
+gmap ctx = kindedGmap ctx . kindedProxy
 
 class (KindedGmap (Scanner c) (KIND a) a, c a) => Scanner (c :: Type -> Constraint) (a :: Type) where
   scan :: (Hashable k, Eq k, c a) => (b -> k) -> GmapCTX c [b] -> Proxy a -> HashMap k b
@@ -93,11 +93,11 @@ instance (c a) => KindedGmap c SCALAR a where
 instance (c a, GFunctor c (Rep a)) => KindedGmap c TYPE a where
   kindedGmap ctx@GmapCTX {..} _ = gmapFun (Proxy @a) <> useGfmap (Proxy @(Rep a)) (mapCTX ctx)
 
-instance Gmap c a => KindedGmap c WRAPPER (f a) where
+instance UseKind (KindedGmap c) a => KindedGmap c WRAPPER (f a) where
   kindedGmap f _ = gmap f (Proxy @a)
 
-instance Gmap c a => KindedGmap c CUSTOM (input -> a) where
+instance UseKind (KindedGmap c) a => KindedGmap c CUSTOM (input -> a) where
   kindedGmap f _ = gmap f (Proxy @a)
 
-instance Gmap c a => KindedGmap c CUSTOM (NamedResolverT m a) where
+instance UseKind (KindedGmap c) a => KindedGmap c CUSTOM (NamedResolverT m a) where
   kindedGmap f _ = gmap f (Proxy @a)
