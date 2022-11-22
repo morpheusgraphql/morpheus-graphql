@@ -42,29 +42,26 @@ toRep _ = Proxy
 omitVisited :: Map TypeFingerprint v -> [GmapProxy c] -> [GmapProxy c]
 omitVisited lib = filter (\(GmapProxy fp _) -> not (M.member fp lib))
 
-getValues :: GmapCTX c v -> GmapProxy c -> ([v], [GmapProxy c])
-getValues ctx (GmapProxy _ x) = useGfmap (toRep x) (mapCTX ctx)
+getRefs :: GmapCTX c v -> GmapProxy c -> [GmapProxy c]
+getRefs ctx (GmapProxy _ x) = useGfmap (toRep x) (mapCTX ctx)
 
 traverseRecs :: GmapCTX c v -> Map TypeFingerprint v -> [GmapProxy c] -> Map TypeFingerprint v
 traverseRecs _ lib [] = lib
-traverseRecs ctx lib (GmapProxy fingerprint p : xs)
-  | M.member fingerprint lib = do
-    let (_, recs) = useGfmap (toRep p) (mapCTX ctx)
-    traverseRecs ctx lib (omitVisited lib (recs <> xs))
-  | otherwise = do
-    let (val, recs) = gmapFun ctx p
-    let (vals, tasks) = bimap concat concat $ unzip $ map (getValues ctx) recs
-    let newLib = foldr (M.insert fingerprint) lib (val <> vals)
-    traverseRecs ctx newLib (recs <> xs <> tasks)
+traverseRecs ctx lib (x@(GmapProxy fingerprint p) : xs) = do
+  let values = gmapFun ctx p
+  let newLib = foldr (M.insert fingerprint) lib values
+  let refs = omitVisited lib (xs <> getRefs ctx x)
+  traverseRecs ctx newLib refs
 
-mapCTX :: GmapCTX c v -> GFunctorContext c ([v], [GmapProxy c])
-mapCTX (GmapCTX f _) = GFunctorContext f
+mapCTX :: GmapCTX c v -> GFunctorContext c [GmapProxy c]
+mapCTX (GmapCTX _ f _) = GFunctorContext f
 
 data GmapProxy (c :: Type -> Constraint) where
   GmapProxy :: forall f a c. (Gmap c a) => TypeFingerprint -> f a -> GmapProxy c
 
 data GmapCTX (c :: Type -> Constraint) (v :: Type) = GmapCTX
-  { gmapFun :: forall f a. (c a) => f a -> ([v], [GmapProxy c]),
+  { gmapFun :: forall f a. (c a) => f a -> [v],
+    gmapRefs :: forall f a. (c a) => f a -> [GmapProxy c],
     gmapKey :: forall f a. c a => f a -> TypeFingerprint
   }
 

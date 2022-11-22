@@ -62,6 +62,7 @@ data UseDeriving gql val = UseDeriving
 
 data UseNamedResolver namedRes resFun gql val = UseNamedResolver
   { useNamedFieldResolver :: forall a m. resFun m a => a -> m (ResolverValue m),
-    useDeriveNamedResolvers :: forall f a m. namedRes m a => f a -> ([NamedResolver m], [GmapProxy (namedRes m)]),
+    useDeriveNamedResolvers :: forall f a m. namedRes m a => f a -> [NamedResolver m],
+    useDeriveNamedRefs :: forall f a m. namedRes m a => f a -> Maybe (GmapProxy (namedRes m)),
     namedDrv :: UseDeriving gql val
   }

@@ -61,7 +61,8 @@ type DecodeValuesConstraint val o e m a =
   )
 
 class KindedNamedResolver namedRes resFun gql val (m :: Type -> Type) (k :: DerivingKind) a where
-  kindedNamedResolver :: UseNamedResolver namedRes resFun gql val -> f k a -> ([NamedResolver m], [GmapProxy (namedRes m)])
+  kindedNamedResolver :: UseNamedResolver namedRes resFun gql val -> f k a -> [NamedResolver m]
+  kindedNamedRefs :: UseNamedResolver namedRes resFun gql val -> f k a -> Maybe (GmapProxy (namedRes m))
 
 instance
   ( DecodeValuesConstraint gql o e m a,
@@ -72,15 +73,14 @@ instance
   KindedNamedResolver namedRes resFun gql val (Resolver o e m) SCALAR a
   where
   kindedNamedResolver ctx _ =
-    ( [ NamedResolver
-          { resolverName = useTypename (dirGQL $ namedDrv ctx) (outputType proxy),
-            resolverFun = decodeValues (namedDrv ctx) proxy >=> pure . map (maybe NamedNullResolver (NamedScalarResolver . encodeScalar))
-          }
-      ],
-      []
-    )
+    [ NamedResolver
+        { resolverName = useTypename (dirGQL $ namedDrv ctx) (outputType proxy),
+          resolverFun = decodeValues (namedDrv ctx) proxy >=> pure . map (maybe NamedNullResolver (NamedScalarResolver . encodeScalar))
+        }
+    ]
     where
       proxy = Proxy @a
+  kindedNamedRefs _ _ = Nothing
 
 instance
   ( DecodeValuesConstraint gql o e m a,
@@ -95,21 +95,26 @@ instance
   KindedNamedResolver namedRes resFun gql val (Resolver o e m) TYPE (a :: Type)
   where
   kindedNamedResolver ctx _ =
-    ( [ NamedResolver
-          { resolverName = useTypename (dirGQL $ namedDrv ctx) (outputType proxy),
-            resolverFun = decodeValues (namedDrv ctx) proxy >=> deriveNamedResolverFun ctx
-          }
-      ],
-      [GmapProxy (useFingerprint (dirGQL $ namedDrv ctx) (outputType proxy)) proxy]
-    )
+    [ NamedResolver
+        { resolverName = useTypename (dirGQL $ namedDrv ctx) (outputType proxy),
+          resolverFun = decodeValues (namedDrv ctx) proxy >=> deriveNamedResolverFun ctx
+        }
+    ]
+    where
+      proxy = Proxy @a
+
+  kindedNamedRefs ctx _ = Just $ GmapProxy (useFingerprint (dirGQL $ namedDrv ctx) (outputType proxy)) proxy
     where
       proxy = Proxy @a
 
 instance namedRes m a => KindedNamedResolver namedRes resFun gql val m CUSTOM (NamedResolverT m a) where
   kindedNamedResolver ctx _ = useDeriveNamedResolvers ctx (Proxy @a)
+  kindedNamedRefs ctx _ = useDeriveNamedRefs ctx (Proxy @a)
 
 instance namedRes m a => KindedNamedResolver namedRes resFun gql val m CUSTOM (input -> a) where
   kindedNamedResolver ctx _ = useDeriveNamedResolvers ctx (Proxy @a)
+  kindedNamedRefs ctx _ = useDeriveNamedRefs ctx (Proxy @a)
 
 instance namedRes m a => KindedNamedResolver namedRes resFun gql val m WRAPPER (f a) where
   kindedNamedResolver ctx _ = useDeriveNamedResolvers ctx (Proxy @a)
+  kindedNamedRefs ctx _ = useDeriveNamedRefs ctx (Proxy @a)

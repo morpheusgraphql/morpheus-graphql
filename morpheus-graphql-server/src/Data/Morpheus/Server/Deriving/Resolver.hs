@@ -78,13 +78,15 @@ class GQLNamedResolverFun (m :: Type -> Type) a where
   deriveNamedResFun :: a -> m (ResolverValue m)
 
 class GQLType a => GQLNamedResolver (m :: Type -> Type) a where
-  deriveNamedRes :: f a -> ([NamedResolver m], [GmapProxy (GQLNamedResolver m)])
+  deriveNamedRes :: f a -> [NamedResolver m]
+  deriveNamedRefs :: f a -> Maybe (GmapProxy (GQLNamedResolver m))
 
 instance
   (GQLType a, KindedNamedResolver GQLNamedResolver GQLNamedResolverFun GQLType GQLValue m (KIND a) a) =>
   GQLNamedResolver m a
   where
   deriveNamedRes = kindedNamedResolver withNamed . kindedProxy
+  deriveNamedRefs = kindedNamedRefs withNamed . kindedProxy
 
 instance KindedNamedFunValue GQLNamedResolverFun GQLType GQLValue (KIND a) m a => GQLNamedResolverFun m a where
   deriveNamedResFun resolver = kindedNamedFunValue withNamed (ContextValue resolver :: ContextValue (KIND a) a)
@@ -94,14 +96,16 @@ withNamed =
   UseNamedResolver
     { namedDrv = withDir,
       useNamedFieldResolver = deriveNamedResFun,
-      useDeriveNamedResolvers = deriveNamedRes
+      useDeriveNamedResolvers = deriveNamedRes,
+      useDeriveNamedRefs = deriveNamedRefs
     }
 
 deriveNamedResolver :: GmapCTX (GQLNamedResolver m) (NamedResolver m)
 deriveNamedResolver =
   GmapCTX
     { gmapFun = deriveNamedRes,
-      gmapKey = useFingerprint withGQL . outputType
+      gmapKey = useFingerprint withGQL . outputType,
+      gmapRefs = maybeToList . deriveNamedRefs
     }
 
 type ROOT (o :: OperationType) e (m :: Type -> Type) a = EXPLORE GQLType GQLResolver (Resolver o e m) (a (Resolver o e m))
@@ -148,8 +152,7 @@ deriveNamedResolvers ::
   RootResolverValue e m
 deriveNamedResolvers NamedResolvers =
   NamedResolversValue $
-    traceShowId $
-      scan
-        resolverName
-        deriveNamedResolver
-        (Proxy @(query (NamedResolverT (Resolver QUERY e m))))
+    scan
+      resolverName
+      deriveNamedResolver
+      (Proxy @(query (NamedResolverT (Resolver QUERY e m))))
