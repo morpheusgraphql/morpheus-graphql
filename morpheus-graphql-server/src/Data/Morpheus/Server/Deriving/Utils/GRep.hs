@@ -20,7 +20,6 @@ module Data.Morpheus.Server.Deriving.Utils.GRep
     deriveValue,
     deriveTypeWith,
     isEmptyConstraint,
-    fieldTypeName,
     isUnionRef,
     unpackMonad,
     ConsRep (..),
@@ -182,12 +181,9 @@ isEmptyConstraint :: ConsRep a -> Bool
 isEmptyConstraint ConsRep {consFields = []} = True
 isEmptyConstraint _ = False
 
-fieldTypeName :: FieldRep k -> TypeName
-fieldTypeName = typeConName . fieldTypeRef
-
 isUnionRef :: TypeName -> ConsRep k -> Bool
 isUnionRef baseName ConsRep {consName, consFields = [fieldRep]} =
-  consName == baseName <> fieldTypeName fieldRep
+  consName == baseName <> typeConName (fieldTypeRef fieldRep)
 isUnionRef _ _ = False
 
 unpackMonad :: Monad m => [ConsRep (m a)] -> m [ConsRep a]

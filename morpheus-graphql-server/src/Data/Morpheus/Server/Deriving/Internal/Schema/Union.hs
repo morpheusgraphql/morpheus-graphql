@@ -16,7 +16,7 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Object
   )
 import Data.Morpheus.Server.Deriving.Utils.GRep
   ( ConsRep (..),
-    fieldTypeName,
+    FieldRep (fieldTypeRef),
     isEmptyConstraint,
     isUnionRef,
   )
@@ -34,6 +34,7 @@ import Data.Morpheus.Types.Internal.AST
     TRUE,
     TypeContent (..),
     TypeName,
+    TypeRef (..),
     UnionMember (..),
     mkNullaryMember,
     mkUnionMember,
@@ -48,7 +49,7 @@ buildUnionTypeContent ::
   SchemaT k (TypeContent TRUE kind CONST)
 buildUnionTypeContent gql scope cons = mkUnionType scope unionRef unionCons
   where
-    unionRef = fieldTypeName <$> concatMap consFields unionRefRep
+    unionRef = typeConName . fieldTypeRef <$> concatMap consFields unionRefRep
     (unionRefRep, unionCons) = partition (isUnionRef (useTypename gql scope)) cons
 
 mkUnionType ::
