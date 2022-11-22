@@ -68,7 +68,8 @@ instance
   ( DecodeValuesConstraint gql o e m a,
     EncodeScalar a,
     val (Dependency a),
-    gql a
+    gql a,
+    namedRes (Resolver o e m) a
   ) =>
   KindedNamedResolver namedRes resFun gql val (Resolver o e m) SCALAR a
   where
@@ -80,7 +81,10 @@ instance
     ]
     where
       proxy = Proxy @a
-  kindedNamedRefs _ _ = Nothing
+  kindedNamedRefs ctx _ = Just (GmapType fp proxy)
+    where
+      fp = useFingerprint (dirGQL $ namedDrv ctx) (outputType proxy)
+      proxy = Proxy @a
 
 instance
   ( DecodeValuesConstraint gql o e m a,
@@ -103,7 +107,7 @@ instance
     where
       proxy = Proxy @a
 
-  kindedNamedRefs ctx _ = Just $ GmapProxy (useFingerprint (dirGQL $ namedDrv ctx) (outputType proxy)) proxy
+  kindedNamedRefs ctx _ = Just $ GmapObject (useFingerprint (dirGQL $ namedDrv ctx) (outputType proxy)) proxy
     where
       proxy = Proxy @a
 
