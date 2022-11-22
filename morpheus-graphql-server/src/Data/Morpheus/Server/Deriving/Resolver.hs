@@ -76,7 +76,7 @@ class GQLNamedResolverFun (m :: Type -> Type) a where
 
 class GQLType a => GQLNamedResolver (m :: Type -> Type) a where
   deriveNamedRes :: f a -> [NamedResolver m]
-  deriveNamedRefs :: f a -> Maybe (ScanRef (GQLNamedResolver m))
+  deriveNamedRefs :: f a -> [ScanRef (GQLNamedResolver m)]
 
 instance
   (GQLType a, KindedNamedResolver GQLNamedResolver GQLNamedResolverFun GQLType GQLValue m (KIND a) a) =>
@@ -101,7 +101,6 @@ deriveNamedResolver :: Scanner (GQLNamedResolver m) (NamedResolver m)
 deriveNamedResolver =
   Scanner
     { scannerFun = deriveNamedRes,
-      scannerFingerprint = useFingerprint withGQL . outputType,
       scannerRefs = maybeToList . deriveNamedRefs
     }
 

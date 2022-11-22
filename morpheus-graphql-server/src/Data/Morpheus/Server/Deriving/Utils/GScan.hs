@@ -59,7 +59,7 @@ runFun Scanner {..} (ScanObject _ t) = scannerFun t
 runFun Scanner {..} (ScanType _ t) = scannerFun t
 
 mapCTX :: Scanner c v -> GFunctorContext c [ScanRef c]
-mapCTX (Scanner _ f _) = GFunctorContext f
+mapCTX (Scanner _ f) = GFunctorContext f
 
 data ScanRef (c :: Type -> Constraint) where
   ScanObject :: forall f a c. (GFunctor c (Rep a), c a) => TypeFingerprint -> f a -> ScanRef c
@@ -67,6 +67,5 @@ data ScanRef (c :: Type -> Constraint) where
 
 data Scanner (c :: Type -> Constraint) (v :: Type) = Scanner
   { scannerFun :: forall f a. (c a) => f a -> [v],
-    scannerRefs :: forall f a. (c a) => f a -> [ScanRef c],
-    scannerFingerprint :: forall f a. c a => f a -> TypeFingerprint
+    scannerRefs :: forall f a. (c a) => f a -> [ScanRef c]
   }

@@ -62,7 +62,7 @@ type DecodeValuesConstraint val o e m a =
 
 class KindedNamedResolver namedRes resFun gql val (m :: Type -> Type) (k :: DerivingKind) a where
   kindedNamedResolver :: UseNamedResolver namedRes resFun gql val -> f k a -> [NamedResolver m]
-  kindedNamedRefs :: UseNamedResolver namedRes resFun gql val -> f k a -> Maybe (ScanRef (namedRes m))
+  kindedNamedRefs :: UseNamedResolver namedRes resFun gql val -> f k a -> [ScanRef (namedRes m)]
 
 instance
   ( DecodeValuesConstraint gql o e m a,
@@ -81,7 +81,7 @@ instance
     ]
     where
       proxy = Proxy @a
-  kindedNamedRefs ctx _ = Just (ScanType fp proxy)
+  kindedNamedRefs ctx _ = [ScanType fp proxy]
     where
       fp = useFingerprint (dirGQL $ namedDrv ctx) (outputType proxy)
       proxy = Proxy @a
@@ -107,7 +107,7 @@ instance
     where
       proxy = Proxy @a
 
-  kindedNamedRefs ctx _ = Just $ ScanObject (useFingerprint (dirGQL $ namedDrv ctx) (outputType proxy)) proxy
+  kindedNamedRefs ctx _ = [ScanObject (useFingerprint (dirGQL $ namedDrv ctx) (outputType proxy)) proxy]
     where
       proxy = Proxy @a
 
