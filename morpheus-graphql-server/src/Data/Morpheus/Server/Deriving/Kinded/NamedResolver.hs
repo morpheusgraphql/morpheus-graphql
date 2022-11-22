@@ -29,7 +29,7 @@ import Data.Morpheus.Server.Deriving.Kinded.NamedResolverFun
   )
 import Data.Morpheus.Server.Deriving.Utils.DeriveGType (DeriveWith)
 import Data.Morpheus.Server.Deriving.Utils.GFunctor
-import Data.Morpheus.Server.Deriving.Utils.GTraversable (GmapProxy (..))
+import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef (..))
 import Data.Morpheus.Server.Deriving.Utils.Kinded (outputType)
 import Data.Morpheus.Server.Deriving.Utils.Use (UseDeriving (..), UseGQLType (useFingerprint, useTypename), UseNamedResolver (..), UseValue (useDecodeValue))
 import Data.Morpheus.Server.NamedResolvers (Dependency, NamedResolverT (..), ResolveNamed (..))
@@ -62,7 +62,7 @@ type DecodeValuesConstraint val o e m a =
 
 class KindedNamedResolver namedRes resFun gql val (m :: Type -> Type) (k :: DerivingKind) a where
   kindedNamedResolver :: UseNamedResolver namedRes resFun gql val -> f k a -> [NamedResolver m]
-  kindedNamedRefs :: UseNamedResolver namedRes resFun gql val -> f k a -> Maybe (GmapProxy (namedRes m))
+  kindedNamedRefs :: UseNamedResolver namedRes resFun gql val -> f k a -> Maybe (ScanRef (namedRes m))
 
 instance
   ( DecodeValuesConstraint gql o e m a,
@@ -81,7 +81,7 @@ instance
     ]
     where
       proxy = Proxy @a
-  kindedNamedRefs ctx _ = Just (GmapType fp proxy)
+  kindedNamedRefs ctx _ = Just (ScanType fp proxy)
     where
       fp = useFingerprint (dirGQL $ namedDrv ctx) (outputType proxy)
       proxy = Proxy @a
@@ -107,7 +107,7 @@ instance
     where
       proxy = Proxy @a
 
-  kindedNamedRefs ctx _ = Just $ GmapObject (useFingerprint (dirGQL $ namedDrv ctx) (outputType proxy)) proxy
+  kindedNamedRefs ctx _ = Just $ ScanObject (useFingerprint (dirGQL $ namedDrv ctx) (outputType proxy)) proxy
     where
       proxy = Proxy @a
 

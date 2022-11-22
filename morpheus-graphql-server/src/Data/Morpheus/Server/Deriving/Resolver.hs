@@ -7,7 +7,6 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -39,9 +38,9 @@ import Data.Morpheus.Server.Deriving.Kinded.NamedResolver
   ( KindedNamedResolver (..),
   )
 import Data.Morpheus.Server.Deriving.Kinded.NamedResolverFun (KindedNamedFunValue (..))
-import Data.Morpheus.Server.Deriving.Utils.GTraversable
-  ( GmapCTX (..),
-    GmapProxy,
+import Data.Morpheus.Server.Deriving.Utils.GScan
+  ( ScanRef,
+    Scanner (..),
     scan,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded (outputType)
@@ -77,7 +76,7 @@ class GQLNamedResolverFun (m :: Type -> Type) a where
 
 class GQLType a => GQLNamedResolver (m :: Type -> Type) a where
   deriveNamedRes :: f a -> [NamedResolver m]
-  deriveNamedRefs :: f a -> Maybe (GmapProxy (GQLNamedResolver m))
+  deriveNamedRefs :: f a -> Maybe (ScanRef (GQLNamedResolver m))
 
 instance
   (GQLType a, KindedNamedResolver GQLNamedResolver GQLNamedResolverFun GQLType GQLValue m (KIND a) a) =>
@@ -98,12 +97,12 @@ withNamed =
       useDeriveNamedRefs = deriveNamedRefs
     }
 
-deriveNamedResolver :: GmapCTX (GQLNamedResolver m) (NamedResolver m)
+deriveNamedResolver :: Scanner (GQLNamedResolver m) (NamedResolver m)
 deriveNamedResolver =
-  GmapCTX
-    { gmapFun = deriveNamedRes,
-      gmapFingerprint = useFingerprint withGQL . outputType,
-      gmapRefs = maybeToList . deriveNamedRefs
+  Scanner
+    { scannerFun = deriveNamedRes,
+      scannerFingerprint = useFingerprint withGQL . outputType,
+      scannerRefs = maybeToList . deriveNamedRefs
     }
 
 type ROOT (o :: OperationType) e (m :: Type -> Type) a = EXPLORE GQLType GQLResolver (Resolver o e m) (a (Resolver o e m))
