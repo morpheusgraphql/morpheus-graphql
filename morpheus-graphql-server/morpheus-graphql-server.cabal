@@ -338,13 +338,13 @@ library
       Data.Morpheus.Server.Deriving.Utils.Proxy
       Data.Morpheus.Server.Deriving.Utils.Types
       Data.Morpheus.Server.Deriving.Utils.Use
-      Data.Morpheus.Server.NamedResolvers
       Data.Morpheus.Server.Playground
       Data.Morpheus.Server.Types.DirectiveDefinitions
       Data.Morpheus.Server.Types.Directives
       Data.Morpheus.Server.Types.GQLType
       Data.Morpheus.Server.Types.Internal
       Data.Morpheus.Server.Types.Kind
+      Data.Morpheus.Server.Types.NamedResolvers
       Data.Morpheus.Server.Types.SchemaT
       Data.Morpheus.Server.Types.TypeName
       Data.Morpheus.Server.Types.Types
