@@ -9,7 +9,7 @@
 module Data.Morpheus.Server.Deriving.Utils.Types
   ( ConsRep (..),
     FieldRep (..),
-    DataType (..),
+    TypeRep (..),
     enumerate,
     isEmptyConstraint,
     fieldTypeName,
@@ -22,7 +22,7 @@ import Data.Morpheus.Types.Internal.AST
 import qualified Data.Text as T
 import Relude
 
-data DataType (v :: Type) = DataType
+data TypeRep (v :: Type) = TypeRep
   { dataTypeName :: TypeName,
     tyIsUnion :: Bool,
     tyCons :: ConsRep v

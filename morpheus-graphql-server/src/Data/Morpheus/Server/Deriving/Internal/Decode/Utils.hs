@@ -47,8 +47,8 @@ import Data.Morpheus.Server.Deriving.Utils.Proxy
   )
 import Data.Morpheus.Server.Deriving.Utils.Types
   ( ConsRep (..),
-    DataType (..),
     FieldRep (..),
+    TypeRep (..),
   )
 import Data.Morpheus.Server.Deriving.Utils.Use (UseDeriving, UseGQLType (useTypename), UseValue (..), dirArgs)
 import Data.Morpheus.Types.GQLScalar
@@ -76,10 +76,10 @@ import GHC.Generics
 import Relude
 
 repValue ::
-  DataType (GQLResult (Value CONST)) ->
+  TypeRep (GQLResult (Value CONST)) ->
   GQLResult (Value CONST)
 repValue
-  DataType
+  TypeRep
     { tyIsUnion,
       tyCons = ConsRep {consFields, consName}
     } = encodeTypeFields consFields

@@ -38,7 +38,7 @@ import Data.Morpheus.Server.Deriving.Utils.GRep
 import Data.Morpheus.Server.Deriving.Utils.Kinded (outputType)
 import Data.Morpheus.Server.Deriving.Utils.Types
   ( ConsRep (..),
-    DataType (..),
+    TypeRep (..),
   )
 import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (useTypeData))
 import Data.Morpheus.Server.Types.Types (Undefined)

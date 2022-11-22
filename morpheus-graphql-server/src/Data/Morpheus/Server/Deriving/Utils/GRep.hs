@@ -60,7 +60,7 @@ deriveValue ::
   (Generic a, GRep gql constraint value (Rep a), gql a) =>
   RepContext gql constraint Identity value ->
   a ->
-  DataType value
+  TypeRep value
 deriveValue options value = (deriveTypeValue options (from value)) {dataTypeName}
   where
     dataTypeName = gqlTypeName (optTypeData options (Identity value))
@@ -75,7 +75,7 @@ deriveTypeWith options _ = deriveTypeDefinition options (Proxy @(Rep a))
 
 --  GENERIC UNION
 class GRep (gql :: Type -> Constraint) (c :: Type -> Constraint) (v :: Type) f where
-  deriveTypeValue :: RepContext gql c Identity v -> f a -> DataType v
+  deriveTypeValue :: RepContext gql c Identity v -> f a -> TypeRep v
   deriveTypeDefinition :: RepContext gql c Proxy v -> proxy f -> [ConsRep v]
 
 instance (Datatype d, GRep gql c v f) => GRep gql c v (M1 D d f) where
@@ -90,7 +90,7 @@ instance (GRep gql c v a, GRep gql c v b) => GRep gql c v (a :+: b) where
 
 instance (DeriveFieldRep gql con v f, Constructor c) => GRep gql con v (M1 C c f) where
   deriveTypeValue options (M1 src) =
-    DataType
+    TypeRep
       { dataTypeName = "",
         tyIsUnion = False,
         tyCons = deriveConsRep (Proxy @c) (toFieldRep options src)

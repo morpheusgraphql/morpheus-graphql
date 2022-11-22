@@ -41,8 +41,8 @@ import Data.Morpheus.Server.Deriving.Utils.GRep
 import Data.Morpheus.Server.Deriving.Utils.Kinded (inputType)
 import Data.Morpheus.Server.Deriving.Utils.Types
   ( ConsRep (..),
-    DataType (..),
     FieldRep (..),
+    TypeRep (..),
     isUnionRef,
   )
 import Data.Morpheus.Server.Deriving.Utils.Use
@@ -62,12 +62,12 @@ convertNode ::
   (MonadError GQLError m) =>
   UseDeriving gql val ->
   f a ->
-  DataType (m (ResolverValue m)) ->
+  TypeRep (m (ResolverValue m)) ->
   ResolverValue m
 convertNode
   drv
   proxy
-  DataType
+  TypeRep
     { dataTypeName,
       tyIsUnion,
       tyCons = cons@ConsRep {consFields, consName}
