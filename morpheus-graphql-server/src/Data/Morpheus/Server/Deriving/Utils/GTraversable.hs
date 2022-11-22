@@ -45,14 +45,11 @@ import Data.Morpheus.Server.Types.TypeName (TypeFingerprint)
 import GHC.Generics (Generic (Rep))
 import Relude hiding (Undefined)
 
-traverseTypes :: (Scanner c a, c a) => GmapCTX c v -> Proxy a -> Map TypeFingerprint v
-traverseTypes f = gmapFun (scanner f mempty) . kindedProxy
-
 class (Gmap (Scanner c) (KIND a) a, c a) => Scanner (c :: Type -> Constraint) (a :: Type) where
   scan :: (Hashable k, Eq k, c a) => (b -> k) -> GmapCTX c [b] -> Proxy a -> HashMap k b
 
 instance (Gmap (Scanner c) (KIND a) a, c a) => Scanner c a where
-  scan fk fv = HM.fromList . map (\x -> (fk x, x)) . join . toList . traverseTypes fv
+  scan fk fv = HM.fromList . map (\x -> (fk x, x)) . join . toList . gmapFun (scanner fv mempty)
 
 scanner ::
   GmapCTX c v ->
@@ -87,10 +84,10 @@ class Gmap (c :: Type -> Constraint) (t :: DerivingKind) a where
   gmap :: (Monoid v, Semigroup v) => GmapCTX c v -> kinded t a -> v
 
 instance (c a) => Gmap c SCALAR a where
-  gmap GmapCTX {..} _ = gmapFun (KindedProxy :: KindedProxy (KIND a) a)
+  gmap GmapCTX {..} _ = gmapFun (Proxy @a)
 
 instance (c a, GFunctor c (Rep a)) => Gmap c TYPE a where
-  gmap ctx@GmapCTX {..} _ = gmapFun (KindedProxy :: KindedProxy (KIND a) a) <> useGfmap (Proxy @(Rep a)) (mapCTX ctx)
+  gmap ctx@GmapCTX {..} _ = gmapFun (Proxy @a) <> useGfmap (Proxy @(Rep a)) (mapCTX ctx)
 
 instance Gmap c (KIND a) a => Gmap c WRAPPER (f a) where
   gmap f _ = gmap f (KindedProxy :: KindedProxy (KIND a) a)
