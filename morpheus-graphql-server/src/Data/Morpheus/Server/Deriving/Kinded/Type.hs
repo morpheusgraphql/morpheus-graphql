@@ -28,7 +28,7 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Type
     deriveTypeDefinition,
     deriveTypeGuardUnions,
   )
-import Data.Morpheus.Server.Deriving.Utils.Grep
+import Data.Morpheus.Server.Deriving.Utils.GRep
   ( DeriveWith,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
