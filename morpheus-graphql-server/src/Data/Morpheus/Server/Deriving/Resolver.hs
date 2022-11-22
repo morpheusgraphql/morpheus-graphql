@@ -39,7 +39,6 @@ import Data.Morpheus.Server.Deriving.Kinded.NamedResolver
   ( KindedNamedResolver (..),
   )
 import Data.Morpheus.Server.Deriving.Kinded.NamedResolverFun (KindedNamedFunValue (..))
-import Data.Morpheus.Server.Deriving.Utils.GFunctor (GFunctor)
 import Data.Morpheus.Server.Deriving.Utils.GTraversable
   ( GmapCTX (..),
     GmapProxy,
@@ -103,7 +102,7 @@ deriveNamedResolver :: GmapCTX (GQLNamedResolver m) (NamedResolver m)
 deriveNamedResolver =
   GmapCTX
     { gmapFun = deriveNamedRes,
-      gmapKey = useFingerprint withGQL . outputType,
+      gmapFingerprint = useFingerprint withGQL . outputType,
       gmapRefs = maybeToList . deriveNamedRefs
     }
 

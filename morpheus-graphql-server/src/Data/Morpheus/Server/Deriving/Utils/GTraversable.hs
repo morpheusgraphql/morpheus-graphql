@@ -38,9 +38,9 @@ exploreFields _ GmapType {} = []
 rep :: f a -> Proxy (Rep a)
 rep _ = Proxy
 
-isVisited :: Map TypeFingerprint v -> GmapProxy c -> Bool
-isVisited lib (GmapObject fp _) = M.member fp lib
-isVisited lib (GmapType fp _) = M.member fp lib
+visited :: Map TypeFingerprint v -> GmapProxy c -> Bool
+visited lib (GmapObject fp _) = M.member fp lib
+visited lib (GmapType fp _) = M.member fp lib
 
 getFingerprint :: GmapProxy c -> TypeFingerprint
 getFingerprint (GmapObject fp _) = fp
@@ -51,7 +51,7 @@ traverseRecs _ lib [] = lib
 traverseRecs ctx lib (x : xs) = do
   let values = runFun ctx x
   let newLib = foldr (M.insert (getFingerprint x)) lib values
-  let refs = filter (not . isVisited lib) (xs <> exploreFields ctx x)
+  let refs = filter (not . visited newLib) (xs <> exploreFields ctx x)
   traverseRecs ctx newLib refs
 
 runFun :: GmapCTX c v -> GmapProxy c -> [v]
@@ -68,5 +68,5 @@ data GmapProxy (c :: Type -> Constraint) where
 data GmapCTX (c :: Type -> Constraint) (v :: Type) = GmapCTX
   { gmapFun :: forall f a. (c a) => f a -> [v],
     gmapRefs :: forall f a. (c a) => f a -> [GmapProxy c],
-    gmapKey :: forall f a. c a => f a -> TypeFingerprint
+    gmapFingerprint :: forall f a. c a => f a -> TypeFingerprint
   }
