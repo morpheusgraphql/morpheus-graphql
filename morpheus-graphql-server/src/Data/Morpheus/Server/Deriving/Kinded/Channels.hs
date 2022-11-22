@@ -30,7 +30,7 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Server.Deriving.Internal.Decode.Utils (useDecodeArguments)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Directive (UseDeriving (..), toFieldRes)
-import Data.Morpheus.Server.Deriving.Utils.DeriveGType
+import Data.Morpheus.Server.Deriving.Utils.Grep
   ( DeriveWith,
     DerivingOptions (..),
     deriveValue,

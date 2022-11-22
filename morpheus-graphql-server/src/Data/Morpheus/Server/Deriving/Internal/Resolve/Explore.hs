@@ -33,7 +33,7 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
   ( toFieldRes,
     visitEnumName,
   )
-import Data.Morpheus.Server.Deriving.Utils.DeriveGType
+import Data.Morpheus.Server.Deriving.Utils.Grep
   ( DeriveWith,
     DerivingOptions (..),
     deriveValue,

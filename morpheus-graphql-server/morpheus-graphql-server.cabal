@@ -331,10 +331,10 @@ library
       Data.Morpheus.Server.Deriving.Resolver
       Data.Morpheus.Server.Deriving.Schema
       Data.Morpheus.Server.Deriving.Utils.AST
-      Data.Morpheus.Server.Deriving.Utils.DeriveGType
       Data.Morpheus.Server.Deriving.Utils.Gmap
       Data.Morpheus.Server.Deriving.Utils.GScan
       Data.Morpheus.Server.Deriving.Utils.Kinded
+      Data.Morpheus.Server.Deriving.Utils.MGRep
       Data.Morpheus.Server.Deriving.Utils.Proxy
       Data.Morpheus.Server.Deriving.Utils.Types
       Data.Morpheus.Server.Deriving.Utils.Use

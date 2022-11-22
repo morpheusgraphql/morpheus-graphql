@@ -13,7 +13,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Server.Deriving.Utils.DeriveGType
+module Data.Morpheus.Server.Deriving.Utils.GRep
   ( DeriveWith (..),
     DerivingOptions (..),
     deriveValue,

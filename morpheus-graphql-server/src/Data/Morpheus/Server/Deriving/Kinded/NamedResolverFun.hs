@@ -35,7 +35,7 @@ import Data.Morpheus.App.Internal.Resolving
   )
 import Data.Morpheus.Server.Deriving.Internal.Decode.Utils (useDecodeArguments)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Directive (UseDeriving, toFieldRes)
-import Data.Morpheus.Server.Deriving.Utils.DeriveGType
+import Data.Morpheus.Server.Deriving.Utils.Grep
   ( DeriveWith,
     DerivingOptions (..),
     deriveValue,
@@ -161,11 +161,11 @@ convertNamedNode
     | null consFields = pure $ NamedEnumResolver consName
     | tyIsUnion = deriveUnion consFields
     | otherwise =
-        pure $
-          NamedObjectResolver
-            ObjectTypeResolver
-              { objectFields = HM.fromList (toFieldRes drv proxy <$> consFields)
-              }
+      pure $
+        NamedObjectResolver
+          ObjectTypeResolver
+            { objectFields = HM.fromList (toFieldRes drv proxy <$> consFields)
+            }
 
 deriveUnion :: (MonadError GQLError m) => [FieldRep (m (ResolverValue m))] -> m (NamedResolverResult m)
 deriveUnion [FieldRep {..}] = NamedUnionResolver <$> (fieldValue >>= getRef)

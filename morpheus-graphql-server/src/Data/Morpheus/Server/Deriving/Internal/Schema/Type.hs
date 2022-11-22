@@ -36,7 +36,7 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Object
   ( buildObjectTypeContent,
   )
 import Data.Morpheus.Server.Deriving.Internal.Schema.Union (buildUnionTypeContent)
-import Data.Morpheus.Server.Deriving.Utils.DeriveGType
+import Data.Morpheus.Server.Deriving.Utils.Grep
   ( DeriveWith,
     DerivingOptions (..),
     deriveTypeWith,
