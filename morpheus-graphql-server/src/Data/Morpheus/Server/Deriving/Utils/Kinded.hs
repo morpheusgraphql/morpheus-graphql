@@ -53,16 +53,8 @@ data CatType (cat :: TypeCategory) a where
   InputType :: CatType IN a
   OutputType :: CatType OUT a
 
--- liftKind :: CatType cat a -> CatType cat (f k a)
--- liftKind InputType = InputType
--- liftKind OutputType = OutputType
-
 deriving instance Show (CatType cat a)
 
--- converts:
---   f a -> KindedType IN a
--- or
---  f k a -> KindedType IN a
 inputType :: f a -> CatType IN a
 inputType _ = InputType
 
