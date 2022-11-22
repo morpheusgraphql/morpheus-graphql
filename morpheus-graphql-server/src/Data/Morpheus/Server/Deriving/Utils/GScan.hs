@@ -24,9 +24,9 @@ where
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Map as M
 import Data.Morpheus.Server.Deriving.Utils.Gmap
-  ( GFunctorContext (..),
-    Gmap,
-    useGfmap,
+  ( Gmap,
+    GmapContext (..),
+    useGmap,
   )
 import Data.Morpheus.Server.Types.TypeName (TypeFingerprint)
 import GHC.Generics (Generic (Rep))
@@ -36,7 +36,7 @@ scan :: (Hashable k, Eq k) => (b -> k) -> Scanner c b -> [ScanRef c] -> HashMap 
 scan toKey ctx = HM.fromList . map (\x -> (toKey x, x)) . toList . scanRefs ctx mempty
 
 fieldRefs :: Scanner c v -> ScanRef c -> [ScanRef c]
-fieldRefs ctx (ScanObject _ x) = useGfmap (rep x) (mapContext ctx)
+fieldRefs ctx (ScanObject _ x) = useGmap (rep x) (mapContext ctx)
 fieldRefs _ ScanType {} = []
 
 rep :: f a -> Proxy (Rep a)
@@ -62,8 +62,8 @@ runRef :: Scanner c v -> ScanRef c -> [v]
 runRef Scanner {..} (ScanObject _ t) = scannerFun t
 runRef Scanner {..} (ScanType _ t) = scannerFun t
 
-mapContext :: Scanner c v -> GFunctorContext c [ScanRef c]
-mapContext (Scanner _ f) = GFunctorContext f
+mapContext :: Scanner c v -> GmapContext c [ScanRef c]
+mapContext (Scanner _ f) = GmapContext f
 
 data ScanRef (c :: Type -> Constraint) where
   ScanObject :: forall f a c. (Gmap c (Rep a), c a) => TypeFingerprint -> f a -> ScanRef c
