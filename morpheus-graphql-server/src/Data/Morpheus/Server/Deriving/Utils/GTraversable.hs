@@ -31,7 +31,7 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
   )
 import Data.Morpheus.Server.NamedResolvers (NamedResolverT)
 import Data.Morpheus.Server.Types.GQLType
-  ( GQLType (..),
+  ( KIND,
     kindedProxy,
   )
 import Data.Morpheus.Server.Types.Kind
