@@ -39,8 +39,8 @@ import Data.Morpheus.Server.Deriving.Kinded.NamedResolver
   )
 import Data.Morpheus.Server.Deriving.Kinded.NamedResolverFun (KindedNamedFunValue (..))
 import Data.Morpheus.Server.Deriving.Utils.GTraversable
-  ( Gmap,
-    GmapCTX (..),
+  ( GmapCTX (..),
+    KindedGmap,
     Scanner (..),
     scan,
   )
@@ -113,7 +113,7 @@ type DERIVE_RESOLVERS e m query mut sub =
 
 type DERIVE_NAMED_RESOLVERS e m query =
   ( GQLType (query (NamedResolverT (Resolver QUERY e m))),
-    Gmap
+    KindedGmap
       (Scanner (GQLNamedResolver (Resolver QUERY e m)))
       (KIND (query (NamedResolverT (Resolver QUERY e m))))
       (query (NamedResolverT (Resolver QUERY e m))),

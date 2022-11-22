@@ -18,17 +18,15 @@
 module Data.Morpheus.Server.Deriving.Utils.GTraversable
   ( GmapCTX (..),
     Scanner (..),
-    Gmap,
     AND,
+    Gmap,
+    KindedGmap,
   )
 where
 
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Map as M
 import Data.Morpheus.Server.Deriving.Utils.GFunctor (GFunctor, GFunctorContext (..), useGfmap)
-import Data.Morpheus.Server.Deriving.Utils.Kinded
-  ( KindedProxy (..),
-  )
 import Data.Morpheus.Server.NamedResolvers (NamedResolverT)
 import Data.Morpheus.Server.Types.GQLType
   ( KIND,
@@ -45,10 +43,16 @@ import Data.Morpheus.Server.Types.TypeName (TypeFingerprint)
 import GHC.Generics (Generic (Rep))
 import Relude hiding (Undefined)
 
-class (Gmap (Scanner c) (KIND a) a, c a) => Scanner (c :: Type -> Constraint) (a :: Type) where
+class Gmap c a where
+  gmap :: (Monoid v, Semigroup v) => GmapCTX c v -> f a -> v
+
+instance KindedGmap c (KIND a) a => Gmap c a where
+  gmap ctx = kindedGmap ctx . kindedProxy
+
+class (KindedGmap (Scanner c) (KIND a) a, c a) => Scanner (c :: Type -> Constraint) (a :: Type) where
   scan :: (Hashable k, Eq k, c a) => (b -> k) -> GmapCTX c [b] -> Proxy a -> HashMap k b
 
-instance (Gmap (Scanner c) (KIND a) a, c a) => Scanner c a where
+instance (KindedGmap (Scanner c) (KIND a) a, c a) => Scanner c a where
   scan fk fv = HM.fromList . map (\x -> (fk x, x)) . join . toList . gmapFun (scanner fv mempty)
 
 scanner ::
@@ -63,7 +67,7 @@ scanner c@GmapCTX {..} lib =
           then lib
           else do
             let newLib = M.insert fingerprint (gmapFun proxy) lib
-            gmap (scanner c newLib) (kindedProxy proxy)
+            gmap (scanner c newLib) proxy
     )
     gmapKey
 
@@ -80,20 +84,20 @@ data GmapCTX (c :: Type -> Constraint) (v :: Type) = GmapCTX
   }
 
 -- Map
-class Gmap (c :: Type -> Constraint) (t :: DerivingKind) a where
-  gmap :: (Monoid v, Semigroup v) => GmapCTX c v -> kinded t a -> v
+class KindedGmap (c :: Type -> Constraint) (t :: DerivingKind) a where
+  kindedGmap :: (Monoid v, Semigroup v) => GmapCTX c v -> kinded t a -> v
 
-instance (c a) => Gmap c SCALAR a where
-  gmap GmapCTX {..} _ = gmapFun (Proxy @a)
+instance (c a) => KindedGmap c SCALAR a where
+  kindedGmap GmapCTX {..} _ = gmapFun (Proxy @a)
 
-instance (c a, GFunctor c (Rep a)) => Gmap c TYPE a where
-  gmap ctx@GmapCTX {..} _ = gmapFun (Proxy @a) <> useGfmap (Proxy @(Rep a)) (mapCTX ctx)
+instance (c a, GFunctor c (Rep a)) => KindedGmap c TYPE a where
+  kindedGmap ctx@GmapCTX {..} _ = gmapFun (Proxy @a) <> useGfmap (Proxy @(Rep a)) (mapCTX ctx)
 
-instance Gmap c (KIND a) a => Gmap c WRAPPER (f a) where
-  gmap f _ = gmap f (KindedProxy :: KindedProxy (KIND a) a)
+instance Gmap c a => KindedGmap c WRAPPER (f a) where
+  kindedGmap f _ = gmap f (Proxy @a)
 
-instance Gmap c (KIND a) a => Gmap c CUSTOM (input -> a) where
-  gmap f _ = gmap f (KindedProxy :: KindedProxy (KIND a) a)
+instance Gmap c a => KindedGmap c CUSTOM (input -> a) where
+  kindedGmap f _ = gmap f (Proxy @a)
 
-instance Gmap c (KIND a) a => Gmap c CUSTOM (NamedResolverT m a) where
-  gmap f _ = gmap f (KindedProxy :: KindedProxy (KIND a) a)
+instance Gmap c a => KindedGmap c CUSTOM (NamedResolverT m a) where
+  kindedGmap f _ = gmap f (Proxy @a)
