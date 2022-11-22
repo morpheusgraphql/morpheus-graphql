@@ -9,7 +9,6 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
@@ -29,18 +28,15 @@ import Data.Morpheus.Server.Types.TypeName (TypeFingerprint)
 import GHC.Generics (Generic (Rep))
 import Relude
 
-scan :: (Hashable k, Eq k, c a, GFunctor c (Rep a)) => (b -> k) -> GmapCTX c b -> Proxy a -> HashMap k b
-scan fk fv = HM.fromList . map (\x -> (fk x, x)) . toList . explore fv
-
-explore :: forall c f a b. (c a, GFunctor c (Rep a)) => GmapCTX c b -> f a -> Map TypeFingerprint b
-explore ctx proxy = traverseRecs ctx mempty [GmapObject (gmapKey ctx proxy) proxy :: GmapProxy c]
+scan :: (Hashable k, Eq k) => (b -> k) -> GmapCTX c b -> [GmapProxy c] -> HashMap k b
+scan toKey ctx = HM.fromList . map (\x -> (toKey x, x)) . toList . traverseRecs ctx mempty
 
 exploreFields :: GmapCTX c v -> GmapProxy c -> [GmapProxy c]
-exploreFields ctx (GmapObject _ x) = useGfmap (toRep x) (mapCTX ctx)
+exploreFields ctx (GmapObject _ x) = useGfmap (rep x) (mapCTX ctx)
 exploreFields _ GmapType {} = []
 
-toRep :: f a -> Proxy (Rep a)
-toRep _ = Proxy
+rep :: f a -> Proxy (Rep a)
+rep _ = Proxy
 
 isVisited :: Map TypeFingerprint v -> GmapProxy c -> Bool
 isVisited lib (GmapObject fp _) = M.member fp lib

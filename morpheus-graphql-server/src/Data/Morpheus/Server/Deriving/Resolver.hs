@@ -71,7 +71,6 @@ import Data.Morpheus.Types.Internal.AST
     QUERY,
     SUBSCRIPTION,
   )
-import GHC.Generics (Rep)
 import Relude
 
 class GQLNamedResolverFun (m :: Type -> Type) a where
@@ -126,8 +125,7 @@ type DERIVE_NAMED_RESOLVERS e m query =
       GQLValue
       (Resolver QUERY e m)
       (KIND (query (NamedResolverT (Resolver QUERY e m))))
-      (query (NamedResolverT (Resolver QUERY e m))),
-    GFunctor (GQLNamedResolver (Resolver QUERY e m)) (Rep (query (NamedResolverT (Resolver QUERY e m))))
+      (query (NamedResolverT (Resolver QUERY e m)))
   )
 
 deriveResolvers ::
@@ -155,4 +153,4 @@ deriveNamedResolvers NamedResolvers =
     scan
       resolverName
       deriveNamedResolver
-      (Proxy @(query (NamedResolverT (Resolver QUERY e m))))
+      (maybeToList $ deriveNamedRefs (Proxy @(query (NamedResolverT (Resolver QUERY e m)))))
