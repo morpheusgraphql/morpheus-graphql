@@ -17,14 +17,14 @@
 module Data.Morpheus.Server.Deriving.Utils.GRep
   ( GRep (..),
     RepContext (..),
+    ConsRep (..),
+    FieldRep (..),
+    TypeRep (..),
     deriveValue,
     deriveTypeWith,
     isEmptyConstraint,
     isUnionRef,
     unpackMonad,
-    ConsRep (..),
-    FieldRep (..),
-    TypeRep (..),
   )
 where
 
