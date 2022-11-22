@@ -31,8 +31,8 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Server.Deriving.Internal.Decode.Utils (useDecodeArguments)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Directive (UseDeriving (..), toFieldRes)
 import Data.Morpheus.Server.Deriving.Utils.GRep
-  ( DeriveWith,
-    DerivingOptions (..),
+  ( DerivingOptions (..),
+    GRep,
     deriveValue,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded (outputType)
@@ -128,7 +128,7 @@ type family IsUndefined a :: Bool where
 class ExploreChannels gql val (t :: Bool) e a where
   exploreChannels :: UseDeriving gql val -> f t -> a -> HashMap FieldName (ChannelRes e)
 
-instance (gql a, Generic a, DeriveWith gql (GetChannel val e) (ChannelRes e) (Rep a)) => ExploreChannels gql val FALSE e a where
+instance (gql a, Generic a, GRep gql (GetChannel val e) (ChannelRes e) (Rep a)) => ExploreChannels gql val FALSE e a where
   exploreChannels drv _ =
     HM.fromList
       . map (toFieldRes drv (Proxy @a))

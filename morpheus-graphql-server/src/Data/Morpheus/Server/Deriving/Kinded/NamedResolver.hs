@@ -27,7 +27,7 @@ import Data.Morpheus.App.Internal.Resolving
 import Data.Morpheus.Server.Deriving.Kinded.NamedResolverFun
   ( deriveNamedResolverFun,
   )
-import Data.Morpheus.Server.Deriving.Utils.GRep (DeriveWith)
+import Data.Morpheus.Server.Deriving.Utils.GRep (GRep)
 import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef (..))
 import Data.Morpheus.Server.Deriving.Utils.Gmap (Gmap)
 import Data.Morpheus.Server.Deriving.Utils.Kinded (outputType)
@@ -92,7 +92,7 @@ instance
     gql a,
     gql [Maybe a],
     val (Dependency a),
-    DeriveWith gql (resFun (Resolver o e m)) (Resolver o e m (ResolverValue (Resolver o e m))) (Rep a),
+    GRep gql (resFun (Resolver o e m)) (Resolver o e m (ResolverValue (Resolver o e m))) (Rep a),
     Gmap (namedRes (Resolver o e m)) (Rep a),
     namedRes (Resolver o e m) a
   ) =>

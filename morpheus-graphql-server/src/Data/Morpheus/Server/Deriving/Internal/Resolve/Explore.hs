@@ -34,8 +34,8 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
     visitEnumName,
   )
 import Data.Morpheus.Server.Deriving.Utils.GRep
-  ( DeriveWith,
-    DerivingOptions (..),
+  ( DerivingOptions (..),
+    GRep,
     deriveValue,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded (inputType)
@@ -109,6 +109,6 @@ useObjectResolvers ctx value = requireObject (useExploreResolvers ctx value)
 
 type EXPLORE gql res (m :: Type -> Type) a =
   ( Generic a,
-    DeriveWith gql (res m) (m (ResolverValue m)) (Rep a),
+    GRep gql (res m) (m (ResolverValue m)) (Rep a),
     gql a
   )

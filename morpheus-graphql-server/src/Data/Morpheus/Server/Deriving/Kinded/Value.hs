@@ -43,8 +43,8 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
     visitFieldName,
   )
 import Data.Morpheus.Server.Deriving.Utils.GRep
-  ( DeriveWith,
-    DerivingOptions (..),
+  ( DerivingOptions (..),
+    GRep,
     deriveValue,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
@@ -104,7 +104,7 @@ instance (DecodeWrapperConstraint f a, DecodeWrapper f, EncodeWrapperValue f, ar
     runExceptT (decodeWrapper (useDecodeValue (dirArgs dir)) value)
       >>= handleEither
 
-instance (gql a, Generic a, DecodeRep gql args (Rep a), DeriveWith gql args (GQLResult (Value CONST)) (Rep a)) => KindedValue gql args TYPE a where
+instance (gql a, Generic a, DecodeRep gql args (Rep a), GRep gql args (GQLResult (Value CONST)) (Rep a)) => KindedValue gql args TYPE a where
   encodeKindedValue UseDeriving {..} =
     repValue
       . deriveValue

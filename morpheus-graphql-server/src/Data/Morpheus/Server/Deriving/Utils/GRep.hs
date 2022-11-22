@@ -14,7 +14,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.Utils.GRep
-  ( DeriveWith (..),
+  ( GRep (..),
     DerivingOptions (..),
     deriveValue,
     deriveTypeWith,
@@ -57,7 +57,7 @@ data DerivingOptions gql derive f v = DerivingOptions
   }
 
 deriveValue ::
-  (Generic a, DeriveWith gql constraint value (Rep a), gql a) =>
+  (Generic a, GRep gql constraint value (Rep a), gql a) =>
   DerivingOptions gql constraint Identity value ->
   a ->
   DataType value
@@ -67,28 +67,28 @@ deriveValue options value = (deriveTypeValue options (from value)) {dataTypeName
 
 deriveTypeWith ::
   forall kind gql c v kinded a.
-  (DeriveWith gql c v (Rep a)) =>
+  (GRep gql c v (Rep a)) =>
   DerivingOptions gql c Proxy v ->
   kinded kind a ->
   [ConsRep v]
 deriveTypeWith options _ = deriveTypeDefinition options (Proxy @(Rep a))
 
 --  GENERIC UNION
-class DeriveWith (gql :: Type -> Constraint) (c :: Type -> Constraint) (v :: Type) f where
+class GRep (gql :: Type -> Constraint) (c :: Type -> Constraint) (v :: Type) f where
   deriveTypeValue :: DerivingOptions gql c Identity v -> f a -> DataType v
   deriveTypeDefinition :: DerivingOptions gql c Proxy v -> proxy f -> [ConsRep v]
 
-instance (Datatype d, DeriveWith gql c v f) => DeriveWith gql c v (M1 D d f) where
+instance (Datatype d, GRep gql c v f) => GRep gql c v (M1 D d f) where
   deriveTypeValue options (M1 src) = deriveTypeValue options src
   deriveTypeDefinition options _ = deriveTypeDefinition options (Proxy @f)
 
 -- | recursion for Object types, both of them : 'INPUT_OBJECT' and 'OBJECT'
-instance (DeriveWith gql c v a, DeriveWith gql c v b) => DeriveWith gql c v (a :+: b) where
+instance (GRep gql c v a, GRep gql c v b) => GRep gql c v (a :+: b) where
   deriveTypeValue f (L1 x) = (deriveTypeValue f x) {tyIsUnion = True}
   deriveTypeValue f (R1 x) = (deriveTypeValue f x) {tyIsUnion = True}
   deriveTypeDefinition options _ = deriveTypeDefinition options (Proxy @a) <> deriveTypeDefinition options (Proxy @b)
 
-instance (DeriveFieldRep gql con v f, Constructor c) => DeriveWith gql con v (M1 C c f) where
+instance (DeriveFieldRep gql con v f, Constructor c) => GRep gql con v (M1 C c f) where
   deriveTypeValue options (M1 src) =
     DataType
       { dataTypeName = "",

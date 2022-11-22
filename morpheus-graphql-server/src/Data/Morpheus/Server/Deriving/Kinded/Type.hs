@@ -29,7 +29,7 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Type
     deriveTypeGuardUnions,
   )
 import Data.Morpheus.Server.Deriving.Utils.GRep
-  ( DeriveWith,
+  ( GRep,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType,
@@ -62,7 +62,7 @@ import Data.Morpheus.Types.Internal.AST
 import GHC.Generics
 import Relude
 
-type DERIVE_TYPE gql c a = (gql a, DeriveWith gql gql (SchemaT c (Maybe (ArgumentsDefinition CONST))) (Rep a))
+type DERIVE_TYPE gql c a = (gql a, GRep gql gql (SchemaT c (Maybe (ArgumentsDefinition CONST))) (Rep a))
 
 -- | DeriveType With specific Kind: 'kind': object, scalar, enum ...
 class DeriveKindedType gql val (cat :: TypeCategory) (kind :: DerivingKind) a where

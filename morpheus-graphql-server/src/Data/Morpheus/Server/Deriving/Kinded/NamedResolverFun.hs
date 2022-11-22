@@ -36,8 +36,8 @@ import Data.Morpheus.App.Internal.Resolving
 import Data.Morpheus.Server.Deriving.Internal.Decode.Utils (useDecodeArguments)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Directive (UseDeriving, toFieldRes)
 import Data.Morpheus.Server.Deriving.Utils.GRep
-  ( DeriveWith,
-    DerivingOptions (..),
+  ( DerivingOptions (..),
+    GRep,
     deriveValue,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
@@ -91,7 +91,7 @@ deriveNamedResolverFun ::
     gql [Maybe a],
     gql a,
     MonadError GQLError m,
-    DeriveWith gql (res m) (m (ResolverValue m)) (Rep a)
+    GRep gql (res m) (m (ResolverValue m)) (Rep a)
   ) =>
   UseNamedResolver namedRes res gql val ->
   [Maybe a] ->
