@@ -28,8 +28,8 @@ import Data.Morpheus.Server.Deriving.Kinded.NamedResolverFun
   ( deriveNamedResolverFun,
   )
 import Data.Morpheus.Server.Deriving.Utils.DeriveGType (DeriveWith)
-import Data.Morpheus.Server.Deriving.Utils.GFunctor
 import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef (..))
+import Data.Morpheus.Server.Deriving.Utils.Gmap (Gmap)
 import Data.Morpheus.Server.Deriving.Utils.Kinded (outputType)
 import Data.Morpheus.Server.Deriving.Utils.Use (UseDeriving (..), UseGQLType (useFingerprint, useTypename), UseNamedResolver (..), UseValue (useDecodeValue))
 import Data.Morpheus.Server.NamedResolvers (Dependency, NamedResolverT (..), ResolveNamed (..))
@@ -93,7 +93,7 @@ instance
     gql [Maybe a],
     val (Dependency a),
     DeriveWith gql (resFun (Resolver o e m)) (Resolver o e m (ResolverValue (Resolver o e m))) (Rep a),
-    GFunctor (namedRes (Resolver o e m)) (Rep a),
+    Gmap (namedRes (Resolver o e m)) (Rep a),
     namedRes (Resolver o e m) a
   ) =>
   KindedNamedResolver namedRes resFun gql val (Resolver o e m) TYPE (a :: Type)

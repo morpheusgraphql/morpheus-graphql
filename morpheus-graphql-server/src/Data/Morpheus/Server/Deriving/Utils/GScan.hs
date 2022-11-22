@@ -23,7 +23,11 @@ where
 
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Map as M
-import Data.Morpheus.Server.Deriving.Utils.GFunctor (GFunctor, GFunctorContext (..), useGfmap)
+import Data.Morpheus.Server.Deriving.Utils.Gmap
+  ( GFunctorContext (..),
+    Gmap,
+    useGfmap,
+  )
 import Data.Morpheus.Server.Types.TypeName (TypeFingerprint)
 import GHC.Generics (Generic (Rep))
 import Relude
@@ -62,7 +66,7 @@ mapContext :: Scanner c v -> GFunctorContext c [ScanRef c]
 mapContext (Scanner _ f) = GFunctorContext f
 
 data ScanRef (c :: Type -> Constraint) where
-  ScanObject :: forall f a c. (GFunctor c (Rep a), c a) => TypeFingerprint -> f a -> ScanRef c
+  ScanObject :: forall f a c. (Gmap c (Rep a), c a) => TypeFingerprint -> f a -> ScanRef c
   ScanType :: forall f a c. (c a) => TypeFingerprint -> f a -> ScanRef c
 
 data Scanner (c :: Type -> Constraint) (v :: Type) = Scanner
