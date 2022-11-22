@@ -29,11 +29,11 @@ import GHC.Generics (Generic (Rep))
 import Relude
 
 scan :: (Hashable k, Eq k) => (b -> k) -> Scanner c b -> [ScanRef c] -> HashMap k b
-scan toKey ctx = HM.fromList . map (\x -> (toKey x, x)) . toList . traverseRecs ctx mempty
+scan toKey ctx = HM.fromList . map (\x -> (toKey x, x)) . toList . scanRefs ctx mempty
 
-exploreFields :: Scanner c v -> ScanRef c -> [ScanRef c]
-exploreFields ctx (ScanObject _ x) = useGfmap (rep x) (mapCTX ctx)
-exploreFields _ ScanType {} = []
+fieldRefs :: Scanner c v -> ScanRef c -> [ScanRef c]
+fieldRefs ctx (ScanObject _ x) = useGfmap (rep x) (mapContext ctx)
+fieldRefs _ ScanType {} = []
 
 rep :: f a -> Proxy (Rep a)
 rep _ = Proxy
@@ -46,20 +46,20 @@ getFingerprint :: ScanRef c -> TypeFingerprint
 getFingerprint (ScanObject fp _) = fp
 getFingerprint (ScanType fp _) = fp
 
-traverseRecs :: Scanner c v -> Map TypeFingerprint v -> [ScanRef c] -> Map TypeFingerprint v
-traverseRecs _ lib [] = lib
-traverseRecs ctx lib (x : xs) = do
-  let values = runFun ctx x
+scanRefs :: Scanner c v -> Map TypeFingerprint v -> [ScanRef c] -> Map TypeFingerprint v
+scanRefs _ lib [] = lib
+scanRefs ctx lib (x : xs) = do
+  let values = runRef ctx x
   let newLib = foldr (M.insert (getFingerprint x)) lib values
-  let refs = filter (not . visited newLib) (xs <> exploreFields ctx x)
-  traverseRecs ctx newLib refs
+  let refs = filter (not . visited newLib) (xs <> fieldRefs ctx x)
+  scanRefs ctx newLib refs
 
-runFun :: Scanner c v -> ScanRef c -> [v]
-runFun Scanner {..} (ScanObject _ t) = scannerFun t
-runFun Scanner {..} (ScanType _ t) = scannerFun t
+runRef :: Scanner c v -> ScanRef c -> [v]
+runRef Scanner {..} (ScanObject _ t) = scannerFun t
+runRef Scanner {..} (ScanType _ t) = scannerFun t
 
-mapCTX :: Scanner c v -> GFunctorContext c [ScanRef c]
-mapCTX (Scanner _ f) = GFunctorContext f
+mapContext :: Scanner c v -> GFunctorContext c [ScanRef c]
+mapContext (Scanner _ f) = GFunctorContext f
 
 data ScanRef (c :: Type -> Constraint) where
   ScanObject :: forall f a c. (GFunctor c (Rep a), c a) => TypeFingerprint -> f a -> ScanRef c
