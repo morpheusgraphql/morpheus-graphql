@@ -144,4 +144,4 @@ deriveNamedResolvers NamedResolvers =
     scan
       resolverName
       deriveNamedResolver
-      (maybeToList $ deriveNamedRefs (Proxy @(query (NamedResolverT (Resolver QUERY e m)))))
+      (deriveNamedRefs (Proxy @(query (NamedResolverT (Resolver QUERY e m)))))
