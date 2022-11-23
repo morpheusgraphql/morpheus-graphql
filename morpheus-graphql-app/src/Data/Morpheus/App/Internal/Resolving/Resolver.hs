@@ -96,7 +96,7 @@ data SubscriptionField (a :: Type) where
     } ->
     SubscriptionField a
 
-class Monad m => MonadResolver (m :: Type -> Type) where
+class (Monad m, MonadError GQLError m) => MonadResolver (m :: Type -> Type) where
   type MonadOperation m :: OperationType
   type MonadEvent m :: Type
   liftState :: ResolverState a -> m a

@@ -17,11 +17,9 @@ module Data.Morpheus.Server.Deriving.Kinded.NamedResolver
 where
 
 import Data.Morpheus.App.Internal.Resolving
-  ( LiftOperation,
-    MonadResolver (..),
+  ( MonadResolver (..),
     NamedResolver (..),
     NamedResolverResult (..),
-    Resolver,
     ResolverValue,
   )
 import Data.Morpheus.Server.Deriving.Kinded.NamedResolverFun
@@ -47,17 +45,16 @@ import Data.Morpheus.Types.Internal.AST
 import GHC.Generics (Rep)
 import Relude
 
-decodeValues :: forall gql val o e m a. DecodeValuesConstraint val o e m a => UseDeriving gql val -> Proxy a -> [ValidValue] -> Resolver o e m [Maybe a]
+decodeValues :: forall gql val m a. DecodeValuesConstraint val m a => UseDeriving gql val -> Proxy a -> [ValidValue] -> m [Maybe a]
 decodeValues ctx _ xs = traverse decodeArg xs >>= resolveBatched
   where
-    decodeArg :: ValidValue -> Resolver o e m (Dependency a)
+    decodeArg :: ValidValue -> m (Dependency a)
     decodeArg = liftState . useDecodeValue (dirArgs ctx)
 
-type DecodeValuesConstraint val o e m a =
-  ( LiftOperation o,
-    ResolveNamed (Resolver o e m) a,
-    Monad m,
-    val (Dependency a)
+type DecodeValuesConstraint val m a =
+  ( ResolveNamed m a,
+    val (Dependency a),
+    MonadResolver m
   )
 
 class KindedNamedResolver namedRes resFun gql val (m :: Type -> Type) (k :: DerivingKind) a where
@@ -65,13 +62,13 @@ class KindedNamedResolver namedRes resFun gql val (m :: Type -> Type) (k :: Deri
   kindedNamedRefs :: UseNamedResolver namedRes resFun gql val -> f k a -> [ScanRef (namedRes m)]
 
 instance
-  ( DecodeValuesConstraint gql o e m a,
+  ( DecodeValuesConstraint gql m a,
     EncodeScalar a,
     val (Dependency a),
     gql a,
-    namedRes (Resolver o e m) a
+    namedRes m a
   ) =>
-  KindedNamedResolver namedRes resFun gql val (Resolver o e m) SCALAR a
+  KindedNamedResolver namedRes resFun gql val m SCALAR a
   where
   kindedNamedResolver ctx _ =
     [ NamedResolver
@@ -87,16 +84,16 @@ instance
       proxy = Proxy @a
 
 instance
-  ( DecodeValuesConstraint gql o e m a,
-    Generic a,
+  ( Generic a,
     gql a,
     gql [Maybe a],
     val (Dependency a),
-    GRep gql (resFun (Resolver o e m)) (Resolver o e m (ResolverValue (Resolver o e m))) (Rep a),
-    Gmap (namedRes (Resolver o e m)) (Rep a),
-    namedRes (Resolver o e m) a
+    GRep gql (resFun m) (m (ResolverValue m)) (Rep a),
+    Gmap (namedRes m) (Rep a),
+    namedRes m a,
+    DecodeValuesConstraint gql m a
   ) =>
-  KindedNamedResolver namedRes resFun gql val (Resolver o e m) TYPE (a :: Type)
+  KindedNamedResolver namedRes resFun gql val m TYPE (a :: Type)
   where
   kindedNamedResolver ctx _ =
     [ NamedResolver
