@@ -75,21 +75,11 @@ instance (MonadError GQLError m, EXPLORE gql res m guard, EXPLORE gql res m unio
   kindedResolver ctx (ContextValue (ResolveType value)) = pure (useExploreResolvers ctx value)
   kindedResolver ctx (ContextValue (ResolveInterface value)) = pure (useExploreResolvers ctx value)
 
---  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
-instance
-  ( Generic a,
-    Monad m,
-    res (Resolver o e m) b,
-    LiftOperation o,
-    val a
-  ) =>
-  KindedResolver gql res val CUSTOM (Resolver o e m) (a -> b)
-  where
+instance (Generic a, res m b, MonadResolver m, val a) => KindedResolver gql res val CUSTOM m (a -> b) where
   kindedResolver res (ContextValue f) =
     getArguments
       >>= liftState . useDecodeValue (dirArgs $ resDrv res) . argumentsToObject
       >>= useEncodeResolver res . f
 
---  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
 instance (Monad m, res (Resolver o e m) b, LiftOperation o) => KindedResolver gql res val CUSTOM (Resolver o e m) (Resolver o e m b) where
   kindedResolver res (ContextValue value) = value >>= useEncodeResolver res
