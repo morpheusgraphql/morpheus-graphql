@@ -97,6 +97,15 @@ data SubscriptionField (a :: Type) where
     } ->
     SubscriptionField a
 
+class Monad m => MonadResolver (m :: Type -> Type) where
+  type ResolverOperationType m :: Type
+  type ResolverEventType m :: Type
+  liftState :: ResolverState a -> m a
+  getArguments :: m (Arguments VALID)
+
+instance (LiftOperation o, Monad m) => MonadResolver (Resolver o e m) where
+  getArguments = asks (selectionArguments . currentSelection)
+
 --
 -- GraphQL Field Resolver
 --
@@ -198,21 +207,10 @@ subscribe ch res =
     fromSub :: Monad m => (e -> Resolver SUBSCRIPTION e m a) -> ReaderT e (ResolverStateT () m) a
     fromSub f = join (ReaderT (runResolverS . f))
 
-withArguments ::
-  (LiftOperation o, Monad m) =>
-  (Arguments VALID -> Resolver o e m a) ->
-  Resolver o e m a
+withArguments :: (MonadResolver m) => (Arguments VALID -> m a) -> m a
 withArguments = (getArguments >>=)
 
-getArguments ::
-  (LiftOperation o, Monad m) =>
-  Resolver o e m (Arguments VALID)
-getArguments = asks (selectionArguments . currentSelection)
-
-getArgument ::
-  (LiftOperation o, Monad m) =>
-  FieldName ->
-  Resolver o e m (Value VALID)
+getArgument :: (MonadResolver m) => FieldName -> m (Value VALID)
 getArgument name = selectOr Null argumentValue name <$> getArguments
 
 runResolver ::
