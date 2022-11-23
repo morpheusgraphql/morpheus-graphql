@@ -45,28 +45,20 @@ import Data.Morpheus.Types.Internal.AST
 import GHC.Generics (Rep)
 import Relude
 
-decodeValues :: forall gql val m a. DecodeValuesConstraint val m a => UseDeriving gql val -> Proxy a -> [ValidValue] -> m [Maybe a]
-decodeValues ctx _ xs = traverse decodeArg xs >>= resolveBatched
-  where
-    decodeArg :: ValidValue -> m (Dependency a)
-    decodeArg = liftState . useDecodeValue (dirArgs ctx)
+type DECODE_VALUES val m a = (ResolveNamed m a, val (Dependency a), MonadResolver m)
 
-type DecodeValuesConstraint val m a =
-  ( ResolveNamed m a,
-    val (Dependency a),
-    MonadResolver m
-  )
+decodeValues :: DECODE_VALUES val m a => UseDeriving gql val -> Proxy a -> [ValidValue] -> m [Maybe a]
+decodeValues ctx _ xs = traverse (liftState . useDecodeValue (dirArgs ctx)) xs >>= resolveBatched
 
 class KindedNamedResolver namedRes resFun gql val (m :: Type -> Type) (k :: DerivingKind) a where
   kindedNamedResolver :: UseNamedResolver namedRes resFun gql val -> f k a -> [NamedResolver m]
   kindedNamedRefs :: UseNamedResolver namedRes resFun gql val -> f k a -> [ScanRef (namedRes m)]
 
 instance
-  ( DecodeValuesConstraint gql m a,
-    EncodeScalar a,
-    val (Dependency a),
+  ( DECODE_VALUES val m a,
     gql a,
-    namedRes m a
+    namedRes m a,
+    EncodeScalar a
   ) =>
   KindedNamedResolver namedRes resFun gql val m SCALAR a
   where
@@ -84,14 +76,13 @@ instance
       proxy = Proxy @a
 
 instance
-  ( Generic a,
+  ( DECODE_VALUES val m a,
     gql a,
-    gql [Maybe a],
-    val (Dependency a),
-    GRep gql (resFun m) (m (ResolverValue m)) (Rep a),
-    Gmap (namedRes m) (Rep a),
     namedRes m a,
-    DecodeValuesConstraint gql m a
+    Generic a,
+    gql [Maybe a],
+    GRep gql (resFun m) (m (ResolverValue m)) (Rep a),
+    Gmap (namedRes m) (Rep a)
   ) =>
   KindedNamedResolver namedRes resFun gql val m TYPE (a :: Type)
   where
