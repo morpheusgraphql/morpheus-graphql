@@ -22,14 +22,12 @@ where
 import Control.Monad.Except (MonadError (..))
 import Data.Aeson (ToJSON (..))
 import Data.Morpheus.App.Internal.Resolving
-  ( LiftOperation,
+  ( MonadResolver (..),
     NamedResolverRef (..),
     NamedResolverResult (..),
     ObjectTypeResolver (..),
-    Resolver,
     ResolverValue (..),
     getArguments,
-    liftResolverState,
     mkList,
     mkNull,
   )
@@ -130,10 +128,10 @@ instance (Monad m, gql a, ToJSON (NamedRef a)) => KindedNamedFunValue res gql va
 packRef :: Applicative m => TypeName -> ValidValue -> ResolverValue m
 packRef name v = ResRef $ pure $ NamedResolverRef name [v]
 
-instance (Monad m, LiftOperation o, val a, res (Resolver o e m) b) => KindedNamedFunValue res gql val CUSTOM (Resolver o e m) (a -> b) where
+instance (Monad m, val a, MonadResolver m, res m b) => KindedNamedFunValue res gql val CUSTOM m (a -> b) where
   kindedNamedFunValue ctx (ContextValue f) =
     getArguments
-      >>= liftResolverState . useDecodeArguments (namedDrv ctx)
+      >>= liftState . useDecodeArguments (namedDrv ctx)
       >>= useNamedFieldResolver ctx . f
 
 getOptions :: UseNamedResolver namedRes res gql val -> RepContext gql (res m) Identity (m (ResolverValue m))
@@ -159,11 +157,11 @@ convertNamedNode
     | null consFields = pure $ NamedEnumResolver consName
     | tyIsUnion = deriveUnion consFields
     | otherwise =
-        pure $
-          NamedObjectResolver
-            ObjectTypeResolver
-              { objectFields = HM.fromList (toFieldRes drv proxy <$> consFields)
-              }
+      pure $
+        NamedObjectResolver
+          ObjectTypeResolver
+            { objectFields = HM.fromList (toFieldRes drv proxy <$> consFields)
+            }
 
 deriveUnion :: (MonadError GQLError m) => [FieldRep (m (ResolverValue m))] -> m (NamedResolverResult m)
 deriveUnion [FieldRep {..}] = NamedUnionResolver <$> (fieldValue >>= getRef)

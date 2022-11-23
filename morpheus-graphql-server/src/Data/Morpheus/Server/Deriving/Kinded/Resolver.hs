@@ -19,10 +19,10 @@ import Control.Monad.Except (MonadError)
 import qualified Data.Map as M
 import Data.Morpheus.App.Internal.Resolving
   ( LiftOperation,
+    MonadResolver (..),
     Resolver,
     ResolverValue (..),
     getArguments,
-    liftResolverState,
   )
 import Data.Morpheus.Server.Deriving.Internal.Resolve.Explore
 import Data.Morpheus.Server.Deriving.Utils.AST
@@ -87,7 +87,7 @@ instance
   where
   kindedResolver res (ContextValue f) =
     getArguments
-      >>= liftResolverState . useDecodeValue (dirArgs $ resDrv res) . argumentsToObject
+      >>= liftState . useDecodeValue (dirArgs $ resDrv res) . argumentsToObject
       >>= useEncodeResolver res . f
 
 --  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY

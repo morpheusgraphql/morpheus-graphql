@@ -26,11 +26,10 @@ module Data.Morpheus.App.Internal.Resolving.Resolver
     WithOperation,
     ResolverContext (..),
     withArguments,
-    getArguments,
     SubscriptionField (..),
-    liftResolverState,
     runResolver,
     getArgument,
+    MonadResolver (..),
   )
 where
 
@@ -98,15 +97,18 @@ data SubscriptionField (a :: Type) where
     SubscriptionField a
 
 class Monad m => MonadResolver (m :: Type -> Type) where
-  type ResolverOperationType m :: Type
-  type ResolverEventType m :: Type
+  type MonadOperation m :: OperationType
+  type MonadEvent m :: Type
   liftState :: ResolverState a -> m a
   getArguments :: m (Arguments VALID)
 
 instance (LiftOperation o, Monad m) => MonadResolver (Resolver o e m) where
+  type MonadOperation (Resolver o e m) = o
+  type MonadEvent (Resolver o e m) = e
   getArguments = asks (selectionArguments . currentSelection)
+  liftState = packResolver . toResolverStateT
 
---
+--liftState
 -- GraphQL Field Resolver
 --
 ---------------------------------------------------------------
@@ -178,9 +180,6 @@ instance (LiftOperation o, Monad m) => MonadReader ResolverContext (Resolver o e
   local f (ResolverQ res) = ResolverQ (local f res)
   local f (ResolverM res) = ResolverM (local f res)
   local f (ResolverS resM) = ResolverS $ mapReaderT (local f) <$> resM
-
-liftResolverState :: (LiftOperation o, Monad m) => ResolverState a -> Resolver o e m a
-liftResolverState = packResolver . toResolverStateT
 
 class LiftOperation (o :: OperationType) where
   packResolver :: Monad m => ResolverStateT e m a -> Resolver o e m a

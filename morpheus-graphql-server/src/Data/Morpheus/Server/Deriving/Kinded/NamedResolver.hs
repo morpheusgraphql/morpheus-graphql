@@ -18,11 +18,11 @@ where
 
 import Data.Morpheus.App.Internal.Resolving
   ( LiftOperation,
+    MonadResolver (..),
     NamedResolver (..),
     NamedResolverResult (..),
     Resolver,
     ResolverValue,
-    liftResolverState,
   )
 import Data.Morpheus.Server.Deriving.Kinded.NamedResolverFun
   ( deriveNamedResolverFun,
@@ -51,7 +51,7 @@ decodeValues :: forall gql val o e m a. DecodeValuesConstraint val o e m a => Us
 decodeValues ctx _ xs = traverse decodeArg xs >>= resolveBatched
   where
     decodeArg :: ValidValue -> Resolver o e m (Dependency a)
-    decodeArg = liftResolverState . useDecodeValue (dirArgs ctx)
+    decodeArg = liftState . useDecodeValue (dirArgs ctx)
 
 type DecodeValuesConstraint val o e m a =
   ( LiftOperation o,
