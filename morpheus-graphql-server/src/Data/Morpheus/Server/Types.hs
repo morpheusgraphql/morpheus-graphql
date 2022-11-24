@@ -69,6 +69,7 @@ module Data.Morpheus.Server.Types
     Value (..),
     DirectiveLocation (..),
     MonadResolver (..),
+    MonadIOResolver,
     Flexible,
     Composed,
   )
@@ -78,7 +79,8 @@ import Data.Morpheus.App
   ( App,
   )
 import Data.Morpheus.App.Internal.Resolving
-  ( MonadResolver (..),
+  ( MonadIOResolver,
+    MonadResolver (..),
     Resolver,
     ResolverContext (..),
     SubscriptionField,

@@ -61,6 +61,7 @@ module Data.Morpheus.Types
     MonadError,
     DirectiveLocation (..),
     MonadResolver (..),
+    MonadIOResolver,
     Flexible,
     Composed,
   )
@@ -87,6 +88,7 @@ import Data.Morpheus.Server.Types
     ID (..),
     MUTATION,
     MonadResolver (..),
+    MonadIOResolver,
     Prefixes (..),
     QUERY,
     Rename (..),
