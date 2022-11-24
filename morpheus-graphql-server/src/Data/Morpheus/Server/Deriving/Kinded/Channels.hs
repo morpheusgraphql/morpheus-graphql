@@ -21,6 +21,7 @@ import Control.Monad.Except (throwError)
 import qualified Data.HashMap.Lazy as HM
 import Data.Morpheus.App.Internal.Resolving
   ( Channel,
+    MonadResolver (..),
     Resolver,
     ResolverState,
     SubscriptionField (..),
@@ -59,28 +60,23 @@ newtype DerivedChannel e = DerivedChannel
 
 type ChannelRes (e :: Type) = Selection VALID -> ResolverState (DerivedChannel e)
 
-type CHANNELS gql val e m (subs :: (Type -> Type) -> Type) =
-  ExploreChannels gql val (IsUndefined (subs (Resolver SUBSCRIPTION e m))) e (subs (Resolver SUBSCRIPTION e m))
+type CHANNELS gql val (subs :: (Type -> Type) -> Type) m =
+  ( MonadResolver m,
+    MonadOperation m ~ SUBSCRIPTION,
+    ExploreChannels gql val (IsUndefined (subs m)) (MonadEvent m) (subs m)
+  )
 
 resolverChannels ::
-  forall e m subs gql val.
-  CHANNELS gql val e m subs =>
+  forall m subs gql val.
+  CHANNELS gql val subs m =>
   UseDeriving gql val ->
-  subs (Resolver SUBSCRIPTION e m) ->
+  subs m ->
   Selection VALID ->
-  ResolverState (Channel e)
+  ResolverState (Channel (MonadEvent m))
 resolverChannels drv value = fmap _unpackChannel . channelSelector
   where
-    channelSelector ::
-      Selection VALID ->
-      ResolverState (DerivedChannel e)
-    channelSelector =
-      selectBySelection
-        ( exploreChannels
-            drv
-            (Proxy @(IsUndefined (subs (Resolver SUBSCRIPTION e m))))
-            value
-        )
+    channelSelector :: Selection VALID -> ResolverState (DerivedChannel (MonadEvent m))
+    channelSelector = selectBySelection (exploreChannels drv (Proxy @(IsUndefined (subs m))) value)
 
 selectBySelection ::
   HashMap FieldName (ChannelRes e) ->

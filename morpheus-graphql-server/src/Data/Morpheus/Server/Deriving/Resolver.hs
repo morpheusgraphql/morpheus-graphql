@@ -101,7 +101,7 @@ deriveNamedResolver = Scanner {scannerFun = deriveNamedRes, scannerRefs = derive
 type ROOT (o :: OperationType) e (m :: Type -> Type) a = EXPLORE GQLType GQLResolver (Resolver o e m) (a (Resolver o e m))
 
 type DERIVE_RESOLVERS e m query mut sub =
-  ( CHANNELS GQLType GQLValue e m sub,
+  ( CHANNELS GQLType GQLValue sub (Resolver SUBSCRIPTION e m),
     ROOT QUERY e m query,
     ROOT MUTATION e m mut,
     ROOT SUBSCRIPTION e m sub

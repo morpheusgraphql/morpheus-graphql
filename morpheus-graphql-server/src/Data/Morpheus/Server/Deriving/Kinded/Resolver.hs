@@ -81,5 +81,5 @@ instance (Generic a, res m b, MonadResolver m, val a) => KindedResolver gql res 
       >>= liftState . useDecodeValue (dirArgs $ resDrv res) . argumentsToObject
       >>= useEncodeResolver res . f
 
-instance (Monad m, res (Resolver o e m) b, LiftOperation o) => KindedResolver gql res val CUSTOM (Resolver o e m) (Resolver o e m b) where
+instance (MonadResolver m, res m a) => KindedResolver gql res val CUSTOM m (m a) where
   kindedResolver res (ContextValue value) = value >>= useEncodeResolver res

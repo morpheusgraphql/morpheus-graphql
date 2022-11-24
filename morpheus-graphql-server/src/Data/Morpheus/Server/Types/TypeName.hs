@@ -76,7 +76,7 @@ replacePairCon x | hsPair == x = gqlPair
     gqlPair = typeRepTyCon $ typeRep $ Proxy @(Pair Int Int)
 replacePairCon x = x
 
--- Ignores Resolver name  from typeName
+-- ignores resolver names from typename
 ignoreResolver :: (TyCon, [TypeRep]) -> [TyCon]
 ignoreResolver (con, _) | con == typeRepTyCon (typeRep $ Proxy @Resolver) = []
 ignoreResolver (con, _) | con == typeRepTyCon (typeRep $ Proxy @NamedResolverT) = []
