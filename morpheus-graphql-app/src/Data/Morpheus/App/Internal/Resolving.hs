@@ -32,6 +32,7 @@ module Data.Morpheus.App.Internal.Resolving
     SubscriptionField (..),
     ResolverState,
     MonadResolver (..),
+    MonadIOResolver,
     ResolverEntry,
     sortErrors,
     EventHandler (..),
