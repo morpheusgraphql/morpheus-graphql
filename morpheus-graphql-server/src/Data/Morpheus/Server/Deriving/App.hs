@@ -2,6 +2,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TupleSections #-}
@@ -40,13 +41,13 @@ import Relude
 
 type RootResolverConstraint m e query mutation subscription =
   ( DERIVE_RESOLVERS e m query mutation subscription,
-    SCHEMA e m query mutation subscription,
+    SCHEMA query mutation subscription,
     Monad m
   )
 
 type NamedResolversConstraint m e query mutation subscription =
   ( DERIVE_NAMED_RESOLVERS e m query,
-    SCHEMA e m query mutation subscription,
+    SCHEMA query mutation subscription,
     Monad m
   )
 
