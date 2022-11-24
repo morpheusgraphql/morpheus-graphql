@@ -25,6 +25,8 @@ module Data.Morpheus.Server.Resolvers
     ResolverS,
     useBatched,
     ignoreBatching,
+    Flexible,
+    Composed,
   )
 where
 

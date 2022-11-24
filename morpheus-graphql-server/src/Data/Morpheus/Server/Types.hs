@@ -69,6 +69,8 @@ module Data.Morpheus.Server.Types
     Value (..),
     DirectiveLocation (..),
     MonadResolver (..),
+    Flexible,
+    Composed,
   )
 where
 
@@ -88,7 +90,9 @@ import Data.Morpheus.Core
     render,
   )
 import Data.Morpheus.Server.Resolvers
-  ( RootResolver (..),
+  ( Composed,
+    Flexible,
+    RootResolver (..),
     defaultRootResolver,
   )
 import Data.Morpheus.Server.Types.DirectiveDefinitions

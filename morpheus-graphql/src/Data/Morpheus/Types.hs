@@ -61,6 +61,8 @@ module Data.Morpheus.Types
     MonadError,
     DirectiveLocation (..),
     MonadResolver (..),
+    Flexible,
+    Composed,
   )
 where
 
@@ -105,6 +107,8 @@ import Data.Morpheus.Server.Types
     render,
     subscribe,
     typeDirective,
+    Flexible,
+    Composed,
   )
 import Data.Morpheus.Types.Internal.AST (GQLError)
 import Relude hiding (Undefined)
