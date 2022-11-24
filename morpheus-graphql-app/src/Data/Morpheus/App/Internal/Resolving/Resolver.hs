@@ -30,6 +30,7 @@ module Data.Morpheus.App.Internal.Resolving.Resolver
     runResolver,
     getArgument,
     MonadResolver (..),
+    MonadIOResolver,
   )
 where
 
@@ -96,7 +97,11 @@ data SubscriptionField (a :: Type) where
     } ->
     SubscriptionField a
 
-class (Monad m, MonadError GQLError m) => MonadResolver (m :: Type -> Type) where
+class (MonadResolver m, MonadIO m) => MonadIOResolver (m :: Type -> Type)
+
+instance (LiftOperation o, Monad m, MonadIO m) => MonadIOResolver (Resolver o e m)
+
+class (Monad m, MonadFail m, MonadError GQLError m) => MonadResolver (m :: Type -> Type) where
   type MonadOperation m :: OperationType
   type MonadEvent m :: Type
   liftState :: ResolverState a -> m a
