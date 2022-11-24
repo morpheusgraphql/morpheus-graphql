@@ -127,7 +127,7 @@ newtype Web a = Web
 
 -------------------------------------------------------------------------------
 
-type RESOLVER t = (MonadTrans t, MonadFail (t Web), MonadIO (t Web))
+type RESOLVER t = (MonadTrans t, MonadIOResolver (t Web))
 
 type RESTRICT o t = (MonadOperation (t Web) ~ o)
 
