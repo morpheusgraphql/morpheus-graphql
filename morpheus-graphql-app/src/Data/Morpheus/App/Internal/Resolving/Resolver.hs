@@ -108,9 +108,7 @@ instance (LiftOperation o, Monad m) => MonadResolver (Resolver o e m) where
   getArguments = asks (selectionArguments . currentSelection)
   liftState = packResolver . toResolverStateT
 
---liftState
--- GraphQL Field Resolver
---
+-- GraphQL Resolver
 ---------------------------------------------------------------
 data Resolver (o :: OperationType) event (m :: Type -> Type) value where
   ResolverQ :: {runResolverQ :: ResolverStateT () m value} -> Resolver QUERY event m value

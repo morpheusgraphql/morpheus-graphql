@@ -98,11 +98,11 @@ type ComposedResolver o e m f a = Composed (Resolver o e m) f a
 
 type ResolverO o e m a = Flexible (Resolver o e m) a
 
-type ResolverQ e m a = Flexible (Resolver QUERY e m) a
+type ResolverQ e m a = ResolverO QUERY e m a
 
-type ResolverM e m a = Flexible (Resolver MUTATION e m) a
+type ResolverM e m a = ResolverO MUTATION e m a
 
-type ResolverS e m a = Flexible (Resolver SUBSCRIPTION e m) a
+type ResolverS e m a = ResolverO SUBSCRIPTION e m a
 
 publish :: (MonadOperation m ~ MUTATION, MonadResolver m, PushEvents e m) => [e] -> m ()
 publish = pushEvents
