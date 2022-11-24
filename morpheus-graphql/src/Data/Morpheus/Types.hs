@@ -60,6 +60,7 @@ module Data.Morpheus.Types
     GQLError,
     MonadError,
     DirectiveLocation (..),
+    MonadResolver (..),
   )
 where
 
@@ -83,6 +84,7 @@ import Data.Morpheus.Server.Types
     GQLType (..),
     ID (..),
     MUTATION,
+    MonadResolver (..),
     Prefixes (..),
     QUERY,
     Rename (..),

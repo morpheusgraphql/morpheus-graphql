@@ -68,6 +68,7 @@ module Data.Morpheus.Server.Types
     DefaultValue (..),
     Value (..),
     DirectiveLocation (..),
+    MonadResolver (..),
   )
 where
 
@@ -75,7 +76,8 @@ import Data.Morpheus.App
   ( App,
   )
 import Data.Morpheus.App.Internal.Resolving
-  ( Resolver,
+  ( MonadResolver (..),
+    Resolver,
     ResolverContext (..),
     SubscriptionField,
     WithOperation,
