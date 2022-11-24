@@ -108,6 +108,7 @@ class (Monad m, MonadFail m, MonadError GQLError m) => MonadResolver (m :: Type 
   liftState :: ResolverState a -> m a
   getArguments :: m (Arguments VALID)
   subscribe :: (MonadOperation m ~ SUBSCRIPTION) => Channel (MonadEvent m) -> MonadQuery m (MonadEvent m -> m a) -> SubscriptionField (m a)
+  publish :: (MonadOperation m ~ MUTATION) => [MonadEvent m] -> m ()
 
 instance (LiftOperation o, Monad m) => MonadResolver (Resolver o e m) where
   type MonadOperation (Resolver o e m) = o
@@ -120,6 +121,7 @@ instance (LiftOperation o, Monad m) => MonadResolver (Resolver o e m) where
   subscribe ch res = SubscriptionField ch (ResolverS (runSubscription <$> runResolverQ res))
     where
       runSubscription f = join (ReaderT (runResolverS . f))
+  publish = pushEvents
 
 -- GraphQL Resolver
 ---------------------------------------------------------------

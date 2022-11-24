@@ -22,8 +22,6 @@ module Data.Morpheus.Types
     lift,
     liftEither,
     WithOperation,
-    publish,
-    subscribe,
     ResolverContext (..),
     ResolverO,
     ComposedResolver,
@@ -87,8 +85,8 @@ import Data.Morpheus.Server.Types
     GQLType (..),
     ID (..),
     MUTATION,
-    MonadResolver (..),
     MonadIOResolver,
+    MonadResolver (..),
     Prefixes (..),
     QUERY,
     Rename (..),
@@ -109,8 +107,6 @@ import Data.Morpheus.Server.Types
     render,
     subscribe,
     typeDirective,
-    Flexible,
-    Composed,
   )
 import Data.Morpheus.Types.Internal.AST (GQLError)
 import Relude hiding (Undefined)

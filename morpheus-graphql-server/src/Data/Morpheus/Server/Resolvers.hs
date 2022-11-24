@@ -18,7 +18,6 @@ module Data.Morpheus.Server.Resolvers
     defaultRootResolver,
     ResolverO,
     ComposedResolver,
-    publish,
     constRes,
     ResolverQ,
     ResolverM,
@@ -32,7 +31,6 @@ where
 
 import Data.Morpheus.App.Internal.Resolving
   ( MonadResolver (..),
-    PushEvents (pushEvents),
     Resolver,
   )
 import Data.Morpheus.Server.Types.NamedResolvers
@@ -105,9 +103,6 @@ type ResolverQ e m a = ResolverO QUERY e m a
 type ResolverM e m a = ResolverO MUTATION e m a
 
 type ResolverS e m a = ResolverO SUBSCRIPTION e m a
-
-publish :: (MonadOperation m ~ MUTATION, MonadResolver m, PushEvents e m) => [e] -> m ()
-publish = pushEvents
 
 constRes :: (MonadResolver m) => b -> a -> m b
 constRes = const . pure
