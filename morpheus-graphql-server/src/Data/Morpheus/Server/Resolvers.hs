@@ -28,7 +28,11 @@ module Data.Morpheus.Server.Resolvers
   )
 where
 
-import Data.Morpheus.App.Internal.Resolving (PushEvents (pushEvents), Resolver, WithOperation)
+import Data.Morpheus.App.Internal.Resolving
+  ( MonadResolver (..),
+    PushEvents (pushEvents),
+    Resolver,
+  )
 import Data.Morpheus.Server.Types.NamedResolvers
   ( NamedResolverT (..),
     ResolveNamed (..),
@@ -100,8 +104,8 @@ type ResolverM e m a = Flexible (Resolver MUTATION e m) a
 
 type ResolverS e m a = Flexible (Resolver SUBSCRIPTION e m) a
 
-publish :: Monad m => [e] -> Resolver MUTATION e m ()
+publish :: (MonadOperation m ~ MUTATION, MonadResolver m, PushEvents e m) => [e] -> m ()
 publish = pushEvents
 
-constRes :: (WithOperation o, Monad m) => b -> a -> Resolver o e m b
+constRes :: (MonadResolver m) => b -> a -> m b
 constRes = const . pure
