@@ -63,7 +63,6 @@ import Data.Morpheus.Server.Types.GQLType
   )
 import Data.Morpheus.Types.Internal.AST
   ( MUTATION,
-    OperationType,
     QUERY,
     SUBSCRIPTION,
   )
@@ -98,26 +97,28 @@ withNamed =
 deriveNamedResolver :: Scanner (GQLNamedResolver m) (NamedResolver m)
 deriveNamedResolver = Scanner {scannerFun = deriveNamedRes, scannerRefs = deriveNamedRefs}
 
-type ROOT (o :: OperationType) e (m :: Type -> Type) a = EXPLORE GQLType GQLResolver (Resolver o e m) (a (Resolver o e m))
+type ROOT (m :: Type -> Type) a = EXPLORE GQLType GQLResolver m (a m)
 
 type DERIVE_RESOLVERS e m query mut sub =
   ( CHANNELS GQLType GQLValue sub (Resolver SUBSCRIPTION e m),
-    ROOT QUERY e m query,
-    ROOT MUTATION e m mut,
-    ROOT SUBSCRIPTION e m sub
+    ROOT (Resolver QUERY e m) query,
+    ROOT (Resolver MUTATION e m) mut,
+    ROOT (Resolver SUBSCRIPTION e m) sub
   )
 
-type DERIVE_NAMED_RESOLVERS e m query =
-  ( GQLType (query (NamedResolverT (Resolver QUERY e m))),
+type NAMED_RESOLVERS m query =
+  ( GQLType (query (NamedResolverT m)),
     KindedNamedResolver
       GQLNamedResolver
       GQLNamedResolverFun
       GQLType
       GQLValue
-      (Resolver QUERY e m)
-      (KIND (query (NamedResolverT (Resolver QUERY e m))))
-      (query (NamedResolverT (Resolver QUERY e m)))
+      m
+      (KIND (query (NamedResolverT m)))
+      (query (NamedResolverT m))
   )
+
+type DERIVE_NAMED_RESOLVERS e m query = NAMED_RESOLVERS (Resolver QUERY e m) query
 
 deriveResolvers ::
   (Monad m, DERIVE_RESOLVERS e m query mut sub) =>
