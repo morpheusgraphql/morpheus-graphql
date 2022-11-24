@@ -27,6 +27,7 @@ module Data.Morpheus.Server.Types.GQLType
     withValue,
     withRes,
     kindedProxy,
+    IgnoredResolver,
   )
 where
 
@@ -153,9 +154,11 @@ lifted :: CatType cat a -> CatType cat (f (KIND a) (Lifted a))
 lifted InputType = InputType
 lifted OutputType = OutputType
 
+type IgnoredResolver = (Resolver QUERY () Identity)
+
 -- lifts monadic object types with specific monad
 type family PARAM k a where
-  PARAM TYPE (t m) = t (Resolver QUERY () Maybe)
+  PARAM TYPE (t m) = t IgnoredResolver
   PARAM k a = a
 
 type DERIVE_T c a = (DeriveKindedType GQLType GQLValue c (KIND a) (Lifted a))

@@ -19,9 +19,6 @@ module Data.Morpheus.Server.Deriving.Schema
   )
 where
 
-import Data.Morpheus.App.Internal.Resolving
-  ( Resolver,
-  )
 import Data.Morpheus.Core (defaultConfig, validateSchema)
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Internal
@@ -32,6 +29,7 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Type
   )
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
+    IgnoredResolver,
     ignoreUndefined,
     withGQL,
   )
@@ -40,15 +38,12 @@ import Data.Morpheus.Server.Types.SchemaT
   )
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
-    QUERY,
     Schema (..),
   )
 import Language.Haskell.TH (Exp, Q)
 import Relude
 
-type Res = (Resolver QUERY () Maybe)
-
-type SCHEMA qu mu su = (GQLType (qu Res), GQLType (mu Res), GQLType (su Res))
+type SCHEMA qu mu su = (GQLType (qu IgnoredResolver), GQLType (mu IgnoredResolver), GQLType (su IgnoredResolver))
 
 -- | normal morpheus server validates schema at runtime (after the schema derivation).
 --   this method allows you to validate it at compile time.
@@ -59,7 +54,7 @@ deriveSchema :: forall root f m e qu mu su. SCHEMA qu mu su => f (root m e qu mu
 deriveSchema _ =
   toSchema
     ( (,,)
-        <$> useDeriveObject withGQL (Proxy @(qu Res))
-        <*> traverse (useDeriveObject withGQL) (ignoreUndefined (Proxy @(mu Res)))
-        <*> traverse (useDeriveObject withGQL) (ignoreUndefined (Proxy @(su Res)))
+        <$> useDeriveObject withGQL (Proxy @(qu IgnoredResolver))
+        <*> traverse (useDeriveObject withGQL) (ignoreUndefined (Proxy @(mu IgnoredResolver)))
+        <*> traverse (useDeriveObject withGQL) (ignoreUndefined (Proxy @(su IgnoredResolver)))
     )
