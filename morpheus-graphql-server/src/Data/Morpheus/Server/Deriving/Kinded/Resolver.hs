@@ -19,7 +19,6 @@ import Control.Monad.Except (MonadError)
 import qualified Data.Map as M
 import Data.Morpheus.App.Internal.Resolving
   ( MonadResolver (..),
-    Resolver,
     ResolverValue (..),
     getArguments,
   )

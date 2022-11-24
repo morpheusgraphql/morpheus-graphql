@@ -30,7 +30,6 @@ module Data.Morpheus.Server.Types
     SUBSCRIPTION,
     lift,
     WithOperation,
-    subscribe,
     ResolverContext (..),
     SubscriptionField,
     App,
@@ -85,7 +84,6 @@ import Data.Morpheus.App.Internal.Resolving
     ResolverContext (..),
     SubscriptionField,
     WithOperation,
-    subscribe,
   )
 import Data.Morpheus.Core
   ( RenderGQL,

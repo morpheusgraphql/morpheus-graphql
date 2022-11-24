@@ -19,14 +19,12 @@
 module Data.Morpheus.App.Internal.Resolving.Resolver
   ( Resolver,
     LiftOperation,
-    lift,
-    subscribe,
     ResponseEvent (..),
     ResponseStream,
     WithOperation,
     ResolverContext (..),
-    withArguments,
     SubscriptionField (..),
+    withArguments,
     runResolver,
     getArgument,
     MonadResolver (..),
@@ -104,14 +102,24 @@ instance (LiftOperation o, Monad m, MonadIO m) => MonadIOResolver (Resolver o e 
 class (Monad m, MonadFail m, MonadError GQLError m) => MonadResolver (m :: Type -> Type) where
   type MonadOperation m :: OperationType
   type MonadEvent m :: Type
+  type MonadQuery m :: (Type -> Type)
+  type MonadMutation m :: (Type -> Type)
+  type MonadSubscription m :: (Type -> Type)
   liftState :: ResolverState a -> m a
   getArguments :: m (Arguments VALID)
+  subscribe :: (MonadOperation m ~ SUBSCRIPTION) => Channel (MonadEvent m) -> MonadQuery m (MonadEvent m -> m a) -> SubscriptionField (m a)
 
 instance (LiftOperation o, Monad m) => MonadResolver (Resolver o e m) where
   type MonadOperation (Resolver o e m) = o
   type MonadEvent (Resolver o e m) = e
+  type MonadQuery (Resolver o e m) = (Resolver QUERY e m)
+  type MonadMutation (Resolver o e m) = (Resolver MUTATION e m)
+  type MonadSubscription (Resolver o e m) = (Resolver SUBSCRIPTION e m)
   getArguments = asks (selectionArguments . currentSelection)
   liftState = packResolver . toResolverStateT
+  subscribe ch res = SubscriptionField ch (ResolverS (runSubscription <$> runResolverQ res))
+    where
+      runSubscription f = join (ReaderT (runResolverS . f))
 
 -- GraphQL Resolver
 ---------------------------------------------------------------
@@ -195,19 +203,6 @@ instance LiftOperation MUTATION where
 
 instance LiftOperation SUBSCRIPTION where
   packResolver = ResolverS . pure . lift . clearStateResolverEvents
-
-subscribe ::
-  (Monad m) =>
-  Channel e ->
-  Resolver QUERY e m (e -> Resolver SUBSCRIPTION e m a) ->
-  SubscriptionField (Resolver SUBSCRIPTION e m a)
-subscribe ch res =
-  SubscriptionField ch $
-    ResolverS $
-      fromSub <$> runResolverQ res
-  where
-    fromSub :: Monad m => (e -> Resolver SUBSCRIPTION e m a) -> ReaderT e (ResolverStateT () m) a
-    fromSub f = join (ReaderT (runResolverS . f))
 
 withArguments :: (MonadResolver m) => (Arguments VALID -> m a) -> m a
 withArguments = (getArguments >>=)
