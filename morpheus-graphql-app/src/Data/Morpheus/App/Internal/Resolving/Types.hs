@@ -58,7 +58,7 @@ type NamedResolverFun m = NamedResolverArg -> m [NamedResolverResult m]
 
 data NamedResolver (m :: Type -> Type) = NamedResolver
   { resolverName :: TypeName,
-    resolverFun :: MonadResolver m => NamedResolverFun m
+    resolverFun :: NamedResolverFun m
   }
 
 instance Show (NamedResolver m) where

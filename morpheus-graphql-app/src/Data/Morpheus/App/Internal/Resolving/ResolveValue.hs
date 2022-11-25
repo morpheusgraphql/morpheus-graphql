@@ -93,11 +93,11 @@ fieldRefs ::
 fieldRefs ObjectTypeResolver {..} currentSelection@Selection {..}
   | selectionName == "__typename" = pure []
   | otherwise = do
-      t <- askFieldTypeName selectionName
-      updateCurrentType t $
-        local (\ctx -> ctx {currentSelection}) $ do
-          x <- maybe (pure []) (fmap pure) (HM.lookup selectionName objectFields)
-          concat <$> traverse (scanRefs selectionContent) x
+    t <- askFieldTypeName selectionName
+    updateCurrentType t $
+      local (\ctx -> ctx {currentSelection}) $ do
+        x <- maybe (pure []) (fmap pure) (HM.lookup selectionName objectFields)
+        concat <$> traverse (scanRefs selectionContent) x
 
 resolveSelection ::
   (MonadResolver m) =>
@@ -215,9 +215,12 @@ getNamedResolverBy ::
   NamedResolverRef ->
   ResolverMap m ->
   m [NamedResolverResult m]
-getNamedResolverBy NamedResolverRef {..} = selectOr cantFoundError ((resolverArgument &) . resolverFun) resolverTypeName
+getNamedResolverBy NamedResolverRef {..} = selectOr notFound found resolverTypeName
   where
-    cantFoundError = throwError ("Resolver Type " <> msg resolverTypeName <> "can't found")
+    found :: (MonadResolver m) => NamedResolver m -> m [NamedResolverResult m]
+    found = (resolverArgument &) . resolverFun
+    notFound :: (MonadResolver m) => m [NamedResolverResult m]
+    notFound = throwError ("Resolver Type " <> msg resolverTypeName <> "can't found")
 
 resolveObject ::
   (MonadResolver m) =>
@@ -243,8 +246,8 @@ runFieldResolver ::
   ResolverMapT m ValidValue
 runFieldResolver Selection {selectionName, selectionContent}
   | selectionName == "__typename" =
-      const (Scalar . String . unpackName <$> lift (asks (typeName . currentType)))
+    const (Scalar . String . unpackName <$> lift (asks (typeName . currentType)))
   | otherwise =
-      maybe (pure Null) (lift >=> (`resolveSelection` selectionContent))
-        . HM.lookup selectionName
-        . objectFields
+    maybe (pure Null) (lift >=> (`resolveSelection` selectionContent))
+      . HM.lookup selectionName
+      . objectFields
