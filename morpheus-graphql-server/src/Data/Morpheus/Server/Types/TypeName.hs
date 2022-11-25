@@ -24,7 +24,7 @@ import Data.Morpheus.App.Internal.Resolving
   ( Resolver,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (..))
-import Data.Morpheus.Server.NamedResolvers (NamedResolverT (..))
+import Data.Morpheus.Server.Types.NamedResolvers (NamedResolverT (..))
 import Data.Morpheus.Server.Types.Types
   ( Pair,
   )
@@ -76,7 +76,7 @@ replacePairCon x | hsPair == x = gqlPair
     gqlPair = typeRepTyCon $ typeRep $ Proxy @(Pair Int Int)
 replacePairCon x = x
 
--- Ignores Resolver name  from typeName
+-- ignores resolver names from typename
 ignoreResolver :: (TyCon, [TypeRep]) -> [TyCon]
 ignoreResolver (con, _) | con == typeRepTyCon (typeRep $ Proxy @Resolver) = []
 ignoreResolver (con, _) | con == typeRepTyCon (typeRep $ Proxy @NamedResolverT) = []

@@ -9,7 +9,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Server.NamedResolvers
+module Data.Morpheus.Server.Types.NamedResolvers
   ( ResolveNamed (..),
     NamedResolverT (..),
     resolve,

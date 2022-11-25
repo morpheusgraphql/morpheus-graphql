@@ -26,12 +26,12 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
 import Data.Morpheus.Server.Deriving.Internal.Schema.Enum
   ( defineEnumUnit,
   )
-import Data.Morpheus.Server.Deriving.Utils.Kinded
-  ( CatType (..),
-  )
-import Data.Morpheus.Server.Deriving.Utils.Types
+import Data.Morpheus.Server.Deriving.Utils.GRep
   ( ConsRep (..),
     FieldRep (..),
+  )
+import Data.Morpheus.Server.Deriving.Utils.Kinded
+  ( CatType (..),
   )
 import Data.Morpheus.Server.Types.SchemaT
   ( SchemaT,

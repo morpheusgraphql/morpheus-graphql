@@ -19,18 +19,16 @@
 module Data.Morpheus.App.Internal.Resolving.Resolver
   ( Resolver,
     LiftOperation,
-    lift,
-    subscribe,
     ResponseEvent (..),
     ResponseStream,
     WithOperation,
     ResolverContext (..),
-    withArguments,
-    getArguments,
     SubscriptionField (..),
-    liftResolverState,
+    withArguments,
     runResolver,
     getArgument,
+    MonadResolver (..),
+    MonadIOResolver,
   )
 where
 
@@ -97,9 +95,35 @@ data SubscriptionField (a :: Type) where
     } ->
     SubscriptionField a
 
---
--- GraphQL Field Resolver
---
+class (MonadResolver m, MonadIO m) => MonadIOResolver (m :: Type -> Type)
+
+instance (LiftOperation o, Monad m, MonadIO m) => MonadIOResolver (Resolver o e m)
+
+class (Monad m, MonadReader ResolverContext m, MonadFail m, MonadError GQLError m) => MonadResolver (m :: Type -> Type) where
+  type MonadOperation m :: OperationType
+  type MonadEvent m :: Type
+  type MonadQuery m :: (Type -> Type)
+  type MonadMutation m :: (Type -> Type)
+  type MonadSubscription m :: (Type -> Type)
+  liftState :: ResolverState a -> m a
+  getArguments :: m (Arguments VALID)
+  subscribe :: (MonadOperation m ~ SUBSCRIPTION) => Channel (MonadEvent m) -> MonadQuery m (MonadEvent m -> m a) -> SubscriptionField (m a)
+  publish :: (MonadOperation m ~ MUTATION) => [MonadEvent m] -> m ()
+
+instance (LiftOperation o, Monad m) => MonadResolver (Resolver o e m) where
+  type MonadOperation (Resolver o e m) = o
+  type MonadEvent (Resolver o e m) = e
+  type MonadQuery (Resolver o e m) = (Resolver QUERY e m)
+  type MonadMutation (Resolver o e m) = (Resolver MUTATION e m)
+  type MonadSubscription (Resolver o e m) = (Resolver SUBSCRIPTION e m)
+  getArguments = asks (selectionArguments . currentSelection)
+  liftState = packResolver . toResolverStateT
+  subscribe ch res = SubscriptionField ch (ResolverS (runSubscription <$> runResolverQ res))
+    where
+      runSubscription f = join (ReaderT (runResolverS . f))
+  publish = pushEvents
+
+-- GraphQL Resolver
 ---------------------------------------------------------------
 data Resolver (o :: OperationType) event (m :: Type -> Type) value where
   ResolverQ :: {runResolverQ :: ResolverStateT () m value} -> Resolver QUERY event m value
@@ -170,9 +194,6 @@ instance (LiftOperation o, Monad m) => MonadReader ResolverContext (Resolver o e
   local f (ResolverM res) = ResolverM (local f res)
   local f (ResolverS resM) = ResolverS $ mapReaderT (local f) <$> resM
 
-liftResolverState :: (LiftOperation o, Monad m) => ResolverState a -> Resolver o e m a
-liftResolverState = packResolver . toResolverStateT
-
 class LiftOperation (o :: OperationType) where
   packResolver :: Monad m => ResolverStateT e m a -> Resolver o e m a
 
@@ -185,34 +206,10 @@ instance LiftOperation MUTATION where
 instance LiftOperation SUBSCRIPTION where
   packResolver = ResolverS . pure . lift . clearStateResolverEvents
 
-subscribe ::
-  (Monad m) =>
-  Channel e ->
-  Resolver QUERY e m (e -> Resolver SUBSCRIPTION e m a) ->
-  SubscriptionField (Resolver SUBSCRIPTION e m a)
-subscribe ch res =
-  SubscriptionField ch $
-    ResolverS $
-      fromSub <$> runResolverQ res
-  where
-    fromSub :: Monad m => (e -> Resolver SUBSCRIPTION e m a) -> ReaderT e (ResolverStateT () m) a
-    fromSub f = join (ReaderT (runResolverS . f))
-
-withArguments ::
-  (LiftOperation o, Monad m) =>
-  (Arguments VALID -> Resolver o e m a) ->
-  Resolver o e m a
+withArguments :: (MonadResolver m) => (Arguments VALID -> m a) -> m a
 withArguments = (getArguments >>=)
 
-getArguments ::
-  (LiftOperation o, Monad m) =>
-  Resolver o e m (Arguments VALID)
-getArguments = asks (selectionArguments . currentSelection)
-
-getArgument ::
-  (LiftOperation o, Monad m) =>
-  FieldName ->
-  Resolver o e m (Value VALID)
+getArgument :: (MonadResolver m) => FieldName -> m (Value VALID)
 getArgument name = selectOr Null argumentValue name <$> getArguments
 
 runResolver ::

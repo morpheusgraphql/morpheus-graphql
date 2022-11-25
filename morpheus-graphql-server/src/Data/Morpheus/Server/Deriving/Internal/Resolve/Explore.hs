@@ -33,18 +33,16 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
   ( toFieldRes,
     visitEnumName,
   )
-import Data.Morpheus.Server.Deriving.Utils.DeriveGType
-  ( DeriveWith,
-    DerivingOptions (..),
-    deriveValue,
-  )
-import Data.Morpheus.Server.Deriving.Utils.Kinded (inputType)
-import Data.Morpheus.Server.Deriving.Utils.Types
+import Data.Morpheus.Server.Deriving.Utils.GRep
   ( ConsRep (..),
-    DataType (..),
     FieldRep (..),
+    GRep,
+    RepContext (..),
+    TypeRep (..),
+    deriveValue,
     isUnionRef,
   )
+import Data.Morpheus.Server.Deriving.Utils.Kinded (inputType)
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseDeriving (..),
     UseGQLType (..),
@@ -62,12 +60,12 @@ convertNode ::
   (MonadError GQLError m) =>
   UseDeriving gql val ->
   f a ->
-  DataType (m (ResolverValue m)) ->
+  TypeRep (m (ResolverValue m)) ->
   ResolverValue m
 convertNode
   drv
   proxy
-  DataType
+  TypeRep
     { dataTypeName,
       tyIsUnion,
       tyCons = cons@ConsRep {consFields, consName}
@@ -84,9 +82,9 @@ convertNode
       -- Inline Union Types ----------------------------------------------------------------------------
       encodeTypeFields fields = mkUnion consName (toFieldRes drv proxy <$> fields)
 
-toOptions :: UseResolver res gql val -> DerivingOptions gql (res m) Identity (m (ResolverValue m))
+toOptions :: UseResolver res gql val -> RepContext gql (res m) Identity (m (ResolverValue m))
 toOptions UseResolver {..} =
-  DerivingOptions
+  RepContext
     { optApply = useEncodeResolver . runIdentity,
       optTypeData = useTypeData (dirGQL resDrv) . inputType
     }
@@ -109,6 +107,6 @@ useObjectResolvers ctx value = requireObject (useExploreResolvers ctx value)
 
 type EXPLORE gql res (m :: Type -> Type) a =
   ( Generic a,
-    DeriveWith gql (res m) (m (ResolverValue m)) (Rep a),
+    GRep gql (res m) (m (ResolverValue m)) (Rep a),
     gql a
   )

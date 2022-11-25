@@ -331,19 +331,19 @@ library
       Data.Morpheus.Server.Deriving.Resolver
       Data.Morpheus.Server.Deriving.Schema
       Data.Morpheus.Server.Deriving.Utils.AST
-      Data.Morpheus.Server.Deriving.Utils.DeriveGType
-      Data.Morpheus.Server.Deriving.Utils.GTraversable
+      Data.Morpheus.Server.Deriving.Utils.Gmap
+      Data.Morpheus.Server.Deriving.Utils.GRep
+      Data.Morpheus.Server.Deriving.Utils.GScan
       Data.Morpheus.Server.Deriving.Utils.Kinded
       Data.Morpheus.Server.Deriving.Utils.Proxy
-      Data.Morpheus.Server.Deriving.Utils.Types
       Data.Morpheus.Server.Deriving.Utils.Use
-      Data.Morpheus.Server.NamedResolvers
       Data.Morpheus.Server.Playground
       Data.Morpheus.Server.Types.DirectiveDefinitions
       Data.Morpheus.Server.Types.Directives
       Data.Morpheus.Server.Types.GQLType
       Data.Morpheus.Server.Types.Internal
       Data.Morpheus.Server.Types.Kind
+      Data.Morpheus.Server.Types.NamedResolvers
       Data.Morpheus.Server.Types.SchemaT
       Data.Morpheus.Server.Types.TypeName
       Data.Morpheus.Server.Types.Types

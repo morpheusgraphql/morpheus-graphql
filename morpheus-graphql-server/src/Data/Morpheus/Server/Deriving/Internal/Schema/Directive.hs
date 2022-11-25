@@ -38,11 +38,11 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Internal
   ( CatType,
     deriveTypeAsArguments,
   )
+import Data.Morpheus.Server.Deriving.Utils.GRep (FieldRep (..))
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
     inputType,
   )
-import Data.Morpheus.Server.Deriving.Utils.Types (FieldRep (..))
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseDeriving (..),
     UseGQLType (..),

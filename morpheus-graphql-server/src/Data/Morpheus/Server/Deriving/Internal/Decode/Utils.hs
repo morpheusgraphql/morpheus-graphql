@@ -39,16 +39,16 @@ import Data.Morpheus.Internal.Utils
     selectOr,
   )
 import Data.Morpheus.Server.Deriving.Utils.AST (argumentsToObject)
+import Data.Morpheus.Server.Deriving.Utils.GRep
+  ( ConsRep (..),
+    FieldRep (..),
+    TypeRep (..),
+  )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
   )
 import Data.Morpheus.Server.Deriving.Utils.Proxy
   ( conNameProxy,
-  )
-import Data.Morpheus.Server.Deriving.Utils.Types
-  ( ConsRep (..),
-    DataType (..),
-    FieldRep (..),
   )
 import Data.Morpheus.Server.Deriving.Utils.Use (UseDeriving, UseGQLType (useTypename), UseValue (..), dirArgs)
 import Data.Morpheus.Types.GQLScalar
@@ -76,10 +76,10 @@ import GHC.Generics
 import Relude
 
 repValue ::
-  DataType (GQLResult (Value CONST)) ->
+  TypeRep (GQLResult (Value CONST)) ->
   GQLResult (Value CONST)
 repValue
-  DataType
+  TypeRep
     { tyIsUnion,
       tyCons = ConsRep {consFields, consName}
     } = encodeTypeFields consFields

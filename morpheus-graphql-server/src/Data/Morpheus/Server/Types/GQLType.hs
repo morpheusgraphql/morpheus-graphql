@@ -20,15 +20,14 @@ module Data.Morpheus.Server.Types.GQLType
   ( GQLType (KIND, directives, __type),
     GQLValue (..),
     InputTypeNamespace (..),
-    deriveTypename,
+    GQLResolver (..),
     ignoreUndefined,
     withGQL,
     withDir,
     withValue,
-    decodeArguments,
-    GQLResolver (..),
     withRes,
     kindedProxy,
+    IgnoredResolver,
   )
 where
 
@@ -60,11 +59,9 @@ import Data.Morpheus.Server.Deriving.Kinded.Type
     deriveTypeGuardUnions,
   )
 import Data.Morpheus.Server.Deriving.Kinded.Value (KindedValue (..))
-import Data.Morpheus.Server.Deriving.Utils.AST (argumentsToObject)
 import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (..), KindedProxy (KindedProxy), catMap, isIN)
 import Data.Morpheus.Server.Deriving.Utils.Proxy (ContextValue (..), symbolName)
 import Data.Morpheus.Server.Deriving.Utils.Use (UseDeriving (..), UseGQLType (..), UseResolver (..), UseValue (..))
-import Data.Morpheus.Server.NamedResolvers (NamedResolverT (..))
 import Data.Morpheus.Server.Types.Directives
   ( GDirectiveUsages (..),
     GQLDirective (..),
@@ -82,6 +79,7 @@ import Data.Morpheus.Server.Types.Kind
     TYPE,
     WRAPPER,
   )
+import Data.Morpheus.Server.Types.NamedResolvers (NamedResolverT (..))
 import Data.Morpheus.Server.Types.SchemaT (SchemaT, extendImplements)
 import Data.Morpheus.Server.Types.TypeName (TypeFingerprint (..), getFingerprint, getTypename)
 import Data.Morpheus.Server.Types.Types
@@ -94,8 +92,7 @@ import Data.Morpheus.Server.Types.Types
 import Data.Morpheus.Server.Types.Visitors (VisitType (..))
 import Data.Morpheus.Types.ID (ID)
 import Data.Morpheus.Types.Internal.AST
-  ( Arguments,
-    ArgumentsDefinition,
+  ( ArgumentsDefinition,
     CONST,
     DirectiveLocation (..),
     FieldDefinition,
@@ -108,7 +105,6 @@ import Data.Morpheus.Types.Internal.AST
     TRUE,
     TypeContent (..),
     TypeDefinition (..),
-    TypeName,
     TypeRef (..),
     TypeWrapper (..),
     VALID,
@@ -129,9 +125,6 @@ ignoreUndefined :: forall f a. GQLType a => f a -> Maybe (f a)
 ignoreUndefined proxy
   | gqlFingerprint (__type (OutputType :: CatType OUT a)) == InternalFingerprint __typenameUndefined = Nothing
   | otherwise = Just proxy
-
-deriveTypename :: (GQLType a) => CatType cat a -> TypeName
-deriveTypename = gqlTypeName . __type
 
 deriveTypeData ::
   forall c (a :: Type).
@@ -161,15 +154,17 @@ lifted :: CatType cat a -> CatType cat (f (KIND a) (Lifted a))
 lifted InputType = InputType
 lifted OutputType = OutputType
 
+type IgnoredResolver = (Resolver QUERY () Identity)
+
 -- lifts monadic object types with specific monad
 type family PARAM k a where
-  PARAM TYPE (t m) = t (Resolver QUERY () Maybe)
+  PARAM TYPE (t m) = t IgnoredResolver
   PARAM k a = a
 
 type DERIVE_T c a = (DeriveKindedType GQLType GQLValue c (KIND a) (Lifted a))
 
 cantBeInputType :: (MonadError GQLError m, GQLType a) => CatType cat a -> m b
-cantBeInputType proxy = throwError $ internal $ "type " <> msg (deriveTypename proxy) <> "can't be a input type"
+cantBeInputType proxy = throwError $ internal $ "type " <> msg (gqlTypeName $ __type proxy) <> "can't be a input type"
 
 -- | GraphQL type, every graphQL type should have an instance of 'GHC.Generics.Generic' and 'GQLType'.
 --
@@ -379,9 +374,6 @@ withDir =
       dirGQL = withGQL,
       dirArgs = withValue
     }
-
-decodeArguments :: forall a. KindedValue GQLType GQLValue (KIND a) a => Arguments VALID -> ResolverState a
-decodeArguments = decodeKindedValue withDir (Proxy @(KIND a)) . argumentsToObject
 
 class GQLType a => GQLValue a where
   decodeValue :: Value VALID -> ResolverState a
