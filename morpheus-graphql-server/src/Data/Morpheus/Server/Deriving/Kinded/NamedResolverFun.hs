@@ -22,22 +22,23 @@ where
 import Control.Monad.Except (MonadError (..))
 import Data.Aeson (ToJSON (..))
 import Data.Morpheus.App.Internal.Resolving
-  ( LiftOperation,
+  ( MonadResolver (..),
     NamedResolverRef (..),
     NamedResolverResult (..),
     ObjectTypeResolver (..),
-    Resolver,
     ResolverValue (..),
     getArguments,
-    liftResolverState,
     mkList,
     mkNull,
   )
 import Data.Morpheus.Server.Deriving.Internal.Decode.Utils (useDecodeArguments)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Directive (UseDeriving, toFieldRes)
-import Data.Morpheus.Server.Deriving.Utils.DeriveGType
-  ( DeriveWith,
-    DerivingOptions (..),
+import Data.Morpheus.Server.Deriving.Utils.GRep
+  ( ConsRep (..),
+    FieldRep (..),
+    GRep,
+    RepContext (..),
+    TypeRep (..),
     deriveValue,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
@@ -47,19 +48,10 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
 import Data.Morpheus.Server.Deriving.Utils.Proxy
   ( ContextValue (..),
   )
-import Data.Morpheus.Server.Deriving.Utils.Types
-  ( ConsRep (..),
-    DataType (..),
-    FieldRep (..),
-  )
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseDeriving (..),
     UseGQLType (..),
     UseNamedResolver (..),
-  )
-import Data.Morpheus.Server.NamedResolvers
-  ( NamedRef,
-    NamedResolverT (..),
   )
 import Data.Morpheus.Server.Types.Kind
   ( CUSTOM,
@@ -67,6 +59,10 @@ import Data.Morpheus.Server.Types.Kind
     SCALAR,
     TYPE,
     WRAPPER,
+  )
+import Data.Morpheus.Server.Types.NamedResolvers
+  ( NamedRef,
+    NamedResolverT (..),
   )
 import Data.Morpheus.Types.GQLScalar
   ( EncodeScalar (..),
@@ -91,7 +87,7 @@ deriveNamedResolverFun ::
     gql [Maybe a],
     gql a,
     MonadError GQLError m,
-    DeriveWith gql (res m) (m (ResolverValue m)) (Rep a)
+    GRep gql (res m) (m (ResolverValue m)) (Rep a)
   ) =>
   UseNamedResolver namedRes res gql val ->
   [Maybe a] ->
@@ -132,15 +128,15 @@ instance (Monad m, gql a, ToJSON (NamedRef a)) => KindedNamedFunValue res gql va
 packRef :: Applicative m => TypeName -> ValidValue -> ResolverValue m
 packRef name v = ResRef $ pure $ NamedResolverRef name [v]
 
-instance (Monad m, LiftOperation o, val a, res (Resolver o e m) b) => KindedNamedFunValue res gql val CUSTOM (Resolver o e m) (a -> b) where
+instance (Monad m, val a, MonadResolver m, res m b) => KindedNamedFunValue res gql val CUSTOM m (a -> b) where
   kindedNamedFunValue ctx (ContextValue f) =
     getArguments
-      >>= liftResolverState . useDecodeArguments (namedDrv ctx)
+      >>= liftState . useDecodeArguments (namedDrv ctx)
       >>= useNamedFieldResolver ctx . f
 
-getOptions :: UseNamedResolver namedRes res gql val -> DerivingOptions gql (res m) Identity (m (ResolverValue m))
+getOptions :: UseNamedResolver namedRes res gql val -> RepContext gql (res m) Identity (m (ResolverValue m))
 getOptions UseNamedResolver {..} =
-  DerivingOptions
+  RepContext
     { optApply = useNamedFieldResolver . runIdentity,
       optTypeData = useTypeData (dirGQL namedDrv) . outputType
     }
@@ -149,12 +145,12 @@ convertNamedNode ::
   (gql a, MonadError GQLError m) =>
   UseDeriving gql val ->
   f a ->
-  DataType (m (ResolverValue m)) ->
+  TypeRep (m (ResolverValue m)) ->
   m (NamedResolverResult m)
 convertNamedNode
   drv
   proxy
-  DataType
+  TypeRep
     { tyIsUnion,
       tyCons = ConsRep {consFields, consName}
     }

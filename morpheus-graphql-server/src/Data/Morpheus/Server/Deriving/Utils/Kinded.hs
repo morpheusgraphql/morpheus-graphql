@@ -10,8 +10,6 @@
 module Data.Morpheus.Server.Deriving.Utils.Kinded
   ( KindedProxy (..),
     setType,
-    setKind,
-    kinded,
     CatType (..),
     inputType,
     outputType,
@@ -47,12 +45,6 @@ data KindedProxy k a
 setType :: f a -> kinded (k :: t) a' -> KindedProxy k a
 setType _ _ = KindedProxy
 
-setKind :: f k -> kinded (k' :: t) a -> KindedProxy k a
-setKind _ _ = KindedProxy
-
-kinded :: f k -> f' a -> KindedProxy k a
-kinded _ _ = KindedProxy
-
 data CatContext (cat :: TypeCategory) where
   InputContext :: CatContext IN
   OutputContext :: CatContext OUT
@@ -61,16 +53,8 @@ data CatType (cat :: TypeCategory) a where
   InputType :: CatType IN a
   OutputType :: CatType OUT a
 
--- liftKind :: CatType cat a -> CatType cat (f k a)
--- liftKind InputType = InputType
--- liftKind OutputType = OutputType
-
 deriving instance Show (CatType cat a)
 
--- converts:
---   f a -> KindedType IN a
--- or
---  f k a -> KindedType IN a
 inputType :: f a -> CatType IN a
 inputType _ = InputType
 

@@ -18,18 +18,22 @@ module Data.Morpheus.Server.Resolvers
     defaultRootResolver,
     ResolverO,
     ComposedResolver,
-    publish,
     constRes,
     ResolverQ,
     ResolverM,
     ResolverS,
     useBatched,
     ignoreBatching,
+    Flexible,
+    Composed,
   )
 where
 
-import Data.Morpheus.App.Internal.Resolving (PushEvents (pushEvents), Resolver, WithOperation)
-import Data.Morpheus.Server.NamedResolvers
+import Data.Morpheus.App.Internal.Resolving
+  ( MonadResolver (..),
+    Resolver,
+  )
+import Data.Morpheus.Server.Types.NamedResolvers
   ( NamedResolverT (..),
     ResolveNamed (..),
     ignoreBatching,
@@ -94,14 +98,11 @@ type ComposedResolver o e m f a = Composed (Resolver o e m) f a
 
 type ResolverO o e m a = Flexible (Resolver o e m) a
 
-type ResolverQ e m a = Flexible (Resolver QUERY e m) a
+type ResolverQ e m a = ResolverO QUERY e m a
 
-type ResolverM e m a = Flexible (Resolver MUTATION e m) a
+type ResolverM e m a = ResolverO MUTATION e m a
 
-type ResolverS e m a = Flexible (Resolver SUBSCRIPTION e m) a
+type ResolverS e m a = ResolverO SUBSCRIPTION e m a
 
-publish :: Monad m => [e] -> Resolver MUTATION e m ()
-publish = pushEvents
-
-constRes :: (WithOperation o, Monad m) => b -> a -> Resolver o e m b
+constRes :: (MonadResolver m) => b -> a -> m b
 constRes = const . pure

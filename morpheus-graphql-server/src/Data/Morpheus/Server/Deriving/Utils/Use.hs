@@ -15,6 +15,7 @@ where
 
 import Data.Morpheus.App.Internal.Resolving (NamedResolver (..), ResolverState, ResolverValue)
 import Data.Morpheus.Internal.Ext (GQLResult)
+import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef)
 import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType)
 import Data.Morpheus.Server.Types.Directives
   ( GDirectiveUsages (..),
@@ -59,8 +60,9 @@ data UseDeriving gql val = UseDeriving
     dirGQL :: UseGQLType gql
   }
 
-data UseNamedResolver namedRes resFun gql val = UseNamedResolver
-  { useNamedFieldResolver :: forall a m. resFun m a => a -> m (ResolverValue m),
-    useDeriveNamedResolvers :: forall f a m. namedRes m a => f a -> [NamedResolver m],
+data UseNamedResolver named fun gql val = UseNamedResolver
+  { useNamedFieldResolver :: forall a m. fun m a => a -> m (ResolverValue m),
+    useDeriveNamedResolvers :: forall f a m. named m a => f a -> [NamedResolver m],
+    useDeriveNamedRefs :: forall f a m. named m a => f a -> [ScanRef (named m)],
     namedDrv :: UseDeriving gql val
   }

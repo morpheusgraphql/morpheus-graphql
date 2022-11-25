@@ -22,8 +22,6 @@ module Data.Morpheus.Types
     lift,
     liftEither,
     WithOperation,
-    publish,
-    subscribe,
     ResolverContext (..),
     ResolverO,
     ComposedResolver,
@@ -60,6 +58,10 @@ module Data.Morpheus.Types
     GQLError,
     MonadError,
     DirectiveLocation (..),
+    MonadResolver (..),
+    MonadIOResolver,
+    Flexible,
+    Composed,
   )
 where
 
@@ -83,6 +85,8 @@ import Data.Morpheus.Server.Types
     GQLType (..),
     ID (..),
     MUTATION,
+    MonadIOResolver,
+    MonadResolver (..),
     Prefixes (..),
     QUERY,
     Rename (..),

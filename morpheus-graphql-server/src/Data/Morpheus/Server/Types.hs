@@ -30,7 +30,6 @@ module Data.Morpheus.Server.Types
     SUBSCRIPTION,
     lift,
     WithOperation,
-    subscribe,
     ResolverContext (..),
     SubscriptionField,
     App,
@@ -68,6 +67,10 @@ module Data.Morpheus.Server.Types
     DefaultValue (..),
     Value (..),
     DirectiveLocation (..),
+    MonadResolver (..),
+    MonadIOResolver,
+    Flexible,
+    Composed,
   )
 where
 
@@ -75,18 +78,21 @@ import Data.Morpheus.App
   ( App,
   )
 import Data.Morpheus.App.Internal.Resolving
-  ( Resolver,
+  ( MonadIOResolver,
+    MonadResolver (..),
+    Resolver,
     ResolverContext (..),
     SubscriptionField,
     WithOperation,
-    subscribe,
   )
 import Data.Morpheus.Core
   ( RenderGQL,
     render,
   )
 import Data.Morpheus.Server.Resolvers
-  ( RootResolver (..),
+  ( Composed,
+    Flexible,
+    RootResolver (..),
     defaultRootResolver,
   )
 import Data.Morpheus.Server.Types.DirectiveDefinitions

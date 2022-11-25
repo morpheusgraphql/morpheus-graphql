@@ -25,6 +25,7 @@ import Control.Concurrent.STM
 import Control.Monad.Except (ExceptT, runExceptT)
 import Control.Monad.Reader (MonadReader, asks, runReaderT)
 import Control.Monad.Trans (MonadIO, liftIO)
+import Control.Monad.Trans.Class (MonadTrans)
 import Control.Monad.Trans.Reader (ReaderT)
 import qualified Data.ByteString.Lazy.Char8 as B
 import Data.List (find)
@@ -32,7 +33,6 @@ import Data.Maybe (fromJust)
 import Data.Morpheus (interpreter)
 import Data.Morpheus.Document (importGQLDocument)
 import Data.Morpheus.Types
-import Data.Morpheus.Types.Internal.AST (OperationType)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
@@ -127,20 +127,24 @@ newtype Web a = Web
 
 -------------------------------------------------------------------------------
 
+type RESOLVER t = (MonadTrans t, MonadIOResolver (t Web))
+
+type RESTRICT o t = (MonadOperation (t Web) ~ o)
+
 -- | Resolve value
-type Value (o :: OperationType) (a :: k) = ResolverO o () Web a
+type Value t (a :: k) = Flexible (t Web) a
 
 -- | Resolve (f value)
-type Composed (o :: OperationType) f (a :: k) = ComposedResolver o () Web f a
+type Wrapped t f (a :: k) = Composed (t Web) f a
 
 -------------------------------------------------------------------------------
-getDB :: (WithOperation o) => Value o Database
+getDB :: (RESOLVER t) => Value t Database
 getDB = do
   dbTVar <- lift $ asks database
   liftIO (readTVarIO dbTVar)
 
 -------------------------------------------------------------------------------
-requireAuthorized :: (WithOperation o) => Value o Int
+requireAuthorized :: (RESOLVER t) => Value t Int
 requireAuthorized = do
   reqHeaders <- lift $ asks reqHeaders
   case find ((== "Authorization") . fst) reqHeaders of
@@ -158,10 +162,10 @@ rootResolver =
       mutationResolver = resolveMutation
     }
 
-resolveMutation :: Mutation (Resolver MUTATION () Web)
+resolveMutation :: (RESOLVER t, RESTRICT MUTATION t) => Mutation (t Web)
 resolveMutation = Mutation {addDog = addDogResolver}
 
-resolveQuery :: Query (Resolver QUERY () Web)
+resolveQuery :: (RESOLVER t, RESTRICT QUERY t) => Query (t Web)
 resolveQuery =
   Query
     { login = loginResolver,
@@ -170,7 +174,7 @@ resolveQuery =
     }
 
 -------------------------------------------------------------------------------
-loginResolver :: (WithOperation o) => LoginArgs -> Composed o Maybe Session
+loginResolver :: (RESOLVER t, RESTRICT QUERY t) => LoginArgs -> Wrapped t Maybe Session
 loginResolver LoginArgs {username, password} = do
   users <- fmap userTable getDB
   let match user =
@@ -186,7 +190,7 @@ loginResolver LoginArgs {username, password} = do
           Session {token = pure tokenUser, user = userResolver userRow}
     Nothing -> fail "Invalid user or password"
 
-getUserResolver :: (WithOperation o) => Arg "id" Int -> Composed o Maybe User
+getUserResolver :: (RESOLVER t) => Arg "id" Int -> Wrapped t Maybe User
 getUserResolver (Arg argId) = do
   _ <- requireAuthorized
   users <- fmap userTable getDB
@@ -196,14 +200,14 @@ getUserResolver (Arg argId) = do
       pure $ Just user
     _ -> pure Nothing
 
-dogsResolver :: Composed QUERY [] Dog
+dogsResolver :: (RESOLVER t) => Wrapped t [] Dog
 dogsResolver = do
   _ <- requireAuthorized
   dogs <- fmap dogTable getDB
   traverse dogResolver dogs
 
 -------------------------------------------------------------------------------
-addDogResolver :: Arg "name" Text -> Value MUTATION Dog
+addDogResolver :: (RESOLVER t, RESTRICT MUTATION t) => Arg "name" Text -> Value t Dog
 addDogResolver (Arg name) = do
   currentUserId <- requireAuthorized
   db <- getDB
@@ -217,7 +221,7 @@ addDogResolver (Arg name) = do
   dogResolver dogToAdd
 
 -------------------------------------------------------------------------------
-userResolver :: forall o. (WithOperation o) => UserRow -> Value o User
+userResolver :: RESOLVER t => UserRow -> Value t User
 userResolver UserRow {userId = thisUserId, userFullName} =
   pure $
     User
@@ -229,7 +233,7 @@ userResolver UserRow {userId = thisUserId, userFullName} =
   where
     idResolver = pure thisUserId
     nameResolver = pure userFullName
-    favoriteDogResolver :: Composed o Maybe Dog
+    favoriteDogResolver :: RESOLVER t => Wrapped t Maybe Dog
     favoriteDogResolver = do
       dogs <- fmap dogTable getDB
       -- the 1st dog is the favorite dog
@@ -238,7 +242,7 @@ userResolver UserRow {userId = thisUserId, userFullName} =
           dog <- dogResolver dogRow
           return . Just $ dog
         Nothing -> return Nothing
-    followsResolver :: Composed o [] User
+    followsResolver :: RESOLVER t => Wrapped t [] User
     followsResolver = do
       follows <- fmap followTable getDB
       users <- fmap userTable getDB
@@ -247,13 +251,13 @@ userResolver UserRow {userId = thisUserId, userFullName} =
       let userFollowees = filter ((`elem` userFolloweeIds) . userId) users
       traverse userResolver userFollowees
 
-dogResolver :: forall o. (WithOperation o) => DogRow -> Value o Dog
+dogResolver :: RESOLVER t => DogRow -> Value t Dog
 dogResolver (DogRow dogId dogName ownerId) =
   pure $ Dog {id = idResolver, name = nameResolver, owner = ownerResolver}
   where
     idResolver = pure dogId
     nameResolver = pure dogName
-    ownerResolver :: Value o User
+    ownerResolver :: RESOLVER t => Value t User
     ownerResolver = do
       users <- fmap userTable getDB
       let userRow = fromJust . find ((== ownerId) . userId) $ users

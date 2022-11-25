@@ -42,9 +42,9 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
   ( visitEnumName,
     visitFieldName,
   )
-import Data.Morpheus.Server.Deriving.Utils.DeriveGType
-  ( DeriveWith,
-    DerivingOptions (..),
+import Data.Morpheus.Server.Deriving.Utils.GRep
+  ( GRep,
+    RepContext (..),
     deriveValue,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
@@ -104,15 +104,15 @@ instance (DecodeWrapperConstraint f a, DecodeWrapper f, EncodeWrapperValue f, ar
     runExceptT (decodeWrapper (useDecodeValue (dirArgs dir)) value)
       >>= handleEither
 
-instance (gql a, Generic a, DecodeRep gql args (Rep a), DeriveWith gql args (GQLResult (Value CONST)) (Rep a)) => KindedValue gql args TYPE a where
+instance (gql a, Generic a, DecodeRep gql args (Rep a), GRep gql args (GQLResult (Value CONST)) (Rep a)) => KindedValue gql args TYPE a where
   encodeKindedValue UseDeriving {..} =
     repValue
       . deriveValue
-        ( DerivingOptions
+        ( RepContext
             { optApply = useEncodeValue dirArgs . runIdentity,
               optTypeData = useTypeData dirGQL . inputType
             } ::
-            DerivingOptions gql args Identity (GQLResult (Value CONST))
+            RepContext gql args Identity (GQLResult (Value CONST))
         )
       . unContextValue
   decodeKindedValue dir _ = fmap to . (`runReaderT` context) . decodeRep dir

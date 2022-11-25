@@ -21,6 +21,7 @@ import Control.Monad.Except (throwError)
 import qualified Data.HashMap.Lazy as HM
 import Data.Morpheus.App.Internal.Resolving
   ( Channel,
+    MonadResolver (..),
     Resolver,
     ResolverState,
     SubscriptionField (..),
@@ -30,16 +31,14 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Server.Deriving.Internal.Decode.Utils (useDecodeArguments)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Directive (UseDeriving (..), toFieldRes)
-import Data.Morpheus.Server.Deriving.Utils.DeriveGType
-  ( DeriveWith,
-    DerivingOptions (..),
+import Data.Morpheus.Server.Deriving.Utils.GRep
+  ( ConsRep (..),
+    GRep,
+    RepContext (..),
+    TypeRep (..),
     deriveValue,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded (outputType)
-import Data.Morpheus.Server.Deriving.Utils.Types
-  ( ConsRep (..),
-    DataType (..),
-  )
 import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (useTypeData))
 import Data.Morpheus.Server.Types.Types (Undefined)
 import Data.Morpheus.Types.Internal.AST
@@ -61,28 +60,23 @@ newtype DerivedChannel e = DerivedChannel
 
 type ChannelRes (e :: Type) = Selection VALID -> ResolverState (DerivedChannel e)
 
-type CHANNELS gql val e m (subs :: (Type -> Type) -> Type) =
-  ExploreChannels gql val (IsUndefined (subs (Resolver SUBSCRIPTION e m))) e (subs (Resolver SUBSCRIPTION e m))
+type CHANNELS gql val (subs :: (Type -> Type) -> Type) m =
+  ( MonadResolver m,
+    MonadOperation m ~ SUBSCRIPTION,
+    ExploreChannels gql val (IsUndefined (subs m)) (MonadEvent m) (subs m)
+  )
 
 resolverChannels ::
-  forall e m subs gql val.
-  CHANNELS gql val e m subs =>
+  forall m subs gql val.
+  CHANNELS gql val subs m =>
   UseDeriving gql val ->
-  subs (Resolver SUBSCRIPTION e m) ->
+  subs m ->
   Selection VALID ->
-  ResolverState (Channel e)
+  ResolverState (Channel (MonadEvent m))
 resolverChannels drv value = fmap _unpackChannel . channelSelector
   where
-    channelSelector ::
-      Selection VALID ->
-      ResolverState (DerivedChannel e)
-    channelSelector =
-      selectBySelection
-        ( exploreChannels
-            drv
-            (Proxy @(IsUndefined (subs (Resolver SUBSCRIPTION e m))))
-            value
-        )
+    channelSelector :: Selection VALID -> ResolverState (DerivedChannel (MonadEvent m))
+    channelSelector = selectBySelection (exploreChannels drv (Proxy @(IsUndefined (subs m))) value)
 
 selectBySelection ::
   HashMap FieldName (ChannelRes e) ->
@@ -128,18 +122,18 @@ type family IsUndefined a :: Bool where
 class ExploreChannels gql val (t :: Bool) e a where
   exploreChannels :: UseDeriving gql val -> f t -> a -> HashMap FieldName (ChannelRes e)
 
-instance (gql a, Generic a, DeriveWith gql (GetChannel val e) (ChannelRes e) (Rep a)) => ExploreChannels gql val FALSE e a where
+instance (gql a, Generic a, GRep gql (GetChannel val e) (ChannelRes e) (Rep a)) => ExploreChannels gql val FALSE e a where
   exploreChannels drv _ =
     HM.fromList
       . map (toFieldRes drv (Proxy @a))
       . consFields
       . tyCons
       . deriveValue
-        ( DerivingOptions
+        ( RepContext
             { optApply = getChannel drv . runIdentity,
               optTypeData = useTypeData (dirGQL drv) . outputType
             } ::
-            DerivingOptions gql (GetChannel val e) Identity (ChannelRes e)
+            RepContext gql (GetChannel val e) Identity (ChannelRes e)
         )
 
 instance ExploreChannels drv val TRUE e (Undefined m) where

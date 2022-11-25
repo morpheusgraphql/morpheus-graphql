@@ -18,11 +18,9 @@ where
 import Control.Monad.Except (MonadError)
 import qualified Data.Map as M
 import Data.Morpheus.App.Internal.Resolving
-  ( LiftOperation,
-    Resolver,
+  ( MonadResolver (..),
     ResolverValue (..),
     getArguments,
-    liftResolverState,
   )
 import Data.Morpheus.Server.Deriving.Internal.Resolve.Explore
 import Data.Morpheus.Server.Deriving.Utils.AST
@@ -75,21 +73,11 @@ instance (MonadError GQLError m, EXPLORE gql res m guard, EXPLORE gql res m unio
   kindedResolver ctx (ContextValue (ResolveType value)) = pure (useExploreResolvers ctx value)
   kindedResolver ctx (ContextValue (ResolveInterface value)) = pure (useExploreResolvers ctx value)
 
---  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
-instance
-  ( Generic a,
-    Monad m,
-    res (Resolver o e m) b,
-    LiftOperation o,
-    val a
-  ) =>
-  KindedResolver gql res val CUSTOM (Resolver o e m) (a -> b)
-  where
+instance (Generic a, res m b, MonadResolver m, val a) => KindedResolver gql res val CUSTOM m (a -> b) where
   kindedResolver res (ContextValue f) =
     getArguments
-      >>= liftResolverState . useDecodeValue (dirArgs $ resDrv res) . argumentsToObject
+      >>= liftState . useDecodeValue (dirArgs $ resDrv res) . argumentsToObject
       >>= useEncodeResolver res . f
 
---  GQL a -> Resolver b, MUTATION, SUBSCRIPTION, QUERY
-instance (Monad m, res (Resolver o e m) b, LiftOperation o) => KindedResolver gql res val CUSTOM (Resolver o e m) (Resolver o e m b) where
+instance (MonadResolver m, res m a) => KindedResolver gql res val CUSTOM m (m a) where
   kindedResolver res (ContextValue value) = value >>= useEncodeResolver res
