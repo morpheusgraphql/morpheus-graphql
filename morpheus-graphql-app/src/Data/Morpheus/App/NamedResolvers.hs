@@ -75,14 +75,14 @@ queryResolvers = NamedResolversValue . mkResolverMap
 
 -- INTERNAL
 data ResultBuilder m
-  = Object (MonadResolver m => [(FieldName, m (ResolverValue m))])
+  = Object [(FieldName, m (ResolverValue m))]
   | Union TypeName ValidValue
   | Null
 
-mkResolverMap :: [(TypeName, NamedFunction m)] -> ResolverMap m
+mkResolverMap :: MonadResolver m => [(TypeName, NamedFunction m)] -> ResolverMap m
 mkResolverMap = HM.fromList . map packRes
   where
-    packRes :: (TypeName, NamedFunction m) -> (TypeName, NamedResolver m)
+    packRes :: MonadResolver m => (TypeName, NamedFunction m) -> (TypeName, NamedResolver m)
     packRes (typeName, f) = (typeName, NamedResolver typeName (fmap (map mapValue) . f))
       where
         mapValue (Object x) = NamedObjectResolver (ObjectTypeResolver $ HM.fromList x)
