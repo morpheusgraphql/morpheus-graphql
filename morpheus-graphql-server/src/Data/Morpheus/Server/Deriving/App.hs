@@ -35,12 +35,12 @@ import Data.Morpheus.Server.Deriving.Schema
   )
 import Data.Morpheus.Server.Resolvers
   ( NamedResolvers,
-    RootResolver (..),
   )
+import Data.Morpheus.Server.Types
 import Relude
 
 type RootResolverConstraint m e query mutation subscription =
-  ( DERIVE_RESOLVERS e m query mutation subscription,
+  ( DERIVE_RESOLVERS (Resolver QUERY e m) query mutation subscription,
     SCHEMA query mutation subscription,
     Monad m
   )
