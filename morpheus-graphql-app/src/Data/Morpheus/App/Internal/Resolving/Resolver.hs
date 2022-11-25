@@ -99,7 +99,7 @@ class (MonadResolver m, MonadIO m) => MonadIOResolver (m :: Type -> Type)
 
 instance (LiftOperation o, Monad m, MonadIO m) => MonadIOResolver (Resolver o e m)
 
-class (Monad m, MonadFail m, MonadError GQLError m) => MonadResolver (m :: Type -> Type) where
+class (Monad m, MonadReader ResolverContext m, MonadFail m, MonadError GQLError m) => MonadResolver (m :: Type -> Type) where
   type MonadOperation m :: OperationType
   type MonadEvent m :: Type
   type MonadQuery m :: (Type -> Type)

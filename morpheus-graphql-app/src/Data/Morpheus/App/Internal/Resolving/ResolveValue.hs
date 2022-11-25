@@ -23,6 +23,7 @@ import Data.Morpheus.App.Internal.Resolving.Batching
     runResMapT,
     useCached,
   )
+import Data.Morpheus.App.Internal.Resolving.Resolver (MonadResolver)
 import Data.Morpheus.App.Internal.Resolving.ResolverState
   ( ResolverContext (..),
     askFieldTypeName,
@@ -67,7 +68,7 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Relude hiding (empty)
 
-scanRefs :: (MonadError GQLError m, MonadReader ResolverContext m) => SelectionContent VALID -> ResolverValue m -> m [(SelectionContent VALID, NamedResolverRef)]
+scanRefs :: (MonadResolver m) => SelectionContent VALID -> ResolverValue m -> m [(SelectionContent VALID, NamedResolverRef)]
 scanRefs sel (ResList xs) = concat <$> traverse (scanRefs sel) xs
 scanRefs sel (ResLazy x) = x >>= scanRefs sel
 scanRefs sel (ResObject tyName obj) = withObject tyName (objectRefs obj) sel
@@ -77,9 +78,7 @@ scanRefs _ ResNull = pure []
 scanRefs _ ResScalar {} = pure []
 
 objectRefs ::
-  ( MonadError GQLError m,
-    MonadReader ResolverContext m
-  ) =>
+  (MonadResolver m) =>
   ObjectTypeResolver m ->
   Maybe (SelectionSet VALID) ->
   m [(SelectionContent VALID, NamedResolverRef)]
@@ -87,24 +86,21 @@ objectRefs _ Nothing = pure []
 objectRefs dr (Just sel) = concat <$> traverse (fieldRefs dr) (toList sel)
 
 fieldRefs ::
-  (MonadError GQLError m, MonadReader ResolverContext m) =>
+  (MonadResolver m) =>
   ObjectTypeResolver m ->
   Selection VALID ->
   m [(SelectionContent VALID, NamedResolverRef)]
 fieldRefs ObjectTypeResolver {..} currentSelection@Selection {..}
   | selectionName == "__typename" = pure []
   | otherwise = do
-      t <- askFieldTypeName selectionName
-      updateCurrentType t $
-        local (\ctx -> ctx {currentSelection}) $ do
-          x <- maybe (pure []) (fmap pure) (HM.lookup selectionName objectFields)
-          concat <$> traverse (scanRefs selectionContent) x
+    t <- askFieldTypeName selectionName
+    updateCurrentType t $
+      local (\ctx -> ctx {currentSelection}) $ do
+        x <- maybe (pure []) (fmap pure) (HM.lookup selectionName objectFields)
+        concat <$> traverse (scanRefs selectionContent) x
 
 resolveSelection ::
-  ( Monad m,
-    MonadReader ResolverContext m,
-    MonadError GQLError m
-  ) =>
+  (MonadResolver m) =>
   ResolverValue m ->
   SelectionContent VALID ->
   ResolverMapT m ValidValue
@@ -113,14 +109,11 @@ resolveSelection res selection = do
   newRmap <- lift (scanRefs selection res >>= buildCache ctx)
   local (const newRmap) (__resolveSelection res selection)
 
-buildCache :: (MonadError GQLError m, MonadReader ResolverContext m) => ResolverMapContext m -> [(SelectionContent VALID, NamedResolverRef)] -> m (ResolverMapContext m)
+buildCache :: (MonadResolver m) => ResolverMapContext m -> [(SelectionContent VALID, NamedResolverRef)] -> m (ResolverMapContext m)
 buildCache ctx@(ResolverMapContext cache rmap) entries = (`ResolverMapContext` rmap) <$> buildCacheWith (resolveRefsCached ctx) cache entries
 
 __resolveSelection ::
-  ( Monad m,
-    MonadReader ResolverContext m,
-    MonadError GQLError m
-  ) =>
+  (MonadResolver m) =>
   ResolverValue m ->
   SelectionContent VALID ->
   ResolverMapT m ValidValue
@@ -140,9 +133,7 @@ __resolveSelection (ResRef ref) sel = do
   lift (ref >>= flip (resolveRef ctx) sel)
 
 withObject ::
-  ( MonadError GQLError m,
-    MonadReader ResolverContext m
-  ) =>
+  (MonadResolver m) =>
   Maybe TypeName ->
   (Maybe (SelectionSet VALID) -> m value) ->
   SelectionContent VALID ->
@@ -165,9 +156,7 @@ noEmptySelection = do
   throwError $ subfieldsNotSelected (selectionName sel) "" (selectionPosition sel)
 
 resolveRef ::
-  ( MonadError GQLError m,
-    MonadReader ResolverContext m
-  ) =>
+  (MonadResolver m) =>
   ResolverMapContext m ->
   NamedResolverRef ->
   SelectionContent VALID ->
@@ -179,9 +168,7 @@ toOne [x] = pure x
 toOne x = throwError (internal ("expected only one resolved value for " <> msg (show x :: String)))
 
 resolveRefsCached ::
-  ( MonadError GQLError m,
-    MonadReader ResolverContext m
-  ) =>
+  (MonadResolver m) =>
   ResolverMapContext m ->
   NamedResolverRef ->
   SelectionContent VALID ->
@@ -198,7 +185,7 @@ resolveRefsCached ctx (NamedResolverRef name args) selection = do
     resolveCached key = (cachedArg key, HM.lookup key $ localCache ctx)
 
 processResult ::
-  (MonadError GQLError m, MonadReader ResolverContext m) =>
+  (MonadResolver m) =>
   TypeName ->
   SelectionContent VALID ->
   NamedResolverResult m ->
@@ -212,9 +199,7 @@ processResult _ selection NamedNullResolver = resolveSelection ResNull selection
 processResult _ selection (NamedScalarResolver v) = resolveSelection (ResScalar v) selection
 
 resolveUncached ::
-  ( MonadError GQLError m,
-    MonadReader ResolverContext m
-  ) =>
+  (MonadResolver m) =>
   TypeName ->
   SelectionContent VALID ->
   [ValidValue] ->
@@ -226,7 +211,7 @@ resolveUncached typename selection xs = do
   pure $ HM.fromList (zip xs vs)
 
 getNamedResolverBy ::
-  (MonadError GQLError m) =>
+  (MonadResolver m) =>
   NamedResolverRef ->
   ResolverMap m ->
   m [NamedResolverResult m]
@@ -235,9 +220,7 @@ getNamedResolverBy NamedResolverRef {..} = selectOr cantFoundError ((resolverArg
     cantFoundError = throwError ("Resolver Type " <> msg resolverTypeName <> "can't found")
 
 resolveObject ::
-  ( MonadReader ResolverContext m,
-    MonadError GQLError m
-  ) =>
+  (MonadResolver m) =>
   ResolverMapContext m ->
   ObjectTypeResolver m ->
   Maybe (SelectionSet VALID) ->
@@ -254,17 +237,14 @@ resolveObject rmap drv sel = do
             <$> runResMapT (runFieldResolver currentSelection drv) cacheCTX
 
 runFieldResolver ::
-  ( Monad m,
-    MonadReader ResolverContext m,
-    MonadError GQLError m
-  ) =>
+  (MonadResolver m) =>
   Selection VALID ->
   ObjectTypeResolver m ->
   ResolverMapT m ValidValue
 runFieldResolver Selection {selectionName, selectionContent}
   | selectionName == "__typename" =
-      const (Scalar . String . unpackName <$> lift (asks (typeName . currentType)))
+    const (Scalar . String . unpackName <$> lift (asks (typeName . currentType)))
   | otherwise =
-      maybe (pure Null) (lift >=> (`resolveSelection` selectionContent))
-        . HM.lookup selectionName
-        . objectFields
+    maybe (pure Null) (lift >=> (`resolveSelection` selectionContent))
+      . HM.lookup selectionName
+      . objectFields
