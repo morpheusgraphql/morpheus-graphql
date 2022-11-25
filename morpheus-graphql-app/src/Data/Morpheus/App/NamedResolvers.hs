@@ -1,3 +1,6 @@
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE RankNTypes #-}
+
 module Data.Morpheus.App.NamedResolvers
   ( ref,
     object,
@@ -15,7 +18,11 @@ module Data.Morpheus.App.NamedResolvers
 where
 
 import qualified Data.HashMap.Lazy as HM
-import Data.Morpheus.App.Internal.Resolving.Resolver (LiftOperation, Resolver, getArgument)
+import Data.Morpheus.App.Internal.Resolving.Resolver
+  ( MonadResolver,
+    Resolver,
+    getArgument,
+  )
 import Data.Morpheus.App.Internal.Resolving.RootResolverValue (RootResolverValue (..))
 import Data.Morpheus.App.Internal.Resolving.Types
   ( NamedResolver (..),
@@ -49,31 +56,31 @@ ref typeName = ResRef . pure . NamedResolverRef typeName . pure
 refs :: Applicative m => TypeName -> [ValidValue] -> ResolverValue m
 refs typeName = mkList . map (ref typeName)
 
-type NamedResolverFunction o e m = [ValidValue] -> Resolver o e m [ResultBuilder o e m]
+type NamedResolverFunction m = [ValidValue] -> m [ResultBuilder m]
 
 -- types
-object :: (LiftOperation o, Monad m) => [(FieldName, Resolver o e m (ResolverValue (Resolver o e m)))] -> Resolver o e m (ResultBuilder o e m)
+object :: (MonadResolver m) => [(FieldName, m (ResolverValue m))] -> m (ResultBuilder m)
 object = pure . Object
 
-variant :: (LiftOperation o, Monad m) => TypeName -> ValidValue -> Resolver o e m (ResultBuilder o e m)
+variant :: (MonadResolver m) => TypeName -> ValidValue -> m (ResultBuilder m)
 variant tName = pure . Union tName
 
-nullRes :: (LiftOperation o, Monad m) => Resolver o e m (ResultBuilder o e m)
+nullRes :: (MonadResolver m) => m (ResultBuilder m)
 nullRes = pure Null
 
-queryResolvers :: Monad m => [(TypeName, NamedResolverFunction QUERY e m)] -> RootResolverValue e m
+queryResolvers :: Monad m => [(TypeName, NamedResolverFunction (Resolver QUERY e m))] -> RootResolverValue e m
 queryResolvers = NamedResolversValue . mkResolverMap
 
 -- INTERNAL
-data ResultBuilder o e m
-  = Object [(FieldName, Resolver o e m (ResolverValue (Resolver o e m)))]
+data ResultBuilder m
+  = Object (MonadResolver m => [(FieldName, m (ResolverValue m))])
   | Union TypeName ValidValue
   | Null
 
-mkResolverMap :: (LiftOperation o, Monad m) => [(TypeName, NamedResolverFunction o e m)] -> ResolverMap (Resolver o e m)
+mkResolverMap :: [(TypeName, NamedResolverFunction m)] -> ResolverMap m
 mkResolverMap = HM.fromList . map packRes
   where
-    packRes :: (LiftOperation o, Monad m) => (TypeName, NamedResolverFunction o e m) -> (TypeName, NamedResolver (Resolver o e m))
+    packRes :: (TypeName, NamedResolverFunction m) -> (TypeName, NamedResolver m)
     packRes (typeName, f) = (typeName, NamedResolver typeName (fmap (map mapValue) . f))
       where
         mapValue (Object x) = NamedObjectResolver (ObjectTypeResolver $ HM.fromList x)

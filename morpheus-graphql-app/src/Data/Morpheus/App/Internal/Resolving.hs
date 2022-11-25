@@ -16,7 +16,6 @@ module Data.Morpheus.App.Internal.Resolving
     RootResolverValue (..),
     resultOr,
     withArguments,
-    -- Dynamic Resolver
     mkBoolean,
     mkFloat,
     mkInt,
