@@ -93,11 +93,11 @@ fieldRefs ::
 fieldRefs ObjectTypeResolver {..} currentSelection@Selection {..}
   | selectionName == "__typename" = pure []
   | otherwise = do
-    t <- askFieldTypeName selectionName
-    updateCurrentType t $
-      local (\ctx -> ctx {currentSelection}) $ do
-        x <- maybe (pure []) (fmap pure) (HM.lookup selectionName objectFields)
-        concat <$> traverse (scanRefs selectionContent) x
+      t <- askFieldTypeName selectionName
+      updateCurrentType t $
+        local (\ctx -> ctx {currentSelection}) $ do
+          x <- maybe (pure []) (fmap pure) (HM.lookup selectionName objectFields)
+          concat <$> traverse (scanRefs selectionContent) x
 
 resolveSelection ::
   (MonadResolver m) =>
@@ -243,8 +243,8 @@ runFieldResolver ::
   ResolverMapT m ValidValue
 runFieldResolver Selection {selectionName, selectionContent}
   | selectionName == "__typename" =
-    const (Scalar . String . unpackName <$> lift (asks (typeName . currentType)))
+      const (Scalar . String . unpackName <$> lift (asks (typeName . currentType)))
   | otherwise =
-    maybe (pure Null) (lift >=> (`resolveSelection` selectionContent))
-      . HM.lookup selectionName
-      . objectFields
+      maybe (pure Null) (lift >=> (`resolveSelection` selectionContent))
+        . HM.lookup selectionName
+        . objectFields
