@@ -90,7 +90,7 @@ type ResponseStream event (m :: Type -> Type) = ResultT (ResponseEvent event m) 
 
 data SubscriptionField (a :: Type) where
   SubscriptionField ::
-    { channel :: forall e m v. a ~ Resolver SUBSCRIPTION e m v => Channel e,
+    { channel :: forall m v. (a ~ m v, MonadResolver m, MonadOperation m ~ SUBSCRIPTION) => Channel (MonadEvent m),
       unSubscribe :: a
     } ->
     SubscriptionField a
