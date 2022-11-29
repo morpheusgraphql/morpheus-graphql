@@ -10,9 +10,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Types.TypeName
-  ( getTypename,
-    getTypeConstructorNames,
-    getFingerprint,
+  ( typeableTypename,
+    typeableFingerprint,
     TypeFingerprint (..),
   )
 where
@@ -59,11 +58,12 @@ data TypeFingerprint
       Ord
     )
 
-getTypename :: Typeable a => f a -> TypeName
-getTypename = packName . intercalate "" . getTypeConstructorNames
+typeableTypename :: Typeable a => f a -> TypeName
+typeableTypename = packName . intercalate "" . fmap (pack . tyConName . replacePairCon) . getTypeConstructors
 
-getTypeConstructorNames :: Typeable a => f a -> [Text]
-getTypeConstructorNames = fmap (pack . tyConName . replacePairCon) . getTypeConstructors
+typeableFingerprint :: Typeable a => CatType c a -> TypeFingerprint
+typeableFingerprint p@InputType = TypeableFingerprint IN $ tyConFingerprint <$> getTypeConstructors p
+typeableFingerprint p@OutputType = TypeableFingerprint OUT $ tyConFingerprint <$> getTypeConstructors p
 
 getTypeConstructors :: Typeable a => f a -> [TyCon]
 getTypeConstructors = ignoreResolver . splitTyConApp . typeRep
@@ -82,7 +82,3 @@ ignoreResolver (con, _) | con == typeRepTyCon (typeRep $ Proxy @Resolver) = []
 ignoreResolver (con, _) | con == typeRepTyCon (typeRep $ Proxy @NamedResolverT) = []
 ignoreResolver (con, args) =
   con : concatMap (ignoreResolver . splitTyConApp) args
-
-getFingerprint :: Typeable a => CatType c a -> TypeFingerprint
-getFingerprint p@InputType = TypeableFingerprint IN $ tyConFingerprint <$> getTypeConstructors p
-getFingerprint p@OutputType = TypeableFingerprint OUT $ tyConFingerprint <$> getTypeConstructors p
