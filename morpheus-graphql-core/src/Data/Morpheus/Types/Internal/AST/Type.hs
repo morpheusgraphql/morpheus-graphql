@@ -70,9 +70,9 @@ instance RenderGQL TypeKind where
 
 --  Definitions:
 --     Strictness:
---        Strict: Value (Strict) Types.
+--        strict: value (Strict) Types.
 --             members: {scalar, enum , input}
---        Lazy: Resolver (lazy) Types
+--        lazy: resolver (lazy) Types
 --             members: strict + {object, interface, union}
 class Strictness t where
   isResolverType :: t -> Bool

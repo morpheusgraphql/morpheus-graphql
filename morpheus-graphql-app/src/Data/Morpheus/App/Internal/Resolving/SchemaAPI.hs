@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.App.Internal.Resolving.SchemaAPI
@@ -9,7 +10,10 @@ module Data.Morpheus.App.Internal.Resolving.SchemaAPI
   )
 where
 
-import Data.Morpheus.App.Internal.Resolving.Resolver (MonadResolver, Resolver, withArguments)
+import Data.Morpheus.App.Internal.Resolving.Resolver
+  ( MonadResolver (..),
+    withArguments,
+  )
 import Data.Morpheus.App.Internal.Resolving.Types
   ( ObjectTypeResolver (..),
     ResolverValue,
@@ -75,7 +79,12 @@ schemaResolver schema@Schema {query, mutation, subscription, directiveDefinition
         ("directives", render $ sortWith directiveDefinitionName $ toList directiveDefinitions)
       ]
 
-schemaAPI :: Monad m => Schema VALID -> ObjectTypeResolver (Resolver QUERY e m)
+schemaAPI ::
+  ( MonadOperation m ~ QUERY,
+    MonadResolver m
+  ) =>
+  Schema VALID ->
+  ObjectTypeResolver m
 schemaAPI schema =
   ObjectTypeResolver
     ( HM.fromList

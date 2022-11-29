@@ -23,7 +23,9 @@ import Data.Morpheus.App.Internal.Resolving.Batching
     runResMapT,
     useCached,
   )
-import Data.Morpheus.App.Internal.Resolving.Resolver (MonadResolver)
+import Data.Morpheus.App.Internal.Resolving.Resolver
+  ( MonadResolver,
+  )
 import Data.Morpheus.App.Internal.Resolving.ResolverState
   ( ResolverContext (..),
     askFieldTypeName,
@@ -93,11 +95,11 @@ fieldRefs ::
 fieldRefs ObjectTypeResolver {..} currentSelection@Selection {..}
   | selectionName == "__typename" = pure []
   | otherwise = do
-      t <- askFieldTypeName selectionName
-      updateCurrentType t $
-        local (\ctx -> ctx {currentSelection}) $ do
-          x <- maybe (pure []) (fmap pure) (HM.lookup selectionName objectFields)
-          concat <$> traverse (scanRefs selectionContent) x
+    t <- askFieldTypeName selectionName
+    updateCurrentType t $
+      local (\ctx -> ctx {currentSelection}) $ do
+        x <- maybe (pure []) (fmap pure) (HM.lookup selectionName objectFields)
+        concat <$> traverse (scanRefs selectionContent) x
 
 resolveSelection ::
   (MonadResolver m) =>
@@ -127,7 +129,7 @@ __resolveSelection (ResEnum name) unionSel@UnionSelection {} = resolveSelection 
 __resolveSelection ResEnum {} _ = throwError (internal "wrong selection on enum value")
 __resolveSelection ResNull _ = pure Null
 __resolveSelection (ResScalar x) SelectionField = pure $ Scalar x
-__resolveSelection ResScalar {} _ = throwError (internal "scalar Resolver should only receive SelectionField")
+__resolveSelection ResScalar {} _ = throwError (internal "scalar resolver should only receive SelectionField")
 __resolveSelection (ResRef ref) sel = do
   ctx <- ask
   lift (ref >>= flip (resolveRef ctx) sel)
@@ -220,7 +222,7 @@ getNamedResolverBy NamedResolverRef {..} = selectOr notFound found resolverTypeN
     found :: (MonadResolver m) => NamedResolver m -> m [NamedResolverResult m]
     found = (resolverArgument &) . resolverFun
     notFound :: (MonadResolver m) => m [NamedResolverResult m]
-    notFound = throwError ("Resolver Type " <> msg resolverTypeName <> "can't found")
+    notFound = throwError ("resolver type " <> msg resolverTypeName <> "can't found")
 
 resolveObject ::
   (MonadResolver m) =>
@@ -246,8 +248,8 @@ runFieldResolver ::
   ResolverMapT m ValidValue
 runFieldResolver Selection {selectionName, selectionContent}
   | selectionName == "__typename" =
-      const (Scalar . String . unpackName <$> lift (asks (typeName . currentType)))
+    const (Scalar . String . unpackName <$> lift (asks (typeName . currentType)))
   | otherwise =
-      maybe (pure Null) (lift >=> (`resolveSelection` selectionContent))
-        . HM.lookup selectionName
-        . objectFields
+    maybe (pure Null) (lift >=> (`resolveSelection` selectionContent))
+      . HM.lookup selectionName
+      . objectFields
