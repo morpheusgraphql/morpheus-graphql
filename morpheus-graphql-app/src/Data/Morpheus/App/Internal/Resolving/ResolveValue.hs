@@ -23,9 +23,7 @@ import Data.Morpheus.App.Internal.Resolving.Batching
     runResMapT,
     useCached,
   )
-import Data.Morpheus.App.Internal.Resolving.Resolver
-  ( MonadResolver,
-  )
+import Data.Morpheus.App.Internal.Resolving.MonadResolver (MonadResolver)
 import Data.Morpheus.App.Internal.Resolving.ResolverState
   ( ResolverContext (..),
     askFieldTypeName,

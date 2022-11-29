@@ -15,7 +15,7 @@ module Data.Morpheus.App.RenderIntrospection
 where
 
 import Control.Monad.Except (MonadError (throwError))
-import Data.Morpheus.App.Internal.Resolving.Resolver
+import Data.Morpheus.App.Internal.Resolving.MonadResolver
   ( MonadResolver,
     ResolverContext (..),
   )

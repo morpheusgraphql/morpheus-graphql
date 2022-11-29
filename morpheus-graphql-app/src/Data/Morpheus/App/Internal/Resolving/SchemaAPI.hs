@@ -10,7 +10,7 @@ module Data.Morpheus.App.Internal.Resolving.SchemaAPI
   )
 where
 
-import Data.Morpheus.App.Internal.Resolving.Resolver
+import Data.Morpheus.App.Internal.Resolving.MonadResolver
   ( MonadResolver (..),
     withArguments,
   )

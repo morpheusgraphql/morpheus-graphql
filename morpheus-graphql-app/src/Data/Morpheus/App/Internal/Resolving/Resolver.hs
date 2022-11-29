@@ -22,13 +22,8 @@ module Data.Morpheus.App.Internal.Resolving.Resolver
     ResponseEvent (..),
     ResponseStream,
     WithOperation,
-    ResolverContext (..),
     SubscriptionField (..),
-    withArguments,
     runResolver,
-    getArgument,
-    MonadResolver (..),
-    MonadIOResolver,
   )
 where
 
@@ -37,6 +32,11 @@ import Control.Monad.Trans.Reader (mapReaderT)
 import Data.Morpheus.App.Internal.Resolving.Event
   ( EventHandler (..),
     ResponseEvent (..),
+  )
+import Data.Morpheus.App.Internal.Resolving.MonadResolver
+  ( MonadIOResolver,
+    MonadResolver (..),
+    SubscriptionField (..),
   )
 import Data.Morpheus.App.Internal.Resolving.ResolverState
   ( ResolverContext (..),
@@ -57,16 +57,12 @@ import Data.Morpheus.Internal.Ext
     cleanEvents,
     mapEvent,
   )
-import Data.Morpheus.Internal.Utils (selectOr)
 import Data.Morpheus.Types.IO
   ( GQLResponse,
     renderResponse,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( Argument (argumentValue),
-    Arguments,
-    FieldName,
-    GQLError,
+  ( GQLError,
     MUTATION,
     OperationType (..),
     QUERY,
@@ -88,27 +84,14 @@ type WithOperation (o :: OperationType) = LiftOperation o
 
 type ResponseStream event (m :: Type -> Type) = ResultT (ResponseEvent event m) m
 
-data SubscriptionField (a :: Type) where
-  SubscriptionField ::
-    { channel :: forall m v. (a ~ m v, MonadResolver m, MonadOperation m ~ SUBSCRIPTION) => Channel (MonadEvent m),
-      unSubscribe :: a
-    } ->
-    SubscriptionField a
-
-class (MonadResolver m, MonadIO m) => MonadIOResolver (m :: Type -> Type)
+-- GraphQL Resolver
+---------------------------------------------------------------
+data Resolver (o :: OperationType) event (m :: Type -> Type) value where
+  ResolverQ :: {runResolverQ :: ResolverStateT () m value} -> Resolver QUERY event m value
+  ResolverM :: {runResolverM :: ResolverStateT event m value} -> Resolver MUTATION event m value
+  ResolverS :: {runResolverS :: ResolverStateT () m (SubEventRes event m value)} -> Resolver SUBSCRIPTION event m value
 
 instance (LiftOperation o, Monad m, MonadIO m) => MonadIOResolver (Resolver o e m)
-
-class (Monad m, MonadReader ResolverContext m, MonadFail m, MonadError GQLError m) => MonadResolver (m :: Type -> Type) where
-  type MonadOperation m :: OperationType
-  type MonadEvent m :: Type
-  type MonadQuery m :: (Type -> Type)
-  type MonadMutation m :: (Type -> Type)
-  type MonadSubscription m :: (Type -> Type)
-  liftState :: ResolverState a -> m a
-  getArguments :: m (Arguments VALID)
-  subscribe :: (MonadOperation m ~ SUBSCRIPTION) => Channel (MonadEvent m) -> MonadQuery m (MonadEvent m -> m a) -> SubscriptionField (m a)
-  publish :: (MonadOperation m ~ MUTATION) => [MonadEvent m] -> m ()
 
 instance (LiftOperation o, Monad m) => MonadResolver (Resolver o e m) where
   type MonadOperation (Resolver o e m) = o
@@ -122,13 +105,6 @@ instance (LiftOperation o, Monad m) => MonadResolver (Resolver o e m) where
     where
       runSubscription f = join (ReaderT (runResolverS . f))
   publish = pushEvents
-
--- GraphQL Resolver
----------------------------------------------------------------
-data Resolver (o :: OperationType) event (m :: Type -> Type) value where
-  ResolverQ :: {runResolverQ :: ResolverStateT () m value} -> Resolver QUERY event m value
-  ResolverM :: {runResolverM :: ResolverStateT event m value} -> Resolver MUTATION event m value
-  ResolverS :: {runResolverS :: ResolverStateT () m (SubEventRes event m value)} -> Resolver SUBSCRIPTION event m value
 
 type SubEventRes event m value = ReaderT event (ResolverStateT () m) value
 
@@ -205,12 +181,6 @@ instance LiftOperation MUTATION where
 
 instance LiftOperation SUBSCRIPTION where
   packResolver = ResolverS . pure . lift . clearStateResolverEvents
-
-withArguments :: (MonadResolver m) => (Arguments VALID -> m a) -> m a
-withArguments = (getArguments >>=)
-
-getArgument :: (MonadResolver m) => FieldName -> m (Value VALID)
-getArgument name = selectOr Null argumentValue name <$> getArguments
 
 runResolver ::
   Monad m =>
