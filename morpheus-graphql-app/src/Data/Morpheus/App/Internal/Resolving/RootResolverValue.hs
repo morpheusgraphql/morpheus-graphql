@@ -111,23 +111,24 @@ runRootResolverValue
     where
       selectByOperation OPERATION_QUERY = runResolver Nothing (resolvedValue operationSelection) ctx
         where
+          resolvers = namedIntrospection "Query" ctx queryResolverMap
           resolvedValue selection =
             resolveRef
-              (ResolverMapContext empty (introspectionFields "Query" ctx queryResolverMap))
+              (ResolverMapContext empty resolvers)
               (NamedResolverRef "Query" ["ROOT"])
               (SelectionSet selection)
       selectByOperation _ = throwError "mutation and subscription is not supported for namedResolvers"
 
-introspectionFields :: (MonadResolver m, MonadOperation m ~ QUERY) => TypeName -> ResolverContext -> ResolverMap m -> ResolverMap m
-introspectionFields queryName ResolverContext {..} = adjust updateNamed queryName
+namedIntrospection :: (MonadResolver m, MonadOperation m ~ QUERY) => TypeName -> ResolverContext -> ResolverMap m -> ResolverMap m
+namedIntrospection queryName ResolverContext {..} = adjust updateNamed queryName
   where
-    updateNamed NamedResolver {..} = NamedResolver {resolverFun = const (updateResult <$> resolverFun []), ..}
+    updateNamed NamedResolver {..} = NamedResolver {resolverFun = const (updateResult <$> resolverFun ["ROOT"]), ..}
       where
-        updateResult [NamedObjectResolver obj] = [NamedObjectResolver (updateFields obj schema)]
+        updateResult [NamedObjectResolver obj] = [NamedObjectResolver (introspectionFields obj schema)]
         updateResult value = value
 
-updateFields :: (MonadResolver m, MonadOperation m ~ QUERY) => ObjectTypeResolver m -> Schema VALID -> ObjectTypeResolver m
-updateFields (ObjectTypeResolver fields) schema = ObjectTypeResolver (fields <> objectFields (schemaAPI schema))
+introspectionFields :: (MonadResolver m, MonadOperation m ~ QUERY) => ObjectTypeResolver m -> Schema VALID -> ObjectTypeResolver m
+introspectionFields (ObjectTypeResolver fields) schema = ObjectTypeResolver (fields <> objectFields (schemaAPI schema))
 
 withIntrospection :: (MonadResolver m, MonadOperation m ~ QUERY) => (SelectionSet VALID -> m ValidValue) -> ResolverContext -> m ValidValue
 withIntrospection m ResolverContext {operation, schema} = case splitSystemSelection (operationSelection operation) of
