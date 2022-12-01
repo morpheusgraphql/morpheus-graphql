@@ -105,11 +105,9 @@ class GetChannel val e a where
   getChannel :: UseDeriving gql val -> a -> ChannelRes e
 
 instance (MonadResolver m, MonadOperation m ~ SUBSCRIPTION, MonadEvent m ~ e) => GetChannel val e (SubscriptionField (m a)) where
-  -- type GET_CHANNEL (SubscriptionField (m a)) = MonadEvent m
   getChannel _ x = const $ pure $ DerivedChannel $ channel x
 
 instance (MonadResolver m, MonadOperation m ~ SUBSCRIPTION, MonadEvent m ~ e, val arg) => GetChannel val e (arg -> SubscriptionField (m a)) where
-  -- type GET_CHANNEL (arg -> SubscriptionField (m a)) = MonadEvent m
   getChannel drv f sel@Selection {selectionArguments} =
     useDecodeArguments drv selectionArguments
       >>= flip (getChannel drv) sel . f
