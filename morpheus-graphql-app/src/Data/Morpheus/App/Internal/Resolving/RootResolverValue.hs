@@ -13,7 +13,7 @@ module Data.Morpheus.App.Internal.Resolving.RootResolverValue
   )
 where
 
-import Control.Monad.Except (MonadError, throwError)
+import Control.Monad.Except (throwError)
 import qualified Data.Aeson as A
 import Data.HashMap.Strict (adjust)
 import Data.Morpheus.App.Internal.Resolving.Event
@@ -29,18 +29,16 @@ import Data.Morpheus.App.Internal.Resolving.ResolverState
   ( ResolverState,
     toResolverStateT,
   )
-import Data.Morpheus.App.Internal.Resolving.SchemaAPI (schemaAPI, schemaAPINamed)
+import Data.Morpheus.App.Internal.Resolving.SchemaAPI (schemaAPI)
 import Data.Morpheus.App.Internal.Resolving.Types
 import Data.Morpheus.App.Internal.Resolving.Utils
   ( lookupResJSON,
   )
-import Data.Morpheus.Internal.Ext (merge)
 import Data.Morpheus.Internal.Utils
   ( empty,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( GQLError,
-    MUTATION,
+  ( MUTATION,
     Operation (..),
     OperationType (..),
     QUERY,
@@ -53,8 +51,6 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
     ValidValue,
     Value (..),
-    internal,
-    splitSystemSelection,
   )
 import Relude hiding
   ( Show,
@@ -95,11 +91,11 @@ runRootResolverValue
       subscriptionResolver,
       channelMap
     }
-  ctx@ResolverContext {operation = Operation {operationType, operationSelection}} =
+  ctx@ResolverContext {operation = Operation {..}, ..} =
     selectByOperation operationType
     where
       selectByOperation OPERATION_QUERY =
-        runResolver channelMap (withIntrospection (rootResolver queryResolver) ctx) ctx
+        runResolver channelMap (rootResolver (withIntroFields schema <$> queryResolver) operationSelection) ctx
       selectByOperation OPERATION_MUTATION =
         runResolver channelMap (rootResolver mutationResolver operationSelection) ctx
       selectByOperation OPERATION_SUBSCRIPTION =
@@ -111,7 +107,7 @@ runRootResolverValue
     where
       selectByOperation OPERATION_QUERY = runResolver Nothing (resolvedValue operationSelection) ctx
         where
-          resolvers = namedIntrospection "Query" ctx queryResolverMap
+          resolvers = withNamedIntroFields "Query" ctx queryResolverMap
           resolvedValue selection =
             resolveRef
               (ResolverMapContext empty resolvers)
@@ -119,28 +115,13 @@ runRootResolverValue
               (SelectionSet selection)
       selectByOperation _ = throwError "mutation and subscription is not supported for namedResolvers"
 
-namedIntrospection :: (MonadResolver m, MonadOperation m ~ QUERY) => TypeName -> ResolverContext -> ResolverMap m -> ResolverMap m
-namedIntrospection queryName ResolverContext {..} = adjust updateNamed queryName
+withNamedIntroFields :: (MonadResolver m, MonadOperation m ~ QUERY) => TypeName -> ResolverContext -> ResolverMap m -> ResolverMap m
+withNamedIntroFields queryName ResolverContext {..} = adjust updateNamed queryName
   where
     updateNamed NamedResolver {..} = NamedResolver {resolverFun = const (updateResult <$> resolverFun ["ROOT"]), ..}
       where
-        updateResult [NamedObjectResolver obj] = [NamedObjectResolver (introspectionFields obj schema)]
+        updateResult [NamedObjectResolver obj] = [NamedObjectResolver (withIntroFields schema obj)]
         updateResult value = value
 
-introspectionFields :: (MonadResolver m, MonadOperation m ~ QUERY) => ObjectTypeResolver m -> Schema VALID -> ObjectTypeResolver m
-introspectionFields (ObjectTypeResolver fields) schema = ObjectTypeResolver (fields <> objectFields (schemaAPI schema))
-
-withIntrospection :: (MonadResolver m, MonadOperation m ~ QUERY) => (SelectionSet VALID -> m ValidValue) -> ResolverContext -> m ValidValue
-withIntrospection m ResolverContext {operation, schema} = case splitSystemSelection (operationSelection operation) of
-  (Nothing, _) -> m $ operationSelection operation
-  (Just intro, Nothing) -> resolveObject resMap (schemaAPI schema) (Just intro)
-  (Just intro, Just selection) -> do
-    x <- m selection
-    y <- resolveObject resMap (schemaAPI schema) (Just intro)
-    mergeRoot y x
-  where
-    resMap = ResolverMapContext mempty mempty
-
-mergeRoot :: MonadError GQLError m => ValidValue -> ValidValue -> m ValidValue
-mergeRoot (Object x) (Object y) = Object <$> merge x y
-mergeRoot _ _ = throwError (internal "can't merge non object types")
+withIntroFields :: (MonadResolver m, MonadOperation m ~ QUERY) => Schema VALID -> ObjectTypeResolver m -> ObjectTypeResolver m
+withIntroFields schema (ObjectTypeResolver fields) = ObjectTypeResolver (fields <> objectFields (schemaAPI schema))
