@@ -7,6 +7,7 @@
 
 module Data.Morpheus.App.Internal.Resolving.SchemaAPI
   ( schemaAPI,
+    schemaAPINamed,
   )
 where
 
@@ -15,7 +16,10 @@ import Data.Morpheus.App.Internal.Resolving.MonadResolver
     withArguments,
   )
 import Data.Morpheus.App.Internal.Resolving.Types
-  ( ObjectTypeResolver (..),
+  ( NamedResolver (NamedResolver, resolverFun, resolverName),
+    NamedResolverResult (NamedObjectResolver),
+    ObjectTypeResolver (..),
+    ResolverMap,
     ResolverValue,
     mkList,
     mkNull,
@@ -78,6 +82,22 @@ schemaResolver schema@Schema {query, mutation, subscription, directiveDefinition
         ("subscriptionType", renderOperation subscription),
         ("directives", render $ sortWith directiveDefinitionName $ toList directiveDefinitions)
       ]
+
+schemaAPINamed ::
+  ( MonadOperation m ~ QUERY,
+    MonadResolver m
+  ) =>
+  Schema VALID ->
+  ResolverMap m
+schemaAPINamed schema =
+  HM.fromList
+    [ ( "Query",
+        NamedResolver
+          { resolverName = "Query",
+            resolverFun = const $ pure [NamedObjectResolver (schemaAPI schema)]
+          }
+      )
+    ]
 
 schemaAPI ::
   ( MonadOperation m ~ QUERY,

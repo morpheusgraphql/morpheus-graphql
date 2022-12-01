@@ -3,6 +3,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -14,6 +15,7 @@ where
 
 import Control.Monad.Except (MonadError, throwError)
 import qualified Data.Aeson as A
+import Data.HashMap.Strict (adjust)
 import Data.Morpheus.App.Internal.Resolving.Event
   ( EventHandler (..),
   )
@@ -27,7 +29,7 @@ import Data.Morpheus.App.Internal.Resolving.ResolverState
   ( ResolverState,
     toResolverStateT,
   )
-import Data.Morpheus.App.Internal.Resolving.SchemaAPI (schemaAPI)
+import Data.Morpheus.App.Internal.Resolving.SchemaAPI (schemaAPI, schemaAPINamed)
 import Data.Morpheus.App.Internal.Resolving.Types
 import Data.Morpheus.App.Internal.Resolving.Utils
   ( lookupResJSON,
@@ -43,9 +45,11 @@ import Data.Morpheus.Types.Internal.AST
     OperationType (..),
     QUERY,
     SUBSCRIPTION,
+    Schema (..),
     Selection,
     SelectionContent (SelectionSet),
     SelectionSet,
+    TypeName,
     VALID,
     ValidValue,
     Value (..),
@@ -102,13 +106,28 @@ runRootResolverValue
         runResolver channelMap (rootResolver subscriptionResolver operationSelection) ctx
 runRootResolverValue
   NamedResolversValue {queryResolverMap}
-  ctx@ResolverContext {operation = Operation {operationType}} =
+  ctx@ResolverContext {operation = Operation {..}} =
     selectByOperation operationType
     where
-      selectByOperation OPERATION_QUERY = runResolver Nothing (withIntrospection resolvedValue ctx) ctx
+      selectByOperation OPERATION_QUERY = runResolver Nothing (resolvedValue operationSelection) ctx
         where
-          resolvedValue selection = resolveRef (ResolverMapContext empty queryResolverMap) (NamedResolverRef "Query" ["ROOT"]) (SelectionSet selection)
+          resolvedValue selection =
+            resolveRef
+              (ResolverMapContext empty (introspectionFields "Query" ctx queryResolverMap))
+              (NamedResolverRef "Query" ["ROOT"])
+              (SelectionSet selection)
       selectByOperation _ = throwError "mutation and subscription is not supported for namedResolvers"
+
+introspectionFields :: (MonadResolver m, MonadOperation m ~ QUERY) => TypeName -> ResolverContext -> ResolverMap m -> ResolverMap m
+introspectionFields queryName ResolverContext {..} = adjust updateNamed queryName
+  where
+    updateNamed NamedResolver {..} = NamedResolver {resolverFun = const (updateResult <$> resolverFun []), ..}
+      where
+        updateResult [NamedObjectResolver obj] = [NamedObjectResolver (updateFields obj schema)]
+        updateResult value = value
+
+updateFields :: (MonadResolver m, MonadOperation m ~ QUERY) => ObjectTypeResolver m -> Schema VALID -> ObjectTypeResolver m
+updateFields (ObjectTypeResolver fields) schema = ObjectTypeResolver (fields <> objectFields (schemaAPI schema))
 
 withIntrospection :: (MonadResolver m, MonadOperation m ~ QUERY) => (SelectionSet VALID -> m ValidValue) -> ResolverContext -> m ValidValue
 withIntrospection m ResolverContext {operation, schema} = case splitSystemSelection (operationSelection operation) of
