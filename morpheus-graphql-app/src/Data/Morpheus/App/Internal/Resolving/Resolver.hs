@@ -23,7 +23,6 @@ module Data.Morpheus.App.Internal.Resolving.Resolver
     ResponseStream,
     WithOperation,
     SubscriptionField (..),
-    runResolver,
   )
 where
 
@@ -99,12 +98,20 @@ instance (LiftOperation o, Monad m) => MonadResolver (Resolver o e m) where
   type MonadQuery (Resolver o e m) = (Resolver QUERY e m)
   type MonadMutation (Resolver o e m) = (Resolver MUTATION e m)
   type MonadSubscription (Resolver o e m) = (Resolver SUBSCRIPTION e m)
+  type MonadParam (Resolver o e m) = m
   getArguments = asks (selectionArguments . currentSelection)
   liftState = packResolver . toResolverStateT
   subscribe ch res = SubscriptionField ch (ResolverS (runSubscription <$> runResolverQ res))
     where
       runSubscription f = join (ReaderT (runResolverS . f))
   publish = pushEvents
+  runResolver _ (ResolverQ resT) sel = cleanEvents $ runResolverStateT resT sel
+  runResolver _ (ResolverM resT) sel = mapEvent Publish $ runResolverStateT resT sel
+  runResolver toChannel (ResolverS resT) ctx = ResultT $ do
+    readResValue <- runResolverStateValueM resT ctx
+    pure $ case readResValue >>= subscriptionEvents ctx toChannel . toEventResolver ctx of
+      Failure x -> Failure x
+      Success {warnings, result} -> Success {warnings, result = ([result], Null)}
 
 type SubEventRes event m value = ReaderT event (ResolverStateT () m) value
 
@@ -181,24 +188,6 @@ instance LiftOperation MUTATION where
 
 instance LiftOperation SUBSCRIPTION where
   packResolver = ResolverS . pure . lift . clearStateResolverEvents
-
-runResolver ::
-  Monad m =>
-  Maybe (Selection VALID -> ResolverState (Channel event)) ->
-  Resolver o event m ValidValue ->
-  ResolverContext ->
-  ResponseStream event m ValidValue
-runResolver _ (ResolverQ resT) sel = cleanEvents $ runResolverStateT resT sel
-runResolver _ (ResolverM resT) sel = mapEvent Publish $ runResolverStateT resT sel
-runResolver toChannel (ResolverS resT) ctx = ResultT $ do
-  readResValue <- runResolverStateValueM resT ctx
-  pure $ case readResValue >>= subscriptionEvents ctx toChannel . toEventResolver ctx of
-    Failure x -> Failure x
-    Success {warnings, result} ->
-      Success
-        { warnings,
-          result = ([result], Null)
-        }
 
 toEventResolver :: Monad m => ResolverContext -> SubEventRes event m ValidValue -> (event -> m GQLResponse)
 toEventResolver sel (ReaderT subRes) event = renderResponse <$> runResolverStateValueM (subRes event) sel
