@@ -84,7 +84,7 @@ type WithOperation (o :: OperationType) = LiftOperation o
 
 type ResponseStream event (m :: Type -> Type) = ResultT (ResponseEvent event m) m
 
--- GraphQL Resolver
+-- GraphQL resolver
 ---------------------------------------------------------------
 data Resolver (o :: OperationType) event (m :: Type -> Type) value where
   ResolverQ :: {runResolverQ :: ResolverStateT () m value} -> Resolver QUERY event m value
