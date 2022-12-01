@@ -15,7 +15,7 @@ import Data.Morpheus.Types.IO
   )
 
 class EventHandler e where
-  type Channel e
+  type Channel e :: Type
   getChannels :: e -> [Channel e]
 
 data ResponseEvent event (m :: Type -> Type)

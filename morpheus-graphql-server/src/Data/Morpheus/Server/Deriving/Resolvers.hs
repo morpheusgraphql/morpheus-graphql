@@ -11,7 +11,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Server.Deriving.Resolver
+module Data.Morpheus.Server.Deriving.Resolvers
   ( deriveResolvers,
     deriveNamedResolvers,
     DERIVE_RESOLVERS,

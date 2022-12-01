@@ -22,7 +22,7 @@ import Data.Morpheus.App.Internal.Resolving.MonadResolver
   ( MonadResolver,
     getArgument,
   )
-import Data.Morpheus.App.Internal.Resolving.Resolver
+import Data.Morpheus.App.Internal.Resolving.Resolver (Resolver)
 import Data.Morpheus.App.Internal.Resolving.RootResolverValue (RootResolverValue (..))
 import Data.Morpheus.App.Internal.Resolving.Types
   ( NamedResolver (..),
