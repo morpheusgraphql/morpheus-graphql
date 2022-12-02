@@ -11,7 +11,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Server.Deriving.Resolver
+module Data.Morpheus.Server.Deriving.Resolvers
   ( deriveResolvers,
     deriveNamedResolvers,
     DERIVE_RESOLVERS,
@@ -105,7 +105,7 @@ type DERIVE_RESOLVERS m query mut sub =
     ROOT (MonadSubscription m) sub
   )
 
-type NAMED_RESOLVERS m query =
+type DERIVE_NAMED_RESOLVERS m query =
   ( GQLType (query (NamedResolverT m)),
     KindedNamedResolver
       GQLNamedResolver
@@ -116,8 +116,6 @@ type NAMED_RESOLVERS m query =
       (KIND (query (NamedResolverT m)))
       (query (NamedResolverT m))
   )
-
-type DERIVE_NAMED_RESOLVERS e m query = NAMED_RESOLVERS (Resolver QUERY e m) query
 
 deriveResolvers ::
   (Monad m, DERIVE_RESOLVERS (Resolver QUERY e m) query mut sub) =>
@@ -136,7 +134,7 @@ deriveResolvers RootResolver {..} =
 
 deriveNamedResolvers ::
   forall e m query mut sub.
-  (Monad m, DERIVE_NAMED_RESOLVERS e m query) =>
+  (Monad m, DERIVE_NAMED_RESOLVERS (Resolver QUERY e m) query) =>
   NamedResolvers m e query mut sub ->
   RootResolverValue e m
 deriveNamedResolvers NamedResolvers =

@@ -38,15 +38,8 @@ class EncodeWrapper (wrapper :: Type -> Type) where
     wrapper a ->
     m (ResolverValue m)
 
-withList ::
-  ( EncodeWrapper f,
-    Monad m
-  ) =>
-  (a -> f b) ->
-  (b -> m (ResolverValue m)) ->
-  a ->
-  m (ResolverValue m)
-withList f encodeValue = encodeWrapper encodeValue . f
+withList :: (Monad m, Foldable f) => (a -> m (ResolverValue m)) -> f a -> m (ResolverValue m)
+withList encodeValue = encodeWrapper encodeValue . toList
 
 instance EncodeWrapper Maybe where
   encodeWrapper = maybe (pure mkNull)
@@ -55,16 +48,16 @@ instance EncodeWrapper [] where
   encodeWrapper encodeValue = fmap mkList . traverse encodeValue
 
 instance EncodeWrapper NonEmpty where
-  encodeWrapper = withList toList
+  encodeWrapper = withList
 
 instance EncodeWrapper Seq where
-  encodeWrapper = withList toList
+  encodeWrapper = withList
 
 instance EncodeWrapper Vector where
-  encodeWrapper = withList toList
+  encodeWrapper = withList
 
 instance EncodeWrapper Set where
-  encodeWrapper = withList toList
+  encodeWrapper = withList
 
 instance EncodeWrapper SubscriptionField where
   encodeWrapper encode (SubscriptionField _ res) = encode res

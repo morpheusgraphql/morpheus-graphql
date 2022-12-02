@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -10,9 +11,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Types.TypeName
-  ( getTypename,
-    getTypeConstructorNames,
-    getFingerprint,
+  ( typeableTypename,
+    typeableFingerprint,
     TypeFingerprint (..),
   )
 where
@@ -59,30 +59,31 @@ data TypeFingerprint
       Ord
     )
 
-getTypename :: Typeable a => f a -> TypeName
-getTypename = packName . intercalate "" . getTypeConstructorNames
+typeableTypename :: Typeable a => f a -> TypeName
+typeableTypename = packName . intercalate "" . fmap (pack . tyConName . replacePairCon) . getTypeConstructors
 
-getTypeConstructorNames :: Typeable a => f a -> [Text]
-getTypeConstructorNames = fmap (pack . tyConName . replacePairCon) . getTypeConstructors
+typeableFingerprint :: Typeable a => CatType c a -> TypeFingerprint
+typeableFingerprint p@InputType = TypeableFingerprint IN $ tyConFingerprint <$> getTypeConstructors p
+typeableFingerprint p@OutputType = TypeableFingerprint OUT $ tyConFingerprint <$> getTypeConstructors p
 
 getTypeConstructors :: Typeable a => f a -> [TyCon]
 getTypeConstructors = ignoreResolver . splitTyConApp . typeRep
 
+rep :: forall k (a :: k) f. Typeable a => f a -> TyCon
+rep = typeRepTyCon . typeRep
+
 -- | replaces typeName (A,B) with Pair_A_B
 replacePairCon :: TyCon -> TyCon
-replacePairCon x | hsPair == x = gqlPair
-  where
-    hsPair = typeRepTyCon $ typeRep $ Proxy @(Int, Int)
-    gqlPair = typeRepTyCon $ typeRep $ Proxy @(Pair Int Int)
+replacePairCon x | rep (Proxy @(Int, Int)) == x = rep (Proxy @(Pair Int Int))
 replacePairCon x = x
+
+ignoredTypes :: [TyCon]
+ignoredTypes =
+  [ rep (Proxy @Resolver),
+    rep (Proxy @NamedResolverT)
+  ]
 
 -- ignores resolver names from typename
 ignoreResolver :: (TyCon, [TypeRep]) -> [TyCon]
-ignoreResolver (con, _) | con == typeRepTyCon (typeRep $ Proxy @Resolver) = []
-ignoreResolver (con, _) | con == typeRepTyCon (typeRep $ Proxy @NamedResolverT) = []
-ignoreResolver (con, args) =
-  con : concatMap (ignoreResolver . splitTyConApp) args
-
-getFingerprint :: Typeable a => CatType c a -> TypeFingerprint
-getFingerprint p@InputType = TypeableFingerprint IN $ tyConFingerprint <$> getTypeConstructors p
-getFingerprint p@OutputType = TypeableFingerprint OUT $ tyConFingerprint <$> getTypeConstructors p
+ignoreResolver (con, _) | con `elem` ignoredTypes = []
+ignoreResolver (con, args) = con : concatMap (ignoreResolver . splitTyConApp) args

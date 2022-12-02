@@ -123,7 +123,7 @@ runResolverStateValueM res = fmap (fmap snd) . runResolverStateM res
 runResolverState :: ResolverState a -> ResolverContext -> GQLResult a
 runResolverState res = fmap snd . runIdentity . runResolverStateM res
 
--- Resolver Internal State
+-- internal resolver state
 newtype ResolverStateT event m a = ResolverStateT
   { _runResolverStateT :: ReaderT ResolverContext (ResultT event m) a
   }

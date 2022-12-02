@@ -23,7 +23,7 @@ import Data.Morpheus.App.Internal.Resolving.Batching
     runResMapT,
     useCached,
   )
-import Data.Morpheus.App.Internal.Resolving.Resolver (MonadResolver)
+import Data.Morpheus.App.Internal.Resolving.MonadResolver (MonadResolver)
 import Data.Morpheus.App.Internal.Resolving.ResolverState
   ( ResolverContext (..),
     askFieldTypeName,
@@ -127,7 +127,7 @@ __resolveSelection (ResEnum name) unionSel@UnionSelection {} = resolveSelection 
 __resolveSelection ResEnum {} _ = throwError (internal "wrong selection on enum value")
 __resolveSelection ResNull _ = pure Null
 __resolveSelection (ResScalar x) SelectionField = pure $ Scalar x
-__resolveSelection ResScalar {} _ = throwError (internal "scalar Resolver should only receive SelectionField")
+__resolveSelection ResScalar {} _ = throwError (internal "scalar resolver should only receive SelectionField")
 __resolveSelection (ResRef ref) sel = do
   ctx <- ask
   lift (ref >>= flip (resolveRef ctx) sel)
@@ -220,7 +220,7 @@ getNamedResolverBy NamedResolverRef {..} = selectOr notFound found resolverTypeN
     found :: (MonadResolver m) => NamedResolver m -> m [NamedResolverResult m]
     found = (resolverArgument &) . resolverFun
     notFound :: (MonadResolver m) => m [NamedResolverResult m]
-    notFound = throwError ("Resolver Type " <> msg resolverTypeName <> "can't found")
+    notFound = throwError ("resolver type " <> msg resolverTypeName <> "can't found")
 
 resolveObject ::
   (MonadResolver m) =>

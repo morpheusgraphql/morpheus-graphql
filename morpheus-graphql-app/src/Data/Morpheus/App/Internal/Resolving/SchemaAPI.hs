@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.App.Internal.Resolving.SchemaAPI
@@ -9,7 +10,10 @@ module Data.Morpheus.App.Internal.Resolving.SchemaAPI
   )
 where
 
-import Data.Morpheus.App.Internal.Resolving.Resolver (Resolver, withArguments)
+import Data.Morpheus.App.Internal.Resolving.MonadResolver
+  ( MonadResolver (..),
+    withArguments,
+  )
 import Data.Morpheus.App.Internal.Resolving.Types
   ( ObjectTypeResolver (..),
     ResolverValue,
@@ -18,8 +22,7 @@ import Data.Morpheus.App.Internal.Resolving.Types
     mkObject,
   )
 import Data.Morpheus.App.RenderIntrospection
-  ( WithSchema,
-    createObjectType,
+  ( createObjectType,
     render,
   )
 import Data.Morpheus.Internal.Utils
@@ -44,25 +47,25 @@ import Data.Morpheus.Types.Internal.AST
 import Relude hiding (empty)
 import qualified Relude as HM
 
-resolveTypes :: (Monad m, WithSchema m) => Schema VALID -> m (ResolverValue m)
+resolveTypes :: MonadResolver m => Schema VALID -> m (ResolverValue m)
 resolveTypes schema = mkList <$> traverse render (toList $ typeDefinitions schema)
 
 renderOperation ::
-  (Monad m, WithSchema m) =>
+  MonadResolver m =>
   Maybe (TypeDefinition OBJECT VALID) ->
   m (ResolverValue m)
 renderOperation (Just TypeDefinition {typeName}) = pure $ createObjectType typeName Nothing [] empty
 renderOperation Nothing = pure mkNull
 
 findType ::
-  (Monad m, WithSchema m) =>
+  MonadResolver m =>
   TypeName ->
   Schema VALID ->
   m (ResolverValue m)
 findType name = selectOr (pure mkNull) render name . typeDefinitions
 
 schemaResolver ::
-  (Monad m, WithSchema m) =>
+  MonadResolver m =>
   Schema VALID ->
   m (ResolverValue m)
 schemaResolver schema@Schema {query, mutation, subscription, directiveDefinitions} =
@@ -76,7 +79,12 @@ schemaResolver schema@Schema {query, mutation, subscription, directiveDefinition
         ("directives", render $ sortWith directiveDefinitionName $ toList directiveDefinitions)
       ]
 
-schemaAPI :: Monad m => Schema VALID -> ObjectTypeResolver (Resolver QUERY e m)
+schemaAPI ::
+  ( MonadOperation m ~ QUERY,
+    MonadResolver m
+  ) =>
+  Schema VALID ->
+  ObjectTypeResolver m
 schemaAPI schema =
   ObjectTypeResolver
     ( HM.fromList
