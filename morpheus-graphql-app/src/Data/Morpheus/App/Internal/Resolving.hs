@@ -42,6 +42,7 @@ module Data.Morpheus.App.Internal.Resolving
 where
 
 import Data.Morpheus.App.Internal.Resolving.Event
+import Data.Morpheus.App.Internal.Resolving.MonadResolver
 import Data.Morpheus.App.Internal.Resolving.Resolver
 import Data.Morpheus.App.Internal.Resolving.ResolverState
 import Data.Morpheus.App.Internal.Resolving.RootResolverValue

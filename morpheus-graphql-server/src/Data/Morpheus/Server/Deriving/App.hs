@@ -23,7 +23,7 @@ import Data.Morpheus.App
 import Data.Morpheus.App.Internal.Resolving
   ( resultOr,
   )
-import Data.Morpheus.Server.Deriving.Resolver
+import Data.Morpheus.Server.Deriving.Resolvers
   ( DERIVE_NAMED_RESOLVERS,
     DERIVE_RESOLVERS,
     deriveNamedResolvers,
@@ -46,7 +46,7 @@ type RootResolverConstraint m e query mutation subscription =
   )
 
 type NamedResolversConstraint m e query mutation subscription =
-  ( DERIVE_NAMED_RESOLVERS e m query,
+  ( DERIVE_NAMED_RESOLVERS (Resolver QUERY e m) query,
     SCHEMA query mutation subscription,
     Monad m
   )

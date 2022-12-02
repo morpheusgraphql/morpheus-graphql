@@ -81,7 +81,11 @@ import Data.Morpheus.Server.Types.Kind
   )
 import Data.Morpheus.Server.Types.NamedResolvers (NamedResolverT (..))
 import Data.Morpheus.Server.Types.SchemaT (SchemaT, extendImplements)
-import Data.Morpheus.Server.Types.TypeName (TypeFingerprint (..), getFingerprint, getTypename)
+import Data.Morpheus.Server.Types.TypeName
+  ( TypeFingerprint (..),
+    typeableFingerprint,
+    typeableTypename,
+  )
 import Data.Morpheus.Server.Types.Types
   ( Arg,
     Pair,
@@ -134,9 +138,9 @@ deriveTypeData ::
   TypeData
 deriveTypeData proxy GDirectiveUsages {typeDirectives} =
   TypeData
-    { gqlTypeName = foldr (`applyTypeName` isIN proxy) (getTypename (Proxy @a)) typeDirectives,
+    { gqlTypeName = foldr (`applyTypeName` isIN proxy) (typeableTypename (Proxy @a)) typeDirectives,
       gqlWrappers = mkBaseType,
-      gqlFingerprint = getFingerprint proxy
+      gqlFingerprint = typeableFingerprint proxy
     }
 
 list :: TypeWrapper -> TypeWrapper

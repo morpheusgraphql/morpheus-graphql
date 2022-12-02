@@ -36,7 +36,6 @@ module Data.Morpheus.Server.Types.Directives
 where
 
 import qualified Data.HashMap.Strict as M
-import Data.Morpheus.Server.Types.TypeName (getTypename)
 import qualified Data.Morpheus.Server.Types.Visitors as Visitors
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
@@ -126,9 +125,6 @@ type TYPE_VISITOR_KIND = '[ 'LOCATION_OBJECT, 'LOCATION_ENUM, 'LOCATION_INPUT_OB
 type FIELD_VISITOR_KIND = '[ 'LOCATION_INPUT_FIELD_DEFINITION, 'LOCATION_FIELD_DEFINITION]
 
 type ENUM_VISITOR_KIND = '[ 'LOCATION_ENUM_VALUE]
-
-__directiveName :: GQLDirective a => f a -> FieldName
-__directiveName = coerce . getTypename
 
 class
   ( ToLocations (DIRECTIVE_LOCATIONS a),

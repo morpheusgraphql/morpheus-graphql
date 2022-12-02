@@ -328,7 +328,7 @@ library
       Data.Morpheus.Server.Deriving.Kinded.Resolver
       Data.Morpheus.Server.Deriving.Kinded.Type
       Data.Morpheus.Server.Deriving.Kinded.Value
-      Data.Morpheus.Server.Deriving.Resolver
+      Data.Morpheus.Server.Deriving.Resolvers
       Data.Morpheus.Server.Deriving.Schema
       Data.Morpheus.Server.Deriving.Utils.AST
       Data.Morpheus.Server.Deriving.Utils.Gmap

@@ -21,7 +21,6 @@ data Event ch con = Event
 
 instance EventHandler (Event ch con) where
   type Channel (Event ch con) = ch
-  getChannels = channels
 
 runEvents ::
   (Foldable t, Applicative f) =>

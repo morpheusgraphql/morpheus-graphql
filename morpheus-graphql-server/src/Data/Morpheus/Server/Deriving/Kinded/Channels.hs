@@ -2,7 +2,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -22,7 +22,6 @@ import qualified Data.HashMap.Lazy as HM
 import Data.Morpheus.App.Internal.Resolving
   ( Channel,
     MonadResolver (..),
-    Resolver,
     ResolverState,
     SubscriptionField (..),
   )
@@ -102,13 +101,13 @@ withSubscriptionSelection Selection {selectionContent = SelectionSet selSet} =
     _ -> throwError (internal "invalid subscription: there can be only one top level selection")
 withSubscriptionSelection _ = throwError (internal "invalid subscription: expected selectionSet")
 
-class GetChannel val e a | a -> e where
+class GetChannel val e a where
   getChannel :: UseDeriving gql val -> a -> ChannelRes e
 
-instance GetChannel val e (SubscriptionField (Resolver SUBSCRIPTION e m a)) where
+instance (MonadResolver m, MonadOperation m ~ SUBSCRIPTION, MonadEvent m ~ e) => GetChannel val e (SubscriptionField (m a)) where
   getChannel _ x = const $ pure $ DerivedChannel $ channel x
 
-instance (val arg) => GetChannel val e (arg -> SubscriptionField (Resolver SUBSCRIPTION e m a)) where
+instance (MonadResolver m, MonadOperation m ~ SUBSCRIPTION, MonadEvent m ~ e, val arg) => GetChannel val e (arg -> SubscriptionField (m a)) where
   getChannel drv f sel@Selection {selectionArguments} =
     useDecodeArguments drv selectionArguments
       >>= flip (getChannel drv) sel . f
