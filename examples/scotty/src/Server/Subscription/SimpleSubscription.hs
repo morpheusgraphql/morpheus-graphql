@@ -9,18 +9,20 @@ module Server.Subscription.SimpleSubscription where
 import Data.Kind (Type)
 import Data.Morpheus.Subscriptions (Event (..))
 import Data.Morpheus.Types
-  ( Resolver,
-    RootResolver (..),
-    SubscriptionField,
-    WithOperation,
-    publish,
-    subscribe,
+  ( Resolver
+  , RootResolver (..)
+  , SubscriptionField
+  , WithOperation
+  , GQLType(..)
+  , publish
+  , subscribe
   )
 import Data.Text (Text)
 import GHC.Generics (Generic)
+
 import Server.Mythology.Character
-  ( Deity,
-    someDeity,
+  ( Deity
+  , someDeity
   )
 
 data Channel
@@ -34,17 +36,17 @@ data Content
 newtype Query m = Query
   { deity :: m Deity
   }
-  deriving (Generic)
+  deriving (Generic,GQLType)
 
 newtype Mutation m = Mutation
   { createDeity :: m Deity
   }
-  deriving (Generic)
+  deriving (Generic,GQLType)
 
 newtype Subscription (m :: Type -> Type) = Subscription
   { newDeity :: SubscriptionField (m Deity)
   }
-  deriving (Generic)
+  deriving (Generic,GQLType)
 
 type APIEvent = Event Channel Content
 

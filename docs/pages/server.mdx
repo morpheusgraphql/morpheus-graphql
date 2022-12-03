@@ -141,20 +141,16 @@ data Content
 
 newtype Query m = Query
   { deity :: m Deity
-  } deriving (Generic)
+  } deriving (Generic,GQLType)
 
 newtype Mutation m = Mutation
   { createDeity :: m Deity
-  } deriving (Generic)
-
-newtype Subscription (m ::  * -> * ) = Subscription
-  { newDeity :: m  Deity
-  } deriving (Generic)
+  } deriving (Generic,GQLType)
 
 newtype Subscription (m :: * -> *) = Subscription
-{ newDeity :: SubscriptionField (m Deity),
-}
-deriving (Generic)
+  { newDeity :: SubscriptionField (m Deity),
+  }
+  deriving (Generic,GQLType)
 
 
 type APIEvent = Event Channel Content

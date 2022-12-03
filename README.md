@@ -21,6 +21,8 @@ _package.yml_
 ```yaml
 dependencies:
   - morpheus-graphql
+  - morpheus-graphql-core
+  - morpheus-graphql-subscriptions
 ```
 
 Additionally, you should tell stack which version to pick:
