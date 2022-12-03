@@ -139,8 +139,6 @@ data Content
   = ContentA Int
   | ContentB Text
 
-type MyEvent = Event Channel Content
-
 newtype Query m = Query
   { deity :: m Deity
   } deriving (Generic)
