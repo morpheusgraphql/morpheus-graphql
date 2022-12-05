@@ -21,6 +21,8 @@ _package.yml_
 ```yaml
 dependencies:
   - morpheus-graphql
+  - morpheus-graphql-core
+  - morpheus-graphql-subscriptions
 ```
 
 Additionally, you should tell stack which version to pick:
@@ -31,14 +33,14 @@ _stack.yml_
 resolver: lts-16.2
 
 extra-deps:
-- morpheus-graphql-0.26.0
-- morpheus-graphql-core-0.26.0
-- morpheus-graphql-app-0.26.0
-- morpheus-graphql-code-gen-0.26.0
-- morpheus-graphql-server-0.26.0
-- morpheus-graphql-client-0.26.0
-- morpheus-graphql-subscriptions-0.26.0
-- morpheus-graphql-code-gen-utils-0.26.0
+- morpheus-graphql-0.27.0
+- morpheus-graphql-core-0.27.0
+- morpheus-graphql-app-0.27.0
+- morpheus-graphql-code-gen-0.27.0
+- morpheus-graphql-code-gen-utils-0.27.0
+- morpheus-graphql-server-0.27.0
+- morpheus-graphql-client-0.27.0
+- morpheus-graphql-subscriptions-0.27.0
 ```
 
 ### Building your first GraphQL API
