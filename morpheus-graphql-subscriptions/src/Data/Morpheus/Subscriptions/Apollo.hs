@@ -11,6 +11,7 @@ module Data.Morpheus.Subscriptions.Apollo
     toApolloResponse,
     Validation,
     ApolloSubscription (..),
+    ApolloResponseType(..),
   )
 where
 
@@ -126,9 +127,23 @@ acceptApolloSubProtocol reqHead =
     apolloProtocol ["graphql-transport-ws"] = AcceptRequest (Just "graphql-transport-ws") []
     apolloProtocol _ = AcceptRequest Nothing []
 
-toApolloResponse :: ID -> GQLResponse -> ByteString
-toApolloResponse sid val =
-  encode $ ApolloSubscription (Just sid) "data" (Just val)
+toApolloResponse :: ApolloResponseType -> Maybe ID -> Maybe GQLResponse -> ByteString
+toApolloResponse responseType sid_myb val_myb =
+  encode $ ApolloSubscription sid_myb (apolloResponseToProtocolMsgType responseType) val_myb
+
+data ApolloResponseType
+  = ConnectionAck
+  | ConnectionError
+  | GqlData
+  | GqlError
+  | GqlComplete
+
+apolloResponseToProtocolMsgType :: ApolloResponseType -> Text
+apolloResponseToProtocolMsgType ConnectionAck = "connection_ack"
+apolloResponseToProtocolMsgType ConnectionError = "connection_error"
+apolloResponseToProtocolMsgType GqlData = "data"
+apolloResponseToProtocolMsgType GqlError = "error"
+apolloResponseToProtocolMsgType GqlComplete = "complete"
 
 data ApolloAction
   = SessionStop ID

@@ -40,6 +40,7 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Subscriptions.Apollo
   ( toApolloResponse,
+    ApolloResponseType (..),
   )
 import Data.Morpheus.Subscriptions.Event (Event (..))
 import Data.Morpheus.Types.IO (GQLResponse)
@@ -162,7 +163,7 @@ startSession sessionChannel resolver sessionId@SessionID {cid, sid} = Updates st
               sessionId
               ClientSession
                 { sessionChannel,
-                  sessionCallback = fmap (toApolloResponse sid) . resolver
+                  sessionCallback = fmap (toApolloResponse GqlData (Just sid) . Just) . resolver
                 }
               clientSessions,
           clientConnections = HM.adjust (addConnectionSession sid) cid clientConnections,

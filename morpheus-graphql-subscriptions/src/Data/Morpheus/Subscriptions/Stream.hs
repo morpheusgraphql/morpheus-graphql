@@ -36,6 +36,7 @@ import Data.Morpheus.App.Internal.Resolving
   )
 import Data.Morpheus.Subscriptions.Apollo
   ( ApolloAction (..),
+    ApolloResponseType (..),
     apolloFormat,
     toApolloResponse,
   )
@@ -123,7 +124,7 @@ handleResponseStream session (ResultT res) =
     unfoldR Failure {errors} = apolloError (toList errors)
     --------------------------
     apolloError :: [GQLError] -> Either ByteString a
-    apolloError = Left . toApolloResponse (sid session) . Errors
+    apolloError = Left . toApolloResponse GqlError (Just $ sid session) . Just . Errors
 
 handleWSRequest ::
   ( Monad m,
@@ -143,7 +144,8 @@ handleWSRequest gqlApp clientId = handle . apolloFormat
     handle = either (liftWS . Left) handleAction
     --------------------------------------------------
     -- handleAction :: ApolloAction -> Stream SUB e m
-    handleAction ConnectionInit = liftWS $ Right []
+    handleAction ConnectionInit =
+      liftWS $ Left $ toApolloResponse ConnectionAck Nothing Nothing
     handleAction (SessionStart sessionId request) =
       handleResponseStream (SessionID clientId sessionId) (gqlApp request)
     handleAction (SessionStop sessionId) =
