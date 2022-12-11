@@ -21,6 +21,7 @@ import Data.Aeson
   ( FromJSON (..),
     ToJSON (..),
     Value (..),
+    Series,
     eitherDecode,
     encode,
     pairs,
@@ -70,6 +71,7 @@ import Prelude
     String,
     ($),
     (.),
+    mempty,
   )
 
 type ID = Text
@@ -85,7 +87,10 @@ instance FromJSON a => FromJSON (ApolloSubscription a) where
   parseJSON = withObject "ApolloSubscription" objectParser
     where
       objectParser o =
-        ApolloSubscription <$> o .:? "id" <*> o .: "type" <*> o .:? "payload"
+        ApolloSubscription
+          <$> o .:? "id"
+          <*> o .: "type"
+          <*> o .:? "payload"
 
 data RequestPayload = RequestPayload
   { payloadOperationName :: Maybe FieldName,
@@ -105,7 +110,16 @@ instance FromJSON RequestPayload where
 
 instance ToJSON a => ToJSON (ApolloSubscription a) where
   toEncoding (ApolloSubscription id' type' payload') =
-    pairs $ "id" .= id' <> "type" .= type' <> "payload" .= payload'
+    pairs $ encodeMaybe "id" id'
+          <> "type" .= type'
+          <> encodeMaybe "payload" payload'
+    where
+      -- Messages should only include these fields when they have real values,
+      -- for example the MessageAck response should only include the type and optionally
+      -- extraneous data in the payload.
+      encodeMaybe :: ToJSON b => Text -> Maybe b -> Series
+      encodeMaybe k Nothing = Prelude.mempty
+      encodeMaybe k (Just v) = k .= v
 
 acceptApolloRequest ::
   MonadIO m =>
@@ -161,15 +175,21 @@ apolloFormat = validateReq . eitherDecode
     validateSub :: ApolloSubscription RequestPayload -> Validation ApolloAction
     validateSub ApolloSubscription {apolloType = "connection_init"} =
       pure ConnectionInit
-    validateSub ApolloSubscription {apolloType = "start", apolloId, apolloPayload} =
-      do
-        sessionId <- validateSession apolloId
-        payload <- validatePayload apolloPayload
-        pure $ SessionStart sessionId payload
+    validateSub sub@ApolloSubscription{apolloType = "subscribe", apolloId, apolloPayload} =
+      validateStartOrSubscribe sub
+    validateSub sub@ApolloSubscription{apolloType = "start", apolloId, apolloPayload} =
+      validateStartOrSubscribe sub
     validateSub ApolloSubscription {apolloType = "stop", apolloId} =
       SessionStop <$> validateSession apolloId
     validateSub ApolloSubscription {apolloType} =
       Left $ "Unknown Request type \"" <> pack (unpack apolloType) <> "\"."
+
+    validateStartOrSubscribe :: ApolloSubscription RequestPayload -> Validation ApolloAction
+    validateStartOrSubscribe ApolloSubscription {apolloType, apolloId, apolloPayload} =
+      do
+        sessionId <- validateSession apolloId
+        payload <- validatePayload apolloPayload
+        pure $ SessionStart sessionId payload
     --------------------------------------------
     validateSession :: Maybe ID -> Validation ID
     validateSession = maybe (Left "\"id\" was not provided") Right
