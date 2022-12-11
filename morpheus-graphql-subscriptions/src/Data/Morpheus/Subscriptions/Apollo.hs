@@ -123,6 +123,7 @@ acceptApolloSubProtocol reqHead =
     apolloProtocol ["graphql-subscriptions"] =
       AcceptRequest (Just "graphql-subscriptions") []
     apolloProtocol ["graphql-ws"] = AcceptRequest (Just "graphql-ws") []
+    apolloProtocol ["graphql-transport-ws"] = AcceptRequest (Just "graphql-transport-ws") []
     apolloProtocol _ = AcceptRequest Nothing []
 
 toApolloResponse :: ID -> GQLResponse -> ByteString
