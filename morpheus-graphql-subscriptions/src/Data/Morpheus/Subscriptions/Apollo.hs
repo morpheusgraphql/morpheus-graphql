@@ -155,7 +155,7 @@ data ApolloResponseType
 apolloResponseToProtocolMsgType :: ApolloResponseType -> Text
 apolloResponseToProtocolMsgType ConnectionAck = "connection_ack"
 apolloResponseToProtocolMsgType ConnectionError = "connection_error"
-apolloResponseToProtocolMsgType GqlData = "data"
+apolloResponseToProtocolMsgType GqlData = "next"
 apolloResponseToProtocolMsgType GqlError = "error"
 apolloResponseToProtocolMsgType GqlComplete = "complete"
 
