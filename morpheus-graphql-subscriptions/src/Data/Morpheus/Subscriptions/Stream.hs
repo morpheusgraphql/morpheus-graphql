@@ -118,10 +118,13 @@ handleResponseStream session (ResultT res) =
     execute Publish {} =
       apolloError
         ["websocket can only handle subscriptions, not mutations"]
-    execute (Subscribe ch subRes) = Right $ startSession ch subRes session
+    execute (Subscribe ch subRes) =
+      Right $ startSession ch subRes session
     --------------------------
-    unfoldR Success {result = (events, _)} = traverse execute events
-    unfoldR Failure {errors} = apolloError (toList errors)
+    unfoldR Success {result = (events, _)} =
+      traverse execute events
+    unfoldR Failure {errors} =
+      apolloError (toList errors)
     --------------------------
     apolloError :: [GQLError] -> Either ByteString a
     apolloError = Left . toApolloResponse GqlError (Just $ sid session) . Just . Errors
