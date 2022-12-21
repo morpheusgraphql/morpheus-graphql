@@ -39,8 +39,8 @@ import Data.Morpheus.Internal.Utils
     KeyOf (..),
   )
 import Data.Morpheus.Subscriptions.Apollo
-  ( toApolloResponse,
-    ApolloResponseType (..),
+  ( ApolloResponseType (..),
+    toApolloResponse,
   )
 import Data.Morpheus.Subscriptions.Event (Event (..))
 import Data.Morpheus.Types.IO (GQLResponse)

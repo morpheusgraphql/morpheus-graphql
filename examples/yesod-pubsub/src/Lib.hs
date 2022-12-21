@@ -1,6 +1,7 @@
 module Lib
-    ( main
-    ) where
+  ( main,
+  )
+where
 
 import qualified Server.Server as WebServer
 

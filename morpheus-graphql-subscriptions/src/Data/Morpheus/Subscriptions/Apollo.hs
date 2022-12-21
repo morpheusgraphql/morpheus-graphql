@@ -11,7 +11,7 @@ module Data.Morpheus.Subscriptions.Apollo
     toApolloResponse,
     Validation,
     ApolloSubscription (..),
-    ApolloResponseType(..),
+    ApolloResponseType (..),
   )
 where
 
@@ -19,9 +19,9 @@ import Control.Applicative (Applicative (..))
 import Control.Monad.IO.Class (MonadIO (..))
 import Data.Aeson
   ( FromJSON (..),
+    Series,
     ToJSON (..),
     Value (..),
-    Series,
     eitherDecode,
     encode,
     pairs,
@@ -69,9 +69,9 @@ import Network.WebSockets
 import Prelude
   ( Show,
     String,
+    mempty,
     ($),
     (.),
-    mempty,
   )
 
 type ID = Text
@@ -110,9 +110,10 @@ instance FromJSON RequestPayload where
 
 instance ToJSON a => ToJSON (ApolloSubscription a) where
   toEncoding (ApolloSubscription id' type' payload') =
-    pairs $ encodeMaybe "id" id'
-          <> "type" .= type'
-          <> encodeMaybe "payload" payload'
+    pairs $
+      encodeMaybe "id" id'
+        <> "type" .= type'
+        <> encodeMaybe "payload" payload'
     where
       -- Messages should only include these fields when they have real values,
       -- for example the MessageAck response should only include the type and optionally
@@ -177,9 +178,9 @@ apolloFormat = validateReq . eitherDecode
     validateSub :: ApolloSubscription RequestPayload -> Validation ApolloAction
     validateSub ApolloSubscription {apolloType = "connection_init"} =
       pure ConnectionInit
-    validateSub sub@ApolloSubscription{apolloType = "subscribe", apolloId, apolloPayload} =
+    validateSub sub@ApolloSubscription {apolloType = "subscribe", apolloId, apolloPayload} =
       validateStartOrSubscribe sub
-    validateSub sub@ApolloSubscription{apolloType = "start", apolloId, apolloPayload} =
+    validateSub sub@ApolloSubscription {apolloType = "start", apolloId, apolloPayload} =
       validateStartOrSubscribe sub
     validateSub ApolloSubscription {apolloType = "stop", apolloId} =
       SessionStop <$> validateSession apolloId
