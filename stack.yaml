@@ -9,6 +9,7 @@ packages:
   - examples/scotty-haxl
   - examples/scotty-freer-simple
   - examples/servant
+  - examples/yesod-pubsub
   - morpheus-graphql-benchmarks
   - morpheus-graphql-tests
   - morpheus-graphql-core
