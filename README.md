@@ -10,6 +10,8 @@ Just open an issue here on GitHub, or join [our Slack channel](https://morpheus-
 
 Please note that this readme file provides only a brief introduction to the library. If you are interested in more advanced topics, visit [Docs](https://morpheusgraphql.com/).
 
+Since version v0.28.0, Morpheus GraphQL implements the [https://github.com/enisdenjo/graphql-ws/blob/master/PROTOCOL.md](graphql-ws GraphQL over WebSocket Protocol), and *no longer* uses the [https://github.com/apollographql/subscriptions-transport-ws/blob/master/PROTOCOL.md](subscriptions-transport-ws) protocol.
+
 ## Getting Started
 
 ### Setup
