@@ -7,8 +7,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TemplateHaskellQuotes #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# OPTIONS_GHC -freduction-depth=0 #-}
 
@@ -46,14 +44,12 @@ import GHC.Generics
 import Server.ServerState (Channel (..), Content (..), MEvent, ServerState)
 import qualified Server.ServerState as ServerState
 
-data Query m = Query
-  { queryCounter :: m Int
-  }
+newtype Query m
+  = Query { queryCounter :: m Int }
   deriving (Generic, GQLType)
 
-data FunctionSearchArgs = FunctionSearchArgs
-  { fn :: Text
-  }
+newtype FunctionSearchArgs
+  = FunctionSearchArgs { fn :: Text }
   deriving (Generic, GQLType)
 
 data QueryCounterArgs
@@ -75,23 +71,23 @@ resolveQuCounter serverState = do
   results <- lift $ ServerState.readResults serverState
   liftEither . return $ Right results
 
-data Mutation m = Mutation
-  { updateCounter :: UpdateCounter -> m Int
-  }
+newtype Mutation m
+  = Mutation { updateCounter :: UpdateCounter -> m Int }
   deriving (Generic, GQLType)
 
-data UpdateCounter = UpdateCounter {updateCounter_newVal :: Int}
+newtype UpdateCounter
+  = UpdateCounter {updateCounter_newVal :: Int}
   deriving (Generic, GQLType)
 
-mut_updateCounter :: ServerState -> UpdateCounter -> ResolverM MEvent IO Int
-mut_updateCounter ss args@UpdateCounter {updateCounter_newVal} = do
+mutUpdateCounter :: ServerState -> UpdateCounter -> ResolverM MEvent IO Int
+mutUpdateCounter ss args@UpdateCounter {updateCounter_newVal} = do
   lift $ ServerState.saveResults ss updateCounter_newVal
   emitNewChannelResults ss updateCounter_newVal
   liftEither . return $ Right updateCounter_newVal
 
 --- Subscriptions
 newtype Subscription (m :: * -> *) = Subscription
-  { sub_counter :: SubscriptionField (m Int)
+  { subCounter :: SubscriptionField (m Int)
   }
   deriving (Generic, GQLType)
 
@@ -106,19 +102,19 @@ rootResolver ss =
           },
       mutationResolver =
         Mutation
-          { updateCounter = mut_updateCounter ss
+          { updateCounter = mutUpdateCounter ss
           },
       subscriptionResolver =
         Subscription
-          { sub_counter = rsub_counter ss
+          { subCounter = rsubCounter ss
           }
     }
 
 gqlApi :: ServerState -> GQLRequest -> IO GQLResponse
 gqlApi serverState = interpreter $ rootResolver serverState
 
-rsub_counter :: ServerState -> SubscriptionField (ResolverS MEvent IO Int)
-rsub_counter ss = do
+rsubCounter :: ServerState -> SubscriptionField (ResolverS MEvent IO Int)
+rsubCounter ss = do
   subscribe ChannelCounter $ do
     pure $ \(Event _ content) -> do
       lift $ ServerState.readResults ss

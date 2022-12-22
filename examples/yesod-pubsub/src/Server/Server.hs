@@ -42,7 +42,8 @@ postGraphqlR = do
   let morpheusApp = Data.Morpheus.deriveApp $ Gql.rootResolver serverState
   body <- requireCheckJsonBody :: Handler GQLRequest
   publisher <- liftIO $ ServerState.readPublisher serverState
-  result <- liftIO $ (MorpheusSub.httpPubApp [publisher] morpheusApp body :: IO GQLResponse)
+  result <- liftIO
+    (MorpheusSub.httpPubApp [publisher] morpheusApp body :: IO GQLResponse)
   returnJson result
 
 main :: IO ()

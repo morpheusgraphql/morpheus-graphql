@@ -25,7 +25,7 @@ data Channel
   = ChannelCounter
   deriving (Show, Eq, Generic, Hashable)
 
-data Content
+newtype Content
   = Count Int
   deriving (Show)
 
@@ -51,13 +51,12 @@ readResults ss =
   readIORef $ counter ss
 
 saveResults :: ServerState -> Int -> IO ()
-saveResults ss i =
-  -- atomicModifyIORef (counter serverState) $ \r ->
-  writeIORef (counter ss) i
+saveResults ss =
+  writeIORef (counter ss)
 
 savePublisher :: ServerState -> (MEvent -> IO ()) -> IO ()
-savePublisher ss pub =
-  writeIORef (publisher ss) pub
+savePublisher ss =
+  writeIORef (publisher ss)
 
 readPublisher :: ServerState -> IO (MEvent -> IO ())
 readPublisher ss =
