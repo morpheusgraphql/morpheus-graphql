@@ -18,9 +18,9 @@ import Relude hiding (ByteString)
 import Subscription.Utils
   ( SimulationState (..),
     SubM,
-    apolloInit,
     apolloConnectionAck,
     apolloConnectionErr,
+    apolloInit,
     apolloStart,
     apolloStop,
     inputsAreConsumed,
