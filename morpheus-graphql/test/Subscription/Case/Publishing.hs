@@ -29,6 +29,8 @@ import Subscription.API
 import Subscription.Utils
   ( SimulationState (..),
     apolloInit,
+    apolloConnectionAck,
+    apolloConnectionErr,
     apolloRes,
     apolloStart,
     apolloStop,
@@ -83,7 +85,8 @@ triggerSubscription = do
       [ inputsAreConsumed inputs,
         testResponse
           -- triggers subscriptions by channels
-          [ apolloRes
+          [ apolloConnectionAck,
+            apolloRes
               "2"
               "{\"newDeity\":{\"name\":\"Zeus\",\"age\":1200}}",
             apolloRes

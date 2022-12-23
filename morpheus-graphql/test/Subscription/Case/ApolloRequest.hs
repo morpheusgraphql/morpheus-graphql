@@ -19,6 +19,8 @@ import Subscription.Utils
   ( SimulationState (..),
     SubM,
     apolloInit,
+    apolloConnectionAck,
+    apolloConnectionErr,
     apolloStart,
     apolloStop,
     inputsAreConsumed,
@@ -66,7 +68,7 @@ testConnectionInit = testSimulation test [apolloInit]
         "connection init"
         [ inputsAreConsumed inputs,
           testResponse
-            []
+            [apolloConnectionAck]
             outputs,
           stored input store,
           storedSingle store
@@ -92,7 +94,7 @@ testSubscriptionStart =
         "subscription start"
         [ inputsAreConsumed inputs,
           testResponse
-            []
+            [apolloConnectionAck]
             outputs,
           storeSubscriptions
             input
@@ -118,7 +120,7 @@ testSubscriptionStop =
         "stop subscription"
         [ inputsAreConsumed inputs,
           testResponse
-            []
+            [apolloConnectionAck]
             outputs,
           storeSubscriptions
             input

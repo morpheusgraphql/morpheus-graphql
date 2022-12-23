@@ -19,6 +19,8 @@ module Subscription.Utils
     apolloStop,
     apolloRes,
     apolloInit,
+    apolloConnectionAck,
+    apolloConnectionErr,
     testSimulation,
   )
 where
@@ -219,3 +221,9 @@ apolloRes sid value = "{\"id\":\"" <> sid <> "\",\"type\":\"data\",\"payload\":{
 
 apolloInit :: ByteString
 apolloInit = "{ \"type\":\"connection_init\" }"
+
+apolloConnectionAck :: ByteString
+apolloConnectionAck = "{ \"type\":\"connection_ack\" }"
+
+apolloConnectionErr :: ByteString
+apolloConnectionErr = "{ \"type\":\"connection_error\" }"
