@@ -39,7 +39,7 @@ import Data.Morpheus.Internal.Utils
     KeyOf (..),
   )
 import Data.Morpheus.Subscriptions.Apollo
-  ( ApolloResponseType (..),
+  ( ApolloMessageType (..),
     toApolloResponse,
   )
 import Data.Morpheus.Subscriptions.Event (Event (..))

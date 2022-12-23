@@ -36,7 +36,7 @@ import Data.Morpheus.App.Internal.Resolving
   )
 import Data.Morpheus.Subscriptions.Apollo
   ( ApolloAction (..),
-    ApolloResponseType (..),
+    ApolloMessageType (..),
     apolloFormat,
     toApolloResponse,
   )
@@ -148,7 +148,7 @@ handleWSRequest gqlApp clientId = handle . apolloFormat
     --------------------------------------------------
     -- handleAction :: ApolloAction -> Stream SUB e m
     handleAction ConnectionInit =
-      liftWS $ Left $ toApolloResponse ConnectionAck Nothing Nothing
+      liftWS $ Left $ toApolloResponse GqlConnectionAck Nothing Nothing
     handleAction (SessionStart sessionId request) =
       handleResponseStream (SessionID clientId sessionId) (gqlApp request)
     handleAction (SessionStop sessionId) =

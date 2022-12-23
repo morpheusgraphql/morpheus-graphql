@@ -11,12 +11,13 @@ module Data.Morpheus.Subscriptions.Apollo
     toApolloResponse,
     Validation,
     ApolloSubscription (..),
-    ApolloResponseType (..),
+    ApolloMessageType (..),
   )
 where
 
 import Control.Applicative (Applicative (..))
 import Control.Monad.IO.Class (MonadIO (..))
+import Control.Monad.Fail (fail)
 import Data.Aeson
   ( FromJSON (..),
     Series,
@@ -26,6 +27,7 @@ import Data.Aeson
     encode,
     pairs,
     withObject,
+    withText,
     (.:),
     (.:?),
     (.=),
@@ -67,9 +69,11 @@ import Network.WebSockets
     pendingRequest,
   )
 import Prelude
-  ( Show,
+  ( Eq,
+    Show,
     String,
     mempty,
+    return,
     ($),
     (.),
   )
@@ -78,7 +82,7 @@ type ID = Text
 
 data ApolloSubscription payload = ApolloSubscription
   { apolloId :: Maybe ID,
-    apolloType :: Text,
+    apolloType :: ApolloMessageType,
     apolloPayload :: Maybe payload
   }
   deriving (Show, Generic)
@@ -145,23 +149,43 @@ acceptApolloSubProtocol reqHead =
       AcceptRequest (Just "graphql-transport-ws") []
     apolloProtocol _ = AcceptRequest Nothing []
 
-toApolloResponse :: ApolloResponseType -> Maybe ID -> Maybe GQLResponse -> ByteString
+toApolloResponse :: ApolloMessageType -> Maybe ID -> Maybe GQLResponse -> ByteString
 toApolloResponse responseType sid_myb val_myb =
-  encode $ ApolloSubscription sid_myb (apolloResponseToProtocolMsgType responseType) val_myb
+  encode $ ApolloSubscription sid_myb responseType val_myb
 
-data ApolloResponseType
-  = ConnectionAck
-  | ConnectionError
+data ApolloMessageType
+  = GqlConnectionAck
+  | GqlConnectionError
   | GqlData
   | GqlError
   | GqlComplete
+  | GqlConnectionInit
+  | GqlSubscribe
+  deriving(Eq,Show,Generic)
 
-apolloResponseToProtocolMsgType :: ApolloResponseType -> Text
-apolloResponseToProtocolMsgType ConnectionAck = "connection_ack"
-apolloResponseToProtocolMsgType ConnectionError = "connection_error"
+instance FromJSON ApolloMessageType where
+  parseJSON = withText "ApolloMessageType" txtParser
+    where
+      txtParser "connection_ack" = return GqlConnectionAck
+      txtParser "connection_error" = return GqlConnectionError
+      txtParser "next" = return GqlData
+      txtParser "error" = return GqlError
+      txtParser "complete" = return GqlComplete
+      txtParser "connection_init" = return GqlConnectionInit
+      txtParser "subscribe" = return GqlSubscribe
+      txtParser other = fail "Invalid type encountered."
+
+instance ToJSON ApolloMessageType where
+  toEncoding = toEncoding . apolloResponseToProtocolMsgType
+
+apolloResponseToProtocolMsgType :: ApolloMessageType -> Text
+apolloResponseToProtocolMsgType GqlConnectionAck = "connection_ack"
+apolloResponseToProtocolMsgType GqlConnectionError = "connection_error"
+apolloResponseToProtocolMsgType GqlConnectionInit = "connection_init"
 apolloResponseToProtocolMsgType GqlData = "next"
 apolloResponseToProtocolMsgType GqlError = "error"
 apolloResponseToProtocolMsgType GqlComplete = "complete"
+apolloResponseToProtocolMsgType GqlSubscribe = "subscribe"
 
 data ApolloAction
   = SessionStop ID
@@ -177,24 +201,21 @@ apolloFormat = validateReq . eitherDecode
     validateReq = either (Left . pack) validateSub
     -------------------------------------
     validateSub :: ApolloSubscription RequestPayload -> Validation ApolloAction
-    validateSub ApolloSubscription {apolloType = "connection_init"} =
+    validateSub ApolloSubscription {apolloType = GqlConnectionInit} =
       pure ConnectionInit
-    validateSub sub@ApolloSubscription {apolloType = "subscribe", apolloId, apolloPayload} =
-      validateStartOrSubscribe sub
-    validateSub sub@ApolloSubscription {apolloType = "start", apolloId, apolloPayload} =
-      validateStartOrSubscribe sub
-    validateSub ApolloSubscription {apolloType = "stop", apolloId} =
-      SessionStop <$> validateSession apolloId
-    validateSub ApolloSubscription {apolloType} =
-      Left $ "Unknown Request type \"" <> pack (unpack apolloType) <> "\"."
-
-    validateStartOrSubscribe :: ApolloSubscription RequestPayload -> Validation ApolloAction
-    validateStartOrSubscribe ApolloSubscription {apolloType, apolloId, apolloPayload} =
+    validateSub ApolloSubscription {apolloType = GqlSubscribe, apolloId, apolloPayload} =
       do
         sessionId <- validateSession apolloId
         payload <- validatePayload apolloPayload
         pure $ SessionStart sessionId payload
-    --------------------------------------------
+    validateSub ApolloSubscription {apolloType = GqlComplete, apolloId} =
+      SessionStop <$> validateSession apolloId
+    validateSub ApolloSubscription {apolloType} =
+      Left $
+        "Unknown Request type \""
+        <> pack (unpack $ apolloResponseToProtocolMsgType apolloType)
+        <> "\"."
+
     validateSession :: Maybe ID -> Validation ID
     validateSession = maybe (Left "\"id\" was not provided") Right
     -------------------------------------
