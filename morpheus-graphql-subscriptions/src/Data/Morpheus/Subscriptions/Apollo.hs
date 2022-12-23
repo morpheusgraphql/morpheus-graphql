@@ -118,7 +118,8 @@ instance ToJSON a => ToJSON (ApolloSubscription a) where
       -- Messages should only include these fields when they have real values,
       -- for example the MessageAck response should only include the type and optionally
       -- extraneous data in the payload.
-      encodeMaybe :: ToJSON b => Text -> Maybe b -> Series
+      -- Aeson < 2.0.0 has Keys as Text, >= 2.0.0 has Data.Aeson.Key.Key
+      -- encodeMaybe :: ToJSON b => Text -> Maybe b -> Series
       encodeMaybe k Nothing = Prelude.mempty
       encodeMaybe k (Just v) = k .= v
 
