@@ -52,7 +52,7 @@ testUnknownType =
         "unknown request type"
         [ inputsAreConsumed inputs,
           testResponse
-            ["Unknown Request type \"bla\"."]
+            ["Error in $.type: Invalid type encountered."]
             outputs,
           storeIsEmpty store
         ]

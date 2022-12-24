@@ -13,6 +13,7 @@
 module Data.Morpheus.Subscriptions
   ( webSocketsApp,
     httpPubApp,
+    ApolloMessageType (..),
     PubApp (..),
     SubApp (..),
     Event (..),
@@ -28,6 +29,9 @@ import Data.Morpheus.App
   ( App,
     MapAPI (..),
     runApp,
+  )
+import Data.Morpheus.Subscriptions.Apollo
+  ( ApolloMessageType (..),
   )
 import Data.Morpheus.Subscriptions.Event
   ( Event (..),
