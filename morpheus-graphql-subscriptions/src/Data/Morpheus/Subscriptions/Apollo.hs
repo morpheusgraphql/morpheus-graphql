@@ -163,7 +163,7 @@ data ApolloMessageType
   | GqlSubscribe
   | GqlPing
   | GqlPong
-  deriving(Eq, Show, Generic)
+  deriving (Eq, Show, Generic)
 
 instance FromJSON ApolloMessageType where
   parseJSON = withText "ApolloMessageType" txtParser
