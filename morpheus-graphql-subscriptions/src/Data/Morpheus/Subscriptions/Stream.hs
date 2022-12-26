@@ -177,7 +177,7 @@ runStreamWS scope@SubContext {callback} SubOutput {streamWS} =
     >>= either callback (traverse_ eventRunner)
   where
     -- eventRunner :: Monad m => WSOutputEvent e m -> m ()
-    eventRunner (WSUpdate updates) = (run scope) updates
+    eventRunner (WSUpdate updates) = run scope updates
     eventRunner (WSMessage msg) = callback msg
 
 runStreamHTTP ::

@@ -16,8 +16,8 @@ module Data.Morpheus.Subscriptions.Apollo
 where
 
 import Control.Applicative (Applicative (..))
-import Control.Monad.IO.Class (MonadIO (..))
 import Control.Monad.Fail (fail)
+import Control.Monad.IO.Class (MonadIO (..))
 import Data.Aeson
   ( FromJSON (..),
     Series,
@@ -163,7 +163,7 @@ data ApolloMessageType
   | GqlSubscribe
   | GqlPing
   | GqlPong
-  deriving(Eq,Show,Generic)
+  deriving(Eq, Show, Generic)
 
 instance FromJSON ApolloMessageType where
   parseJSON = withText "ApolloMessageType" txtParser
@@ -222,8 +222,8 @@ apolloFormat = validateReq . eitherDecode
     validateSub ApolloSubscription {apolloType} =
       Left $
         "Unknown Request type \""
-        <> pack (unpack $ apolloResponseToProtocolMsgType apolloType)
-        <> "\"."
+          <> pack (unpack $ apolloResponseToProtocolMsgType apolloType)
+          <> "\"."
 
     validateSession :: Maybe ID -> Validation ID
     validateSession = maybe (Left "\"id\" was not provided") Right
