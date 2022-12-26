@@ -161,6 +161,8 @@ data ApolloMessageType
   | GqlComplete
   | GqlConnectionInit
   | GqlSubscribe
+  | GqlPing
+  | GqlPong
   deriving(Eq,Show,Generic)
 
 instance FromJSON ApolloMessageType where
@@ -173,6 +175,8 @@ instance FromJSON ApolloMessageType where
       txtParser "complete" = return GqlComplete
       txtParser "connection_init" = return GqlConnectionInit
       txtParser "subscribe" = return GqlSubscribe
+      txtParser "ping" = return GqlPing
+      txtParser "pong" = return GqlPong
       txtParser other = fail "Invalid type encountered."
 
 instance ToJSON ApolloMessageType where
@@ -186,11 +190,14 @@ apolloResponseToProtocolMsgType GqlData = "next"
 apolloResponseToProtocolMsgType GqlError = "error"
 apolloResponseToProtocolMsgType GqlComplete = "complete"
 apolloResponseToProtocolMsgType GqlSubscribe = "subscribe"
+apolloResponseToProtocolMsgType GqlPing = "ping"
+apolloResponseToProtocolMsgType GqlPong = "pong"
 
 data ApolloAction
   = SessionStop ID
   | SessionStart ID GQLRequest
   | ConnectionInit
+  | Ping
 
 type Validation = Either ByteString
 
@@ -203,6 +210,8 @@ apolloFormat = validateReq . eitherDecode
     validateSub :: ApolloSubscription RequestPayload -> Validation ApolloAction
     validateSub ApolloSubscription {apolloType = GqlConnectionInit} =
       pure ConnectionInit
+    validateSub ApolloSubscription {apolloType = GqlPing} =
+      pure Ping
     validateSub ApolloSubscription {apolloType = GqlSubscribe, apolloId, apolloPayload} =
       do
         sessionId <- validateSession apolloId

@@ -21,6 +21,8 @@ module Subscription.Utils
     apolloInit,
     apolloConnectionAck,
     apolloConnectionErr,
+    apolloPing,
+    apolloPong,
     testSimulation,
   )
 where
@@ -228,3 +230,9 @@ apolloConnectionAck = "{\"type\":\"connection_ack\"}"
 
 apolloConnectionErr :: ByteString
 apolloConnectionErr = "{\"type\":\"connection_error\"}"
+
+apolloPing :: ByteString
+apolloPing = "{\"type\":\"ping\"}"
+
+apolloPong :: ByteString
+apolloPong = "{\"type\":\"pong\"}"

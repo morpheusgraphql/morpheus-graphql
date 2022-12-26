@@ -21,6 +21,8 @@ import Subscription.Utils
     apolloConnectionAck,
     apolloConnectionErr,
     apolloInit,
+    apolloPing,
+    apolloPong,
     apolloStart,
     apolloStop,
     inputsAreConsumed,
@@ -72,6 +74,21 @@ testConnectionInit = testSimulation test [apolloInit]
             outputs,
           stored input store,
           storedSingle store
+        ]
+
+testPingPong ::
+  (Eq ch, Show ch, Hashable ch) =>
+  App (Event ch a) (SubM (Event ch a)) ->
+  IO TestTree
+testPingPong = testSimulation test [apolloInit,apolloPing]
+  where
+    test input SimulationState {inputs, outputs, store} =
+      testGroup
+        "ping pong"
+        [ inputsAreConsumed inputs,
+          testResponse
+            [apolloConnectionAck,apolloPong]
+            outputs
         ]
 
 startSub :: ByteString -> ByteString
@@ -139,5 +156,6 @@ testApolloRequest app =
       [ testUnknownType,
         testConnectionInit,
         testSubscriptionStart,
-        testSubscriptionStop
+        testSubscriptionStop,
+        testPingPong
       ]

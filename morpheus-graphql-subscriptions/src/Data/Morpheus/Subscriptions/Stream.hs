@@ -153,6 +153,8 @@ handleWSRequest gqlApp clientId = handle . apolloFormat
     -- handleAction :: ApolloAction -> Stream SUB e m
     handleAction ConnectionInit = do
       liftWS $ Right [WSMessage $ toApolloResponse GqlConnectionAck Nothing Nothing]
+    handleAction Ping = do
+      liftWS $ Right [WSMessage $ toApolloResponse GqlPong Nothing Nothing]
     handleAction (SessionStart sessionId request) =
       handleResponseStream (SessionID clientId sessionId) (gqlApp request)
     handleAction (SessionStop sessionId) =
