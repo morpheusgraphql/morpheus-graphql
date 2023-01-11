@@ -3,9 +3,9 @@
 ## Morpheus `GraphQL Client` with Template haskell QuasiQuotes
 
 ```hs
-defineByDocumentFile
+declareLocalTypesInline
     "./schema.gql"
-  [gql|
+  [raw|
     query GetHero ($character: Character)
       {
         deity (fatherOf:$character) {
