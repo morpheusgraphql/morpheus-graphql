@@ -64,7 +64,7 @@ import Data.Morpheus.Types.Internal.AST
     internal,
     unitFieldName,
     unitTypeName,
-    unpackName,
+    unpackName,FieldName
   )
 import Relude hiding (empty)
 
@@ -90,13 +90,13 @@ fieldRefs ::
   ObjectTypeResolver m ->
   Selection VALID ->
   m [(SelectionContent VALID, NamedResolverRef)]
-fieldRefs ObjectTypeResolver {..} currentSelection@Selection {..}
+fieldRefs objRes currentSelection@Selection {..}
   | selectionName == "__typename" = pure []
   | otherwise = do
       t <- askFieldTypeName selectionName
       updateCurrentType t $
         local (\ctx -> ctx {currentSelection}) $ do
-          x <- maybe (pure []) (fmap pure) (HM.lookup selectionName objectFields)
+          x <- selectObjectFields  [] (fmap pure) selectionName objRes
           concat <$> traverse (scanRefs selectionContent) x
 
 resolveSelection ::
@@ -247,7 +247,8 @@ runFieldResolver ::
 runFieldResolver Selection {selectionName, selectionContent}
   | selectionName == "__typename" =
       const (Scalar . String . unpackName <$> lift (asks (typeName . currentType)))
-  | otherwise =
-      maybe (pure Null) (lift >=> (`resolveSelection` selectionContent))
-        . HM.lookup selectionName
-        . objectFields
+  | otherwise = selectObjectFields Null (lift >=> (`resolveSelection` selectionContent)) selectionName
+
+
+selectObjectFields :: Monad m' => a -> (m (ResolverValue m) -> m' a) -> FieldName -> ObjectTypeResolver m -> m' a
+selectObjectFields fb suc selectionName ObjectTypeResolver {..} = maybe (pure fb) suc (HM.lookup selectionName objectFields)
