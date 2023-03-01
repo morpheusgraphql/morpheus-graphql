@@ -36,6 +36,7 @@ data-files:
     test/Feature/Directive/field-visitor/name-encode/query.gql
     test/Feature/Directive/field-visitor/name-introspection/query.gql
     test/Feature/Directive/type-visitor/description/query.gql
+    test/Feature/Execution/tests/single/query.gql
     test/Feature/Inference/object-and-enum/introspection/query.gql
     test/Feature/Inference/object-and-enum/resolving/query.gql
     test/Feature/Inference/tagged-arguments-fail/introspection/query.gql
@@ -168,6 +169,7 @@ data-files:
     test/Feature/Directive/field-visitor/name-encode/response.json
     test/Feature/Directive/field-visitor/name-introspection/response.json
     test/Feature/Directive/type-visitor/description/response.json
+    test/Feature/Execution/tests/single/response.json
     test/Feature/Inference/object-and-enum/introspection/response.json
     test/Feature/Inference/object-and-enum/resolving/response.json
     test/Feature/Inference/tagged-arguments-fail/introspection/response.json
@@ -380,6 +382,7 @@ test-suite morpheus-graphql-server-test
       Feature.Directive.EnumVisitor
       Feature.Directive.FieldVisitor
       Feature.Directive.TypeVisitor
+      Feature.Execution.SingleExecution
       Feature.Inference.ObjectAndEnum
       Feature.Inference.TaggedArguments
       Feature.Inference.TaggedArgumentsFail
