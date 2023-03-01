@@ -1,10 +1,1 @@
-{
-  union {
-    ...FA
-    aText
-  }
-}
-
-fragment FA on A {
-  aText
-}
+{ test }
