@@ -43,7 +43,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeName,
     VALID,
     ValidValue,
-    unpackName,
+    unpackName,msg, Value(..)
   )
 import Relude hiding (ByteString, fromList)
 import Test.Morpheus
@@ -65,7 +65,7 @@ typeConstraint cons (name, f) = (name,) $ maybe f (require f) (lookup (unpackNam
 require :: Monad m => NamedResolverFunction QUERY e m -> BatchedValues -> NamedResolverFunction QUERY e m
 require f req args
   | fromList args == req = f args
-  | otherwise = throwError ("was not batched! expected: " <> show req <> "got: " <> show args)
+  | otherwise = throwError ("was not batched! expected: " <> msg (List $ toList req) <> "got: " <> msg (List args))
 
 gods :: [ValidValue]
 gods = ["poseidon", "morpheus", "zeus"]

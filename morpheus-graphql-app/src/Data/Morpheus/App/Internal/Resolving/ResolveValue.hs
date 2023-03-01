@@ -96,7 +96,7 @@ fieldRefs objRes currentSelection@Selection {..}
       t <- askFieldTypeName selectionName
       updateCurrentType t $
         local (\ctx -> ctx {currentSelection}) $ do
-          x <- selectObjectFields  [] (fmap pure) selectionName objRes
+          x <- withField  [] (fmap pure) selectionName objRes
           concat <$> traverse (scanRefs selectionContent) x
 
 resolveSelection ::
@@ -106,7 +106,8 @@ resolveSelection ::
   ResolverMapT m ValidValue
 resolveSelection res selection = do
   ctx <- ask
-  newRmap <- lift (scanRefs selection res >>= buildCache ctx)
+  refs <- traceShowId <$> lift (scanRefs selection res)
+  newRmap <- lift (buildCache ctx [])
   local (const newRmap) (__resolveSelection res selection)
 
 buildCache :: (MonadResolver m) => ResolverMapContext m -> [(SelectionContent VALID, NamedResolverRef)] -> m (ResolverMapContext m)
@@ -229,8 +230,8 @@ resolveObject ::
   Maybe (SelectionSet VALID) ->
   m ValidValue
 resolveObject rmap drv sel = do
-  newCache <- objectRefs drv sel >>= buildCache rmap
-  Object <$> maybe (pure empty) (traverseCollection (resolver newCache)) sel
+  -- newCache <- objectRefs drv sel >>= buildCache rmap
+  Object <$> maybe (pure empty) (traverseCollection (resolver rmap)) sel
   where
     resolver cacheCTX currentSelection = do
       t <- askFieldTypeName (selectionName currentSelection)
@@ -247,8 +248,8 @@ runFieldResolver ::
 runFieldResolver Selection {selectionName, selectionContent}
   | selectionName == "__typename" =
       const (Scalar . String . unpackName <$> lift (asks (typeName . currentType)))
-  | otherwise = selectObjectFields Null (lift >=> (`resolveSelection` selectionContent)) selectionName
+  | otherwise = withField Null (lift >=> (`resolveSelection` selectionContent)) selectionName
 
 
-selectObjectFields :: Monad m' => a -> (m (ResolverValue m) -> m' a) -> FieldName -> ObjectTypeResolver m -> m' a
-selectObjectFields fb suc selectionName ObjectTypeResolver {..} = maybe (pure fb) suc (HM.lookup selectionName objectFields)
+withField :: Monad m' => a -> (m (ResolverValue m) -> m' a) -> FieldName -> ObjectTypeResolver m -> m' a
+withField fb suc selectionName ObjectTypeResolver {..} = maybe (pure fb) suc (HM.lookup selectionName objectFields)
