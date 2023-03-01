@@ -230,8 +230,8 @@ resolveObject ::
   Maybe (SelectionSet VALID) ->
   m ValidValue
 resolveObject rmap drv sel = do
-  -- newCache <- objectRefs drv sel >>= buildCache rmap
-  Object <$> maybe (pure empty) (traverseCollection (resolver rmap)) sel
+  newCache <- refreshCache rmap drv sel
+  Object <$> maybe (pure empty) (traverseCollection (resolver newCache)) sel
   where
     resolver cacheCTX currentSelection = do
       t <- askFieldTypeName (selectionName currentSelection)
@@ -239,6 +239,18 @@ resolveObject rmap drv sel = do
         local (\ctx -> ctx {currentSelection}) $
           ObjectEntry (keyOf currentSelection)
             <$> runResMapT (runFieldResolver currentSelection drv) cacheCTX
+
+refreshCache ::
+  (MonadResolver m) =>
+  ResolverMapContext m ->
+  ObjectTypeResolver m ->
+  Maybe (SelectionSet VALID) ->
+  m (ResolverMapContext m)
+refreshCache ctx drv sel 
+  -- TODO: this is workaround to fix https://github.com/morpheusgraphql/morpheus-graphql/issues/810
+  -- which deactivates caching for non named resolvers. find out better long term solution
+  | null (resolverMap ctx) = pure ctx
+  | otherwise = objectRefs drv sel >>= buildCache ctx
 
 runFieldResolver ::
   (MonadResolver m) =>
