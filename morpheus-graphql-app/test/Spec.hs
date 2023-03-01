@@ -9,6 +9,7 @@ where
 
 import APIConstraints (runAPIConstraints)
 import Batching (runBatchingTest)
+import Execution (runExecutionTest)
 import Data.Morpheus.App
   ( App (..),
     eitherSchema,
@@ -66,5 +67,6 @@ main =
       deepScan runApiTest (mkUrl "api"),
       deepScan (map . runNamedResolversTest) (mkUrl "named-resolvers"),
       deepScan (map . runAPIConstraints) (mkUrl "api-constraints"),
-      deepScan (map . runBatchingTest) (mkUrl "batching")
+      deepScan (map . runBatchingTest) (mkUrl "batching"),
+      deepScan (map . runExecutionTest) (mkUrl "execution")
     ]

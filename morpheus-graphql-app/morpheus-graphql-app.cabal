@@ -46,6 +46,8 @@ data-files:
     test/batching/objects-fields/query.gql
     test/batching/objects-lists-fields/query.gql
     test/batching/schema.gql
+    test/execution/query/query.gql
+    test/execution/schema.gql
     test/merge/schema/query-subscription-mutation/app-1.gql
     test/merge/schema/query-subscription-mutation/app-2.gql
     test/merge/schema/query-subscription-mutation/mutation/query.gql
@@ -96,6 +98,7 @@ data-files:
     test/batching/objects-fields/response.json
     test/batching/objects-lists-fields/batching.json
     test/batching/objects-lists-fields/response.json
+    test/execution/query/response.json
     test/merge/schema/query-subscription-mutation/app-1.json
     test/merge/schema/query-subscription-mutation/app-2.json
     test/merge/schema/query-subscription-mutation/mutation/response.json
@@ -169,6 +172,7 @@ test-suite morpheus-graphql-app-test
   other-modules:
       APIConstraints
       Batching
+      Execution
       NamedResolvers
       Paths_morpheus_graphql_app
   hs-source-dirs:
