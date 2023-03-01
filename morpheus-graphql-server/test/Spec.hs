@@ -27,7 +27,6 @@ import qualified Feature.Input.Objects as Objects
 import qualified Feature.Input.Scalars as Scalars
 import qualified Feature.Input.Variables as Variables
 import qualified Feature.NamedResolvers.API as NamedResolvers
-import qualified Feature.Execution.SingleExecution as SingleExecution
 import Relude
 import Test.Morpheus
   ( FileUrl,
@@ -92,8 +91,5 @@ main =
         ],
       testFeatures
         "NamedResolvers"
-        [(NamedResolvers.api, "tests")],
-      testFeatures
-        "Execution"
-        [(SingleExecution.api, "tests")]
+        [(NamedResolvers.api, "tests")]
     ]
