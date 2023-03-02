@@ -48,7 +48,8 @@ import Data.Morpheus.Internal.Utils
     (<:>),
   )
 import Data.Morpheus.Types.Internal.AST
-  ( GQLError,
+  ( FieldName,
+    GQLError,
     Msg (msg),
     ObjectEntry (ObjectEntry),
     ScalarValue (..),
@@ -64,7 +65,7 @@ import Data.Morpheus.Types.Internal.AST
     internal,
     unitFieldName,
     unitTypeName,
-    unpackName,FieldName
+    unpackName,
   )
 import Relude hiding (empty)
 
@@ -96,7 +97,7 @@ fieldRefs objRes currentSelection@Selection {..}
       t <- askFieldTypeName selectionName
       updateCurrentType t $
         local (\ctx -> ctx {currentSelection}) $ do
-          x <- withField  [] (fmap pure) selectionName objRes
+          x <- withField [] (fmap pure) selectionName objRes
           concat <$> traverse (scanRefs selectionContent) x
 
 resolveSelection ::
@@ -246,7 +247,7 @@ refreshCache ::
   ObjectTypeResolver m ->
   Maybe (SelectionSet VALID) ->
   m (ResolverMapContext m)
-refreshCache ctx drv sel 
+refreshCache ctx drv sel
   -- TODO: this is workaround to fix https://github.com/morpheusgraphql/morpheus-graphql/issues/810
   -- which deactivates caching for non named resolvers. find out better long term solution
   | null (resolverMap ctx) = pure ctx
@@ -261,7 +262,6 @@ runFieldResolver Selection {selectionName, selectionContent}
   | selectionName == "__typename" =
       const (Scalar . String . unpackName <$> lift (asks (typeName . currentType)))
   | otherwise = withField Null (lift >=> (`resolveSelection` selectionContent)) selectionName
-
 
 withField :: Monad m' => a -> (m (ResolverValue m) -> m' a) -> FieldName -> ObjectTypeResolver m -> m' a
 withField fb suc selectionName ObjectTypeResolver {..} = maybe (pure fb) suc (HM.lookup selectionName objectFields)

@@ -43,7 +43,9 @@ import Data.Morpheus.Types.Internal.AST
     TypeName,
     VALID,
     ValidValue,
-    unpackName,msg, Value(..)
+    Value (..),
+    msg,
+    unpackName,
   )
 import Relude hiding (ByteString, fromList)
 import Test.Morpheus

@@ -9,7 +9,6 @@ where
 
 import APIConstraints (runAPIConstraints)
 import Batching (runBatchingTest)
-import Execution (runExecutionTest)
 import Data.Morpheus.App
   ( App (..),
     eitherSchema,
@@ -26,6 +25,7 @@ import Data.Morpheus.Types.IO
   ( GQLRequest (..),
     GQLResponse,
   )
+import Execution (runExecutionTest)
 import NamedResolvers (runNamedResolversTest)
 import Relude hiding (ByteString)
 import Test.Morpheus
