@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Execution
@@ -8,10 +7,11 @@ module Execution
 where
 
 import Control.Monad.Except (MonadError (throwError))
-import Data.ByteString.Lazy.Char8 qualified as LBS
+import Data.ByteString.Lazy.Char8 (readFile)
 import Data.Morpheus.App (mkApp, runApp)
 import Data.Morpheus.App.Internal.Resolving
   ( ObjectTypeResolver (..),
+    Resolver,
     ResolverValue,
     RootResolverValue (..),
     mkObject,
@@ -29,11 +29,13 @@ import Data.Morpheus.Types.IO
     GQLResponse,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( Schema,
+  ( Msg (..),
+    QUERY,
+    Schema,
     VALID,
     ValidValue,
   )
-import Relude hiding (ByteString)
+import Relude hiding (ByteString, readFile)
 import Test.Morpheus
   ( FileUrl,
     file,
@@ -43,6 +45,10 @@ import Test.Tasty
   ( TestTree,
   )
 
+type ExecState m = (StateT Int m)
+
+type ResQ m = Resolver QUERY () (ExecState m)
+
 getName :: ValidValue -> ResolverValue m
 getName "zeus" = "Zeus"
 getName "morpheus" = "Morpheus"
@@ -50,19 +56,25 @@ getName "poseidon" = "Zeus"
 getName "cronos" = "Cronos"
 getName _ = ""
 
--- TODO: restrict execution count
-deityResolver :: Monad m => ValidValue -> m (ResolverValue m)
-deityResolver name = pure $ mkObject "Deity" [("name", pure $ getName name)]
+restrictExecutions :: Monad m => Int -> ResQ m ()
+restrictExecutions expected = do
+  count <- lift get
+  if expected == count then pure () else throwError ("unexpected execution count. expected " <> msg expected <> " but got " <> msg count <> ".")
 
-resolvers :: Monad m => RootResolverValue e m
+deityResolver :: Monad m => ValidValue -> ResQ m (ResolverValue (ResQ m))
+deityResolver name = do
+  lift (modify (+ 1))
+  pure $ mkObject "Deity" [("name", pure $ getName name)]
+
+resolvers :: Monad m => RootResolverValue () (ExecState m)
 resolvers =
   RootResolverValue
     { queryResolver =
         pure
           ( ObjectTypeResolver $
               fromList
-                [ ("deity", getArgument "id" >>= deityResolver),
-                  ("deities", list <$> traverse deityResolver ["zeus", "morpheus"])
+                [ ("deity", (getArgument "id" >>= deityResolver) <* restrictExecutions 1),
+                  ("deities", (list <$> traverse deityResolver ["zeus", "morpheus"]) <* restrictExecutions 2)
                 ]
           ),
       mutationResolver = pure (ObjectTypeResolver mempty),
@@ -71,7 +83,7 @@ resolvers =
     }
 
 getSchema :: FileUrl -> IO (Schema VALID)
-getSchema url = LBS.readFile (toString url) >>= resultOr (fail . show) pure . parseSchema
+getSchema url = readFile (toString url) >>= resultOr (fail . show) pure . parseSchema
 
 runExecutionTest :: FileUrl -> FileUrl -> TestTree
 runExecutionTest url = testApi api
@@ -79,4 +91,5 @@ runExecutionTest url = testApi api
     api :: GQLRequest -> IO GQLResponse
     api req = do
       schemaDeities <- getSchema (file url "schema.gql")
-      runApp (mkApp schemaDeities resolvers) req
+      (response, _) <- runStateT (runApp (mkApp schemaDeities resolvers) req) 0
+      pure response
