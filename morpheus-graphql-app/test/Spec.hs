@@ -25,6 +25,7 @@ import Data.Morpheus.Types.IO
   ( GQLRequest (..),
     GQLResponse,
   )
+import Execution (runExecutionTest)
 import NamedResolvers (runNamedResolversTest)
 import Relude hiding (ByteString)
 import Test.Morpheus
@@ -66,5 +67,6 @@ main =
       deepScan runApiTest (mkUrl "api"),
       deepScan (map . runNamedResolversTest) (mkUrl "named-resolvers"),
       deepScan (map . runAPIConstraints) (mkUrl "api-constraints"),
-      deepScan (map . runBatchingTest) (mkUrl "batching")
+      deepScan (map . runBatchingTest) (mkUrl "batching"),
+      deepScan (map . runExecutionTest) (mkUrl "execution")
     ]

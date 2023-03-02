@@ -48,7 +48,8 @@ import Data.Morpheus.Internal.Utils
     (<:>),
   )
 import Data.Morpheus.Types.Internal.AST
-  ( GQLError,
+  ( FieldName,
+    GQLError,
     Msg (msg),
     ObjectEntry (ObjectEntry),
     ScalarValue (..),
@@ -90,13 +91,13 @@ fieldRefs ::
   ObjectTypeResolver m ->
   Selection VALID ->
   m [(SelectionContent VALID, NamedResolverRef)]
-fieldRefs ObjectTypeResolver {..} currentSelection@Selection {..}
+fieldRefs objRes currentSelection@Selection {..}
   | selectionName == "__typename" = pure []
   | otherwise = do
       t <- askFieldTypeName selectionName
       updateCurrentType t $
         local (\ctx -> ctx {currentSelection}) $ do
-          x <- maybe (pure []) (fmap pure) (HM.lookup selectionName objectFields)
+          x <- withField [] (fmap pure) selectionName objRes
           concat <$> traverse (scanRefs selectionContent) x
 
 resolveSelection ::
@@ -106,7 +107,8 @@ resolveSelection ::
   ResolverMapT m ValidValue
 resolveSelection res selection = do
   ctx <- ask
-  newRmap <- lift (scanRefs selection res >>= buildCache ctx)
+  refs <- traceShowId <$> lift (scanRefs selection res)
+  newRmap <- lift (buildCache ctx [])
   local (const newRmap) (__resolveSelection res selection)
 
 buildCache :: (MonadResolver m) => ResolverMapContext m -> [(SelectionContent VALID, NamedResolverRef)] -> m (ResolverMapContext m)
@@ -229,7 +231,7 @@ resolveObject ::
   Maybe (SelectionSet VALID) ->
   m ValidValue
 resolveObject rmap drv sel = do
-  newCache <- objectRefs drv sel >>= buildCache rmap
+  newCache <- refreshCache rmap drv sel
   Object <$> maybe (pure empty) (traverseCollection (resolver newCache)) sel
   where
     resolver cacheCTX currentSelection = do
@@ -239,6 +241,18 @@ resolveObject rmap drv sel = do
           ObjectEntry (keyOf currentSelection)
             <$> runResMapT (runFieldResolver currentSelection drv) cacheCTX
 
+refreshCache ::
+  (MonadResolver m) =>
+  ResolverMapContext m ->
+  ObjectTypeResolver m ->
+  Maybe (SelectionSet VALID) ->
+  m (ResolverMapContext m)
+refreshCache ctx drv sel
+  -- TODO: this is workaround to fix https://github.com/morpheusgraphql/morpheus-graphql/issues/810
+  -- which deactivates caching for non named resolvers. find out better long term solution
+  | null (resolverMap ctx) = pure ctx
+  | otherwise = objectRefs drv sel >>= buildCache ctx
+
 runFieldResolver ::
   (MonadResolver m) =>
   Selection VALID ->
@@ -247,7 +261,7 @@ runFieldResolver ::
 runFieldResolver Selection {selectionName, selectionContent}
   | selectionName == "__typename" =
       const (Scalar . String . unpackName <$> lift (asks (typeName . currentType)))
-  | otherwise =
-      maybe (pure Null) (lift >=> (`resolveSelection` selectionContent))
-        . HM.lookup selectionName
-        . objectFields
+  | otherwise = withField Null (lift >=> (`resolveSelection` selectionContent)) selectionName
+
+withField :: Monad m' => a -> (m (ResolverValue m) -> m' a) -> FieldName -> ObjectTypeResolver m -> m' a
+withField fb suc selectionName ObjectTypeResolver {..} = maybe (pure fb) suc (HM.lookup selectionName objectFields)
