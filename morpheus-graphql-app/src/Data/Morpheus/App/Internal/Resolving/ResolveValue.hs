@@ -14,7 +14,7 @@ module Data.Morpheus.App.Internal.Resolving.ResolveValue
 where
 
 import Control.Monad.Except (MonadError (throwError))
-import qualified Data.HashMap.Lazy as HM
+import Data.HashMap.Lazy qualified as HM
 import Data.Morpheus.App.Internal.Resolving.Batching
   ( CacheKey (..),
     ResolverMapContext (..),
@@ -107,8 +107,7 @@ resolveSelection ::
   ResolverMapT m ValidValue
 resolveSelection res selection = do
   ctx <- ask
-  refs <- traceShowId <$> lift (scanRefs selection res)
-  newRmap <- lift (buildCache ctx [])
+  newRmap <- lift (scanRefs selection res >>= buildCache ctx)
   local (const newRmap) (__resolveSelection res selection)
 
 buildCache :: (MonadResolver m) => ResolverMapContext m -> [(SelectionContent VALID, NamedResolverRef)] -> m (ResolverMapContext m)
