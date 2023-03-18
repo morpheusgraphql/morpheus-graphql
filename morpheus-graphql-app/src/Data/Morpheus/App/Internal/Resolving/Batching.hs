@@ -131,8 +131,10 @@ updateCache f cache entries = do
   enabled <- asks (debug . config)
   pure $ dumpCache enabled newCache
 
-buildCacheWith :: ResolverMonad m => ResolverFun m -> LocalCache -> [SelectionRef] -> m LocalCache
-buildCacheWith f cache entries = updateCache f cache (buildBatches entries)
+buildCacheWith :: ResolverMonad m => ResolverFun (ResolverMapT m) -> [SelectionRef] -> ResolverMapT m (ResolverMapContext m)
+buildCacheWith f entries = do
+  ctx@(ResolverMapContext cache rmap) <- ask
+  (`ResolverMapContext` rmap) <$> lift (updateCache (\x -> runResMapT (f x) ctx) cache (buildBatches entries))
 
 data ResolverMapContext m = ResolverMapContext
   { localCache :: LocalCache,

@@ -99,12 +99,11 @@ resolveSelection ::
   SelectionContent VALID ->
   ResolverMapT m ValidValue
 resolveSelection res selection = do
-  ctx <- ask
-  newRmap <- lift (scanRefs selection res >>= buildCache ctx)
+  newRmap <- lift (scanRefs selection res) >>= buildCache
   local (const newRmap) (__resolveSelection res selection)
 
-buildCache :: (MonadResolver m) => ResolverMapContext m -> [SelectionRef] -> m (ResolverMapContext m)
-buildCache ctx@(ResolverMapContext cache rmap) entries = (`ResolverMapContext` rmap) <$> buildCacheWith (resolveRefsCached ctx) cache entries
+buildCache :: (MonadResolver m) => [SelectionRef] -> ResolverMapT m (ResolverMapContext m)
+buildCache = buildCacheWith resolveRefsCached
 
 __resolveSelection ::
   (MonadResolver m) =>
@@ -151,16 +150,17 @@ noEmptySelection = do
   throwError $ subfieldsNotSelected (selectionName sel) "" (selectionPosition sel)
 
 resolveRef :: (MonadResolver m) => ResolverMapContext m -> SelectionRef -> m ValidValue
-resolveRef rmap ref = resolveRefsCached rmap ref >>= withSingle
+resolveRef ctx ref = runResMapT (resolveRefsCached ref) ctx >>= withSingle
 
 withSingle :: (MonadError GQLError f, Show a) => [a] -> f a
 withSingle [x] = pure x
 withSingle x = throwError (internal ("expected only one resolved value for " <> msg (show x :: String)))
 
-resolveRefsCached :: (MonadResolver m) => ResolverMapContext m -> SelectionRef -> m [ValidValue]
-resolveRefsCached ctx (selection, NamedResolverRef name args) = do
+resolveRefsCached :: (MonadResolver m) => SelectionRef -> ResolverMapT m [ValidValue]
+resolveRefsCached (selection, NamedResolverRef name args) = do
+  ctx <- ask
   let (cachedMap, uncachedSelection) = splitCached ctx (selection, NamedResolverRef name args)
-  notCachedMap <- runResMapT (resolveUncached name uncachedSelection) ctx
+  notCachedMap <- resolveUncached name uncachedSelection
   traverse (useCached (cachedMap <> notCachedMap)) args
 
 processResult ::
@@ -233,7 +233,7 @@ refreshCache ctx drv sel
   -- TODO: this is workaround to fix https://github.com/morpheusgraphql/morpheus-graphql/issues/810
   -- which deactivates caching for non named resolvers. find out better long term solution
   | null (resolverMap ctx) = pure ctx
-  | otherwise = objectRefs drv sel >>= buildCache ctx
+  | otherwise = objectRefs drv sel >>= \refs -> runResMapT (buildCache refs) ctx
 
 runFieldResolver ::
   (MonadResolver m) =>
