@@ -34,7 +34,6 @@ import Data.Morpheus.App.Internal.Resolving.Types
     NamedResolverRef (..),
     NamedResolverResult (..),
     ObjectTypeResolver (..),
-    ResolverMap,
     ResolverValue (..),
     mkEnum,
     mkUnion,
