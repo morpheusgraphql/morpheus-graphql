@@ -91,6 +91,8 @@ data CacheKey = CacheKey
   }
   deriving (Eq, Generic)
 
+type SelectionRef = (SelectionContent VALID, NamedResolverRef)
+
 instance Show CacheKey where
   show (CacheKey sel typename dep) = printSel sel <> ":" <> toString typename <> ":" <> unpack (render dep)
 
@@ -100,7 +102,7 @@ instance Hashable CacheKey where
 uniq :: (Eq a, Hashable a) => [a] -> [a]
 uniq = keys . unsafeFromList . map (,True)
 
-buildBatches :: [(SelectionContent VALID, NamedResolverRef)] -> [BatchEntry]
+buildBatches :: [SelectionRef] -> [BatchEntry]
 buildBatches inputs =
   let entityTypes = uniq $ map (second resolverTypeName) inputs
    in mapMaybe (selectByEntity inputs) entityTypes
@@ -130,8 +132,6 @@ updateCache f cache entries = do
 
 buildCacheWith :: ResolverMonad m => ResolverFun m -> LocalCache -> [SelectionRef] -> m LocalCache
 buildCacheWith f cache entries = updateCache f cache (buildBatches entries)
-
-type SelectionRef = (SelectionContent VALID, NamedResolverRef)
 
 data ResolverMapContext m = ResolverMapContext
   { localCache :: LocalCache,
