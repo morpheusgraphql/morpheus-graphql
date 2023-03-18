@@ -15,12 +15,12 @@ where
 
 import Control.Monad.Except (MonadError (throwError))
 import Data.Morpheus.App.Internal.Resolving.Batching
-  ( CacheKey (..),
-    ResolverMapContext (..),
+  ( ResolverMapContext (..),
     ResolverMapT,
     SelectionRef,
     buildCacheWith,
     runResMapT,
+    splitCached,
     useCached,
   )
 import Data.Morpheus.App.Internal.Resolving.MonadResolver (MonadResolver)
@@ -159,15 +159,9 @@ withSingle x = throwError (internal ("expected only one resolved value for " <> 
 
 resolveRefsCached :: (MonadResolver m) => ResolverMapContext m -> SelectionRef -> m [ValidValue]
 resolveRefsCached ctx (selection, NamedResolverRef name args) = do
-  let keys = map (CacheKey selection name) args
-  let cached = map resolveCached keys
-  let cachedMap = unsafeFromList (mapMaybe unp cached)
-  notCachedMap <- runResMapT (resolveUncached name selection $ map fst $ filter (isNothing . snd) cached) ctx
+  let (cachedMap, uncachedSelection) = splitCached ctx (selection, NamedResolverRef name args)
+  notCachedMap <- runResMapT (resolveUncached name uncachedSelection) ctx
   traverse (useCached (cachedMap <> notCachedMap)) args
-  where
-    unp (_, Nothing) = Nothing
-    unp (x, Just y) = Just (x, y)
-    resolveCached key = (cachedArg key, lookup key $ localCache ctx)
 
 processResult ::
   (MonadResolver m) =>
@@ -186,11 +180,10 @@ processResult _ selection (NamedScalarResolver v) = resolveSelection (ResScalar 
 resolveUncached ::
   (MonadResolver m) =>
   TypeName ->
-  SelectionContent VALID ->
-  [ValidValue] ->
+  (SelectionContent VALID, [ValidValue]) ->
   ResolverMapT m (HashMap ValidValue ValidValue)
-resolveUncached _ _ [] = pure empty
-resolveUncached typename selection xs = do
+resolveUncached _ (_, []) = pure empty
+resolveUncached typename (selection, xs) = do
   rmap <- asks resolverMap
   vs <- lift (getNamedResolverBy (NamedResolverRef typename xs) rmap) >>= traverse (processResult typename selection)
   pure $ unsafeFromList (zip xs vs)
