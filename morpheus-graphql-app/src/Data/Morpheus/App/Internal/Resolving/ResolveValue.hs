@@ -231,14 +231,20 @@ resolveObject ::
   m ValidValue
 resolveObject rmap drv sel = do
   newCache <- refreshCache rmap drv sel
-  Object <$> maybe (pure empty) (traverseCollection (resolver newCache)) sel
-  where
-    resolver cacheCTX currentSelection = do
-      t <- askFieldTypeName (selectionName currentSelection)
-      updateCurrentType t $
-        local (\ctx -> ctx {currentSelection}) $
-          ObjectEntry (keyOf currentSelection)
-            <$> runResMapT (runFieldResolver currentSelection drv) cacheCTX
+  Object <$> maybe (pure empty) (traverseCollection (resolver drv newCache)) sel
+
+resolver ::
+  MonadResolver m =>
+  ObjectTypeResolver m ->
+  ResolverMapContext m ->
+  Selection VALID ->
+  m (ObjectEntry VALID)
+resolver drv cacheCTX currentSelection = do
+  t <- askFieldTypeName (selectionName currentSelection)
+  updateCurrentType t $
+    local (\ctx -> ctx {currentSelection}) $
+      ObjectEntry (keyOf currentSelection)
+        <$> runResMapT (runFieldResolver currentSelection drv) cacheCTX
 
 refreshCache ::
   (MonadResolver m) =>
