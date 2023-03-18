@@ -16,6 +16,7 @@ where
 import Control.Monad.Except (throwError)
 import Data.Aeson (FromJSON (..))
 import Data.HashMap.Strict (adjust)
+import Data.Morpheus.App.Internal.Resolving.Batching
 import Data.Morpheus.App.Internal.Resolving.Event
   ( EventHandler (..),
   )
@@ -107,11 +108,8 @@ runRootResolverValue
     where
       selectByOperation OPERATION_QUERY = runResolver Nothing (resolvedValue operationSelection) ctx
         where
-          resolvers = withNamedIntroFields "Query" ctx queryResolverMap
-          resolvedValue selection =
-            resolveRef
-              (ResolverMapContext empty resolvers)
-              (SelectionSet selection, NamedResolverRef "Query" ["ROOT"])
+          resMap = ResolverMapContext empty (withNamedIntroFields "Query" ctx queryResolverMap)
+          resolvedValue selection = runResMapT (resolveRef (SelectionSet selection, NamedResolverRef "Query" ["ROOT"])) resMap
       selectByOperation _ = throwError "mutation and subscription is not supported for namedResolvers"
 
 withNamedIntroFields :: (MonadResolver m, MonadOperation m ~ QUERY) => TypeName -> ResolverContext -> ResolverMap m -> ResolverMap m

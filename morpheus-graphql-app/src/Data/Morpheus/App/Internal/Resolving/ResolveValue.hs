@@ -104,7 +104,7 @@ resolveSelection res selection = do
 
 buildCache :: (MonadResolver m) => [SelectionRef] -> ResolverMapT m a -> ResolverMapT m a
 buildCache refs m = do
-  ctx <- buildCacheWith resolveRefsCached refs
+  ctx <- buildCacheWith resolveRefs refs
   local (const ctx) m
 
 __resolveSelection ::
@@ -124,9 +124,8 @@ __resolveSelection ResNull _ = pure Null
 __resolveSelection (ResScalar x) SelectionField = pure $ Scalar x
 __resolveSelection ResScalar {} _ = throwError (internal "scalar resolver should only receive SelectionField")
 __resolveSelection (ResRef mRef) sel = do
-  ctx <- ask
   ref <- lift mRef
-  lift (resolveRef ctx (sel, ref))
+  resolveRef (sel, ref)
 
 withObject ::
   (MonadResolver m) =>
@@ -151,19 +150,30 @@ noEmptySelection = do
   sel <- asks currentSelection
   throwError $ subfieldsNotSelected (selectionName sel) "" (selectionPosition sel)
 
-resolveRef :: (MonadResolver m) => ResolverMapContext m -> SelectionRef -> m ValidValue
-resolveRef ctx ref = runResMapT (resolveRefsCached ref) ctx >>= withSingle
+resolveRef :: (MonadResolver m) => SelectionRef -> ResolverMapT m ValidValue
+resolveRef ref = resolveRefs ref >>= withSingle
 
 withSingle :: (MonadError GQLError f, Show a) => [a] -> f a
 withSingle [x] = pure x
 withSingle x = throwError (internal ("expected only one resolved value for " <> msg (show x :: String)))
 
-resolveRefsCached :: (MonadResolver m) => SelectionRef -> ResolverMapT m [ValidValue]
-resolveRefsCached (selection, NamedResolverRef name args) = do
+resolveRefs :: (MonadResolver m) => SelectionRef -> ResolverMapT m [ValidValue]
+resolveRefs (selection, NamedResolverRef name args) = do
   ctx <- ask
   let (cachedMap, uncachedSelection) = splitCached ctx (selection, NamedResolverRef name args)
-  notCachedMap <- resolveUncached name uncachedSelection
-  traverse (useCached (cachedMap <> notCachedMap)) args
+  uncachedMap <- resolveUncached name uncachedSelection
+  traverse (useCached (cachedMap <> uncachedMap)) args
+
+resolveUncached ::
+  (MonadResolver m) =>
+  TypeName ->
+  (SelectionContent VALID, [ValidValue]) ->
+  ResolverMapT m (HashMap ValidValue ValidValue)
+resolveUncached _ (_, []) = pure empty
+resolveUncached typename (selection, xs) = do
+  resolver <- getNamedResolverBy (NamedResolverRef typename xs)
+  values <- traverse (processResult typename selection) resolver
+  pure $ unsafeFromList (zip xs values)
 
 processResult ::
   (MonadResolver m) =>
@@ -179,23 +189,13 @@ processResult _ selection (NamedEnumResolver value) = resolveSelection (ResEnum 
 processResult _ selection NamedNullResolver = resolveSelection ResNull selection
 processResult _ selection (NamedScalarResolver v) = resolveSelection (ResScalar v) selection
 
-resolveUncached ::
-  (MonadResolver m) =>
-  TypeName ->
-  (SelectionContent VALID, [ValidValue]) ->
-  ResolverMapT m (HashMap ValidValue ValidValue)
-resolveUncached _ (_, []) = pure empty
-resolveUncached typename (selection, xs) = do
-  rmap <- asks resolverMap
-  vs <- lift (getNamedResolverBy (NamedResolverRef typename xs) rmap) >>= traverse (processResult typename selection)
-  pure $ unsafeFromList (zip xs vs)
-
 getNamedResolverBy ::
   (MonadResolver m) =>
   NamedResolverRef ->
-  ResolverMap m ->
-  m [NamedResolverResult m]
-getNamedResolverBy NamedResolverRef {..} = selectOr notFound found resolverTypeName
+  ResolverMapT m [NamedResolverResult m]
+getNamedResolverBy NamedResolverRef {..} = do
+  rmap <- asks resolverMap
+  lift (selectOr notFound found resolverTypeName rmap)
   where
     found :: (MonadResolver m) => NamedResolver m -> m [NamedResolverResult m]
     found = (resolverArgument &) . resolverFun
