@@ -99,11 +99,13 @@ resolveSelection ::
   SelectionContent VALID ->
   ResolverMapT m ValidValue
 resolveSelection res selection = do
-  newRmap <- lift (scanRefs selection res) >>= buildCache
-  local (const newRmap) (__resolveSelection res selection)
+  refs <- lift (scanRefs selection res)
+  buildCache refs (__resolveSelection res selection)
 
-buildCache :: (MonadResolver m) => [SelectionRef] -> ResolverMapT m (ResolverMapContext m)
-buildCache = buildCacheWith resolveRefsCached
+buildCache :: (MonadResolver m) => [SelectionRef] -> ResolverMapT m a -> ResolverMapT m a
+buildCache refs m = do
+  ctx <- buildCacheWith resolveRefsCached refs
+  local (const ctx) m
 
 __resolveSelection ::
   (MonadResolver m) =>
@@ -207,35 +209,40 @@ resolveObject ::
   Maybe (SelectionSet VALID) ->
   m ValidValue
 resolveObject rmap drv sel =
-  refreshCache rmap drv sel (\x -> Object <$> maybe (pure empty) (traverseCollection (resolverWithCache drv x)) sel)
+  refreshCache
+    rmap
+    drv
+    sel
+    (Object <$> maybe (pure empty) (traverseCollection (resolverWithCache drv)) sel)
 
 resolverWithCache ::
   MonadResolver m =>
   ObjectTypeResolver m ->
-  ResolverMapContext m ->
   Selection VALID ->
-  m (ObjectEntry VALID)
-resolverWithCache drv cacheCTX currentSelection = do
-  t <- askFieldTypeName (selectionName currentSelection)
-  updateCurrentType t $
-    local (\ctx -> ctx {currentSelection}) $
-      ObjectEntry (keyOf currentSelection)
-        <$> runResMapT (runFieldResolver currentSelection drv) cacheCTX
+  ResolverMapT m (ObjectEntry VALID)
+resolverWithCache drv currentSelection = do
+  cacheCTX <- ask
+  lift $ do
+    t <- askFieldTypeName (selectionName currentSelection)
+    updateCurrentType t $
+      local (\resCTX -> resCTX {currentSelection}) $
+        ObjectEntry (keyOf currentSelection)
+          <$> runResMapT (runFieldResolver currentSelection drv) cacheCTX
 
 refreshCache ::
   (MonadResolver m) =>
   ResolverMapContext m ->
   ObjectTypeResolver m ->
   Maybe (SelectionSet VALID) ->
-  (ResolverMapContext m -> m v) ->
+  ResolverMapT m v ->
   m v
-refreshCache ctx drv sel f
+refreshCache ctx drv sel v
   -- TODO: this is workaround to fix https://github.com/morpheusgraphql/morpheus-graphql/issues/810
   -- which deactivates caching for non named resolvers. find out better long term solution
-  | null (resolverMap ctx) = f ctx
+  | null (resolverMap ctx) = runResMapT v ctx
   | otherwise = do
-      x <- objectRefs drv sel >>= \refs -> runResMapT (buildCache refs) ctx
-      f x
+      refs <- objectRefs drv sel
+      runResMapT (buildCache refs v) ctx
 
 runFieldResolver ::
   (MonadResolver m) =>
