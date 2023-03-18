@@ -24,16 +24,20 @@ module Data.Morpheus.App.Internal.Resolving.Batching
     ResolverMapContext (..),
     ResolverMapT (..),
     runResMapT,
+    SelectionRef,
   )
 where
 
 import Control.Monad.Except (MonadError (throwError))
 import Data.ByteString.Lazy.Char8 (unpack)
-import qualified Data.HashMap.Lazy as HM
+import Data.HashMap.Lazy (keys)
 import Data.Morpheus.App.Internal.Resolving.ResolverState (config)
 import Data.Morpheus.App.Internal.Resolving.Types (ResolverMap)
 import Data.Morpheus.App.Internal.Resolving.Utils
 import Data.Morpheus.Core (Config (..), RenderGQL, render)
+import Data.Morpheus.Internal.Utils
+  ( IsMap (..),
+  )
 import Data.Morpheus.Types.Internal.AST
   ( GQLError,
     Msg (..),
@@ -50,7 +54,7 @@ import Relude hiding (show, trace)
 type LocalCache = HashMap CacheKey ValidValue
 
 useCached :: (Eq k, Show k, Hashable k, MonadError GQLError f) => HashMap k a -> k -> f a
-useCached mp v = case HM.lookup v mp of
+useCached mp v = case lookup v mp of
   Just x -> pure x
   Nothing -> throwError (internal $ "cache value could not found for key" <> msg (show v :: String))
 
@@ -60,7 +64,7 @@ dumpCache enabled cache
   | otherwise = trace ("\nCACHE:\n" <> printCache cache) cache
 
 printCache :: LocalCache -> [Char]
-printCache cache = intercalate "\n" (map printKeyValue $ HM.toList cache) <> "\n"
+printCache cache = intercalate "\n" (map printKeyValue $ toAssoc cache) <> "\n"
   where
     printKeyValue (key, v) = " " <> show key <> ": " <> unpack (render v)
 
@@ -94,28 +98,28 @@ instance Hashable CacheKey where
   hashWithSalt s (CacheKey sel tyName arg) = hashWithSalt s (sel, tyName, render arg)
 
 uniq :: (Eq a, Hashable a) => [a] -> [a]
-uniq = HM.keys . HM.fromList . map (,True)
+uniq = keys . unsafeFromList . map (,True)
 
 buildBatches :: [(SelectionContent VALID, NamedResolverRef)] -> [BatchEntry]
 buildBatches inputs =
   let entityTypes = uniq $ map (second resolverTypeName) inputs
    in mapMaybe (selectByEntity inputs) entityTypes
 
-selectByEntity :: [(SelectionContent VALID, NamedResolverRef)] -> (SelectionContent VALID, TypeName) -> Maybe BatchEntry
+selectByEntity :: [SelectionRef] -> (SelectionContent VALID, TypeName) -> Maybe BatchEntry
 selectByEntity inputs (tSel, tName) = case filter areEq inputs of
   [] -> Nothing
   xs -> Just $ BatchEntry tSel tName (uniq $ concatMap (resolverArgument . snd) xs)
   where
     areEq (sel, v) = sel == tSel && tName == resolverTypeName v
 
-type ResolverFun m = NamedResolverRef -> SelectionContent VALID -> m [ValidValue]
+type ResolverFun m = SelectionRef -> m [ValidValue]
 
 resolveBatched :: Monad m => ResolverFun m -> BatchEntry -> m LocalCache
 resolveBatched f (BatchEntry sel name deps) = do
-  res <- f (NamedResolverRef name deps) sel
-  let keys = map (CacheKey sel name) deps
-  let entries = zip keys res
-  pure $ HM.fromList entries
+  res <- f (sel, NamedResolverRef name deps)
+  let ks = map (CacheKey sel name) deps
+  let entries = zip ks res
+  pure $ unsafeFromList entries
 
 updateCache :: (ResolverMonad m, Traversable t) => ResolverFun m -> LocalCache -> t BatchEntry -> m LocalCache
 updateCache f cache entries = do
@@ -124,8 +128,10 @@ updateCache f cache entries = do
   enabled <- asks (debug . config)
   pure $ dumpCache enabled newCache
 
-buildCacheWith :: ResolverMonad m => ResolverFun m -> LocalCache -> [(SelectionContent VALID, NamedResolverRef)] -> m LocalCache
+buildCacheWith :: ResolverMonad m => ResolverFun m -> LocalCache -> [SelectionRef] -> m LocalCache
 buildCacheWith f cache entries = updateCache f cache (buildBatches entries)
+
+type SelectionRef = (SelectionContent VALID, NamedResolverRef)
 
 data ResolverMapContext m = ResolverMapContext
   { localCache :: LocalCache,
