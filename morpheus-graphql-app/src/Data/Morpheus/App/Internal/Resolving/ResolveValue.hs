@@ -103,7 +103,7 @@ resolveSelection res selection = do
   newRmap <- lift (scanRefs selection res >>= buildCache ctx)
   local (const newRmap) (__resolveSelection res selection)
 
-buildCache :: (MonadResolver m) => ResolverMapContext m -> [(SelectionContent VALID, NamedResolverRef)] -> m (ResolverMapContext m)
+buildCache :: (MonadResolver m) => ResolverMapContext m -> [SelectionRef] -> m (ResolverMapContext m)
 buildCache ctx@(ResolverMapContext cache rmap) entries = (`ResolverMapContext` rmap) <$> buildCacheWith (resolveRefsCached ctx) cache entries
 
 __resolveSelection ::
