@@ -54,7 +54,7 @@ import Relude hiding (show, trace)
 
 type LocalCache = HashMap CacheKey ValidValue
 
-useCached :: (Eq k, Show k, Hashable k, MonadError GQLError f) => HashMap k a -> k -> f a
+useCached :: (IsMap k (m k), Eq k, Show k, Hashable k, MonadError GQLError f) => m k a -> k -> f a
 useCached mp v = case lookup v mp of
   Just x -> pure x
   Nothing -> throwError (internal $ "cache value could not found for key" <> msg (show v :: String))
@@ -160,21 +160,14 @@ deriving instance MonadError GQLError m => MonadError GQLError (ResolverMapT m)
 runResMapT :: ResolverMapT m a -> ResolverMapContext m -> m a
 runResMapT (ResolverMapT x) = runReaderT x
 
-mapWith :: IsMap k m => [k] -> [a] -> m a
-mapWith refs values = unsafeFromList (zip refs values)
-
-genCache :: Monad m => ResolverFun (ResolverMapT m) -> SelectionRef -> ResolverMapT m (HashMap ValidValue ValidValue)
+genCache :: Monad m => ResolverFun (ResolverMapT m) -> SelectionRef -> ResolverMapT m ([CacheKey], LocalCache)
 genCache f (selection, NamedResolverRef name args) = do
   ctx <- ask
   let ks = map (CacheKey selection name) args
-  let cached = map (resolveCached ctx) ks
-  let uncached = map fst $ filter (isNothing . snd) cached
-  values <- f (selection, NamedResolverRef name uncached)
-  let uncachedMap = mapWith uncached values
-  pure (unsafeFromList (mapMaybe unp cached) <> uncachedMap)
-  where
-    resolveCached ctx key = (cachedArg key, lookup key $ localCache ctx)
+  let uncached = map cachedArg $ filter (isNotCached ctx) ks
+  let batches = buildBatches [(selection, NamedResolverRef name uncached)]
+  cache <- traverse (resolveBatched f) batches
+  pure (ks, fold (localCache ctx : cache))
 
-unp :: (a, Maybe b) -> Maybe (a, b)
-unp (_, Nothing) = Nothing
-unp (x, Just y) = Just (x, y)
+isNotCached :: ResolverMapContext m -> CacheKey -> Bool
+isNotCached ctx key = isNothing $ lookup key $ localCache ctx

@@ -136,9 +136,9 @@ resolveRef :: (MonadResolver m) => SelectionRef -> ResolverMapT m ValidValue
 resolveRef ref = resolveRefs ref >>= withSingle
 
 resolveRefs :: (MonadResolver m) => SelectionRef -> ResolverMapT m [ValidValue]
-resolveRefs (selection, ref) = do
-  cache <- genCache resolveUncached (selection, ref)
-  traverse (useCached cache) (resolverArgument ref)
+resolveRefs ref = do
+  (ks, cache) <- genCache resolveUncached ref
+  traverse (useCached cache) ks
 
 resolveSelection :: (MonadResolver m) => ResolverValue m -> SelectionContent VALID -> ResolverMapT m ValidValue
 resolveSelection = withCache resolveUncachedSel
