@@ -25,7 +25,7 @@ module Data.Morpheus.App.Internal.Resolving.Batching
     ResolverMapT (..),
     runResMapT,
     SelectionRef,
-    genCache,
+    cacheRefs,
   )
 where
 
@@ -168,6 +168,11 @@ genCache f (selection, NamedResolverRef name args) = do
   let batches = buildBatches [(selection, NamedResolverRef name uncached)]
   cache <- traverse (resolveBatched f) batches
   pure (ks, fold (localCache ctx : cache))
+
+cacheRefs :: (MonadError GQLError m) => ResolverFun (ResolverMapT m) -> SelectionRef -> ResolverMapT m [ValidValue]
+cacheRefs f ref = do
+  (ks, cache) <- genCache f ref
+  traverse (useCached cache) ks
 
 isNotCached :: ResolverMapContext m -> CacheKey -> Bool
 isNotCached ctx key = isNothing $ lookup key $ localCache ctx
