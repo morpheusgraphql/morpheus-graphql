@@ -25,6 +25,7 @@ import Data.Morpheus.App.Internal.Resolving.Batching
     runResMapT,
   )
 import Data.Morpheus.App.Internal.Resolving.MonadResolver (MonadResolver)
+import Data.Morpheus.App.Internal.Resolving.Refs
 import Data.Morpheus.App.Internal.Resolving.ResolverState
   ( ResolverContext (..),
     askFieldTypeName,
@@ -32,25 +33,19 @@ import Data.Morpheus.App.Internal.Resolving.ResolverState
   )
 import Data.Morpheus.App.Internal.Resolving.Types
   ( NamedResolver (..),
-    NamedResolverRef (..),
     NamedResolverResult (..),
-    ObjectTypeResolver (..),
-    ResolverValue (..),
     mkEnum,
     mkUnion,
   )
-import Data.Morpheus.Error (subfieldsNotSelected)
+import Data.Morpheus.App.Internal.Resolving.Utils
 import Data.Morpheus.Internal.Utils
-  ( IsMap (..),
-    KeyOf (keyOf),
+  ( KeyOf (keyOf),
     empty,
     selectOr,
     traverseCollection,
-    (<:>),
   )
 import Data.Morpheus.Types.Internal.AST
-  ( FieldName,
-    Msg (msg),
+  ( Msg (msg),
     ObjectEntry (ObjectEntry),
     ScalarValue (..),
     Selection (..),
@@ -58,7 +53,6 @@ import Data.Morpheus.Types.Internal.AST
     SelectionSet,
     TypeDefinition (..),
     TypeName,
-    UnionTag (unionTagSelection),
     VALID,
     ValidValue,
     Value (..),
@@ -69,62 +63,40 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Relude hiding (empty)
 
-class RefScanner f where
-  type RefSel f :: Type
-  scanRefs :: (MonadResolver m) => RefSel f -> f m -> m [SelectionRef]
-
-instance RefScanner ResolverValue where
-  type RefSel ResolverValue = SelectionContent VALID
-  scanRefs sel (ResList xs) = concat <$> traverse (scanRefs sel) xs
-  scanRefs sel (ResLazy x) = x >>= scanRefs sel
-  scanRefs sel (ResObject tyName obj) = withObject tyName (`scanRefs` obj) sel
-  scanRefs sel (ResRef ref) = pure . (sel,) <$> ref
-  scanRefs _ ResEnum {} = pure []
-  scanRefs _ ResNull = pure []
-  scanRefs _ ResScalar {} = pure []
-
-instance RefScanner ObjectTypeResolver where
-  type RefSel ObjectTypeResolver = Maybe (SelectionSet VALID)
-  scanRefs Nothing _ = pure []
-  scanRefs (Just sel) objRes = concat <$> traverse fieldRefs (toList sel)
-    where
-      fieldRefs currentSelection@Selection {..}
-        | selectionName == "__typename" = pure []
-        | otherwise = do
-            t <- askFieldTypeName selectionName
-            updateCurrentType t $
-              local (\ctx -> ctx {currentSelection}) $ do
-                x <- withField [] (fmap pure) selectionName objRes
-                concat <$> traverse (scanRefs selectionContent) x
-
 withCache :: (RefScanner res, MonadResolver m) => (res m -> RefSel res -> ResolverMapT m b) -> res m -> RefSel res -> ResolverMapT m b
 withCache f resolver selection = do
   refs <- lift (scanRefs selection resolver)
-  buildCache resolveUncached refs (f resolver selection)
-
-withObject ::
-  (MonadResolver m) =>
-  Maybe TypeName ->
-  (Maybe (SelectionSet VALID) -> m value) ->
-  SelectionContent VALID ->
-  m value
-withObject __typename f = updateCurrentType __typename . checkContent
-  where
-    checkContent (SelectionSet selection) = f (Just selection)
-    checkContent (UnionSelection interface unionSel) = do
-      typename <- asks (typeName . currentType)
-      selection <- selectOr (pure interface) (fx interface) typename unionSel
-      f selection
-      where
-        fx (Just x) y = Just <$> (x <:> unionTagSelection y)
-        fx Nothing y = pure $ Just $ unionTagSelection y
-    checkContent SelectionField = do
-      sel <- asks currentSelection
-      throwError $ subfieldsNotSelected (selectionName sel) "" (selectionPosition sel)
+  buildCache resolveUncachedRef refs (f resolver selection)
 
 -- RESOLVING
 resolveRef :: (MonadResolver m) => SelectionRef -> ResolverMapT m ValidValue
-resolveRef = cacheRef resolveUncached
+resolveRef = cacheRef resolveUncachedRef
+
+resolveUncachedRef :: (MonadResolver m) => SelectionRef -> ResolverMapT m [ValidValue]
+resolveUncachedRef (_, NamedResolverRef _ []) = pure empty
+resolveUncachedRef (selection, NamedResolverRef {..}) = do
+  rmap <- asks resolverMap
+  namedResolvers <- lift (selectOr notFound found resolverTypeName rmap)
+  traverse (resolveNamedResolver resolverTypeName selection) namedResolvers
+  where
+    found :: (MonadResolver m) => NamedResolver m -> m [NamedResolverResult m]
+    found = (resolverArgument &) . resolverFun
+    notFound :: (MonadResolver m) => m [NamedResolverResult m]
+    notFound = throwError ("resolver type " <> msg resolverTypeName <> "can't found")
+
+resolveNamedResolver ::
+  (MonadResolver m) =>
+  TypeName ->
+  SelectionContent VALID ->
+  NamedResolverResult m ->
+  ResolverMapT m ValidValue
+resolveNamedResolver typename selection (NamedObjectResolver res) = do
+  ctx <- ask
+  lift $ withObject (Just typename) (resolveObject ctx res) selection
+resolveNamedResolver _ selection (NamedUnionResolver unionRef) = resolveSelection (ResRef $ pure unionRef) selection
+resolveNamedResolver _ selection (NamedEnumResolver value) = resolveSelection (ResEnum value) selection
+resolveNamedResolver _ selection NamedNullResolver = resolveSelection ResNull selection
+resolveNamedResolver _ selection (NamedScalarResolver v) = resolveSelection (ResScalar v) selection
 
 resolveSelection :: (MonadResolver m) => ResolverValue m -> SelectionContent VALID -> ResolverMapT m ValidValue
 resolveSelection = withCache resolveUncachedSel
@@ -144,40 +116,13 @@ resolveSelection = withCache resolveUncachedSel
       ref <- lift mRef
       resolveRef (sel, ref)
 
-processResult ::
-  (MonadResolver m) =>
-  TypeName ->
-  SelectionContent VALID ->
-  NamedResolverResult m ->
-  ResolverMapT m ValidValue
-processResult typename selection (NamedObjectResolver res) = do
-  ctx <- ask
-  lift $ withObject (Just typename) (resolveObject ctx res) selection
-processResult _ selection (NamedUnionResolver unionRef) = resolveSelection (ResRef $ pure unionRef) selection
-processResult _ selection (NamedEnumResolver value) = resolveSelection (ResEnum value) selection
-processResult _ selection NamedNullResolver = resolveSelection ResNull selection
-processResult _ selection (NamedScalarResolver v) = resolveSelection (ResScalar v) selection
-
-resolveUncached :: (MonadResolver m) => SelectionRef -> ResolverMapT m [ValidValue]
-resolveUncached (_, NamedResolverRef _ []) = pure empty
-resolveUncached (selection, NamedResolverRef {..}) = do
-  rmap <- asks resolverMap
-  results <- lift (selectOr notFound found resolverTypeName rmap)
-  traverse (processResult resolverTypeName selection) results
-  where
-    found :: (MonadResolver m) => NamedResolver m -> m [NamedResolverResult m]
-    found = (resolverArgument &) . resolverFun
-    notFound :: (MonadResolver m) => m [NamedResolverResult m]
-    notFound = throwError ("resolver type " <> msg resolverTypeName <> "can't found")
-
 resolveObject ::
   (MonadResolver m) =>
   ResolverMapContext m ->
   ObjectTypeResolver m ->
   Maybe (SelectionSet VALID) ->
   m ValidValue
-resolveObject =
-  refreshCache (\drv sel -> Object <$> maybe (pure empty) (traverseCollection (resolverWithCache drv)) sel)
+resolveObject = refreshCache (\drv sel -> Object <$> maybe (pure empty) (traverseCollection (resolverWithCache drv)) sel)
 
 resolverWithCache ::
   MonadResolver m =>
@@ -215,6 +160,3 @@ runFieldResolver Selection {selectionName, selectionContent}
   | selectionName == "__typename" =
       const (Scalar . String . unpackName <$> lift (asks (typeName . currentType)))
   | otherwise = withField Null (lift >=> (`resolveSelection` selectionContent)) selectionName
-
-withField :: Monad m' => a -> (m (ResolverValue m) -> m' a) -> FieldName -> ObjectTypeResolver m -> m' a
-withField fb suc selectionName ObjectTypeResolver {..} = maybe (pure fb) suc (lookup selectionName objectFields)

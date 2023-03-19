@@ -7,6 +7,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -18,13 +19,17 @@ module Data.Morpheus.App.Internal.Resolving.Utils
     lookupResJSON,
     mkValue,
     ResolverMonad,
+    withField,
+    withObject,
   )
 where
 
 import Control.Monad.Except (MonadError (throwError))
-import qualified Data.Aeson as A
+import Data.Aeson qualified as A
+import Data.Morpheus.App.Internal.Resolving.MonadResolver (MonadResolver)
 import Data.Morpheus.App.Internal.Resolving.ResolverState
   ( ResolverContext (..),
+    updateCurrentType,
   )
 import Data.Morpheus.App.Internal.Resolving.Types
   ( NamedResolverRef (..),
@@ -34,13 +39,20 @@ import Data.Morpheus.App.Internal.Resolving.Types
     mkNull,
     mkObjectMaybe,
   )
-import Data.Morpheus.Internal.Utils (selectOr, toAssoc)
-import qualified Data.Morpheus.Internal.Utils as U
+import Data.Morpheus.Error (subfieldsNotSelected)
+import Data.Morpheus.Internal.Utils (IsMap (..), selectOr, toAssoc, (<:>))
+import Data.Morpheus.Internal.Utils qualified as U
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     GQLError,
     ScalarValue (..),
+    Selection (..),
+    SelectionContent (..),
+    SelectionSet,
+    TypeDefinition (..),
     TypeName,
+    UnionTag (..),
+    VALID,
     decodeScientific,
     internal,
     packName,
@@ -48,7 +60,7 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Data.Morpheus.Types.SelectionTree (SelectionTree (..))
 import Data.Text (breakOnEnd, splitOn)
-import qualified Data.Vector as V
+import Data.Vector qualified as V
 import Relude hiding (break)
 
 type ResolverMonad m = (MonadError GQLError m, MonadReader ResolverContext m)
@@ -107,3 +119,26 @@ requireObject _ = throwError (internal "resolver must be an object")
 unpackJSONName :: A.Value -> Maybe TypeName
 unpackJSONName (A.String x) = Just (packName x)
 unpackJSONName _ = Nothing
+
+withField :: Monad m' => a -> (m (ResolverValue m) -> m' a) -> FieldName -> ObjectTypeResolver m -> m' a
+withField fb suc selectionName ObjectTypeResolver {..} = maybe (pure fb) suc (lookup selectionName objectFields)
+
+withObject ::
+  (MonadResolver m) =>
+  Maybe TypeName ->
+  (Maybe (SelectionSet VALID) -> m value) ->
+  SelectionContent VALID ->
+  m value
+withObject __typename f = updateCurrentType __typename . checkContent
+  where
+    checkContent (SelectionSet selection) = f (Just selection)
+    checkContent (UnionSelection interface unionSel) = do
+      typename <- asks (typeName . currentType)
+      selection <- selectOr (pure interface) (fx interface) typename unionSel
+      f selection
+      where
+        fx (Just x) y = Just <$> (x <:> unionTagSelection y)
+        fx Nothing y = pure $ Just $ unionTagSelection y
+    checkContent SelectionField = do
+      sel <- asks currentSelection
+      throwError $ subfieldsNotSelected (selectionName sel) "" (selectionPosition sel)
