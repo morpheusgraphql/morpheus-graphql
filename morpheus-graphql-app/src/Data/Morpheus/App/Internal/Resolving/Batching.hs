@@ -160,14 +160,15 @@ deriving instance MonadError GQLError m => MonadError GQLError (ResolverMapT m)
 runResMapT :: ResolverMapT m a -> ResolverMapContext m -> m a
 runResMapT (ResolverMapT x) = runReaderT x
 
-splitCached :: ResolverMapContext m -> SelectionRef -> (HashMap ValidValue ValidValue, (SelectionContent VALID, [ValidValue]))
-splitCached ctx (selection, NamedResolverRef name args) = do
+splitCached :: Monad m => SelectionRef -> ResolverMapT m (HashMap ValidValue ValidValue, (SelectionContent VALID, [ValidValue]))
+splitCached (selection, NamedResolverRef name args) = do
+  ctx <- ask
   let ks = map (CacheKey selection name) args
-  let cached = map resolveCached ks
+  let cached = map (resolveCached ctx) ks
   let uncached = (selection, map fst $ filter (isNothing . snd) cached)
-  (unsafeFromList (mapMaybe unp cached), uncached)
+  pure (unsafeFromList (mapMaybe unp cached), uncached)
   where
-    resolveCached key = (cachedArg key, lookup key $ localCache ctx)
+    resolveCached ctx key = (cachedArg key, lookup key $ localCache ctx)
 
 unp :: (a, Maybe b) -> Maybe (a, b)
 unp (_, Nothing) = Nothing

@@ -88,45 +88,21 @@ instance RefScanner ResolverValue where
 instance RefScanner ObjectTypeResolver where
   type RefSel ObjectTypeResolver = Maybe (SelectionSet VALID)
   scanRefs Nothing _ = pure []
-  scanRefs (Just sel) dr = concat <$> traverse (fieldRefs dr) (toList sel)
-
-fieldRefs :: (MonadResolver m) => ObjectTypeResolver m -> Selection VALID -> m [SelectionRef]
-fieldRefs objRes currentSelection@Selection {..}
-  | selectionName == "__typename" = pure []
-  | otherwise = do
-      t <- askFieldTypeName selectionName
-      updateCurrentType t $
-        local (\ctx -> ctx {currentSelection}) $ do
-          x <- withField [] (fmap pure) selectionName objRes
-          concat <$> traverse (scanRefs selectionContent) x
-
-resolveSelection :: (MonadResolver m) => ResolverValue m -> SelectionContent VALID -> ResolverMapT m ValidValue
-resolveSelection = withCache resolveSelectionUncached
+  scanRefs (Just sel) objRes = concat <$> traverse fieldRefs (toList sel)
+    where
+      fieldRefs currentSelection@Selection {..}
+        | selectionName == "__typename" = pure []
+        | otherwise = do
+            t <- askFieldTypeName selectionName
+            updateCurrentType t $
+              local (\ctx -> ctx {currentSelection}) $ do
+                x <- withField [] (fmap pure) selectionName objRes
+                concat <$> traverse (scanRefs selectionContent) x
 
 withCache :: (RefScanner res, MonadResolver m) => (res m -> RefSel res -> ResolverMapT m b) -> res m -> RefSel res -> ResolverMapT m b
 withCache f resolver selection = do
   refs <- lift (scanRefs selection resolver)
   buildCache resolveRefs refs (f resolver selection)
-
-resolveSelectionUncached ::
-  (MonadResolver m) =>
-  ResolverValue m ->
-  SelectionContent VALID ->
-  ResolverMapT m ValidValue
-resolveSelectionUncached (ResLazy x) selection = lift x >>= (`resolveSelection` selection)
-resolveSelectionUncached (ResList xs) selection = List <$> traverse (`resolveSelection` selection) xs
-resolveSelectionUncached (ResObject tyName obj) sel = do
-  ctx <- ask
-  lift $ withObject tyName (resolveObject ctx obj) sel
-resolveSelectionUncached (ResEnum name) SelectionField = pure $ Scalar $ String $ unpackName name
-resolveSelectionUncached (ResEnum name) unionSel@UnionSelection {} = resolveSelection (mkUnion name [(unitFieldName, pure $ mkEnum unitTypeName)]) unionSel
-resolveSelectionUncached ResEnum {} _ = throwError (internal "wrong selection on enum value")
-resolveSelectionUncached ResNull _ = pure Null
-resolveSelectionUncached (ResScalar x) SelectionField = pure $ Scalar x
-resolveSelectionUncached ResScalar {} _ = throwError (internal "scalar resolver should only receive SelectionField")
-resolveSelectionUncached (ResRef mRef) sel = do
-  ref <- lift mRef
-  resolveRef (sel, ref)
 
 withObject ::
   (MonadResolver m) =>
@@ -151,19 +127,37 @@ noEmptySelection = do
   sel <- asks currentSelection
   throwError $ subfieldsNotSelected (selectionName sel) "" (selectionPosition sel)
 
-resolveRef :: (MonadResolver m) => SelectionRef -> ResolverMapT m ValidValue
-resolveRef ref = resolveRefs ref >>= withSingle
-
 withSingle :: (MonadError GQLError f, Show a) => [a] -> f a
 withSingle [x] = pure x
 withSingle x = throwError (internal ("expected only one resolved value for " <> msg (show x :: String)))
 
+-- RESOLVING
+resolveRef :: (MonadResolver m) => SelectionRef -> ResolverMapT m ValidValue
+resolveRef ref = resolveRefs ref >>= withSingle
+
 resolveRefs :: (MonadResolver m) => SelectionRef -> ResolverMapT m [ValidValue]
 resolveRefs (selection, NamedResolverRef name args) = do
-  ctx <- ask
-  let (cachedMap, uncachedSelection) = splitCached ctx (selection, NamedResolverRef name args)
+  (cachedMap, uncachedSelection) <- splitCached (selection, NamedResolverRef name args)
   uncachedMap <- resolveUncached name uncachedSelection
   traverse (useCached (cachedMap <> uncachedMap)) args
+
+resolveSelection :: (MonadResolver m) => ResolverValue m -> SelectionContent VALID -> ResolverMapT m ValidValue
+resolveSelection = withCache resolveUncachedSel
+  where
+    resolveUncachedSel (ResLazy x) selection = lift x >>= (`resolveSelection` selection)
+    resolveUncachedSel (ResList xs) selection = List <$> traverse (`resolveSelection` selection) xs
+    resolveUncachedSel (ResObject tyName obj) sel = do
+      ctx <- ask
+      lift $ withObject tyName (resolveObject ctx obj) sel
+    resolveUncachedSel (ResEnum name) SelectionField = pure $ Scalar $ String $ unpackName name
+    resolveUncachedSel (ResEnum name) unionSel@UnionSelection {} = resolveSelection (mkUnion name [(unitFieldName, pure $ mkEnum unitTypeName)]) unionSel
+    resolveUncachedSel ResEnum {} _ = throwError (internal "wrong selection on enum value")
+    resolveUncachedSel ResNull _ = pure Null
+    resolveUncachedSel (ResScalar x) SelectionField = pure $ Scalar x
+    resolveUncachedSel ResScalar {} _ = throwError (internal "scalar resolver should only receive SelectionField")
+    resolveUncachedSel (ResRef mRef) sel = do
+      ref <- lift mRef
+      resolveRef (sel, ref)
 
 resolveUncached ::
   (MonadResolver m) =>
