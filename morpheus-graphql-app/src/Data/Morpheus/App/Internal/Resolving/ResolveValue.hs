@@ -21,9 +21,8 @@ import Data.Morpheus.App.Internal.Resolving.Batching
     ResolverMapT,
     SelectionRef,
     buildCache,
-    cacheRefs,
+    cacheRef,
     runResMapT,
-    useCached,
   )
 import Data.Morpheus.App.Internal.Resolving.MonadResolver (MonadResolver)
 import Data.Morpheus.App.Internal.Resolving.ResolverState
@@ -51,7 +50,6 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
-    GQLError,
     Msg (msg),
     ObjectEntry (ObjectEntry),
     ScalarValue (..),
@@ -102,7 +100,7 @@ instance RefScanner ObjectTypeResolver where
 withCache :: (RefScanner res, MonadResolver m) => (res m -> RefSel res -> ResolverMapT m b) -> res m -> RefSel res -> ResolverMapT m b
 withCache f resolver selection = do
   refs <- lift (scanRefs selection resolver)
-  buildCache resolveRefs refs (f resolver selection)
+  buildCache resolveUncached refs (f resolver selection)
 
 withObject ::
   (MonadResolver m) =>
@@ -120,23 +118,13 @@ withObject __typename f = updateCurrentType __typename . checkContent
       where
         fx (Just x) y = Just <$> (x <:> unionTagSelection y)
         fx Nothing y = pure $ Just $ unionTagSelection y
-    checkContent SelectionField = noEmptySelection
-
-noEmptySelection :: (MonadError GQLError m, MonadReader ResolverContext m) => m value
-noEmptySelection = do
-  sel <- asks currentSelection
-  throwError $ subfieldsNotSelected (selectionName sel) "" (selectionPosition sel)
-
-withSingle :: (MonadError GQLError f, Show a) => [a] -> f a
-withSingle [x] = pure x
-withSingle x = throwError (internal ("expected only one resolved value for " <> msg (show x :: String)))
+    checkContent SelectionField = do
+      sel <- asks currentSelection
+      throwError $ subfieldsNotSelected (selectionName sel) "" (selectionPosition sel)
 
 -- RESOLVING
 resolveRef :: (MonadResolver m) => SelectionRef -> ResolverMapT m ValidValue
-resolveRef ref = resolveRefs ref >>= withSingle
-
-resolveRefs :: (MonadResolver m) => SelectionRef -> ResolverMapT m [ValidValue]
-resolveRefs = cacheRefs resolveUncached
+resolveRef = cacheRef resolveUncached
 
 resolveSelection :: (MonadResolver m) => ResolverValue m -> SelectionContent VALID -> ResolverMapT m ValidValue
 resolveSelection = withCache resolveUncachedSel

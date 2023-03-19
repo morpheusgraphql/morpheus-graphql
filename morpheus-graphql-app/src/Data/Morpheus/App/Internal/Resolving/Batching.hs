@@ -19,13 +19,12 @@
 module Data.Morpheus.App.Internal.Resolving.Batching
   ( CacheKey (..),
     LocalCache,
-    useCached,
-    buildCache,
     ResolverMapContext (..),
     ResolverMapT (..),
     runResMapT,
     SelectionRef,
-    cacheRefs,
+    buildCache,
+    cacheRef,
   )
 where
 
@@ -134,7 +133,7 @@ updateCache f cache entries = do
 buildCache :: (ResolverMonad m) => ResolverFun (ResolverMapT m) -> [SelectionRef] -> ResolverMapT m a -> ResolverMapT m a
 buildCache f refs m = do
   oldCtx@(ResolverMapContext cache rmap) <- ask
-  ctx <- (`ResolverMapContext` rmap) <$> lift (updateCache (\x -> runResMapT (f x) oldCtx) cache (buildBatches refs))
+  ctx <- (`ResolverMapContext` rmap) <$> lift (updateCache (\x -> runResMapT (cacheRefs f x) oldCtx) cache (buildBatches refs))
   local (const ctx) m
 
 data ResolverMapContext m = ResolverMapContext
@@ -160,6 +159,13 @@ deriving instance MonadError GQLError m => MonadError GQLError (ResolverMapT m)
 runResMapT :: ResolverMapT m a -> ResolverMapContext m -> m a
 runResMapT (ResolverMapT x) = runReaderT x
 
+isNotCached :: ResolverMapContext m -> CacheKey -> Bool
+isNotCached ctx key = isNothing $ lookup key $ localCache ctx
+
+withSingle :: (MonadError GQLError f, Show a) => [a] -> f a
+withSingle [x] = pure x
+withSingle x = throwError (internal ("expected only one resolved value for " <> msg (show x :: String)))
+
 cacheRefs :: (MonadError GQLError m) => ResolverFun (ResolverMapT m) -> SelectionRef -> ResolverMapT m [ValidValue]
 cacheRefs f (selection, NamedResolverRef name args) = do
   ctx <- ask
@@ -170,5 +176,6 @@ cacheRefs f (selection, NamedResolverRef name args) = do
   let cache = fold (localCache ctx : caches)
   traverse (useCached cache) ks
 
-isNotCached :: ResolverMapContext m -> CacheKey -> Bool
-isNotCached ctx key = isNothing $ lookup key $ localCache ctx
+-- RESOLVING
+cacheRef :: (MonadError GQLError m) => ResolverFun (ResolverMapT m) -> SelectionRef -> ResolverMapT m ValidValue
+cacheRef f ref = cacheRefs f ref >>= withSingle
