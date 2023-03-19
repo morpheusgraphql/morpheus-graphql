@@ -20,7 +20,7 @@ module Data.Morpheus.App.Internal.Resolving.Batching
   ( CacheKey (..),
     LocalCache,
     useCached,
-    buildCacheWith,
+    buildCache,
     ResolverMapContext (..),
     ResolverMapT (..),
     runResMapT,
@@ -131,10 +131,11 @@ updateCache f cache entries = do
   enabled <- asks (debug . config)
   pure $ dumpCache enabled newCache
 
-buildCacheWith :: ResolverMonad m => ResolverFun (ResolverMapT m) -> [SelectionRef] -> ResolverMapT m (ResolverMapContext m)
-buildCacheWith f entries = do
-  ctx@(ResolverMapContext cache rmap) <- ask
-  (`ResolverMapContext` rmap) <$> lift (updateCache (\x -> runResMapT (f x) ctx) cache (buildBatches entries))
+buildCache :: (ResolverMonad m) => ResolverFun (ResolverMapT m) -> [SelectionRef] -> ResolverMapT m a -> ResolverMapT m a
+buildCache f refs m = do
+  oldCtx@(ResolverMapContext cache rmap) <- ask
+  ctx <- (`ResolverMapContext` rmap) <$> lift (updateCache (\x -> runResMapT (f x) oldCtx) cache (buildBatches refs))
+  local (const ctx) m
 
 data ResolverMapContext m = ResolverMapContext
   { localCache :: LocalCache,

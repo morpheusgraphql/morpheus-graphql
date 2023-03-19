@@ -18,7 +18,7 @@ import Data.Morpheus.App.Internal.Resolving.Batching
   ( ResolverMapContext (..),
     ResolverMapT,
     SelectionRef,
-    buildCacheWith,
+    buildCache,
     runResMapT,
     splitCached,
     useCached,
@@ -99,12 +99,7 @@ resolveSelection ::
   ResolverMapT m ValidValue
 resolveSelection res selection = do
   refs <- lift (scanRefs selection res)
-  buildCache refs (__resolveSelection res selection)
-
-buildCache :: (MonadResolver m) => [SelectionRef] -> ResolverMapT m a -> ResolverMapT m a
-buildCache refs m = do
-  ctx <- buildCacheWith resolveRefs refs
-  local (const ctx) m
+  buildCache resolveRefs refs (__resolveSelection res selection)
 
 __resolveSelection ::
   (MonadResolver m) =>
@@ -241,7 +236,7 @@ refreshCache ctx drv sel v
   | null (resolverMap ctx) = runResMapT v ctx
   | otherwise = do
       refs <- objectRefs drv sel
-      runResMapT (buildCache refs v) ctx
+      runResMapT (buildCacheWith resolveRefs refs v) ctx
 
 runFieldResolver ::
   (MonadResolver m) =>
