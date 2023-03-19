@@ -4,6 +4,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.App.Internal.Resolving.ResolveValue
@@ -69,18 +71,24 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Relude hiding (empty)
 
-scanRefs :: (MonadResolver m) => SelectionContent VALID -> ResolverValue m -> m [SelectionRef]
-scanRefs sel (ResList xs) = concat <$> traverse (scanRefs sel) xs
-scanRefs sel (ResLazy x) = x >>= scanRefs sel
-scanRefs sel (ResObject tyName obj) = withObject tyName (objectRefs obj) sel
-scanRefs sel (ResRef ref) = pure . (sel,) <$> ref
-scanRefs _ ResEnum {} = pure []
-scanRefs _ ResNull = pure []
-scanRefs _ ResScalar {} = pure []
+class RefScanner f where
+  type RefSel f :: Type
+  scanRefs :: (MonadResolver m) => RefSel f -> f m -> m [SelectionRef]
 
-objectRefs :: (MonadResolver m) => ObjectTypeResolver m -> Maybe (SelectionSet VALID) -> m [SelectionRef]
-objectRefs _ Nothing = pure []
-objectRefs dr (Just sel) = concat <$> traverse (fieldRefs dr) (toList sel)
+instance RefScanner ResolverValue where
+  type RefSel ResolverValue = SelectionContent VALID
+  scanRefs sel (ResList xs) = concat <$> traverse (scanRefs sel) xs
+  scanRefs sel (ResLazy x) = x >>= scanRefs sel
+  scanRefs sel (ResObject tyName obj) = withObject tyName (`scanRefs` obj) sel
+  scanRefs sel (ResRef ref) = pure . (sel,) <$> ref
+  scanRefs _ ResEnum {} = pure []
+  scanRefs _ ResNull = pure []
+  scanRefs _ ResScalar {} = pure []
+
+instance RefScanner ObjectTypeResolver where
+  type RefSel ObjectTypeResolver = Maybe (SelectionSet VALID)
+  scanRefs Nothing _ = pure []
+  scanRefs (Just sel) dr = concat <$> traverse (fieldRefs dr) (toList sel)
 
 fieldRefs :: (MonadResolver m) => ObjectTypeResolver m -> Selection VALID -> m [SelectionRef]
 fieldRefs objRes currentSelection@Selection {..}
@@ -92,14 +100,13 @@ fieldRefs objRes currentSelection@Selection {..}
           x <- withField [] (fmap pure) selectionName objRes
           concat <$> traverse (scanRefs selectionContent) x
 
-resolveSelection ::
-  (MonadResolver m) =>
-  ResolverValue m ->
-  SelectionContent VALID ->
-  ResolverMapT m ValidValue
-resolveSelection res selection = do
-  refs <- lift (scanRefs selection res)
-  buildCache resolveRefs refs (resolveSelectionUncached res selection)
+resolveSelection :: (MonadResolver m) => ResolverValue m -> SelectionContent VALID -> ResolverMapT m ValidValue
+resolveSelection = withCache resolveSelectionUncached
+
+withCache :: (RefScanner res, MonadResolver m) => (res m -> RefSel res -> ResolverMapT m b) -> res m -> RefSel res -> ResolverMapT m b
+withCache f resolver selection = do
+  refs <- lift (scanRefs selection resolver)
+  buildCache resolveRefs refs (f resolver selection)
 
 resolveSelectionUncached ::
   (MonadResolver m) =>
@@ -202,12 +209,8 @@ resolveObject ::
   ObjectTypeResolver m ->
   Maybe (SelectionSet VALID) ->
   m ValidValue
-resolveObject rmap drv sel =
-  refreshCache
-    rmap
-    drv
-    sel
-    (Object <$> maybe (pure empty) (traverseCollection (resolverWithCache drv)) sel)
+resolveObject =
+  refreshCache (\drv sel -> Object <$> maybe (pure empty) (traverseCollection (resolverWithCache drv)) sel)
 
 resolverWithCache ::
   MonadResolver m =>
@@ -225,18 +228,16 @@ resolverWithCache drv currentSelection = do
 
 refreshCache ::
   (MonadResolver m) =>
+  (ObjectTypeResolver m -> Maybe (SelectionSet VALID) -> ResolverMapT m v) ->
   ResolverMapContext m ->
   ObjectTypeResolver m ->
   Maybe (SelectionSet VALID) ->
-  ResolverMapT m v ->
   m v
-refreshCache ctx drv sel v
+refreshCache f ctx drv sel
   -- TODO: this is workaround to fix https://github.com/morpheusgraphql/morpheus-graphql/issues/810
   -- which deactivates caching for non named resolvers. find out better long term solution
-  | null (resolverMap ctx) = runResMapT v ctx
-  | otherwise = do
-      refs <- objectRefs drv sel
-      runResMapT (buildCache resolveRefs refs v) ctx
+  | null (resolverMap ctx) = runResMapT (f drv sel) ctx
+  | otherwise = runResMapT (withCache f drv sel) ctx
 
 runFieldResolver ::
   (MonadResolver m) =>
