@@ -160,18 +160,14 @@ deriving instance MonadError GQLError m => MonadError GQLError (ResolverMapT m)
 runResMapT :: ResolverMapT m a -> ResolverMapContext m -> m a
 runResMapT (ResolverMapT x) = runReaderT x
 
-genCache :: Monad m => ResolverFun (ResolverMapT m) -> SelectionRef -> ResolverMapT m ([CacheKey], LocalCache)
-genCache f (selection, NamedResolverRef name args) = do
+cacheRefs :: (MonadError GQLError m) => ResolverFun (ResolverMapT m) -> SelectionRef -> ResolverMapT m [ValidValue]
+cacheRefs f (selection, NamedResolverRef name args) = do
   ctx <- ask
   let ks = map (CacheKey selection name) args
   let uncached = map cachedArg $ filter (isNotCached ctx) ks
   let batches = buildBatches [(selection, NamedResolverRef name uncached)]
-  cache <- traverse (resolveBatched f) batches
-  pure (ks, fold (localCache ctx : cache))
-
-cacheRefs :: (MonadError GQLError m) => ResolverFun (ResolverMapT m) -> SelectionRef -> ResolverMapT m [ValidValue]
-cacheRefs f ref = do
-  (ks, cache) <- genCache f ref
+  caches <- traverse (resolveBatched f) batches
+  let cache = fold (localCache ctx : caches)
   traverse (useCached cache) ks
 
 isNotCached :: ResolverMapContext m -> CacheKey -> Bool
