@@ -236,7 +236,7 @@ refreshCache ctx drv sel v
   | null (resolverMap ctx) = runResMapT v ctx
   | otherwise = do
       refs <- objectRefs drv sel
-      runResMapT (buildCacheWith resolveRefs refs v) ctx
+      runResMapT (buildCache resolveRefs refs v) ctx
 
 runFieldResolver ::
   (MonadResolver m) =>
