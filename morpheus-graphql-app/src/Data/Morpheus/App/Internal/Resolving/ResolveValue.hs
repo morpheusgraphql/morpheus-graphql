@@ -99,25 +99,25 @@ resolveSelection ::
   ResolverMapT m ValidValue
 resolveSelection res selection = do
   refs <- lift (scanRefs selection res)
-  buildCache resolveRefs refs (__resolveSelection res selection)
+  buildCache resolveRefs refs (resolveSelectionUncached res selection)
 
-__resolveSelection ::
+resolveSelectionUncached ::
   (MonadResolver m) =>
   ResolverValue m ->
   SelectionContent VALID ->
   ResolverMapT m ValidValue
-__resolveSelection (ResLazy x) selection = lift x >>= (`resolveSelection` selection)
-__resolveSelection (ResList xs) selection = List <$> traverse (`resolveSelection` selection) xs
-__resolveSelection (ResObject tyName obj) sel = do
+resolveSelectionUncached (ResLazy x) selection = lift x >>= (`resolveSelection` selection)
+resolveSelectionUncached (ResList xs) selection = List <$> traverse (`resolveSelection` selection) xs
+resolveSelectionUncached (ResObject tyName obj) sel = do
   ctx <- ask
   lift $ withObject tyName (resolveObject ctx obj) sel
-__resolveSelection (ResEnum name) SelectionField = pure $ Scalar $ String $ unpackName name
-__resolveSelection (ResEnum name) unionSel@UnionSelection {} = resolveSelection (mkUnion name [(unitFieldName, pure $ mkEnum unitTypeName)]) unionSel
-__resolveSelection ResEnum {} _ = throwError (internal "wrong selection on enum value")
-__resolveSelection ResNull _ = pure Null
-__resolveSelection (ResScalar x) SelectionField = pure $ Scalar x
-__resolveSelection ResScalar {} _ = throwError (internal "scalar resolver should only receive SelectionField")
-__resolveSelection (ResRef mRef) sel = do
+resolveSelectionUncached (ResEnum name) SelectionField = pure $ Scalar $ String $ unpackName name
+resolveSelectionUncached (ResEnum name) unionSel@UnionSelection {} = resolveSelection (mkUnion name [(unitFieldName, pure $ mkEnum unitTypeName)]) unionSel
+resolveSelectionUncached ResEnum {} _ = throwError (internal "wrong selection on enum value")
+resolveSelectionUncached ResNull _ = pure Null
+resolveSelectionUncached (ResScalar x) SelectionField = pure $ Scalar x
+resolveSelectionUncached ResScalar {} _ = throwError (internal "scalar resolver should only receive SelectionField")
+resolveSelectionUncached (ResRef mRef) sel = do
   ref <- lift mRef
   resolveRef (sel, ref)
 
