@@ -21,8 +21,8 @@ import Data.Morpheus.App.Internal.Resolving.Batching
     ResolverMapT,
     SelectionRef,
     buildCache,
+    genCache,
     runResMapT,
-    splitCached,
     useCached,
   )
 import Data.Morpheus.App.Internal.Resolving.MonadResolver (MonadResolver)
@@ -135,15 +135,10 @@ withSingle x = throwError (internal ("expected only one resolved value for " <> 
 resolveRef :: (MonadResolver m) => SelectionRef -> ResolverMapT m ValidValue
 resolveRef ref = resolveRefs ref >>= withSingle
 
-mapWith :: IsMap k m => [k] -> [a] -> m a
-mapWith refs values = unsafeFromList (zip refs values)
-
 resolveRefs :: (MonadResolver m) => SelectionRef -> ResolverMapT m [ValidValue]
 resolveRefs (selection, ref) = do
-  (cachedMap, uncachedRef) <- splitCached (selection, ref)
-  values <- resolveUncached (selection, uncachedRef)
-  let uncachedMap = mapWith (resolverArgument uncachedRef) values
-  traverse (useCached (cachedMap <> uncachedMap)) (resolverArgument ref)
+  cache <- genCache resolveUncached (selection, ref)
+  traverse (useCached cache) (resolverArgument ref)
 
 resolveSelection :: (MonadResolver m) => ResolverValue m -> SelectionContent VALID -> ResolverMapT m ValidValue
 resolveSelection = withCache resolveUncachedSel

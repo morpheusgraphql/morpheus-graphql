@@ -25,7 +25,7 @@ module Data.Morpheus.App.Internal.Resolving.Batching
     ResolverMapT (..),
     runResMapT,
     SelectionRef,
-    splitCached,
+    genCache,
   )
 where
 
@@ -160,13 +160,18 @@ deriving instance MonadError GQLError m => MonadError GQLError (ResolverMapT m)
 runResMapT :: ResolverMapT m a -> ResolverMapContext m -> m a
 runResMapT (ResolverMapT x) = runReaderT x
 
-splitCached :: Monad m => SelectionRef -> ResolverMapT m (HashMap ValidValue ValidValue, NamedResolverRef)
-splitCached (selection, NamedResolverRef name args) = do
+mapWith :: IsMap k m => [k] -> [a] -> m a
+mapWith refs values = unsafeFromList (zip refs values)
+
+genCache :: Monad m => ResolverFun (ResolverMapT m) -> SelectionRef -> ResolverMapT m (HashMap ValidValue ValidValue)
+genCache f (selection, NamedResolverRef name args) = do
   ctx <- ask
   let ks = map (CacheKey selection name) args
   let cached = map (resolveCached ctx) ks
   let uncached = map fst $ filter (isNothing . snd) cached
-  pure (unsafeFromList (mapMaybe unp cached), NamedResolverRef name uncached)
+  values <- f (selection, NamedResolverRef name uncached)
+  let uncachedMap = mapWith uncached values
+  pure (unsafeFromList (mapMaybe unp cached) <> uncachedMap)
   where
     resolveCached ctx key = (cachedArg key, lookup key $ localCache ctx)
 
