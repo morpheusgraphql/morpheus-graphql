@@ -3,7 +3,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -66,15 +65,15 @@ import Relude hiding (empty)
 withCache :: (RefScanner res, MonadResolver m) => (res m -> RefSel res -> ResolverMapT m b) -> res m -> RefSel res -> ResolverMapT m b
 withCache f resolver selection = do
   refs <- lift (scanRefs selection resolver)
-  buildCache resolveUncachedRef refs (f resolver selection)
+  buildCache resolveUncachedNamedRef refs (f resolver selection)
 
 -- RESOLVING
 resolveRef :: (MonadResolver m) => SelectionRef -> ResolverMapT m ValidValue
-resolveRef = cacheRef resolveUncachedRef
+resolveRef = cacheRef resolveUncachedNamedRef
 
-resolveUncachedRef :: (MonadResolver m) => SelectionRef -> ResolverMapT m [ValidValue]
-resolveUncachedRef (_, NamedResolverRef _ []) = pure empty
-resolveUncachedRef (selection, NamedResolverRef {..}) = do
+resolveUncachedNamedRef :: (MonadResolver m) => SelectionRef -> ResolverMapT m [ValidValue]
+resolveUncachedNamedRef (_, NamedResolverRef _ []) = pure empty
+resolveUncachedNamedRef (selection, NamedResolverRef {..}) = do
   rmap <- asks resolverMap
   namedResolvers <- lift (selectOr notFound found resolverTypeName rmap)
   traverse (resolveNamedResolver resolverTypeName selection) namedResolvers
