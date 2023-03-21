@@ -25,6 +25,8 @@ module Data.Morpheus.App.Internal.Resolving.Batching
     SelectionRef,
     cachedRef,
     cachedWith,
+    getBatchingState,
+    lookupResolvers,
   )
 where
 
@@ -32,11 +34,11 @@ import Control.Monad.Except (MonadError (throwError))
 import Data.ByteString.Lazy.Char8 (unpack)
 import Data.HashMap.Lazy (keys)
 import Data.Morpheus.App.Internal.Resolving.Refs (RefScanner (..))
-import Data.Morpheus.App.Internal.Resolving.ResolverState (config)
-import Data.Morpheus.App.Internal.Resolving.Types (ResolverMap)
+import Data.Morpheus.App.Internal.Resolving.ResolverState (ResolverContext, config)
+import Data.Morpheus.App.Internal.Resolving.Types (NamedResolver (..), NamedResolverResult, ResolverMap)
 import Data.Morpheus.App.Internal.Resolving.Utils
 import Data.Morpheus.Core (Config (..), RenderGQL, render)
-import Data.Morpheus.Internal.Utils (IsMap (..))
+import Data.Morpheus.Internal.Utils (IsMap (..), selectOr)
 import Data.Morpheus.Types.Internal.AST
   ( GQLError,
     Msg (..),
@@ -137,13 +139,14 @@ cachedWith ::
   RefSel res ->
   ResolverMapT m b
 cachedWith resolveRef resolveValue resolver selection = do
-  oldCtx@(ResolverMapContext oldCache rmap) <- ask
-  if null rmap
+  resolvers <- namedResolvers
+  if null resolvers
     then resolveValue resolver selection
     else do
+      ctx <- getBatchingState
       refs <- lift (scanRefs selection resolver)
-      newCache <- lift (updateCache (\x -> runResMapT (cacheRefs resolveRef x) oldCtx) oldCache (buildBatches refs))
-      local (const (ResolverMapContext newCache rmap)) (resolveValue resolver selection)
+      newCache <- lift (updateCache (\x -> runResMapT (cacheRefs resolveRef x) ctx) (localCache ctx) (buildBatches refs))
+      setCache newCache (resolveValue resolver selection)
 
 data ResolverMapContext m = ResolverMapContext
   { localCache :: LocalCache,
@@ -156,14 +159,37 @@ newtype ResolverMapT m a = ResolverMapT
   deriving
     ( Functor,
       Applicative,
-      Monad,
-      MonadReader (ResolverMapContext m)
+      Monad
     )
+
+instance (MonadReader ResolverContext m) => MonadReader ResolverContext (ResolverMapT m) where
+  ask = ResolverMapT (lift ask)
+  local f (ResolverMapT m) = ResolverMapT (ReaderT (local f . runReaderT m))
 
 instance MonadTrans ResolverMapT where
   lift = ResolverMapT . lift
 
 deriving instance MonadError GQLError m => MonadError GQLError (ResolverMapT m)
+
+setCache :: Monad m => LocalCache -> ResolverMapT m a -> ResolverMapT m a
+setCache cache m = do
+  ResolverMapT $ do
+    rmap <- asks resolverMap
+    local (const (ResolverMapContext cache rmap)) (_runResMapT m)
+
+lookupResolvers :: ResolverMonad m => NamedResolverRef -> ResolverMapT m [NamedResolverResult m]
+lookupResolvers NamedResolverRef {..} = do
+  rmap <- namedResolvers
+  lift (selectOr notFound found resolverTypeName rmap)
+  where
+    found = (resolverArgument &) . resolverFun
+    notFound = throwError ("resolver type " <> msg resolverTypeName <> "can't found")
+
+namedResolvers :: Monad m => ResolverMapT m (ResolverMap m)
+namedResolvers = resolverMap <$> ResolverMapT ask
+
+getBatchingState :: Monad m => ResolverMapT m (ResolverMapContext m)
+getBatchingState = ResolverMapT ask
 
 runResMapT :: ResolverMapT m a -> ResolverMapContext m -> m a
 runResMapT (ResolverMapT x) = runReaderT x
@@ -177,7 +203,7 @@ withSingle x = throwError (internal ("expected only one resolved value for " <> 
 
 cacheRefs :: (MonadError GQLError m) => ResolverFun (ResolverMapT m) -> SelectionRef -> ResolverMapT m [ValidValue]
 cacheRefs f (selection, NamedResolverRef name args) = do
-  ctx <- ask
+  ctx <- getBatchingState
   let ks = map (CacheKey selection name) args
   let uncached = map cachedArg $ filter (isNotCached ctx) ks
   let batches = buildBatches [(selection, NamedResolverRef name uncached)]
