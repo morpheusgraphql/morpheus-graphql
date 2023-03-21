@@ -33,7 +33,7 @@ where
 import Control.Monad.Except (MonadError (throwError))
 import Data.ByteString.Lazy.Char8 (unpack)
 import Data.HashMap.Lazy (keys)
-import Data.Morpheus.App.Internal.Resolving.Refs (RefScanner (..))
+import Data.Morpheus.App.Internal.Resolving.Refs (scanRefs)
 import Data.Morpheus.App.Internal.Resolving.ResolverState (ResolverContext, config)
 import Data.Morpheus.App.Internal.Resolving.Types (NamedResolver (..), NamedResolverResult, ResolverMap)
 import Data.Morpheus.App.Internal.Resolving.Utils
@@ -132,11 +132,11 @@ updateCache f cache entries = do
   pure $ dumpCache enabled newCache
 
 cachedWith ::
-  (RefScanner res, ResolverMonad m) =>
+  (ResolverMonad m) =>
   (SelectionRef -> ResolverMapT m [ValidValue]) ->
-  (res m -> RefSel res -> ResolverMapT m b) ->
-  res m ->
-  RefSel res ->
+  (ResolverValue m -> SelectionContent VALID -> ResolverMapT m b) ->
+  ResolverValue m ->
+  SelectionContent VALID ->
   ResolverMapT m b
 cachedWith resolveRef resolveValue resolver selection = do
   resolvers <- namedResolvers

@@ -20,7 +20,6 @@ import Data.Morpheus.App.Internal.Resolving.Batching
     SelectionRef,
     cachedRef,
     cachedWith,
-    getBatchingState,
     lookupResolvers,
     runResMapT,
   )
@@ -28,8 +27,7 @@ import Data.Morpheus.App.Internal.Resolving.MonadResolver (MonadResolver)
 import Data.Morpheus.App.Internal.Resolving.Refs
 import Data.Morpheus.App.Internal.Resolving.ResolverState
   ( ResolverContext (..),
-    askFieldTypeName,
-    updateCurrentType,
+    inSelectionField,
   )
 import Data.Morpheus.App.Internal.Resolving.Types
   ( NamedResolverResult (..),
@@ -61,7 +59,12 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Relude hiding (empty)
 
-withCache :: (RefScanner res, MonadResolver m) => (res m -> RefSel res -> ResolverMapT m b) -> res m -> RefSel res -> ResolverMapT m b
+withCache ::
+  (MonadResolver m) =>
+  (ResolverValue m -> SelectionContent VALID -> ResolverMapT m b) ->
+  ResolverValue m ->
+  SelectionContent VALID ->
+  ResolverMapT m b
 withCache = cachedWith resolveNamedRef
 
 resolveNamedRoot :: MonadResolver m => ResolverMap m -> SelectionSet VALID -> m ValidValue
@@ -105,14 +108,7 @@ resolveObject :: (MonadResolver m) => ObjectTypeResolver m -> Maybe (SelectionSe
 resolveObject drv sel = Object <$> maybe (pure empty) (traverseCollection (resolveField drv)) sel
 
 resolveField :: MonadResolver m => ObjectTypeResolver m -> Selection VALID -> ResolverMapT m (ObjectEntry VALID)
-resolveField drv currentSelection = do
-  cache <- getBatchingState
-  lift $ do
-    fieldType <- askFieldTypeName (selectionName currentSelection)
-    updateCurrentType fieldType $
-      local (\ctx -> ctx {currentSelection}) $
-        ObjectEntry (keyOf currentSelection)
-          <$> runResMapT (runFieldResolver currentSelection drv) cache
+resolveField drv selection = inSelectionField selection $ ObjectEntry (keyOf selection) <$> runFieldResolver selection drv
 
 runFieldResolver ::
   (MonadResolver m) =>
