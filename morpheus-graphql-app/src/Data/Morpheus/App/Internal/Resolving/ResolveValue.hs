@@ -76,26 +76,26 @@ resolveUncachedNamedRef (_, NamedResolverRef _ []) = pure empty
 resolveUncachedNamedRef (selection, NamedResolverRef {..}) = do
   rmap <- asks resolverMap
   namedResolvers <- lift (selectOr notFound found resolverTypeName rmap)
-  traverse (resolveNamedResolver resolverTypeName selection) namedResolvers
+  traverse (resolveNamedResolverResult resolverTypeName selection) namedResolvers
   where
     found :: (MonadResolver m) => NamedResolver m -> m [NamedResolverResult m]
     found = (resolverArgument &) . resolverFun
     notFound :: (MonadResolver m) => m [NamedResolverResult m]
     notFound = throwError ("resolver type " <> msg resolverTypeName <> "can't found")
 
-resolveNamedResolver ::
+resolveNamedResolverResult ::
   (MonadResolver m) =>
   TypeName ->
   SelectionContent VALID ->
   NamedResolverResult m ->
   ResolverMapT m ValidValue
-resolveNamedResolver typename selection (NamedObjectResolver res) = do
+resolveNamedResolverResult typename selection (NamedObjectResolver res) = do
   ctx <- ask
   lift $ withObject (Just typename) (resolveObject ctx res) selection
-resolveNamedResolver _ selection (NamedUnionResolver unionRef) = resolveSelection (ResRef $ pure unionRef) selection
-resolveNamedResolver _ selection (NamedEnumResolver value) = resolveSelection (ResEnum value) selection
-resolveNamedResolver _ selection NamedNullResolver = resolveSelection ResNull selection
-resolveNamedResolver _ selection (NamedScalarResolver v) = resolveSelection (ResScalar v) selection
+resolveNamedResolverResult _ selection (NamedUnionResolver unionRef) = resolveSelection (ResRef $ pure unionRef) selection
+resolveNamedResolverResult _ selection (NamedEnumResolver value) = resolveSelection (ResEnum value) selection
+resolveNamedResolverResult _ selection NamedNullResolver = resolveSelection ResNull selection
+resolveNamedResolverResult _ selection (NamedScalarResolver v) = resolveSelection (ResScalar v) selection
 
 resolveSelection :: (MonadResolver m) => ResolverValue m -> SelectionContent VALID -> ResolverMapT m ValidValue
 resolveSelection = withCache resolveUncachedSel

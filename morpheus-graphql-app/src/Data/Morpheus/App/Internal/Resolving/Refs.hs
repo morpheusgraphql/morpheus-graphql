@@ -13,19 +13,13 @@ module Data.Morpheus.App.Internal.Resolving.Refs
   )
 where
 
-import Data.Morpheus.App.Internal.Resolving.Batching
-  ( SelectionRef,
-  )
 import Data.Morpheus.App.Internal.Resolving.MonadResolver (MonadResolver)
 import Data.Morpheus.App.Internal.Resolving.ResolverState
   ( ResolverContext (..),
     askFieldTypeName,
     updateCurrentType,
   )
-import Data.Morpheus.App.Internal.Resolving.Types
-  ( ObjectTypeResolver (..),
-    ResolverValue (..),
-  )
+import Data.Morpheus.App.Internal.Resolving.Types (NamedResolverRef, ObjectTypeResolver (..), ResolverValue (..))
 import Data.Morpheus.App.Internal.Resolving.Utils (withField, withObject)
 import Data.Morpheus.Types.Internal.AST
   ( Selection (..),
@@ -34,6 +28,8 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
   )
 import Relude hiding (empty)
+
+type SelectionRef = (SelectionContent VALID, NamedResolverRef)
 
 class RefScanner f where
   type RefSel f :: Type
