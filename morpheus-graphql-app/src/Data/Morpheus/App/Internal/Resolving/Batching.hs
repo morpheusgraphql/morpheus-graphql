@@ -23,14 +23,15 @@ module Data.Morpheus.App.Internal.Resolving.Batching
     ResolverMapT (..),
     runResMapT,
     SelectionRef,
-    buildCache,
     cacheRef,
+    cachedWith,
   )
 where
 
 import Control.Monad.Except (MonadError (throwError))
 import Data.ByteString.Lazy.Char8 (unpack)
 import Data.HashMap.Lazy (keys)
+import Data.Morpheus.App.Internal.Resolving.Refs (RefScanner (..))
 import Data.Morpheus.App.Internal.Resolving.ResolverState (config)
 import Data.Morpheus.App.Internal.Resolving.Types (ResolverMap)
 import Data.Morpheus.App.Internal.Resolving.Utils
@@ -129,6 +130,17 @@ updateCache f cache entries = do
   let newCache = foldr (<>) cache caches
   enabled <- asks (debug . config)
   pure $ dumpCache enabled newCache
+
+cachedWith ::
+  (RefScanner res, ResolverMonad m) =>
+  (SelectionRef -> ResolverMapT m [ValidValue]) ->
+  (res m -> RefSel res -> ResolverMapT m b) ->
+  res m ->
+  RefSel res ->
+  ResolverMapT m b
+cachedWith uncachedResolveRef uncachedResolve resolver selection = do
+  refs <- lift (scanRefs selection resolver)
+  buildCache uncachedResolveRef refs (uncachedResolve resolver selection)
 
 buildCache :: (ResolverMonad m) => ResolverFun (ResolverMapT m) -> [SelectionRef] -> ResolverMapT m a -> ResolverMapT m a
 buildCache f refs m = do

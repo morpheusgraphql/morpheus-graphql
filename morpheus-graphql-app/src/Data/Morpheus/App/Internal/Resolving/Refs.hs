@@ -13,14 +13,13 @@ module Data.Morpheus.App.Internal.Resolving.Refs
   )
 where
 
-import Data.Morpheus.App.Internal.Resolving.MonadResolver (MonadResolver)
 import Data.Morpheus.App.Internal.Resolving.ResolverState
   ( ResolverContext (..),
     askFieldTypeName,
     updateCurrentType,
   )
 import Data.Morpheus.App.Internal.Resolving.Types (NamedResolverRef, ObjectTypeResolver (..), ResolverValue (..))
-import Data.Morpheus.App.Internal.Resolving.Utils (withField, withObject)
+import Data.Morpheus.App.Internal.Resolving.Utils (ResolverMonad, withField, withObject)
 import Data.Morpheus.Types.Internal.AST
   ( Selection (..),
     SelectionContent (..),
@@ -33,7 +32,7 @@ type SelectionRef = (SelectionContent VALID, NamedResolverRef)
 
 class RefScanner f where
   type RefSel f :: Type
-  scanRefs :: (MonadResolver m) => RefSel f -> f m -> m [SelectionRef]
+  scanRefs :: (ResolverMonad m) => RefSel f -> f m -> m [SelectionRef]
 
 instance RefScanner ResolverValue where
   type RefSel ResolverValue = SelectionContent VALID

@@ -26,7 +26,6 @@ where
 
 import Control.Monad.Except (MonadError (throwError))
 import Data.Aeson qualified as A
-import Data.Morpheus.App.Internal.Resolving.MonadResolver (MonadResolver)
 import Data.Morpheus.App.Internal.Resolving.ResolverState
   ( ResolverContext (..),
     updateCurrentType,
@@ -124,7 +123,7 @@ withField :: Monad m' => a -> (m (ResolverValue m) -> m' a) -> FieldName -> Obje
 withField fb suc selectionName ObjectTypeResolver {..} = maybe (pure fb) suc (lookup selectionName objectFields)
 
 withObject ::
-  (MonadResolver m) =>
+  (ResolverMonad m) =>
   Maybe TypeName ->
   (Maybe (SelectionSet VALID) -> m value) ->
   SelectionContent VALID ->

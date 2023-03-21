@@ -19,8 +19,8 @@ import Data.Morpheus.App.Internal.Resolving.Batching
   ( ResolverMapContext (..),
     ResolverMapT,
     SelectionRef,
-    buildCache,
     cacheRef,
+    cachedWith,
     runResMapT,
   )
 import Data.Morpheus.App.Internal.Resolving.MonadResolver (MonadResolver)
@@ -63,9 +63,7 @@ import Data.Morpheus.Types.Internal.AST
 import Relude hiding (empty)
 
 withCache :: (RefScanner res, MonadResolver m) => (res m -> RefSel res -> ResolverMapT m b) -> res m -> RefSel res -> ResolverMapT m b
-withCache f resolver selection = do
-  refs <- lift (scanRefs selection resolver)
-  buildCache resolveUncachedNamedRef refs (f resolver selection)
+withCache = cachedWith resolveUncachedNamedRef
 
 -- RESOLVING
 resolveRef :: (MonadResolver m) => SelectionRef -> ResolverMapT m ValidValue
