@@ -36,9 +36,7 @@ import Data.Morpheus.App.Internal.Resolving.ResolverState (config)
 import Data.Morpheus.App.Internal.Resolving.Types (ResolverMap)
 import Data.Morpheus.App.Internal.Resolving.Utils
 import Data.Morpheus.Core (Config (..), RenderGQL, render)
-import Data.Morpheus.Internal.Utils
-  ( IsMap (..),
-  )
+import Data.Morpheus.Internal.Utils (Empty (..), IsMap (..))
 import Data.Morpheus.Types.Internal.AST
   ( GQLError,
     Msg (..),
@@ -50,7 +48,7 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Debug.Trace (trace)
 import GHC.Show (Show (show))
-import Relude hiding (show, trace)
+import Relude hiding (empty, show, trace)
 
 type LocalCache = HashMap CacheKey ValidValue
 

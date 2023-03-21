@@ -46,7 +46,6 @@ import Data.Morpheus.Types.Internal.AST
     SUBSCRIPTION,
     Schema (..),
     Selection,
-    SelectionContent (SelectionSet),
     SelectionSet,
     TypeName,
     VALID,
@@ -82,7 +81,7 @@ instance Monad m => FromJSON (RootResolverValue e m) where
 rootResolver :: (MonadResolver m) => ResolverState (ObjectTypeResolver m) -> SelectionSet VALID -> m ValidValue
 rootResolver res selection = do
   root <- liftState (toResolverStateT res)
-  resolveObject (ResolverMapContext mempty mempty) root (Just selection)
+  resolvePlainRoot root selection
 
 runRootResolverValue :: Monad m => RootResolverValue e m -> ResolverContext -> ResponseStream e m (Value VALID)
 runRootResolverValue
@@ -106,10 +105,9 @@ runRootResolverValue
   ctx@ResolverContext {operation = Operation {..}} =
     selectByOperation operationType
     where
-      selectByOperation OPERATION_QUERY = runResolver Nothing (resolvedValue operationSelection) ctx
+      selectByOperation OPERATION_QUERY = runResolver Nothing queryResolver ctx
         where
-          resMap = ResolverMapContext empty (withNamedIntroFields "Query" ctx queryResolverMap)
-          resolvedValue selection = runResMapT (resolveRef (SelectionSet selection, NamedResolverRef "Query" ["ROOT"])) resMap
+          queryResolver = resolveNamedRoot (withNamedIntroFields "Query" ctx queryResolverMap) operationSelection
       selectByOperation _ = throwError "mutation and subscription is not supported for namedResolvers"
 
 withNamedIntroFields :: (MonadResolver m, MonadOperation m ~ QUERY) => TypeName -> ResolverContext -> ResolverMap m -> ResolverMap m

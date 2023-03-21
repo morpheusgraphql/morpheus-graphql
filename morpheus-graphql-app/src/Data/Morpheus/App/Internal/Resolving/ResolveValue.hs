@@ -8,9 +8,8 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.App.Internal.Resolving.ResolveValue
-  ( resolveRef,
-    resolveObject,
-    ResolverMapContext (..),
+  ( resolvePlainRoot,
+    resolveNamedRoot,
   )
 where
 
@@ -33,6 +32,7 @@ import Data.Morpheus.App.Internal.Resolving.ResolverState
 import Data.Morpheus.App.Internal.Resolving.Types
   ( NamedResolver (..),
     NamedResolverResult (..),
+    ResolverMap,
     mkEnum,
     mkUnion,
   )
@@ -65,6 +65,12 @@ import Relude hiding (empty)
 withCache :: (RefScanner res, MonadResolver m) => (res m -> RefSel res -> ResolverMapT m b) -> res m -> RefSel res -> ResolverMapT m b
 withCache = cachedWith resolveUncachedNamedRef
 
+resolveNamedRoot :: MonadResolver m => ResolverMap m -> SelectionSet VALID -> m ValidValue
+resolveNamedRoot named selection = runResMapT (resolveRef (SelectionSet selection, NamedResolverRef "Query" ["ROOT"])) (ResolverMapContext empty named)
+
+resolvePlainRoot :: MonadResolver m => ObjectTypeResolver m -> SelectionSet VALID -> m ValidValue
+resolvePlainRoot root selection = resolveObject (ResolverMapContext mempty mempty) root (Just selection)
+
 -- RESOLVING
 resolveRef :: (MonadResolver m) => SelectionRef -> ResolverMapT m ValidValue
 resolveRef = cachedRef resolveUncachedNamedRef
@@ -96,7 +102,7 @@ resolveNamedResolverResult _ selection NamedNullResolver = resolveSelection ResN
 resolveNamedResolverResult _ selection (NamedScalarResolver v) = resolveSelection (ResScalar v) selection
 
 resolveSelection :: (MonadResolver m) => ResolverValue m -> SelectionContent VALID -> ResolverMapT m ValidValue
-resolveSelection = withCache resolveUncachedSel
+resolveSelection = resolveUncachedSel
   where
     resolveUncachedSel (ResLazy x) selection = lift x >>= (`resolveSelection` selection)
     resolveUncachedSel (ResList xs) selection = List <$> traverse (`resolveSelection` selection) xs
