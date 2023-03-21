@@ -23,7 +23,7 @@ module Data.Morpheus.App.Internal.Resolving.Batching
     ResolverMapT (..),
     runResMapT,
     SelectionRef,
-    cacheRef,
+    cachedRef,
     cachedWith,
   )
 where
@@ -138,15 +138,11 @@ cachedWith ::
   res m ->
   RefSel res ->
   ResolverMapT m b
-cachedWith uncachedResolveRef uncachedResolve resolver selection = do
+cachedWith resolveRef resolveValue resolver selection = do
   refs <- lift (scanRefs selection resolver)
-  buildCache uncachedResolveRef refs (uncachedResolve resolver selection)
-
-buildCache :: (ResolverMonad m) => ResolverFun (ResolverMapT m) -> [SelectionRef] -> ResolverMapT m a -> ResolverMapT m a
-buildCache f refs m = do
-  oldCtx@(ResolverMapContext cache rmap) <- ask
-  ctx <- (`ResolverMapContext` rmap) <$> lift (updateCache (\x -> runResMapT (cacheRefs f x) oldCtx) cache (buildBatches refs))
-  local (const ctx) m
+  oldCtx@(ResolverMapContext oldCache rmap) <- ask
+  newCache <- lift (updateCache (\x -> runResMapT (cacheRefs resolveRef x) oldCtx) oldCache (buildBatches refs))
+  local (const (ResolverMapContext newCache rmap)) (resolveValue resolver selection)
 
 data ResolverMapContext m = ResolverMapContext
   { localCache :: LocalCache,
@@ -189,5 +185,5 @@ cacheRefs f (selection, NamedResolverRef name args) = do
   traverse (useCached cache) ks
 
 -- RESOLVING
-cacheRef :: (MonadError GQLError m) => ResolverFun (ResolverMapT m) -> SelectionRef -> ResolverMapT m ValidValue
-cacheRef f ref = cacheRefs f ref >>= withSingle
+cachedRef :: (MonadError GQLError m) => ResolverFun (ResolverMapT m) -> SelectionRef -> ResolverMapT m ValidValue
+cachedRef f ref = cacheRefs f ref >>= withSingle

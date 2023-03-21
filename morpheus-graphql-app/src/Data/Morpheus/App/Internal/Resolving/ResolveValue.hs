@@ -19,7 +19,7 @@ import Data.Morpheus.App.Internal.Resolving.Batching
   ( ResolverMapContext (..),
     ResolverMapT,
     SelectionRef,
-    cacheRef,
+    cachedRef,
     cachedWith,
     runResMapT,
   )
@@ -67,7 +67,7 @@ withCache = cachedWith resolveUncachedNamedRef
 
 -- RESOLVING
 resolveRef :: (MonadResolver m) => SelectionRef -> ResolverMapT m ValidValue
-resolveRef = cacheRef resolveUncachedNamedRef
+resolveRef = cachedRef resolveUncachedNamedRef
 
 resolveUncachedNamedRef :: (MonadResolver m) => SelectionRef -> ResolverMapT m [ValidValue]
 resolveUncachedNamedRef (_, NamedResolverRef _ []) = pure empty
