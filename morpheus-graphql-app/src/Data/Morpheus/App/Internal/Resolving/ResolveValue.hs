@@ -66,10 +66,10 @@ withCache :: (RefScanner res, MonadResolver m) => (res m -> RefSel res -> Resolv
 withCache = cachedWith resolveUncachedNamedRef
 
 resolveNamedRoot :: MonadResolver m => ResolverMap m -> SelectionSet VALID -> m ValidValue
-resolveNamedRoot named selection = runResMapT (resolveRef (SelectionSet selection, NamedResolverRef "Query" ["ROOT"])) (ResolverMapContext empty named)
+resolveNamedRoot resolvers selection = runResMapT (resolveRef (SelectionSet selection, NamedResolverRef "Query" ["ROOT"])) (ResolverMapContext empty resolvers)
 
 resolvePlainRoot :: MonadResolver m => ObjectTypeResolver m -> SelectionSet VALID -> m ValidValue
-resolvePlainRoot root selection = resolveObject (ResolverMapContext mempty mempty) root (Just selection)
+resolvePlainRoot root selection = runResMapT (resolveObj root (Just selection)) (ResolverMapContext mempty mempty)
 
 -- RESOLVING
 resolveRef :: (MonadResolver m) => SelectionRef -> ResolverMapT m ValidValue
@@ -80,44 +80,35 @@ resolveUncachedNamedRef (_, NamedResolverRef _ []) = pure empty
 resolveUncachedNamedRef (selection, NamedResolverRef {..}) = do
   rmap <- asks resolverMap
   namedResolvers <- lift (selectOr notFound found resolverTypeName rmap)
-  traverse (resolveNamedResolverResult resolverTypeName selection) namedResolvers
+  traverse (resolveSelection selection . toResolverValue resolverTypeName) namedResolvers
   where
     found :: (MonadResolver m) => NamedResolver m -> m [NamedResolverResult m]
     found = (resolverArgument &) . resolverFun
     notFound :: (MonadResolver m) => m [NamedResolverResult m]
     notFound = throwError ("resolver type " <> msg resolverTypeName <> "can't found")
 
-resolveNamedResolverResult ::
-  (MonadResolver m) =>
-  TypeName ->
-  SelectionContent VALID ->
-  NamedResolverResult m ->
-  ResolverMapT m ValidValue
-resolveNamedResolverResult typename selection (NamedObjectResolver res) = do
-  ctx <- ask
-  lift $ withObject (Just typename) (resolveObject ctx res) selection
-resolveNamedResolverResult _ selection (NamedUnionResolver unionRef) = resolveSelection (ResRef $ pure unionRef) selection
-resolveNamedResolverResult _ selection (NamedEnumResolver value) = resolveSelection (ResEnum value) selection
-resolveNamedResolverResult _ selection NamedNullResolver = resolveSelection ResNull selection
-resolveNamedResolverResult _ selection (NamedScalarResolver v) = resolveSelection (ResScalar v) selection
+toResolverValue :: (MonadResolver m) => TypeName -> NamedResolverResult m -> ResolverValue m
+toResolverValue typeName (NamedObjectResolver res) = ResObject (Just typeName) res
+toResolverValue _ (NamedUnionResolver unionRef) = ResRef $ pure unionRef
+toResolverValue _ (NamedEnumResolver value) = ResEnum value
+toResolverValue _ NamedNullResolver = ResNull
+toResolverValue _ (NamedScalarResolver v) = ResScalar v
 
-resolveSelection :: (MonadResolver m) => ResolverValue m -> SelectionContent VALID -> ResolverMapT m ValidValue
-resolveSelection = resolveUncachedSel
-  where
-    resolveUncachedSel (ResLazy x) selection = lift x >>= (`resolveSelection` selection)
-    resolveUncachedSel (ResList xs) selection = List <$> traverse (`resolveSelection` selection) xs
-    resolveUncachedSel (ResObject tyName obj) sel = do
-      ctx <- ask
-      lift $ withObject tyName (resolveObject ctx obj) sel
-    resolveUncachedSel (ResEnum name) SelectionField = pure $ Scalar $ String $ unpackName name
-    resolveUncachedSel (ResEnum name) unionSel@UnionSelection {} = resolveSelection (mkUnion name [(unitFieldName, pure $ mkEnum unitTypeName)]) unionSel
-    resolveUncachedSel ResEnum {} _ = throwError (internal "wrong selection on enum value")
-    resolveUncachedSel ResNull _ = pure Null
-    resolveUncachedSel (ResScalar x) SelectionField = pure $ Scalar x
-    resolveUncachedSel ResScalar {} _ = throwError (internal "scalar resolver should only receive SelectionField")
-    resolveUncachedSel (ResRef mRef) sel = do
-      ref <- lift mRef
-      resolveRef (sel, ref)
+resolveSelection :: (MonadResolver m) => SelectionContent VALID -> ResolverValue m -> ResolverMapT m ValidValue
+resolveSelection selection (ResLazy x) = lift x >>= resolveSelection selection
+resolveSelection selection (ResList xs) = List <$> traverse (resolveSelection selection) xs
+resolveSelection selection (ResObject typeName obj) = do
+  ctx <- ask
+  lift $ withObject typeName (resolveObject ctx obj) selection
+resolveSelection SelectionField (ResEnum name) = pure $ Scalar $ String $ unpackName name
+resolveSelection selection@UnionSelection {} (ResEnum name) = resolveSelection selection (mkUnion name [(unitFieldName, pure $ mkEnum unitTypeName)])
+resolveSelection _ ResEnum {} = throwError (internal "wrong selection on enum value")
+resolveSelection _ ResNull = pure Null
+resolveSelection SelectionField (ResScalar x) = pure $ Scalar x
+resolveSelection _ ResScalar {} = throwError (internal "scalar resolver should only receive SelectionField")
+resolveSelection selection (ResRef mRef) = do
+  ref <- lift mRef
+  resolveRef (selection, ref)
 
 resolveObject ::
   (MonadResolver m) =>
@@ -125,7 +116,10 @@ resolveObject ::
   ObjectTypeResolver m ->
   Maybe (SelectionSet VALID) ->
   m ValidValue
-resolveObject = refreshCache (\drv sel -> Object <$> maybe (pure empty) (traverseCollection (resolverWithCache drv)) sel)
+resolveObject ctx drv sel = runResMapT (withCache resolveObj drv sel) ctx
+
+resolveObj :: (MonadResolver m) => ObjectTypeResolver m -> Maybe (SelectionSet VALID) -> ResolverMapT m ValidValue
+resolveObj drv sel = Object <$> maybe (pure empty) (traverseCollection (resolverWithCache drv)) sel
 
 resolverWithCache ::
   MonadResolver m =>
@@ -141,19 +135,6 @@ resolverWithCache drv currentSelection = do
         ObjectEntry (keyOf currentSelection)
           <$> runResMapT (runFieldResolver currentSelection drv) cacheCTX
 
-refreshCache ::
-  (MonadResolver m) =>
-  (ObjectTypeResolver m -> Maybe (SelectionSet VALID) -> ResolverMapT m v) ->
-  ResolverMapContext m ->
-  ObjectTypeResolver m ->
-  Maybe (SelectionSet VALID) ->
-  m v
-refreshCache f ctx drv sel
-  -- TODO: this is workaround to fix https://github.com/morpheusgraphql/morpheus-graphql/issues/810
-  -- which deactivates caching for non named resolvers. find out better long term solution
-  | null (resolverMap ctx) = runResMapT (f drv sel) ctx
-  | otherwise = runResMapT (withCache f drv sel) ctx
-
 runFieldResolver ::
   (MonadResolver m) =>
   Selection VALID ->
@@ -162,4 +143,4 @@ runFieldResolver ::
 runFieldResolver Selection {selectionName, selectionContent}
   | selectionName == "__typename" =
       const (Scalar . String . unpackName <$> lift (asks (typeName . currentType)))
-  | otherwise = withField Null (lift >=> (`resolveSelection` selectionContent)) selectionName
+  | otherwise = withField Null (lift >=> resolveSelection selectionContent) selectionName

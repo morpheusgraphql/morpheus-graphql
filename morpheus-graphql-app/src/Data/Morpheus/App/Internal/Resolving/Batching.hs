@@ -36,7 +36,7 @@ import Data.Morpheus.App.Internal.Resolving.ResolverState (config)
 import Data.Morpheus.App.Internal.Resolving.Types (ResolverMap)
 import Data.Morpheus.App.Internal.Resolving.Utils
 import Data.Morpheus.Core (Config (..), RenderGQL, render)
-import Data.Morpheus.Internal.Utils (Empty (..), IsMap (..))
+import Data.Morpheus.Internal.Utils (IsMap (..))
 import Data.Morpheus.Types.Internal.AST
   ( GQLError,
     Msg (..),
@@ -137,10 +137,13 @@ cachedWith ::
   RefSel res ->
   ResolverMapT m b
 cachedWith resolveRef resolveValue resolver selection = do
-  refs <- lift (scanRefs selection resolver)
   oldCtx@(ResolverMapContext oldCache rmap) <- ask
-  newCache <- lift (updateCache (\x -> runResMapT (cacheRefs resolveRef x) oldCtx) oldCache (buildBatches refs))
-  local (const (ResolverMapContext newCache rmap)) (resolveValue resolver selection)
+  if null rmap
+    then resolveValue resolver selection
+    else do
+      refs <- lift (scanRefs selection resolver)
+      newCache <- lift (updateCache (\x -> runResMapT (cacheRefs resolveRef x) oldCtx) oldCache (buildBatches refs))
+      local (const (ResolverMapContext newCache rmap)) (resolveValue resolver selection)
 
 data ResolverMapContext m = ResolverMapContext
   { localCache :: LocalCache,

@@ -16,7 +16,6 @@ where
 import Control.Monad.Except (throwError)
 import Data.Aeson (FromJSON (..))
 import Data.HashMap.Strict (adjust)
-import Data.Morpheus.App.Internal.Resolving.Batching
 import Data.Morpheus.App.Internal.Resolving.Event
   ( EventHandler (..),
   )
@@ -34,9 +33,6 @@ import Data.Morpheus.App.Internal.Resolving.SchemaAPI (schemaAPI)
 import Data.Morpheus.App.Internal.Resolving.Types
 import Data.Morpheus.App.Internal.Resolving.Utils
   ( lookupResJSON,
-  )
-import Data.Morpheus.Internal.Utils
-  ( empty,
   )
 import Data.Morpheus.Types.Internal.AST
   ( MUTATION,
