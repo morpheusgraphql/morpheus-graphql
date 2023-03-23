@@ -18,9 +18,8 @@ import Data.Morpheus.App.Internal.Resolving.Batching
   ( ResolverMapContext (..),
     ResolverMapT,
     SelectionRef,
-    cachedRef,
-    cachedWith,
     lookupResolvers,
+    resolveWithBatching,
     runResMapT,
   )
 import Data.Morpheus.App.Internal.Resolving.MonadResolver (MonadResolver)
@@ -59,38 +58,30 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Relude hiding (empty)
 
-withCache ::
-  (MonadResolver m) =>
-  (ResolverValue m -> SelectionContent VALID -> ResolverMapT m b) ->
-  ResolverValue m ->
-  SelectionContent VALID ->
-  ResolverMapT m b
-withCache = cachedWith resolveNamedRef
-
-resolveNamedRoot :: MonadResolver m => ResolverMap m -> SelectionSet VALID -> m ValidValue
-resolveNamedRoot resolvers selection = runResMapT (resolveRef (SelectionSet selection, NamedResolverRef "Query" ["ROOT"])) (ResolverMapContext empty resolvers)
-
-resolvePlainRoot :: MonadResolver m => ObjectTypeResolver m -> SelectionSet VALID -> m ValidValue
-resolvePlainRoot root selection = runResMapT (resolveObject root (Just selection)) (ResolverMapContext mempty mempty)
-
--- RESOLVING
-resolveRef :: (MonadResolver m) => SelectionRef -> ResolverMapT m ValidValue
-resolveRef = cachedRef resolveNamedRef
-
-resolveNamedRef :: (MonadResolver m) => SelectionRef -> ResolverMapT m [ValidValue]
-resolveNamedRef (_, NamedResolverRef _ []) = pure empty
-resolveNamedRef (selection, ref) = do
-  namedResolvers <- lookupResolvers ref
-  traverse (resolverSel . toResolverValue (resolverTypeName ref)) namedResolvers
-  where
-    resolverSel drv = withCache (flip resolveSelection) drv selection
-
+-- UNCACHED
 toResolverValue :: (MonadResolver m) => TypeName -> NamedResolverResult m -> ResolverValue m
 toResolverValue typeName (NamedObjectResolver res) = ResObject (Just typeName) res
 toResolverValue _ (NamedUnionResolver unionRef) = ResRef $ pure unionRef
 toResolverValue _ (NamedEnumResolver value) = ResEnum value
 toResolverValue _ NamedNullResolver = ResNull
 toResolverValue _ (NamedScalarResolver v) = ResScalar v
+
+resolvePlainRoot :: MonadResolver m => ObjectTypeResolver m -> SelectionSet VALID -> m ValidValue
+resolvePlainRoot root selection = runResMapT (resolveObject root (Just selection)) (ResolverMapContext mempty mempty)
+
+-- CACHED
+resolveNamedRoot :: MonadResolver m => ResolverMap m -> SelectionSet VALID -> m ValidValue
+resolveNamedRoot resolvers selection =
+  runResMapT
+    (resolveSelection (SelectionSet selection) (ResRef (NamedResolverRef "Query" ["ROOT"])))
+    (ResolverMapContext empty resolvers)
+
+-- RESOLVING
+unpackNamedRef :: (MonadResolver m) => SelectionRef -> ResolverMapT m [ResolverValue m]
+unpackNamedRef (_, NamedResolverRef _ []) = pure empty
+unpackNamedRef (selection, ref) = do
+  namedResolvers <- lookupResolvers ref
+  map (toResolverValue (resolverTypeName ref)) namedResolvers
 
 resolveSelection :: (MonadResolver m) => SelectionContent VALID -> ResolverValue m -> ResolverMapT m ValidValue
 resolveSelection selection (ResLazy x) = lift x >>= resolveSelection selection
@@ -102,7 +93,9 @@ resolveSelection _ ResEnum {} = throwError (internal "wrong selection on enum va
 resolveSelection _ ResNull = pure Null
 resolveSelection SelectionField (ResScalar x) = pure $ Scalar x
 resolveSelection _ ResScalar {} = throwError (internal "scalar resolver should only receive SelectionField")
-resolveSelection selection (ResRef mRef) = lift mRef >>= resolveRef . (selection,)
+resolveSelection selection (ResRef mRef) =
+  lift mRef
+    >>= resolveWithBatching (flip resolveSelection) unpackNamedRef . (selection,)
 
 resolveObject :: (MonadResolver m) => ObjectTypeResolver m -> Maybe (SelectionSet VALID) -> ResolverMapT m ValidValue
 resolveObject drv sel = Object <$> maybe (pure empty) (traverseCollection (resolveField drv)) sel
@@ -117,5 +110,5 @@ runFieldResolver ::
   ResolverMapT m ValidValue
 runFieldResolver Selection {selectionName, selectionContent}
   | selectionName == "__typename" =
-      const (Scalar . String . unpackName <$> lift (asks (typeName . currentType)))
+    const (Scalar . String . unpackName <$> lift (asks (typeName . currentType)))
   | otherwise = withField Null (lift >=> resolveSelection selectionContent) selectionName

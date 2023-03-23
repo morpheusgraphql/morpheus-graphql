@@ -23,10 +23,9 @@ module Data.Morpheus.App.Internal.Resolving.Batching
     ResolverMapT (..),
     runResMapT,
     SelectionRef,
-    cachedRef,
-    cachedWith,
     getBatchingState,
     lookupResolvers,
+    resolveWithBatching,
   )
 where
 
@@ -214,3 +213,7 @@ cacheRefs f (selection, NamedResolverRef name args) = do
 -- RESOLVING
 cachedRef :: (MonadError GQLError m) => ResolverFun (ResolverMapT m) -> SelectionRef -> ResolverMapT m ValidValue
 cachedRef f ref = cacheRefs f ref >>= withSingle
+
+resolveWithBatching resolveSelection unpackRef selection mRef = cachedRef resolveNamed (selection, ref)
+  where
+    resolveNamed ref = traverse (\drv -> cachedWith resolveNamed resolveSelection drv selection) unpackRef ref
