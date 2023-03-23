@@ -214,6 +214,17 @@ cacheRefs f (selection, NamedResolverRef name args) = do
 cachedRef :: (MonadError GQLError m) => ResolverFun (ResolverMapT m) -> SelectionRef -> ResolverMapT m ValidValue
 cachedRef f ref = cacheRefs f ref >>= withSingle
 
-resolveWithBatching resolveSelection unpackRef selection mRef = cachedRef resolveNamed (selection, ref)
+resolveWithBatching ::
+  ( MonadError GQLError m,
+    MonadReader ResolverContext m
+  ) =>
+  ( ResolverValue m ->
+    SelectionContent VALID ->
+    ResolverMapT m ValidValue
+  ) ->
+  (SelectionRef -> ResolverMapT m [ResolverValue m]) ->
+  (SelectionContent VALID, NamedResolverRef) ->
+  ResolverMapT m ValidValue
+resolveWithBatching resolveSelection unpackRef (selection, ref) = cachedRef resolveNamed (selection, ref)
   where
-    resolveNamed ref = traverse (\drv -> cachedWith resolveNamed resolveSelection drv selection) unpackRef ref
+    resolveNamed sref = (unpackRef sref) >>= traverse (\drv -> cachedWith resolveNamed resolveSelection drv selection)

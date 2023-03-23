@@ -73,7 +73,7 @@ resolvePlainRoot root selection = runResMapT (resolveObject root (Just selection
 resolveNamedRoot :: MonadResolver m => ResolverMap m -> SelectionSet VALID -> m ValidValue
 resolveNamedRoot resolvers selection =
   runResMapT
-    (resolveSelection (SelectionSet selection) (ResRef (NamedResolverRef "Query" ["ROOT"])))
+    (resolveSelection (SelectionSet selection) (ResRef $ pure (NamedResolverRef "Query" ["ROOT"])))
     (ResolverMapContext empty resolvers)
 
 -- RESOLVING
@@ -81,7 +81,7 @@ unpackNamedRef :: (MonadResolver m) => SelectionRef -> ResolverMapT m [ResolverV
 unpackNamedRef (_, NamedResolverRef _ []) = pure empty
 unpackNamedRef (selection, ref) = do
   namedResolvers <- lookupResolvers ref
-  map (toResolverValue (resolverTypeName ref)) namedResolvers
+  pure $ map (toResolverValue (resolverTypeName ref)) namedResolvers
 
 resolveSelection :: (MonadResolver m) => SelectionContent VALID -> ResolverValue m -> ResolverMapT m ValidValue
 resolveSelection selection (ResLazy x) = lift x >>= resolveSelection selection
