@@ -25,7 +25,7 @@ module Data.Morpheus.App.Internal.Resolving.Batching
     SelectionRef,
     getBatchingState,
     lookupResolvers,
-    resolveWithBatching,
+    withBatching,
   )
 where
 
@@ -34,7 +34,11 @@ import Data.ByteString.Lazy.Char8 (unpack)
 import Data.HashMap.Lazy (keys)
 import Data.Morpheus.App.Internal.Resolving.Refs (scanRefs)
 import Data.Morpheus.App.Internal.Resolving.ResolverState (ResolverContext, config)
-import Data.Morpheus.App.Internal.Resolving.Types (NamedResolver (..), NamedResolverResult, ResolverMap)
+import Data.Morpheus.App.Internal.Resolving.Types
+  ( NamedResolver (..),
+    NamedResolverResult (..),
+    ResolverMap,
+  )
 import Data.Morpheus.App.Internal.Resolving.Utils
 import Data.Morpheus.Core (Config (..), RenderGQL, render)
 import Data.Morpheus.Internal.Utils (IsMap (..), selectOr)
@@ -214,17 +218,26 @@ cacheRefs f (selection, NamedResolverRef name args) = do
 cachedRef :: (MonadError GQLError m) => ResolverFun (ResolverMapT m) -> SelectionRef -> ResolverMapT m ValidValue
 cachedRef f ref = cacheRefs f ref >>= withSingle
 
-resolveWithBatching ::
+withBatching ::
   ( MonadError GQLError m,
     MonadReader ResolverContext m
   ) =>
-  ( ResolverValue m ->
-    SelectionContent VALID ->
-    ResolverMapT m ValidValue
-  ) ->
-  (SelectionRef -> ResolverMapT m [ResolverValue m]) ->
-  (SelectionContent VALID, NamedResolverRef) ->
+  (ResolverValue m -> SelectionContent VALID -> ResolverMapT m ValidValue) ->
+  SelectionContent VALID ->
+  NamedResolverRef ->
   ResolverMapT m ValidValue
-resolveWithBatching resolveSelection unpackRef (selection, ref) = cachedRef resolveNamed (selection, ref)
+withBatching resolveSelection selection ref = cachedRef resolveNamed (selection, ref)
   where
-    resolveNamed sref = (unpackRef sref) >>= traverse (\drv -> cachedWith resolveNamed resolveSelection drv selection)
+    resolveNamed sref = (unpackNamedRef sref) >>= traverse (\drv -> cachedWith resolveNamed resolveSelection drv selection)
+    -- TODO
+    unpackNamedRef (_, NamedResolverRef _ []) = pure []
+    unpackNamedRef (selection, ref) = do
+      namedResolvers <- lookupResolvers ref
+      pure $ map (toResolverValue (resolverTypeName ref)) namedResolvers
+
+toResolverValue :: (Monad m) => TypeName -> NamedResolverResult m -> ResolverValue m
+toResolverValue typeName (NamedObjectResolver res) = ResObject (Just typeName) res
+toResolverValue _ (NamedUnionResolver unionRef) = ResRef $ pure unionRef
+toResolverValue _ (NamedEnumResolver value) = ResEnum value
+toResolverValue _ NamedNullResolver = ResNull
+toResolverValue _ (NamedScalarResolver v) = ResScalar v

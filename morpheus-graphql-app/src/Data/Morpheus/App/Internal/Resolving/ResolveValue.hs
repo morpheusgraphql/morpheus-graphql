@@ -19,8 +19,8 @@ import Data.Morpheus.App.Internal.Resolving.Batching
     ResolverMapT,
     SelectionRef,
     lookupResolvers,
-    resolveWithBatching,
     runResMapT,
+    withBatching,
   )
 import Data.Morpheus.App.Internal.Resolving.MonadResolver (MonadResolver)
 import Data.Morpheus.App.Internal.Resolving.Refs
@@ -59,12 +59,6 @@ import Data.Morpheus.Types.Internal.AST
 import Relude hiding (empty)
 
 -- UNCACHED
-toResolverValue :: (MonadResolver m) => TypeName -> NamedResolverResult m -> ResolverValue m
-toResolverValue typeName (NamedObjectResolver res) = ResObject (Just typeName) res
-toResolverValue _ (NamedUnionResolver unionRef) = ResRef $ pure unionRef
-toResolverValue _ (NamedEnumResolver value) = ResEnum value
-toResolverValue _ NamedNullResolver = ResNull
-toResolverValue _ (NamedScalarResolver v) = ResScalar v
 
 resolvePlainRoot :: MonadResolver m => ObjectTypeResolver m -> SelectionSet VALID -> m ValidValue
 resolvePlainRoot root selection = runResMapT (resolveObject root (Just selection)) (ResolverMapContext mempty mempty)
@@ -77,11 +71,6 @@ resolveNamedRoot resolvers selection =
     (ResolverMapContext empty resolvers)
 
 -- RESOLVING
-unpackNamedRef :: (MonadResolver m) => SelectionRef -> ResolverMapT m [ResolverValue m]
-unpackNamedRef (_, NamedResolverRef _ []) = pure empty
-unpackNamedRef (selection, ref) = do
-  namedResolvers <- lookupResolvers ref
-  pure $ map (toResolverValue (resolverTypeName ref)) namedResolvers
 
 resolveSelection :: (MonadResolver m) => SelectionContent VALID -> ResolverValue m -> ResolverMapT m ValidValue
 resolveSelection selection (ResLazy x) = lift x >>= resolveSelection selection
@@ -93,9 +82,7 @@ resolveSelection _ ResEnum {} = throwError (internal "wrong selection on enum va
 resolveSelection _ ResNull = pure Null
 resolveSelection SelectionField (ResScalar x) = pure $ Scalar x
 resolveSelection _ ResScalar {} = throwError (internal "scalar resolver should only receive SelectionField")
-resolveSelection selection (ResRef mRef) =
-  lift mRef
-    >>= resolveWithBatching (flip resolveSelection) unpackNamedRef . (selection,)
+resolveSelection selection (ResRef mRef) = lift mRef >>= withBatching (flip resolveSelection) selection
 
 resolveObject :: (MonadResolver m) => ObjectTypeResolver m -> Maybe (SelectionSet VALID) -> ResolverMapT m ValidValue
 resolveObject drv sel = Object <$> maybe (pure empty) (traverseCollection (resolveField drv)) sel
