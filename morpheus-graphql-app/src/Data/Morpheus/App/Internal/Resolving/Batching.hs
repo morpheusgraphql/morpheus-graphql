@@ -219,21 +219,19 @@ cachedRef :: (MonadError GQLError m) => ResolverFun (ResolverMapT m) -> Selectio
 cachedRef f ref = cacheRefs f ref >>= withSingle
 
 withBatching ::
-  ( MonadError GQLError m,
-    MonadReader ResolverContext m
-  ) =>
-  (ResolverValue m -> SelectionContent VALID -> ResolverMapT m ValidValue) ->
+  ResolverMonad m =>
+  (SelectionContent VALID -> ResolverValue m -> ResolverMapT m ValidValue) ->
   SelectionContent VALID ->
   NamedResolverRef ->
   ResolverMapT m ValidValue
-withBatching resolveSelection selection ref = cachedRef resolveNamed (selection, ref)
+withBatching resolve = curry (cachedRef resolveNamed)
   where
-    resolveNamed sref = (unpackNamedRef sref) >>= traverse (\drv -> cachedWith resolveNamed resolveSelection drv selection)
+    resolveNamed (selection, ref) = unpackNamedRef (selection, ref) >>= traverse (\drv -> cachedWith resolveNamed (flip resolve) drv selection)
     -- TODO
     unpackNamedRef (_, NamedResolverRef _ []) = pure []
     unpackNamedRef (selection, ref) = do
-      namedResolvers <- lookupResolvers ref
-      pure $ map (toResolverValue (resolverTypeName ref)) namedResolvers
+      resolvers <- lookupResolvers ref
+      pure $ map (toResolverValue (resolverTypeName ref)) resolvers
 
 toResolverValue :: (Monad m) => TypeName -> NamedResolverResult m -> ResolverValue m
 toResolverValue typeName (NamedObjectResolver res) = ResObject (Just typeName) res
