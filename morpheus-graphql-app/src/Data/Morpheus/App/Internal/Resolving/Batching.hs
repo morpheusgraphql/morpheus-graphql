@@ -134,23 +134,6 @@ updateCache f cache entries = do
   enabled <- asks (debug . config)
   pure $ dumpCache enabled newCache
 
-cachedWith ::
-  (ResolverMonad m) =>
-  (SelectionRef -> ResolverMapT m [ValidValue]) ->
-  (ResolverValue m -> SelectionContent VALID -> ResolverMapT m b) ->
-  ResolverValue m ->
-  SelectionContent VALID ->
-  ResolverMapT m b
-cachedWith resolveRef resolveValue resolver selection = do
-  resolvers <- namedResolvers
-  if null resolvers
-    then resolveValue resolver selection
-    else do
-      ctx <- getBatchingState
-      refs <- lift (scanRefs selection resolver)
-      newCache <- lift (updateCache (\x -> runResMapT (cacheRefs resolveRef x) ctx) (localCache ctx) (buildBatches refs))
-      setCache newCache (resolveValue resolver selection)
-
 data ResolverMapContext m = ResolverMapContext
   { localCache :: LocalCache,
     resolverMap :: ResolverMap m
@@ -214,24 +197,34 @@ cacheRefs f (selection, NamedResolverRef name args) = do
   let cache = fold (localCache ctx : caches)
   traverse (useCached cache) ks
 
--- RESOLVING
-cachedRef :: (MonadError GQLError m) => ResolverFun (ResolverMapT m) -> SelectionRef -> ResolverMapT m ValidValue
-cachedRef f ref = cacheRefs f ref >>= withSingle
+cachedWith ::
+  (ResolverMonad m) =>
+  (SelectionRef -> ResolverMapT m [ValidValue]) ->
+  (ResolverValue m -> SelectionContent VALID -> ResolverMapT m b) ->
+  ResolverValue m ->
+  SelectionContent VALID ->
+  ResolverMapT m b
+cachedWith resolveRef resolveValue resolver selection = do
+  ctx <- getBatchingState
+  refs <- lift (scanRefs selection resolver)
+  newCache <- lift (updateCache (\x -> runResMapT (cacheRefs resolveRef x) ctx) (localCache ctx) (buildBatches refs))
+  setCache newCache (resolveValue resolver selection)
 
+-- RESOLVING
 withBatching ::
   ResolverMonad m =>
   (SelectionContent VALID -> ResolverValue m -> ResolverMapT m ValidValue) ->
   SelectionContent VALID ->
   NamedResolverRef ->
   ResolverMapT m ValidValue
-withBatching resolve = curry (cachedRef resolveNamed)
+withBatching resolve sel namedRef = cacheRefs resolveNamed (sel, namedRef) >>= withSingle
   where
-    resolveNamed (selection, ref) = unpackNamedRef (selection, ref) >>= traverse (\drv -> cachedWith resolveNamed (flip resolve) drv selection)
-    -- TODO
-    unpackNamedRef (_, NamedResolverRef _ []) = pure []
-    unpackNamedRef (selection, ref) = do
-      resolvers <- lookupResolvers ref
-      pure $ map (toResolverValue (resolverTypeName ref)) resolvers
+    resolveNamed ref = unpackNamedRef ref >>= traverse (\drv -> cachedWith resolveNamed (flip resolve) drv (fst ref))
+
+unpackNamedRef (_, NamedResolverRef _ []) = pure []
+unpackNamedRef (selection, ref) = do
+  resolvers <- lookupResolvers ref
+  pure $ map (toResolverValue (resolverTypeName ref)) resolvers
 
 toResolverValue :: (Monad m) => TypeName -> NamedResolverResult m -> ResolverValue m
 toResolverValue typeName (NamedObjectResolver res) = ResObject (Just typeName) res
