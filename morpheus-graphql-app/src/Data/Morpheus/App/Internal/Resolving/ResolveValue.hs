@@ -74,26 +74,25 @@ resolveNamedRoot typeName resolvers selection =
 resolveSelection :: (MonadResolver m) => SelectionContent VALID -> ResolverValue m -> ResolverMapT m ValidValue
 resolveSelection selection (ResLazy x) = lift x >>= resolveSelection selection
 resolveSelection selection (ResList xs) = List <$> traverse (resolveSelection selection) xs
-resolveSelection selection (ResObject typeName obj) = withObject typeName (resolveObject obj) selection
 resolveSelection SelectionField (ResEnum name) = pure $ Scalar $ String $ unpackName name
 resolveSelection selection@UnionSelection {} (ResEnum name) = resolveSelection selection (mkUnion name [(unitFieldName, pure $ mkEnum unitTypeName)])
 resolveSelection _ ResEnum {} = throwError (internal "wrong selection on enum value")
 resolveSelection _ ResNull = pure Null
 resolveSelection SelectionField (ResScalar x) = pure $ Scalar x
 resolveSelection _ ResScalar {} = throwError (internal "scalar resolver should only receive SelectionField")
+resolveSelection selection (ResObject typeName obj) = withObject typeName (mapSelectionSet resolveField) selection
+  where
+    resolveField s = lift (toResolverValue obj s) >>= resolveSelection (selectionContent s)
 resolveSelection selection (ResRef mRef) = lift mRef >>= withBatching resolveSelection selection
-
-resolveObject :: (MonadResolver m) => ObjectTypeResolver m -> Maybe (SelectionSet VALID) -> ResolverMapT m ValidValue
-resolveObject drv sel = Object <$> maybe (pure empty) (traverseCollection (resolveField drv)) sel
-
-resolveField :: MonadResolver m => ObjectTypeResolver m -> Selection VALID -> ResolverMapT m (ObjectEntry VALID)
-resolveField drv sel = ObjectEntry (keyOf sel) <$> inSelectionField sel (lift (toResolverValue sel drv) >>= resolveSelection (selectionContent sel))
 
 toResolverValue ::
   (MonadResolver m) =>
-  Selection VALID ->
   ObjectTypeResolver m ->
+  Selection VALID ->
   m (ResolverValue m)
-toResolverValue Selection {selectionName} obj
+toResolverValue obj Selection {selectionName}
   | selectionName == "__typename" = mkString . unpackName <$> asks (typeName . currentType)
   | otherwise = withField mkNull id selectionName obj
+
+mapSelectionSet :: (ResolverMonad m) => (Selection VALID -> m ValidValue) -> Maybe (SelectionSet VALID) -> m ValidValue
+mapSelectionSet f = fmap Object . maybe (pure empty) (traverseCollection (\sel -> ObjectEntry (keyOf sel) <$> inSelectionField sel (f sel)))
