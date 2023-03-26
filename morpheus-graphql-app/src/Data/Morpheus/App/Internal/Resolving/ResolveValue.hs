@@ -27,6 +27,8 @@ import Data.Morpheus.App.Internal.Resolving.ResolverState
 import Data.Morpheus.App.Internal.Resolving.Types
   ( ResolverMap,
     mkEnum,
+    mkNull,
+    mkString,
     mkUnion,
   )
 import Data.Morpheus.App.Internal.Resolving.Utils
@@ -42,6 +44,7 @@ import Data.Morpheus.Types.Internal.AST
     SelectionContent (..),
     SelectionSet,
     TypeDefinition (..),
+    TypeName,
     VALID,
     ValidValue,
     Value (..),
@@ -55,13 +58,15 @@ import Relude hiding (empty)
 -- UNCACHED
 
 resolvePlainRoot :: MonadResolver m => ObjectTypeResolver m -> SelectionSet VALID -> m ValidValue
-resolvePlainRoot root selection = runResMapT (resolveObject root (Just selection)) (ResolverMapContext mempty mempty)
+resolvePlainRoot resolver selection = do
+  name <- asks (typeName . currentType)
+  runResMapT (resolveSelection (SelectionSet selection) (ResObject (Just name) resolver)) (ResolverMapContext mempty mempty)
 
 -- CACHED
-resolveNamedRoot :: MonadResolver m => ResolverMap m -> SelectionSet VALID -> m ValidValue
-resolveNamedRoot resolvers selection =
+resolveNamedRoot :: MonadResolver m => TypeName -> ResolverMap m -> SelectionSet VALID -> m ValidValue
+resolveNamedRoot typeName resolvers selection =
   runResMapT
-    (resolveSelection (SelectionSet selection) (ResRef $ pure (NamedResolverRef "Query" ["ROOT"])))
+    (resolveSelection (SelectionSet selection) (ResRef $ pure (NamedResolverRef typeName ["ROOT"])))
     (ResolverMapContext empty resolvers)
 
 -- RESOLVING
@@ -82,14 +87,13 @@ resolveObject :: (MonadResolver m) => ObjectTypeResolver m -> Maybe (SelectionSe
 resolveObject drv sel = Object <$> maybe (pure empty) (traverseCollection (resolveField drv)) sel
 
 resolveField :: MonadResolver m => ObjectTypeResolver m -> Selection VALID -> ResolverMapT m (ObjectEntry VALID)
-resolveField drv selection = inSelectionField selection $ ObjectEntry (keyOf selection) <$> runFieldResolver selection drv
+resolveField drv sel = ObjectEntry (keyOf sel) <$> inSelectionField sel (lift (toResolverValue sel drv) >>= resolveSelection (selectionContent sel))
 
-runFieldResolver ::
+toResolverValue ::
   (MonadResolver m) =>
   Selection VALID ->
   ObjectTypeResolver m ->
-  ResolverMapT m ValidValue
-runFieldResolver Selection {selectionName, selectionContent} obj
-  | selectionName == "__typename" =
-    Scalar . String . unpackName <$> lift (asks (typeName . currentType))
-  | otherwise = withField Null (lift >=> resolveSelection selectionContent) selectionName obj
+  m (ResolverValue m)
+toResolverValue Selection {selectionName} obj
+  | selectionName == "__typename" = mkString . unpackName <$> asks (typeName . currentType)
+  | otherwise = withField mkNull id selectionName obj

@@ -43,6 +43,7 @@ import Data.Morpheus.Types.Internal.AST
     Schema (..),
     Selection,
     SelectionSet,
+    TypeDefinition (typeName),
     TypeName,
     VALID,
     ValidValue,
@@ -103,7 +104,9 @@ runRootResolverValue
     where
       selectByOperation OPERATION_QUERY = runResolver Nothing queryResolver ctx
         where
-          queryResolver = resolveNamedRoot (withNamedIntroFields "Query" ctx queryResolverMap) operationSelection
+          queryResolver = do
+            name <- asks (typeName . query . schema)
+            resolveNamedRoot name (withNamedIntroFields name ctx queryResolverMap) operationSelection
       selectByOperation _ = throwError "mutation and subscription is not supported for namedResolvers"
 
 withNamedIntroFields :: (MonadResolver m, MonadOperation m ~ QUERY) => TypeName -> ResolverContext -> ResolverMap m -> ResolverMap m
