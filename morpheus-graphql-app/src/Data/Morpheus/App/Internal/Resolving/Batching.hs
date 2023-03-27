@@ -158,10 +158,10 @@ cachedWith ::
   (ResolverMonad m) =>
   (SelectionRef -> ResolverMapT m [ValidValue]) ->
   SelectionResolverFun m ->
-  ResolverValue m ->
   SelectionContent VALID ->
+  ResolverValue m ->
   ResolverMapT m ValidValue
-cachedWith resolveRef resolveSelection resolver selection = do
+cachedWith resolveRef resolveSelection selection resolver = do
   refs <- lift (scanRefs selection resolver)
   newCache <- updateCache (cacheRefs resolveRef) (buildBatches refs)
   setCache newCache (resolveSelection selection resolver)
@@ -171,8 +171,8 @@ withBatching :: ResolverMonad m => SelectionResolverFun m -> SelectionRef -> Res
 withBatching resolve = cacheRefs resolveRef >=> withSingle
   where
     resolveRef (selection, ref) = do
-      resValue <- runNamedResolverRef ref
-      traverse (\drv -> cachedWith resolveRef resolve drv selection) resValue
+      values <- runNamedResolverRef ref
+      traverse (cachedWith resolveRef resolve selection) values
 
 runNamedResolverRef :: (MonadError GQLError m, MonadReader ResolverContext m) => NamedResolverRef -> ResolverMapT m [ResolverValue m]
 runNamedResolverRef NamedResolverRef {..}
