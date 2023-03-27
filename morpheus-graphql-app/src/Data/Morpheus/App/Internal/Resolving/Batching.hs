@@ -150,25 +150,15 @@ withSingle x = throwError (internal ("expected only one resolved value for " <> 
 
 type SelectionResolverFun m = SelectionContent VALID -> ResolverValue m -> ResolverMapT m ValidValue
 
-type ResolveRefFun m = SelectionRef -> ResolverMapT m [ValidValue]
-
-cachedWith ::
-  (ResolverMonad m) =>
-  ResolveRefFun m ->
-  SelectionResolverFun m ->
-  SelectionContent VALID ->
-  ResolverValue m ->
-  ResolverMapT m ValidValue
-cachedWith resolveRef resolveSelection selection resolver = do
-  refs <- lift (scanRefs selection resolver)
-  cache <- batchesToCache resolveRef refs >>= withDebug
-  setCache cache (resolveSelection selection resolver)
-
 -- RESOLVING
 withBatching :: ResolverMonad m => SelectionResolverFun m -> SelectionRef -> ResolverMapT m ValidValue
 withBatching resolve = resolveRefsWitchCaching >=> withSingle
   where
-    resolveRefs (selection, ref) = runNamedResolverRef ref >>= traverse (cachedWith resolveRefsWitchCaching resolve selection)
+    cachedWith resolveSelection selection resolver = do
+      refs <- lift (scanRefs selection resolver)
+      cache <- batchesToCache resolveRefsWitchCaching refs >>= withDebug
+      setCache cache (resolveSelection selection resolver)
+    resolveRefs (selection, ref) = runNamedResolverRef ref >>= traverse (cachedWith resolve selection)
     resolveRefsWitchCaching (selection, NamedResolverRef name args) = do
       oldCache <- getCached
       let cacheKeys = toCacheKey selection name args
