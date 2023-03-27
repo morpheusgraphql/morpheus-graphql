@@ -2,6 +2,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -83,7 +84,7 @@ resolveSelection _ ResScalar {} = throwError (internal "scalar resolver should o
 resolveSelection selection (ResObject typeName obj) = withObject typeName (mapSelectionSet resolveField) selection
   where
     resolveField s = lift (toResolverValue obj s) >>= resolveSelection (selectionContent s)
-resolveSelection selection (ResRef mRef) = lift mRef >>= uncurry (withBatching resolveSelection) selection
+resolveSelection selection (ResRef mRef) = lift mRef >>= withBatching resolveSelection . (selection,)
 
 toResolverValue ::
   (MonadResolver m) =>
