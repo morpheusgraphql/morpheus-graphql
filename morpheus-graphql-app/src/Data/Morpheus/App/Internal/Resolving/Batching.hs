@@ -152,19 +152,21 @@ type SelectionResolverFun m = SelectionContent VALID -> ResolverValue m -> Resol
 
 -- RESOLVING
 withBatching :: ResolverMonad m => SelectionResolverFun m -> SelectionRef -> ResolverMapT m ValidValue
-withBatching resolve = resolveRefsWitchCaching >=> withSingle
+withBatching resolveSelection = resolveRefsWitchCaching >=> withSingle
   where
-    cachedWith resolveSelection selection resolver = do
-      refs <- lift (scanRefs selection resolver)
-      cache <- batchesToCache resolveRefsWitchCaching refs >>= withDebug
-      setCache cache (resolveSelection selection resolver)
-    resolveRefs (selection, ref) = runNamedResolverRef ref >>= traverse (cachedWith resolve selection)
     resolveRefsWitchCaching (selection, NamedResolverRef name args) = do
       oldCache <- getCached
       let cacheKeys = toCacheKey selection name args
       let uncached = map cachedArg $ filter (isNotCached oldCache) cacheKeys
       cache <- batchesToCache resolveRefs [(selection, NamedResolverRef name uncached)]
       traverse (useCached cache) cacheKeys
+      where
+        resolveRefs (s, ref) = runNamedResolverRef ref >>= traverse resolveValue
+          where
+            resolveValue value = do
+              refs <- lift (scanRefs s value)
+              cache <- batchesToCache resolveRefsWitchCaching refs >>= withDebug
+              setCache cache (resolveSelection s value)
 
 runNamedResolverRef :: (MonadError GQLError m, MonadReader ResolverContext m) => NamedResolverRef -> ResolverMapT m [ResolverValue m]
 runNamedResolverRef NamedResolverRef {..}
