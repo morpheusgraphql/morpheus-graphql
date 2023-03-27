@@ -100,10 +100,10 @@ zipBatched (BatchEntry sel name deps) res = do
   let cacheKeys = toCacheKey sel name deps
   initCache (zip cacheKeys res)
 
-batchesToCache :: Monad m => ResolverFun (ResolverMapT m) -> [BatchEntry] -> ResolverMapT m CacheStore
-batchesToCache f batches = do
+batchesToCache :: Monad m => ResolverFun (ResolverMapT m) -> [SelectionRef] -> ResolverMapT m CacheStore
+batchesToCache f refs = do
   oldCache <- getCached
-  caches <- traverse (resolveBatched f) batches
+  caches <- traverse (resolveBatched f) (buildBatches refs)
   pure (mergeCache oldCache caches)
 
 resolveBatched :: Monad m => ResolverFun m -> BatchEntry -> m LocalCache
@@ -161,7 +161,7 @@ cachedWith ::
   ResolverMapT m ValidValue
 cachedWith resolveRef resolveSelection selection resolver = do
   refs <- lift (scanRefs selection resolver)
-  cache <- batchesToCache resolveRef (buildBatches refs) >>= withDebug
+  cache <- batchesToCache resolveRef refs >>= withDebug
   setCache cache (resolveSelection selection resolver)
 
 -- RESOLVING
@@ -173,8 +173,7 @@ withBatching resolve = resolveRefsWitchCaching >=> withSingle
       oldCache <- getCached
       let cacheKeys = toCacheKey selection name args
       let uncached = map cachedArg $ filter (isNotCached oldCache) cacheKeys
-      let batches = buildBatches [(selection, NamedResolverRef name uncached)]
-      cache <- batchesToCache resolveRefs batches
+      cache <- batchesToCache resolveRefs [(selection, NamedResolverRef name uncached)]
       traverse (useCached cache) cacheKeys
 
 runNamedResolverRef :: (MonadError GQLError m, MonadReader ResolverContext m) => NamedResolverRef -> ResolverMapT m [ResolverValue m]
