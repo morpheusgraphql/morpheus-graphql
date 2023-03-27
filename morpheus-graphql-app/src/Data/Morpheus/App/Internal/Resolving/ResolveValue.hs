@@ -60,14 +60,14 @@ import Relude hiding (empty)
 resolvePlainRoot :: MonadResolver m => ObjectTypeResolver m -> SelectionSet VALID -> m ValidValue
 resolvePlainRoot resolver selection = do
   name <- asks (typeName . currentType)
-  runResMapT (resolveSelection (SelectionSet selection) (ResObject (Just name) resolver)) (ResolverMapContext mempty mempty)
+  runResMapT (resolveSelection (SelectionSet selection) (ResObject (Just name) resolver)) (NamedContext empty empty)
 
 -- CACHED
 resolveNamedRoot :: MonadResolver m => TypeName -> ResolverMap m -> SelectionSet VALID -> m ValidValue
 resolveNamedRoot typeName resolvers selection =
   runResMapT
     (resolveSelection (SelectionSet selection) (ResRef $ pure (NamedResolverRef typeName ["ROOT"])))
-    (ResolverMapContext empty resolvers)
+    (NamedContext empty resolvers)
 
 -- RESOLVING
 
@@ -83,7 +83,7 @@ resolveSelection _ ResScalar {} = throwError (internal "scalar resolver should o
 resolveSelection selection (ResObject typeName obj) = withObject typeName (mapSelectionSet resolveField) selection
   where
     resolveField s = lift (toResolverValue obj s) >>= resolveSelection (selectionContent s)
-resolveSelection selection (ResRef mRef) = lift mRef >>= withBatching resolveSelection selection
+resolveSelection selection (ResRef mRef) = lift mRef >>= uncurry (withBatching resolveSelection) selection
 
 toResolverValue ::
   (MonadResolver m) =>
