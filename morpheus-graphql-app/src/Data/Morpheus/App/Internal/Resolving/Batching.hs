@@ -155,8 +155,8 @@ withBatching :: ResolverMonad m => SelectionResolverFun m -> SelectionRef -> Res
 withBatching resolveSelection = resolveRefsWitchCaching >=> withSingle
   where
     resolveRefsWitchCaching (selection, NamedResolverRef name args) = do
-      oldCache <- getCached
       let cacheKeys = toCacheKey selection name args
+      oldCache <- getCached
       let uncached = map cachedArg $ filter (isNotCached oldCache) cacheKeys
       cache <- batchesToCache resolveUncachedRefs [(selection, NamedResolverRef name uncached)]
       traverse (useCached cache) cacheKeys
