@@ -134,16 +134,6 @@ withSingle :: (MonadError GQLError f, Show a) => [a] -> f a
 withSingle [x] = pure x
 withSingle x = throwError (internal ("expected only one resolved value for " <> msg (show x :: String)))
 
-cacheRefs :: (MonadError GQLError m) => ResolverFun (ResolverMapT m) -> ResolveRefFun m
-cacheRefs f (selection, NamedResolverRef name args) = do
-  oldCache <- getCached
-  let ks = map (CacheKey selection name) args
-  let uncached = map cachedArg $ filter (isNotCached oldCache) ks
-  let batches = buildBatches [(selection, NamedResolverRef name uncached)]
-  caches <- traverse (resolveBatched f) batches
-  let cache = mergeCache oldCache caches
-  traverse (useCached cache) ks
-
 type SelectionResolverFun m = SelectionContent VALID -> ResolverValue m -> ResolverMapT m ValidValue
 
 type ResolveRefFun m = SelectionRef -> ResolverMapT m [ValidValue]
@@ -170,11 +160,17 @@ cachedWith resolveRef resolveSelection selection resolver = do
 
 -- RESOLVING
 withBatching :: ResolverMonad m => SelectionResolverFun m -> SelectionRef -> ResolverMapT m ValidValue
-withBatching resolve = resolveRef >=> withSingle
+withBatching resolve = resolveRefsWitchCaching >=> withSingle
   where
-    resolveRef = cacheRefs $ \(selection, ref) -> do
-      values <- runNamedResolverRef ref
-      traverse (cachedWith resolveRef resolve selection) values
+    resolveRefs (selection, ref) = runNamedResolverRef ref >>= traverse (cachedWith resolveRefsWitchCaching resolve selection)
+    resolveRefsWitchCaching (selection, NamedResolverRef name args) = do
+      oldCache <- getCached
+      let ks = map (CacheKey selection name) args
+      let uncached = map cachedArg $ filter (isNotCached oldCache) ks
+      let batches = buildBatches [(selection, NamedResolverRef name uncached)]
+      caches <- traverse (resolveBatched resolveRefs) batches
+      let cache = mergeCache oldCache caches
+      traverse (useCached cache) ks
 
 runNamedResolverRef :: (MonadError GQLError m, MonadReader ResolverContext m) => NamedResolverRef -> ResolverMapT m [ResolverValue m]
 runNamedResolverRef NamedResolverRef {..}
