@@ -11,12 +11,14 @@ module Data.Morpheus.App.Internal.Resolving.Cache
     useCached,
     isNotCached,
     mergeCache,
+    withDebug,
   )
 where
 
 import Control.Monad.Except
 import Data.ByteString.Lazy.Char8 (unpack)
-import Data.Morpheus.Core (RenderGQL, render)
+import Data.Morpheus.App.Internal.Resolving.ResolverState
+import Data.Morpheus.Core (Config (debug), RenderGQL, render)
 import Data.Morpheus.Internal.Utils
   ( Empty (..),
     IsMap (..),
@@ -30,7 +32,8 @@ import Data.Morpheus.Types.Internal.AST
     ValidValue,
     internal,
   )
-import Relude hiding (Show, empty, show)
+import Debug.Trace (trace)
+import Relude hiding (Show, empty, show, trace)
 import Prelude (Show (show))
 
 printSelectionKey :: RenderGQL a => a -> String
@@ -76,3 +79,13 @@ isNotCached (CacheStore store) key = isNothing $ lookup key store
 
 mergeCache :: CacheStore -> [CacheStore] -> CacheStore
 mergeCache initial caches = CacheStore $ fold $ map _unpackStore (initial : caches)
+
+withDebug :: MonadReader ResolverContext m => CacheStore -> m CacheStore
+withDebug cache = do
+  enabled <- asks (debug . config)
+  pure $ dumpCache enabled cache
+
+dumpCache :: Bool -> CacheStore -> CacheStore
+dumpCache enabled cache
+  | not enabled = cache
+  | otherwise = trace ("\nCACHE:\n" <> show cache) cache
