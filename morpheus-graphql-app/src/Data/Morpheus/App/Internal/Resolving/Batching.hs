@@ -37,6 +37,7 @@ import Data.Morpheus.App.Internal.Resolving.Cache
     isNotCached,
     mergeCache,
     printSelectionKey,
+    toUncached,
     useCached,
     withDebug,
   )
@@ -91,9 +92,6 @@ selectByEntity inputs (tSel, tName) = case filter areEq inputs of
     areEq (sel, v) = sel == tSel && tName == resolverTypeName v
 
 type ResolverFun m = SelectionRef -> m [ValidValue]
-
-toCacheKey :: SelectionContent VALID -> TypeName -> [ValidValue] -> [CacheKey]
-toCacheKey sel name = map (CacheKey sel name)
 
 zipBatched :: Monad m => BatchEntry -> [ValidValue] -> m CacheStore
 zipBatched (BatchEntry sel name deps) res = do
@@ -150,23 +148,23 @@ fullCache caches = (`mergeCache` caches) <$> ResolverMapT (asks localCache)
 resolveBatched :: Monad m => ResolverFun m -> BatchEntry -> m LocalCache
 resolveBatched f b@(BatchEntry sel name deps) = f (sel, NamedResolverRef name deps) >>= zipBatched b
 
+toCacheKey :: SelectionContent VALID -> TypeName -> [ValidValue] -> [CacheKey]
+toCacheKey sel name = map (CacheKey sel name)
+
 -- RESOLVING
 withBatching :: ResolverMonad m => SelectionResolverFun m -> SelectionRef -> ResolverMapT m ValidValue
-withBatching resolveSelection = resolveRefsWitchCaching >=> withSingle
+withBatching resolveSelection = resolveRef >=> withSingle
   where
-    resolveRefsWitchCaching (selection, NamedResolverRef name args) = do
-      let cacheKeys = toCacheKey selection name args
+    resolveRef r = do
       oldCache <- getCached
-      let uncached = map cachedArg $ filter (isNotCached oldCache) cacheKeys
-      cache <- resolveBatched resolveUncachedRefs (toBatch (selection, NamedResolverRef name uncached)) >>= fullCache . pure
+      let (cacheKeys, uncached) = second toBatch (toUncached oldCache r)
+      cache <- resolveBatched (\(s, ref) -> runNamedResolverRef ref >>= traverse (\v -> prefetch s v (resolveSelection s v))) uncached >>= fullCache . pure
       traverse (useCached cache) cacheKeys
       where
-        resolveUncachedRefs (s, ref) = runNamedResolverRef ref >>= traverse resolveValue
-          where
-            resolveValue value = do
-              refs <- lift (scanRefs s value)
-              cache <- traverse (resolveBatched resolveRefsWitchCaching) (buildBatches refs) >>= fullCache >>= withDebug
-              setCache cache (resolveSelection s value)
+        prefetch s value x = do
+          refs <- lift (scanRefs s value)
+          cache <- traverse (resolveBatched resolveRef) (buildBatches refs) >>= fullCache >>= withDebug
+          setCache cache x
 
 runNamedResolverRef :: (MonadError GQLError m, MonadReader ResolverContext m) => NamedResolverRef -> ResolverMapT m [ResolverValue m]
 runNamedResolverRef NamedResolverRef {..}

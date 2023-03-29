@@ -12,12 +12,14 @@ module Data.Morpheus.App.Internal.Resolving.Cache
     isNotCached,
     mergeCache,
     withDebug,
+    toUncached,
   )
 where
 
 import Control.Monad.Except
 import Data.ByteString.Lazy.Char8 (unpack)
 import Data.Morpheus.App.Internal.Resolving.ResolverState
+import Data.Morpheus.App.Internal.Resolving.Types (NamedResolverRef (NamedResolverRef))
 import Data.Morpheus.Core (Config (debug), RenderGQL, render)
 import Data.Morpheus.Internal.Utils
   ( Empty (..),
@@ -89,3 +91,11 @@ dumpCache :: Bool -> CacheStore -> CacheStore
 dumpCache enabled cache
   | not enabled = cache
   | otherwise = trace ("\nCACHE:\n" <> show cache) cache
+
+type SelectionRef = (SelectionContent VALID, NamedResolverRef)
+
+toUncached :: CacheStore -> SelectionRef -> ([CacheKey], SelectionRef)
+toUncached cache (selection, NamedResolverRef name args) = do
+  let cacheKeys = map (CacheKey selection name) args
+  let uncached = map cachedArg $ filter (isNotCached cache) cacheKeys
+  (cacheKeys, (selection, NamedResolverRef name uncached))
