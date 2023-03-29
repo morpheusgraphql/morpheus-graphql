@@ -31,10 +31,9 @@ import Control.Monad.Except (MonadError (throwError))
 import Data.ByteString.Lazy.Char8 (unpack)
 import Data.HashMap.Lazy (keys)
 import Data.Morpheus.App.Internal.Resolving.Cache
-  ( CacheKey (CacheKey, cachedArg),
+  ( CacheKey (..),
     CacheStore,
     initCache,
-    isNotCached,
     mergeCache,
     printSelectionKey,
     toUncached,
