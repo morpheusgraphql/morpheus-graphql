@@ -121,12 +121,6 @@ instance MonadTrans ResolverMapT where
 
 deriving instance MonadError GQLError m => MonadError GQLError (ResolverMapT m)
 
-setCache :: Monad m => LocalCache -> ResolverMapT m a -> ResolverMapT m a
-setCache cache m = do
-  ResolverMapT $ do
-    rmap <- asks resolverMap
-    local (const (NamedContext cache rmap)) (_runResMapT m)
-
 getCached :: Monad m => ResolverMapT m CacheStore
 getCached = ResolverMapT (asks localCache)
 
@@ -151,6 +145,12 @@ resolveBatched f b@(BatchEntry sel name deps) = f (sel, NamedResolverRef name de
 toCacheKey :: SelectionContent VALID -> TypeName -> [ValidValue] -> [CacheKey]
 toCacheKey sel name = map (CacheKey sel name)
 
+setCache :: Monad m => ResolverMapT m a -> LocalCache -> ResolverMapT m a
+setCache m cache = do
+  ResolverMapT $ do
+    rmap <- asks resolverMap
+    local (const (NamedContext cache rmap)) (_runResMapT m)
+
 -- RESOLVING
 withBatching :: ResolverMonad m => SelectionResolverFun m -> SelectionRef -> ResolverMapT m ValidValue
 withBatching resolveSelection = resolveRef >=> withSingle
@@ -158,13 +158,12 @@ withBatching resolveSelection = resolveRef >=> withSingle
     resolveRef r = do
       oldCache <- getCached
       let (cacheKeys, uncached) = second toBatch (toUncached oldCache r)
-      cache <- resolveBatched (\(s, ref) -> runNamedResolverRef ref >>= traverse (\v -> prefetch s v (resolveSelection s v))) uncached >>= fullCache . pure
+      cache <- resolveBatched (\(s, ref) -> runNamedResolverRef ref >>= traverse (\v -> prefetch s v >>= setCache (resolveSelection s v))) uncached >>= fullCache . pure
       traverse (useCached cache) cacheKeys
       where
-        prefetch s value x = do
+        prefetch s value = do
           refs <- lift (scanRefs s value)
-          cache <- traverse (resolveBatched resolveRef) (buildBatches refs) >>= fullCache >>= withDebug
-          setCache cache x
+          traverse (resolveBatched resolveRef) (buildBatches refs) >>= fullCache >>= withDebug
 
 runNamedResolverRef :: (MonadError GQLError m, MonadReader ResolverContext m) => NamedResolverRef -> ResolverMapT m [ResolverValue m]
 runNamedResolverRef NamedResolverRef {..}
