@@ -5,7 +5,7 @@
 
 module Data.Morpheus.App.Internal.Resolving.Cache
   ( CacheKey (..),
-    CacheStore,
+    CacheStore (..),
     printSelectionKey,
     initCache,
     useCached,
@@ -13,13 +13,15 @@ module Data.Morpheus.App.Internal.Resolving.Cache
     mergeCache,
     withDebug,
     toUncached,
+    insertPres,
+    CacheValue (..),
   )
 where
 
 import Control.Monad.Except
 import Data.ByteString.Lazy.Char8 (unpack)
 import Data.Morpheus.App.Internal.Resolving.ResolverState
-import Data.Morpheus.App.Internal.Resolving.Types (NamedResolverRef (NamedResolverRef))
+import Data.Morpheus.App.Internal.Resolving.Types (NamedResolverRef (NamedResolverRef), ResolverValue)
 import Data.Morpheus.Core (Config (debug), RenderGQL, render)
 import Data.Morpheus.Internal.Utils
   ( Empty (..),
@@ -52,50 +54,61 @@ data CacheKey = CacheKey
   }
   deriving (Eq, Generic)
 
+data CacheValue m
+  = CachedValue ValidValue
+  | CachedResolver (ResolverValue m)
+
+instance Show (CacheValue m) where
+  show (CachedValue v) = unpack (render v)
+  show (CachedResolver v) = show v
+
 instance Show CacheKey where
   show (CacheKey sel typename dep) = printSelectionKey sel <> ":" <> toString typename <> ":" <> unpack (render dep)
 
 instance Hashable CacheKey where
   hashWithSalt s (CacheKey sel tyName arg) = hashWithSalt s (sel, tyName, render arg)
 
-newtype CacheStore = CacheStore {_unpackStore :: HashMap CacheKey ValidValue}
+newtype CacheStore m = CacheStore {_unpackStore :: HashMap CacheKey (CacheValue m)}
 
-instance Show CacheStore where
-  show (CacheStore cache) = intercalate "\n" (map printKeyValue $ toAssoc cache) <> "\n"
+instance Show (CacheStore m) where
+  show (CacheStore cache) = "\nCACHE:\n" <> intercalate "\n" (map printKeyValue $ toAssoc cache) <> "\n"
     where
-      printKeyValue (key, v) = " " <> show key <> ": " <> unpack (render v)
+      printKeyValue (key, v) = " " <> show key <> ": " <> show v
 
-instance Empty CacheStore where
+instance Empty (CacheStore m) where
   empty = CacheStore empty
 
-initCache :: Monad m => [(CacheKey, ValidValue)] -> m CacheStore
-initCache = fmap CacheStore . pure . unsafeFromList
+initCache :: Monad m' => [(CacheKey, ValidValue)] -> m' (CacheStore m)
+initCache = fmap CacheStore . pure . unsafeFromList . map (second CachedValue)
 
-useCached :: MonadError GQLError m => CacheStore -> CacheKey -> m ValidValue
+insertPres :: CacheStore m -> [(CacheKey, ResolverValue m)] -> CacheStore m
+insertPres cache = mergeCache cache . pure . CacheStore . unsafeFromList . map (second CachedResolver)
+
+useCached :: MonadError GQLError m => CacheStore m' -> CacheKey -> m (CacheValue m')
 useCached (CacheStore mp) v = case lookup v mp of
   Just x -> pure x
   Nothing -> throwError (internal $ "cache value could not found for key" <> msg (show v :: String))
 
-isNotCached :: CacheStore -> CacheKey -> Bool
+isNotCached :: CacheStore m -> CacheKey -> Bool
 isNotCached (CacheStore store) key = isNothing $ lookup key store
 
-mergeCache :: CacheStore -> [CacheStore] -> CacheStore
+mergeCache :: CacheStore m -> [CacheStore m] -> CacheStore m
 mergeCache initial caches = CacheStore $ fold $ map _unpackStore (initial : caches)
 
-withDebug :: MonadReader ResolverContext m => CacheStore -> m CacheStore
-withDebug cache = do
+withDebug :: (Show a, MonadReader ResolverContext m) => a -> m a
+withDebug v = do
   enabled <- asks (debug . config)
-  pure $ dumpCache enabled cache
+  pure $ dumpCache True v
 
-dumpCache :: Bool -> CacheStore -> CacheStore
+dumpCache :: Show a => Bool -> a -> a
 dumpCache enabled cache
   | not enabled = cache
-  | otherwise = trace ("\nCACHE:\n" <> show cache) cache
+  | otherwise = trace (show cache) cache
 
 type SelectionRef = (SelectionContent VALID, NamedResolverRef)
 
-toUncached :: CacheStore -> SelectionRef -> ([CacheKey], SelectionRef)
+toUncached :: CacheStore m -> SelectionRef -> ([CacheKey], Maybe SelectionRef)
 toUncached cache (selection, NamedResolverRef name args) = do
   let cacheKeys = map (CacheKey selection name) args
   let uncached = map cachedArg $ filter (isNotCached cache) cacheKeys
-  (cacheKeys, (selection, NamedResolverRef name uncached))
+  (cacheKeys, if null uncached then Nothing else Just (selection, NamedResolverRef name uncached))

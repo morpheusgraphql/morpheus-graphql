@@ -15,7 +15,7 @@ where
 
 import Control.Monad.Except (MonadError (throwError))
 import Data.Morpheus.App.Internal.Resolving.Batching
-  ( ResolverMapContext (..),
+  ( NamedContext (..),
     ResolverMapT,
     runResMapT,
     withBatching,
