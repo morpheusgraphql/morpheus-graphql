@@ -32,10 +32,10 @@ import Data.Morpheus.App.Internal.Resolving.Cache
   ( CacheKey (..),
     CacheT,
     CacheValue (..),
+    cacheResolverValues,
+    cacheValue,
     isCached,
     printSelectionKey,
-    setCacheValue,
-    updateCache,
     useCached,
     withDebug,
   )
@@ -123,7 +123,7 @@ toKeys :: BatchEntry -> [CacheKey]
 toKeys (BatchEntry sel name deps) = map (CacheKey sel name) deps
 
 setCachedValue :: Monad m => CacheKey -> ValidValue -> ResolverMapT m ValidValue
-setCachedValue key = inCache . setCacheValue key
+setCachedValue key = inCache . cacheValue key
 
 inCache :: Monad m => CacheT m a -> ResolverMapT m a
 inCache = ResolverMapT . lift
@@ -147,7 +147,7 @@ prefetch batch = do
   batches <- buildBatches . concat <$> traverse (lift . scanRefs (batchedSelection batch)) value
   resolvedEntries <- traverse (\b -> (b,) <$> run b) batches
   let caches = foldMap zipCaches $ (batch, value) : resolvedEntries
-  inCache $ updateCache caches
+  inCache $ cacheResolverValues caches
   where
     zipCaches (b, res) = zip (toKeys b) res
     run = withDebug >=> runBatch

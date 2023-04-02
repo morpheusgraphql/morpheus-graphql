@@ -10,11 +10,10 @@ module Data.Morpheus.App.Internal.Resolving.Cache
     useCached,
     isCached,
     withDebug,
-    updateCache,
+    cacheResolverValues,
+    cacheValue,
     CacheValue (..),
-    setValue,
     CacheT,
-    setCacheValue,
   )
 where
 
@@ -81,13 +80,12 @@ instance Show (CacheStore m) where
 instance Empty (CacheStore m) where
   empty = CacheStore empty
 
-updateCache :: MonadReader ResolverContext m => [(CacheKey, ResolverValue m)] -> CacheT m ()
-updateCache pres = do
-  caches <- ins pres
-  modify (`mergeCache` [caches])
-  get >>= withDebug >> pure ()
-  where
-    ins = pure . CacheStore . unsafeFromList . map (second CachedResolver)
+cacheResolverValues :: MonadReader ResolverContext m => [(CacheKey, ResolverValue m)] -> CacheT m ()
+cacheResolverValues pres = do
+  CacheStore oldCache <- get
+  let updates = unsafeFromList (map (second CachedResolver) pres)
+  cache <- withDebug $ CacheStore $ updates <> oldCache
+  modify (const cache)
 
 useCached :: MonadError GQLError m => CacheKey -> CacheT m (CacheValue m)
 useCached v = do
@@ -99,9 +97,6 @@ useCached v = do
 isCached :: Monad m => CacheKey -> CacheT m Bool
 isCached key = isJust . lookup key . _unpackStore <$> get
 
-mergeCache :: CacheStore m -> [CacheStore m] -> CacheStore m
-mergeCache initial caches = CacheStore $ fold $ map _unpackStore (initial : caches)
-
 setValue :: (CacheKey, ValidValue) -> CacheStore m -> CacheStore m
 setValue (key, value) = CacheStore . HM.insert key (CachedValue value) . _unpackStore
 
@@ -112,5 +107,5 @@ withDebug v = showValue <$> asks (debug . config)
       | enabled = v
       | otherwise = trace (show v) v
 
-setCacheValue :: Monad m => CacheKey -> ValidValue -> CacheT m ValidValue
-setCacheValue key value = modify (setValue (key, value)) $> value
+cacheValue :: Monad m => CacheKey -> ValidValue -> CacheT m ValidValue
+cacheValue key value = modify (setValue (key, value)) $> value
