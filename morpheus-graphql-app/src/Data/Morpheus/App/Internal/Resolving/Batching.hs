@@ -17,24 +17,24 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.App.Internal.Resolving.Batching
-  ( CacheKey,
-    LocalCache,
-    NamedContext (..),
+  ( NamedContext (..),
     ResolverMapT (..),
     runResMapT,
     SelectionRef,
     withBatching,
+    setCache,
   )
 where
 
 import Control.Monad.Except (MonadError (throwError))
 import Data.ByteString.Lazy.Char8 (unpack)
-import Data.HashMap.Lazy (keys, traverseWithKey)
+import Data.HashMap.Lazy (keys)
 import qualified Data.HashMap.Lazy as HM
 import Data.Morpheus.App.Internal.Resolving.Cache
   ( CacheKey (..),
-    CacheStore (CacheStore),
+    CacheStore,
     CacheValue (..),
+    initCache,
     insertPres,
     mergeCache,
     printSelectionKey,
@@ -67,8 +67,6 @@ import Data.Morpheus.Types.Internal.AST
   )
 import GHC.Show (Show (show))
 import Relude hiding (show)
-
-type LocalCache = CacheStore
 
 data BatchEntry = BatchEntry
   { batchedSelection :: SelectionContent VALID,
@@ -104,7 +102,7 @@ selectByEntity inputs (tSel, tName) = case gerArgs (filter areEq inputs) of
     areEq (sel, v) = sel == tSel && tName == resolverTypeName v
 
 data NamedContext m = NamedContext
-  { localCache :: LocalCache m,
+  { localCache :: CacheStore m,
     resolverMap :: ResolverMap m
   }
 
@@ -136,21 +134,16 @@ withSingle :: (MonadError GQLError f, Show a) => [a] -> f a
 withSingle [x] = pure x
 withSingle x = throwError (internal ("expected only one resolved value for " <> msg (show x :: String)))
 
-type SelectionResolverFun m = SelectionContent VALID -> ResolverValue m -> ResolverMapT m ValidValue
-
 mkBatch :: SelectionRef -> BatchEntry
 mkBatch (sel, NamedResolverRef name args) = BatchEntry sel name (uniq args)
-
-fullCache :: Monad m => [CacheStore m] -> ResolverMapT m (CacheStore m)
-fullCache caches = (`mergeCache` caches) <$> ResolverMapT (asks localCache)
 
 toCacheKey :: SelectionContent VALID -> TypeName -> [ValidValue] -> [CacheKey]
 toCacheKey sel name = map (CacheKey sel name)
 
-setPres :: Monad m => Prefetches m -> ResolverMapT m a -> ResolverMapT m a
-setPres ps = ResolverMapT . local update . _runResMapT
+setCache :: Monad m => CacheStore m -> ResolverMapT m a -> ResolverMapT m a
+setCache s = ResolverMapT . local update . _runResMapT
   where
-    update x = x {localCache = insertPres (localCache x) (HM.toList ps)}
+    update x = x {localCache = mergeCache (localCache x) [s]}
 
 type Prefetches m = HashMap CacheKey (ResolverValue m)
 
@@ -160,25 +153,24 @@ zipPrefetches (BatchEntry sel name deps) res = do
   unsafeFromList (zip cacheKeys res)
 
 -- RESOLVING
-withBatching :: ResolverMonad m => SelectionResolverFun m -> SelectionRef -> ResolverMapT m ValidValue
-withBatching resolveSelection ref = do
+withBatching :: ResolverMonad m => SelectionRef -> ResolverMapT m (CacheValue m, CacheStore m)
+withBatching ref = do
   oldCache <- getCached
   let (cacheKeys, uncached) = second (fmap mkBatch) (toUncached oldCache ref)
-  pres <- maybe (pure mempty) prefetch uncached
-  setPres pres $ do
-    cache <- traverseWithKey (resolveSelection . cachedSel) pres >>= (fullCache . pure . CacheStore) . fmap CachedValue >>= withDebug
-    x <- traverse (useCached cache) cacheKeys >>= withSingle
-    case x of
-      (CachedValue v) -> pure v
-      (CachedResolver v) -> resolveSelection (fst ref) v
+  pres <- maybe (initCache []) prefetch uncached
+  setCache pres $ do
+    cache <- getCached
+    value <- traverse (useCached cache) cacheKeys >>= withSingle
+    pure (value, cache)
 
-prefetch :: ResolverMonad m => BatchEntry -> ResolverMapT m (Prefetches m)
+prefetch :: ResolverMonad m => BatchEntry -> ResolverMapT m (CacheStore m)
 prefetch batch = do
   value <- run batch
   batches <- buildBatches . concat <$> traverse (lift . scanRefs (batchedSelection batch)) value
   xs <- traverse (\b -> zipPrefetches b <$> run b) batches
   let pre = fold (zipPrefetches batch value : xs)
-  pure pre
+  cache <- getCached
+  withDebug (insertPres cache (HM.toList pre))
   where
     run = withDebug >=> runBatch
 

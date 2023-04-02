@@ -18,8 +18,10 @@ import Data.Morpheus.App.Internal.Resolving.Batching
   ( NamedContext (..),
     ResolverMapT,
     runResMapT,
+    setCache,
     withBatching,
   )
+import Data.Morpheus.App.Internal.Resolving.Cache (CacheValue (..))
 import Data.Morpheus.App.Internal.Resolving.MonadResolver (MonadResolver)
 import Data.Morpheus.App.Internal.Resolving.ResolverState
   ( ResolverContext (..),
@@ -84,7 +86,13 @@ resolveSelection _ ResScalar {} = throwError (internal "scalar resolver should o
 resolveSelection selection (ResObject typeName obj) = withObject typeName (mapSelectionSet resolveField) selection
   where
     resolveField s = lift (toResolverValue obj s) >>= resolveSelection (selectionContent s)
-resolveSelection selection (ResRef mRef) = lift mRef >>= withBatching resolveSelection . (selection,)
+resolveSelection selection (ResRef mRef) = do
+  ref <- lift mRef
+  (value, cache) <- withBatching (selection, ref)
+  setCache cache $
+    case value of
+      (CachedValue v) -> pure v
+      (CachedResolver v) -> resolveSelection selection v
 
 toResolverValue ::
   (MonadResolver m) =>
