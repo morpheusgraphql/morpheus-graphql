@@ -129,20 +129,13 @@ getCached = ResolverMapT (asks localCache)
 runResMapT :: ResolverMapT m a -> NamedContext m -> m a
 runResMapT (ResolverMapT x) = runReaderT x
 
-toCacheKey :: SelectionContent VALID -> TypeName -> [ValidValue] -> [CacheKey]
-toCacheKey sel name = map (CacheKey sel name)
-
 setCache :: Monad m => CacheStore m -> ResolverMapT m a -> ResolverMapT m a
 setCache s = ResolverMapT . local update . _runResMapT
   where
     update x = x {localCache = mergeCache (localCache x) [s]}
 
-type Prefetches m = HashMap CacheKey (ResolverValue m)
-
-zipPrefetches :: Monad m => BatchEntry -> [ResolverValue m] -> Prefetches m
-zipPrefetches (BatchEntry sel name deps) res = do
-  let cacheKeys = toCacheKey sel name deps
-  unsafeFromList (zip cacheKeys res)
+toKeys :: BatchEntry -> [CacheKey]
+toKeys (BatchEntry sel name deps) = map (CacheKey sel name) deps
 
 -- RESOLVING
 resolveRef :: ResolverMonad m => SelectionContent VALID -> NamedResolverRef -> ResolverMapT m (CacheValue m, CacheStore m)
@@ -162,11 +155,12 @@ prefetch :: ResolverMonad m => BatchEntry -> ResolverMapT m (CacheStore m)
 prefetch batch = do
   value <- run batch
   batches <- buildBatches . concat <$> traverse (lift . scanRefs (batchedSelection batch)) value
-  xs <- traverse (\b -> zipPrefetches b <$> run b) batches
-  let pre = fold (zipPrefetches batch value : xs)
+  xs <- traverse (\b -> (b,) <$> run b) batches
+  let pre = foldMap zipPrefetched $ (batch, value) : xs
   cache <- getCached
   withDebug (insertPres cache (HM.toList pre))
   where
+    zipPrefetched (b, res) = unsafeFromList (zip (toKeys b) res)
     run = withDebug >=> runBatch
 
 runBatch :: (MonadError GQLError m, MonadReader ResolverContext m) => BatchEntry -> ResolverMapT m [ResolverValue m]

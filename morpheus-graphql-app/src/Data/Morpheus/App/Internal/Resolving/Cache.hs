@@ -91,11 +91,8 @@ mergeCache :: CacheStore m -> [CacheStore m] -> CacheStore m
 mergeCache initial caches = CacheStore $ fold $ map _unpackStore (initial : caches)
 
 withDebug :: (Show a, MonadReader ResolverContext m) => a -> m a
-withDebug v = do
-  enabled <- asks (debug . config)
-  pure $ dumpCache enabled v
-
-dumpCache :: Show a => Bool -> a -> a
-dumpCache enabled cache
-  | not enabled = cache
-  | otherwise = trace (show cache) cache
+withDebug v = showValue <$> asks (debug . config)
+  where
+    showValue enabled
+      | not enabled = v
+      | otherwise = trace (show v) v
