@@ -22,6 +22,7 @@ import Data.ByteString.Lazy.Char8 (unpack)
 import qualified Data.HashMap.Lazy as HM
 import Data.Morpheus.App.Internal.Resolving.ResolverState
 import Data.Morpheus.App.Internal.Resolving.Types (ResolverValue)
+import Data.Morpheus.App.Internal.Resolving.Utils (ResolverMonad)
 import Data.Morpheus.Core (Config (debug), RenderGQL, render)
 import Data.Morpheus.Internal.Utils
   ( Empty (..),
@@ -80,17 +81,17 @@ instance Show (CacheStore m) where
 instance Empty (CacheStore m) where
   empty = CacheStore empty
 
-cacheResolverValues :: MonadReader ResolverContext m => [(CacheKey, ResolverValue m)] -> CacheT m ()
+cacheResolverValues :: ResolverMonad m => [(CacheKey, ResolverValue m)] -> CacheT m ()
 cacheResolverValues pres = do
   CacheStore oldCache <- get
   let updates = unsafeFromList (map (second CachedResolver) pres)
-  cache <- withDebug $ CacheStore $ updates <> oldCache
+  cache <- labeledDebug "\nUPDATE|>" $ CacheStore $ updates <> oldCache
   modify (const cache)
 
-useCached :: MonadError GQLError m => CacheKey -> CacheT m (CacheValue m)
+useCached :: ResolverMonad m => CacheKey -> CacheT m (CacheValue m)
 useCached v = do
-  mp <- get
-  case lookup v (_unpackStore mp) of
+  cache <- get >>= labeledDebug "\nUSE|>"
+  case lookup v (_unpackStore cache) of
     Just x -> pure x
     Nothing -> throwError (internal $ "cache value could not found for key" <> msg (show v :: String))
 
@@ -100,12 +101,15 @@ isCached key = isJust . lookup key . _unpackStore <$> get
 setValue :: (CacheKey, ValidValue) -> CacheStore m -> CacheStore m
 setValue (key, value) = CacheStore . HM.insert key (CachedValue value) . _unpackStore
 
-withDebug :: (Show a, MonadReader ResolverContext m) => a -> m a
-withDebug v = showValue <$> asks (debug . config)
+labeledDebug :: (Show a, MonadReader ResolverContext m) => String -> a -> m a
+labeledDebug label v = showValue <$> asks (debug . config)
   where
     showValue enabled
-      | enabled = v
-      | otherwise = trace (show v) v
+      | enabled = trace (label <> show v) v
+      | otherwise = v
+
+withDebug :: (Show a, MonadReader ResolverContext m) => a -> m a
+withDebug = labeledDebug ""
 
 cacheValue :: Monad m => CacheKey -> ValidValue -> CacheT m ValidValue
 cacheValue key value = modify (setValue (key, value)) $> value
