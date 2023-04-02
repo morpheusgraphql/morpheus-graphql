@@ -36,6 +36,7 @@ import Data.Morpheus.App.Internal.Resolving.Cache
     CacheValue (..),
     initCache,
     insertPres,
+    isNotCached,
     mergeCache,
     printSelectionKey,
     toUncached,
@@ -130,13 +131,6 @@ getCached = ResolverMapT (asks localCache)
 runResMapT :: ResolverMapT m a -> NamedContext m -> m a
 runResMapT (ResolverMapT x) = runReaderT x
 
-withSingle :: (MonadError GQLError f, Show a) => [a] -> f a
-withSingle [x] = pure x
-withSingle x = throwError (internal ("expected only one resolved value for " <> msg (show x :: String)))
-
-mkBatch :: SelectionRef -> BatchEntry
-mkBatch (sel, NamedResolverRef name args) = BatchEntry sel name (uniq args)
-
 toCacheKey :: SelectionContent VALID -> TypeName -> [ValidValue] -> [CacheKey]
 toCacheKey sel name = map (CacheKey sel name)
 
@@ -154,14 +148,19 @@ zipPrefetches (BatchEntry sel name deps) res = do
 
 -- RESOLVING
 withBatching :: ResolverMonad m => SelectionRef -> ResolverMapT m (CacheValue m, CacheStore m)
-withBatching ref = do
+withBatching (sel, NamedResolverRef typename [arg]) = do
   oldCache <- getCached
-  let (cacheKeys, uncached) = second (fmap mkBatch) (toUncached oldCache ref)
+  let key = CacheKey sel typename arg
+  let uncached =
+        if isNotCached oldCache key
+          then Just (BatchEntry sel typename [arg])
+          else Nothing
   pres <- maybe (initCache []) prefetch uncached
   setCache pres $ do
     cache <- getCached
-    value <- traverse (useCached cache) cacheKeys >>= withSingle
+    value <- useCached cache key
     pure (value, cache)
+withBatching ref = throwError (internal ("expected only one resolved value for " <> msg (show ref :: String)))
 
 prefetch :: ResolverMonad m => BatchEntry -> ResolverMapT m (CacheStore m)
 prefetch batch = do
