@@ -133,8 +133,10 @@ library
       Data.Morpheus.Types.GQLWrapper
   other-modules:
       Data.Morpheus.App.Internal.Resolving.Batching
+      Data.Morpheus.App.Internal.Resolving.Cache
       Data.Morpheus.App.Internal.Resolving.Event
       Data.Morpheus.App.Internal.Resolving.MonadResolver
+      Data.Morpheus.App.Internal.Resolving.Refs
       Data.Morpheus.App.Internal.Resolving.Resolver
       Data.Morpheus.App.Internal.Resolving.ResolverState
       Data.Morpheus.App.Internal.Resolving.ResolveValue

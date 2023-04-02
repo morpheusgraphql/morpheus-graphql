@@ -28,6 +28,8 @@ module Data.Morpheus.App.Internal.Resolving.ResolverState
     runResolverStateValueM,
     updateCurrentType,
     askFieldTypeName,
+    inField,
+    inSelectionField,
   )
 where
 
@@ -105,6 +107,16 @@ fieldTypeName name t = case typeContent t of
   (DataObject _ fs) -> selectOr Nothing (Just . typeConName . fieldType) name fs
   (DataInterface fs) -> selectOr Nothing (Just . typeConName . fieldType) name fs
   _ -> Nothing
+
+inSelectionField :: (MonadReader ResolverContext m, MonadError GQLError m) => Selection VALID -> m b -> m b
+inSelectionField selection m = do
+  inField (selectionName selection) $
+    local (\ctx -> ctx {currentSelection = selection}) m
+
+inField :: (MonadReader ResolverContext m, MonadError GQLError m) => FieldName -> m b -> m b
+inField fieldName m = do
+  fieldType <- askFieldTypeName fieldName
+  updateCurrentType fieldType m
 
 askFieldTypeName :: MonadReader ResolverContext m => FieldName -> m (Maybe TypeName)
 askFieldTypeName name = asks (fieldTypeName name . currentType)

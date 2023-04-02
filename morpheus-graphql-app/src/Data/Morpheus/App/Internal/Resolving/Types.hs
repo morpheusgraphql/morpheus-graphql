@@ -37,7 +37,7 @@ where
 import Control.Monad.Except (MonadError (throwError))
 import qualified Data.HashMap.Lazy as HM
 import Data.Morpheus.Internal.Ext (Merge (..))
-import Data.Morpheus.Internal.Utils (KeyOf (keyOf))
+import Data.Morpheus.Internal.Utils (IsMap (toAssoc), KeyOf (keyOf))
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     GQLError,
@@ -69,7 +69,9 @@ newtype ObjectTypeResolver m = ObjectTypeResolver
   }
 
 instance Show (ObjectTypeResolver m) where
-  show _ = "ObjectTypeResolver {}"
+  show ObjectTypeResolver {..} = "ObjectTypeResolver { " <> intercalate "," (map showField (toAssoc objectFields)) <> " }"
+    where
+      showField (name, _) = show name <> " = " <> "ResolverValue m"
 
 data NamedResolverRef = NamedResolverRef
   { resolverTypeName :: TypeName,

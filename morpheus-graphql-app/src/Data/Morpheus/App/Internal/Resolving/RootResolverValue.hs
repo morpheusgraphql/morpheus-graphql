@@ -14,7 +14,7 @@ module Data.Morpheus.App.Internal.Resolving.RootResolverValue
 where
 
 import Control.Monad.Except (throwError)
-import qualified Data.Aeson as A
+import Data.Aeson (FromJSON (..))
 import Data.HashMap.Strict (adjust)
 import Data.Morpheus.App.Internal.Resolving.Event
   ( EventHandler (..),
@@ -34,9 +34,6 @@ import Data.Morpheus.App.Internal.Resolving.Types
 import Data.Morpheus.App.Internal.Resolving.Utils
   ( lookupResJSON,
   )
-import Data.Morpheus.Internal.Utils
-  ( empty,
-  )
 import Data.Morpheus.Types.Internal.AST
   ( MUTATION,
     Operation (..),
@@ -45,8 +42,8 @@ import Data.Morpheus.Types.Internal.AST
     SUBSCRIPTION,
     Schema (..),
     Selection,
-    SelectionContent (SelectionSet),
     SelectionSet,
+    TypeDefinition (typeName),
     TypeName,
     VALID,
     ValidValue,
@@ -68,7 +65,7 @@ data RootResolverValue e m
   | NamedResolversValue
       {queryResolverMap :: ResolverMap (Resolver QUERY e m)}
 
-instance Monad m => A.FromJSON (RootResolverValue e m) where
+instance Monad m => FromJSON (RootResolverValue e m) where
   parseJSON res =
     pure
       RootResolverValue
@@ -81,7 +78,7 @@ instance Monad m => A.FromJSON (RootResolverValue e m) where
 rootResolver :: (MonadResolver m) => ResolverState (ObjectTypeResolver m) -> SelectionSet VALID -> m ValidValue
 rootResolver res selection = do
   root <- liftState (toResolverStateT res)
-  resolveObject (ResolverMapContext mempty mempty) root (Just selection)
+  resolvePlainRoot root selection
 
 runRootResolverValue :: Monad m => RootResolverValue e m -> ResolverContext -> ResponseStream e m (Value VALID)
 runRootResolverValue
@@ -105,14 +102,11 @@ runRootResolverValue
   ctx@ResolverContext {operation = Operation {..}} =
     selectByOperation operationType
     where
-      selectByOperation OPERATION_QUERY = runResolver Nothing (resolvedValue operationSelection) ctx
+      selectByOperation OPERATION_QUERY = runResolver Nothing queryResolver ctx
         where
-          resolvers = withNamedIntroFields "Query" ctx queryResolverMap
-          resolvedValue selection =
-            resolveRef
-              (ResolverMapContext empty resolvers)
-              (NamedResolverRef "Query" ["ROOT"])
-              (SelectionSet selection)
+          queryResolver = do
+            name <- asks (typeName . query . schema)
+            resolveNamedRoot name (withNamedIntroFields name ctx queryResolverMap) operationSelection
       selectByOperation _ = throwError "mutation and subscription is not supported for namedResolvers"
 
 withNamedIntroFields :: (MonadResolver m, MonadOperation m ~ QUERY) => TypeName -> ResolverContext -> ResolverMap m -> ResolverMap m
