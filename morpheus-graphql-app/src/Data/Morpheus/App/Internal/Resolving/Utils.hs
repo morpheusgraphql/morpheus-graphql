@@ -41,7 +41,7 @@ import Data.Morpheus.App.Internal.Resolving.Types
     mkString,
   )
 import Data.Morpheus.Error (subfieldsNotSelected)
-import Data.Morpheus.Internal.Utils ((<:>), IsMap (..), selectOr, toAssoc)
+import Data.Morpheus.Internal.Utils (IsMap (..), selectOr, toAssoc, (<:>))
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     GQLError,

@@ -73,7 +73,9 @@ data BatchEntry = BatchEntry
 
 instance Show BatchEntry where
   show BatchEntry {..} =
-    "\nBATCH(" <> toString batchedType <> "):"
+    "\nBATCH("
+      <> toString batchedType
+      <> "):"
       <> "\n  sel:"
       <> printSelectionKey batchedSelection
       <> "\n  dep:"
@@ -94,6 +96,7 @@ selectByEntity inputs (tSel, tName) = case gerArgs (filter areEq inputs) of
   [] -> Nothing
   args -> Just (BatchEntry tSel tName args)
     where
+
   where
     gerArgs = uniq . concatMap (resolverArgument . snd)
     areEq (sel, v) = sel == tSel && tName == resolverTypeName v
@@ -156,9 +159,9 @@ runBatch :: (MonadError GQLError m, MonadReader ResolverContext m) => BatchEntry
 runBatch (BatchEntry _ name deps)
   | null deps = pure []
   | otherwise = do
-    resolvers <- ResolverMapT ask
-    NamedResolver {resolverFun} <- lift (selectOr notFound pure name resolvers)
-    map (toResolverValue name) <$> lift (resolverFun deps)
+      resolvers <- ResolverMapT ask
+      NamedResolver {resolverFun} <- lift (selectOr notFound pure name resolvers)
+      map (toResolverValue name) <$> lift (resolverFun deps)
   where
     notFound = throwError ("resolver type " <> msg name <> "can't found")
 
