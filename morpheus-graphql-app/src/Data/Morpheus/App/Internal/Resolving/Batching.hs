@@ -19,9 +19,8 @@
 module Data.Morpheus.App.Internal.Resolving.Batching
   ( ResolverMapT (..),
     SelectionRef,
-    runResMapT,
-    resolveRef,
-    setCachedValue,
+    runBatchedT,
+    MonadBatching (..),
   )
 where
 
@@ -119,30 +118,35 @@ instance MonadTrans ResolverMapT where
 
 deriving instance MonadError GQLError m => MonadError GQLError (ResolverMapT m)
 
-runResMapT :: Monad m => ResolverMapT m a -> ResolverMap m -> m a
-runResMapT (ResolverMapT m) rmap = fst <$> runStateT (runReaderT m rmap) empty
+runBatchedT :: Monad m => ResolverMapT m a -> ResolverMap m -> m a
+runBatchedT (ResolverMapT m) rmap = fst <$> runStateT (runReaderT m rmap) empty
 
 toKeys :: BatchEntry -> [CacheKey]
 toKeys (BatchEntry sel name deps) = map (CacheKey sel name) deps
 
-setCachedValue :: Monad m => CacheKey -> ValidValue -> ResolverMapT m ValidValue
-setCachedValue key = inCache . cacheValue key
-
 inCache :: Monad m => CacheT m a -> ResolverMapT m a
 inCache = ResolverMapT . lift
 
--- RESOLVING
-resolveRef :: ResolverMonad m => SelectionContent VALID -> NamedResolverRef -> ResolverMapT m (CacheKey, CacheValue m)
-resolveRef sel (NamedResolverRef typename [arg]) = do
-  let key = CacheKey sel typename arg
-  alreadyCached <- inCache (isCached key)
-  if alreadyCached
-    then pure ()
-    else prefetch (BatchEntry sel typename [arg])
-  inCache $ do
-    value <- useCached key
-    pure (key, value)
-resolveRef _ ref = throwError (internal ("expected only one resolved value for " <> msg (show ref :: String)))
+class MonadTrans t => MonadBatching t where
+  resolveRef :: ResolverMonad m => SelectionContent VALID -> NamedResolverRef -> t m (CacheKey, CacheValue m)
+  storeValue :: ResolverMonad m => CacheKey -> ValidValue -> t m ValidValue
+
+instance MonadBatching IdentityT where
+  resolveRef _ _ = throwError $ internal "batching is only allowed with named resolvers"
+  storeValue _ _ = throwError $ internal "batching is only allowed with named resolvers"
+
+instance MonadBatching ResolverMapT where
+  resolveRef sel (NamedResolverRef typename [arg]) = do
+    let key = CacheKey sel typename arg
+    alreadyCached <- inCache (isCached key)
+    if alreadyCached
+      then pure ()
+      else prefetch (BatchEntry sel typename [arg])
+    inCache $ do
+      value <- useCached key
+      pure (key, value)
+  resolveRef _ ref = throwError (internal ("expected only one resolved value for " <> msg (show ref :: String)))
+  storeValue key = inCache . cacheValue key
 
 prefetch :: ResolverMonad m => BatchEntry -> ResolverMapT m ()
 prefetch batch = do

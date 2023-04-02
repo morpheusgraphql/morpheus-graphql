@@ -14,10 +14,8 @@ where
 
 import Control.Monad.Except (MonadError (throwError))
 import Data.Morpheus.App.Internal.Resolving.Batching
-  ( ResolverMapT,
-    resolveRef,
-    runResMapT,
-    setCachedValue,
+  ( MonadBatching (..),
+    runBatchedT,
   )
 import Data.Morpheus.App.Internal.Resolving.Cache (CacheValue (..))
 import Data.Morpheus.App.Internal.Resolving.MonadResolver (MonadResolver)
@@ -57,22 +55,21 @@ import Data.Morpheus.Types.Internal.AST
 import Relude hiding (empty)
 
 -- UNCACHED
-
 resolvePlainRoot :: MonadResolver m => ObjectTypeResolver m -> SelectionSet VALID -> m ValidValue
 resolvePlainRoot resolver selection = do
   name <- asks (typeName . currentType)
-  runResMapT (resolveSelection (SelectionSet selection) (ResObject (Just name) resolver)) empty
+  runIdentityT (resolveSelection (SelectionSet selection) (ResObject (Just name) resolver))
 
 -- CACHED
 resolveNamedRoot :: MonadResolver m => TypeName -> ResolverMap m -> SelectionSet VALID -> m ValidValue
 resolveNamedRoot typeName resolvers selection =
-  runResMapT
+  runBatchedT
     (resolveSelection (SelectionSet selection) (ResRef $ pure (NamedResolverRef typeName ["ROOT"])))
     resolvers
 
 -- RESOLVING
 
-resolveSelection :: (MonadResolver m) => SelectionContent VALID -> ResolverValue m -> ResolverMapT m ValidValue
+resolveSelection :: (ResolverMonad (t m), MonadBatching t, MonadResolver m) => SelectionContent VALID -> ResolverValue m -> t m ValidValue
 resolveSelection selection (ResLazy x) = lift x >>= resolveSelection selection
 resolveSelection selection (ResList xs) = List <$> traverse (resolveSelection selection) xs
 resolveSelection SelectionField (ResEnum name) = pure $ Scalar $ String $ unpackName name
@@ -88,7 +85,7 @@ resolveSelection selection (ResRef mRef) = do
   (key, value) <- resolveRef selection =<< lift mRef
   case value of
     (CachedValue v) -> pure v
-    (CachedResolver v) -> resolveSelection selection v >>= setCachedValue key
+    (CachedResolver v) -> resolveSelection selection v >>= storeValue key
 
 toResolverValue ::
   (MonadResolver m) =>
