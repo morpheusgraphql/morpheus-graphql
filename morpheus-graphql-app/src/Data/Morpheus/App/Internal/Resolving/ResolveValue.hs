@@ -2,7 +2,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -15,11 +14,10 @@ where
 
 import Control.Monad.Except (MonadError (throwError))
 import Data.Morpheus.App.Internal.Resolving.Batching
-  ( NamedContext (..),
-    ResolverMapT,
+  ( ResolverMapT,
     resolveRef,
     runResMapT,
-    setCache,
+    setCachedValue,
   )
 import Data.Morpheus.App.Internal.Resolving.Cache (CacheValue (..))
 import Data.Morpheus.App.Internal.Resolving.MonadResolver (MonadResolver)
@@ -63,14 +61,14 @@ import Relude hiding (empty)
 resolvePlainRoot :: MonadResolver m => ObjectTypeResolver m -> SelectionSet VALID -> m ValidValue
 resolvePlainRoot resolver selection = do
   name <- asks (typeName . currentType)
-  runResMapT (resolveSelection (SelectionSet selection) (ResObject (Just name) resolver)) (NamedContext empty empty)
+  runResMapT (resolveSelection (SelectionSet selection) (ResObject (Just name) resolver)) empty
 
 -- CACHED
 resolveNamedRoot :: MonadResolver m => TypeName -> ResolverMap m -> SelectionSet VALID -> m ValidValue
 resolveNamedRoot typeName resolvers selection =
   runResMapT
     (resolveSelection (SelectionSet selection) (ResRef $ pure (NamedResolverRef typeName ["ROOT"])))
-    (NamedContext empty resolvers)
+    resolvers
 
 -- RESOLVING
 
@@ -87,11 +85,10 @@ resolveSelection selection (ResObject typeName obj) = withObject typeName (mapSe
   where
     resolveField s = lift (toResolverValue obj s) >>= resolveSelection (selectionContent s)
 resolveSelection selection (ResRef mRef) = do
-  (value, cache) <- resolveRef selection =<< lift mRef
-  setCache cache $
-    case value of
-      (CachedValue v) -> pure v
-      (CachedResolver v) -> resolveSelection selection v
+  (key, value) <- resolveRef selection =<< lift mRef
+  case value of
+    (CachedValue v) -> pure v
+    (CachedResolver v) -> resolveSelection selection v >>= setCachedValue key
 
 toResolverValue ::
   (MonadResolver m) =>

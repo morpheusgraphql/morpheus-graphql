@@ -17,12 +17,11 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.App.Internal.Resolving.Batching
-  ( NamedContext (..),
-    ResolverMapT (..),
-    runResMapT,
+  ( ResolverMapT (..),
     SelectionRef,
-    setCache,
+    runResMapT,
     resolveRef,
+    setCachedValue,
   )
 where
 
@@ -37,6 +36,7 @@ import Data.Morpheus.App.Internal.Resolving.Cache
     isNotCached,
     mergeCache,
     printSelectionKey,
+    setValue,
     useCached,
     withDebug,
   )
@@ -53,7 +53,7 @@ import Data.Morpheus.App.Internal.Resolving.Utils
     ResolverValue (ResEnum, ResNull, ResObject, ResRef, ResScalar),
   )
 import Data.Morpheus.Core (render)
-import Data.Morpheus.Internal.Utils (IsMap (..), selectOr)
+import Data.Morpheus.Internal.Utils (Empty (empty), IsMap (..), selectOr)
 import Data.Morpheus.Types.Internal.AST
   ( GQLError,
     Msg (..),
@@ -64,7 +64,7 @@ import Data.Morpheus.Types.Internal.AST
     internal,
   )
 import GHC.Show (Show (show))
-import Relude hiding (show)
+import Relude hiding (empty, show)
 
 data BatchEntry = BatchEntry
   { batchedSelection :: SelectionContent VALID,
@@ -99,13 +99,12 @@ selectByEntity inputs (tSel, tName) = case gerArgs (filter areEq inputs) of
     gerArgs = uniq . concatMap (resolverArgument . snd)
     areEq (sel, v) = sel == tSel && tName == resolverTypeName v
 
-data NamedContext m = NamedContext
-  { localCache :: CacheStore m,
-    resolverMap :: ResolverMap m
-  }
-
 newtype ResolverMapT m a = ResolverMapT
-  { _runResMapT :: ReaderT (NamedContext m) m a
+  { _runResMapT ::
+      ReaderT
+        (ResolverMap m)
+        (StateT (CacheStore m) m)
+        a
   }
   deriving
     ( Functor,
@@ -118,26 +117,27 @@ instance (MonadReader ResolverContext m) => MonadReader ResolverContext (Resolve
   local f (ResolverMapT m) = ResolverMapT (ReaderT (local f . runReaderT m))
 
 instance MonadTrans ResolverMapT where
-  lift = ResolverMapT . lift
+  lift = ResolverMapT . lift . lift
 
 deriving instance MonadError GQLError m => MonadError GQLError (ResolverMapT m)
 
 getCached :: Monad m => ResolverMapT m (CacheStore m)
-getCached = ResolverMapT (asks localCache)
+getCached = ResolverMapT $ lift get
 
-runResMapT :: ResolverMapT m a -> NamedContext m -> m a
-runResMapT (ResolverMapT x) = runReaderT x
+runResMapT :: Monad m => ResolverMapT m a -> ResolverMap m -> m a
+runResMapT (ResolverMapT m) rmap = fst <$> runStateT (runReaderT m rmap) empty
 
-setCache :: Monad m => CacheStore m -> ResolverMapT m a -> ResolverMapT m a
-setCache s = ResolverMapT . local update . _runResMapT
-  where
-    update x = x {localCache = mergeCache (localCache x) [s]}
+updateCache :: Monad m => CacheStore m -> ResolverMapT m ()
+updateCache s = ResolverMapT $ lift $ modify (`mergeCache` [s])
 
 toKeys :: BatchEntry -> [CacheKey]
 toKeys (BatchEntry sel name deps) = map (CacheKey sel name) deps
 
+setCachedValue :: Monad m => CacheKey -> ValidValue -> ResolverMapT m ValidValue
+setCachedValue key value = ResolverMapT (lift $ modify $ setValue (key, value)) $> value
+
 -- RESOLVING
-resolveRef :: ResolverMonad m => SelectionContent VALID -> NamedResolverRef -> ResolverMapT m (CacheValue m, CacheStore m)
+resolveRef :: ResolverMonad m => SelectionContent VALID -> NamedResolverRef -> ResolverMapT m (CacheKey, CacheValue m)
 resolveRef sel (NamedResolverRef typename [arg]) = do
   let key = CacheKey sel typename arg
   oldCache <- getCached
@@ -146,8 +146,9 @@ resolveRef sel (NamedResolverRef typename [arg]) = do
           then Just (BatchEntry sel typename [arg])
           else Nothing
   cache <- maybe getCached prefetch uncached
+  updateCache cache
   value <- useCached cache key
-  pure (value, cache)
+  pure (key, value)
 resolveRef _ ref = throwError (internal ("expected only one resolved value for " <> msg (show ref :: String)))
 
 prefetch :: ResolverMonad m => BatchEntry -> ResolverMapT m (CacheStore m)
@@ -166,7 +167,7 @@ runBatch :: (MonadError GQLError m, MonadReader ResolverContext m) => BatchEntry
 runBatch (BatchEntry _ name deps)
   | null deps = pure []
   | otherwise = do
-    resolvers <- ResolverMapT (asks resolverMap)
+    resolvers <- ResolverMapT ask
     NamedResolver {resolverFun} <- lift (selectOr notFound pure name resolvers)
     map (toResolverValue name) <$> lift (resolverFun deps)
   where

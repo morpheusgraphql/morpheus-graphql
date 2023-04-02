@@ -13,6 +13,7 @@ module Data.Morpheus.App.Internal.Resolving.Cache
     withDebug,
     insertPres,
     CacheValue (..),
+    setValue,
   )
 where
 
@@ -90,6 +91,9 @@ isNotCached (CacheStore store) key = isNothing $ lookup key store
 
 mergeCache :: CacheStore m -> [CacheStore m] -> CacheStore m
 mergeCache initial caches = CacheStore $ fold $ map _unpackStore (initial : caches)
+
+setValue :: (CacheKey, ValidValue) -> CacheStore m -> CacheStore m
+setValue (key, value) = CacheStore . HM.insert key (CachedValue value) . _unpackStore
 
 withDebug :: (Show a, MonadReader ResolverContext m) => a -> m a
 withDebug v = showValue <$> asks (debug . config)
