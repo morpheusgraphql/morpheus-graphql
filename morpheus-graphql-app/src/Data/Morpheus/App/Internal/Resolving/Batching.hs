@@ -145,8 +145,8 @@ zipPrefetches (BatchEntry sel name deps) res = do
   unsafeFromList (zip cacheKeys res)
 
 -- RESOLVING
-resolveRef :: ResolverMonad m => SelectionRef -> ResolverMapT m (CacheValue m, CacheStore m)
-resolveRef (sel, NamedResolverRef typename [arg]) = do
+resolveRef :: ResolverMonad m => SelectionContent VALID -> NamedResolverRef -> ResolverMapT m (CacheValue m, CacheStore m)
+resolveRef sel (NamedResolverRef typename [arg]) = do
   let key = CacheKey sel typename arg
   oldCache <- getCached
   let uncached =
@@ -156,7 +156,7 @@ resolveRef (sel, NamedResolverRef typename [arg]) = do
   cache <- maybe getCached prefetch uncached
   value <- useCached cache key
   pure (value, cache)
-resolveRef ref = throwError (internal ("expected only one resolved value for " <> msg (show ref :: String)))
+resolveRef _ ref = throwError (internal ("expected only one resolved value for " <> msg (show ref :: String)))
 
 prefetch :: ResolverMonad m => BatchEntry -> ResolverMapT m (CacheStore m)
 prefetch batch = do

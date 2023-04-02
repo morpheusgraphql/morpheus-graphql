@@ -87,8 +87,7 @@ resolveSelection selection (ResObject typeName obj) = withObject typeName (mapSe
   where
     resolveField s = lift (toResolverValue obj s) >>= resolveSelection (selectionContent s)
 resolveSelection selection (ResRef mRef) = do
-  ref <- lift mRef
-  (value, cache) <- resolveRef (selection, ref)
+  (value, cache) <- resolveRef selection =<< lift mRef
   setCache cache $
     case value of
       (CachedValue v) -> pure v
