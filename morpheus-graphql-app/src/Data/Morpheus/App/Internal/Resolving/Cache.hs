@@ -8,12 +8,13 @@ module Data.Morpheus.App.Internal.Resolving.Cache
     CacheStore (..),
     printSelectionKey,
     useCached,
-    isNotCached,
-    mergeCache,
+    isCached,
     withDebug,
-    insertPres,
+    updateCache,
     CacheValue (..),
     setValue,
+    CacheT,
+    setCacheValue,
   )
 where
 
@@ -39,6 +40,8 @@ import Data.Morpheus.Types.Internal.AST
 import Debug.Trace (trace)
 import Relude hiding (Show, empty, show, trace)
 import Prelude (Show (show))
+
+type CacheT m = (StateT (CacheStore m) m)
 
 printSelectionKey :: RenderGQL a => a -> String
 printSelectionKey sel = map replace $ filter ignoreSpaces $ unpack (render sel)
@@ -78,16 +81,23 @@ instance Show (CacheStore m) where
 instance Empty (CacheStore m) where
   empty = CacheStore empty
 
-insertPres :: CacheStore m -> [(CacheKey, ResolverValue m)] -> CacheStore m
-insertPres cache = mergeCache cache . pure . CacheStore . unsafeFromList . map (second CachedResolver)
+updateCache :: MonadReader ResolverContext m => [(CacheKey, ResolverValue m)] -> CacheT m ()
+updateCache pres = do
+  caches <- ins pres
+  modify (`mergeCache` [caches])
+  get >>= withDebug >> pure ()
+  where
+    ins = pure . CacheStore . unsafeFromList . map (second CachedResolver)
 
-useCached :: MonadError GQLError m => CacheStore m' -> CacheKey -> m (CacheValue m')
-useCached (CacheStore mp) v = case lookup v mp of
-  Just x -> pure x
-  Nothing -> throwError (internal $ "cache value could not found for key" <> msg (show v :: String))
+useCached :: MonadError GQLError m => CacheKey -> CacheT m (CacheValue m)
+useCached v = do
+  mp <- get
+  case lookup v (_unpackStore mp) of
+    Just x -> pure x
+    Nothing -> throwError (internal $ "cache value could not found for key" <> msg (show v :: String))
 
-isNotCached :: CacheStore m -> CacheKey -> Bool
-isNotCached (CacheStore store) key = isNothing $ lookup key store
+isCached :: Monad m => CacheKey -> CacheT m Bool
+isCached key = isJust . lookup key . _unpackStore <$> get
 
 mergeCache :: CacheStore m -> [CacheStore m] -> CacheStore m
 mergeCache initial caches = CacheStore $ fold $ map _unpackStore (initial : caches)
@@ -99,5 +109,8 @@ withDebug :: (Show a, MonadReader ResolverContext m) => a -> m a
 withDebug v = showValue <$> asks (debug . config)
   where
     showValue enabled
-      | not enabled = v
+      | enabled = v
       | otherwise = trace (show v) v
+
+setCacheValue :: Monad m => CacheKey -> ValidValue -> CacheT m ValidValue
+setCacheValue key value = modify (setValue (key, value)) $> value

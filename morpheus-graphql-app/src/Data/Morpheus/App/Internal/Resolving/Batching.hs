@@ -30,13 +30,12 @@ import Data.ByteString.Lazy.Char8 (unpack)
 import Data.HashMap.Lazy (keys)
 import Data.Morpheus.App.Internal.Resolving.Cache
   ( CacheKey (..),
-    CacheStore,
+    CacheT,
     CacheValue (..),
-    insertPres,
-    isNotCached,
-    mergeCache,
+    isCached,
     printSelectionKey,
-    setValue,
+    setCacheValue,
+    updateCache,
     useCached,
     withDebug,
   )
@@ -100,11 +99,7 @@ selectByEntity inputs (tSel, tName) = case gerArgs (filter areEq inputs) of
     areEq (sel, v) = sel == tSel && tName == resolverTypeName v
 
 newtype ResolverMapT m a = ResolverMapT
-  { _runResMapT ::
-      ReaderT
-        (ResolverMap m)
-        (StateT (CacheStore m) m)
-        a
+  { _runResMapT :: ReaderT (ResolverMap m) (CacheT m) a
   }
   deriving
     ( Functor,
@@ -121,44 +116,38 @@ instance MonadTrans ResolverMapT where
 
 deriving instance MonadError GQLError m => MonadError GQLError (ResolverMapT m)
 
-getCached :: Monad m => ResolverMapT m (CacheStore m)
-getCached = ResolverMapT $ lift get
-
 runResMapT :: Monad m => ResolverMapT m a -> ResolverMap m -> m a
 runResMapT (ResolverMapT m) rmap = fst <$> runStateT (runReaderT m rmap) empty
-
-updateCache :: Monad m => CacheStore m -> ResolverMapT m ()
-updateCache s = ResolverMapT $ lift $ modify (`mergeCache` [s])
 
 toKeys :: BatchEntry -> [CacheKey]
 toKeys (BatchEntry sel name deps) = map (CacheKey sel name) deps
 
 setCachedValue :: Monad m => CacheKey -> ValidValue -> ResolverMapT m ValidValue
-setCachedValue key value = ResolverMapT (lift $ modify $ setValue (key, value)) $> value
+setCachedValue key = inCache . setCacheValue key
+
+inCache :: Monad m => CacheT m a -> ResolverMapT m a
+inCache = ResolverMapT . lift
 
 -- RESOLVING
 resolveRef :: ResolverMonad m => SelectionContent VALID -> NamedResolverRef -> ResolverMapT m (CacheKey, CacheValue m)
 resolveRef sel (NamedResolverRef typename [arg]) = do
   let key = CacheKey sel typename arg
-  oldCache <- getCached
-  let uncached =
-        if isNotCached oldCache key
-          then Just (BatchEntry sel typename [arg])
-          else Nothing
-  cache <- maybe getCached prefetch uncached
-  updateCache cache
-  value <- useCached cache key
-  pure (key, value)
+  alreadyCached <- inCache (isCached key)
+  if alreadyCached
+    then pure ()
+    else prefetch (BatchEntry sel typename [arg])
+  inCache $ do
+    value <- useCached key
+    pure (key, value)
 resolveRef _ ref = throwError (internal ("expected only one resolved value for " <> msg (show ref :: String)))
 
-prefetch :: ResolverMonad m => BatchEntry -> ResolverMapT m (CacheStore m)
+prefetch :: ResolverMonad m => BatchEntry -> ResolverMapT m ()
 prefetch batch = do
-  cache <- getCached
   value <- run batch
   batches <- buildBatches . concat <$> traverse (lift . scanRefs (batchedSelection batch)) value
-  xs <- traverse (\b -> (b,) <$> run b) batches
-  let caches = foldMap zipCaches $ (batch, value) : xs
-  withDebug $ insertPres cache caches
+  resolvedEntries <- traverse (\b -> (b,) <$> run b) batches
+  let caches = foldMap zipCaches $ (batch, value) : resolvedEntries
+  inCache $ updateCache caches
   where
     zipCaches (b, res) = zip (toKeys b) res
     run = withDebug >=> runBatch
