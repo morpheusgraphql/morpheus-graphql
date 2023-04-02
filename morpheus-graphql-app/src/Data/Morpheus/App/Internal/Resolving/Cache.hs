@@ -29,8 +29,7 @@ import Data.Morpheus.Internal.Utils
     IsMap (..),
   )
 import Data.Morpheus.Types.Internal.AST
-  ( GQLError,
-    Msg (msg),
+  ( Msg (msg),
     SelectionContent,
     TypeName,
     VALID,
