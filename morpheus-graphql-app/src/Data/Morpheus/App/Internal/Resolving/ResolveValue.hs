@@ -17,9 +17,9 @@ import Control.Monad.Except (MonadError (throwError))
 import Data.Morpheus.App.Internal.Resolving.Batching
   ( NamedContext (..),
     ResolverMapT,
+    resolveRef,
     runResMapT,
     setCache,
-    withBatching,
   )
 import Data.Morpheus.App.Internal.Resolving.Cache (CacheValue (..))
 import Data.Morpheus.App.Internal.Resolving.MonadResolver (MonadResolver)
@@ -88,7 +88,7 @@ resolveSelection selection (ResObject typeName obj) = withObject typeName (mapSe
     resolveField s = lift (toResolverValue obj s) >>= resolveSelection (selectionContent s)
 resolveSelection selection (ResRef mRef) = do
   ref <- lift mRef
-  (value, cache) <- withBatching (selection, ref)
+  (value, cache) <- resolveRef (selection, ref)
   setCache cache $
     case value of
       (CachedValue v) -> pure v
