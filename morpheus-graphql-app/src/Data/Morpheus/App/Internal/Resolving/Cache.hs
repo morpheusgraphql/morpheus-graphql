@@ -7,7 +7,6 @@ module Data.Morpheus.App.Internal.Resolving.Cache
   ( CacheKey (..),
     CacheStore (..),
     printSelectionKey,
-    initCache,
     useCached,
     isNotCached,
     mergeCache,
@@ -77,9 +76,6 @@ instance Show (CacheStore m) where
 
 instance Empty (CacheStore m) where
   empty = CacheStore empty
-
-initCache :: Monad m' => [(CacheKey, ValidValue)] -> m' (CacheStore m)
-initCache = fmap CacheStore . pure . unsafeFromList . map (second CachedValue)
 
 insertPres :: CacheStore m -> [(CacheKey, ResolverValue m)] -> CacheStore m
 insertPres cache = mergeCache cache . pure . CacheStore . unsafeFromList . map (second CachedResolver)

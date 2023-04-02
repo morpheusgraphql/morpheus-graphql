@@ -34,7 +34,6 @@ import Data.Morpheus.App.Internal.Resolving.Cache
   ( CacheKey (..),
     CacheStore,
     CacheValue (..),
-    initCache,
     insertPres,
     isNotCached,
     mergeCache,
@@ -148,17 +147,15 @@ zipPrefetches (BatchEntry sel name deps) res = do
 -- RESOLVING
 resolveRef :: ResolverMonad m => SelectionRef -> ResolverMapT m (CacheValue m, CacheStore m)
 resolveRef (sel, NamedResolverRef typename [arg]) = do
-  oldCache <- getCached
   let key = CacheKey sel typename arg
+  oldCache <- getCached
   let uncached =
         if isNotCached oldCache key
           then Just (BatchEntry sel typename [arg])
           else Nothing
-  updatedCache <- maybe (initCache []) prefetch uncached
-  setCache updatedCache $ do
-    cache <- getCached
-    value <- useCached cache key
-    pure (value, cache)
+  cache <- maybe getCached prefetch uncached
+  value <- useCached cache key
+  pure (value, cache)
 resolveRef ref = throwError (internal ("expected only one resolved value for " <> msg (show ref :: String)))
 
 prefetch :: ResolverMonad m => BatchEntry -> ResolverMapT m (CacheStore m)
