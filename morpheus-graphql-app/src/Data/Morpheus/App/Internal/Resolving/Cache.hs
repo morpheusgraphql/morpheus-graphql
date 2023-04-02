@@ -18,6 +18,7 @@ where
 
 import Control.Monad.Except
 import Data.ByteString.Lazy.Char8 (unpack)
+import qualified Data.HashMap.Lazy as HM
 import Data.Morpheus.App.Internal.Resolving.ResolverState
 import Data.Morpheus.App.Internal.Resolving.Types (ResolverValue)
 import Data.Morpheus.Core (Config (debug), RenderGQL, render)

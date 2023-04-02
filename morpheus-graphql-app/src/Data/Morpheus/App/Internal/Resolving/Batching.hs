@@ -29,7 +29,6 @@ where
 import Control.Monad.Except (MonadError (throwError))
 import Data.ByteString.Lazy.Char8 (unpack)
 import Data.HashMap.Lazy (keys)
-import qualified Data.HashMap.Lazy as HM
 import Data.Morpheus.App.Internal.Resolving.Cache
   ( CacheKey (..),
     CacheStore,
@@ -153,14 +152,14 @@ resolveRef _ ref = throwError (internal ("expected only one resolved value for "
 
 prefetch :: ResolverMonad m => BatchEntry -> ResolverMapT m (CacheStore m)
 prefetch batch = do
+  cache <- getCached
   value <- run batch
   batches <- buildBatches . concat <$> traverse (lift . scanRefs (batchedSelection batch)) value
   xs <- traverse (\b -> (b,) <$> run b) batches
-  let pre = foldMap zipPrefetched $ (batch, value) : xs
-  cache <- getCached
-  withDebug (insertPres cache (HM.toList pre))
+  let caches = foldMap zipCaches $ (batch, value) : xs
+  withDebug $ insertPres cache caches
   where
-    zipPrefetched (b, res) = unsafeFromList (zip (toKeys b) res)
+    zipCaches (b, res) = zip (toKeys b) res
     run = withDebug >=> runBatch
 
 runBatch :: (MonadError GQLError m, MonadReader ResolverContext m) => BatchEntry -> ResolverMapT m [ResolverValue m]
