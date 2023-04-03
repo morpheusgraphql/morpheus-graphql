@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           morpheus-graphql-tests
-version:        0.27.0
+version:        0.27.1
 synopsis:       Morpheus GraphQL Test
 category:       web, graphql, test
 homepage:       https://morpheusgraphql.com
