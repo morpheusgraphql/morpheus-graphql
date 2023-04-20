@@ -101,7 +101,7 @@ library
     , relude >=0.3.0 && <2.0.0
     , req >=3.0.0 && <4.0.0
     , template-haskell >=2.0.0 && <3.0.0
-    , text >=1.2.3 && <2.1.0
+    , text >=1.2.3 && <3
     , transformers >=0.3.0 && <0.6.0
     , unliftio-core >=0.0.1 && <0.4.0
     , unordered-containers >=0.2.8 && <0.3.0
@@ -146,7 +146,7 @@ test-suite morpheus-graphql-client-test
     , tasty >=0.1.0 && <1.5.0
     , tasty-hunit >=0.1.0 && <1.0.0
     , template-haskell >=2.0.0 && <3.0.0
-    , text >=1.2.3 && <2.1.0
+    , text >=1.2.3 && <3
     , transformers >=0.3.0 && <0.6.0
     , unliftio-core >=0.0.1 && <0.4.0
     , unordered-containers >=0.2.8 && <0.3.0
