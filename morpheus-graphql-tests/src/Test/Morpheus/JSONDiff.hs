@@ -10,7 +10,7 @@ module Test.Morpheus.JSONDiff
 where
 
 import Data.Aeson (encode)
-import Data.Aeson.KeyMap (KeyMap, keys, lookup)
+import Data.Aeson.KeyMap (keys, lookup)
 import Data.Aeson.Types (ToJSON (..), Value (..))
 import Data.ByteString.Lazy.Char8 (unpack)
 import GHC.Show (Show (show))
