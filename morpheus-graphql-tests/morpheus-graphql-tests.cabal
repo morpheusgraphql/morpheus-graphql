@@ -25,6 +25,7 @@ library
       Test.Morpheus
   other-modules:
       Test.Morpheus.File
+      Test.Morpheus.JSONDiff
       Test.Morpheus.Response
       Test.Morpheus.Utils
       Paths_morpheus_graphql_tests
