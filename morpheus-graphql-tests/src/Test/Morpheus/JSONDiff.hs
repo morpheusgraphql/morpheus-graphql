@@ -11,7 +11,7 @@ where
 
 import Data.Aeson (encode)
 import Data.Aeson.KeyMap (KeyMap, keys, lookup)
-import Data.Aeson.Types (Key, ToJSON (..), Value (..))
+import Data.Aeson.Types (ToJSON (..), Value (..))
 import Data.ByteString.Lazy.Char8 (unpack)
 import GHC.Show (Show (show))
 import Relude hiding (ByteString, Show, show)
@@ -51,6 +51,7 @@ diff (Object beforeFields, Object afterFields) = diffNode $ map toPair ks
   where
     ks = uniq (keys (beforeFields <> afterFields))
     toPair key = (unescape (show key), (getField key beforeFields, getField key afterFields))
+    getField key = fromMaybe Null . lookup key
 diff (Array beforeElems, Array afterElems) = diffNode (zip ks vs)
   where
     ks = map show ([1 ..] :: [Int])
@@ -66,9 +67,6 @@ diffNode values
   | otherwise = Just (DiffNode entries)
   where
     entries = mapMaybe (\(key, value) -> (key,) <$> diff value) values
-
-getField :: Key -> KeyMap Value -> Value
-getField key = fromMaybe Null . lookup key
 
 uniq :: (Eq a) => [a] -> [a]
 uniq [] = []
