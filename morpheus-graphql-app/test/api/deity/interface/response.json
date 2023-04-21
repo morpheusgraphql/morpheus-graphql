@@ -16,7 +16,7 @@
       "interfaces": null,
       "enumValues": null,
       "possibleTypes": [
-        { "kind": "OBJET", "name": "Deity", "ofType": null },
+        { "kind": "OBJECT", "name": "Deity", "ofType": null },
         { "kind": "OBJECT", "name": "Hero", "ofType": null }
       ]
     },
