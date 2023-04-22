@@ -32,7 +32,7 @@ dependencies:
   - req                              >=  3.0.0     &&  <  4.0.0
   - text                             >=  1.2.3     &&  <  3.0.0
   - template-haskell                 >=  2.0.0     &&  <  3.0.0
-  - transformers                     >=  0.3.0     &&  <  0.6.0
+  - transformers                     >=  0.3.0     &&  <  0.7.0
   - unordered-containers             >=  0.2.8     &&  <  0.3.0
   - unliftio-core                    >=  0.0.1     &&  <  0.4.0
   - wuss                             >=  1.0.0     &&  <  3.0.0
