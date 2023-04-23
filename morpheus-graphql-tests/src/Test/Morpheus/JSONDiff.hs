@@ -17,11 +17,11 @@ import GHC.Show (Show (show))
 import Relude hiding (ByteString, Show, show)
 import Test.Tasty.HUnit (assertFailure)
 
-data JSONDiff
-  = DiffNode [(String, JSONDiff)]
+data Diff
+  = DiffNode [(String, Diff)]
   | DiffLeaf Value Value
 
-instance Show JSONDiff where
+instance Show Diff where
   show (DiffNode xs) = intercalate "\n" (map showField xs)
     where
       showField (k, v) = k <> ":\n  " <> indent (show v)
@@ -46,7 +46,7 @@ indent = concatMap f
     f '\n' = "\n  "
     f x = x : ""
 
-diff :: (Value, Value) -> Maybe JSONDiff
+diff :: (Value, Value) -> Maybe Diff
 diff (Object beforeFields, Object afterFields) = diffNode $ map toPair ks
   where
     ks = uniq (keys (beforeFields <> afterFields))
@@ -61,7 +61,7 @@ diff (v1, v2)
       Nothing
   | otherwise = Just (DiffLeaf v1 v2)
 
-diffNode :: [(String, (Value, Value))] -> Maybe JSONDiff
+diffNode :: [(String, (Value, Value))] -> Maybe Diff
 diffNode values
   | null entries = Nothing
   | otherwise = Just (DiffNode entries)
