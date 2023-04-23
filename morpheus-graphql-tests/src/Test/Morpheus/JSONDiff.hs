@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -10,11 +11,16 @@ module Test.Morpheus.JSONDiff
 where
 
 import Data.Aeson (ToJSON (..), Value (..), encode)
-import Data.Aeson.KeyMap (keys, lookup)
 import Data.ByteString.Lazy.Char8 (unpack)
 import GHC.Show (Show (show))
 import Relude hiding (ByteString, Show, show)
 import Test.Tasty.HUnit (assertFailure)
+
+#if MIN_VERSION_aeson(2,0,0)
+import Data.Aeson.KeyMap (keys, lookup)
+# else
+import Data.HashMap.Lazy (keys, lookup)
+#endif
 
 data Diff
   = DiffNode [(String, Diff)]
