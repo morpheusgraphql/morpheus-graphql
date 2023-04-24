@@ -3,8 +3,8 @@
     "__type": {
       "kind": "INTERFACE",
       "possibleTypes": [
-        { "kind": "OBJECT", "ofType": null, "name": "Deity" },
-        { "kind": "OBJECT", "ofType": null, "name": "Creature" }
+        { "kind": "OBJECT", "ofType": null, "name": "Creature" },
+        { "kind": "OBJECT", "ofType": null, "name": "Deity" }
       ],
       "enumValues": null,
       "interfaces": null,
