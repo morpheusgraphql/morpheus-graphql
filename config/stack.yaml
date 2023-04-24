@@ -62,9 +62,10 @@ plan:
       fraxl: 0.3.0.0
       haxl: 2.4.0.0
       type-aligned: 0.9.6
-    resolver: nightly-2022-10-10
+    resolver: nightly-2023-04-23
     skip:
       - examples/scotty-fraxl
+      - examples/scotty-freer-simple
 rules:
   Glob:
     - 0.7.0
