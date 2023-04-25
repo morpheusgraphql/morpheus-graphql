@@ -1,7 +1,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -41,11 +41,11 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Relude hiding (empty)
 
-schemaResolver ::
+resolveSchema ::
   MonadResolver m =>
   Schema VALID ->
   m (ResolverValue m)
-schemaResolver schema@Schema {query, mutation, subscription, directiveDefinitions} =
+resolveSchema schema@Schema {..} =
   pure $
     mkObject
       "__Schema"
@@ -66,7 +66,7 @@ schemaAPI schema =
   ObjectTypeResolver
     ( fromList
         [ ("__type", withArguments typeResolver),
-          ("__schema", schemaResolver schema)
+          ("__schema", resolveSchema schema)
         ]
     )
   where
