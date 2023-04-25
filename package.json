@@ -23,7 +23,7 @@
     "@types/js-yaml": "^4.0.5",
     "@types/node": "^17.0.23",
     "@types/ramda": "^0.28.4",
-    "cspell": "^5.18.5"
+    "cspell": "^6.31.1"
   },
   "dependencies": {
     "@actions/core": "^1.9.1",
