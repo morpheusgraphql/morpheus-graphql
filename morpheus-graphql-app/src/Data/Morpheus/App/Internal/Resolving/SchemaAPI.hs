@@ -24,7 +24,7 @@ import Data.Morpheus.App.RenderIntrospection
   ( renderI,
   )
 import Data.Morpheus.Internal.Utils
-  ( lookup,
+  ( IsMap (..),
   )
 import Data.Morpheus.Types.Internal.AST
   ( DirectiveDefinition (..),
@@ -38,10 +38,7 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Relude hiding (empty)
 
-resolveSchema ::
-  MonadResolver m =>
-  Schema VALID ->
-  m (ResolverValue m)
+resolveSchema :: MonadResolver m => Schema VALID -> m (ResolverValue m)
 resolveSchema schema@Schema {..} =
   pure $
     mkObject
