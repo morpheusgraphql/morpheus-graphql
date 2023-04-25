@@ -99,7 +99,7 @@ const batchPRInfo = (xs: unknown[]) =>
     )
   );
 
-const getAsoccPR = ({
+const getAssociatedPR = ({
   associatedPullRequests,
   message,
 }: Commit): Maybe<number> => {
@@ -113,10 +113,10 @@ const getAsoccPR = ({
 
 const getGithubPRs = (commits: string[]): Promise<GithubPR[]> =>
   batchMap(batchCommitInfo, commits).then((ghCommits) =>
-    batchMap(batchPRInfo, uniq(ghCommits.map(getAsoccPR).filter(Boolean)))
+    batchMap(batchPRInfo, uniq(ghCommits.map(getAssociatedPR).filter(Boolean)))
   );
 
-const getPullRequesrs = (commits: string[]) =>
+const getPullRequests = (commits: string[]) =>
   getGithubPRs(commits).then((prs) =>
     prs.map(
       ({ labels, ...pr }): PullRequest => ({
@@ -132,4 +132,4 @@ type PullRequest = Omit<GithubPR, "labels"> & {
   scopes: SCOPE[];
 };
 
-export { getPullRequesrs, PullRequest };
+export { getPullRequests, PullRequest };
