@@ -474,8 +474,8 @@ possibleInterfaceTypes ::
   Schema s ->
   [TypeDefinition ANY s]
 possibleInterfaceTypes name schema =
-  sortWith typeName
-    $ mapMaybe
+  sortWith typeName $
+    mapMaybe
       (isPossibleInterfaceType name)
       (toList $ typeDefinitions schema)
 
