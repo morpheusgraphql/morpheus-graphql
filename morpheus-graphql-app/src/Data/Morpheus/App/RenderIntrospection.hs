@@ -9,8 +9,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.App.RenderIntrospection
-  ( render,
-    createObjectType,
+  ( renderI,
   )
 where
 
@@ -27,7 +26,7 @@ import Data.Morpheus.App.Internal.Resolving.Types
     mkObject,
     mkString,
   )
-import qualified Data.Morpheus.Core as GQL
+import Data.Morpheus.Core (render)
 import Data.Morpheus.Internal.Utils
   ( fromLBS,
     selectBy,
@@ -45,8 +44,10 @@ import Data.Morpheus.Types.Internal.AST
     FieldDefinition (..),
     FieldName,
     FieldsDefinition,
+    GQLError,
     IN,
     Msg (msg),
+    Name,
     OUT,
     TRUE,
     TypeContent (..),
@@ -72,273 +73,211 @@ import Data.Morpheus.Types.Internal.AST
 import Data.Text (pack)
 import Relude
 
-selectType :: MonadResolver m => TypeName -> m (TypeDefinition ANY VALID)
-selectType name =
+iError :: GQLError -> GQLError
+iError x = internal ("INTROSPECTION" <> x)
+
+getType :: MonadResolver m => TypeName -> m TypeDef
+getType name =
   asks schema
-    >>= selectBy (internal $ "INTROSPECTION Type not Found: \"" <> msg name <> "\"") name
+    >>= selectBy (iError $ "type \"" <> msg name <> "\" not found!") name
       . typeDefinitions
 
-class RenderIntrospection a where
-  render :: (MonadResolver m) => a -> m (ResolverValue m)
+assertINTERFACE :: MonadResolver m => TypeDef -> m TypeDef
+assertINTERFACE t@TypeDefinition {typeContent = DataInterface {}} = pure t
+assertINTERFACE t = throwError $ iError $ "Type " <> msg (typeName t) <> " must be an Interface!"
 
-instance RenderIntrospection TypeName where
-  render = pure . mkString . unpackName
+type TypeDef = TypeDefinition ANY VALID
 
-instance RenderIntrospection FieldName where
-  render = pure . mkString . unpackName
+type IValue m = m (ResolverValue m)
 
-instance RenderIntrospection Description where
-  render = pure . mkString
+type IField m = (FieldName, IValue m)
 
-instance RenderIntrospection a => RenderIntrospection [a] where
-  render ls = mkList <$> traverse render ls
+class RenderI a where
+  renderI :: MonadResolver m => a -> IValue m
 
-instance RenderIntrospection a => RenderIntrospection (Maybe a) where
-  render (Just value) = render value
-  render Nothing = pure mkNull
+instance RenderI (Name t) where
+  renderI = pure . mkString . unpackName
 
-instance RenderIntrospection Bool where
-  render = pure . mkBoolean
+instance RenderI Description where
+  renderI = pure . mkString
 
-instance RenderIntrospection TypeKind where
-  render = pure . mkString . fromLBS . GQL.render
+instance RenderI a => RenderI [a] where
+  renderI ls = mkList <$> traverse renderI ls
 
-instance RenderIntrospection (DirectiveDefinition VALID) where
-  render
-    DirectiveDefinition
-      { directiveDefinitionName,
-        directiveDefinitionDescription,
-        directiveDefinitionLocations,
-        directiveDefinitionArgs
-      } =
-      pure $
-        mkObject
-          "__Directive"
-          [ renderName directiveDefinitionName,
-            description directiveDefinitionDescription,
-            ("locations", render directiveDefinitionLocations),
-            ("args", render directiveDefinitionArgs)
+instance RenderI a => RenderI (Maybe a) where
+  renderI (Just value) = renderI value
+  renderI Nothing = pure mkNull
+
+instance RenderI Bool where
+  renderI = pure . mkBoolean
+
+instance RenderI TypeKind where
+  renderI = pure . mkString . fromLBS . render
+
+instance RenderI (DirectiveDefinition VALID) where
+  renderI DirectiveDefinition {..} =
+    object
+      "__Directive"
+      [ fName directiveDefinitionName,
+        fDescription directiveDefinitionDescription,
+        ("locations", renderI directiveDefinitionLocations),
+        ("args", renderI directiveDefinitionArgs)
+      ]
+
+instance RenderI DirectiveLocation where
+  renderI locations = pure $ mkString (pack $ show locations)
+
+instance RenderI (TypeDefinition c VALID) where
+  renderI TypeDefinition {..} = renderContent typeContent
+    where
+      __type :: MonadResolver m => TypeKind -> [IField m] -> IValue m
+      __type kind = __Type kind typeName typeDescription
+      renderContent :: MonadResolver m => TypeContent bool a VALID -> IValue m
+      renderContent DataScalar {} = __type KIND_SCALAR []
+      renderContent (DataEnum enums) = __type KIND_ENUM [("enumValues", renderI enums)]
+      renderContent (DataInputObject inputFields) =
+        __type
+          KIND_INPUT_OBJECT
+          [("inputFields", renderI inputFields)]
+      renderContent DataObject {objectImplements, objectFields} =
+        __Type
+          (KIND_OBJECT Nothing)
+          typeName
+          typeDescription
+          [ ("fields", renderI objectFields),
+            ("interfaces", traverse (getType >=> assertINTERFACE) objectImplements >>= renderI)
+          ]
+      renderContent (DataUnion union) =
+        __type
+          KIND_UNION
+          [("possibleTypes", renderI $ toList union)]
+      renderContent (DataInputUnion members) =
+        __Type
+          KIND_INPUT_OBJECT
+          typeName
+          ( Just
+              ( "Note! This input is an exclusive object,\n"
+                  <> "i.e., the customer can provide a value for only one field."
+              )
+              <> typeDescription
+          )
+          [ ( "inputFields",
+              renderI (mkInputUnionFields members)
+            )
+          ]
+      renderContent (DataInterface fields) =
+        __type
+          KIND_INTERFACE
+          [ ("fields", renderI fields),
+            ("possibleTypes", asks schema >>= renderI . possibleInterfaceTypes typeName)
           ]
 
-instance RenderIntrospection DirectiveLocation where
-  render locations = pure $ mkString (pack $ show locations)
+instance RenderI (UnionMember OUT s) where
+  renderI UnionMember {memberName} = getType memberName >>= renderI
 
-instance RenderIntrospection (TypeDefinition cat VALID) where
-  render
-    TypeDefinition
-      { typeName,
-        typeDescription,
-        typeContent
-      } = pure $ renderContent typeContent
-      where
-        __type ::
-          MonadResolver m =>
-          TypeKind ->
-          [(FieldName, m (ResolverValue m))] ->
-          ResolverValue m
-        __type kind = mkType kind typeName typeDescription
-        renderContent :: MonadResolver m => TypeContent bool a VALID -> ResolverValue m
-        renderContent DataScalar {} = __type KIND_SCALAR []
-        renderContent (DataEnum enums) = __type KIND_ENUM [("enumValues", render enums)]
-        renderContent (DataInputObject inputFields) =
-          __type
-            KIND_INPUT_OBJECT
-            [("inputFields", render inputFields)]
-        renderContent DataObject {objectImplements, objectFields} =
-          createObjectType typeName typeDescription objectImplements objectFields
-        renderContent (DataUnion union) =
-          __type
-            KIND_UNION
-            [("possibleTypes", render $ toList union)]
-        renderContent (DataInputUnion members) =
-          mkType
-            KIND_INPUT_OBJECT
-            typeName
-            ( Just
-                ( "Note! This input is an exclusive object,\n"
-                    <> "i.e., the customer can provide a value for only one field."
-                )
-                <> typeDescription
-            )
-            [ ( "inputFields",
-                render (mkInputUnionFields members)
-              )
-            ]
-        renderContent (DataInterface fields) =
-          __type
-            KIND_INTERFACE
-            [ ("fields", render fields),
-              ("possibleTypes", renderPossibleTypes typeName)
-            ]
+instance RenderI (FieldDefinition cat s) => RenderI (FieldsDefinition cat s) where
+  renderI = renderI . filter fieldVisibility . toList
 
-instance RenderIntrospection (UnionMember OUT s) where
-  render UnionMember {memberName} = selectType memberName >>= render
+instance RenderI (FieldContent TRUE IN VALID) where
+  renderI = renderI . defaultInputValue
 
-instance
-  RenderIntrospection (FieldDefinition cat s) =>
-  RenderIntrospection (FieldsDefinition cat s)
-  where
-  render = render . filter fieldVisibility . toList
+instance RenderI (Value VALID) where
+  renderI Null = pure mkNull
+  renderI x = pure $ mkString $ fromLBS $ render x
 
-instance RenderIntrospection (FieldContent TRUE IN VALID) where
-  render = render . defaultInputValue
+instance RenderI (FieldDefinition OUT VALID) where
+  renderI FieldDefinition {..} =
+    object "__Field" $
+      [ fName fieldName,
+        fDescription fieldDescription,
+        fType fieldType,
+        ("args", maybe (pure $ mkList []) renderI fieldContent)
+      ]
+        <> fDeprecated fieldDirectives
 
-instance RenderIntrospection (Value VALID) where
-  render Null = pure mkNull
-  render x = pure $ mkString $ fromLBS $ GQL.render x
+instance RenderI (FieldContent TRUE OUT VALID) where
+  renderI (FieldArgs args) = renderI args
 
-instance RenderIntrospection (FieldDefinition OUT VALID) where
-  render FieldDefinition {..} =
-    pure $
-      mkObject "__Field" $
-        [ renderName fieldName,
-          description fieldDescription,
-          type' fieldType,
-          ("args", maybe (pure $ mkList []) render fieldContent)
-        ]
-          <> renderDeprecated fieldDirectives
+instance RenderI (ArgumentsDefinition VALID) where
+  renderI = fmap mkList . traverse (renderI . argument) . toList
 
-instance RenderIntrospection (FieldContent TRUE OUT VALID) where
-  render (FieldArgs args) = render args
+instance RenderI (FieldDefinition IN VALID) where
+  renderI FieldDefinition {..} =
+    object
+      "__InputValue"
+      [ fName fieldName,
+        fDescription fieldDescription,
+        fType fieldType,
+        fDefaultValue fieldContent
+      ]
 
-instance RenderIntrospection (ArgumentsDefinition VALID) where
-  render = fmap mkList . traverse (render . argument) . toList
+instance RenderI (DataEnumValue VALID) where
+  renderI DataEnumValue {..} =
+    object "__EnumValue" $
+      [ fName enumName,
+        fDescription enumDescription
+      ]
+        <> fDeprecated enumDirectives
 
-instance RenderIntrospection (FieldDefinition IN VALID) where
-  render FieldDefinition {..} =
-    pure $
-      mkObject
-        "__InputValue"
-        [ renderName fieldName,
-          description fieldDescription,
-          type' fieldType,
-          defaultValue fieldContent
-        ]
-
-instance RenderIntrospection (DataEnumValue VALID) where
-  render DataEnumValue {enumName, enumDescription, enumDirectives} =
-    pure $
-      mkObject "__Field" $
-        [ renderName enumName,
-          description enumDescription
-        ]
-          <> renderDeprecated enumDirectives
-
-instance RenderIntrospection TypeRef where
-  render TypeRef {typeConName, typeWrappers} = renderWrapper typeWrappers
+instance RenderI TypeRef where
+  renderI TypeRef {..} = renderWrapper typeWrappers
     where
-      renderWrapper :: (Monad m, MonadResolver m) => TypeWrapper -> m (ResolverValue m)
       renderWrapper (TypeList nextWrapper isNonNull) =
-        pure $
-          withNonNull isNonNull $
-            mkObject
-              "__Type"
-              [ renderKind KIND_LIST,
-                ("ofType", renderWrapper nextWrapper)
-              ]
+        withNonNull isNonNull $ wrapper KIND_LIST (renderWrapper nextWrapper)
       renderWrapper (BaseType isNonNull) =
-        withNonNull isNonNull <$> do
-          kind <- kindOf <$> selectType typeConName
-          pure $ mkType kind typeConName Nothing []
+        withNonNull isNonNull $ do
+          kind <- kindOf <$> getType typeConName
+          __Type kind typeConName Nothing []
 
-withNonNull ::
+withNonNull :: MonadResolver m => Bool -> IValue m -> IValue m
+withNonNull True = wrapper KIND_NON_NULL
+withNonNull False = id
+
+__Type ::
   MonadResolver m =>
-  Bool ->
-  ResolverValue m ->
-  ResolverValue m
-withNonNull True contentType =
-  mkObject
-    "__Type"
-    [ renderKind KIND_NON_NULL,
-      ("ofType", pure contentType)
-    ]
-withNonNull False contentType = contentType
-
-renderPossibleTypes ::
-  MonadResolver m =>
-  TypeName ->
-  m (ResolverValue m)
-renderPossibleTypes name = mkList <$> (asks schema >>= traverse render . possibleInterfaceTypes name)
-
-renderDeprecated ::
-  MonadResolver m =>
-  Directives s ->
-  [(FieldName, m (ResolverValue m))]
-renderDeprecated dirs =
-  [ ("isDeprecated", render (isJust $ lookupDeprecated dirs)),
-    ("deprecationReason", render (lookupDeprecated dirs >>= lookupDeprecatedReason))
-  ]
-
-description ::
-  MonadResolver m =>
-  Maybe Description ->
-  (FieldName, m (ResolverValue m))
-description = ("description",) . render
-
-mkType ::
-  ( RenderIntrospection name,
-    MonadResolver m
-  ) =>
   TypeKind ->
-  name ->
+  Name t ->
   Maybe Description ->
-  [(FieldName, m (ResolverValue m))] ->
-  ResolverValue m
-mkType kind name desc etc =
-  mkObject
+  [IField m] ->
+  IValue m
+__Type kind name desc etc =
+  object
     "__Type"
-    ( [ renderKind kind,
-        renderName name,
-        description desc
+    ( [ fKind kind,
+        fName name,
+        fDescription desc
       ]
         <> etc
     )
 
-createObjectType ::
-  (MonadResolver m) =>
-  TypeName ->
-  Maybe Description ->
-  [TypeName] ->
-  FieldsDefinition OUT VALID ->
-  ResolverValue m
-createObjectType name desc interfaces fields =
-  mkType (KIND_OBJECT Nothing) name desc [("fields", render fields), ("interfaces", mkList <$> traverse implementedInterface interfaces)]
+wrapper :: MonadResolver m => TypeKind -> IValue m -> IValue m
+wrapper k t =
+  object
+    "__Type"
+    [ fKind k,
+      ("ofType", t)
+    ]
 
-implementedInterface ::
-  (MonadResolver m) =>
-  TypeName ->
-  m (ResolverValue m)
-implementedInterface name =
-  selectType name
-    >>= renderContent
-  where
-    renderContent typeDef@TypeDefinition {typeContent = DataInterface {}} = render typeDef
-    renderContent _ = throwError $ internal $ "Type " <> msg name <> " must be an Interface"
+object :: Monad m => TypeName -> [IField m] -> IValue m
+object name = pure . mkObject name
 
-renderName ::
-  ( RenderIntrospection name,
-    MonadResolver m
-  ) =>
-  name ->
-  (FieldName, m (ResolverValue m))
-renderName = ("name",) . render
+fDeprecated :: MonadResolver m => Directives s -> [IField m]
+fDeprecated dirs =
+  [ ("isDeprecated", renderI (isJust $ lookupDeprecated dirs)),
+    ("deprecationReason", renderI (lookupDeprecated dirs >>= lookupDeprecatedReason))
+  ]
 
-renderKind ::
-  MonadResolver m =>
-  TypeKind ->
-  (FieldName, m (ResolverValue m))
-renderKind = ("kind",) . render
+fDescription :: MonadResolver m => Maybe Description -> IField m
+fDescription = ("description",) . renderI
 
-type' ::
-  MonadResolver m =>
-  TypeRef ->
-  (FieldName, m (ResolverValue m))
-type' = ("type",) . render
+fName :: MonadResolver m => Name t -> IField m
+fName = ("name",) . renderI
 
-defaultValue ::
-  MonadResolver m =>
-  Maybe (FieldContent TRUE IN VALID) ->
-  ( FieldName,
-    m (ResolverValue m)
-  )
-defaultValue = ("defaultValue",) . render
+fKind :: MonadResolver m => TypeKind -> IField m
+fKind = ("kind",) . renderI
+
+fType :: MonadResolver m => TypeRef -> IField m
+fType = ("type",) . renderI
+
+fDefaultValue :: MonadResolver m => Maybe (FieldContent TRUE IN VALID) -> IField m
+fDefaultValue = ("defaultValue",) . renderI

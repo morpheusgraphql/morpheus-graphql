@@ -22,12 +22,10 @@ import Data.Morpheus.App.Internal.Resolving.Types
     mkObject,
   )
 import Data.Morpheus.App.RenderIntrospection
-  ( createObjectType,
-    render,
+  ( renderI,
   )
 import Data.Morpheus.Internal.Utils
-  ( empty,
-    selectOr,
+  ( selectOr,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
@@ -45,16 +43,15 @@ import Data.Morpheus.Types.Internal.AST
     typeDefinitions,
   )
 import Relude hiding (empty)
-import qualified Relude as HM
 
 resolveTypes :: MonadResolver m => Schema VALID -> m (ResolverValue m)
-resolveTypes schema = mkList <$> traverse render (toList $ typeDefinitions schema)
+resolveTypes schema = mkList <$> traverse renderI (toList $ typeDefinitions schema)
 
 renderOperation ::
   MonadResolver m =>
   Maybe (TypeDefinition OBJECT VALID) ->
   m (ResolverValue m)
-renderOperation (Just TypeDefinition {typeName}) = pure $ createObjectType typeName Nothing [] empty
+renderOperation (Just t) = renderI t
 renderOperation Nothing = pure mkNull
 
 findType ::
@@ -62,7 +59,7 @@ findType ::
   TypeName ->
   Schema VALID ->
   m (ResolverValue m)
-findType name = selectOr (pure mkNull) render name . typeDefinitions
+findType name = selectOr (pure mkNull) renderI name . typeDefinitions
 
 schemaResolver ::
   MonadResolver m =>
@@ -76,7 +73,7 @@ schemaResolver schema@Schema {query, mutation, subscription, directiveDefinition
         ("queryType", renderOperation (Just query)),
         ("mutationType", renderOperation mutation),
         ("subscriptionType", renderOperation subscription),
-        ("directives", render $ sortWith directiveDefinitionName $ toList directiveDefinitions)
+        ("directives", renderI $ sortWith directiveDefinitionName $ toList directiveDefinitions)
       ]
 
 schemaAPI ::
@@ -87,7 +84,7 @@ schemaAPI ::
   ObjectTypeResolver m
 schemaAPI schema =
   ObjectTypeResolver
-    ( HM.fromList
+    ( fromList
         [ ("__type", withArguments typeResolver),
           ("__schema", schemaResolver schema)
         ]
