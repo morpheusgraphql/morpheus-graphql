@@ -12,7 +12,7 @@ where
 
 import Data.Morpheus.App.Internal.Resolving.MonadResolver
   ( MonadResolver (..),
-    withArguments,
+    getArgument,
   )
 import Data.Morpheus.App.Internal.Resolving.Types
   ( ObjectTypeResolver (..),
@@ -25,13 +25,9 @@ import Data.Morpheus.App.RenderIntrospection
   )
 import Data.Morpheus.Internal.Utils
   ( lookup,
-    selectOr,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( Argument (..),
-    Arguments,
-    DirectiveDefinition (..),
-    FieldName,
+  ( DirectiveDefinition (..),
     QUERY,
     ScalarValue (..),
     Schema (..),
@@ -57,14 +53,9 @@ resolveSchema schema@Schema {..} =
         ("directives", renderI $ sortWith directiveDefinitionName $ toList directiveDefinitions)
       ]
 
-resolveType :: MonadResolver m => Schema VALID -> Arguments VALID -> m (ResolverValue m)
-resolveType schema = selectOr (pure mkNull) handleArg ("name" :: FieldName)
-  where
-    handleArg
-      Argument
-        { argumentValue = (Scalar (String typename))
-        } = renderI $ lookup (packName typename) (typeDefinitions schema)
-    handleArg _ = pure mkNull
+resolveType :: MonadResolver m => Schema VALID -> Value VALID -> m (ResolverValue m)
+resolveType schema (Scalar (String typename)) = renderI $ lookup (packName typename) (typeDefinitions schema)
+resolveType _ _ = pure mkNull
 
 schemaAPI ::
   ( MonadOperation m ~ QUERY,
@@ -75,7 +66,7 @@ schemaAPI ::
 schemaAPI schema =
   ObjectTypeResolver
     ( fromList
-        [ ("__type", withArguments (resolveType schema)),
+        [ ("__type", getArgument "name" >>= resolveType schema),
           ("__schema", resolveSchema schema)
         ]
     )
