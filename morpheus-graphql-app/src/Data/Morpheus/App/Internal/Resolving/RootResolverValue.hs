@@ -88,11 +88,11 @@ runRootResolverValue
       subscriptionResolver,
       channelMap
     }
-  ctx@ResolverContext {operation = Operation {..}, ..} =
+  ctx@ResolverContext {operation = Operation {..}} =
     selectByOperation operationType
     where
       selectByOperation OPERATION_QUERY =
-        runResolver channelMap (rootResolver (withIntroFields schema <$> queryResolver) operationSelection) ctx
+        runResolver channelMap (rootResolver (withIntroFields <$> queryResolver) operationSelection) ctx
       selectByOperation OPERATION_MUTATION =
         runResolver channelMap (rootResolver mutationResolver operationSelection) ctx
       selectByOperation OPERATION_SUBSCRIPTION =
@@ -106,16 +106,16 @@ runRootResolverValue
         where
           queryResolver = do
             name <- asks (typeName . query . schema)
-            resolveNamedRoot name (withNamedIntroFields name ctx queryResolverMap) operationSelection
+            resolveNamedRoot name (withNamedIntroFields name queryResolverMap) operationSelection
       selectByOperation _ = throwError "mutation and subscription is not supported for namedResolvers"
 
-withNamedIntroFields :: (MonadResolver m, MonadOperation m ~ QUERY) => TypeName -> ResolverContext -> ResolverMap m -> ResolverMap m
-withNamedIntroFields queryName ResolverContext {..} = adjust updateNamed queryName
+withNamedIntroFields :: (MonadResolver m, MonadOperation m ~ QUERY) => TypeName -> ResolverMap m -> ResolverMap m
+withNamedIntroFields = adjust updateNamed
   where
     updateNamed NamedResolver {..} = NamedResolver {resolverFun = const (updateResult <$> resolverFun ["ROOT"]), ..}
       where
-        updateResult [NamedObjectResolver obj] = [NamedObjectResolver (withIntroFields schema obj)]
+        updateResult [NamedObjectResolver obj] = [NamedObjectResolver (withIntroFields obj)]
         updateResult value = value
 
-withIntroFields :: (MonadResolver m, MonadOperation m ~ QUERY) => Schema VALID -> ObjectTypeResolver m -> ObjectTypeResolver m
-withIntroFields schema (ObjectTypeResolver fields) = ObjectTypeResolver (fields <> objectFields (schemaAPI schema))
+withIntroFields :: (MonadResolver m, MonadOperation m ~ QUERY) => ObjectTypeResolver m -> ObjectTypeResolver m
+withIntroFields (ObjectTypeResolver fields) = ObjectTypeResolver (fields <> objectFields schemaAPI)

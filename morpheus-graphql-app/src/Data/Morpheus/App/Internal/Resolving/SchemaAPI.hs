@@ -12,7 +12,7 @@ where
 
 import Data.Morpheus.App.Internal.Resolving.MonadResolver
   ( MonadResolver (..),
-    ResolverContext (schema),
+    ResolverContext (..),
     getArgument,
   )
 import Data.Morpheus.App.Internal.Resolving.Types
@@ -51,20 +51,19 @@ resolveSchema schema@Schema {..} =
         ("directives", renderI $ sortWith directiveDefinitionName $ toList directiveDefinitions)
       ]
 
-resolveType :: MonadResolver m => Value VALID -> m (ResolverValue m)
-resolveType (Scalar (String typename)) = asks schema >>= renderI . lookup (packName typename) . typeDefinitions
+resolveType :: (MonadResolver m) => Value VALID -> m (ResolverValue m)
+resolveType (Scalar (String typename)) = asks (typeDefinitions . schema) >>= renderI . lookup (packName typename)
 resolveType _ = pure mkNull
 
 schemaAPI ::
   ( MonadOperation m ~ QUERY,
     MonadResolver m
   ) =>
-  Schema VALID ->
   ObjectTypeResolver m
-schemaAPI schema =
+schemaAPI =
   ObjectTypeResolver
     ( fromList
         [ ("__type", getArgument "name" >>= resolveType),
-          ("__schema", resolveSchema schema)
+          ("__schema", asks schema >>= resolveSchema)
         ]
     )
