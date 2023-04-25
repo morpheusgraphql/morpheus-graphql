@@ -17,7 +17,6 @@ import Data.Morpheus.App.Internal.Resolving.MonadResolver
 import Data.Morpheus.App.Internal.Resolving.Types
   ( ObjectTypeResolver (..),
     ResolverValue,
-    mkList,
     mkNull,
     mkObject,
   )
@@ -25,41 +24,22 @@ import Data.Morpheus.App.RenderIntrospection
   ( renderI,
   )
 import Data.Morpheus.Internal.Utils
-  ( selectOr,
+  ( lookup,
+    selectOr,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
     DirectiveDefinition (..),
     FieldName,
-    OBJECT,
     QUERY,
     ScalarValue (..),
     Schema (..),
-    TypeDefinition (..),
-    TypeName,
     VALID,
     Value (..),
     packName,
     typeDefinitions,
   )
 import Relude hiding (empty)
-
-resolveTypes :: MonadResolver m => Schema VALID -> m (ResolverValue m)
-resolveTypes schema = mkList <$> traverse renderI (toList $ typeDefinitions schema)
-
-renderOperation ::
-  MonadResolver m =>
-  Maybe (TypeDefinition OBJECT VALID) ->
-  m (ResolverValue m)
-renderOperation (Just t) = renderI t
-renderOperation Nothing = pure mkNull
-
-findType ::
-  MonadResolver m =>
-  TypeName ->
-  Schema VALID ->
-  m (ResolverValue m)
-findType name = selectOr (pure mkNull) renderI name . typeDefinitions
 
 schemaResolver ::
   MonadResolver m =>
@@ -69,10 +49,10 @@ schemaResolver schema@Schema {query, mutation, subscription, directiveDefinition
   pure $
     mkObject
       "__Schema"
-      [ ("types", resolveTypes schema),
-        ("queryType", renderOperation (Just query)),
-        ("mutationType", renderOperation mutation),
-        ("subscriptionType", renderOperation subscription),
+      [ ("types", renderI $ toList $ typeDefinitions schema),
+        ("queryType", renderI (Just query)),
+        ("mutationType", renderI mutation),
+        ("subscriptionType", renderI subscription),
         ("directives", renderI $ sortWith directiveDefinitionName $ toList directiveDefinitions)
       ]
 
@@ -95,5 +75,5 @@ schemaAPI schema =
         handleArg
           Argument
             { argumentValue = (Scalar (String typename))
-            } = findType (packName typename) schema
+            } = renderI $ lookup (packName typename) (typeDefinitions schema)
         handleArg _ = pure mkNull
