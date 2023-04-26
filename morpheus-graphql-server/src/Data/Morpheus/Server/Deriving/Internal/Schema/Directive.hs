@@ -27,7 +27,6 @@ module Data.Morpheus.Server.Deriving.Internal.Schema.Directive
     visitFieldName,
     toFieldRes,
     UseDeriving (..),
-    exploreDirectives,
     deriveDirectiveDefinition,
   )
 where
@@ -42,15 +41,12 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Internal
 import Data.Morpheus.Server.Deriving.Utils.GRep
   ( GRepField (..),
   )
-import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef)
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
     inputType,
   )
 import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
-  ( NodeDerivation (DirectiveDerivation),
-    SchemaBuilder,
-    derivations,
+  ( SchemaBuilder,
   )
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseDeriving (..),
@@ -108,12 +104,6 @@ deriveDirectiveDefinition options proxy = do
 deriveDirectiveUsages :: UseDeriving gql args -> [GDirectiveUsage gql args] -> SchemaBuilder (Directives CONST)
 deriveDirectiveUsages options = fmap unsafeFromList . traverse (toDirectiveTuple options)
 
-exploreDirectives :: UseDeriving gql args -> [GDirectiveUsage gql args] -> [ScanRef gql]
-exploreDirectives UseDeriving {..} = concatMap (exploreDirective drvGQL)
-
-exploreDirective :: UseGQLType gql -> GDirectiveUsage gql args -> [ScanRef gql]
-exploreDirective UseGQLType {..} (GDirectiveUsage x) = useExploreRef $ inputType $ Identity x
-
 encodeDirectiveArguments :: val a => UseValue val -> a -> SchemaBuilder (Arguments CONST)
 encodeDirectiveArguments val x = resultOr (const $ throwError err) pure (useEncodeValue val x) >>= unpackValue
   where
@@ -127,9 +117,6 @@ toDirectiveTuple ::
   GDirectiveUsage gql args ->
   SchemaBuilder (FieldName, Directive CONST)
 toDirectiveTuple drv (GDirectiveUsage x) = do
-  dir <- deriveDirectiveDefinition drv (Identity x)
-  derivations [DirectiveDerivation fingerprint dir]
-  let directiveName = deriveDirectiveName (drvGQL drv) (Identity x)
   args <- toList <$> encodeDirectiveArguments (drvArgs drv) x
   directiveArgs <- fromElems (map editArg args)
   pure
@@ -141,7 +128,7 @@ toDirectiveTuple drv (GDirectiveUsage x) = do
         }
     )
   where
-    fingerprint = useFingerprint (drvGQL drv) $ inputType (Identity x)
+    directiveName = deriveDirectiveName (drvGQL drv) (Identity x)
     editArg Argument {..} = Argument {argumentName = applyGQLFieldOptions drv (Identity x) argumentName, ..}
 
 getDirHM :: (Ord k, Hashable k, Empty a) => k -> HashMap k a -> a

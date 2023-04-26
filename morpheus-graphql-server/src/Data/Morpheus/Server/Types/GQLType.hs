@@ -44,7 +44,6 @@ import Data.Morpheus.App.Internal.Resolving
   )
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Internal.Utils (singleton)
-import Data.Morpheus.Server.Deriving.Internal.Schema.Directive (exploreDirectives)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Type
   ( deriveInterfaceDefinition,
     fillTypeContent,
@@ -62,7 +61,7 @@ import Data.Morpheus.Server.Deriving.Kinded.Type
   )
 import Data.Morpheus.Server.Deriving.Kinded.Value (KindedValue (..))
 import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef (..))
-import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (..), KindedProxy (KindedProxy), catMap, isIN)
+import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (..), KindedProxy (KindedProxy), catMap, inputType, isIN)
 import Data.Morpheus.Server.Deriving.Utils.Proxy (ContextValue (..), symbolName)
 import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
   ( GQLNode (..),
@@ -78,7 +77,8 @@ import Data.Morpheus.Server.Deriving.Utils.Use
     UseValue (..),
   )
 import Data.Morpheus.Server.Types.Directives
-  ( GDirectiveUsages (..),
+  ( GDirectiveUsage (..),
+    GDirectiveUsages (..),
     GQLDirective (..),
     allUsages,
     applyTypeName,
@@ -331,8 +331,7 @@ instance (KnownSymbol name, GQLType value) => GQLType (Arg name value) where
   type KIND (Arg name value) = CUSTOM
   __type = __type . catMap (Proxy @value)
   __deriveType OutputType = cantBeInputType (OutputType :: CatType OUT (Arg name value))
-  __deriveType p@InputType = fmap GQLTypeNode $ do
-    fillTypeContent withDir p content
+  __deriveType p@InputType = GQLTypeNode <$> fillTypeContent withDir p content
     where
       content :: TypeContent TRUE IN CONST
       content = DataInputObject (singleton argName field)
@@ -350,7 +349,7 @@ instance (DERIVE_TYPE GQLType i, DERIVE_TYPE GQLType u) => GQLType (TypeGuard i 
   __deriveType OutputType = do
     unions <- deriveTypeGuardUnions withDir union
     derivations [ImplementsDerivation (useTypename withGQL interface) unions]
-    fmap GQLTypeNode $ deriveInterfaceDefinition withDir interface
+    GQLTypeNode <$> deriveInterfaceDefinition withDir interface
     where
       interface = OutputType :: CatType OUT i
       union = OutputType :: CatType OUT u
@@ -416,7 +415,10 @@ withGQL =
   where
     f p =
       __exploreRef p
-        <> exploreDirectives withDir (allUsages (directives p))
+        <> concatMap exploreDirective (allUsages (directives p))
+
+exploreDirective :: GDirectiveUsage GQLType GQLValue -> [ScanRef GQLType]
+exploreDirective (GDirectiveUsage x) = __exploreRef $ inputType $ Identity x
 
 constraintType :: Applicative f => GQLNode c -> f (TypeDefinition c CONST)
 constraintType node = case node of

@@ -68,29 +68,27 @@ type DERIVE_TYPE gql a =
 
 -- | DeriveType With specific Kind: 'kind': object, scalar, enum ...
 class DeriveKindedType ctx (k :: DerivingKind) a where
-  deriveKindedType ::
-    ctx ~ UseDeriving gql v =>
-    ctx ->
-    CatType cat (f k a) ->
-    SchemaBuilder (GQLNode cat)
+  deriveKindedType :: ctx ~ UseDeriving gql v => ctx -> CatType cat (f k a) -> SchemaBuilder (GQLNode cat)
   exploreKindedRefs :: ctx ~ UseDeriving gql v => ctx -> CatType cat (f k a) -> [ScanRef gql]
 
 instance (gql a, ctx ~ UseDeriving gql v) => DeriveKindedType ctx WRAPPER (f a) where
   deriveKindedType UseDeriving {..} = useDeriveNode drvGQL . catMap (Proxy @a)
   exploreKindedRefs UseDeriving {..} = useExploreRef drvGQL . catMap (Proxy @a)
 
+scanLeaf :: (c a, gql a) => UseGQLType gql -> CatType k a -> [ScanRef c]
+scanLeaf gql p = [ScanLeaf (useFingerprint gql p) p]
+
+scanNode :: (c a, gql a, Gmap c (Rep a)) => UseGQLType gql -> CatType k a -> [ScanRef c]
+scanNode gql p = [ScanNode (useFingerprint gql p) p]
+
 instance (DecodeScalar a, gql a, ctx ~ UseDeriving gql v) => DeriveKindedType ctx SCALAR a where
   deriveKindedType drv = fmap GQLTypeNode . deriveScalarDefinition scalarValidator drv . unliftKind
-  exploreKindedRefs UseDeriving {..} proxy = [ScanLeaf (useFingerprint drvGQL p) p]
-    where
-      p = catMap (Proxy @a) proxy
+  exploreKindedRefs UseDeriving {..} proxy = scanLeaf drvGQL (catMap (Proxy @a) proxy)
 
 instance (DERIVE_TYPE gql a, Gmap gql (Rep a), ctx ~ UseDeriving gql v) => DeriveKindedType ctx TYPE a where
   deriveKindedType drv = fmap GQLTypeNode . deriveTypeDefinition drv . unliftKind
-  exploreKindedRefs UseDeriving {..} proxy = [ScanNode (useFingerprint drvGQL p) p]
-    where
-      p = catMap (Proxy @a) proxy
+  exploreKindedRefs UseDeriving {..} proxy = scanNode drvGQL (catMap (Proxy @a) proxy)
 
 instance (ctx ~ UseDeriving gql v, GQLDirective a, gql a, v a, Gmap gql (Rep a)) => DeriveKindedType ctx DIRECTIVE a where
   deriveKindedType drv _ = GQLDirectiveNode <$> deriveDirectiveDefinition drv (Proxy @a)
-  exploreKindedRefs UseDeriving {..} proxy = [] -- TODO: find out
+  exploreKindedRefs UseDeriving {..} proxy = scanLeaf drvGQL (catMap (Proxy @a) proxy)
