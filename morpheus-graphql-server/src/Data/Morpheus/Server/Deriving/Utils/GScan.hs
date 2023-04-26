@@ -20,8 +20,7 @@ module Data.Morpheus.Server.Deriving.Utils.GScan
   )
 where
 
-import qualified Data.HashMap.Strict as HM
-import qualified Data.Map as M
+import Data.HashMap.Strict (fromList, insert, member)
 import Data.Morpheus.Server.Deriving.Utils.Gmap
   ( Gmap,
     GmapContext (..),
@@ -30,10 +29,10 @@ import Data.Morpheus.Server.Deriving.Utils.Gmap
 import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (InputType, OutputType), inputType, outputType)
 import Data.Morpheus.Server.Types.TypeName (TypeFingerprint)
 import GHC.Generics (Generic (Rep))
-import Relude
+import Relude hiding (fromList)
 
 useProxies :: (Hashable k, Eq k) => (ScanProxy c -> [v]) -> (v -> k) -> [ScanProxy c] -> HashMap k v
-useProxies toValue toKey = HM.fromList . map (\x -> (toKey x, x)) . concatMap toValue
+useProxies toValue toKey = fromList . map (\x -> (toKey x, x)) . concatMap toValue
 
 scan :: Scanner c -> [ScanRef c] -> [ScanProxy c]
 scan ctx = toList . scanRefs ctx mempty
@@ -49,21 +48,21 @@ mapContext InputType (Scanner f) = GmapContext (f . inputType)
 rep :: f a -> Proxy (Rep a)
 rep _ = Proxy
 
-visited :: Map TypeFingerprint v -> ScanRef c -> Bool
-visited lib (ScanNode fp _) = M.member fp lib
-visited lib (ScanLeaf fp _) = M.member fp lib
+visited :: HashMap TypeFingerprint v -> ScanRef c -> Bool
+visited lib (ScanNode fp _) = member fp lib
+visited lib (ScanLeaf fp _) = member fp lib
 
 getFingerprint :: ScanRef c -> TypeFingerprint
 getFingerprint (ScanNode fp _) = fp
 getFingerprint (ScanLeaf fp _) = fp
 
-type ProxyLib c = Map TypeFingerprint (ScanProxy c)
+type ProxyLib c = HashMap TypeFingerprint (ScanProxy c)
 
 scanRefs :: Scanner c -> ProxyLib c -> [ScanRef c] -> ProxyLib c
 scanRefs _ lib [] = lib
 scanRefs ctx lib (x : xs) = do
   let values = runRef x
-  let newLib = foldr (M.insert (getFingerprint x)) lib values
+  let newLib = foldr (insert (getFingerprint x)) lib values
   let refs = filter (not . visited newLib) (xs <> fieldRefs ctx x)
   scanRefs ctx newLib refs
 

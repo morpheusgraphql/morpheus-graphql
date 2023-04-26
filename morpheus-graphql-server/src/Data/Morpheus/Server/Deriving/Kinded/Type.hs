@@ -91,4 +91,4 @@ instance (DERIVE_TYPE gql a, Gmap gql (Rep a), ctx ~ UseDeriving gql v) => Deriv
 
 instance (ctx ~ UseDeriving gql v, GQLDirective a, gql a, v a, Gmap gql (Rep a)) => DeriveKindedType ctx DIRECTIVE a where
   deriveKindedType drv _ = GQLDirectiveNode <$> deriveDirectiveDefinition drv (Proxy @a)
-  exploreKindedRefs UseDeriving {..} proxy = scanLeaf drvGQL (catMap (Proxy @a) proxy)
+  exploreKindedRefs UseDeriving {..} proxy = scanNode drvGQL (catMap (Proxy @a) proxy)
