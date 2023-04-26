@@ -35,9 +35,7 @@ import Data.Morpheus.Server.Deriving.Utils.GScan
     scan,
   )
 import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
-  ( NodeDerivation (..),
-    SchemaBuilder,
-    derivations,
+  ( SchemaBuilder,
     resolveGQLNode,
     toSchema,
   )
@@ -52,7 +50,6 @@ import Data.Morpheus.Types.Internal.AST
   ( CONST,
     OUT,
     Schema (..),
-    toAny,
   )
 import Language.Haskell.TH (Exp, Q)
 import Relude
