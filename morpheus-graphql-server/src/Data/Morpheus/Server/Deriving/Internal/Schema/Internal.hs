@@ -38,7 +38,7 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
     inputType,
   )
 import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder (SchemaBuilder)
-import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (..), useDeriveType)
+import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (..))
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition,
     CONST,

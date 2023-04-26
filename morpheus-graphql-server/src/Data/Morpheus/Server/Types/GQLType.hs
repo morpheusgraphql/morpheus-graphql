@@ -214,10 +214,6 @@ class GQLType a where
   default __deriveType :: DERIVE_T a => CatType c a -> SchemaBuilder (GQLNode c)
   __deriveType = deriveKindedType withDir . lifted
 
-  -- __deriveNode :: CatType c a -> SchemaBuilder (GQLNode c)
-  -- default __deriveNode :: CatType c a -> SchemaBuilder (GQLNode c)
-  -- __deriveNode = fmap GQLTypeNode . __deriveType
-
   __exploreRef :: CatType c a -> [ScanRef GQLType]
   default __exploreRef :: DERIVE_T a => CatType c a -> [ScanRef GQLType]
   __exploreRef = exploreKindedRefs withDir . lifted
@@ -257,7 +253,7 @@ instance GQLType ID where
 instance GQLType (Value CONST) where
   type KIND (Value CONST) = CUSTOM
   __type = mkTypeData "INTERNAL_VALUE"
-  __deriveType = deriveScalarDefinition (const $ ScalarDefinition pure) withDir
+  __deriveType = fmap GQLTypeNode . deriveScalarDefinition (const $ ScalarDefinition pure) withDir
 
   -- __exploreTypes _ = []
   __exploreRef _ = []
@@ -335,7 +331,7 @@ instance (KnownSymbol name, GQLType value) => GQLType (Arg name value) where
   type KIND (Arg name value) = CUSTOM
   __type = __type . catMap (Proxy @value)
   __deriveType OutputType = cantBeInputType (OutputType :: CatType OUT (Arg name value))
-  __deriveType p@InputType = do
+  __deriveType p@InputType = fmap GQLTypeNode $ do
     fillTypeContent withDir p content
     where
       content :: TypeContent TRUE IN CONST
@@ -354,7 +350,7 @@ instance (DERIVE_TYPE GQLType i, DERIVE_TYPE GQLType u) => GQLType (TypeGuard i 
   __deriveType OutputType = do
     unions <- deriveTypeGuardUnions withDir union
     derivations [ImplementsDerivation (useTypename withGQL interface) unions]
-    deriveInterfaceDefinition withDir interface
+    fmap GQLTypeNode $ deriveInterfaceDefinition withDir interface
     where
       interface = OutputType :: CatType OUT i
       union = OutputType :: CatType OUT u
