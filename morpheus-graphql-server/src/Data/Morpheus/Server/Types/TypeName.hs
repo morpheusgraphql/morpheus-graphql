@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -56,7 +57,8 @@ data TypeFingerprint
     ( Generic,
       Show,
       Eq,
-      Ord
+      Ord,
+      Hashable
     )
 
 typeableTypename :: Typeable a => f a -> TypeName
