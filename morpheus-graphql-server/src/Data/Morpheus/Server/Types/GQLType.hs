@@ -65,7 +65,8 @@ import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef (..))
 import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (..), KindedProxy (KindedProxy), catMap, isIN)
 import Data.Morpheus.Server.Deriving.Utils.Proxy (ContextValue (..), symbolName)
 import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
-  ( NodeDerivation (..),
+  ( GQLNode (..),
+    NodeDerivation (..),
     SchemaBuilder,
     derivations,
   )
@@ -212,6 +213,10 @@ class GQLType a where
   __deriveType :: CatType c a -> SchemaBuilder (TypeDefinition c CONST)
   default __deriveType :: DERIVE_T a => CatType c a -> SchemaBuilder (TypeDefinition c CONST)
   __deriveType = deriveKindedType withDir . lifted
+
+  __deriveNode :: CatType c a -> SchemaBuilder (GQLNode c)
+  default __deriveNode :: CatType c a -> SchemaBuilder (GQLNode c)
+  __deriveNode = fmap GQLTypeNode . __deriveType
 
   __exploreRef :: CatType c a -> [ScanRef GQLType]
   default __exploreRef :: DERIVE_T a => CatType c a -> [ScanRef GQLType]
@@ -407,7 +412,7 @@ withGQL =
     { useFingerprint = gqlFingerprint . __type,
       useTypename = gqlTypeName . __type,
       useTypeData = __type,
-      useDeriveNode = undefined,
+      useDeriveNode = __deriveNode,
       useDeriveType = __deriveType,
       useExploreRef = f,
       useDeriveFieldArguments = fmap FieldRep . __deriveFieldArguments
