@@ -20,8 +20,7 @@ import Data.Aeson
   ( FromJSON (..),
     eitherDecode,
   )
-import Data.ByteString.Lazy.Char8 (ByteString)
-import qualified Data.ByteString.Lazy.Char8 as L
+import Data.ByteString.Lazy.Char8 (ByteString, unpack)
 import Relude hiding (ByteString)
 import Test.Morpheus.File
   ( FileUrl (FileUrl, fileName, isDir),
@@ -89,7 +88,7 @@ requireEq f expected actual
 eqFailureMessage :: ByteString -> ByteString -> IO a3
 eqFailureMessage expected actual =
   assertFailure $
-    L.unpack $
+    unpack $
       "expected: \n\n "
         <> expected
         <> " \n\n but got: \n\n "

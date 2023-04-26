@@ -12,8 +12,9 @@ where
 
 import Data.Aeson (ToJSON (..), Value (..), encode)
 import Data.ByteString.Lazy.Char8 (unpack)
+import Data.Set (fromList)
 import GHC.Show (Show (show))
-import Relude hiding (ByteString, Show, show)
+import Relude hiding (ByteString, Show, fromList, show)
 import Test.Tasty.HUnit (assertFailure)
 
 #if MIN_VERSION_aeson(2,0,0)
@@ -25,6 +26,7 @@ import Data.HashMap.Lazy (keys, lookup)
 data Diff
   = DiffNode [(String, Diff)]
   | DiffLeaf Value Value
+  | ListOrder [(Int, Int)]
 
 instance Show Diff where
   show (DiffNode xs) = intercalate "\n" (map showField xs)
@@ -35,6 +37,11 @@ instance Show Diff where
       <> showLeaf x
       <> "but it is:"
       <> showLeaf y
+  show (ListOrder xs) =
+    "incorrect list order:" <> indent ("\n" <> intercalate "\n" (map showOrderChange xs))
+
+showOrderChange :: (Show a1, Show a2) => (a1, a2) -> String
+showOrderChange (x, y) = show x <> " -> " <> show y
 
 showLeaf :: ToJSON a => a -> [Char]
 showLeaf x = " " <> unpack (encode x) <> "\n"
@@ -51,16 +58,26 @@ indent = concatMap f
     f '\n' = "\n  "
     f x = x : ""
 
+arrayDiff :: Eq a => [a] -> [a] -> [(Int, Int)]
+arrayDiff xs ys = do
+  let as = zip [0 .. length xs] xs
+  let bs = zip [0 .. length ys] ys
+  let ids = map (\(i, a) -> (i, maybe (-1) fst (find (\(_, b) -> b == a) bs))) as
+  filter (uncurry (/=)) ids
+
 diff :: (Value, Value) -> Maybe Diff
 diff (Object beforeFields, Object afterFields) = diffNode $ map toPair ks
   where
     ks = uniq (keys (beforeFields <> afterFields))
     toPair key = (unescape (show key), (getField key beforeFields, getField key afterFields))
     getField key = fromMaybe Null . lookup key
-diff (Array beforeElems, Array afterElems) = diffNode (zip ks vs)
+diff (Array beforeElems, Array afterElems)
+  | fromList bs == fromList as && bs /= as = Just (ListOrder (arrayDiff bs as))
+  | otherwise = diffNode (zip ks (zipOptional bs as))
   where
+    bs = toList beforeElems
+    as = toList afterElems
     ks = map show ([1 ..] :: [Int])
-    vs = zipOptional (toList beforeElems) (toList afterElems)
 diff (v1, v2)
   | v1 == v2 =
       Nothing
