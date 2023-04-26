@@ -103,7 +103,7 @@ toSchema ::
   GQLResult (Schema CONST)
 toSchema (SchemaBuilder v) = do
   ((q, m, s), typeDefs) <- v
-  SchemaState {typeDefinitions, implements, directiveDefinitions} <- execUpdates mempty typeDefs
+  SchemaState {typeDefinitions, implements, directiveDefinitions} <- foldlM (&) mempty (map execNode typeDefs)
   types <- map (insertImplements implements) <$> checkTypeCollisions (toAssoc typeDefinitions)
   schema <- defineSchemaWith types (Just q, m, s)
   foldlM defineDirective schema directiveDefinitions
@@ -147,26 +147,23 @@ withSameCategory :: TypeFingerprint -> TypeFingerprint
 withSameCategory (TypeableFingerprint _ xs) = TypeableFingerprint OUT xs
 withSameCategory x = x
 
-execUpdates :: Monad m => SchemaState -> [NodeDerivation] -> m SchemaState
-execUpdates s = foldlM (&) s . map exec
-
-exec :: Monad m => NodeDerivation -> SchemaState -> m SchemaState
-exec (TypeDerivation InternalFingerprint {} _) s = pure s
-exec (TypeDerivation fp t) s = pure s {typeDefinitions = insert fp t (typeDefinitions s)}
-exec (DirectiveDerivation InternalFingerprint {} _) s = pure s
-exec (DirectiveDerivation fp d) s = pure s {directiveDefinitions = insert fp d (directiveDefinitions s)}
-exec (ImplementsDerivation interface types) s = pure $ s {implements = foldr insertInterface (implements s) types}
+execNode :: Monad m => NodeDerivation -> SchemaState -> m SchemaState
+execNode (TypeDerivation InternalFingerprint {} _) s = pure s
+execNode (TypeDerivation fp t) s = pure s {typeDefinitions = insert fp t (typeDefinitions s)}
+execNode (DirectiveDerivation InternalFingerprint {} _) s = pure s
+execNode (DirectiveDerivation fp d) s = pure s {directiveDefinitions = insert fp d (directiveDefinitions s)}
+execNode (ImplementsDerivation interface types) s = pure $ s {implements = foldr insertInterface (implements s) types}
   where
     insertInterface = alter (Just . (interface :) . fromMaybe [])
-exec (UnionType nodes) s = foldlM (&) s (map execNode nodes)
+execNode (UnionType nodes) s = foldlM (&) s (map execNodeTypeVariant nodes)
 
-execNode :: Monad m => NodeTypeVariant -> SchemaState -> m SchemaState
-execNode (NodeTypeVariant consName fields) s =
+execNodeTypeVariant :: Monad m => NodeTypeVariant -> SchemaState -> m SchemaState
+execNodeTypeVariant (NodeTypeVariant consName fields) s =
   pure s {typeDefinitions = insert fp t (typeDefinitions s)}
   where
     fp = CustomFingerprint consName
     t = mkType consName fields
-execNode NodeUnitType s = pure s {typeDefinitions = insert fp t (typeDefinitions s)}
+execNodeTypeVariant NodeUnitType s = pure s {typeDefinitions = insert fp t (typeDefinitions s)}
   where
     fp = CustomFingerprint unitTypeName
     t = mkType unitTypeName (mkEnumContent [unitTypeName])
