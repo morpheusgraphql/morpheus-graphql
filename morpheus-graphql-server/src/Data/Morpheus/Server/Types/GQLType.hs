@@ -210,13 +210,13 @@ class GQLType a where
   default __type :: Typeable a => CatType cat a -> TypeData
   __type proxy = deriveTypeData proxy (directives proxy)
 
-  __deriveType :: CatType c a -> SchemaBuilder (TypeDefinition c CONST)
-  default __deriveType :: DERIVE_T a => CatType c a -> SchemaBuilder (TypeDefinition c CONST)
+  __deriveType :: CatType c a -> SchemaBuilder (GQLNode c)
+  default __deriveType :: DERIVE_T a => CatType c a -> SchemaBuilder (GQLNode c)
   __deriveType = deriveKindedType withDir . lifted
 
-  __deriveNode :: CatType c a -> SchemaBuilder (GQLNode c)
-  default __deriveNode :: CatType c a -> SchemaBuilder (GQLNode c)
-  __deriveNode = fmap GQLTypeNode . __deriveType
+  -- __deriveNode :: CatType c a -> SchemaBuilder (GQLNode c)
+  -- default __deriveNode :: CatType c a -> SchemaBuilder (GQLNode c)
+  -- __deriveNode = fmap GQLTypeNode . __deriveType
 
   __exploreRef :: CatType c a -> [ScanRef GQLType]
   default __exploreRef :: DERIVE_T a => CatType c a -> [ScanRef GQLType]

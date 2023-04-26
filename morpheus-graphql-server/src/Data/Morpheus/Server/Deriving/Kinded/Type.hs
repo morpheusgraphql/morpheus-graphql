@@ -21,6 +21,7 @@ module Data.Morpheus.Server.Deriving.Kinded.Type
   )
 where
 
+import Data.Morpheus.Server.Deriving.Internal.Schema.Directive (deriveDirectiveDefinition, deriveTypeDirectives)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Type
   ( deriveScalarDefinition,
     deriveTypeDefinition,
@@ -37,16 +38,18 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
     unliftKind,
   )
 import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
-  ( SchemaBuilder,
+  ( GQLNode (..),
+    SchemaBuilder,
   )
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( FieldRep,
     UseDeriving (..),
     UseGQLType (..),
-    useDeriveType,
   )
+import Data.Morpheus.Server.Types.Directives (GQLDirective)
 import Data.Morpheus.Server.Types.Kind
-  ( DerivingKind,
+  ( DIRECTIVE,
+    DerivingKind,
     SCALAR,
     TYPE,
     WRAPPER,
@@ -55,12 +58,8 @@ import Data.Morpheus.Types.GQLScalar
   ( DecodeScalar (..),
     scalarValidator,
   )
-import Data.Morpheus.Types.Internal.AST
-  ( CONST,
-    TypeDefinition (..),
-  )
 import GHC.Generics (Generic (Rep))
-import Relude (Proxy (Proxy), (.))
+import Relude
 
 type DERIVE_TYPE gql a =
   ( gql a,
@@ -73,21 +72,27 @@ class DeriveKindedType ctx (k :: DerivingKind) a where
     ctx ~ UseDeriving gql v =>
     ctx ->
     CatType cat (f k a) ->
-    SchemaBuilder (TypeDefinition cat CONST)
+    SchemaBuilder (GQLNode cat)
   exploreKindedRefs :: ctx ~ UseDeriving gql v => ctx -> CatType cat (f k a) -> [ScanRef gql]
 
 instance (gql a, ctx ~ UseDeriving gql v) => DeriveKindedType ctx WRAPPER (f a) where
-  deriveKindedType UseDeriving {..} = useDeriveType drvGQL . catMap (Proxy @a)
+  deriveKindedType UseDeriving {..} = useDeriveNode drvGQL . catMap (Proxy @a)
   exploreKindedRefs UseDeriving {..} = useExploreRef drvGQL . catMap (Proxy @a)
 
 instance (DecodeScalar a, gql a, ctx ~ UseDeriving gql v) => DeriveKindedType ctx SCALAR a where
-  deriveKindedType drv = deriveScalarDefinition scalarValidator drv . unliftKind
+  deriveKindedType drv = fmap GQLTypeNode . deriveScalarDefinition scalarValidator drv . unliftKind
   exploreKindedRefs UseDeriving {..} proxy = [ScanLeaf (useFingerprint drvGQL p) p]
     where
       p = catMap (Proxy @a) proxy
 
 instance (DERIVE_TYPE gql a, Gmap gql (Rep a), ctx ~ UseDeriving gql v) => DeriveKindedType ctx TYPE a where
-  deriveKindedType drv = deriveTypeDefinition drv . unliftKind
+  deriveKindedType drv = fmap GQLTypeNode . deriveTypeDefinition drv . unliftKind
+  exploreKindedRefs UseDeriving {..} proxy = [ScanNode (useFingerprint drvGQL p) p]
+    where
+      p = catMap (Proxy @a) proxy
+
+instance (ctx ~ UseDeriving gql v, GQLDirective a, gql a, v a, Gmap gql (Rep a)) => DeriveKindedType ctx DIRECTIVE a where
+  deriveKindedType drv _ = GQLDirectiveNode <$> deriveDirectiveDefinition drv (Proxy @a)
   exploreKindedRefs UseDeriving {..} proxy = [ScanNode (useFingerprint drvGQL p) p]
     where
       p = catMap (Proxy @a) proxy

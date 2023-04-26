@@ -28,13 +28,13 @@ module Data.Morpheus.Server.Deriving.Internal.Schema.Directive
     toFieldRes,
     UseDeriving (..),
     exploreDirectives,
+    deriveDirectiveDefinition,
   )
 where
 
 import Control.Monad.Except
-import qualified Data.HashMap.Lazy as HM
 import Data.Morpheus.Internal.Ext (resultOr, unsafeFromList)
-import Data.Morpheus.Internal.Utils (Empty (..), fromElems)
+import Data.Morpheus.Internal.Utils (Empty (..), fromElems, lookup)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Internal
   ( CatType,
     deriveTypeAsArguments,
@@ -93,11 +93,8 @@ import GHC.TypeLits ()
 import Relude hiding (empty)
 
 deriveDirectiveDefinition ::
-  (gql a, GQLDirective a, args a) =>
-  UseDeriving gql args ->
-  a ->
-  SchemaBuilder (DirectiveDefinition CONST)
-deriveDirectiveDefinition options arg = do
+  (gql a, GQLDirective a, args a) => UseDeriving gql args -> f a -> SchemaBuilder (DirectiveDefinition CONST)
+deriveDirectiveDefinition options proxy = do
   directiveDefinitionArgs <- deriveTypeAsArguments (drvGQL options) proxy
   pure
     ( DirectiveDefinition
@@ -107,8 +104,6 @@ deriveDirectiveDefinition options arg = do
           directiveDefinitionLocations = getLocations proxy
         }
     )
-  where
-    proxy = Identity arg
 
 deriveDirectiveUsages :: UseDeriving gql args -> [GDirectiveUsage gql args] -> SchemaBuilder (Directives CONST)
 deriveDirectiveUsages options = fmap unsafeFromList . traverse (toDirectiveTuple options)
@@ -132,7 +127,7 @@ toDirectiveTuple ::
   GDirectiveUsage gql args ->
   SchemaBuilder (FieldName, Directive CONST)
 toDirectiveTuple drv (GDirectiveUsage x) = do
-  dir <- deriveDirectiveDefinition drv x
+  dir <- deriveDirectiveDefinition drv (Identity x)
   derivations [DirectiveDerivation fingerprint dir]
   let directiveName = deriveDirectiveName (drvGQL drv) (Identity x)
   args <- toList <$> encodeDirectiveArguments (drvArgs drv) x
@@ -150,7 +145,7 @@ toDirectiveTuple drv (GDirectiveUsage x) = do
     editArg Argument {..} = Argument {argumentName = applyGQLFieldOptions drv (Identity x) argumentName, ..}
 
 getDirHM :: (Ord k, Hashable k, Empty a) => k -> HashMap k a -> a
-getDirHM name xs = fromMaybe empty $ name `HM.lookup` xs
+getDirHM name xs = fromMaybe empty $ name `lookup` xs
 
 isIncluded :: GDirectiveUsage gql args -> Bool
 isIncluded (GDirectiveUsage x) = not $ excludeFromSchema (Identity x)

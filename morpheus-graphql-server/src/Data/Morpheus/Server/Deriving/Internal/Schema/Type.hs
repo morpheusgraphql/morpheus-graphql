@@ -56,7 +56,6 @@ import Data.Morpheus.Server.Deriving.Utils.Use
   ( FieldRep (..),
     UseGQLType (..),
     UseRef (UseRef),
-    useDeriveType,
   )
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
