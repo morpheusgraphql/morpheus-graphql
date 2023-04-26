@@ -336,6 +336,7 @@ library
       Data.Morpheus.Server.Deriving.Utils.GScan
       Data.Morpheus.Server.Deriving.Utils.Kinded
       Data.Morpheus.Server.Deriving.Utils.Proxy
+      Data.Morpheus.Server.Deriving.Utils.SchemaT
       Data.Morpheus.Server.Deriving.Utils.Use
       Data.Morpheus.Server.Playground
       Data.Morpheus.Server.Types.DirectiveDefinitions
@@ -344,7 +345,6 @@ library
       Data.Morpheus.Server.Types.Internal
       Data.Morpheus.Server.Types.Kind
       Data.Morpheus.Server.Types.NamedResolvers
-      Data.Morpheus.Server.Types.SchemaT
       Data.Morpheus.Server.Types.TypeName
       Data.Morpheus.Server.Types.Types
       Data.Morpheus.Server.Types.Visitors

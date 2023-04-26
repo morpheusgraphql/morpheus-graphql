@@ -7,7 +7,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -16,6 +15,8 @@ module Data.Morpheus.Server.Deriving.Utils.GScan
   ( Scanner (..),
     ScanRef (..),
     scan,
+    useProxies,
+    ScanProxy (..),
   )
 where
 
@@ -26,48 +27,57 @@ import Data.Morpheus.Server.Deriving.Utils.Gmap
     GmapContext (..),
     useGmap,
   )
+import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (InputType, OutputType), inputType, outputType)
 import Data.Morpheus.Server.Types.TypeName (TypeFingerprint)
 import GHC.Generics (Generic (Rep))
 import Relude
 
-scan :: (Hashable k, Eq k) => (b -> k) -> Scanner c b -> [ScanRef c] -> HashMap k b
-scan toKey ctx = HM.fromList . map (\x -> (toKey x, x)) . toList . scanRefs ctx mempty
+useProxies :: (Hashable k, Eq k) => (ScanProxy c -> [v]) -> (v -> k) -> [ScanProxy c] -> HashMap k v
+useProxies toValue toKey = HM.fromList . map (\x -> (toKey x, x)) . concatMap toValue
 
-fieldRefs :: Scanner c v -> ScanRef c -> [ScanRef c]
-fieldRefs ctx (ScanObject _ x) = useGmap (rep x) (mapContext ctx)
-fieldRefs _ ScanType {} = []
+scan :: Scanner c -> [ScanRef c] -> [ScanProxy c]
+scan ctx = toList . scanRefs ctx mempty
+
+fieldRefs :: Scanner c -> ScanRef c -> [ScanRef c]
+fieldRefs ctx (ScanNode _ x) = useGmap (rep x) (mapContext x ctx)
+fieldRefs _ ScanLeaf {} = []
+
+mapContext :: CatType k a -> Scanner c -> GmapContext c [ScanRef c]
+mapContext OutputType (Scanner f) = GmapContext (f . outputType)
+mapContext InputType (Scanner f) = GmapContext (f . inputType)
 
 rep :: f a -> Proxy (Rep a)
 rep _ = Proxy
 
 visited :: Map TypeFingerprint v -> ScanRef c -> Bool
-visited lib (ScanObject fp _) = M.member fp lib
-visited lib (ScanType fp _) = M.member fp lib
+visited lib (ScanNode fp _) = M.member fp lib
+visited lib (ScanLeaf fp _) = M.member fp lib
 
 getFingerprint :: ScanRef c -> TypeFingerprint
-getFingerprint (ScanObject fp _) = fp
-getFingerprint (ScanType fp _) = fp
+getFingerprint (ScanNode fp _) = fp
+getFingerprint (ScanLeaf fp _) = fp
 
-scanRefs :: Scanner c v -> Map TypeFingerprint v -> [ScanRef c] -> Map TypeFingerprint v
+type ProxyLib c = Map TypeFingerprint (ScanProxy c)
+
+scanRefs :: Scanner c -> ProxyLib c -> [ScanRef c] -> ProxyLib c
 scanRefs _ lib [] = lib
 scanRefs ctx lib (x : xs) = do
-  let values = runRef ctx x
+  let values = runRef x
   let newLib = foldr (M.insert (getFingerprint x)) lib values
   let refs = filter (not . visited newLib) (xs <> fieldRefs ctx x)
   scanRefs ctx newLib refs
 
-runRef :: Scanner c v -> ScanRef c -> [v]
-runRef Scanner {..} (ScanObject _ t) = scannerFun t
-runRef Scanner {..} (ScanType _ t) = scannerFun t
+data ScanProxy (c :: Type -> Constraint) where
+  ScanProxy :: c a => CatType k a -> ScanProxy c
 
-mapContext :: Scanner c v -> GmapContext c [ScanRef c]
-mapContext (Scanner _ f) = GmapContext f
+runRef :: ScanRef c -> [ScanProxy c]
+runRef (ScanNode _ p) = [ScanProxy p]
+runRef (ScanLeaf _ p) = [ScanProxy p]
 
 data ScanRef (c :: Type -> Constraint) where
-  ScanObject :: forall f a c. (Gmap c (Rep a), c a) => TypeFingerprint -> f a -> ScanRef c
-  ScanType :: forall f a c. (c a) => TypeFingerprint -> f a -> ScanRef c
+  ScanNode :: forall k a c. (Gmap c (Rep a), c a) => TypeFingerprint -> CatType k a -> ScanRef c
+  ScanLeaf :: forall k a c. (c a) => TypeFingerprint -> CatType k a -> ScanRef c
 
-data Scanner (c :: Type -> Constraint) (v :: Type) = Scanner
-  { scannerFun :: forall f a. (c a) => f a -> [v],
-    scannerRefs :: forall f a. (c a) => f a -> [ScanRef c]
+newtype Scanner (c :: Type -> Constraint) = Scanner
+  { scannerRefs :: forall k a. (c a) => CatType k a -> [ScanRef c]
   }

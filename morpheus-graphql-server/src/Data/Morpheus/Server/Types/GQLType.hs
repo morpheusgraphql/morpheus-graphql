@@ -15,9 +15,10 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 
 module Data.Morpheus.Server.Types.GQLType
-  ( GQLType (KIND, directives, __type),
+  ( GQLType (..),
     GQLValue (..),
     InputTypeNamespace (..),
     GQLResolver (..),
@@ -35,16 +36,18 @@ where
 
 import Control.Monad.Except (MonadError (throwError))
 import Data.Morpheus.App.Internal.Resolving
-  ( Resolver,
+  ( MonadResolver,
+    Resolver,
     ResolverState,
     ResolverValue,
     SubscriptionField,
   )
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Internal.Utils (singleton)
+import Data.Morpheus.Server.Deriving.Internal.Schema.Directive (exploreDirectives)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Type
-  ( fillTypeContent,
-    injectType,
+  ( deriveInterfaceDefinition,
+    fillTypeContent,
   )
 import Data.Morpheus.Server.Deriving.Kinded.Arguments
   ( DeriveFieldArguments (..),
@@ -54,14 +57,25 @@ import Data.Morpheus.Server.Deriving.Kinded.Resolver (KindedResolver (..))
 import Data.Morpheus.Server.Deriving.Kinded.Type
   ( DERIVE_TYPE,
     DeriveKindedType (..),
-    deriveInterfaceDefinition,
     deriveScalarDefinition,
     deriveTypeGuardUnions,
   )
 import Data.Morpheus.Server.Deriving.Kinded.Value (KindedValue (..))
+import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef (..))
 import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (..), KindedProxy (KindedProxy), catMap, isIN)
 import Data.Morpheus.Server.Deriving.Utils.Proxy (ContextValue (..), symbolName)
-import Data.Morpheus.Server.Deriving.Utils.Use (UseDeriving (..), UseGQLType (..), UseResolver (..), UseValue (..))
+import Data.Morpheus.Server.Deriving.Utils.SchemaT
+  ( NodeDerivation (..),
+    SchemaBuilder,
+    derivations,
+  )
+import Data.Morpheus.Server.Deriving.Utils.Use
+  ( FieldRep (..),
+    UseDeriving (..),
+    UseGQLType (..),
+    UseResolver (..),
+    UseValue (..),
+  )
 import Data.Morpheus.Server.Types.Directives
   ( GDirectiveUsages (..),
     GQLDirective (..),
@@ -80,7 +94,6 @@ import Data.Morpheus.Server.Types.Kind
     WRAPPER,
   )
 import Data.Morpheus.Server.Types.NamedResolvers (NamedResolverT (..))
-import Data.Morpheus.Server.Types.SchemaT (SchemaT, extendImplements)
 import Data.Morpheus.Server.Types.TypeName
   ( TypeFingerprint (..),
     typeableFingerprint,
@@ -165,7 +178,7 @@ type family PARAM k a where
   PARAM TYPE (t m) = t IgnoredResolver
   PARAM k a = a
 
-type DERIVE_T c a = (DeriveKindedType GQLType GQLValue c (KIND a) (Lifted a))
+type DERIVE_T a = (DeriveKindedType WITH_DERIVING (KIND a) (Lifted a))
 
 cantBeInputType :: (MonadError GQLError m, GQLType a) => CatType cat a -> m b
 cantBeInputType proxy = throwError $ internal $ "type " <> msg (gqlTypeName $ __type proxy) <> "can't be a input type"
@@ -195,15 +208,19 @@ class GQLType a where
   default __type :: Typeable a => CatType cat a -> TypeData
   __type proxy = deriveTypeData proxy (directives proxy)
 
-  __deriveType :: CatType c a -> SchemaT c (TypeDefinition c CONST)
-  default __deriveType :: DERIVE_T c a => CatType c a -> SchemaT c (TypeDefinition c CONST)
+  __deriveType :: CatType c a -> SchemaBuilder (TypeDefinition c CONST)
+  default __deriveType :: DERIVE_T a => CatType c a -> SchemaBuilder (TypeDefinition c CONST)
   __deriveType = deriveKindedType withDir . lifted
 
-  __deriveFieldArguments :: CatType c a -> SchemaT c (Maybe (ArgumentsDefinition CONST))
+  __exploreRef :: CatType c a -> [ScanRef GQLType]
+  default __exploreRef :: DERIVE_T a => CatType c a -> [ScanRef GQLType]
+  __exploreRef = exploreKindedRefs withDir . lifted
+
+  __deriveFieldArguments :: CatType c a -> SchemaBuilder (Maybe (ArgumentsDefinition CONST))
   default __deriveFieldArguments ::
-    DeriveFieldArguments GQLType (HasArguments a) =>
+    DeriveFieldArguments WITH_DERIVING (HasArguments a) =>
     CatType c a ->
-    SchemaT c (Maybe (ArgumentsDefinition CONST))
+    SchemaBuilder (Maybe (ArgumentsDefinition CONST))
   __deriveFieldArguments OutputType = deriveFieldArguments withDir (Proxy @(HasArguments a))
   __deriveFieldArguments InputType = pure Nothing
 
@@ -235,6 +252,9 @@ instance GQLType (Value CONST) where
   type KIND (Value CONST) = CUSTOM
   __type = mkTypeData "INTERNAL_VALUE"
   __deriveType = deriveScalarDefinition (const $ ScalarDefinition pure) withDir
+
+  -- __exploreTypes _ = []
+  __exploreRef _ = []
 
 -- WRAPPERS
 instance GQLType () where
@@ -270,6 +290,7 @@ instance GQLType a => GQLType (Vector a) where
 instance GQLType a => GQLType (SubscriptionField a) where
   type KIND (SubscriptionField a) = WRAPPER
   __type = __type . catMap (Proxy @a)
+  __exploreRef = __exploreRef . catMap (Proxy @a)
 
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (Pair a b) where
   directives _ = typeDirective InputTypeNamespace {inputTypeNamespace = "Input"}
@@ -281,54 +302,72 @@ instance (GQLType b, GQLType a) => GQLType (a -> b) where
   __type = __type . catMap (Proxy @b)
   __deriveType OutputType = __deriveType (OutputType :: CatType OUT b)
   __deriveType proxy = cantBeInputType proxy
+  __exploreRef _ =
+    __exploreRef (InputType :: CatType IN a)
+      <> __exploreRef (OutputType :: CatType OUT b)
 
 instance (GQLType k, GQLType v, Typeable k, Typeable v) => GQLType (Map k v) where
   type KIND (Map k v) = CUSTOM
   __type = __type . catMap (Proxy @[Pair k v])
   __deriveType = __deriveType . catMap (Proxy @[(k, v)])
+  __exploreRef = __exploreRef . catMap (Proxy @(Pair k v))
 
 instance GQLType a => GQLType (Resolver o e m a) where
   type KIND (Resolver o e m a) = CUSTOM
   __type = __type . catMap (Proxy @a)
   __deriveType = __deriveType . catMap (Proxy @a)
 
-instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (a, b) where
-  __type = __type . catMap (Proxy @(Pair a b))
+  -- __exploreTypes _ = []
+  __exploreRef = __exploreRef . catMap (Proxy @a)
+
+instance (Typeable k, Typeable v, GQLType k, GQLType v) => GQLType (k, v) where
+  __type = __type . catMap (Proxy @(Pair k v))
   directives _ = typeDirective InputTypeNamespace {inputTypeNamespace = "Input"}
+  __exploreRef = __exploreRef . catMap (Proxy @(Pair k v))
 
 instance (KnownSymbol name, GQLType value) => GQLType (Arg name value) where
   type KIND (Arg name value) = CUSTOM
   __type = __type . catMap (Proxy @value)
   __deriveType OutputType = cantBeInputType (OutputType :: CatType OUT (Arg name value))
   __deriveType p@InputType = do
-    injectType withDir proxy
     fillTypeContent withDir p content
     where
       content :: TypeContent TRUE IN CONST
       content = DataInputObject (singleton argName field)
-      proxy = InputType :: CatType IN value
       argName = symbolName (Proxy @name)
       field :: FieldDefinition IN CONST
       field = mkField Nothing argName (TypeRef gqlTypeName gqlWrappers)
-      TypeData {gqlTypeName, gqlWrappers} = useTypeData withGQL proxy
+      TypeData {gqlTypeName, gqlWrappers} = useTypeData withGQL (InputType :: CatType IN value)
 
-instance (DERIVE_TYPE GQLType OUT i, DERIVE_TYPE GQLType OUT u) => GQLType (TypeGuard i u) where
+  __exploreRef OutputType = []
+  __exploreRef InputType = __exploreRef (InputType :: CatType IN value)
+
+instance (DERIVE_TYPE GQLType i, DERIVE_TYPE GQLType u) => GQLType (TypeGuard i u) where
   type KIND (TypeGuard i u) = CUSTOM
   __type = __type . catMap (Proxy @i)
   __deriveType OutputType = do
     unions <- deriveTypeGuardUnions withDir union
-    extendImplements (useTypename withGQL interface) unions
+    derivations [ImplementsDerivation (useTypename withGQL interface) unions]
     deriveInterfaceDefinition withDir interface
     where
       interface = OutputType :: CatType OUT i
       union = OutputType :: CatType OUT u
   __deriveType proxy = cantBeInputType proxy
+  __exploreRef InputType = []
+  __exploreRef ref@OutputType =
+    [ScanLeaf (useFingerprint withGQL ref) ref]
+      <> __exploreRef union
+      <> __exploreRef interface
+    where
+      interface = OutputType :: CatType OUT i
+      union = OutputType :: CatType OUT u
 
 instance (GQLType a) => GQLType (NamedResolverT m a) where
   type KIND (NamedResolverT m a) = CUSTOM
   __type = __type . catMap (Proxy :: Proxy a)
   __deriveType = __deriveType . catMap (Proxy @a)
   __deriveFieldArguments = __deriveFieldArguments . catMap (Proxy @a)
+  __exploreRef = __exploreRef . catMap (Proxy :: Proxy a)
 
 type DirectiveUsages = GDirectiveUsages GQLType GQLValue
 
@@ -368,29 +407,45 @@ withGQL =
       useTypename = gqlTypeName . __type,
       useTypeData = __type,
       useDeriveType = __deriveType,
-      useDeriveFieldArguments = __deriveFieldArguments
+      useExploreRef = f,
+      useDeriveFieldArguments = fmap FieldRep . __deriveFieldArguments
     }
+  where
+    f p =
+      __exploreRef p
+        <> exploreDirectives
+          withDir
+          ( join (toList enumValueDirectives)
+              <> join (toList fieldDirectives)
+              <> typeDirectives
+          )
+      where
+        GDirectiveUsages {..} = directives p
 
-withDir :: UseDeriving GQLType GQLValue
+withDir :: WITH_DERIVING
 withDir =
   UseDeriving
     { __directives = directives,
-      dirGQL = withGQL,
-      dirArgs = withValue
+      drvGQL = withGQL,
+      drvArgs = withValue
     }
+
+type WITH_DERIVING = UseDeriving GQLType GQLValue
+
+type WITH_RESOLVER = UseResolver GQLResolver GQLType GQLValue
 
 class GQLType a => GQLValue a where
   decodeValue :: Value VALID -> ResolverState a
   encodeValue :: a -> GQLResult (Value CONST)
 
-instance (GQLType a, KindedValue GQLType GQLValue (KIND a) a) => GQLValue a where
+instance (GQLType a, KindedValue WITH_DERIVING (KIND a) a) => GQLValue a where
   encodeValue value = encodeKindedValue withDir (ContextValue value :: ContextValue (KIND a) a)
   decodeValue = decodeKindedValue withDir (Proxy @(KIND a))
 
-class GQLResolver (m :: Type -> Type) resolver where
+class MonadResolver m => GQLResolver (m :: Type -> Type) resolver where
   deriveResolver :: resolver -> m (ResolverValue m)
 
-instance (KindedResolver GQLType GQLResolver GQLValue (KIND a) m a) => GQLResolver m a where
+instance (MonadResolver m, KindedResolver WITH_RESOLVER (KIND a) m a) => GQLResolver m a where
   deriveResolver resolver = kindedResolver withRes (ContextValue resolver :: ContextValue (KIND a) a)
 
 withRes :: UseResolver GQLResolver GQLType GQLValue

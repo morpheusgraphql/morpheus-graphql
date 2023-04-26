@@ -26,7 +26,7 @@ import Data.Text
   )
 import GHC.Generics (Generic)
 
-data Character = Hydra
+data Character = Character
   { name :: Text,
     age :: Int
   }

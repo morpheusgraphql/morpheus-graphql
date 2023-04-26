@@ -44,7 +44,7 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
   )
 import Data.Morpheus.Server.Deriving.Utils.GRep
   ( GRep,
-    RepContext (..),
+    GRepContext (..),
     deriveValue,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
@@ -90,29 +90,29 @@ import GHC.Generics
 import GHC.TypeLits (KnownSymbol)
 import Relude
 
-class KindedValue gql args (kind :: DerivingKind) (a :: Type) where
-  encodeKindedValue :: UseDeriving gql args -> ContextValue kind a -> GQLResult (Value CONST)
-  decodeKindedValue :: UseDeriving gql args -> Proxy kind -> ValidValue -> ResolverState a
+class KindedValue ctx (k :: DerivingKind) (a :: Type) where
+  encodeKindedValue :: UseDeriving gql args ~ ctx => ctx -> ContextValue k a -> GQLResult (Value CONST)
+  decodeKindedValue :: UseDeriving gql args ~ ctx => ctx -> Proxy k -> ValidValue -> ResolverState a
 
-instance (EncodeScalar a, DecodeScalar a, gql a) => KindedValue gql args SCALAR a where
+instance (EncodeScalar a, DecodeScalar a, ctx ~ UseDeriving gql args, gql a) => KindedValue ctx SCALAR a where
   encodeKindedValue _ = pure . Scalar . encodeScalar . unContextValue
-  decodeKindedValue dir _ = withScalar (useTypename (dirGQL dir) (InputType :: CatType IN a)) decodeScalar
+  decodeKindedValue dir _ = withScalar (useTypename (drvGQL dir) (InputType :: CatType IN a)) decodeScalar
 
-instance (DecodeWrapperConstraint f a, DecodeWrapper f, EncodeWrapperValue f, args a) => KindedValue gql args WRAPPER (f a) where
-  encodeKindedValue dir = encodeWrapperValue (useEncodeValue (dirArgs dir)) . unContextValue
+instance (ctx ~ UseDeriving gql args, DecodeWrapperConstraint f a, DecodeWrapper f, EncodeWrapperValue f, args a) => KindedValue ctx WRAPPER (f a) where
+  encodeKindedValue dir = encodeWrapperValue (useEncodeValue (drvArgs dir)) . unContextValue
   decodeKindedValue dir _ value =
-    runExceptT (decodeWrapper (useDecodeValue (dirArgs dir)) value)
+    runExceptT (decodeWrapper (useDecodeValue (drvArgs dir)) value)
       >>= handleEither
 
-instance (gql a, Generic a, DecodeRep gql args (Rep a), GRep gql args (GQLResult (Value CONST)) (Rep a)) => KindedValue gql args TYPE a where
+instance (ctx ~ UseDeriving gql args, gql a, Generic a, DecodeRep gql args (Rep a), GRep gql args (GQLResult (Value CONST)) (Rep a)) => KindedValue ctx TYPE a where
   encodeKindedValue UseDeriving {..} =
     repValue
       . deriveValue
-        ( RepContext
-            { optApply = useEncodeValue dirArgs . runIdentity,
-              optTypeData = useTypeData dirGQL . inputType
+        ( GRepContext
+            { optApply = useEncodeValue drvArgs . runIdentity,
+              optTypeData = useTypeData drvGQL . inputType
             } ::
-            RepContext gql args Identity (GQLResult (Value CONST))
+            GRepContext gql args Identity (GQLResult (Value CONST))
         )
       . unContextValue
   decodeKindedValue dir _ = fmap to . (`runReaderT` context) . decodeRep dir
@@ -120,14 +120,14 @@ instance (gql a, Generic a, DecodeRep gql args (Rep a), GRep gql args (GQLResult
       context =
         Context
           { isVariantRef = False,
-            typeName = useTypename (dirGQL dir) (InputType :: CatType IN a),
+            typeName = useTypename (drvGQL dir) (InputType :: CatType IN a),
             enumVisitor = visitEnumName dir proxy,
             fieldVisitor = visitFieldName dir proxy
           }
         where
           proxy = Proxy @a
 
-instance KindedValue gql args CUSTOM (Value CONST) where
+instance KindedValue ctx CUSTOM (Value CONST) where
   encodeKindedValue _ = pure . unContextValue
   decodeKindedValue _ _ = pure . toConstValue
 
@@ -141,14 +141,14 @@ toConstValue (Object fields) = Object (fmap toEntry fields)
     toEntry :: ObjectEntry VALID -> ObjectEntry CONST
     toEntry ObjectEntry {..} = ObjectEntry {entryValue = toConstValue entryValue, ..}
 
-instance (KnownSymbol name, args a) => KindedValue gql args CUSTOM (Arg name a) where
+instance (ctx ~ UseDeriving gql args, KnownSymbol name, args a) => KindedValue ctx CUSTOM (Arg name a) where
   encodeKindedValue _ _ = throwError "directives cant be tagged arguments"
-  decodeKindedValue UseDeriving {dirArgs} _ value = Arg <$> withInputObject fieldDecoder value
+  decodeKindedValue UseDeriving {drvArgs} _ value = Arg <$> withInputObject fieldDecoder value
     where
-      fieldDecoder = decodeFieldWith (useDecodeValue dirArgs) fieldName
+      fieldDecoder = decodeFieldWith (useDecodeValue drvArgs) fieldName
       fieldName = symbolName (Proxy @name)
 
 --  Map
-instance (Ord k, val [(k, v)]) => KindedValue gql val CUSTOM (Map k v) where
-  decodeKindedValue dir _ v = M.fromList <$> (useDecodeValue (dirArgs dir) v :: ResolverState [(k, v)])
-  encodeKindedValue dir = useEncodeValue (dirArgs dir) . M.toList . unContextValue
+instance (ctx ~ UseDeriving gql args, Ord k, args [(k, v)]) => KindedValue ctx CUSTOM (Map k v) where
+  decodeKindedValue UseDeriving {..} _ v = M.fromList <$> (useDecodeValue drvArgs v :: ResolverState [(k, v)])
+  encodeKindedValue UseDeriving {..} = useEncodeValue drvArgs . M.toList . unContextValue

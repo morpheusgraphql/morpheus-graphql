@@ -27,13 +27,13 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Internal
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
   )
-import Data.Morpheus.Server.Deriving.Utils.Use
-  ( UseDeriving (..),
-    UseGQLType (..),
+import Data.Morpheus.Server.Deriving.Utils.SchemaT
+  ( SchemaBuilder,
   )
-import Data.Morpheus.Server.Types.SchemaT
-  ( SchemaT,
-    withInput,
+import Data.Morpheus.Server.Deriving.Utils.Use
+  ( FieldRep (..),
+    UseDeriving (..),
+    UseGQLType (..),
   )
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition,
@@ -46,16 +46,16 @@ type family HasArguments a where
   HasArguments (a -> b) = (a -> b)
   HasArguments a = ()
 
-class DeriveFieldArguments gql a where
-  deriveFieldArguments :: UseDeriving gql val -> f a -> SchemaT OUT (Maybe (ArgumentsDefinition CONST))
+class DeriveFieldArguments ctx a where
+  deriveFieldArguments :: UseDeriving gql val ~ ctx => ctx -> f a -> SchemaBuilder (Maybe (ArgumentsDefinition CONST))
 
-instance DeriveFieldArguments gql () where
+instance DeriveFieldArguments ctx () where
   deriveFieldArguments _ _ = pure Nothing
 
-instance (gql b, gql a) => DeriveFieldArguments gql (a -> b) where
+instance (UseDeriving gql val ~ ctx, gql b, gql a) => DeriveFieldArguments ctx (a -> b) where
   deriveFieldArguments UseDeriving {..} _ = do
-    a <- withInput $ deriveTypeAsArguments dirGQL (Proxy @a)
-    b <- useDeriveFieldArguments dirGQL (OutputType :: CatType OUT b)
+    a <- deriveTypeAsArguments drvGQL (Proxy @a)
+    b <- unFieldRep <$> useDeriveFieldArguments drvGQL (OutputType :: CatType OUT b)
     case b of
       Just x -> Just <$> (a <:> x)
       Nothing -> pure $ Just a

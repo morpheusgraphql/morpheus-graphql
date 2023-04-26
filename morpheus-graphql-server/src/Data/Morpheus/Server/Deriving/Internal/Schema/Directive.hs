@@ -27,6 +27,7 @@ module Data.Morpheus.Server.Deriving.Internal.Schema.Directive
     visitFieldName,
     toFieldRes,
     UseDeriving (..),
+    exploreDirectives,
   )
 where
 
@@ -38,10 +39,18 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Internal
   ( CatType,
     deriveTypeAsArguments,
   )
-import Data.Morpheus.Server.Deriving.Utils.GRep (FieldRep (..))
+import Data.Morpheus.Server.Deriving.Utils.GRep
+  ( GRepField (..),
+  )
+import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef)
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
     inputType,
+  )
+import Data.Morpheus.Server.Deriving.Utils.SchemaT
+  ( NodeDerivation (DirectiveDerivation),
+    SchemaBuilder,
+    derivations,
   )
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseDeriving (..),
@@ -62,12 +71,6 @@ import Data.Morpheus.Server.Types.Directives
     applyTypeFieldNames,
     getLocations,
   )
-import Data.Morpheus.Server.Types.SchemaT
-  ( SchemaT,
-    insertDirectiveDefinition,
-    outToAny,
-    withInput,
-  )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
     Arguments,
@@ -78,10 +81,8 @@ import Data.Morpheus.Types.Internal.AST
     Directives,
     FieldContent (..),
     FieldName,
-    IN,
-    OUT,
     ObjectEntry (..),
-    Position (Position),
+    Position (..),
     TRUE,
     TypeName,
     Value (..),
@@ -95,13 +96,12 @@ deriveDirectiveDefinition ::
   (gql a, GQLDirective a, args a) =>
   UseDeriving gql args ->
   a ->
-  b ->
-  SchemaT kind (DirectiveDefinition CONST)
-deriveDirectiveDefinition options arg _ = do
-  directiveDefinitionArgs <- outToAny (withInput $ deriveTypeAsArguments (dirGQL options) proxy)
+  SchemaBuilder (DirectiveDefinition CONST)
+deriveDirectiveDefinition options arg = do
+  directiveDefinitionArgs <- deriveTypeAsArguments (drvGQL options) proxy
   pure
     ( DirectiveDefinition
-        { directiveDefinitionName = deriveDirectiveName (dirGQL options) proxy,
+        { directiveDefinitionName = deriveDirectiveName (drvGQL options) proxy,
           directiveDefinitionDescription = visitTypeDescription options proxy Nothing,
           directiveDefinitionArgs,
           directiveDefinitionLocations = getLocations proxy
@@ -110,10 +110,16 @@ deriveDirectiveDefinition options arg _ = do
   where
     proxy = Identity arg
 
-deriveDirectiveUsages :: UseDeriving gql args -> [GDirectiveUsage gql args] -> SchemaT kind (Directives CONST)
+deriveDirectiveUsages :: UseDeriving gql args -> [GDirectiveUsage gql args] -> SchemaBuilder (Directives CONST)
 deriveDirectiveUsages options = fmap unsafeFromList . traverse (toDirectiveTuple options)
 
-encodeDirectiveArguments :: val a => UseValue val -> a -> SchemaT OUT (Arguments CONST)
+exploreDirectives :: UseDeriving gql args -> [GDirectiveUsage gql args] -> [ScanRef gql]
+exploreDirectives UseDeriving {..} = concatMap (exploreDirective drvGQL)
+
+exploreDirective :: UseGQLType gql -> GDirectiveUsage gql args -> [ScanRef gql]
+exploreDirective UseGQLType {..} (GDirectiveUsage x) = useExploreRef $ inputType $ Identity x
+
+encodeDirectiveArguments :: val a => UseValue val -> a -> SchemaBuilder (Arguments CONST)
 encodeDirectiveArguments val x = resultOr (const $ throwError err) pure (useEncodeValue val x) >>= unpackValue
   where
     err = internal "could not encode arguments. Arguments should be an object like type!"
@@ -124,11 +130,12 @@ encodeDirectiveArguments val x = resultOr (const $ throwError err) pure (useEnco
 toDirectiveTuple ::
   UseDeriving gql args ->
   GDirectiveUsage gql args ->
-  SchemaT kind (FieldName, Directive CONST)
-toDirectiveTuple options (GDirectiveUsage x) = do
-  insertDirective options (deriveDirectiveDefinition options x) x
-  let directiveName = deriveDirectiveName (dirGQL options) (Identity x)
-  args <- toList <$> outToAny (encodeDirectiveArguments (dirArgs options) x)
+  SchemaBuilder (FieldName, Directive CONST)
+toDirectiveTuple drv (GDirectiveUsage x) = do
+  dir <- deriveDirectiveDefinition drv x
+  derivations [DirectiveDerivation fingerprint dir]
+  let directiveName = deriveDirectiveName (drvGQL drv) (Identity x)
+  args <- toList <$> encodeDirectiveArguments (drvArgs drv) x
   directiveArgs <- fromElems (map editArg args)
   pure
     ( directiveName,
@@ -139,18 +146,8 @@ toDirectiveTuple options (GDirectiveUsage x) = do
         }
     )
   where
-    editArg Argument {..} = Argument {argumentName = applyGQLFieldOptions options (Identity x) argumentName, ..}
-
-insertDirective ::
-  forall gql args a k.
-  gql a =>
-  UseDeriving gql args ->
-  (CatType IN a -> SchemaT k (DirectiveDefinition CONST)) ->
-  a ->
-  SchemaT k ()
-insertDirective ops f _ = insertDirectiveDefinition (useFingerprint (dirGQL ops) proxy) f proxy
-  where
-    proxy = InputType :: CatType IN a
+    fingerprint = useFingerprint (drvGQL drv) $ inputType (Identity x)
+    editArg Argument {..} = Argument {argumentName = applyGQLFieldOptions drv (Identity x) argumentName, ..}
 
 getDirHM :: (Ord k, Hashable k, Empty a) => k -> HashMap k a -> a
 getDirHM name xs = fromMaybe empty $ name `HM.lookup` xs
@@ -165,13 +162,13 @@ getFieldDirectiveUsages :: gql a => UseDeriving gql args -> FieldName -> f a -> 
 getFieldDirectiveUsages UseDeriving {..} name proxy = getDirHM name $ fieldDirectives $ __directives proxy
 
 -- derive directives
-deriveEnumDirectives :: gql a => UseDeriving gql args -> f a -> TypeName -> SchemaT k (Directives CONST)
+deriveEnumDirectives :: gql a => UseDeriving gql args -> f a -> TypeName -> SchemaBuilder (Directives CONST)
 deriveEnumDirectives options proxy name = deriveDirectiveUsages options $ filter isIncluded $ getEnumDirectiveUsages options proxy name
 
-deriveFieldDirectives :: gql a => UseDeriving gql args -> f a -> FieldName -> SchemaT kind (Directives CONST)
+deriveFieldDirectives :: gql a => UseDeriving gql args -> f a -> FieldName -> SchemaBuilder (Directives CONST)
 deriveFieldDirectives options proxy name = deriveDirectiveUsages options $ filter isIncluded $ getFieldDirectiveUsages options name proxy
 
-deriveTypeDirectives :: gql a => UseDeriving gql args -> f a -> SchemaT kind (Directives CONST)
+deriveTypeDirectives :: gql a => UseDeriving gql args -> f a -> SchemaBuilder (Directives CONST)
 deriveTypeDirectives options proxy = deriveDirectiveUsages options $ filter isIncluded $ typeDirectives $ __directives options proxy
 
 -- visit
@@ -213,8 +210,8 @@ visitFieldName options proxy name = foldr applyFieldName (applyGQLFieldOptions o
 visitTypeDescription :: gql a => UseDeriving gql args -> f a -> Maybe Description -> Maybe Description
 visitTypeDescription options proxy desc = foldr applyTypeDescription desc (typeDirectives $ __directives options proxy)
 
-toFieldRes :: gql a => UseDeriving gql args -> f a -> FieldRep v -> (FieldName, v)
-toFieldRes options proxy FieldRep {..} = (visitFieldName options proxy fieldSelector, fieldValue)
+toFieldRes :: gql a => UseDeriving gql args -> f a -> GRepField v -> (FieldName, v)
+toFieldRes options proxy GRepField {..} = (visitFieldName options proxy fieldSelector, fieldValue)
 
 deriveDirectiveName :: gql a => UseGQLType gql -> f a -> FieldName
 deriveDirectiveName options = coerce . useTypename options . inputType

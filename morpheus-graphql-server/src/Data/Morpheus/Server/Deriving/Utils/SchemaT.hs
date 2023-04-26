@@ -9,42 +9,53 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Server.Types.SchemaT
-  ( SchemaT,
-    updateSchema,
-    insertType,
+module Data.Morpheus.Server.Deriving.Utils.SchemaT
+  ( SchemaBuilder (..),
     TypeFingerprint (..),
     toSchema,
-    withInput,
-    extendImplements,
-    insertDirectiveDefinition,
-    outToAny,
+    NodeDerivation (..),
+    derivations,
+    NodeTypeVariant (..),
+    NodeType (..),
   )
 where
 
 import Control.Monad.Except (MonadError (..))
 import qualified Data.Map as Map
 import Data.Morpheus.Internal.Ext (GQLResult)
-import Data.Morpheus.Server.Types.TypeName
+import Data.Morpheus.Server.Types.TypeName (TypeFingerprint (..))
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
     CONST,
     DirectiveDefinition,
     GQLError,
-    IN,
     OBJECT,
-    OUT,
     Schema,
+    TRUE,
     TypeCategory (..),
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
     defineDirective,
     defineSchemaWith,
+    mkEnumContent,
+    mkType,
     msg,
-    toAny,
+    unitTypeName,
   )
 import Relude hiding (empty)
+
+data NodeTypeVariant
+  = NodeTypeVariant TypeName (TypeContent TRUE ANY CONST)
+  | NodeUnitType
+
+data NodeType = TypeNodeUnion [NodeTypeVariant]
+
+data NodeDerivation
+  = TypeDerivation TypeFingerprint (TypeDefinition ANY CONST)
+  | DirectiveDerivation TypeFingerprint (DirectiveDefinition CONST)
+  | ImplementsDerivation TypeName [TypeName]
+  | UnionType [NodeTypeVariant]
 
 data SchemaState where
   SchemaState ::
@@ -54,54 +65,47 @@ data SchemaState where
     } ->
     SchemaState
 
-emptyMyMap :: SchemaState
-emptyMyMap =
-  SchemaState
-    { typeDefinitions = Map.empty,
-      implements = Map.empty,
-      directiveDefinitions = Map.empty
-    }
+instance Semigroup SchemaState where
+  SchemaState t1 i1 d1 <> SchemaState t2 i2 d2 = SchemaState (t1 <> t2) (i1 <> i2) (d1 <> d2)
+
+instance Monoid SchemaState where
+  mempty = SchemaState mempty mempty mempty
 
 -- Helper Functions
-newtype SchemaT (cat :: TypeCategory) a = SchemaT
-  { runSchemaT ::
-      GQLResult
-        ( a,
-          [SchemaState -> GQLResult SchemaState]
-        )
+newtype SchemaBuilder a = SchemaBuilder
+  { runSchemaT :: GQLResult (a, [NodeDerivation])
   }
   deriving (Functor)
 
-instance MonadError GQLError (SchemaT c) where
-  throwError = SchemaT . throwError
-  catchError (SchemaT mx) f = SchemaT (catchError mx (runSchemaT . f))
+instance MonadError GQLError SchemaBuilder where
+  throwError = SchemaBuilder . throwError
+  catchError (SchemaBuilder mx) f = SchemaBuilder (catchError mx (runSchemaT . f))
 
-instance Applicative (SchemaT c) where
-  pure = SchemaT . pure . (,[])
-  (SchemaT v1) <*> (SchemaT v2) = SchemaT $ do
+instance Applicative SchemaBuilder where
+  pure = SchemaBuilder . pure . (,[])
+  (SchemaBuilder v1) <*> (SchemaBuilder v2) = SchemaBuilder $ do
     (f, u1) <- v1
     (a, u2) <- v2
     pure (f a, u1 <> u2)
 
-instance Monad (SchemaT c) where
+instance Monad SchemaBuilder where
   return = pure
-  (SchemaT v1) >>= f =
-    SchemaT $ do
+  (SchemaBuilder v1) >>= f =
+    SchemaBuilder $ do
       (x, up1) <- v1
       (y, up2) <- runSchemaT (f x)
       pure (y, up1 <> up2)
 
 toSchema ::
-  SchemaT
-    c
+  SchemaBuilder
     ( TypeDefinition OBJECT CONST,
       Maybe (TypeDefinition OBJECT CONST),
       Maybe (TypeDefinition OBJECT CONST)
     ) ->
   GQLResult (Schema CONST)
-toSchema (SchemaT v) = do
+toSchema (SchemaBuilder v) = do
   ((q, m, s), typeDefs) <- v
-  SchemaState {typeDefinitions, implements, directiveDefinitions} <- execUpdates emptyMyMap typeDefs
+  SchemaState {typeDefinitions, implements, directiveDefinitions} <- execUpdates mempty typeDefs
   types <- map (insertImplements implements) <$> checkTypeCollisions (Map.toList typeDefinitions)
   schema <- defineSchemaWith types (Just q, m, s)
   foldlM defineDirective schema directiveDefinitions
@@ -109,23 +113,13 @@ toSchema (SchemaT v) = do
 insertImplements :: Map TypeName [TypeName] -> TypeDefinition c CONST -> TypeDefinition c CONST
 insertImplements x TypeDefinition {typeContent = DataObject {..}, ..} =
   TypeDefinition
-    { typeContent =
-        DataObject
-          { objectImplements = objectImplements <> implements,
-            ..
-          },
+    { typeContent = DataObject {objectImplements = objectImplements <> implements, ..},
       ..
     }
   where
     implements :: [TypeName]
     implements = Map.findWithDefault [] typeName x
 insertImplements _ t = t
-
-withInput :: SchemaT IN a -> SchemaT OUT a
-withInput (SchemaT x) = SchemaT x
-
-outToAny :: SchemaT OUT a -> SchemaT k' a
-outToAny (SchemaT x) = SchemaT x
 
 checkTypeCollisions :: [(TypeFingerprint, TypeDefinition k a)] -> GQLResult [TypeDefinition k a]
 checkTypeCollisions = fmap Map.elems . foldlM collectTypes Map.empty
@@ -155,60 +149,29 @@ withSameCategory :: TypeFingerprint -> TypeFingerprint
 withSameCategory (TypeableFingerprint _ xs) = TypeableFingerprint OUT xs
 withSameCategory x = x
 
-execUpdates :: Monad m => a -> [a -> m a] -> m a
-execUpdates = foldlM (&)
+execUpdates :: Monad m => SchemaState -> [NodeDerivation] -> m SchemaState
+execUpdates s = foldlM (&) s . map exec
 
-insertType :: TypeDefinition cat CONST -> SchemaT cat' ()
-insertType dt = updateSchema (CustomFingerprint (typeName dt)) (const $ pure dt) ()
-
-updateSchema ::
-  TypeFingerprint ->
-  (a -> SchemaT cat' (TypeDefinition cat CONST)) ->
-  a ->
-  SchemaT cat' ()
-updateSchema InternalFingerprint {} _ _ = SchemaT $ pure ((), [])
-updateSchema fingerprint f x =
-  SchemaT $ pure ((), [upLib])
+exec :: Monad m => NodeDerivation -> SchemaState -> m SchemaState
+exec (TypeDerivation InternalFingerprint {} _) s = pure s
+exec (TypeDerivation fp t) s = pure s {typeDefinitions = Map.insert fp t (typeDefinitions s)}
+exec (DirectiveDerivation InternalFingerprint {} _) s = pure s
+exec (DirectiveDerivation fp d) s = pure s {directiveDefinitions = Map.insert fp d (directiveDefinitions s)}
+exec (ImplementsDerivation interface types) s = pure $ s {implements = foldr insertInterface (implements s) types}
   where
-    upLib :: SchemaState -> GQLResult SchemaState
-    upLib schema
-      | Map.member fingerprint (typeDefinitions schema) = pure schema
-      | otherwise = do
-          (type', updates) <- runSchemaT (f x)
-          execUpdates schema (update type' : updates)
-      where
-        update t schemaState =
-          pure
-            schemaState
-              { typeDefinitions = Map.insert fingerprint (toAny t) (typeDefinitions schemaState)
-              }
-
-insertDirectiveDefinition ::
-  TypeFingerprint ->
-  (a -> SchemaT cat' (DirectiveDefinition CONST)) ->
-  a ->
-  SchemaT cat' ()
-insertDirectiveDefinition InternalFingerprint {} _ _ = SchemaT $ pure ((), [])
-insertDirectiveDefinition fingerprint f x =
-  SchemaT $ pure ((), [upLib])
-  where
-    upLib :: SchemaState -> GQLResult SchemaState
-    upLib schema
-      | Map.member fingerprint (typeDefinitions schema) = pure schema
-      | otherwise = do
-          (type', updates) <- runSchemaT (f x)
-          execUpdates schema (update type' : updates)
-      where
-        update t schemaState =
-          pure
-            schemaState
-              { directiveDefinitions = Map.insert fingerprint t (directiveDefinitions schemaState)
-              }
-
-extendImplements :: TypeName -> [TypeName] -> SchemaT cat' ()
-extendImplements interface types = SchemaT $ pure ((), [upLib])
-  where
-    upLib :: SchemaState -> GQLResult SchemaState
-    upLib schema = pure schema {implements = foldr insertInterface (implements schema) types}
-    insertInterface :: TypeName -> Map TypeName [TypeName] -> Map TypeName [TypeName]
     insertInterface = Map.alter (Just . (interface :) . fromMaybe [])
+exec (UnionType nodes) s = foldlM (&) s (map execNode nodes)
+
+execNode :: Monad m => NodeTypeVariant -> SchemaState -> m SchemaState
+execNode (NodeTypeVariant consName fields) s =
+  pure s {typeDefinitions = Map.insert fp t (typeDefinitions s)}
+  where
+    fp = CustomFingerprint consName
+    t = mkType consName fields
+execNode NodeUnitType s = pure s {typeDefinitions = Map.insert fp t (typeDefinitions s)}
+  where
+    fp = CustomFingerprint unitTypeName
+    t = mkType unitTypeName (mkEnumContent [unitTypeName])
+
+derivations :: [NodeDerivation] -> SchemaBuilder ()
+derivations nodes = SchemaBuilder $ pure ((), nodes)

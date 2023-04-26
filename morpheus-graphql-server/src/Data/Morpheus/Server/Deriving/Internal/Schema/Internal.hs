@@ -37,13 +37,12 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
     inputType,
   )
-import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (..))
-import Data.Morpheus.Server.Types.SchemaT (SchemaT)
+import Data.Morpheus.Server.Deriving.Utils.SchemaT (SchemaBuilder)
+import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (..), useDeriveType)
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition,
     CONST,
     FieldsDefinition,
-    IN,
     Msg (..),
     Schema (..),
     TRUE,
@@ -59,15 +58,15 @@ fromSchema :: GQLResult (Schema VALID) -> Q Exp
 fromSchema Success {} = [|()|]
 fromSchema Failure {errors} = fail (show errors)
 
-withObject :: (gql a) => UseGQLType gql -> CatType c a -> TypeContent TRUE any s -> SchemaT c (FieldsDefinition c s)
+withObject :: (gql a) => UseGQLType gql -> CatType c a -> TypeContent TRUE any s -> SchemaBuilder (FieldsDefinition c s)
 withObject _ InputType DataInputObject {inputObjectFields} = pure inputObjectFields
 withObject _ OutputType DataObject {objectFields} = pure objectFields
 withObject gql x _ = failureOnlyObject gql x
 
-failureOnlyObject :: (gql a) => UseGQLType gql -> CatType c a -> SchemaT c b
+failureOnlyObject :: (gql a) => UseGQLType gql -> CatType c a -> SchemaBuilder b
 failureOnlyObject gql proxy = throwError $ msg (useTypename gql proxy) <> " should have only one nonempty constructor"
 
-deriveTypeAsArguments :: gql a => UseGQLType gql -> f a -> SchemaT IN (ArgumentsDefinition CONST)
+deriveTypeAsArguments :: gql a => UseGQLType gql -> f a -> SchemaBuilder (ArgumentsDefinition CONST)
 deriveTypeAsArguments gql arg =
   fieldsToArguments
     <$> ( useDeriveType gql (inputType arg)

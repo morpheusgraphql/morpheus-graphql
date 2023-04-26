@@ -6,6 +6,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
@@ -40,9 +41,8 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Server.Deriving.Utils.AST (argumentsToObject)
 import Data.Morpheus.Server.Deriving.Utils.GRep
-  ( ConsRep (..),
-    FieldRep (..),
-    TypeRep (..),
+  ( GRepField (..),
+    GRepValue (..),
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
@@ -50,7 +50,11 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
 import Data.Morpheus.Server.Deriving.Utils.Proxy
   ( conNameProxy,
   )
-import Data.Morpheus.Server.Deriving.Utils.Use (UseDeriving, UseGQLType (useTypename), UseValue (..), dirArgs)
+import Data.Morpheus.Server.Deriving.Utils.Use
+  ( UseDeriving (..),
+    UseGQLType (..),
+    UseValue (..),
+  )
 import Data.Morpheus.Types.GQLScalar
   ( toScalar,
   )
@@ -76,24 +80,15 @@ import GHC.Generics
 import Relude
 
 repValue ::
-  TypeRep (GQLResult (Value CONST)) ->
+  GRepValue (GQLResult (Value CONST)) ->
   GQLResult (Value CONST)
-repValue
-  TypeRep
-    { tyIsUnion,
-      tyCons = ConsRep {consFields, consName}
-    } = encodeTypeFields consFields
-    where
-      encodeTypeFields ::
-        [FieldRep (GQLResult (Value CONST))] -> GQLResult (Value CONST)
-      encodeTypeFields [] = pure $ Enum consName
-      encodeTypeFields fields | not tyIsUnion = Object <$> (traverse fromField fields >>= fromElems)
-        where
-          fromField FieldRep {fieldSelector, fieldValue} = do
-            entryValue <- fieldValue
-            pure ObjectEntry {entryName = fieldSelector, entryValue}
-      -- Type References --------------------------------------------------------------
-      encodeTypeFields _ = throwError (internal "input unions are not supported")
+repValue GRepValueEnum {..} = pure $ Enum enumVariantName
+repValue GRepValueObject {..} = Object <$> (traverse fromField objectFields >>= fromElems)
+  where
+    fromField GRepField {fieldSelector, fieldValue} = do
+      entryValue <- fieldValue
+      pure ObjectEntry {entryName = fieldSelector, entryValue}
+repValue _ = throwError (internal "input unions are not supported")
 
 withInputObject ::
   MonadError GQLError m =>
@@ -236,4 +231,4 @@ instance CountFields U1 where
   countFields _ = 0
 
 useDecodeArguments :: val a => UseDeriving gql val -> Arguments VALID -> ResolverState a
-useDecodeArguments drv = useDecodeValue (dirArgs drv) . argumentsToObject
+useDecodeArguments drv = useDecodeValue (drvArgs drv) . argumentsToObject
