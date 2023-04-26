@@ -21,7 +21,7 @@ module Data.Morpheus.Server.Deriving.Kinded.Type
   )
 where
 
-import Data.Morpheus.Server.Deriving.Internal.Schema.Directive (deriveDirectiveDefinition, deriveTypeDirectives)
+import Data.Morpheus.Server.Deriving.Internal.Schema.Directive (deriveDirectiveDefinition)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Type
   ( deriveScalarDefinition,
     deriveTypeDefinition,

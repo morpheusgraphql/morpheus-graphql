@@ -408,8 +408,8 @@ withGQL =
     { useFingerprint = gqlFingerprint . __type,
       useTypename = gqlTypeName . __type,
       useTypeData = __type,
-      useDeriveNode = __deriveNode,
-      useDeriveType = __deriveType,
+      useDeriveNode = __deriveType,
+      useDeriveType = __deriveType >=> constraintType,
       useExploreRef = f,
       useDeriveFieldArguments = fmap FieldRep . __deriveFieldArguments
     }
@@ -417,6 +417,10 @@ withGQL =
     f p =
       __exploreRef p
         <> exploreDirectives withDir (allUsages (directives p))
+
+constraintType :: Applicative f => GQLNode c -> f (TypeDefinition c CONST)
+constraintType node = case node of
+  GQLTypeNode x -> pure x
 
 withDir :: WITH_DERIVING
 withDir =

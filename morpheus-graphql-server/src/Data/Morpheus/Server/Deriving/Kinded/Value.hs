@@ -20,13 +20,14 @@ where
 import Control.Monad.Except
   ( MonadError (throwError),
   )
-import qualified Data.Map as M
 import Data.Morpheus.App.Internal.Resolving
   ( ResolverState,
   )
 import Data.Morpheus.Internal.Ext
   ( GQLResult,
+    unsafeFromList,
   )
+import Data.Morpheus.Internal.Utils (IsMap (toAssoc))
 import Data.Morpheus.Server.Deriving.Internal.Decode.Rep
   ( DecodeRep (..),
   )
@@ -63,6 +64,7 @@ import Data.Morpheus.Server.Deriving.Utils.Use
   )
 import Data.Morpheus.Server.Types.Kind
   ( CUSTOM,
+    DIRECTIVE,
     DerivingKind,
     SCALAR,
     TYPE,
@@ -127,6 +129,29 @@ instance (ctx ~ UseDeriving gql args, gql a, Generic a, DecodeRep gql args (Rep 
         where
           proxy = Proxy @a
 
+instance (ctx ~ UseDeriving gql args, gql a, Generic a, DecodeRep gql args (Rep a), GRep gql args (GQLResult (Value CONST)) (Rep a)) => KindedValue ctx DIRECTIVE a where
+  encodeKindedValue UseDeriving {..} =
+    repValue
+      . deriveValue
+        ( GRepContext
+            { optApply = useEncodeValue drvArgs . runIdentity,
+              optTypeData = useTypeData drvGQL . inputType
+            } ::
+            GRepContext gql args Identity (GQLResult (Value CONST))
+        )
+      . unContextValue
+  decodeKindedValue dir _ = fmap to . (`runReaderT` context) . decodeRep dir
+    where
+      context =
+        Context
+          { isVariantRef = False,
+            typeName = useTypename (drvGQL dir) (InputType :: CatType IN a),
+            enumVisitor = visitEnumName dir proxy,
+            fieldVisitor = visitFieldName dir proxy
+          }
+        where
+          proxy = Proxy @a
+
 instance KindedValue ctx CUSTOM (Value CONST) where
   encodeKindedValue _ = pure . unContextValue
   decodeKindedValue _ _ = pure . toConstValue
@@ -150,5 +175,5 @@ instance (ctx ~ UseDeriving gql args, KnownSymbol name, args a) => KindedValue c
 
 --  Map
 instance (ctx ~ UseDeriving gql args, Ord k, args [(k, v)]) => KindedValue ctx CUSTOM (Map k v) where
-  decodeKindedValue UseDeriving {..} _ v = M.fromList <$> (useDecodeValue drvArgs v :: ResolverState [(k, v)])
-  encodeKindedValue UseDeriving {..} = useEncodeValue drvArgs . M.toList . unContextValue
+  decodeKindedValue UseDeriving {..} _ v = unsafeFromList <$> (useDecodeValue drvArgs v :: ResolverState [(k, v)])
+  encodeKindedValue UseDeriving {..} = useEncodeValue drvArgs . toAssoc . unContextValue
