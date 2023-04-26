@@ -83,9 +83,11 @@ instance GQLDirective Deprecated where
 
 newtype Describe = Describe {text :: Text}
   deriving
-    ( GQLType,
-      Generic
+    ( Generic
     )
+
+instance GQLType Describe where
+  type KIND Describe = DIRECTIVE
 
 instance GQLDirective Describe where
   type
@@ -115,9 +117,11 @@ instance VisitType Describe where
 -- of prefixes
 newtype Rename = Rename {newName :: Text}
   deriving
-    ( Generic,
-      GQLType
+    ( Generic
     )
+
+instance GQLType Rename where
+  type KIND Rename = DIRECTIVE
 
 instance GQLDirective Rename where
   excludeFromSchema _ = True
