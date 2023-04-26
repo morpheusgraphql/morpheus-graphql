@@ -79,6 +79,7 @@ import Data.Morpheus.Server.Deriving.Utils.Use
 import Data.Morpheus.Server.Types.Directives
   ( GDirectiveUsages (..),
     GQLDirective (..),
+    allUsages,
     applyTypeName,
     typeDirective,
   )
@@ -413,14 +414,7 @@ withGQL =
   where
     f p =
       __exploreRef p
-        <> exploreDirectives
-          withDir
-          ( join (toList enumValueDirectives)
-              <> join (toList fieldDirectives)
-              <> typeDirectives
-          )
-      where
-        GDirectiveUsages {..} = directives p
+        <> exploreDirectives withDir (allUsages (directives p))
 
 withDir :: WITH_DERIVING
 withDir =

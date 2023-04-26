@@ -5,6 +5,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -32,11 +33,16 @@ module Data.Morpheus.Server.Types.Directives
     fieldDirective',
     enumDirective,
     enumDirective',
+    allUsages,
   )
 where
 
+{- ORMOLU_DISABLE -}
 import qualified Data.HashMap.Strict as M
 import qualified Data.Morpheus.Server.Types.Visitors as Visitors
+import qualified Language.Haskell.TH as TH
+{- ORMOLU_ENABLE -}
+
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
     Description,
@@ -49,7 +55,6 @@ import Data.Morpheus.Types.Internal.AST
     packName,
     unpackName,
   )
-import qualified Language.Haskell.TH as TH
 import Relude
 
 type family OR (a :: Bool) (b :: Bool) where
@@ -254,6 +259,12 @@ data GDirectiveUsages gql args = GDirectiveUsages
     fieldDirectives :: M.HashMap FieldName [GDirectiveUsage gql args],
     enumValueDirectives :: M.HashMap TypeName [GDirectiveUsage gql args]
   }
+
+allUsages :: GDirectiveUsages gql args -> [GDirectiveUsage gql args]
+allUsages GDirectiveUsages {..} =
+  join (toList enumValueDirectives)
+    <> join (toList fieldDirectives)
+    <> typeDirectives
 
 instance Monoid (GDirectiveUsages gql args) where
   mempty = GDirectiveUsages mempty mempty mempty
