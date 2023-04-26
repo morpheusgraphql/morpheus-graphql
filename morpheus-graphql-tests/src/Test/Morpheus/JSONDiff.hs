@@ -12,9 +12,8 @@ where
 
 import Data.Aeson (ToJSON (..), Value (..), encode)
 import Data.ByteString.Lazy.Char8 (unpack)
-import Data.Set (fromList)
 import GHC.Show (Show (show))
-import Relude hiding (ByteString, Show, fromList, show)
+import Relude hiding (ByteString, Show, show)
 import Test.Tasty.HUnit (assertFailure)
 
 #if MIN_VERSION_aeson(2,0,0)
@@ -72,7 +71,7 @@ diff (Object beforeFields, Object afterFields) = diffNode $ map toPair ks
     toPair key = (unescape (show key), (getField key beforeFields, getField key afterFields))
     getField key = fromMaybe Null . lookup key
 diff (Array beforeElems, Array afterElems)
-  | fromList bs == fromList as && bs /= as = Just (ListOrder (arrayDiff bs as))
+  | sort bs == sort as && bs /= as = Just (ListOrder (arrayDiff bs as))
   | otherwise = diffNode (zip ks (zipOptional bs as))
   where
     bs = toList beforeElems
