@@ -36,7 +36,7 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
     catMap,
     unliftKind,
   )
-import Data.Morpheus.Server.Deriving.Utils.SchemaT
+import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
   ( SchemaBuilder,
   )
 import Data.Morpheus.Server.Deriving.Utils.Use

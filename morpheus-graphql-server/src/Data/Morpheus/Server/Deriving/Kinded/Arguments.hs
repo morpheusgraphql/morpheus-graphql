@@ -27,7 +27,7 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Internal
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
   )
-import Data.Morpheus.Server.Deriving.Utils.SchemaT
+import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
   ( SchemaBuilder,
   )
 import Data.Morpheus.Server.Deriving.Utils.Use

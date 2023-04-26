@@ -64,7 +64,7 @@ import Data.Morpheus.Server.Deriving.Kinded.Value (KindedValue (..))
 import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef (..))
 import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (..), KindedProxy (KindedProxy), catMap, isIN)
 import Data.Morpheus.Server.Deriving.Utils.Proxy (ContextValue (..), symbolName)
-import Data.Morpheus.Server.Deriving.Utils.SchemaT
+import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
   ( NodeDerivation (..),
     SchemaBuilder,
     derivations,

@@ -9,7 +9,7 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Server.Deriving.Utils.SchemaT
+module Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
   ( SchemaBuilder (..),
     TypeFingerprint (..),
     toSchema,

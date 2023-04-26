@@ -34,7 +34,7 @@ import Data.Morpheus.Server.Deriving.Utils.GScan
     Scanner (..),
     scan,
   )
-import Data.Morpheus.Server.Deriving.Utils.SchemaT
+import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
   ( NodeDerivation (..),
     SchemaBuilder,
     derivations,
@@ -70,7 +70,7 @@ compileTimeSchemaValidation = fromSchema . (deriveSchema >=> validateSchema True
 exploreRef :: GQLType a => CatType c a -> [ScanRef GQLType]
 exploreRef = useExploreRef withGQL
 
-explore :: forall f (a :: (* -> *) -> *). GQLType (a IgnoredResolver) => f a -> [ScanProxy GQLType]
+explore :: forall f (a :: (Type -> Type) -> Type). GQLType (a IgnoredResolver) => f a -> [ScanProxy GQLType]
 explore _ = scan (Scanner exploreRef) (exploreRef (OutputType :: CatType OUT (a IgnoredResolver)))
 
 deriveSchema :: forall root f m e qu mu su. SCHEMA qu mu su => f (root m e qu mu su) -> GQLResult (Schema CONST)

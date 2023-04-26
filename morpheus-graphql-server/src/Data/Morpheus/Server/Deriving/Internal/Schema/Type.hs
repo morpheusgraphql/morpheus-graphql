@@ -48,7 +48,7 @@ import Data.Morpheus.Server.Deriving.Utils.GRep
     scanTypes,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded (CatContext, addContext, getCatContext, mkScalar, outputType)
-import Data.Morpheus.Server.Deriving.Utils.SchemaT
+import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
   ( NodeDerivation,
     SchemaBuilder (..),
   )

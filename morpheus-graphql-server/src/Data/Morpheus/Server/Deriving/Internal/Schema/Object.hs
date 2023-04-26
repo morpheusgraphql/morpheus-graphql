@@ -34,7 +34,7 @@ import Data.Morpheus.Server.Deriving.Utils.GRep
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
   )
-import Data.Morpheus.Server.Deriving.Utils.SchemaT
+import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
   ( NodeTypeVariant (..),
     SchemaBuilder (..),
   )

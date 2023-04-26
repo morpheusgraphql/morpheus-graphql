@@ -47,7 +47,7 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
     inputType,
   )
-import Data.Morpheus.Server.Deriving.Utils.SchemaT
+import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
   ( NodeDerivation (DirectiveDerivation),
     SchemaBuilder,
     derivations,
