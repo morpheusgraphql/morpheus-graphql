@@ -10,6 +10,7 @@ module Data.Morpheus.Server.Types.Kind
     TYPE,
     CUSTOM,
     WRAPPER,
+    DIRECTIVE,
   )
 where
 
@@ -20,6 +21,7 @@ data DerivingKind
   | DERIVING_TYPE
   | DERIVING_WRAPPER
   | DERIVING_CUSTOM
+  | DERIVING_DIRECTIVE
   deriving (Show)
 
 -- | GraphQL Scalar: Int, Float, String, Boolean or any user defined custom Scalar type
@@ -31,4 +33,8 @@ type TYPE = 'DERIVING_TYPE
 -- | GraphQL Arrays , Resolvers and NonNull fields
 type WRAPPER = 'DERIVING_WRAPPER
 
+-- | GraphQL Arrays , Resolvers and NonNull fields
+type DIRECTIVE = 'DERIVING_DIRECTIVE
+
+-- | GraphQL Custom Types
 type CUSTOM = 'DERIVING_CUSTOM

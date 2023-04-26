@@ -18,12 +18,13 @@ module Data.Morpheus.Server.Types.DirectiveDefinitions
 where
 
 import Data.Morpheus.Server.Types.Directives (GQLDirective (..))
-import Data.Morpheus.Server.Types.GQLType (GQLType (__type))
+import Data.Morpheus.Server.Types.GQLType (GQLType (..))
 import Data.Morpheus.Server.Types.Internal
   ( mkTypeData,
     stripConstructorNamespace,
     stripFieldNamespace,
   )
+import Data.Morpheus.Server.Types.Kind (DIRECTIVE)
 import Data.Morpheus.Server.Types.Visitors
   ( VisitEnum (..),
     VisitField (..),
@@ -39,7 +40,10 @@ data Prefixes = Prefixes
   { addPrefix :: Text,
     removePrefix :: Text
   }
-  deriving (Generic, GQLType)
+  deriving (Generic)
+
+instance GQLType Prefixes where
+  type KIND Prefixes = DIRECTIVE
 
 instance GQLDirective Prefixes where
   type
