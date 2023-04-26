@@ -16,6 +16,8 @@ module Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
     NodeDerivation (..),
     derivations,
     NodeTypeVariant (..),
+    GQLNode (..),
+    resolveGQLNode,
   )
 where
 
@@ -41,6 +43,7 @@ import Data.Morpheus.Types.Internal.AST
     mkEnumContent,
     mkType,
     msg,
+    toAny,
     unitTypeName,
   )
 import Relude hiding (empty)
@@ -170,3 +173,11 @@ execNodeTypeVariant NodeUnitType s = pure s {typeDefinitions = insert fp t (type
 
 derivations :: [NodeDerivation] -> SchemaBuilder ()
 derivations nodes = SchemaBuilder $ pure ((), nodes)
+
+data GQLNode c
+  = GQLTypeNode (TypeDefinition c CONST)
+  | GQLDirectiveNode (DirectiveDefinition CONST)
+
+resolveGQLNode :: TypeFingerprint -> GQLNode c -> SchemaBuilder ()
+resolveGQLNode fp (GQLTypeNode node) = SchemaBuilder $ pure ((), [TypeDerivation fp (toAny node)])
+resolveGQLNode fp (GQLDirectiveNode node) = SchemaBuilder $ pure ((), [DirectiveDerivation fp node])

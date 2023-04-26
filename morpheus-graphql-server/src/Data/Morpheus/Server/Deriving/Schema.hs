@@ -38,6 +38,7 @@ import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
   ( NodeDerivation (..),
     SchemaBuilder,
     derivations,
+    resolveGQLNode,
     toSchema,
   )
 import Data.Morpheus.Server.Deriving.Utils.Use
@@ -89,5 +90,5 @@ deriveSchema _ =
 
 resolveRef :: ScanProxy GQLType -> SchemaBuilder ()
 resolveRef (ScanProxy proxy) =
-  useDeriveType withGQL proxy
-    >>= \t -> derivations [TypeDerivation (useFingerprint withGQL proxy) (toAny t)]
+  useDeriveNode withGQL proxy
+    >>= resolveGQLNode (useFingerprint withGQL proxy)
