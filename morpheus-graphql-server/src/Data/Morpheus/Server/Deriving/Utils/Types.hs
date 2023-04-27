@@ -17,6 +17,7 @@ module Data.Morpheus.Server.Deriving.Utils.Types
     typeToArguments,
     CatType (..),
     NodeTypeVariant (..),
+    GQLTypeNodeExtension (..),
   )
 where
 
@@ -74,6 +75,10 @@ argumentsToObject :: Arguments VALID -> Value VALID
 argumentsToObject = Object . fmap toEntry
   where
     toEntry Argument {..} = ObjectEntry argumentName argumentValue
+
+data GQLTypeNodeExtension
+  = ImplementsExtension TypeName [TypeName]
+  | UnionVariantsExtension [NodeTypeVariant]
 
 data GQLTypeNode c
   = GQLTypeNode (TypeDefinition c CONST)

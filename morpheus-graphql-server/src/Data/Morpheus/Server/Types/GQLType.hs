@@ -80,7 +80,7 @@ import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
     SchemaBuilder,
     derivations,
   )
-import Data.Morpheus.Server.Deriving.Utils.Types (GQLTypeNode (..))
+import Data.Morpheus.Server.Deriving.Utils.Types (GQLTypeNode (..), GQLTypeNodeExtension (..))
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( FieldRep (..),
     UseDeriving (..),
@@ -358,7 +358,7 @@ instance (DERIVE_TYPE GQLType i, DERIVE_TYPE GQLType u) => GQLType (TypeGuard i 
   __type = __type . catMap (Proxy @i)
   __deriveType OutputType = do
     unions <- deriveTypeGuardUnions withDir union
-    derivations [ImplementsDerivation (useTypename withGQL interface) unions]
+    derivations [NodeExtension $ ImplementsExtension (useTypename withGQL interface) unions]
     GQLTypeNode <$> deriveInterfaceDefinition withDir interface
     where
       interface = OutputType :: CatType OUT i

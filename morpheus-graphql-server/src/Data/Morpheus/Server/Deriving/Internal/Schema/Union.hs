@@ -22,10 +22,10 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Object
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
   )
-import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
-  ( NodeDerivation (..),
+import Data.Morpheus.Server.Deriving.Utils.Types
+  ( GQLTypeNodeExtension (..),
+    NodeTypeVariant (..),
   )
-import Data.Morpheus.Server.Deriving.Utils.Types (NodeTypeVariant (..))
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition,
     CONST,
@@ -41,9 +41,9 @@ buildUnionType ::
   CatType kind a ->
   [TypeName] ->
   [GRepCons (Maybe (ArgumentsDefinition CONST))] ->
-  GQLResult (TypeContent TRUE kind CONST, [NodeDerivation])
+  GQLResult (TypeContent TRUE kind CONST, [GQLTypeNodeExtension])
 buildUnionType p@InputType variantRefs inlineVariants = do
-  let nodes = [UnionType ([NodeUnitType | not (null nullaryVariants)] <> typeDependencies p objectVariants)]
+  let nodes = [UnionVariantsExtension ([NodeUnitType | not (null nullaryVariants)] <> typeDependencies p objectVariants)]
   variants <- fromElems members
   pure (DataInputUnion variants, nodes)
   where
@@ -53,7 +53,7 @@ buildUnionType p@InputType variantRefs inlineVariants = do
         <> fmap (mkNullaryMember . consName) nullaryVariants
 buildUnionType p@OutputType unionRef unionCons = do
   variants <- fromElems (map mkUnionMember (unionRef <> map consName unionCons))
-  pure (DataUnion variants, [UnionType (typeDependencies p unionCons)])
+  pure (DataUnion variants, [UnionVariantsExtension (typeDependencies p unionCons)])
 
 typeDependencies :: CatType kind a -> [GRepCons (Maybe (ArgumentsDefinition CONST))] -> [NodeTypeVariant]
 typeDependencies proxy cons = concat $ traverse (defineObjectType proxy) cons

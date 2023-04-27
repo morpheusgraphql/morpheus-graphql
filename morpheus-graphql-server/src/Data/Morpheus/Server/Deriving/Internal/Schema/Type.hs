@@ -51,10 +51,10 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
     outputType,
   )
 import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
-  ( NodeDerivation,
+  ( NodeDerivation (NodeExtension),
     SchemaBuilder (..),
   )
-import Data.Morpheus.Server.Deriving.Utils.Types (CatType, nodeToType, withObject)
+import Data.Morpheus.Server.Deriving.Utils.Types (CatType, GQLTypeNodeExtension, nodeToType, withObject)
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( FieldRep (..),
     UseGQLType (..),
@@ -80,7 +80,7 @@ buildTypeContent ::
   UseDeriving gql args ->
   CatType kind a ->
   GRepType FieldRep ->
-  GQLResult (TypeContent TRUE kind CONST, [NodeDerivation])
+  GQLResult (TypeContent TRUE kind CONST, [GQLTypeNodeExtension])
 buildTypeContent options scope (GRepTypeEnum variants) = (,[]) <$> buildEnumTypeContent options scope variants
 buildTypeContent options scope (GRepTypeObject fields) = (,[]) <$> buildObjectTypeContent options scope (map (unFieldRep <$>) fields)
 buildTypeContent _ scope GRepTypeUnion {..} = buildUnionType scope (map fst variantRefs) (map (unFieldRep <$>) inlineVariants)
@@ -107,7 +107,9 @@ deriveTypeContentWith ::
   SchemaBuilder (TypeContent TRUE kind CONST)
 deriveTypeContentWith drv@UseDeriving {..} proxy = do
   reps <- deriveType (toFieldContent (getCatContext proxy) drvGQL) proxy
-  SchemaBuilder (buildTypeContent drv proxy reps)
+  SchemaBuilder $ do
+    (t, ext) <- buildTypeContent drv proxy reps
+    pure (t, map NodeExtension ext)
 
 deriveTypeGuardUnions ::
   (gql a, GRep gql gql (SchemaBuilder FieldRep) (Rep a)) =>

@@ -23,7 +23,7 @@ import Control.Monad.Except (MonadError (..))
 import Data.Map (alter, findWithDefault, insert)
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Internal.Utils (IsMap (..))
-import Data.Morpheus.Server.Deriving.Utils.Types (NodeTypeVariant (..))
+import Data.Morpheus.Server.Deriving.Utils.Types (GQLTypeNodeExtension (..), NodeTypeVariant (..))
 import Data.Morpheus.Server.Types.TypeName (TypeFingerprint (..))
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
@@ -48,8 +48,7 @@ import Relude hiding (empty)
 data NodeDerivation
   = TypeDerivation TypeFingerprint (TypeDefinition ANY CONST)
   | DirectiveDerivation TypeFingerprint (DirectiveDefinition CONST)
-  | ImplementsDerivation TypeName [TypeName]
-  | UnionType [NodeTypeVariant]
+  | NodeExtension GQLTypeNodeExtension
 
 data SchemaState where
   SchemaState ::
@@ -149,10 +148,10 @@ execNode (TypeDerivation InternalFingerprint {} _) s = pure s
 execNode (TypeDerivation fp t) s = pure s {typeDefinitions = insert fp t (typeDefinitions s)}
 execNode (DirectiveDerivation InternalFingerprint {} _) s = pure s
 execNode (DirectiveDerivation fp d) s = pure s {directiveDefinitions = insert fp d (directiveDefinitions s)}
-execNode (ImplementsDerivation interface types) s = pure $ s {implements = foldr insertInterface (implements s) types}
+execNode (NodeExtension (ImplementsExtension interface types)) s = pure $ s {implements = foldr insertInterface (implements s) types}
   where
     insertInterface = alter (Just . (interface :) . fromMaybe [])
-execNode (UnionType nodes) s = foldlM (&) s (map execNodeTypeVariant nodes)
+execNode (NodeExtension (UnionVariantsExtension nodes)) s = foldlM (&) s (map execNodeTypeVariant nodes)
 
 execNodeTypeVariant :: Monad m => NodeTypeVariant -> SchemaState -> m SchemaState
 execNodeTypeVariant (NodeTypeVariant consName fields) s =
