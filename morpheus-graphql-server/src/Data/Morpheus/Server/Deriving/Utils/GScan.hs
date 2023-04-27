@@ -37,13 +37,13 @@ useProxies toValue toKey = fromList . map (\x -> (toKey x, x)) . concatMap toVal
 scan :: Scanner c -> [ScanRef c] -> [ScanProxy c]
 scan ctx = toList . scanRefs ctx mempty
 
-fieldRefs :: Scanner c -> ScanRef c -> [ScanRef c]
-fieldRefs ctx (ScanNode _ _ x) = runGmap (rep x) (mapContext x ctx)
-fieldRefs _ ScanLeaf {} = []
-
 mapContext :: CatType k a -> Scanner c -> GmapFun c [ScanRef c]
 mapContext OutputType (Scanner f) = GmapFun (f . outputType)
 mapContext InputType (Scanner f) = GmapFun (f . inputType)
+
+fieldRefs :: Scanner c -> ScanRef c -> [ScanRef c]
+fieldRefs ctx (ScanNode _ _ x) = runGmap (rep x) (mapContext x ctx)
+fieldRefs _ ScanLeaf {} = []
 
 rep :: f a -> Proxy (Rep a)
 rep _ = Proxy
