@@ -15,9 +15,9 @@ module Data.Morpheus.Server.Deriving.Internal.Decode.Rep
 where
 
 import Control.Monad.Except (MonadError (throwError))
+import Data.Morpheus.Generic (CountFields (..))
 import Data.Morpheus.Server.Deriving.Internal.Decode.Utils
   ( Context (..),
-    CountFields (..),
     DecoderT,
     DescribeCons,
     decodeFieldWith,
@@ -58,11 +58,11 @@ decideEither dir (left, right) name value
   | name `elem` left = L1 <$> decodeRep dir value
   | name `elem` right = R1 <$> decodeRep dir value
   | otherwise =
-    throwError $
-      internal $
-        "Constructor \""
-          <> msg name
-          <> "\" could not find in Union"
+      throwError $
+        internal $
+          "Constructor \""
+            <> msg name
+            <> "\" could not find in Union"
 
 decodeInputUnionObject ::
   (DecodeRep gql args f, DecodeRep gql args g) =>

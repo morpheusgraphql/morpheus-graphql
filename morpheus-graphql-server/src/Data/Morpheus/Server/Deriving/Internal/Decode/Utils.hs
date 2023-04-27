@@ -25,7 +25,6 @@ module Data.Morpheus.Server.Deriving.Internal.Decode.Utils
     Context (..),
     getUnionInfos,
     DescribeCons,
-    CountFields (..),
     RefType (..),
     repValue,
     useDecodeArguments,
@@ -35,7 +34,8 @@ where
 import Control.Monad.Except (MonadError (throwError))
 import Data.Morpheus.App.Internal.Resolving (ResolverState)
 import Data.Morpheus.Generic
-  ( GRepField (..),
+  ( CountFields,
+    GRepField (..),
     GRepValue (..),
   )
 import Data.Morpheus.Internal.Ext (GQLResult)
@@ -217,18 +217,6 @@ instance (Selector s, gql a) => RefType gql (M1 S s (K1 i a)) where
 
 instance RefType gql U1 where
   refType _ _ = Nothing
-
-class CountFields (f :: Type -> Type) where
-  countFields :: Proxy f -> Int
-
-instance (CountFields f, CountFields g) => CountFields (f :*: g) where
-  countFields _ = countFields (Proxy @f) + countFields (Proxy @g)
-
-instance (Selector s) => CountFields (M1 S s (K1 i a)) where
-  countFields _ = 1
-
-instance CountFields U1 where
-  countFields _ = 0
 
 useDecodeArguments :: val a => UseDeriving gql val -> Arguments VALID -> ResolverState a
 useDecodeArguments drv = useDecodeValue (drvArgs drv) . argumentsToObject

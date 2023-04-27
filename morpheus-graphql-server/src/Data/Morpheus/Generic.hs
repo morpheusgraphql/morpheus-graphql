@@ -11,9 +11,14 @@ module Data.Morpheus.Generic
     deriveType,
     deriveValue,
     scanTypes,
+    -- Others
+    CountFields (..),
   )
 where
 
+import Data.Morpheus.Generic.CountFields
+  ( CountFields (..),
+  )
 import Data.Morpheus.Generic.GRep
   ( GRep,
     GRepCons (..),

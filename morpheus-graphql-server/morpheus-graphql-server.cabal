@@ -312,6 +312,7 @@ library
       Data.Morpheus.Server.Types
   other-modules:
       Data.Morpheus.Generic
+      Data.Morpheus.Generic.CountFields
       Data.Morpheus.Generic.Gmap
       Data.Morpheus.Generic.GRep
       Data.Morpheus.Server.Deriving.App
