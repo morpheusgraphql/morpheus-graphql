@@ -16,6 +16,7 @@ module Data.Morpheus.Server.Deriving.Utils.Types
     withObject,
     typeToArguments,
     CatType (..),
+    NodeTypeVariant (..),
   )
 where
 
@@ -28,7 +29,8 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
   )
 import Data.Morpheus.Types.Internal.AST
-  ( Argument (..),
+  ( ANY,
+    Argument (..),
     Arguments,
     ArgumentsDefinition,
     CONST,
@@ -81,3 +83,7 @@ nodeToType :: (Applicative f, MonadError GQLError f) => GQLTypeNode c -> f (Type
 nodeToType node = case node of
   GQLTypeNode x -> pure x
   GQLDirectiveNode dir -> throwError $ "expected " <> msg (directiveDefinitionName dir) <> " to be a type but its directive!"
+
+data NodeTypeVariant
+  = NodeTypeVariant TypeName (TypeContent TRUE ANY CONST)
+  | NodeUnitType

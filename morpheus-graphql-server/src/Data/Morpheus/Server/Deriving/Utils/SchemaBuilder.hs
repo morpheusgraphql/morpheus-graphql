@@ -16,7 +16,6 @@ module Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
     toSchema,
     NodeDerivation (..),
     derivations,
-    NodeTypeVariant (..),
   )
 where
 
@@ -24,6 +23,7 @@ import Control.Monad.Except (MonadError (..))
 import Data.Map (alter, findWithDefault, insert)
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Internal.Utils (IsMap (..))
+import Data.Morpheus.Server.Deriving.Utils.Types (NodeTypeVariant (..))
 import Data.Morpheus.Server.Types.TypeName (TypeFingerprint (..))
 import Data.Morpheus.Types.Internal.AST
   ( ANY,
@@ -32,7 +32,6 @@ import Data.Morpheus.Types.Internal.AST
     GQLError,
     OBJECT,
     Schema,
-    TRUE,
     TypeCategory (..),
     TypeContent (..),
     TypeDefinition (..),
@@ -45,10 +44,6 @@ import Data.Morpheus.Types.Internal.AST
     unitTypeName,
   )
 import Relude hiding (empty)
-
-data NodeTypeVariant
-  = NodeTypeVariant TypeName (TypeContent TRUE ANY CONST)
-  | NodeUnitType
 
 data NodeDerivation
   = TypeDerivation TypeFingerprint (TypeDefinition ANY CONST)

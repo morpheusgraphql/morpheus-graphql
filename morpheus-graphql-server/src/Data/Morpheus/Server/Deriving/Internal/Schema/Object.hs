@@ -34,9 +34,7 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Enum
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
   )
-import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
-  ( NodeTypeVariant (..),
-  )
+import Data.Morpheus.Server.Deriving.Utils.Types (NodeTypeVariant (..))
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition,
     CONST,

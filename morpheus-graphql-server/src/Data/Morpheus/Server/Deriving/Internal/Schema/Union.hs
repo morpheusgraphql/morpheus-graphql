@@ -24,8 +24,8 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
   )
 import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
   ( NodeDerivation (..),
-    NodeTypeVariant (..),
   )
+import Data.Morpheus.Server.Deriving.Utils.Types (NodeTypeVariant (..))
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition,
     CONST,
