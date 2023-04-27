@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -72,6 +73,7 @@ newtype Deprecated = Deprecated
     )
 
 instance GQLType Deprecated where
+  type KIND Deprecated = DIRECTIVE
   __type = mkTypeData "deprecated"
 
 instance GQLDirective Deprecated where
@@ -153,9 +155,11 @@ newtype DropNamespace = DropNamespace
   { dropNamespace :: Text
   }
   deriving
-    ( Generic,
-      GQLType
+    ( Generic
     )
+
+instance GQLType DropNamespace where
+  type KIND DropNamespace = DIRECTIVE
 
 instance GQLDirective DropNamespace where
   type
@@ -176,10 +180,10 @@ instance VisitType DropNamespace where
 newtype DefaultValue = DefaultValue
   { defaultValue :: Value CONST
   }
-  deriving
-    ( Generic,
-      GQLType
-    )
+  deriving (Generic)
+
+instance GQLType DefaultValue where
+  type KIND DefaultValue = DIRECTIVE
 
 instance GQLDirective DefaultValue where
   type DIRECTIVE_LOCATIONS DefaultValue = '[ 'LOCATION_INPUT_FIELD_DEFINITION]

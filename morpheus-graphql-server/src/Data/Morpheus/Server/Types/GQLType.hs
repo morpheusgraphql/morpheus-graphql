@@ -29,10 +29,20 @@ module Data.Morpheus.Server.Types.GQLType
     withRes,
     kindedProxy,
     IgnoredResolver,
+    enumDirective,
+    enumDirective',
+    fieldDirective,
+    fieldDirective',
+    typeDirective,
   )
 where
 
 -- MORPHEUS
+
+{- ORMOLU_DISABLE -}
+import qualified Data.HashMap.Strict as M
+import qualified Language.Haskell.TH as TH
+{- ORMOLU_ENABLE -}
 
 import Control.Monad.Except (MonadError (throwError))
 import Data.Morpheus.App.Internal.Resolving
@@ -82,7 +92,6 @@ import Data.Morpheus.Server.Types.Directives
     GQLDirective (..),
     allUsages,
     applyTypeName,
-    typeDirective,
   )
 import Data.Morpheus.Server.Types.Internal
   ( TypeData (..),
@@ -90,6 +99,7 @@ import Data.Morpheus.Server.Types.Internal
   )
 import Data.Morpheus.Server.Types.Kind
   ( CUSTOM,
+    DIRECTIVE,
     DerivingKind,
     SCALAR,
     TYPE,
@@ -115,6 +125,7 @@ import Data.Morpheus.Types.Internal.AST
     CONST,
     DirectiveLocation (..),
     FieldDefinition,
+    FieldName,
     GQLError,
     IN,
     Msg (msg),
@@ -124,6 +135,7 @@ import Data.Morpheus.Types.Internal.AST
     TRUE,
     TypeContent (..),
     TypeDefinition (..),
+    TypeName,
     TypeRef (..),
     TypeWrapper (..),
     VALID,
@@ -131,6 +143,7 @@ import Data.Morpheus.Types.Internal.AST
     internal,
     mkBaseType,
     mkField,
+    packName,
     toNullable,
     unitTypeName,
   )
@@ -372,10 +385,15 @@ instance (GQLType a) => GQLType (NamedResolverT m a) where
 
 type DirectiveUsages = GDirectiveUsages GQLType GQLValue
 
+type DirectiveConstraint a = (GQLDirective a, GQLType a, KIND a ~ DIRECTIVE, GQLValue a)
+
+type DirectiveUsage = GDirectiveUsage GQLType GQLValue
+
 newtype InputTypeNamespace = InputTypeNamespace {inputTypeNamespace :: Text}
   deriving (Generic)
-  deriving anyclass
-    (GQLType)
+
+instance GQLType InputTypeNamespace where
+  type KIND InputTypeNamespace = DIRECTIVE
 
 instance GQLDirective InputTypeNamespace where
   excludeFromSchema _ = True
@@ -417,7 +435,22 @@ withGQL =
       __exploreRef p
         <> concatMap exploreDirective (allUsages (directives p))
 
-exploreDirective :: GDirectiveUsage GQLType GQLValue -> [ScanRef GQLType]
+typeDirective :: (DirectiveConstraint a) => a -> DirectiveUsages
+typeDirective x = GDirectiveUsages [GDirectiveUsage x] mempty mempty
+
+fieldDirective :: (DirectiveConstraint a) => FieldName -> a -> DirectiveUsages
+fieldDirective name x = GDirectiveUsages mempty (M.singleton name [GDirectiveUsage x]) mempty
+
+fieldDirective' :: (DirectiveConstraint a) => TH.Name -> a -> DirectiveUsages
+fieldDirective' name = fieldDirective (packName name)
+
+enumDirective :: (DirectiveConstraint a) => TypeName -> a -> DirectiveUsages
+enumDirective name x = GDirectiveUsages mempty mempty (M.singleton name [GDirectiveUsage x])
+
+enumDirective' :: (DirectiveConstraint a) => TH.Name -> a -> DirectiveUsages
+enumDirective' name = enumDirective (packName name)
+
+exploreDirective :: DirectiveUsage -> [ScanRef GQLType]
 exploreDirective (GDirectiveUsage x) = __exploreRef $ inputType $ Identity x
 
 constraintType :: Applicative f => GQLNode c -> f (TypeDefinition c CONST)
