@@ -15,17 +15,17 @@ module Data.Morpheus.Server.Deriving.Kinded.Resolver
   )
 where
 
-import qualified Data.Map as M
 import Data.Morpheus.App.Internal.Resolving
   ( MonadResolver (..),
     ResolverValue (..),
     getArguments,
   )
+import Data.Morpheus.Internal.Utils (toAssoc)
 import Data.Morpheus.Server.Deriving.Internal.Resolve.Explore
-import Data.Morpheus.Server.Deriving.Utils.AST
 import Data.Morpheus.Server.Deriving.Utils.Proxy
   ( ContextValue (..),
   )
+import Data.Morpheus.Server.Deriving.Utils.Types
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseDeriving (..),
     UseResolver (..),
@@ -61,8 +61,8 @@ instance (UseResolver res gql val ~ ctx, EXPLORE gql res m a) => KindedResolver 
   kindedResolver ctx = pure . useExploreResolvers ctx . unContextValue
 
 --  Map
-instance (UseResolver res gql val ~ ctx, res m [(k, v)]) => KindedResolver ctx CUSTOM m (Map k v) where
-  kindedResolver res = useEncodeResolver res . M.toList . unContextValue
+instance (UseResolver res gql val ~ ctx, res m [(k, v)], Ord k) => KindedResolver ctx CUSTOM m (Map k v) where
+  kindedResolver res = useEncodeResolver res . toAssoc . unContextValue
 
 --  INTERFACE Types
 instance (UseResolver res gql val ~ ctx, EXPLORE gql res m guard, EXPLORE gql res m union) => KindedResolver ctx CUSTOM m (TypeGuard guard union) where

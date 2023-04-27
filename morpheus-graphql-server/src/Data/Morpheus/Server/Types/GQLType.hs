@@ -71,7 +71,6 @@ import Data.Morpheus.Server.Deriving.Kinded.Type
     scanNode,
   )
 import Data.Morpheus.Server.Deriving.Kinded.Value (KindedValue (..))
-import Data.Morpheus.Server.Deriving.Utils.AST (GQLTypeNode (..))
 import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef (..))
 import Data.Morpheus.Server.Deriving.Utils.Gmap
 import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (..), KindedProxy (KindedProxy), catMap, inputType, isIN)
@@ -81,6 +80,7 @@ import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
     SchemaBuilder,
     derivations,
   )
+import Data.Morpheus.Server.Deriving.Utils.Types (GQLTypeNode (..))
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( FieldRep (..),
     UseDeriving (..),

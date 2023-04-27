@@ -24,7 +24,6 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Internal
   ( CatType,
     typeToArguments,
   )
-import Data.Morpheus.Server.Deriving.Utils.AST (nodeToType)
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
     inputType,
@@ -32,6 +31,7 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
 import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
   ( SchemaBuilder,
   )
+import Data.Morpheus.Server.Deriving.Utils.Types (nodeToType)
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( FieldRep (..),
     UseDeriving (..),

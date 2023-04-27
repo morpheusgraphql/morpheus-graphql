@@ -29,7 +29,6 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Internal
 import Data.Morpheus.Server.Deriving.Internal.Schema.Type
   ( useDeriveRoot,
   )
-import Data.Morpheus.Server.Deriving.Utils.AST (GQLTypeNode (..))
 import Data.Morpheus.Server.Deriving.Utils.GScan
   ( ScanProxy (..),
     ScanRef,
@@ -42,6 +41,7 @@ import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
     TypeFingerprint,
     toSchema,
   )
+import Data.Morpheus.Server.Deriving.Utils.Types (GQLTypeNode (..))
 import Data.Morpheus.Server.Deriving.Utils.Use
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),

@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module Data.Morpheus.Server.Deriving.Utils.AST
+module Data.Morpheus.Server.Deriving.Utils.Types
   ( argumentsToObject,
     nodeToType,
     GQLTypeNode (..),

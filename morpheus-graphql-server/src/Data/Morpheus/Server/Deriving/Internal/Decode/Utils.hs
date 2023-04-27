@@ -39,7 +39,6 @@ import Data.Morpheus.Internal.Utils
   ( fromElems,
     selectOr,
   )
-import Data.Morpheus.Server.Deriving.Utils.AST (argumentsToObject)
 import Data.Morpheus.Server.Deriving.Utils.GRep
   ( GRepField (..),
     GRepValue (..),
@@ -50,6 +49,7 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
 import Data.Morpheus.Server.Deriving.Utils.Proxy
   ( conNameProxy,
   )
+import Data.Morpheus.Server.Deriving.Utils.Types (argumentsToObject)
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseDeriving (..),
     UseGQLType (..),

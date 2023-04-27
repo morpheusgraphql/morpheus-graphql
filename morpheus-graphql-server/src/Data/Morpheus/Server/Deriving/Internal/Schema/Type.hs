@@ -40,7 +40,6 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Object
   ( buildObjectTypeContent,
   )
 import Data.Morpheus.Server.Deriving.Internal.Schema.Union (buildUnionType)
-import Data.Morpheus.Server.Deriving.Utils.AST (nodeToType)
 import Data.Morpheus.Server.Deriving.Utils.GRep
   ( GRep,
     GRepContext (..),
@@ -53,6 +52,7 @@ import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
   ( NodeDerivation,
     SchemaBuilder (..),
   )
+import Data.Morpheus.Server.Deriving.Utils.Types (nodeToType)
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( FieldRep (..),
     UseGQLType (..),
