@@ -268,8 +268,6 @@ instance GQLType (Value CONST) where
   type KIND (Value CONST) = CUSTOM
   __type = mkTypeData "INTERNAL_VALUE"
   __deriveType = fmap GQLTypeNode . deriveScalarDefinition (const $ ScalarDefinition pure) withDir
-
-  -- __exploreTypes _ = []
   __exploreRef _ = []
 
 -- WRAPPERS
@@ -332,8 +330,6 @@ instance GQLType a => GQLType (Resolver o e m a) where
   type KIND (Resolver o e m a) = CUSTOM
   __type = __type . catMap (Proxy @a)
   __deriveType = __deriveType . catMap (Proxy @a)
-
-  -- __exploreTypes _ = []
   __exploreRef = __exploreRef . catMap (Proxy @a)
 
 instance (Typeable k, Typeable v, GQLType k, GQLType v) => GQLType (k, v) where
