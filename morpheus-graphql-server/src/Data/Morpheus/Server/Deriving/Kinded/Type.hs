@@ -35,6 +35,7 @@ import Data.Morpheus.Server.Deriving.Utils.Gmap (Gmap)
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
     catMap,
+    inputType,
     unliftKind,
   )
 import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
@@ -89,6 +90,8 @@ instance (DERIVE_TYPE gql a, Gmap gql (Rep a), ctx ~ UseDeriving gql v) => Deriv
   deriveKindedType drv = fmap GQLTypeNode . deriveTypeDefinition drv . unliftKind
   exploreKindedRefs UseDeriving {..} proxy = scanNode drvGQL (catMap (Proxy @a) proxy)
 
-instance (ctx ~ UseDeriving gql v, GQLDirective a, gql a, v a, Gmap gql (Rep a)) => DeriveKindedType ctx DIRECTIVE a where
-  deriveKindedType drv _ = GQLDirectiveNode <$> deriveDirectiveDefinition drv (Proxy @a)
+instance (DERIVE_TYPE gql a, Gmap gql (Rep a), ctx ~ UseDeriving gql v, GQLDirective a, v a) => DeriveKindedType ctx DIRECTIVE a where
+  deriveKindedType drv _ = GQLDirectiveNode <$> (deriveTypeDefinition drv proxy >>= deriveDirectiveDefinition drv proxy)
+    where
+      proxy = inputType (Proxy @a)
   exploreKindedRefs UseDeriving {..} proxy = scanNode drvGQL (catMap (Proxy @a) proxy)

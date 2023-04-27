@@ -36,7 +36,7 @@ import Data.Morpheus.Internal.Ext (resultOr, unsafeFromList)
 import Data.Morpheus.Internal.Utils (Empty (..), fromElems, lookup)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Internal
   ( CatType,
-    deriveTypeAsArguments,
+    typeToArguments,
   )
 import Data.Morpheus.Server.Deriving.Utils.GRep
   ( GRepField (..),
@@ -77,9 +77,11 @@ import Data.Morpheus.Types.Internal.AST
     Directives,
     FieldContent (..),
     FieldName,
+    IN,
     ObjectEntry (..),
     Position (..),
     TRUE,
+    TypeDefinition,
     TypeName,
     Value (..),
     internal,
@@ -89,12 +91,12 @@ import GHC.TypeLits ()
 import Relude hiding (empty)
 
 deriveDirectiveDefinition ::
-  (gql a, GQLDirective a, args a) => UseDeriving gql args -> f a -> SchemaBuilder (DirectiveDefinition CONST)
-deriveDirectiveDefinition options proxy = do
-  directiveDefinitionArgs <- deriveTypeAsArguments (drvGQL options) proxy
+  (gql a, GQLDirective a, args a) => UseDeriving gql args -> f a -> TypeDefinition IN CONST -> SchemaBuilder (DirectiveDefinition CONST)
+deriveDirectiveDefinition options@UseDeriving {..} proxy t = do
+  directiveDefinitionArgs <- typeToArguments drvGQL proxy t
   pure
     ( DirectiveDefinition
-        { directiveDefinitionName = deriveDirectiveName (drvGQL options) proxy,
+        { directiveDefinitionName = deriveDirectiveName drvGQL proxy,
           directiveDefinitionDescription = visitTypeDescription options proxy Nothing,
           directiveDefinitionArgs,
           directiveDefinitionLocations = getLocations proxy

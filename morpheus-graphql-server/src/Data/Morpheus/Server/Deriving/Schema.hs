@@ -86,9 +86,4 @@ deriveSchema _ =
       useDeriveRoot withGQL (Proxy @(qu IgnoredResolver))
 
 resolveRef :: ScanProxy GQLType -> SchemaBuilder ()
-resolveRef (ScanProxy proxy) =
-  traceShow
-    (useTypename withGQL proxy)
-    ( useDeriveNode withGQL proxy
-        >>= resolveGQLNode (useFingerprint withGQL proxy)
-    )
+resolveRef (ScanProxy proxy) = useDeriveNode withGQL proxy >>= resolveGQLNode (useFingerprint withGQL proxy)

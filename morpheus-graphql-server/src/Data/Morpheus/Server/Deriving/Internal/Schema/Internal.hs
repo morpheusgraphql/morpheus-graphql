@@ -22,7 +22,7 @@ module Data.Morpheus.Server.Deriving.Internal.Schema.Internal
   ( CatType (..),
     fromSchema,
     withObject,
-    deriveTypeAsArguments,
+    typeToArguments,
   )
 where
 
@@ -37,7 +37,6 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
     inputType,
   )
-import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder (SchemaBuilder)
 import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (..))
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition,
@@ -72,6 +71,3 @@ failureOnlyObject gql proxy = throwError $ msg (useTypename gql proxy) <> " shou
 
 typeToArguments :: (DerivingMonad m, gql a) => UseGQLType gql -> f a -> TypeDefinition IN CONST -> m (ArgumentsDefinition CONST)
 typeToArguments gql arg = fmap fieldsToArguments . withObject gql (inputType arg) . typeContent
-
-deriveTypeAsArguments :: gql a => UseGQLType gql -> f a -> SchemaBuilder (ArgumentsDefinition CONST)
-deriveTypeAsArguments gql arg = useDeriveType gql (inputType arg) >>= typeToArguments gql arg

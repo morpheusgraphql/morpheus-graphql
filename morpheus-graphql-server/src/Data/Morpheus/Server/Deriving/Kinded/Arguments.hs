@@ -22,10 +22,11 @@ where
 import Data.Morpheus.Internal.Ext ((<:>))
 import Data.Morpheus.Server.Deriving.Internal.Schema.Internal
   ( CatType,
-    deriveTypeAsArguments,
+    typeToArguments,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
+    inputType,
   )
 import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
   ( SchemaBuilder,
@@ -54,8 +55,10 @@ instance DeriveFieldArguments ctx () where
 
 instance (UseDeriving gql val ~ ctx, gql b, gql a) => DeriveFieldArguments ctx (a -> b) where
   deriveFieldArguments UseDeriving {..} _ = do
-    a <- deriveTypeAsArguments drvGQL (Proxy @a)
+    a <- useDeriveType drvGQL proxy >>= typeToArguments drvGQL proxy
     b <- unFieldRep <$> useDeriveFieldArguments drvGQL (OutputType :: CatType OUT b)
     case b of
       Just x -> Just <$> (a <:> x)
       Nothing -> pure $ Just a
+    where
+      proxy = inputType (Proxy @a)
