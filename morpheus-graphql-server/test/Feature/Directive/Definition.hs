@@ -57,9 +57,7 @@ instance VisitType Power where
 
 instance GQLType MythologyDeity where
   directives _ =
-    x
-      typeDirective
-      Power {name = "Lightning bolts", isLimited = False}
+    typeDirective Power {name = "Lightning bolts", isLimited = False}
       <> typeDirective Prefixes {addPrefix = "", removePrefix = "Mythology"}
       <> fieldDirective' 'deprecatedField Deprecated {reason = Nothing}
       <> fieldDirective' 'deprecatedFieldWithReason Deprecated {reason = Just "this should be deprecated"}
