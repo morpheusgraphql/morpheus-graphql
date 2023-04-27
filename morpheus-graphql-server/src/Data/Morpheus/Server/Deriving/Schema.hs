@@ -35,6 +35,7 @@ import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
     TypeFingerprint,
     liftResult,
     toSchema,
+    unliftResult,
   )
 import Data.Morpheus.Server.Deriving.Utils.Types (CatType (OutputType), GQLTypeNode (..), fromSchema)
 import Data.Morpheus.Server.Deriving.Utils.Use
@@ -79,10 +80,11 @@ resolveNode (ScanProxy proxy) = toDerivation (useFingerprint withGQL proxy) <$> 
 
 deriveSchema :: forall root f m e qu mu su. SCHEMA qu mu su => f (root m e qu mu su) -> GQLResult (Schema CONST)
 deriveSchema _ =
-  toSchema
+  unliftResult
     ( (,,,)
         <$> useDeriveRoot withGQL (Proxy @(qu IgnoredResolver))
         <*> traverse (useDeriveRoot withGQL) (ignoreUndefined (Proxy @(mu IgnoredResolver)))
         <*> traverse (useDeriveRoot withGQL) (ignoreUndefined (Proxy @(su IgnoredResolver)))
         <*> liftResult (fmap join (traverse resolveNode (explore (Proxy @qu) <> explore (Proxy @mu) <> explore (Proxy @su))))
     )
+    >>= toSchema

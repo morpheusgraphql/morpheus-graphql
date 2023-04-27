@@ -98,16 +98,14 @@ instance Monad SchemaBuilder where
       pure (y, up1 <> up2)
 
 toSchema ::
-  SchemaBuilder
-    ( TypeDefinition OBJECT CONST,
-      Maybe (TypeDefinition OBJECT CONST),
-      Maybe (TypeDefinition OBJECT CONST),
-      [NodeDerivation]
-    ) ->
+  ( TypeDefinition OBJECT CONST,
+    Maybe (TypeDefinition OBJECT CONST),
+    Maybe (TypeDefinition OBJECT CONST),
+    [NodeDerivation]
+  ) ->
   GQLResult (Schema CONST)
-toSchema (SchemaBuilder v) = do
-  ((q, m, s, nodes), typeDefs) <- v
-  SchemaState {typeDefinitions, implements, directiveDefinitions} <- foldlM (&) mempty (map execNode (typeDefs <> nodes))
+toSchema (q, m, s, nodes) = do
+  SchemaState {typeDefinitions, implements, directiveDefinitions} <- foldlM (&) mempty (map execNode nodes)
   types <- map (insertImplements implements) <$> checkTypeCollisions (toAssoc typeDefinitions)
   schema <- defineSchemaWith types (Just q, m, s)
   foldlM defineDirective schema directiveDefinitions
