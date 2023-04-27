@@ -12,6 +12,10 @@ module Data.Morpheus.Server.Deriving.Internal.Schema.Object
   )
 where
 
+import Data.Morpheus.Generic
+  ( GRepCons (..),
+    GRepField (..),
+  )
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Internal.Utils
   ( empty,
@@ -47,10 +51,6 @@ import Data.Morpheus.Types.Internal.AST
     unitFieldName,
     unitTypeName,
     unsafeFromFields,
-  )
-import Data.Morpheus.Utils.GRep
-  ( GRepCons (..),
-    GRepField (..),
   )
 
 defineObjectType :: CatType kind a -> GRepCons (Maybe (ArgumentsDefinition CONST)) -> [NodeTypeVariant]

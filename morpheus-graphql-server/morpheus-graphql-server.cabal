@@ -311,6 +311,9 @@ library
       Data.Morpheus.Server.Resolvers
       Data.Morpheus.Server.Types
   other-modules:
+      Data.Morpheus.Generic
+      Data.Morpheus.Generic.Gmap
+      Data.Morpheus.Generic.GRep
       Data.Morpheus.Server.Deriving.App
       Data.Morpheus.Server.Deriving.Internal.Decode.Rep
       Data.Morpheus.Server.Deriving.Internal.Decode.Utils
@@ -345,8 +348,6 @@ library
       Data.Morpheus.Server.Types.TypeName
       Data.Morpheus.Server.Types.Types
       Data.Morpheus.Server.Types.Visitors
-      Data.Morpheus.Utils.Gmap
-      Data.Morpheus.Utils.GRep
       Paths_morpheus_graphql_server
   hs-source-dirs:
       src

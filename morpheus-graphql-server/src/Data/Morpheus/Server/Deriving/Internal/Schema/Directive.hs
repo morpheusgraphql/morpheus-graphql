@@ -32,6 +32,9 @@ module Data.Morpheus.Server.Deriving.Internal.Schema.Directive
 where
 
 import Control.Monad.Except
+import Data.Morpheus.Generic
+  ( GRepField (..),
+  )
 import Data.Morpheus.Internal.Ext (GQLResult, resultOr, unsafeFromList)
 import Data.Morpheus.Internal.Utils (Empty (..), fromElems, lookup)
 import Data.Morpheus.Server.Deriving.Utils.Kinded
@@ -79,9 +82,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeName,
     Value (..),
     internal,
-  )
-import Data.Morpheus.Utils.GRep
-  ( GRepField (..),
   )
 import GHC.Generics ()
 import GHC.TypeLits ()

@@ -14,7 +14,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Utils.GRep
+module Data.Morpheus.Generic.GRep
   ( GRep (..),
     GRepContext (..),
     GRepCons (..),

@@ -28,6 +28,12 @@ import Data.Morpheus.App.Internal.Resolving
     mkUnion,
     requireObject,
   )
+import Data.Morpheus.Generic
+  ( GRep,
+    GRepContext (..),
+    GRepValue (..),
+    deriveValue,
+  )
 import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
   ( toFieldRes,
     visitEnumName,
@@ -40,12 +46,6 @@ import Data.Morpheus.Server.Deriving.Utils.Use
   )
 import Data.Morpheus.Types.Internal.AST
   ( GQLError,
-  )
-import Data.Morpheus.Utils.GRep
-  ( GRep,
-    GRepContext (..),
-    GRepValue (..),
-    deriveValue,
   )
 import GHC.Generics (Generic (Rep))
 import Relude

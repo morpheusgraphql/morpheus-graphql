@@ -22,6 +22,10 @@ module Data.Morpheus.Server.Deriving.Kinded.Type
   )
 where
 
+import Data.Morpheus.Generic
+  ( GRep,
+    Gmap,
+  )
 import Data.Morpheus.Server.Deriving.Internal.Schema.Directive (deriveDirectiveDefinition)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Type
   ( deriveScalarDefinition,
@@ -56,10 +60,6 @@ import Data.Morpheus.Types.GQLScalar
   ( DecodeScalar (..),
     scalarValidator,
   )
-import Data.Morpheus.Utils.GRep
-  ( GRep,
-  )
-import Data.Morpheus.Utils.Gmap (Gmap)
 import GHC.Generics (Generic (Rep))
 import Relude
 

@@ -30,6 +30,12 @@ import Data.Morpheus.App.Internal.Resolving
     mkList,
     mkNull,
   )
+import Data.Morpheus.Generic
+  ( GRep,
+    GRepContext (..),
+    GRepValue (..),
+    deriveValue,
+  )
 import Data.Morpheus.Server.Deriving.Internal.Decode.Utils (useDecodeArguments)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Directive (UseDeriving, toFieldRes)
 import Data.Morpheus.Server.Deriving.Utils.Kinded
@@ -66,12 +72,6 @@ import Data.Morpheus.Types.Internal.AST
     Value (List),
     internal,
     replaceValue,
-  )
-import Data.Morpheus.Utils.GRep
-  ( GRep,
-    GRepContext (..),
-    GRepValue (..),
-    deriveValue,
   )
 import GHC.Generics
   ( Generic (..),

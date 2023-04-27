@@ -23,6 +23,13 @@ import Control.Monad.Except
   ( MonadError (..),
   )
 import Data.Foldable
+import Data.Morpheus.Generic
+  ( GRep,
+    GRepContext (..),
+    GRepType (..),
+    deriveType,
+    scanTypes,
+  )
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
   ( UseDeriving (..),
@@ -64,13 +71,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeName,
     UnionMember (..),
     mkType,
-  )
-import Data.Morpheus.Utils.GRep
-  ( GRep,
-    GRepContext (..),
-    GRepType (..),
-    deriveType,
-    scanTypes,
   )
 import GHC.Generics (Rep)
 import Relude

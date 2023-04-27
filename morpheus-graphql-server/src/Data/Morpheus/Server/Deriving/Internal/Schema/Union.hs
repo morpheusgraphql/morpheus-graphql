@@ -8,6 +8,9 @@ module Data.Morpheus.Server.Deriving.Internal.Schema.Union
 where
 
 import Data.List (partition)
+import Data.Morpheus.Generic
+  ( GRepCons (..),
+  )
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Internal.Utils (fromElems)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Enum
@@ -31,9 +34,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeName,
     mkNullaryMember,
     mkUnionMember,
-  )
-import Data.Morpheus.Utils.GRep
-  ( GRepCons (..),
   )
 import Relude
 

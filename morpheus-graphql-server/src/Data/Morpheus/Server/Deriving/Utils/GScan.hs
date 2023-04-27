@@ -21,13 +21,13 @@ module Data.Morpheus.Server.Deriving.Utils.GScan
 where
 
 import Data.HashMap.Strict (fromList, insert, member)
-import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (InputType, OutputType), inputType, outputType)
-import Data.Morpheus.Server.Types.TypeName (TypeFingerprint)
-import Data.Morpheus.Utils.Gmap
+import Data.Morpheus.Generic.Gmap
   ( Gmap,
     GmapFun (..),
     runGmap,
   )
+import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (InputType, OutputType), inputType, outputType)
+import Data.Morpheus.Server.Types.TypeName (TypeFingerprint)
 import GHC.Generics (Generic (Rep))
 import Relude hiding (fromList)
 

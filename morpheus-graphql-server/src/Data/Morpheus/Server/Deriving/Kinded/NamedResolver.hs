@@ -22,6 +22,7 @@ import Data.Morpheus.App.Internal.Resolving
     NamedResolverResult (..),
     ResolverValue,
   )
+import Data.Morpheus.Generic (GRep, Gmap)
 import Data.Morpheus.Server.Deriving.Kinded.NamedResolverFun
   ( deriveNamedResolverFun,
   )
@@ -40,8 +41,6 @@ import Data.Morpheus.Types.GQLScalar (EncodeScalar (..))
 import Data.Morpheus.Types.Internal.AST
   ( ValidValue,
   )
-import Data.Morpheus.Utils.GRep (GRep)
-import Data.Morpheus.Utils.Gmap (Gmap)
 import GHC.Generics (Rep)
 import Relude
 

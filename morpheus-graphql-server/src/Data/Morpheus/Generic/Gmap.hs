@@ -13,8 +13,8 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Utils.Gmap
-  ( Gmap (..),
+module Data.Morpheus.Generic.Gmap
+  ( Gmap,
     GmapFun (..),
     runGmap,
   )

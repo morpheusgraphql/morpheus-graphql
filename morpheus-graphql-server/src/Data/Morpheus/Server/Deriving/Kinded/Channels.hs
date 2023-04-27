@@ -25,6 +25,13 @@ import Data.Morpheus.App.Internal.Resolving
     ResolverState,
     SubscriptionField (..),
   )
+import Data.Morpheus.Generic
+  ( GRep,
+    GRepContext (..),
+    GRepField,
+    GRepValue (..),
+    deriveValue,
+  )
 import Data.Morpheus.Internal.Utils
   ( selectBy,
   )
@@ -42,13 +49,6 @@ import Data.Morpheus.Types.Internal.AST
     TRUE,
     VALID,
     internal,
-  )
-import Data.Morpheus.Utils.GRep
-  ( GRep,
-    GRepContext (..),
-    GRepField,
-    GRepValue (..),
-    deriveValue,
   )
 import GHC.Generics (Rep)
 import Relude hiding (Undefined)

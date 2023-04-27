@@ -52,6 +52,7 @@ import Data.Morpheus.App.Internal.Resolving
     ResolverValue,
     SubscriptionField,
   )
+import Data.Morpheus.Generic (Gmap)
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Internal.Utils (singleton)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Type
@@ -147,7 +148,6 @@ import Data.Morpheus.Types.Internal.AST
     toNullable,
     unitTypeName,
   )
-import Data.Morpheus.Utils.Gmap
 import Data.Sequence (Seq)
 import Data.Vector (Vector)
 import GHC.Generics

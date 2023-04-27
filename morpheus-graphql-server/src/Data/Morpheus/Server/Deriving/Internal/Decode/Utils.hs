@@ -34,6 +34,10 @@ where
 
 import Control.Monad.Except (MonadError (throwError))
 import Data.Morpheus.App.Internal.Resolving (ResolverState)
+import Data.Morpheus.Generic
+  ( GRepField (..),
+    GRepValue (..),
+  )
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Internal.Utils
   ( fromElems,
@@ -71,10 +75,6 @@ import Data.Morpheus.Types.Internal.AST
     Value (..),
     getInputUnionValue,
     internal,
-  )
-import Data.Morpheus.Utils.GRep
-  ( GRepField (..),
-    GRepValue (..),
   )
 import GHC.Generics
 import Relude
