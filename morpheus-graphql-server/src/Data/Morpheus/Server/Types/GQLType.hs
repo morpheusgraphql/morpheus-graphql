@@ -72,7 +72,6 @@ import Data.Morpheus.Server.Deriving.Kinded.Type
   )
 import Data.Morpheus.Server.Deriving.Kinded.Value (KindedValue (..))
 import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef (..))
-import Data.Morpheus.Server.Deriving.Utils.Gmap
 import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (..), KindedProxy (KindedProxy), catMap, inputType, isIN)
 import Data.Morpheus.Server.Deriving.Utils.Proxy (ContextValue (..), symbolName)
 import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
@@ -148,6 +147,7 @@ import Data.Morpheus.Types.Internal.AST
     toNullable,
     unitTypeName,
   )
+import Data.Morpheus.Utils.Gmap
 import Data.Sequence (Seq)
 import Data.Vector (Vector)
 import GHC.Generics

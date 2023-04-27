@@ -25,9 +25,7 @@ import Data.Morpheus.App.Internal.Resolving
 import Data.Morpheus.Server.Deriving.Kinded.NamedResolverFun
   ( deriveNamedResolverFun,
   )
-import Data.Morpheus.Server.Deriving.Utils.GRep (GRep)
 import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef (..))
-import Data.Morpheus.Server.Deriving.Utils.Gmap (Gmap)
 import Data.Morpheus.Server.Deriving.Utils.Kinded (outputType)
 import Data.Morpheus.Server.Deriving.Utils.Use (UseDeriving (..), UseGQLType (useFingerprint, useTypename), UseNamedResolver (..), UseValue (useDecodeValue))
 import Data.Morpheus.Server.Types.Kind
@@ -42,6 +40,8 @@ import Data.Morpheus.Types.GQLScalar (EncodeScalar (..))
 import Data.Morpheus.Types.Internal.AST
   ( ValidValue,
   )
+import Data.Morpheus.Utils.GRep (GRep)
+import Data.Morpheus.Utils.Gmap (Gmap)
 import GHC.Generics (Rep)
 import Relude
 

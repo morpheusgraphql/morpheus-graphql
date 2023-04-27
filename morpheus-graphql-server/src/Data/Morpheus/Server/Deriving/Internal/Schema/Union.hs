@@ -16,9 +16,6 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Enum
 import Data.Morpheus.Server.Deriving.Internal.Schema.Object
   ( defineObjectType,
   )
-import Data.Morpheus.Server.Deriving.Utils.GRep
-  ( GRepCons (..),
-  )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
   )
@@ -34,6 +31,9 @@ import Data.Morpheus.Types.Internal.AST
     TypeName,
     mkNullaryMember,
     mkUnionMember,
+  )
+import Data.Morpheus.Utils.GRep
+  ( GRepCons (..),
   )
 import Relude
 

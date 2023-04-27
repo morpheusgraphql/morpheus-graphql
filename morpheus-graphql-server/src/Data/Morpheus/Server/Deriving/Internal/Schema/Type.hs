@@ -36,13 +36,6 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Object
   ( buildObjectTypeContent,
   )
 import Data.Morpheus.Server.Deriving.Internal.Schema.Union (buildUnionType)
-import Data.Morpheus.Server.Deriving.Utils.GRep
-  ( GRep,
-    GRepContext (..),
-    GRepType (..),
-    deriveType,
-    scanTypes,
-  )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatContext,
     addContext,
@@ -71,6 +64,13 @@ import Data.Morpheus.Types.Internal.AST
     TypeName,
     UnionMember (..),
     mkType,
+  )
+import Data.Morpheus.Utils.GRep
+  ( GRep,
+    GRepContext (..),
+    GRepType (..),
+    deriveType,
+    scanTypes,
   )
 import GHC.Generics (Rep)
 import Relude

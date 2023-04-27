@@ -32,12 +32,6 @@ import Data.Morpheus.App.Internal.Resolving
   )
 import Data.Morpheus.Server.Deriving.Internal.Decode.Utils (useDecodeArguments)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Directive (UseDeriving, toFieldRes)
-import Data.Morpheus.Server.Deriving.Utils.GRep
-  ( GRep,
-    GRepContext (..),
-    GRepValue (..),
-    deriveValue,
-  )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
     outputType,
@@ -73,7 +67,12 @@ import Data.Morpheus.Types.Internal.AST
     internal,
     replaceValue,
   )
-import qualified GHC.Exts as HM
+import Data.Morpheus.Utils.GRep
+  ( GRep,
+    GRepContext (..),
+    GRepValue (..),
+    deriveValue,
+  )
 import GHC.Generics
   ( Generic (..),
   )
@@ -145,7 +144,7 @@ convertNamedNode ::
   GRepValue (m (ResolverValue m)) ->
   m (NamedResolverResult m)
 convertNamedNode _ _ GRepValueEnum {..} = pure $ NamedEnumResolver enumVariantName
-convertNamedNode drv proxy GRepValueObject {..} = pure $ NamedObjectResolver $ ObjectTypeResolver $ HM.fromList (toFieldRes drv proxy <$> objectFields)
+convertNamedNode drv proxy GRepValueObject {..} = pure $ NamedObjectResolver $ ObjectTypeResolver $ fromList (toFieldRes drv proxy <$> objectFields)
 convertNamedNode _ _ GRepValueUnionRef {..} = NamedUnionResolver <$> (unionRefValue >>= getRef)
 convertNamedNode _ _ GRepValueUnion {} = throwError "only union references are supported!"
 

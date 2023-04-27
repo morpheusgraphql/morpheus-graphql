@@ -39,10 +39,6 @@ import Data.Morpheus.Internal.Utils
   ( fromElems,
     selectOr,
   )
-import Data.Morpheus.Server.Deriving.Utils.GRep
-  ( GRepField (..),
-    GRepValue (..),
-  )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
   )
@@ -75,6 +71,10 @@ import Data.Morpheus.Types.Internal.AST
     Value (..),
     getInputUnionValue,
     internal,
+  )
+import Data.Morpheus.Utils.GRep
+  ( GRepField (..),
+    GRepValue (..),
   )
 import GHC.Generics
 import Relude

@@ -43,11 +43,6 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
   ( visitEnumName,
     visitFieldName,
   )
-import Data.Morpheus.Server.Deriving.Utils.GRep
-  ( GRep,
-    GRepContext (..),
-    deriveValue,
-  )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
     inputType,
@@ -87,6 +82,11 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
     ValidValue,
     Value (..),
+  )
+import Data.Morpheus.Utils.GRep
+  ( GRep,
+    GRepContext (..),
+    deriveValue,
   )
 import GHC.Generics
 import GHC.TypeLits (KnownSymbol)

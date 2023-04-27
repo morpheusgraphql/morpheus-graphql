@@ -34,9 +34,6 @@ where
 import Control.Monad.Except
 import Data.Morpheus.Internal.Ext (GQLResult, resultOr, unsafeFromList)
 import Data.Morpheus.Internal.Utils (Empty (..), fromElems, lookup)
-import Data.Morpheus.Server.Deriving.Utils.GRep
-  ( GRepField (..),
-  )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
     inputType,
@@ -82,6 +79,9 @@ import Data.Morpheus.Types.Internal.AST
     TypeName,
     Value (..),
     internal,
+  )
+import Data.Morpheus.Utils.GRep
+  ( GRepField (..),
   )
 import GHC.Generics ()
 import GHC.TypeLits ()

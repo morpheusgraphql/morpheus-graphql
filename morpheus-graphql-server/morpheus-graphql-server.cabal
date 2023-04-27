@@ -329,8 +329,6 @@ library
       Data.Morpheus.Server.Deriving.Kinded.Value
       Data.Morpheus.Server.Deriving.Resolvers
       Data.Morpheus.Server.Deriving.Schema
-      Data.Morpheus.Server.Deriving.Utils.Gmap
-      Data.Morpheus.Server.Deriving.Utils.GRep
       Data.Morpheus.Server.Deriving.Utils.GScan
       Data.Morpheus.Server.Deriving.Utils.Kinded
       Data.Morpheus.Server.Deriving.Utils.Proxy
@@ -347,6 +345,8 @@ library
       Data.Morpheus.Server.Types.TypeName
       Data.Morpheus.Server.Types.Types
       Data.Morpheus.Server.Types.Visitors
+      Data.Morpheus.Utils.Gmap
+      Data.Morpheus.Utils.GRep
       Paths_morpheus_graphql_server
   hs-source-dirs:
       src

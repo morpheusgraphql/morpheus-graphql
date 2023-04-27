@@ -32,12 +32,6 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
   ( toFieldRes,
     visitEnumName,
   )
-import Data.Morpheus.Server.Deriving.Utils.GRep
-  ( GRep,
-    GRepContext (..),
-    GRepValue (..),
-    deriveValue,
-  )
 import Data.Morpheus.Server.Deriving.Utils.Kinded (inputType)
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseDeriving (..),
@@ -46,6 +40,12 @@ import Data.Morpheus.Server.Deriving.Utils.Use
   )
 import Data.Morpheus.Types.Internal.AST
   ( GQLError,
+  )
+import Data.Morpheus.Utils.GRep
+  ( GRep,
+    GRepContext (..),
+    GRepValue (..),
+    deriveValue,
   )
 import GHC.Generics (Generic (Rep))
 import Relude

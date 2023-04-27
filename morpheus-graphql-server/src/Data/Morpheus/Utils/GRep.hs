@@ -14,7 +14,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Server.Deriving.Utils.GRep
+module Data.Morpheus.Utils.GRep
   ( GRep (..),
     GRepContext (..),
     GRepCons (..),
@@ -42,7 +42,7 @@ import Data.Morpheus.Types.Internal.AST
     TypeRef (..),
     packName,
   )
-import qualified Data.Text as T
+import Data.Text (pack)
 import GHC.Generics
   ( C,
     Constructor,
@@ -74,8 +74,8 @@ deriveValue ::
 deriveValue options value
   | null cons = GRepValueEnum typename (consName cons)
   | isUnion = case (isUnionRef typename cons, consFields cons) of
-    (True, [GRepField {..}]) -> GRepValueUnionRef (typeConName fieldTypeRef) fieldValue
-    _ -> GRepValueUnion typename (consName cons) (consFields cons)
+      (True, [GRepField {..}]) -> GRepValueUnionRef (typeConName fieldTypeRef) fieldValue
+      _ -> GRepValueUnion typename (consName cons) (consFields cons)
   | otherwise = GRepValueObject typename (consFields cons)
   where
     (isUnion, cons) = deriveTypeValue options (from value)
@@ -235,7 +235,7 @@ data GRepField (a :: Type) = GRepField
 enumerate :: [GRepField a] -> [GRepField a]
 enumerate = zipWith setFieldName ([0 ..] :: [Int])
   where
-    setFieldName i field = field {fieldSelector = packName $ "_" <> T.pack (show i)}
+    setFieldName i field = field {fieldSelector = packName $ "_" <> pack (show i)}
 
 isUnionRef :: TypeName -> GRepCons k -> Bool
 isUnionRef baseName GRepCons {consName, consFields = [fieldRep]} =

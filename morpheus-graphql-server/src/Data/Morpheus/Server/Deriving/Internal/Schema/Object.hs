@@ -27,10 +27,6 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
 import Data.Morpheus.Server.Deriving.Internal.Schema.Enum
   (
   )
-import Data.Morpheus.Server.Deriving.Utils.GRep
-  ( GRepCons (..),
-    GRepField (..),
-  )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
   )
@@ -51,6 +47,10 @@ import Data.Morpheus.Types.Internal.AST
     unitFieldName,
     unitTypeName,
     unsafeFromFields,
+  )
+import Data.Morpheus.Utils.GRep
+  ( GRepCons (..),
+    GRepField (..),
   )
 
 defineObjectType :: CatType kind a -> GRepCons (Maybe (ArgumentsDefinition CONST)) -> [NodeTypeVariant]

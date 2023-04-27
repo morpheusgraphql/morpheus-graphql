@@ -28,11 +28,7 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Type
     deriveTypeDefinition,
     deriveTypeGuardUnions,
   )
-import Data.Morpheus.Server.Deriving.Utils.GRep
-  ( GRep,
-  )
 import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef (..))
-import Data.Morpheus.Server.Deriving.Utils.Gmap (Gmap)
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
     catMap,
@@ -60,6 +56,10 @@ import Data.Morpheus.Types.GQLScalar
   ( DecodeScalar (..),
     scalarValidator,
   )
+import Data.Morpheus.Utils.GRep
+  ( GRep,
+  )
+import Data.Morpheus.Utils.Gmap (Gmap)
 import GHC.Generics (Generic (Rep))
 import Relude
 

@@ -19,7 +19,6 @@ module Data.Morpheus.Server.Deriving.Kinded.Channels
 where
 
 import Control.Monad.Except (throwError)
-import qualified Data.HashMap.Lazy as HM
 import Data.Morpheus.App.Internal.Resolving
   ( Channel,
     MonadResolver (..),
@@ -31,13 +30,6 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Server.Deriving.Internal.Decode.Utils (useDecodeArguments)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Directive (UseDeriving (..), toFieldRes)
-import Data.Morpheus.Server.Deriving.Utils.GRep
-  ( GRep,
-    GRepContext (..),
-    GRepField,
-    GRepValue (..),
-    deriveValue,
-  )
 import Data.Morpheus.Server.Deriving.Utils.Kinded (outputType)
 import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (useTypeData))
 import Data.Morpheus.Server.Types.Types (Undefined)
@@ -50,6 +42,13 @@ import Data.Morpheus.Types.Internal.AST
     TRUE,
     VALID,
     internal,
+  )
+import Data.Morpheus.Utils.GRep
+  ( GRep,
+    GRepContext (..),
+    GRepField,
+    GRepValue (..),
+    deriveValue,
   )
 import GHC.Generics (Rep)
 import Relude hiding (Undefined)
@@ -124,7 +123,7 @@ class ExploreChannels ctx (t :: Bool) e a where
 
 instance (UseDeriving gql val ~ ctx, gql a, Generic a, GRep gql (GetChannel val e) (ChannelRes e) (Rep a)) => ExploreChannels ctx FALSE e a where
   exploreChannels drv _ =
-    HM.fromList
+    fromList
       . map (toFieldRes drv (Proxy @a))
       . toFields
       . deriveValue
@@ -140,4 +139,4 @@ toFields GRepValueObject {..} = objectFields
 toFields _ = []
 
 instance ExploreChannels ctx TRUE e (Undefined m) where
-  exploreChannels _ _ = pure HM.empty
+  exploreChannels _ _ = pure mempty

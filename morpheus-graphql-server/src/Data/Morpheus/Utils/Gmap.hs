@@ -13,7 +13,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Server.Deriving.Utils.Gmap
+module Data.Morpheus.Utils.Gmap
   ( Gmap (..),
     GmapFun (..),
     runGmap,
