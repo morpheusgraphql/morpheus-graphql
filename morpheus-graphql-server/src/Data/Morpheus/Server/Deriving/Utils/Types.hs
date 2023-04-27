@@ -81,12 +81,12 @@ data GQLTypeNodeExtension
   | UnionVariantsExtension [NodeTypeVariant]
 
 data GQLTypeNode c
-  = GQLTypeNode (TypeDefinition c CONST)
+  = GQLTypeNode (TypeDefinition c CONST) [GQLTypeNodeExtension]
   | GQLDirectiveNode (DirectiveDefinition CONST)
 
 nodeToType :: (Applicative f, MonadError GQLError f) => GQLTypeNode c -> f (TypeDefinition c CONST)
 nodeToType node = case node of
-  GQLTypeNode x -> pure x
+  GQLTypeNode x _ -> pure x
   GQLDirectiveNode dir -> throwError $ "expected " <> msg (directiveDefinitionName dir) <> " to be a type but its directive!"
 
 data NodeTypeVariant

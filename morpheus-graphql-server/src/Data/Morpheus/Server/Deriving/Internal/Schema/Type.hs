@@ -135,7 +135,7 @@ deriveScalarDefinition ::
   UseDeriving gql args ->
   CatType cat a ->
   GQLResult (GQLTypeNode cat)
-deriveScalarDefinition f dir p = GQLTypeNode <$> fillTypeContent dir p (mkScalar p (f p))
+deriveScalarDefinition f dir p = (`GQLTypeNode` []) <$> fillTypeContent dir p (mkScalar p (f p))
 
 deriveTypeDefinition ::
   (DERIVE_TYPE gql a) =>

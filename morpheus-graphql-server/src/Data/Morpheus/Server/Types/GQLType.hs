@@ -80,7 +80,6 @@ import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
     SchemaBuilder,
     derivations,
     liftResult,
-    resolveResult,
   )
 import Data.Morpheus.Server.Deriving.Utils.Types (GQLTypeNode (..), GQLTypeNodeExtension (..))
 import Data.Morpheus.Server.Deriving.Utils.Use
@@ -343,7 +342,7 @@ instance (KnownSymbol name, GQLType value) => GQLType (Arg name value) where
   type KIND (Arg name value) = CUSTOM
   __type = __type . catMap (Proxy @value)
   __deriveType OutputType = cantBeInputType (OutputType :: CatType OUT (Arg name value))
-  __deriveType p@InputType = GQLTypeNode <$> liftResult (fillTypeContent withDir p content)
+  __deriveType p@InputType = liftResult ((`GQLTypeNode` []) <$> fillTypeContent withDir p content)
     where
       content :: TypeContent TRUE IN CONST
       content = DataInputObject (singleton argName field)
@@ -361,7 +360,7 @@ instance (DERIVE_TYPE GQLType i, DERIVE_TYPE GQLType u) => GQLType (TypeGuard i 
   __deriveType OutputType = do
     unions <- liftResult (deriveTypeGuardUnions withDir union)
     derivations [NodeExtension $ ImplementsExtension (useTypename withGQL interface) unions]
-    GQLTypeNode <$> resolveResult (deriveInterfaceDefinition withDir interface)
+    liftResult (uncurry GQLTypeNode <$> deriveInterfaceDefinition withDir interface)
     where
       interface = OutputType :: CatType OUT i
       union = OutputType :: CatType OUT u

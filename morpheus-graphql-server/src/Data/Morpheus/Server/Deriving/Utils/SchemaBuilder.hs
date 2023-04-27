@@ -18,7 +18,6 @@ module Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
     derivations,
     liftResult,
     unliftResult,
-    resolveResult,
   )
 where
 
@@ -72,11 +71,6 @@ newtype SchemaBuilder a = SchemaBuilder
   { runSchemaT :: GQLResult (a, [NodeDerivation])
   }
   deriving (Functor)
-
-resolveResult :: GQLResult (a, [GQLTypeNodeExtension]) -> SchemaBuilder a
-resolveResult x = SchemaBuilder $ do
-  (a, ext) <- x
-  pure (a, map NodeExtension ext)
 
 liftResult :: GQLResult a -> SchemaBuilder a
 liftResult x = SchemaBuilder ((,[]) <$> x)

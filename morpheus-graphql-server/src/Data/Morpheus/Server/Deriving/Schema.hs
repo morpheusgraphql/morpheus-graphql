@@ -70,11 +70,11 @@ exploreRef = useExploreRef withGQL
 explore :: forall f (a :: (Type -> Type) -> Type). GQLType (a IgnoredResolver) => f a -> [ScanProxy GQLType]
 explore _ = scan (Scanner exploreRef) (exploreRef (OutputType :: CatType OUT (a IgnoredResolver)))
 
-toDerivation :: TypeFingerprint -> GQLTypeNode c -> NodeDerivation
-toDerivation fp (GQLTypeNode node) = TypeDerivation fp (toAny node)
-toDerivation fp (GQLDirectiveNode node) = DirectiveDerivation fp node
+toDerivation :: TypeFingerprint -> GQLTypeNode c -> [NodeDerivation]
+toDerivation fp (GQLTypeNode node xs) = TypeDerivation fp (toAny node) : map NodeExtension xs
+toDerivation fp (GQLDirectiveNode node) = [DirectiveDerivation fp node]
 
-resolveNode :: ScanProxy GQLType -> SchemaBuilder NodeDerivation
+resolveNode :: ScanProxy GQLType -> SchemaBuilder [NodeDerivation]
 resolveNode (ScanProxy proxy) = toDerivation (useFingerprint withGQL proxy) <$> useDeriveNode withGQL proxy
 
 deriveSchema :: forall root f m e qu mu su. SCHEMA qu mu su => f (root m e qu mu su) -> GQLResult (Schema CONST)
@@ -84,5 +84,5 @@ deriveSchema _ =
         <$> useDeriveRoot withGQL (Proxy @(qu IgnoredResolver))
         <*> traverse (useDeriveRoot withGQL) (ignoreUndefined (Proxy @(mu IgnoredResolver)))
         <*> traverse (useDeriveRoot withGQL) (ignoreUndefined (Proxy @(su IgnoredResolver)))
-        <*> traverse resolveNode (explore (Proxy @qu) <> explore (Proxy @mu) <> explore (Proxy @su))
+        <*> fmap join (traverse resolveNode (explore (Proxy @qu) <> explore (Proxy @mu) <> explore (Proxy @su)))
     )
