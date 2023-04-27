@@ -28,7 +28,7 @@ where
 
 -- MORPHEUS
 
-import Control.Monad.Except (throwError)
+import Control.Monad.Except (MonadError, throwError)
 import Data.Morpheus.Internal.Ext
   ( GQLResult,
     Result (Failure, Success, errors),
@@ -43,6 +43,8 @@ import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition,
     CONST,
     FieldsDefinition,
+    GQLError,
+    IN,
     Msg (..),
     Schema (..),
     TRUE,
@@ -54,21 +56,22 @@ import Data.Morpheus.Types.Internal.AST
 import Language.Haskell.TH (Exp, Q)
 import Relude hiding (empty)
 
+type DerivingMonad m = (MonadError GQLError m)
+
 fromSchema :: GQLResult (Schema VALID) -> Q Exp
 fromSchema Success {} = [|()|]
 fromSchema Failure {errors} = fail (show errors)
 
-withObject :: (gql a) => UseGQLType gql -> CatType c a -> TypeContent TRUE any s -> SchemaBuilder (FieldsDefinition c s)
+withObject :: (DerivingMonad m, gql a) => UseGQLType gql -> CatType c a -> TypeContent TRUE any s -> m (FieldsDefinition c s)
 withObject _ InputType DataInputObject {inputObjectFields} = pure inputObjectFields
 withObject _ OutputType DataObject {objectFields} = pure objectFields
 withObject gql x _ = failureOnlyObject gql x
 
-failureOnlyObject :: (gql a) => UseGQLType gql -> CatType c a -> SchemaBuilder b
+failureOnlyObject :: (DerivingMonad m, gql a) => UseGQLType gql -> CatType c a -> m b
 failureOnlyObject gql proxy = throwError $ msg (useTypename gql proxy) <> " should have only one nonempty constructor"
 
+typeToArguments :: (DerivingMonad m, gql a) => UseGQLType gql -> f a -> TypeDefinition IN CONST -> m (ArgumentsDefinition CONST)
+typeToArguments gql arg = fmap fieldsToArguments . withObject gql (inputType arg) . typeContent
+
 deriveTypeAsArguments :: gql a => UseGQLType gql -> f a -> SchemaBuilder (ArgumentsDefinition CONST)
-deriveTypeAsArguments gql arg =
-  fieldsToArguments
-    <$> ( useDeriveType gql (inputType arg)
-            >>= withObject gql (inputType arg) . typeContent
-        )
+deriveTypeAsArguments gql arg = useDeriveType gql (inputType arg) >>= typeToArguments gql arg
