@@ -23,7 +23,6 @@ module Data.Morpheus.Server.Deriving.Internal.Schema.Internal
     fromSchema,
     withObject,
     typeToArguments,
-    nodeToType,
   )
 where
 
@@ -38,14 +37,10 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
     inputType,
   )
-import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
-  ( GQLNode (..),
-  )
 import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (..))
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition,
     CONST,
-    DirectiveDefinition (..),
     FieldsDefinition,
     GQLError,
     IN,
@@ -70,11 +65,6 @@ withObject :: (DerivingMonad m, gql a) => UseGQLType gql -> CatType c a -> TypeC
 withObject _ InputType DataInputObject {inputObjectFields} = pure inputObjectFields
 withObject _ OutputType DataObject {objectFields} = pure objectFields
 withObject gql x _ = failureOnlyObject gql x
-
-nodeToType :: (Applicative f, MonadError GQLError f) => GQLNode c -> f (TypeDefinition c CONST)
-nodeToType node = case node of
-  GQLTypeNode x -> pure x
-  GQLDirectiveNode dir -> throwError $ "expected " <> msg (directiveDefinitionName dir) <> " to be a type but its directive!"
 
 failureOnlyObject :: (DerivingMonad m, gql a) => UseGQLType gql -> CatType c a -> m b
 failureOnlyObject gql proxy = throwError $ msg (useTypename gql proxy) <> " should have only one nonempty constructor"

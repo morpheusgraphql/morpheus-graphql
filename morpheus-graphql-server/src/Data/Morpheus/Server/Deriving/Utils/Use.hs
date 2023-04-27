@@ -17,11 +17,11 @@ where
 
 import Data.Morpheus.App.Internal.Resolving (NamedResolver (..), ResolverState, ResolverValue)
 import Data.Morpheus.Internal.Ext (GQLResult)
+import Data.Morpheus.Server.Deriving.Utils.AST
 import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef)
 import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType)
 import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
-  ( GQLNode,
-    SchemaBuilder,
+  ( SchemaBuilder,
   )
 import Data.Morpheus.Server.Types.Directives
   ( GDirectiveUsages (..),

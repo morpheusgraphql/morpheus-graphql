@@ -34,13 +34,13 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Enum
   )
 import Data.Morpheus.Server.Deriving.Internal.Schema.Internal
   ( CatType,
-    nodeToType,
     withObject,
   )
 import Data.Morpheus.Server.Deriving.Internal.Schema.Object
   ( buildObjectTypeContent,
   )
 import Data.Morpheus.Server.Deriving.Internal.Schema.Union (buildUnionType)
+import Data.Morpheus.Server.Deriving.Utils.AST (nodeToType)
 import Data.Morpheus.Server.Deriving.Utils.GRep
   ( GRep,
     GRepContext (..),

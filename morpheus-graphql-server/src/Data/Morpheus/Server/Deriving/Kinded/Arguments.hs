@@ -22,9 +22,9 @@ where
 import Data.Morpheus.Internal.Ext ((<:>))
 import Data.Morpheus.Server.Deriving.Internal.Schema.Internal
   ( CatType,
-    nodeToType,
     typeToArguments,
   )
+import Data.Morpheus.Server.Deriving.Utils.AST (nodeToType)
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
     inputType,

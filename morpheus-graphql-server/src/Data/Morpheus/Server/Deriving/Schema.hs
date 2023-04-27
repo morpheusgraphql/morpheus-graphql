@@ -29,6 +29,7 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Internal
 import Data.Morpheus.Server.Deriving.Internal.Schema.Type
   ( useDeriveRoot,
   )
+import Data.Morpheus.Server.Deriving.Utils.AST (GQLNode (..))
 import Data.Morpheus.Server.Deriving.Utils.GScan
   ( ScanProxy (..),
     ScanRef,
@@ -36,10 +37,9 @@ import Data.Morpheus.Server.Deriving.Utils.GScan
     scan,
   )
 import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
-  ( GQLNode,
+  ( NodeDerivation (..),
     SchemaBuilder,
     TypeFingerprint,
-    toAnyNode,
     toSchema,
   )
 import Data.Morpheus.Server.Deriving.Utils.Use
@@ -50,10 +50,10 @@ import Data.Morpheus.Server.Types.GQLType
     withGQL,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( ANY,
-    CONST,
+  ( CONST,
     OUT,
     Schema (..),
+    toAny,
   )
 import Language.Haskell.TH (Exp, Q)
 import Relude
@@ -75,8 +75,12 @@ exploreRef = useExploreRef withGQL
 explore :: forall f (a :: (Type -> Type) -> Type). GQLType (a IgnoredResolver) => f a -> [ScanProxy GQLType]
 explore _ = scan (Scanner exploreRef) (exploreRef (OutputType :: CatType OUT (a IgnoredResolver)))
 
-resolveNode :: ScanProxy GQLType -> SchemaBuilder (TypeFingerprint, GQLNode ANY)
-resolveNode (ScanProxy proxy) = (useFingerprint withGQL proxy,) . toAnyNode <$> useDeriveNode withGQL proxy
+toDerivation :: TypeFingerprint -> GQLNode c -> NodeDerivation
+toDerivation fp (GQLTypeNode node) = TypeDerivation fp (toAny node)
+toDerivation fp (GQLDirectiveNode node) = DirectiveDerivation fp node
+
+resolveNode :: ScanProxy GQLType -> SchemaBuilder NodeDerivation
+resolveNode (ScanProxy proxy) = toDerivation (useFingerprint withGQL proxy) <$> useDeriveNode withGQL proxy
 
 deriveSchema :: forall root f m e qu mu su. SCHEMA qu mu su => f (root m e qu mu su) -> GQLResult (Schema CONST)
 deriveSchema _ =

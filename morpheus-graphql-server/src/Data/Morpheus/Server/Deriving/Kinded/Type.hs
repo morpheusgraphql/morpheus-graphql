@@ -28,6 +28,7 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Type
     deriveTypeDefinition,
     deriveTypeGuardUnions,
   )
+import Data.Morpheus.Server.Deriving.Utils.AST (GQLNode (..))
 import Data.Morpheus.Server.Deriving.Utils.GRep
   ( GRep,
   )
@@ -40,8 +41,7 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
     unliftKind,
   )
 import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
-  ( GQLNode (..),
-    SchemaBuilder,
+  ( SchemaBuilder,
   )
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( FieldRep,
