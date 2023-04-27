@@ -20,12 +20,13 @@ module Data.Morpheus.Server.Deriving.Kinded.Arguments
 where
 
 import Data.Morpheus.Internal.Ext (GQLResult, (<:>))
+import Data.Morpheus.Internal.Utils (empty)
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
     inputType,
   )
 import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
-  ( unliftResult,
+  ( runSchemaT,
   )
 import Data.Morpheus.Server.Deriving.Utils.Types (nodeToType, typeToArguments)
 import Data.Morpheus.Server.Deriving.Utils.Use
@@ -38,7 +39,7 @@ import Data.Morpheus.Types.Internal.AST
     CONST,
     OUT,
   )
-import Relude
+import Relude hiding (empty)
 
 type family HasArguments a where
   HasArguments (a -> b) = (a -> b)
@@ -53,9 +54,7 @@ instance DeriveFieldArguments ctx () where
 instance (UseDeriving gql val ~ ctx, gql b, gql a) => DeriveFieldArguments ctx (a -> b) where
   deriveFieldArguments UseDeriving {..} _ = do
     a <- useDeriveNode drvGQL proxy >>= nodeToType >>= typeToArguments
-    b <- unFieldRep <$> useDeriveFieldArguments drvGQL (OutputType :: CatType OUT b)
-    unliftResult $ case b of
-      Just x -> Just <$> (a <:> x)
-      Nothing -> pure $ Just a
+    b <- fromMaybe empty . unFieldRep <$> useDeriveFieldArguments drvGQL (OutputType :: CatType OUT b)
+    Just . fst <$> runSchemaT (a <:> b)
     where
       proxy = inputType (Proxy @a)

@@ -16,8 +16,6 @@ module Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
     toSchema,
     NodeDerivation (..),
     derivations,
-    liftResult,
-    unliftResult,
   )
 where
 
@@ -71,12 +69,6 @@ newtype SchemaBuilder a = SchemaBuilder
   { runSchemaT :: GQLResult (a, [NodeDerivation])
   }
   deriving (Functor)
-
-liftResult :: GQLResult a -> SchemaBuilder a
-liftResult x = SchemaBuilder ((,[]) <$> x)
-
-unliftResult :: SchemaBuilder a -> GQLResult a
-unliftResult (SchemaBuilder x) = fst <$> x
 
 instance MonadError GQLError SchemaBuilder where
   throwError = SchemaBuilder . throwError
