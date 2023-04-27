@@ -34,16 +34,15 @@ where
 import Control.Monad.Except
 import Data.Morpheus.Internal.Ext (GQLResult, resultOr, unsafeFromList)
 import Data.Morpheus.Internal.Utils (Empty (..), fromElems, lookup)
-import Data.Morpheus.Server.Deriving.Internal.Schema.Internal
-  ( CatType,
-    typeToArguments,
-  )
 import Data.Morpheus.Server.Deriving.Utils.GRep
   ( GRepField (..),
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
     inputType,
+  )
+import Data.Morpheus.Server.Deriving.Utils.Types
+  ( typeToArguments,
   )
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseDeriving (..),
@@ -90,7 +89,7 @@ import Relude hiding (empty)
 
 deriveDirectiveDefinition :: (MonadError GQLError m, gql a, GQLDirective a, args a) => UseDeriving gql args -> f a -> TypeDefinition IN CONST -> m (DirectiveDefinition CONST)
 deriveDirectiveDefinition options@UseDeriving {..} proxy t = do
-  directiveDefinitionArgs <- typeToArguments drvGQL proxy t
+  directiveDefinitionArgs <- typeToArguments t
   pure
     ( DirectiveDefinition
         { directiveDefinitionName = deriveDirectiveName drvGQL proxy,

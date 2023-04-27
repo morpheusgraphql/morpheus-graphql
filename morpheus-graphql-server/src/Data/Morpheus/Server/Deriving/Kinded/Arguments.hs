@@ -20,10 +20,6 @@ module Data.Morpheus.Server.Deriving.Kinded.Arguments
 where
 
 import Data.Morpheus.Internal.Ext ((<:>))
-import Data.Morpheus.Server.Deriving.Internal.Schema.Internal
-  ( CatType,
-    typeToArguments,
-  )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
     inputType,
@@ -31,7 +27,7 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
 import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
   ( SchemaBuilder,
   )
-import Data.Morpheus.Server.Deriving.Utils.Types (nodeToType)
+import Data.Morpheus.Server.Deriving.Utils.Types (CatType, nodeToType, typeToArguments)
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( FieldRep (..),
     UseDeriving (..),
@@ -56,7 +52,7 @@ instance DeriveFieldArguments ctx () where
 
 instance (UseDeriving gql val ~ ctx, gql b, gql a) => DeriveFieldArguments ctx (a -> b) where
   deriveFieldArguments UseDeriving {..} _ = do
-    a <- useDeriveNode drvGQL proxy >>= nodeToType >>= typeToArguments drvGQL proxy
+    a <- useDeriveNode drvGQL proxy >>= nodeToType >>= typeToArguments
     b <- unFieldRep <$> useDeriveFieldArguments drvGQL (OutputType :: CatType OUT b)
     case b of
       Just x -> Just <$> (a <:> x)

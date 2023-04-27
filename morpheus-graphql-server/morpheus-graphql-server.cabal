@@ -317,7 +317,6 @@ library
       Data.Morpheus.Server.Deriving.Internal.Resolve.Explore
       Data.Morpheus.Server.Deriving.Internal.Schema.Directive
       Data.Morpheus.Server.Deriving.Internal.Schema.Enum
-      Data.Morpheus.Server.Deriving.Internal.Schema.Internal
       Data.Morpheus.Server.Deriving.Internal.Schema.Object
       Data.Morpheus.Server.Deriving.Internal.Schema.Type
       Data.Morpheus.Server.Deriving.Internal.Schema.Union

@@ -7,7 +7,6 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -22,10 +21,6 @@ where
 
 import Data.Morpheus.Core (defaultConfig, validateSchema)
 import Data.Morpheus.Internal.Ext (GQLResult)
-import Data.Morpheus.Server.Deriving.Internal.Schema.Internal
-  ( CatType (OutputType),
-    fromSchema,
-  )
 import Data.Morpheus.Server.Deriving.Internal.Schema.Type
   ( useDeriveRoot,
   )
@@ -41,7 +36,7 @@ import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
     TypeFingerprint,
     toSchema,
   )
-import Data.Morpheus.Server.Deriving.Utils.Types (GQLTypeNode (..))
+import Data.Morpheus.Server.Deriving.Utils.Types (CatType (OutputType), GQLTypeNode (..), fromSchema)
 import Data.Morpheus.Server.Deriving.Utils.Use
 import Data.Morpheus.Server.Types.GQLType
   ( GQLType (..),
