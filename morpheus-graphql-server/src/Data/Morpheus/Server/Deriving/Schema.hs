@@ -39,7 +39,6 @@ import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
   ( GQLNode,
     SchemaBuilder,
     TypeFingerprint,
-    resolveGQLNode,
     toAnyNode,
     toSchema,
   )
@@ -76,20 +75,15 @@ exploreRef = useExploreRef withGQL
 explore :: forall f (a :: (Type -> Type) -> Type). GQLType (a IgnoredResolver) => f a -> [ScanProxy GQLType]
 explore _ = scan (Scanner exploreRef) (exploreRef (OutputType :: CatType OUT (a IgnoredResolver)))
 
+resolveNode :: ScanProxy GQLType -> SchemaBuilder (TypeFingerprint, GQLNode ANY)
+resolveNode (ScanProxy proxy) = (useFingerprint withGQL proxy,) . toAnyNode <$> useDeriveNode withGQL proxy
+
 deriveSchema :: forall root f m e qu mu su. SCHEMA qu mu su => f (root m e qu mu su) -> GQLResult (Schema CONST)
 deriveSchema _ =
   toSchema
-    ( (,,)
-        <$> deriveQuery
+    ( (,,,)
+        <$> useDeriveRoot withGQL (Proxy @(qu IgnoredResolver))
         <*> traverse (useDeriveRoot withGQL) (ignoreUndefined (Proxy @(mu IgnoredResolver)))
         <*> traverse (useDeriveRoot withGQL) (ignoreUndefined (Proxy @(su IgnoredResolver)))
+        <*> traverse resolveNode (explore (Proxy @qu) <> explore (Proxy @mu) <> explore (Proxy @su))
     )
-  where
-    deriveQuery = do
-      let refs = explore (Proxy @qu) <> explore (Proxy @mu) <> explore (Proxy @su)
-      nodes <- traverse resolveNode refs
-      traverse_ (uncurry resolveGQLNode) nodes
-      useDeriveRoot withGQL (Proxy @(qu IgnoredResolver))
-
-resolveNode :: ScanProxy GQLType -> SchemaBuilder (TypeFingerprint, GQLNode ANY)
-resolveNode (ScanProxy proxy) = (useFingerprint withGQL proxy,) . toAnyNode <$> useDeriveNode withGQL proxy

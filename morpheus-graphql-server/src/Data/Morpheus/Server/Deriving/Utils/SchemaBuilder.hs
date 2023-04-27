@@ -18,7 +18,6 @@ module Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
     derivations,
     NodeTypeVariant (..),
     GQLNode (..),
-    resolveGQLNode,
     toAnyNode,
   )
 where
@@ -103,12 +102,13 @@ toSchema ::
   SchemaBuilder
     ( TypeDefinition OBJECT CONST,
       Maybe (TypeDefinition OBJECT CONST),
-      Maybe (TypeDefinition OBJECT CONST)
+      Maybe (TypeDefinition OBJECT CONST),
+      [(TypeFingerprint, GQLNode ANY)]
     ) ->
   GQLResult (Schema CONST)
 toSchema (SchemaBuilder v) = do
-  ((q, m, s), typeDefs) <- v
-  SchemaState {typeDefinitions, implements, directiveDefinitions} <- foldlM (&) mempty (map execNode typeDefs)
+  ((q, m, s, nodes), typeDefs) <- v
+  SchemaState {typeDefinitions, implements, directiveDefinitions} <- foldlM (&) mempty (map execNode (typeDefs <> map resolveGQLNode nodes))
   types <- map (insertImplements implements) <$> checkTypeCollisions (toAssoc typeDefinitions)
   schema <- defineSchemaWith types (Just q, m, s)
   foldlM defineDirective schema directiveDefinitions
@@ -184,6 +184,6 @@ toAnyNode :: GQLNode c -> GQLNode ANY
 toAnyNode (GQLTypeNode node) = GQLTypeNode (toAny node)
 toAnyNode (GQLDirectiveNode node) = GQLDirectiveNode node
 
-resolveGQLNode :: TypeFingerprint -> GQLNode ANY -> SchemaBuilder ()
-resolveGQLNode fp (GQLTypeNode node) = SchemaBuilder $ pure ((), [TypeDerivation fp node])
-resolveGQLNode fp (GQLDirectiveNode node) = SchemaBuilder $ pure ((), [DirectiveDerivation fp node])
+resolveGQLNode :: (TypeFingerprint, GQLNode ANY) -> NodeDerivation
+resolveGQLNode (fp, GQLTypeNode node) = TypeDerivation fp node
+resolveGQLNode (fp, GQLDirectiveNode node) = DirectiveDerivation fp node
