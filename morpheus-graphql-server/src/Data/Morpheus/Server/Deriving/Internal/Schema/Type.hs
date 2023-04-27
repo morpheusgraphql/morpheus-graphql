@@ -53,10 +53,9 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
   )
 import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
   ( SchemaBuilder,
-    liftResult,
     unliftResult,
   )
-import Data.Morpheus.Server.Deriving.Utils.Types (CatType, GQLTypeNodeExtension, nodeToType, withObject)
+import Data.Morpheus.Server.Deriving.Utils.Types (CatType, GQLTypeNode (..), GQLTypeNodeExtension, nodeToType, withObject)
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( FieldRep (..),
     UseGQLType (..),
@@ -135,8 +134,8 @@ deriveScalarDefinition ::
   (CatType cat a -> ScalarDefinition) ->
   UseDeriving gql args ->
   CatType cat a ->
-  SchemaBuilder (TypeDefinition cat CONST)
-deriveScalarDefinition f dir p = liftResult $ fillTypeContent dir p (mkScalar p (f p))
+  GQLResult (GQLTypeNode cat)
+deriveScalarDefinition f dir p = GQLTypeNode <$> fillTypeContent dir p (mkScalar p (f p))
 
 deriveTypeDefinition ::
   (DERIVE_TYPE gql a) =>

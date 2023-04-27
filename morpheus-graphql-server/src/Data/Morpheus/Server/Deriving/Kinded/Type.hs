@@ -41,6 +41,7 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
   )
 import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
   ( SchemaBuilder,
+    liftResult,
     resolveResult,
   )
 import Data.Morpheus.Server.Deriving.Utils.Types (GQLTypeNode (..))
@@ -79,7 +80,7 @@ scanNode :: (c a, gql a, Gmap c (Rep a)) => Bool -> UseGQLType gql -> CatType k 
 scanNode visible gql p = [ScanNode visible (useFingerprint gql p) p]
 
 instance (DecodeScalar a, gql a, ctx ~ UseDeriving gql v) => DeriveKindedType ctx SCALAR a where
-  deriveKindedType drv = fmap GQLTypeNode . deriveScalarDefinition scalarValidator drv . unliftKind
+  deriveKindedType drv = liftResult . deriveScalarDefinition scalarValidator drv . unliftKind
   exploreKindedRefs UseDeriving {..} proxy = scanLeaf drvGQL (catMap (Proxy @a) proxy)
 
 instance (DERIVE_TYPE gql a, Gmap gql (Rep a), ctx ~ UseDeriving gql v) => DeriveKindedType ctx TYPE a where

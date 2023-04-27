@@ -269,7 +269,7 @@ instance GQLType ID where
 instance GQLType (Value CONST) where
   type KIND (Value CONST) = CUSTOM
   __type = mkTypeData "INTERNAL_VALUE"
-  __deriveType = fmap GQLTypeNode . deriveScalarDefinition (const $ ScalarDefinition pure) withDir
+  __deriveType = liftResult . deriveScalarDefinition (const $ ScalarDefinition pure) withDir
   __exploreRef _ = []
 
 -- WRAPPERS
