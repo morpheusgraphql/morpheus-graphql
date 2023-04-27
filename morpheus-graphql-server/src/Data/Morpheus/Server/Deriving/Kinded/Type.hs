@@ -28,7 +28,7 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Type
     deriveTypeDefinition,
     deriveTypeGuardUnions,
   )
-import Data.Morpheus.Server.Deriving.Utils.AST (GQLNode (..))
+import Data.Morpheus.Server.Deriving.Utils.AST (GQLTypeNode (..))
 import Data.Morpheus.Server.Deriving.Utils.GRep
   ( GRep,
   )
@@ -70,7 +70,7 @@ type DERIVE_TYPE gql a =
 
 -- | DeriveType With specific Kind: 'kind': object, scalar, enum ...
 class DeriveKindedType ctx (k :: DerivingKind) a where
-  deriveKindedType :: ctx ~ UseDeriving gql v => ctx -> CatType cat (f k a) -> SchemaBuilder (GQLNode cat)
+  deriveKindedType :: ctx ~ UseDeriving gql v => ctx -> CatType cat (f k a) -> SchemaBuilder (GQLTypeNode cat)
   exploreKindedRefs :: ctx ~ UseDeriving gql v => ctx -> CatType cat (f k a) -> [ScanRef gql]
 
 instance (gql a, ctx ~ UseDeriving gql v) => DeriveKindedType ctx WRAPPER (f a) where

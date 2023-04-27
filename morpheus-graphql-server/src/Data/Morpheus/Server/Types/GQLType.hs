@@ -71,7 +71,7 @@ import Data.Morpheus.Server.Deriving.Kinded.Type
     scanNode,
   )
 import Data.Morpheus.Server.Deriving.Kinded.Value (KindedValue (..))
-import Data.Morpheus.Server.Deriving.Utils.AST (GQLNode (..))
+import Data.Morpheus.Server.Deriving.Utils.AST (GQLTypeNode (..))
 import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef (..))
 import Data.Morpheus.Server.Deriving.Utils.Gmap
 import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (..), KindedProxy (KindedProxy), catMap, inputType, isIN)
@@ -224,8 +224,8 @@ class GQLType a where
   default __type :: Typeable a => CatType cat a -> TypeData
   __type proxy = deriveTypeData proxy (directives proxy)
 
-  __deriveType :: CatType c a -> SchemaBuilder (GQLNode c)
-  default __deriveType :: DERIVE_T a => CatType c a -> SchemaBuilder (GQLNode c)
+  __deriveType :: CatType c a -> SchemaBuilder (GQLTypeNode c)
+  default __deriveType :: DERIVE_T a => CatType c a -> SchemaBuilder (GQLTypeNode c)
   __deriveType = deriveKindedType withDir . lifted
 
   __exploreRef :: CatType c a -> [ScanRef GQLType]

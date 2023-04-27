@@ -50,7 +50,7 @@ data UseGQLType gql = UseGQLType
   { useFingerprint :: forall c a. gql a => CatType c a -> TypeFingerprint,
     useTypename :: forall c a. gql a => CatType c a -> TypeName,
     useTypeData :: forall c a. gql a => CatType c a -> TypeData,
-    useDeriveNode :: forall c a. gql a => CatType c a -> SchemaBuilder (GQLNode c),
+    useDeriveNode :: forall c a. gql a => CatType c a -> SchemaBuilder (GQLTypeNode c),
     useDeriveFieldArguments :: forall c a. gql a => CatType c a -> SchemaBuilder FieldRep,
     useExploreRef :: forall c a. gql a => CatType c a -> [ScanRef gql]
   }

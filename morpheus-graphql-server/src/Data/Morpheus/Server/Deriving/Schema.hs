@@ -29,7 +29,7 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Internal
 import Data.Morpheus.Server.Deriving.Internal.Schema.Type
   ( useDeriveRoot,
   )
-import Data.Morpheus.Server.Deriving.Utils.AST (GQLNode (..))
+import Data.Morpheus.Server.Deriving.Utils.AST (GQLTypeNode (..))
 import Data.Morpheus.Server.Deriving.Utils.GScan
   ( ScanProxy (..),
     ScanRef,
@@ -75,7 +75,7 @@ exploreRef = useExploreRef withGQL
 explore :: forall f (a :: (Type -> Type) -> Type). GQLType (a IgnoredResolver) => f a -> [ScanProxy GQLType]
 explore _ = scan (Scanner exploreRef) (exploreRef (OutputType :: CatType OUT (a IgnoredResolver)))
 
-toDerivation :: TypeFingerprint -> GQLNode c -> NodeDerivation
+toDerivation :: TypeFingerprint -> GQLTypeNode c -> NodeDerivation
 toDerivation fp (GQLTypeNode node) = TypeDerivation fp (toAny node)
 toDerivation fp (GQLDirectiveNode node) = DirectiveDerivation fp node
 

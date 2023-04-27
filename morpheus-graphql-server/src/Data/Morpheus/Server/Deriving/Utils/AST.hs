@@ -6,7 +6,7 @@
 module Data.Morpheus.Server.Deriving.Utils.AST
   ( argumentsToObject,
     nodeToType,
-    GQLNode (..),
+    GQLTypeNode (..),
     DerivingMonad,
   )
 where
@@ -32,11 +32,11 @@ argumentsToObject = Object . fmap toEntry
   where
     toEntry Argument {..} = ObjectEntry argumentName argumentValue
 
-data GQLNode c
+data GQLTypeNode c
   = GQLTypeNode (TypeDefinition c CONST)
   | GQLDirectiveNode (DirectiveDefinition CONST)
 
-nodeToType :: (Applicative f, MonadError GQLError f) => GQLNode c -> f (TypeDefinition c CONST)
+nodeToType :: (Applicative f, MonadError GQLError f) => GQLTypeNode c -> f (TypeDefinition c CONST)
 nodeToType node = case node of
   GQLTypeNode x -> pure x
   GQLDirectiveNode dir -> throwError $ "expected " <> msg (directiveDefinitionName dir) <> " to be a type but its directive!"
