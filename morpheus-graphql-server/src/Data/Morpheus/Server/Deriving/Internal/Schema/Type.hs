@@ -16,6 +16,7 @@ module Data.Morpheus.Server.Deriving.Internal.Schema.Type
     deriveTypeGuardUnions,
     useDeriveRoot,
     exploreTypes,
+    DERIVE_TYPE,
   )
 where
 
@@ -76,7 +77,10 @@ import Data.Morpheus.Types.Internal.AST
 import GHC.Generics (Rep)
 import Relude
 
-type GREP_CON gql a = (GRep gql gql (SchemaBuilder FieldRep) (Rep a), gql a)
+type DERIVE_TYPE gql a =
+  ( gql a,
+    GRep gql gql (SchemaBuilder FieldRep) (Rep a)
+  )
 
 buildTypeContent ::
   (gql a) =>
@@ -104,7 +108,7 @@ scanCTX ctx gql =
     }
 
 deriveTypeContentWith ::
-  (GREP_CON gql a) =>
+  (DERIVE_TYPE gql a) =>
   UseDeriving gql args ->
   CatType kind a ->
   GQLResult (TypeContent TRUE kind CONST, [GQLTypeNodeExtension])
@@ -113,7 +117,7 @@ deriveTypeContentWith drv@UseDeriving {..} proxy = do
   buildTypeContent drv proxy reps
 
 deriveTypeGuardUnions ::
-  (GREP_CON gql a) =>
+  (DERIVE_TYPE gql a) =>
   UseDeriving gql args ->
   CatType OUT a ->
   GQLResult [TypeName]
@@ -135,7 +139,7 @@ deriveScalarDefinition ::
 deriveScalarDefinition f dir p = liftResult $ fillTypeContent dir p (mkScalar p (f p))
 
 deriveTypeDefinition ::
-  (GREP_CON gql a) =>
+  (DERIVE_TYPE gql a) =>
   UseDeriving gql args ->
   CatType c a ->
   GQLResult (TypeDefinition c CONST, [GQLTypeNodeExtension])
@@ -145,7 +149,7 @@ deriveTypeDefinition dir proxy = do
   pure (t, ext)
 
 deriveInterfaceDefinition ::
-  (GREP_CON gql a) =>
+  (DERIVE_TYPE gql a) =>
   UseDeriving gql args ->
   CatType OUT a ->
   GQLResult (TypeDefinition OUT CONST, [GQLTypeNodeExtension])

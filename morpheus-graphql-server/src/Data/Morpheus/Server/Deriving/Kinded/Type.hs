@@ -23,12 +23,12 @@ module Data.Morpheus.Server.Deriving.Kinded.Type
 where
 
 import Data.Morpheus.Generic
-  ( GRep,
-    Gmap,
+  ( Gmap,
   )
 import Data.Morpheus.Server.Deriving.Internal.Schema.Directive (deriveDirectiveDefinition)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Type
-  ( deriveScalarDefinition,
+  ( DERIVE_TYPE,
+    deriveScalarDefinition,
     deriveTypeDefinition,
     deriveTypeGuardUnions,
   )
@@ -45,8 +45,7 @@ import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
   )
 import Data.Morpheus.Server.Deriving.Utils.Types (GQLTypeNode (..))
 import Data.Morpheus.Server.Deriving.Utils.Use
-  ( FieldRep,
-    UseDeriving (..),
+  ( UseDeriving (..),
     UseGQLType (..),
   )
 import Data.Morpheus.Server.Types.Directives (GQLDirective (..))
@@ -63,11 +62,6 @@ import Data.Morpheus.Types.GQLScalar
   )
 import GHC.Generics (Generic (Rep))
 import Relude
-
-type DERIVE_TYPE gql a =
-  ( gql a,
-    GRep gql gql (SchemaBuilder FieldRep) (Rep a)
-  )
 
 -- | DeriveType With specific Kind: 'kind': object, scalar, enum ...
 class DeriveKindedType ctx (k :: DerivingKind) a where
