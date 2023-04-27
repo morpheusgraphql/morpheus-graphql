@@ -421,7 +421,7 @@ withGQL =
     { useFingerprint = gqlFingerprint . __type,
       useTypename = gqlTypeName . __type,
       useTypeData = __type,
-      useDeriveNode = liftResult . __deriveType,
+      useDeriveNode = __deriveType,
       useExploreRef,
       useDeriveFieldArguments = liftResult . fmap FieldRep . __deriveFieldArguments
     }

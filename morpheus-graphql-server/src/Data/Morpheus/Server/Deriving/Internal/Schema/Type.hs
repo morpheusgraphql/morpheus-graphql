@@ -53,6 +53,7 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
   )
 import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
   ( SchemaBuilder,
+    liftResult,
     unliftResult,
   )
 import Data.Morpheus.Server.Deriving.Utils.Types (CatType, GQLTypeNode (..), GQLTypeNodeExtension, nodeToType, withObject)
@@ -182,7 +183,7 @@ toFieldContent ctx gql =
 
 useDeriveRoot :: gql a => UseGQLType gql -> f a -> SchemaBuilder (TypeDefinition OBJECT CONST)
 useDeriveRoot gql pr = do
-  fields <- useDeriveNode gql proxy >>= nodeToType >>= withObject (useTypename gql proxy) . typeContent
+  fields <- liftResult (useDeriveNode gql proxy) >>= nodeToType >>= withObject (useTypename gql proxy) . typeContent
   pure $ mkType (useTypename gql (outputType proxy)) (DataObject [] fields)
   where
     proxy = outputType pr

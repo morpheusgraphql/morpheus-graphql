@@ -40,9 +40,6 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
     inputType,
     unliftKind,
   )
-import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
-  ( unliftResult,
-  )
 import Data.Morpheus.Server.Deriving.Utils.Types (GQLTypeNode (..))
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseDeriving (..),
@@ -69,7 +66,7 @@ class DeriveKindedType ctx (k :: DerivingKind) a where
   exploreKindedRefs :: ctx ~ UseDeriving gql v => ctx -> CatType cat (f k a) -> [ScanRef gql]
 
 instance (gql a, ctx ~ UseDeriving gql v) => DeriveKindedType ctx WRAPPER (f a) where
-  deriveKindedType UseDeriving {..} = unliftResult . useDeriveNode drvGQL . catMap (Proxy @a)
+  deriveKindedType UseDeriving {..} = useDeriveNode drvGQL . catMap (Proxy @a)
   exploreKindedRefs UseDeriving {..} = useExploreRef drvGQL . catMap (Proxy @a)
 
 scanLeaf :: (c a, gql a) => UseGQLType gql -> CatType k a -> [ScanRef c]
