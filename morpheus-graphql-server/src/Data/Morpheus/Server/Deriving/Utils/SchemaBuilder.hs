@@ -19,6 +19,7 @@ module Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
     NodeTypeVariant (..),
     GQLNode (..),
     resolveGQLNode,
+    toAnyNode,
   )
 where
 
@@ -179,6 +180,10 @@ data GQLNode c
   = GQLTypeNode (TypeDefinition c CONST)
   | GQLDirectiveNode (DirectiveDefinition CONST)
 
-resolveGQLNode :: TypeFingerprint -> GQLNode c -> SchemaBuilder ()
-resolveGQLNode fp (GQLTypeNode node) = SchemaBuilder $ pure ((), [TypeDerivation fp (toAny node)])
+toAnyNode :: GQLNode c -> GQLNode ANY
+toAnyNode (GQLTypeNode node) = GQLTypeNode (toAny node)
+toAnyNode (GQLDirectiveNode node) = GQLDirectiveNode node
+
+resolveGQLNode :: TypeFingerprint -> GQLNode ANY -> SchemaBuilder ()
+resolveGQLNode fp (GQLTypeNode node) = SchemaBuilder $ pure ((), [TypeDerivation fp node])
 resolveGQLNode fp (GQLDirectiveNode node) = SchemaBuilder $ pure ((), [DirectiveDerivation fp node])

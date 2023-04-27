@@ -7,6 +7,7 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -35,8 +36,11 @@ import Data.Morpheus.Server.Deriving.Utils.GScan
     scan,
   )
 import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
-  ( SchemaBuilder,
+  ( GQLNode,
+    SchemaBuilder,
+    TypeFingerprint,
     resolveGQLNode,
+    toAnyNode,
     toSchema,
   )
 import Data.Morpheus.Server.Deriving.Utils.Use
@@ -47,7 +51,8 @@ import Data.Morpheus.Server.Types.GQLType
     withGQL,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( CONST,
+  ( ANY,
+    CONST,
     OUT,
     Schema (..),
   )
@@ -82,8 +87,9 @@ deriveSchema _ =
   where
     deriveQuery = do
       let refs = explore (Proxy @qu) <> explore (Proxy @mu) <> explore (Proxy @su)
-      traverse_ resolveRef refs
+      nodes <- traverse resolveNode refs
+      traverse_ (uncurry resolveGQLNode) nodes
       useDeriveRoot withGQL (Proxy @(qu IgnoredResolver))
 
-resolveRef :: ScanProxy GQLType -> SchemaBuilder ()
-resolveRef (ScanProxy proxy) = useDeriveNode withGQL proxy >>= resolveGQLNode (useFingerprint withGQL proxy)
+resolveNode :: ScanProxy GQLType -> SchemaBuilder (TypeFingerprint, GQLNode ANY)
+resolveNode (ScanProxy proxy) = (useFingerprint withGQL proxy,) . toAnyNode <$> useDeriveNode withGQL proxy
