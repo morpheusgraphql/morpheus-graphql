@@ -45,6 +45,7 @@ import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (..))
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition,
     CONST,
+    DirectiveDefinition (..),
     FieldsDefinition,
     GQLError,
     IN,
@@ -73,7 +74,7 @@ withObject gql x _ = failureOnlyObject gql x
 nodeToType :: (Applicative f, MonadError GQLError f) => GQLNode c -> f (TypeDefinition c CONST)
 nodeToType node = case node of
   GQLTypeNode x -> pure x
-  GQLDirectiveNode x -> throwError "TODO: error message"
+  GQLDirectiveNode dir -> throwError $ "expected " <> msg (directiveDefinitionName dir) <> " to be a type but its directive!"
 
 failureOnlyObject :: (DerivingMonad m, gql a) => UseGQLType gql -> CatType c a -> m b
 failureOnlyObject gql proxy = throwError $ msg (useTypename gql proxy) <> " should have only one nonempty constructor"

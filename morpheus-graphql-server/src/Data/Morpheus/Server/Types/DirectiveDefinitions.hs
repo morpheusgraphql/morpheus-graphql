@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -66,9 +67,9 @@ instance VisitType Prefixes where
 newtype Deprecated = Deprecated
   { reason :: Maybe Text
   }
-  deriving
-    ( Generic,
-      VisitEnum,
+  deriving (Generic)
+  deriving anyclass
+    ( VisitEnum,
       VisitField
     )
 

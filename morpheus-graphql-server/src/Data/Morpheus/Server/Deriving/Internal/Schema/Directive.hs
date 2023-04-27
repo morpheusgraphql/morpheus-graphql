@@ -77,6 +77,7 @@ import Data.Morpheus.Types.Internal.AST
     Directives,
     FieldContent (..),
     FieldName,
+    GQLError,
     IN,
     ObjectEntry (..),
     Position (..),
@@ -90,8 +91,7 @@ import GHC.Generics ()
 import GHC.TypeLits ()
 import Relude hiding (empty)
 
-deriveDirectiveDefinition ::
-  (gql a, GQLDirective a, args a) => UseDeriving gql args -> f a -> TypeDefinition IN CONST -> SchemaBuilder (DirectiveDefinition CONST)
+deriveDirectiveDefinition :: (MonadError GQLError m, gql a, GQLDirective a, args a) => UseDeriving gql args -> f a -> TypeDefinition IN CONST -> m (DirectiveDefinition CONST)
 deriveDirectiveDefinition options@UseDeriving {..} proxy t = do
   directiveDefinitionArgs <- typeToArguments drvGQL proxy t
   pure

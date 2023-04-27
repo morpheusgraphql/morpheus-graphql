@@ -136,7 +136,6 @@ import Data.Morpheus.Types.Internal.AST
     ScalarDefinition (..),
     TRUE,
     TypeContent (..),
-    TypeDefinition (..),
     TypeName,
     TypeRef (..),
     TypeWrapper (..),
