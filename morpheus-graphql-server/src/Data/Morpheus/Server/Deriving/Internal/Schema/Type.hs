@@ -54,7 +54,6 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
 import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
   ( SchemaBuilder,
     liftResult,
-    unliftResult,
   )
 import Data.Morpheus.Server.Deriving.Utils.Types (CatType, GQLTypeNode (..), GQLTypeNodeExtension, nodeToType, withObject)
 import Data.Morpheus.Server.Deriving.Utils.Use
@@ -79,7 +78,7 @@ import Relude
 
 type DERIVE_TYPE gql a =
   ( gql a,
-    GRep gql gql (SchemaBuilder FieldRep) (Rep a)
+    GRep gql gql (GQLResult FieldRep) (Rep a)
   )
 
 buildTypeContent ::
@@ -113,7 +112,7 @@ deriveTypeContentWith ::
   CatType kind a ->
   GQLResult (TypeContent TRUE kind CONST, [GQLTypeNodeExtension])
 deriveTypeContentWith drv@UseDeriving {..} proxy = do
-  reps <- unliftResult (deriveType (toFieldContent (getCatContext proxy) drvGQL) proxy)
+  reps <- deriveType (toFieldContent (getCatContext proxy) drvGQL) proxy
   buildTypeContent drv proxy reps
 
 deriveTypeGuardUnions ::
@@ -174,11 +173,11 @@ fillTypeContent options@UseDeriving {drvGQL = UseGQLType {..}} proxy content = d
       dirs
       content
 
-toFieldContent :: CatContext cat -> UseGQLType gql -> GRepContext gql gql Proxy (SchemaBuilder FieldRep)
+toFieldContent :: CatContext cat -> UseGQLType gql -> GRepContext gql gql Proxy (GQLResult FieldRep)
 toFieldContent ctx gql =
   GRepContext
     { optTypeData = useTypeData gql . addContext ctx,
-      optApply = liftResult . useDeriveFieldArguments gql . addContext ctx
+      optApply = useDeriveFieldArguments gql . addContext ctx
     }
 
 useDeriveRoot :: gql a => UseGQLType gql -> f a -> SchemaBuilder (TypeDefinition OBJECT CONST)
