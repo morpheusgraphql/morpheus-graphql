@@ -23,8 +23,8 @@ where
 import Data.HashMap.Strict (fromList, insert, member)
 import Data.Morpheus.Server.Deriving.Utils.Gmap
   ( Gmap,
-    GmapContext (..),
-    useGmap,
+    GmapFun (..),
+    runGmap,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (InputType, OutputType), inputType, outputType)
 import Data.Morpheus.Server.Types.TypeName (TypeFingerprint)
@@ -38,12 +38,12 @@ scan :: Scanner c -> [ScanRef c] -> [ScanProxy c]
 scan ctx = toList . scanRefs ctx mempty
 
 fieldRefs :: Scanner c -> ScanRef c -> [ScanRef c]
-fieldRefs ctx (ScanNode _ _ x) = useGmap (rep x) (mapContext x ctx)
+fieldRefs ctx (ScanNode _ _ x) = runGmap (rep x) (mapContext x ctx)
 fieldRefs _ ScanLeaf {} = []
 
-mapContext :: CatType k a -> Scanner c -> GmapContext c [ScanRef c]
-mapContext OutputType (Scanner f) = GmapContext (f . outputType)
-mapContext InputType (Scanner f) = GmapContext (f . inputType)
+mapContext :: CatType k a -> Scanner c -> GmapFun c [ScanRef c]
+mapContext OutputType (Scanner f) = GmapFun (f . outputType)
+mapContext InputType (Scanner f) = GmapFun (f . inputType)
 
 rep :: f a -> Proxy (Rep a)
 rep _ = Proxy
