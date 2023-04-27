@@ -17,9 +17,6 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
   )
-import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
-  ( SchemaBuilder (runSchemaT),
-  )
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
     DataEnumValue (..),
@@ -34,7 +31,7 @@ buildEnumTypeContent options p@OutputType enumCons = DataEnum <$> traverse (mkEn
 
 mkEnumValue :: gql a => UseDeriving gql args -> f a -> TypeName -> GQLResult (DataEnumValue CONST)
 mkEnumValue options proxy enumName = do
-  enumDirectives <- fst <$> runSchemaT (deriveEnumDirectives options proxy enumName)
+  enumDirectives <- deriveEnumDirectives options proxy enumName
   pure
     DataEnumValue
       { enumName = visitEnumName options proxy enumName,

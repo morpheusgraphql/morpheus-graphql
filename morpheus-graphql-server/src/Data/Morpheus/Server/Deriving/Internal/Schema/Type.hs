@@ -155,7 +155,7 @@ fillTypeContent ::
   TypeContent TRUE cat CONST ->
   SchemaBuilder (TypeDefinition cat CONST)
 fillTypeContent options@UseDeriving {drvGQL = UseGQLType {..}} proxy content = do
-  dirs <- deriveTypeDirectives options proxy
+  dirs <- SchemaBuilder ((,[]) <$> deriveTypeDirectives options proxy)
   pure $
     TypeDefinition
       (visitTypeDescription options proxy Nothing)

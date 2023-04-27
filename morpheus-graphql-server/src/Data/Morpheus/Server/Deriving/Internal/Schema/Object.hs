@@ -36,7 +36,6 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
   )
 import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
   ( NodeTypeVariant (..),
-    SchemaBuilder (..),
   )
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition,
@@ -103,7 +102,7 @@ toFieldContent _ _ = Nothing
 
 setGQLTypeProps :: gql a => UseDeriving gql args -> CatType kind a -> FieldDefinition kind CONST -> GQLResult (FieldDefinition kind CONST)
 setGQLTypeProps options proxy FieldDefinition {..} = do
-  dirs <- fst <$> runSchemaT (deriveFieldDirectives options proxy fieldName)
+  dirs <- deriveFieldDirectives options proxy fieldName
   pure
     FieldDefinition
       { fieldName = visitFieldName options proxy fieldName,

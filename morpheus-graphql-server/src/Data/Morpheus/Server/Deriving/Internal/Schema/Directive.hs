@@ -32,7 +32,7 @@ module Data.Morpheus.Server.Deriving.Internal.Schema.Directive
 where
 
 import Control.Monad.Except
-import Data.Morpheus.Internal.Ext (resultOr, unsafeFromList)
+import Data.Morpheus.Internal.Ext (GQLResult, resultOr, unsafeFromList)
 import Data.Morpheus.Internal.Utils (Empty (..), fromElems, lookup)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Internal
   ( CatType,
@@ -103,10 +103,10 @@ deriveDirectiveDefinition options@UseDeriving {..} proxy t = do
         }
     )
 
-deriveDirectiveUsages :: UseDeriving gql args -> [GDirectiveUsage gql args] -> SchemaBuilder (Directives CONST)
+deriveDirectiveUsages :: UseDeriving gql args -> [GDirectiveUsage gql args] -> GQLResult (Directives CONST)
 deriveDirectiveUsages options = fmap unsafeFromList . traverse (toDirectiveTuple options)
 
-encodeDirectiveArguments :: val a => UseValue val -> a -> SchemaBuilder (Arguments CONST)
+encodeDirectiveArguments :: val a => UseValue val -> a -> GQLResult (Arguments CONST)
 encodeDirectiveArguments val x = resultOr (const $ throwError err) pure (useEncodeValue val x) >>= unpackValue
   where
     err = internal "could not encode arguments. Arguments should be an object like type!"
@@ -117,7 +117,7 @@ encodeDirectiveArguments val x = resultOr (const $ throwError err) pure (useEnco
 toDirectiveTuple ::
   UseDeriving gql args ->
   GDirectiveUsage gql args ->
-  SchemaBuilder (FieldName, Directive CONST)
+  GQLResult (FieldName, Directive CONST)
 toDirectiveTuple drv (GDirectiveUsage x) = do
   args <- toList <$> encodeDirectiveArguments (drvArgs drv) x
   directiveArgs <- fromElems (map editArg args)
@@ -146,13 +146,13 @@ getFieldDirectiveUsages :: gql a => UseDeriving gql args -> FieldName -> f a -> 
 getFieldDirectiveUsages UseDeriving {..} name proxy = getDirHM name $ fieldDirectives $ __directives proxy
 
 -- derive directives
-deriveEnumDirectives :: gql a => UseDeriving gql args -> f a -> TypeName -> SchemaBuilder (Directives CONST)
+deriveEnumDirectives :: gql a => UseDeriving gql args -> f a -> TypeName -> GQLResult (Directives CONST)
 deriveEnumDirectives options proxy name = deriveDirectiveUsages options $ filter isIncluded $ getEnumDirectiveUsages options proxy name
 
-deriveFieldDirectives :: gql a => UseDeriving gql args -> f a -> FieldName -> SchemaBuilder (Directives CONST)
+deriveFieldDirectives :: gql a => UseDeriving gql args -> f a -> FieldName -> GQLResult (Directives CONST)
 deriveFieldDirectives options proxy name = deriveDirectiveUsages options $ filter isIncluded $ getFieldDirectiveUsages options name proxy
 
-deriveTypeDirectives :: gql a => UseDeriving gql args -> f a -> SchemaBuilder (Directives CONST)
+deriveTypeDirectives :: gql a => UseDeriving gql args -> f a -> GQLResult (Directives CONST)
 deriveTypeDirectives options proxy = deriveDirectiveUsages options $ filter isIncluded $ typeDirectives $ __directives options proxy
 
 -- visit
