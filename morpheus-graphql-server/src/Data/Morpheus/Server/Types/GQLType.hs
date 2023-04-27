@@ -75,9 +75,6 @@ import Data.Morpheus.Server.Deriving.Kinded.Value (KindedValue (..))
 import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef (..))
 import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (..), KindedProxy (KindedProxy), catMap, inputType, isIN)
 import Data.Morpheus.Server.Deriving.Utils.Proxy (ContextValue (..), symbolName)
-import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
-  ( liftResult,
-  )
 import Data.Morpheus.Server.Deriving.Utils.Types (GQLTypeNode (..), GQLTypeNodeExtension (..))
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( FieldRep (..),
@@ -423,7 +420,7 @@ withGQL =
       useTypeData = __type,
       useDeriveNode = __deriveType,
       useExploreRef,
-      useDeriveFieldArguments = liftResult . fmap FieldRep . __deriveFieldArguments
+      useDeriveFieldArguments = fmap FieldRep . __deriveFieldArguments
     }
   where
     useExploreRef p =

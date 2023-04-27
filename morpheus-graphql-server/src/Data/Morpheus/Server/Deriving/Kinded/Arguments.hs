@@ -53,7 +53,7 @@ instance DeriveFieldArguments ctx () where
 instance (UseDeriving gql val ~ ctx, gql b, gql a) => DeriveFieldArguments ctx (a -> b) where
   deriveFieldArguments UseDeriving {..} _ = do
     a <- useDeriveNode drvGQL proxy >>= nodeToType >>= typeToArguments
-    b <- unFieldRep <$> unliftResult (useDeriveFieldArguments drvGQL (OutputType :: CatType OUT b))
+    b <- unFieldRep <$> useDeriveFieldArguments drvGQL (OutputType :: CatType OUT b)
     unliftResult $ case b of
       Just x -> Just <$> (a <:> x)
       Nothing -> pure $ Just a

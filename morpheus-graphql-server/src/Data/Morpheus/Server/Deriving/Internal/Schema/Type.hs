@@ -178,7 +178,7 @@ toFieldContent :: CatContext cat -> UseGQLType gql -> GRepContext gql gql Proxy 
 toFieldContent ctx gql =
   GRepContext
     { optTypeData = useTypeData gql . addContext ctx,
-      optApply = useDeriveFieldArguments gql . addContext ctx
+      optApply = liftResult . useDeriveFieldArguments gql . addContext ctx
     }
 
 useDeriveRoot :: gql a => UseGQLType gql -> f a -> SchemaBuilder (TypeDefinition OBJECT CONST)

@@ -18,9 +18,6 @@ where
 import Data.Morpheus.App.Internal.Resolving (NamedResolver (..), ResolverState, ResolverValue)
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef)
-import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
-  ( SchemaBuilder,
-  )
 import Data.Morpheus.Server.Deriving.Utils.Types
 import Data.Morpheus.Server.Types.Directives
   ( GDirectiveUsages (..),
@@ -50,7 +47,7 @@ data UseGQLType gql = UseGQLType
     useTypename :: forall c a. gql a => CatType c a -> TypeName,
     useTypeData :: forall c a. gql a => CatType c a -> TypeData,
     useDeriveNode :: forall c a. gql a => CatType c a -> GQLResult (GQLTypeNode c),
-    useDeriveFieldArguments :: forall c a. gql a => CatType c a -> SchemaBuilder FieldRep,
+    useDeriveFieldArguments :: forall c a. gql a => CatType c a -> GQLResult FieldRep,
     useExploreRef :: forall c a. gql a => CatType c a -> [ScanRef gql]
   }
 
