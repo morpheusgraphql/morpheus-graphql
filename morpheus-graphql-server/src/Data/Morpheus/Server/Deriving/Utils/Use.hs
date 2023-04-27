@@ -33,7 +33,6 @@ import Data.Morpheus.Server.Types.TypeName
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition,
     CONST,
-    TypeDefinition (..),
     TypeName,
     ValidValue,
     Value,
@@ -51,7 +50,6 @@ data UseGQLType gql = UseGQLType
   { useFingerprint :: forall c a. gql a => CatType c a -> TypeFingerprint,
     useTypename :: forall c a. gql a => CatType c a -> TypeName,
     useTypeData :: forall c a. gql a => CatType c a -> TypeData,
-    useDeriveType :: forall c a. gql a => CatType c a -> SchemaBuilder (TypeDefinition c CONST),
     useDeriveNode :: forall c a. gql a => CatType c a -> SchemaBuilder (GQLNode c),
     useDeriveFieldArguments :: forall c a. gql a => CatType c a -> SchemaBuilder FieldRep,
     useExploreRef :: forall c a. gql a => CatType c a -> [ScanRef gql]

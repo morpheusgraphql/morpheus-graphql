@@ -426,7 +426,6 @@ withGQL =
       useTypename = gqlTypeName . __type,
       useTypeData = __type,
       useDeriveNode = __deriveType,
-      useDeriveType = __deriveType >=> constraintType,
       useExploreRef,
       useDeriveFieldArguments = fmap FieldRep . __deriveFieldArguments
     }
@@ -452,10 +451,6 @@ enumDirective' name = enumDirective (packName name)
 
 exploreDirective :: DirectiveUsage -> [ScanRef GQLType]
 exploreDirective (GDirectiveUsage x) = __exploreRef $ inputType $ Identity x
-
-constraintType :: Applicative f => GQLNode c -> f (TypeDefinition c CONST)
-constraintType node = case node of
-  GQLTypeNode x -> pure x
 
 withDir :: WITH_DERIVING
 withDir =

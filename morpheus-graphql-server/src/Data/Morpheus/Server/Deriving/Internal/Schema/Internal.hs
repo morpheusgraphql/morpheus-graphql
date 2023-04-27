@@ -23,6 +23,7 @@ module Data.Morpheus.Server.Deriving.Internal.Schema.Internal
     fromSchema,
     withObject,
     typeToArguments,
+    nodeToType,
   )
 where
 
@@ -37,6 +38,7 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
     inputType,
   )
+import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
 import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (..))
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition,
@@ -65,6 +67,11 @@ withObject :: (DerivingMonad m, gql a) => UseGQLType gql -> CatType c a -> TypeC
 withObject _ InputType DataInputObject {inputObjectFields} = pure inputObjectFields
 withObject _ OutputType DataObject {objectFields} = pure objectFields
 withObject gql x _ = failureOnlyObject gql x
+
+nodeToType :: (Applicative f, MonadError GQLError f) => GQLNode c -> f (TypeDefinition c CONST)
+nodeToType node = case node of
+  GQLTypeNode x -> pure x
+  GQLDirectiveNode x -> throwError "TODO: error message"
 
 failureOnlyObject :: (DerivingMonad m, gql a) => UseGQLType gql -> CatType c a -> m b
 failureOnlyObject gql proxy = throwError $ msg (useTypename gql proxy) <> " should have only one nonempty constructor"
