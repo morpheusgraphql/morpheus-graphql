@@ -97,7 +97,7 @@ instance
     where
       proxy = Proxy @a
 
-  kindedNamedRefs ctx _ = [ScanNode (useFingerprint (drvGQL $ namedDrv ctx) (outputType proxy)) (outputType proxy)]
+  kindedNamedRefs ctx _ = [ScanNode True (useFingerprint (drvGQL $ namedDrv ctx) (outputType proxy)) (outputType proxy)]
     where
       proxy = Proxy @a
 

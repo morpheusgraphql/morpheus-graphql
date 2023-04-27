@@ -38,7 +38,7 @@ scan :: Scanner c -> [ScanRef c] -> [ScanProxy c]
 scan ctx = toList . scanRefs ctx mempty
 
 fieldRefs :: Scanner c -> ScanRef c -> [ScanRef c]
-fieldRefs ctx (ScanNode _ x) = useGmap (rep x) (mapContext x ctx)
+fieldRefs ctx (ScanNode _ _ x) = useGmap (rep x) (mapContext x ctx)
 fieldRefs _ ScanLeaf {} = []
 
 mapContext :: CatType k a -> Scanner c -> GmapContext c [ScanRef c]
@@ -49,11 +49,11 @@ rep :: f a -> Proxy (Rep a)
 rep _ = Proxy
 
 visited :: HashMap TypeFingerprint v -> ScanRef c -> Bool
-visited lib (ScanNode fp _) = member fp lib
+visited lib (ScanNode _ fp _) = member fp lib
 visited lib (ScanLeaf fp _) = member fp lib
 
 getFingerprint :: ScanRef c -> TypeFingerprint
-getFingerprint (ScanNode fp _) = fp
+getFingerprint (ScanNode _ fp _) = fp
 getFingerprint (ScanLeaf fp _) = fp
 
 type ProxyLib c = HashMap TypeFingerprint (ScanProxy c)
@@ -70,11 +70,13 @@ data ScanProxy (c :: Type -> Constraint) where
   ScanProxy :: c a => CatType k a -> ScanProxy c
 
 runRef :: ScanRef c -> [ScanProxy c]
-runRef (ScanNode _ p) = [ScanProxy p]
+runRef (ScanNode visible _ p)
+  | visible = [ScanProxy p]
+  | otherwise = []
 runRef (ScanLeaf _ p) = [ScanProxy p]
 
 data ScanRef (c :: Type -> Constraint) where
-  ScanNode :: forall k a c. (Gmap c (Rep a), c a) => TypeFingerprint -> CatType k a -> ScanRef c
+  ScanNode :: forall k a c. (Gmap c (Rep a), c a) => Bool -> TypeFingerprint -> CatType k a -> ScanRef c
   ScanLeaf :: forall k a c. (c a) => TypeFingerprint -> CatType k a -> ScanRef c
 
 newtype Scanner (c :: Type -> Constraint) = Scanner

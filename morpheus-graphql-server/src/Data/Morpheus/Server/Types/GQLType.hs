@@ -68,9 +68,11 @@ import Data.Morpheus.Server.Deriving.Kinded.Type
     DeriveKindedType (..),
     deriveScalarDefinition,
     deriveTypeGuardUnions,
+    scanNode,
   )
 import Data.Morpheus.Server.Deriving.Kinded.Value (KindedValue (..))
 import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef (..))
+import Data.Morpheus.Server.Deriving.Utils.Gmap
 import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (..), KindedProxy (KindedProxy), catMap, inputType, isIN)
 import Data.Morpheus.Server.Deriving.Utils.Proxy (ContextValue (..), symbolName)
 import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
@@ -312,13 +314,13 @@ instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (Pair a b) wh
 
 -- Manual
 
-instance (GQLType b, GQLType a) => GQLType (a -> b) where
+instance (GQLType b, GQLType a, Gmap GQLType (Rep a)) => GQLType (a -> b) where
   type KIND (a -> b) = CUSTOM
   __type = __type . catMap (Proxy @b)
   __deriveType OutputType = __deriveType (OutputType :: CatType OUT b)
   __deriveType proxy = cantBeInputType proxy
   __exploreRef _ =
-    __exploreRef (InputType :: CatType IN a)
+    scanNode False withGQL (InputType :: CatType IN a)
       <> __exploreRef (OutputType :: CatType OUT b)
 
 instance (GQLType k, GQLType v, Typeable k, Typeable v) => GQLType (Map k v) where
