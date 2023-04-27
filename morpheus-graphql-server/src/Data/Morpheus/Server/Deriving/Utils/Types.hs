@@ -26,7 +26,6 @@ import Data.Morpheus.Internal.Ext
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
-    inputType,
   )
 import Data.Morpheus.Types.Internal.AST
   ( Argument (..),
@@ -38,6 +37,7 @@ import Data.Morpheus.Types.Internal.AST
     GQLError,
     IN,
     Msg (..),
+    OUT,
     ObjectEntry (..),
     Schema (..),
     TRUE,
@@ -57,16 +57,16 @@ fromSchema :: GQLResult (Schema VALID) -> Q Exp
 fromSchema Success {} = [|()|]
 fromSchema Failure {errors} = fail (show errors)
 
-withObject :: (DerivingMonad m) => TypeName -> CatType c a -> TypeContent TRUE any s -> m (FieldsDefinition c s)
-withObject _ InputType DataInputObject {inputObjectFields} = pure inputObjectFields
-withObject _ OutputType DataObject {objectFields} = pure objectFields
-withObject name _ _ = failureOnlyObject name
+withObject :: (DerivingMonad m) => TypeName -> TypeContent TRUE any s -> m (FieldsDefinition OUT s)
+withObject _ DataObject {objectFields} = pure objectFields
+withObject name _ = failureOnlyObject name
 
 failureOnlyObject :: (DerivingMonad m) => TypeName -> m b
 failureOnlyObject name = throwError $ msg name <> " should have only one nonempty constructor"
 
 typeToArguments :: (DerivingMonad m) => TypeDefinition IN CONST -> m (ArgumentsDefinition CONST)
-typeToArguments TypeDefinition {..} = fieldsToArguments <$> withObject typeName (inputType (Proxy @())) typeContent
+typeToArguments TypeDefinition {typeContent = DataInputObject {inputObjectFields}} = pure $ fieldsToArguments inputObjectFields
+typeToArguments TypeDefinition {typeName} = failureOnlyObject typeName
 
 argumentsToObject :: Arguments VALID -> Value VALID
 argumentsToObject = Object . fmap toEntry

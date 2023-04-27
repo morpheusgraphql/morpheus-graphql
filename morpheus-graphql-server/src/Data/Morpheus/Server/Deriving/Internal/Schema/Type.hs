@@ -43,7 +43,13 @@ import Data.Morpheus.Server.Deriving.Utils.GRep
     deriveType,
     scanTypes,
   )
-import Data.Morpheus.Server.Deriving.Utils.Kinded (CatContext, addContext, getCatContext, mkScalar, outputType)
+import Data.Morpheus.Server.Deriving.Utils.Kinded
+  ( CatContext,
+    addContext,
+    getCatContext,
+    mkScalar,
+    outputType,
+  )
 import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
   ( NodeDerivation,
     SchemaBuilder (..),
@@ -56,7 +62,6 @@ import Data.Morpheus.Server.Deriving.Utils.Use
   )
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
-    FieldsDefinition,
     OBJECT,
     OUT,
     ScalarDefinition,
@@ -141,7 +146,8 @@ deriveInterfaceDefinition ::
   CatType OUT a ->
   SchemaBuilder (TypeDefinition OUT CONST)
 deriveInterfaceDefinition drv proxy = do
-  fields <- deriveFields drv proxy
+  content <- deriveTypeContentWith drv proxy
+  fields <- withObject (useTypename (drvGQL drv) proxy) content
   fillTypeContent drv proxy (DataInterface fields)
 
 fillTypeContent ::
@@ -159,17 +165,6 @@ fillTypeContent options@UseDeriving {drvGQL = UseGQLType {..}} proxy content = d
       dirs
       content
 
-deriveFields ::
-  ( gql a,
-    GRep gql gql (SchemaBuilder FieldRep) (Rep a)
-  ) =>
-  UseDeriving gql args ->
-  CatType cat a ->
-  SchemaBuilder (FieldsDefinition cat CONST)
-deriveFields drv kindedType = do
-  content <- deriveTypeContentWith drv kindedType
-  withObject (useTypename (drvGQL drv) kindedType) kindedType content
-
 toFieldContent :: CatContext cat -> UseGQLType gql -> GRepContext gql gql Proxy (SchemaBuilder FieldRep)
 toFieldContent ctx gql =
   GRepContext
@@ -179,7 +174,7 @@ toFieldContent ctx gql =
 
 useDeriveRoot :: gql a => UseGQLType gql -> f a -> SchemaBuilder (TypeDefinition OBJECT CONST)
 useDeriveRoot gql pr = do
-  fields <- useDeriveNode gql proxy >>= nodeToType >>= withObject (useTypename gql proxy) proxy . typeContent
+  fields <- useDeriveNode gql proxy >>= nodeToType >>= withObject (useTypename gql proxy) . typeContent
   pure $ mkType (useTypename gql (outputType proxy)) (DataObject [] fields)
   where
     proxy = outputType pr

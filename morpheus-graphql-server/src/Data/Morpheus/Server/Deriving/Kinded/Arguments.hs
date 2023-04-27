@@ -27,7 +27,7 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
 import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
   ( SchemaBuilder,
   )
-import Data.Morpheus.Server.Deriving.Utils.Types (CatType, nodeToType, typeToArguments)
+import Data.Morpheus.Server.Deriving.Utils.Types (nodeToType, typeToArguments)
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( FieldRep (..),
     UseDeriving (..),
