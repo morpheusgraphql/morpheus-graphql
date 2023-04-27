@@ -79,6 +79,8 @@ import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
   ( NodeDerivation (..),
     SchemaBuilder,
     derivations,
+    liftResult,
+    resolveResult,
   )
 import Data.Morpheus.Server.Deriving.Utils.Types (GQLTypeNode (..), GQLTypeNodeExtension (..))
 import Data.Morpheus.Server.Deriving.Utils.Use
@@ -232,11 +234,11 @@ class GQLType a where
   default __exploreRef :: DERIVE_T a => CatType c a -> [ScanRef GQLType]
   __exploreRef = exploreKindedRefs withDir . lifted
 
-  __deriveFieldArguments :: CatType c a -> SchemaBuilder (Maybe (ArgumentsDefinition CONST))
+  __deriveFieldArguments :: CatType c a -> GQLResult (Maybe (ArgumentsDefinition CONST))
   default __deriveFieldArguments ::
     DeriveFieldArguments WITH_DERIVING (HasArguments a) =>
     CatType c a ->
-    SchemaBuilder (Maybe (ArgumentsDefinition CONST))
+    GQLResult (Maybe (ArgumentsDefinition CONST))
   __deriveFieldArguments OutputType = deriveFieldArguments withDir (Proxy @(HasArguments a))
   __deriveFieldArguments InputType = pure Nothing
 
@@ -341,7 +343,7 @@ instance (KnownSymbol name, GQLType value) => GQLType (Arg name value) where
   type KIND (Arg name value) = CUSTOM
   __type = __type . catMap (Proxy @value)
   __deriveType OutputType = cantBeInputType (OutputType :: CatType OUT (Arg name value))
-  __deriveType p@InputType = GQLTypeNode <$> fillTypeContent withDir p content
+  __deriveType p@InputType = GQLTypeNode <$> liftResult (fillTypeContent withDir p content)
     where
       content :: TypeContent TRUE IN CONST
       content = DataInputObject (singleton argName field)
@@ -357,9 +359,9 @@ instance (DERIVE_TYPE GQLType i, DERIVE_TYPE GQLType u) => GQLType (TypeGuard i 
   type KIND (TypeGuard i u) = CUSTOM
   __type = __type . catMap (Proxy @i)
   __deriveType OutputType = do
-    unions <- deriveTypeGuardUnions withDir union
+    unions <- liftResult (deriveTypeGuardUnions withDir union)
     derivations [NodeExtension $ ImplementsExtension (useTypename withGQL interface) unions]
-    GQLTypeNode <$> deriveInterfaceDefinition withDir interface
+    GQLTypeNode <$> resolveResult (deriveInterfaceDefinition withDir interface)
     where
       interface = OutputType :: CatType OUT i
       union = OutputType :: CatType OUT u
@@ -424,7 +426,7 @@ withGQL =
       useTypeData = __type,
       useDeriveNode = __deriveType,
       useExploreRef,
-      useDeriveFieldArguments = fmap FieldRep . __deriveFieldArguments
+      useDeriveFieldArguments = liftResult . fmap FieldRep . __deriveFieldArguments
     }
   where
     useExploreRef p =

@@ -41,6 +41,7 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
   )
 import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
   ( SchemaBuilder,
+    resolveResult,
   )
 import Data.Morpheus.Server.Deriving.Utils.Types (GQLTypeNode (..))
 import Data.Morpheus.Server.Deriving.Utils.Use
@@ -88,11 +89,11 @@ instance (DecodeScalar a, gql a, ctx ~ UseDeriving gql v) => DeriveKindedType ct
   exploreKindedRefs UseDeriving {..} proxy = scanLeaf drvGQL (catMap (Proxy @a) proxy)
 
 instance (DERIVE_TYPE gql a, Gmap gql (Rep a), ctx ~ UseDeriving gql v) => DeriveKindedType ctx TYPE a where
-  deriveKindedType drv = fmap GQLTypeNode . deriveTypeDefinition drv . unliftKind
+  deriveKindedType drv = fmap GQLTypeNode . resolveResult . deriveTypeDefinition drv . unliftKind
   exploreKindedRefs UseDeriving {..} proxy = scanNode True drvGQL (catMap (Proxy @a) proxy)
 
 instance (DERIVE_TYPE gql a, Gmap gql (Rep a), ctx ~ UseDeriving gql v, GQLDirective a, v a) => DeriveKindedType ctx DIRECTIVE a where
-  deriveKindedType drv _ = GQLDirectiveNode <$> (deriveTypeDefinition drv proxy >>= deriveDirectiveDefinition drv proxy)
+  deriveKindedType drv _ = GQLDirectiveNode <$> (resolveResult (deriveTypeDefinition drv proxy) >>= deriveDirectiveDefinition drv proxy)
     where
       proxy = inputType (Proxy @a)
   exploreKindedRefs UseDeriving {..} proxy

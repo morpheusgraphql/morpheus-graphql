@@ -19,13 +19,13 @@ module Data.Morpheus.Server.Deriving.Kinded.Arguments
   )
 where
 
-import Data.Morpheus.Internal.Ext ((<:>))
+import Data.Morpheus.Internal.Ext (GQLResult, (<:>))
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
     inputType,
   )
 import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
-  ( SchemaBuilder,
+  ( unliftResult,
   )
 import Data.Morpheus.Server.Deriving.Utils.Types (nodeToType, typeToArguments)
 import Data.Morpheus.Server.Deriving.Utils.Use
@@ -45,16 +45,16 @@ type family HasArguments a where
   HasArguments a = ()
 
 class DeriveFieldArguments ctx a where
-  deriveFieldArguments :: UseDeriving gql val ~ ctx => ctx -> f a -> SchemaBuilder (Maybe (ArgumentsDefinition CONST))
+  deriveFieldArguments :: UseDeriving gql val ~ ctx => ctx -> f a -> GQLResult (Maybe (ArgumentsDefinition CONST))
 
 instance DeriveFieldArguments ctx () where
   deriveFieldArguments _ _ = pure Nothing
 
 instance (UseDeriving gql val ~ ctx, gql b, gql a) => DeriveFieldArguments ctx (a -> b) where
   deriveFieldArguments UseDeriving {..} _ = do
-    a <- useDeriveNode drvGQL proxy >>= nodeToType >>= typeToArguments
-    b <- unFieldRep <$> useDeriveFieldArguments drvGQL (OutputType :: CatType OUT b)
-    case b of
+    a <- unliftResult (useDeriveNode drvGQL proxy) >>= nodeToType >>= typeToArguments
+    b <- unFieldRep <$> unliftResult (useDeriveFieldArguments drvGQL (OutputType :: CatType OUT b))
+    unliftResult $ case b of
       Just x -> Just <$> (a <:> x)
       Nothing -> pure $ Just a
     where

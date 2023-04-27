@@ -51,8 +51,9 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
     outputType,
   )
 import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
-  ( NodeDerivation (NodeExtension),
-    SchemaBuilder (..),
+  ( SchemaBuilder,
+    liftResult,
+    unliftResult,
   )
 import Data.Morpheus.Server.Deriving.Utils.Types (CatType, GQLTypeNodeExtension, nodeToType, withObject)
 import Data.Morpheus.Server.Deriving.Utils.Use
@@ -74,6 +75,8 @@ import Data.Morpheus.Types.Internal.AST
   )
 import GHC.Generics (Rep)
 import Relude
+
+type GREP_CON gql a = (GRep gql gql (SchemaBuilder FieldRep) (Rep a), gql a)
 
 buildTypeContent ::
   (gql a) =>
@@ -101,26 +104,24 @@ scanCTX ctx gql =
     }
 
 deriveTypeContentWith ::
-  (gql a, GRep gql gql (SchemaBuilder FieldRep) (Rep a)) =>
+  (GREP_CON gql a) =>
   UseDeriving gql args ->
   CatType kind a ->
-  SchemaBuilder (TypeContent TRUE kind CONST)
+  GQLResult (TypeContent TRUE kind CONST, [GQLTypeNodeExtension])
 deriveTypeContentWith drv@UseDeriving {..} proxy = do
-  reps <- deriveType (toFieldContent (getCatContext proxy) drvGQL) proxy
-  SchemaBuilder $ do
-    (t, ext) <- buildTypeContent drv proxy reps
-    pure (t, map NodeExtension ext)
+  reps <- unliftResult (deriveType (toFieldContent (getCatContext proxy) drvGQL) proxy)
+  buildTypeContent drv proxy reps
 
 deriveTypeGuardUnions ::
-  (gql a, GRep gql gql (SchemaBuilder FieldRep) (Rep a)) =>
+  (GREP_CON gql a) =>
   UseDeriving gql args ->
   CatType OUT a ->
-  SchemaBuilder [TypeName]
+  GQLResult [TypeName]
 deriveTypeGuardUnions drv proxy = do
-  content <- deriveTypeContentWith drv proxy
+  (content, _) <- deriveTypeContentWith drv proxy
   getUnionNames content
   where
-    getUnionNames :: TypeContent TRUE OUT CONST -> SchemaBuilder [TypeName]
+    getUnionNames :: TypeContent TRUE OUT CONST -> GQLResult [TypeName]
     getUnionNames DataUnion {unionMembers} = pure $ toList $ memberName <$> unionMembers
     getUnionNames DataObject {} = pure [useTypename (drvGQL drv) proxy]
     getUnionNames _ = throwError "guarded type must be an union or object"
@@ -131,35 +132,37 @@ deriveScalarDefinition ::
   UseDeriving gql args ->
   CatType cat a ->
   SchemaBuilder (TypeDefinition cat CONST)
-deriveScalarDefinition f dir p = fillTypeContent dir p (mkScalar p (f p))
+deriveScalarDefinition f dir p = liftResult $ fillTypeContent dir p (mkScalar p (f p))
 
 deriveTypeDefinition ::
-  (gql a, GRep gql gql (SchemaBuilder FieldRep) (Rep a)) =>
+  (GREP_CON gql a) =>
   UseDeriving gql args ->
   CatType c a ->
-  SchemaBuilder (TypeDefinition c CONST)
+  GQLResult (TypeDefinition c CONST, [GQLTypeNodeExtension])
 deriveTypeDefinition dir proxy = do
-  content <- deriveTypeContentWith dir proxy
-  fillTypeContent dir proxy content
+  (content, ext) <- deriveTypeContentWith dir proxy
+  t <- fillTypeContent dir proxy content
+  pure (t, ext)
 
 deriveInterfaceDefinition ::
-  (gql a, GRep gql gql (SchemaBuilder FieldRep) (Rep a)) =>
+  (GREP_CON gql a) =>
   UseDeriving gql args ->
   CatType OUT a ->
-  SchemaBuilder (TypeDefinition OUT CONST)
+  GQLResult (TypeDefinition OUT CONST, [GQLTypeNodeExtension])
 deriveInterfaceDefinition drv proxy = do
-  content <- deriveTypeContentWith drv proxy
+  (content, ext) <- deriveTypeContentWith drv proxy
   fields <- withObject (useTypename (drvGQL drv) proxy) content
-  fillTypeContent drv proxy (DataInterface fields)
+  t <- fillTypeContent drv proxy (DataInterface fields)
+  pure (t, ext)
 
 fillTypeContent ::
   gql a =>
   UseDeriving gql args ->
   CatType c a ->
   TypeContent TRUE cat CONST ->
-  SchemaBuilder (TypeDefinition cat CONST)
+  GQLResult (TypeDefinition cat CONST)
 fillTypeContent options@UseDeriving {drvGQL = UseGQLType {..}} proxy content = do
-  dirs <- SchemaBuilder ((,[]) <$> deriveTypeDirectives options proxy)
+  dirs <- deriveTypeDirectives options proxy
   pure $
     TypeDefinition
       (visitTypeDescription options proxy Nothing)
