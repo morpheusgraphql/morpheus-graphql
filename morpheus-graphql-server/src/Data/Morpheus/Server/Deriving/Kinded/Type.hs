@@ -47,7 +47,7 @@ import Data.Morpheus.Server.Deriving.Utils.Use
     UseDeriving (..),
     UseGQLType (..),
   )
-import Data.Morpheus.Server.Types.Directives (GQLDirective)
+import Data.Morpheus.Server.Types.Directives (GQLDirective (..))
 import Data.Morpheus.Server.Types.Kind
   ( DIRECTIVE,
     DerivingKind,
@@ -94,4 +94,6 @@ instance (DERIVE_TYPE gql a, Gmap gql (Rep a), ctx ~ UseDeriving gql v, GQLDirec
   deriveKindedType drv _ = GQLDirectiveNode <$> (deriveTypeDefinition drv proxy >>= deriveDirectiveDefinition drv proxy)
     where
       proxy = inputType (Proxy @a)
-  exploreKindedRefs UseDeriving {..} proxy = scanNode drvGQL (catMap (Proxy @a) proxy)
+  exploreKindedRefs UseDeriving {..} proxy
+    | excludeFromSchema (Proxy @a) = []
+    | otherwise = scanNode drvGQL (catMap (Proxy @a) proxy)
