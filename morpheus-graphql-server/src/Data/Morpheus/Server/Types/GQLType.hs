@@ -76,10 +76,7 @@ import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef (..))
 import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (..), KindedProxy (KindedProxy), catMap, inputType, isIN)
 import Data.Morpheus.Server.Deriving.Utils.Proxy (ContextValue (..), symbolName)
 import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
-  ( NodeDerivation (..),
-    SchemaBuilder,
-    derivations,
-    liftResult,
+  ( liftResult,
   )
 import Data.Morpheus.Server.Deriving.Utils.Types (GQLTypeNode (..), GQLTypeNodeExtension (..))
 import Data.Morpheus.Server.Deriving.Utils.Use
@@ -225,8 +222,8 @@ class GQLType a where
   default __type :: Typeable a => CatType cat a -> TypeData
   __type proxy = deriveTypeData proxy (directives proxy)
 
-  __deriveType :: CatType c a -> SchemaBuilder (GQLTypeNode c)
-  default __deriveType :: DERIVE_T a => CatType c a -> SchemaBuilder (GQLTypeNode c)
+  __deriveType :: CatType c a -> GQLResult (GQLTypeNode c)
+  default __deriveType :: DERIVE_T a => CatType c a -> GQLResult (GQLTypeNode c)
   __deriveType = deriveKindedType withDir . lifted
 
   __exploreRef :: CatType c a -> [ScanRef GQLType]
@@ -268,7 +265,7 @@ instance GQLType ID where
 instance GQLType (Value CONST) where
   type KIND (Value CONST) = CUSTOM
   __type = mkTypeData "INTERNAL_VALUE"
-  __deriveType = liftResult . deriveScalarDefinition (const $ ScalarDefinition pure) withDir
+  __deriveType = deriveScalarDefinition (const $ ScalarDefinition pure) withDir
   __exploreRef _ = []
 
 -- WRAPPERS
@@ -342,7 +339,7 @@ instance (KnownSymbol name, GQLType value) => GQLType (Arg name value) where
   type KIND (Arg name value) = CUSTOM
   __type = __type . catMap (Proxy @value)
   __deriveType OutputType = cantBeInputType (OutputType :: CatType OUT (Arg name value))
-  __deriveType p@InputType = liftResult ((`GQLTypeNode` []) <$> fillTypeContent withDir p content)
+  __deriveType p@InputType = (`GQLTypeNode` []) <$> fillTypeContent withDir p content
     where
       content :: TypeContent TRUE IN CONST
       content = DataInputObject (singleton argName field)
@@ -358,9 +355,10 @@ instance (DERIVE_TYPE GQLType i, DERIVE_TYPE GQLType u) => GQLType (TypeGuard i 
   type KIND (TypeGuard i u) = CUSTOM
   __type = __type . catMap (Proxy @i)
   __deriveType OutputType = do
-    unions <- liftResult (deriveTypeGuardUnions withDir union)
-    derivations [NodeExtension $ ImplementsExtension (useTypename withGQL interface) unions]
-    liftResult (uncurry GQLTypeNode <$> deriveInterfaceDefinition withDir interface)
+    unions <- deriveTypeGuardUnions withDir union
+    let imp = ImplementsExtension (useTypename withGQL interface) unions
+    (cont, ext) <- deriveInterfaceDefinition withDir interface
+    pure $ GQLTypeNode cont (imp : ext)
     where
       interface = OutputType :: CatType OUT i
       union = OutputType :: CatType OUT u
@@ -423,7 +421,7 @@ withGQL =
     { useFingerprint = gqlFingerprint . __type,
       useTypename = gqlTypeName . __type,
       useTypeData = __type,
-      useDeriveNode = __deriveType,
+      useDeriveNode = liftResult . __deriveType,
       useExploreRef,
       useDeriveFieldArguments = liftResult . fmap FieldRep . __deriveFieldArguments
     }
