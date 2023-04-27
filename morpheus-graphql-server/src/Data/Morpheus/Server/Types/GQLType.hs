@@ -427,11 +427,11 @@ withGQL =
       useTypeData = __type,
       useDeriveNode = __deriveType,
       useDeriveType = __deriveType >=> constraintType,
-      useExploreRef = f,
+      useExploreRef,
       useDeriveFieldArguments = fmap FieldRep . __deriveFieldArguments
     }
   where
-    f p =
+    useExploreRef p =
       __exploreRef p
         <> concatMap exploreDirective (allUsages (directives p))
 
