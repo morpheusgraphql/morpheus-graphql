@@ -32,11 +32,8 @@ import Data.Morpheus.Server.Deriving.Utils.GScan
   )
 import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
   ( NodeDerivation (..),
-    SchemaBuilder,
     TypeFingerprint,
-    liftResult,
     toSchema,
-    unliftResult,
   )
 import Data.Morpheus.Server.Deriving.Utils.Types (CatType (OutputType), GQLTypeNode (..), fromSchema)
 import Data.Morpheus.Server.Deriving.Utils.Use
@@ -83,18 +80,13 @@ toDerivation fp (GQLDirectiveNode node) = [DirectiveDerivation fp node]
 resolveNode :: ScanProxy GQLType -> GQLResult [NodeDerivation]
 resolveNode (ScanProxy proxy) = toDerivation (useFingerprint withGQL proxy) <$> useDeriveNode withGQL proxy
 
-deriveRoot :: GQLType a => f a -> SchemaBuilder (TypeDefinition OBJECT CONST)
-deriveRoot = liftResult . useDeriveRoot withGQL
+deriveRoot :: GQLType a => f a -> GQLResult (TypeDefinition OBJECT CONST)
+deriveRoot = useDeriveRoot withGQL
 
 deriveSchema :: forall root f m e qu mu su. SCHEMA qu mu su => f (root m e qu mu su) -> GQLResult (Schema CONST)
 deriveSchema _ = do
-  (q, m, s) <-
-    unliftResult
-      ( do
-          q <- deriveRoot (Proxy @(qu IgnoredResolver))
-          m <- traverse deriveRoot (ignoreUndefined (Proxy @(mu IgnoredResolver)))
-          s <- traverse deriveRoot (ignoreUndefined (Proxy @(su IgnoredResolver)))
-          pure (q, m, s)
-      )
+  q <- deriveRoot (Proxy @(qu IgnoredResolver))
+  m <- traverse deriveRoot (ignoreUndefined (Proxy @(mu IgnoredResolver)))
+  s <- traverse deriveRoot (ignoreUndefined (Proxy @(su IgnoredResolver)))
   ts <- fmap join (traverse resolveNode (explore (Proxy @qu) <> explore (Proxy @mu) <> explore (Proxy @su)))
   toSchema (q, m, s, ts)
