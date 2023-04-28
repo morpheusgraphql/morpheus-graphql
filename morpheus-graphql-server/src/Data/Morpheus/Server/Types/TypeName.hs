@@ -1,5 +1,4 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -48,7 +47,8 @@ import Data.Typeable
     typeRepTyCon,
   )
 import GHC.Fingerprint
-import Relude hiding (Seq, Undefined, intercalate)
+import Relude hiding (Seq, Undefined, intercalate, show)
+import Prelude (show)
 
 data TypeFingerprint
   = TypeableFingerprint
@@ -73,11 +73,15 @@ typeableTypename :: (Typeable a) => f a -> TypeName
 typeableTypename = packName . intercalate "" . fmap (pack . tyConName . replacePairCon) . getTypeConstructors
 
 toCategory :: CatType c a -> TypeCategory
-toCategory p@InputType = IN
-toCategory p@OutputType = OUT
+toCategory InputType = IN
+toCategory OutputType = OUT
 
 typeableFingerprint :: (Typeable a) => CatType c a -> TypeFingerprint
-typeableFingerprint p = TypeableFingerprint (toCategory p) (tyConFingerprint <$> getTypeConstructors p)
+typeableFingerprint p =
+  TypeableFingerprint
+    { category = toCategory p,
+      fingerprints = tyConFingerprint <$> getTypeConstructors p
+    }
 
 getTypeConstructors :: (Typeable a) => f a -> [TyCon]
 getTypeConstructors = ignoreResolver . splitTyConApp . typeRep
