@@ -6,6 +6,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -21,6 +22,7 @@ where
 
 import Data.Morpheus.Core (defaultConfig, validateSchema)
 import Data.Morpheus.Internal.Ext (GQLResult)
+import Data.Morpheus.Internal.Utils (toAssoc)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Type
   ( useDeriveRoot,
   )
@@ -32,8 +34,11 @@ import Data.Morpheus.Server.Deriving.Utils.GScan
   )
 import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
   ( NodeDerivation (..),
+    SchemaState (..),
     TypeFingerprint,
-    toSchema,
+    checkTypeCollisions,
+    execNode,
+    insertImplements,
   )
 import Data.Morpheus.Server.Deriving.Utils.Types (CatType (OutputType), GQLTypeNode (..), fromSchema)
 import Data.Morpheus.Server.Deriving.Utils.Use
@@ -51,6 +56,8 @@ import Data.Morpheus.Types.Internal.AST
     OUT,
     Schema (..),
     TypeDefinition,
+    defineDirective,
+    defineSchemaWith,
     toAny,
   )
 import Language.Haskell.TH (Exp, Q)
@@ -85,8 +92,11 @@ deriveRoot = useDeriveRoot withGQL
 
 deriveSchema :: forall root f m e qu mu su. SCHEMA qu mu su => f (root m e qu mu su) -> GQLResult (Schema CONST)
 deriveSchema _ = do
-  q <- deriveRoot (Proxy @(qu IgnoredResolver))
-  m <- traverse deriveRoot (ignoreUndefined (Proxy @(mu IgnoredResolver)))
-  s <- traverse deriveRoot (ignoreUndefined (Proxy @(su IgnoredResolver)))
-  ts <- fmap join (traverse resolveNode (explore (Proxy @qu) <> explore (Proxy @mu) <> explore (Proxy @su)))
-  toSchema (q, m, s, ts)
+  query <- deriveRoot (Proxy @(qu IgnoredResolver))
+  mutation <- traverse deriveRoot (ignoreUndefined (Proxy @(mu IgnoredResolver)))
+  subscription <- traverse deriveRoot (ignoreUndefined (Proxy @(su IgnoredResolver)))
+  typeNodes <- fmap join (traverse resolveNode (explore (Proxy @qu) <> explore (Proxy @mu) <> explore (Proxy @su)))
+  SchemaState {..} <- foldlM (&) mempty (map execNode typeNodes)
+  types <- map (insertImplements implements) <$> checkTypeCollisions (toAssoc typeDefinitions)
+  schema <- defineSchemaWith types (Just query, mutation, subscription)
+  foldlM defineDirective schema directiveDefinitions

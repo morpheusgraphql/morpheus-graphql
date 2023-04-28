@@ -1,20 +1,15 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
-  ( SchemaBuilder (..),
-    TypeFingerprint (..),
-    toSchema,
+  ( TypeFingerprint (..),
     NodeDerivation (..),
+    SchemaState (..),
+    insertImplements,
+    execNode,
+    checkTypeCollisions,
   )
 where
 
@@ -28,15 +23,10 @@ import Data.Morpheus.Types.Internal.AST
   ( ANY,
     CONST,
     DirectiveDefinition,
-    GQLError,
-    OBJECT,
-    Schema,
     TypeCategory (..),
     TypeContent (..),
     TypeDefinition (..),
     TypeName,
-    defineDirective,
-    defineSchemaWith,
     mkEnumContent,
     mkType,
     msg,
@@ -62,30 +52,6 @@ instance Semigroup SchemaState where
 
 instance Monoid SchemaState where
   mempty = SchemaState mempty mempty mempty
-
--- Helper Functions
-newtype SchemaBuilder a = SchemaBuilder
-  { runSchemaT :: GQLResult a
-  }
-  deriving
-    ( Functor,
-      MonadError GQLError,
-      Monad,
-      Applicative
-    )
-
-toSchema ::
-  ( TypeDefinition OBJECT CONST,
-    Maybe (TypeDefinition OBJECT CONST),
-    Maybe (TypeDefinition OBJECT CONST),
-    [NodeDerivation]
-  ) ->
-  GQLResult (Schema CONST)
-toSchema (q, m, s, nodes) = do
-  SchemaState {typeDefinitions, implements, directiveDefinitions} <- foldlM (&) mempty (map execNode nodes)
-  types <- map (insertImplements implements) <$> checkTypeCollisions (toAssoc typeDefinitions)
-  schema <- defineSchemaWith types (Just q, m, s)
-  foldlM defineDirective schema directiveDefinitions
 
 insertImplements :: Map TypeName [TypeName] -> TypeDefinition c CONST -> TypeDefinition c CONST
 insertImplements x TypeDefinition {typeContent = DataObject {..}, ..} =
