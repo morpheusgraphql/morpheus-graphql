@@ -2,12 +2,12 @@
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
@@ -15,7 +15,6 @@ module Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
     TypeFingerprint (..),
     toSchema,
     NodeDerivation (..),
-    derivations,
   )
 where
 
@@ -66,28 +65,19 @@ instance Monoid SchemaState where
 
 -- Helper Functions
 newtype SchemaBuilder a = SchemaBuilder
-  { runSchemaT :: GQLResult (a, [NodeDerivation])
+  { runSchemaT :: GQLResult a
   }
-  deriving (Functor)
-
-instance MonadError GQLError SchemaBuilder where
-  throwError = SchemaBuilder . throwError
-  catchError (SchemaBuilder mx) f = SchemaBuilder (catchError mx (runSchemaT . f))
+  deriving
+    ( Functor,
+      MonadError GQLError,
+      Monad
+    )
 
 instance Applicative SchemaBuilder where
-  pure = SchemaBuilder . pure . (,[])
+  pure = SchemaBuilder . pure
   (SchemaBuilder v1) <*> (SchemaBuilder v2) = SchemaBuilder $ do
-    (f, u1) <- v1
-    (a, u2) <- v2
-    pure (f a, u1 <> u2)
-
-instance Monad SchemaBuilder where
-  return = pure
-  (SchemaBuilder v1) >>= f =
-    SchemaBuilder $ do
-      (x, up1) <- v1
-      (y, up2) <- runSchemaT (f x)
-      pure (y, up1 <> up2)
+    f <- v1
+    f <$> v2
 
 toSchema ::
   ( TypeDefinition OBJECT CONST,
@@ -161,6 +151,3 @@ execNodeTypeVariant NodeUnitType s = pure s {typeDefinitions = insert fp t (type
   where
     fp = CustomFingerprint unitTypeName
     t = mkType unitTypeName (mkEnumContent [unitTypeName])
-
-derivations :: [NodeDerivation] -> SchemaBuilder ()
-derivations nodes = SchemaBuilder $ pure ((), nodes)

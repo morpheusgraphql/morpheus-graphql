@@ -55,6 +55,6 @@ instance (UseDeriving gql val ~ ctx, gql b, gql a) => DeriveFieldArguments ctx (
   deriveFieldArguments UseDeriving {..} _ = do
     a <- useDeriveNode drvGQL proxy >>= nodeToType >>= typeToArguments
     b <- fromMaybe empty . unFieldRep <$> useDeriveFieldArguments drvGQL (OutputType :: CatType OUT b)
-    Just . fst <$> runSchemaT (a <:> b)
+    Just <$> runSchemaT (a <:> b)
     where
       proxy = inputType (Proxy @a)
