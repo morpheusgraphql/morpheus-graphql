@@ -6,6 +6,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -50,28 +51,38 @@ import GHC.Fingerprint
 import Relude hiding (Seq, Undefined, intercalate)
 
 data TypeFingerprint
-  = TypeableFingerprint TypeCategory [Fingerprint]
+  = TypeableFingerprint
+      { category :: TypeCategory,
+        fingerprints :: [Fingerprint]
+      }
   | InternalFingerprint TypeName
   | CustomFingerprint TypeName
   deriving
     ( Generic,
       Show,
       Eq,
-      Ord,
-      Hashable
+      Ord
     )
 
-typeableTypename :: Typeable a => f a -> TypeName
+instance Hashable TypeFingerprint where
+  hashWithSalt s TypeableFingerprint {..} = hashWithSalt s (1 :: Int, category, map show fingerprints)
+  hashWithSalt s (InternalFingerprint x) = hashWithSalt s (2 :: Int, x)
+  hashWithSalt s (CustomFingerprint x) = hashWithSalt s (3 :: Int, x)
+
+typeableTypename :: (Typeable a) => f a -> TypeName
 typeableTypename = packName . intercalate "" . fmap (pack . tyConName . replacePairCon) . getTypeConstructors
 
-typeableFingerprint :: Typeable a => CatType c a -> TypeFingerprint
-typeableFingerprint p@InputType = TypeableFingerprint IN $ tyConFingerprint <$> getTypeConstructors p
-typeableFingerprint p@OutputType = TypeableFingerprint OUT $ tyConFingerprint <$> getTypeConstructors p
+toCategory :: CatType c a -> TypeCategory
+toCategory p@InputType = IN
+toCategory p@OutputType = OUT
 
-getTypeConstructors :: Typeable a => f a -> [TyCon]
+typeableFingerprint :: (Typeable a) => CatType c a -> TypeFingerprint
+typeableFingerprint p = TypeableFingerprint (toCategory p) (tyConFingerprint <$> getTypeConstructors p)
+
+getTypeConstructors :: (Typeable a) => f a -> [TyCon]
 getTypeConstructors = ignoreResolver . splitTyConApp . typeRep
 
-rep :: forall k (a :: k) f. Typeable a => f a -> TyCon
+rep :: forall k (a :: k) f. (Typeable a) => f a -> TyCon
 rep = typeRepTyCon . typeRep
 
 -- | replaces typeName (A,B) with Pair_A_B
