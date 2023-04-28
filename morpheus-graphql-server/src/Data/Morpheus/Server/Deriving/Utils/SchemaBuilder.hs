@@ -70,14 +70,9 @@ newtype SchemaBuilder a = SchemaBuilder
   deriving
     ( Functor,
       MonadError GQLError,
-      Monad
+      Monad,
+      Applicative
     )
-
-instance Applicative SchemaBuilder where
-  pure = SchemaBuilder . pure
-  (SchemaBuilder v1) <*> (SchemaBuilder v2) = SchemaBuilder $ do
-    f <- v1
-    f <$> v2
 
 toSchema ::
   ( TypeDefinition OBJECT CONST,

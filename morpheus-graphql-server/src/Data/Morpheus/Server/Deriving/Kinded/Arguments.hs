@@ -25,9 +25,6 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
     inputType,
   )
-import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
-  ( runSchemaT,
-  )
 import Data.Morpheus.Server.Deriving.Utils.Types (nodeToType, typeToArguments)
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( FieldRep (..),
@@ -55,6 +52,6 @@ instance (UseDeriving gql val ~ ctx, gql b, gql a) => DeriveFieldArguments ctx (
   deriveFieldArguments UseDeriving {..} _ = do
     a <- useDeriveNode drvGQL proxy >>= nodeToType >>= typeToArguments
     b <- fromMaybe empty . unFieldRep <$> useDeriveFieldArguments drvGQL (OutputType :: CatType OUT b)
-    Just <$> runSchemaT (a <:> b)
+    Just <$> (a <:> b)
     where
       proxy = inputType (Proxy @a)
