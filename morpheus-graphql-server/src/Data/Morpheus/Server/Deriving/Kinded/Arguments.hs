@@ -27,8 +27,7 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
   )
 import Data.Morpheus.Server.Deriving.Utils.Types (nodeToType, typeToArguments)
 import Data.Morpheus.Server.Deriving.Utils.Use
-  ( FieldRep (..),
-    UseDeriving (..),
+  ( UseDeriving (..),
     UseGQLType (..),
   )
 import Data.Morpheus.Types.Internal.AST
@@ -43,15 +42,13 @@ type family HasArguments a where
   HasArguments a = ()
 
 class DeriveFieldArguments ctx a where
-  deriveFieldArguments :: UseDeriving gql val ~ ctx => ctx -> f a -> GQLResult (Maybe (ArgumentsDefinition CONST))
+  deriveFieldArguments :: UseDeriving gql val ~ ctx => ctx -> f a -> GQLResult (ArgumentsDefinition CONST)
 
 instance DeriveFieldArguments ctx () where
-  deriveFieldArguments _ _ = pure Nothing
+  deriveFieldArguments _ _ = pure empty
 
 instance (UseDeriving gql val ~ ctx, gql b, gql a) => DeriveFieldArguments ctx (a -> b) where
   deriveFieldArguments UseDeriving {..} _ = do
-    a <- useDeriveNode drvGQL proxy >>= nodeToType >>= typeToArguments
-    b <- fromMaybe empty . unFieldRep <$> useDeriveFieldArguments drvGQL (OutputType :: CatType OUT b)
-    Just <$> (a <:> b)
-    where
-      proxy = inputType (Proxy @a)
+    a <- useDeriveNode drvGQL (inputType (Proxy @a)) >>= nodeToType >>= typeToArguments
+    b <- useDeriveFieldArguments drvGQL (OutputType :: CatType OUT b)
+    a <:> b

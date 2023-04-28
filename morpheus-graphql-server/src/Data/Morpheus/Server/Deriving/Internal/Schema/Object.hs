@@ -51,7 +51,7 @@ import Data.Morpheus.Types.Internal.AST
     unsafeFromFields,
   )
 
-defineObjectType :: CatType kind a -> GRepCons (Maybe (ArgumentsDefinition CONST)) -> [NodeTypeVariant]
+defineObjectType :: CatType kind a -> GRepCons (ArgumentsDefinition CONST) -> [NodeTypeVariant]
 defineObjectType proxy GRepCons {consName, consFields} =
   [NodeTypeVariant consName (toAny (mkObjectTypeContent proxy fields))] <> [NodeUnitType | null consFields]
   where
@@ -66,7 +66,7 @@ buildObjectTypeContent ::
   gql a =>
   UseDeriving gql args ->
   CatType cat a ->
-  [GRepField (Maybe (ArgumentsDefinition CONST))] ->
+  [GRepField (ArgumentsDefinition CONST)] ->
   GQLResult (TypeContent TRUE cat CONST)
 buildObjectTypeContent options scope consFields = do
   xs <- traverse (setGQLTypeProps options scope . repToFieldDefinition scope) consFields
@@ -78,7 +78,7 @@ mkObjectTypeContent OutputType = DataObject []
 
 repToFieldDefinition ::
   CatType c a ->
-  GRepField (Maybe (ArgumentsDefinition CONST)) ->
+  GRepField (ArgumentsDefinition CONST) ->
   FieldDefinition c CONST
 repToFieldDefinition
   x
@@ -94,8 +94,8 @@ repToFieldDefinition
         ..
       }
 
-toFieldContent :: CatType c a -> Maybe (ArgumentsDefinition CONST) -> Maybe (FieldContent TRUE c CONST)
-toFieldContent OutputType (Just x) = Just (FieldArgs x)
+toFieldContent :: CatType c a -> ArgumentsDefinition CONST -> Maybe (FieldContent TRUE c CONST)
+toFieldContent OutputType x | not (null x) = Just (FieldArgs x)
 toFieldContent _ _ = Nothing
 
 setGQLTypeProps :: gql a => UseDeriving gql args -> CatType kind a -> FieldDefinition kind CONST -> GQLResult (FieldDefinition kind CONST)

@@ -59,12 +59,12 @@ import Data.Morpheus.Server.Deriving.Utils.Types
     withObject,
   )
 import Data.Morpheus.Server.Deriving.Utils.Use
-  ( FieldRep (..),
-    UseGQLType (..),
+  ( UseGQLType (..),
     UseRef (UseRef),
   )
 import Data.Morpheus.Types.Internal.AST
-  ( CONST,
+  ( ArgumentsDefinition,
+    CONST,
     OBJECT,
     OUT,
     ScalarDefinition,
@@ -80,18 +80,18 @@ import Relude
 
 type DERIVE_TYPE gql a =
   ( gql a,
-    GRep gql gql (GQLResult FieldRep) (Rep a)
+    GRep gql gql (GQLResult (ArgumentsDefinition CONST)) (Rep a)
   )
 
 buildTypeContent ::
   (gql a) =>
   UseDeriving gql args ->
   CatType kind a ->
-  GRepType FieldRep ->
+  GRepType (ArgumentsDefinition CONST) ->
   GQLResult (TypeContent TRUE kind CONST, [GQLTypeNodeExtension])
 buildTypeContent options scope (GRepTypeEnum variants) = (,[]) <$> buildEnumTypeContent options scope variants
-buildTypeContent options scope (GRepTypeObject fields) = (,[]) <$> buildObjectTypeContent options scope (map (unFieldRep <$>) fields)
-buildTypeContent _ scope GRepTypeUnion {..} = buildUnionType scope (map fst variantRefs) (map (unFieldRep <$>) inlineVariants)
+buildTypeContent options scope (GRepTypeObject fields) = (,[]) <$> buildObjectTypeContent options scope fields
+buildTypeContent _ scope GRepTypeUnion {..} = buildUnionType scope (map fst variantRefs) inlineVariants
 
 exploreTypes ::
   (gql a, GRep gql gql (UseRef gql) (Rep a)) =>
@@ -175,7 +175,7 @@ fillTypeContent options@UseDeriving {drvGQL = UseGQLType {..}} proxy content = d
       dirs
       content
 
-toFieldContent :: CatContext cat -> UseGQLType gql -> GRepContext gql gql Proxy (GQLResult FieldRep)
+toFieldContent :: CatContext cat -> UseGQLType gql -> GRepContext gql gql Proxy (GQLResult (ArgumentsDefinition CONST))
 toFieldContent ctx gql =
   GRepContext
     { optTypeData = useTypeData gql . addContext ctx,

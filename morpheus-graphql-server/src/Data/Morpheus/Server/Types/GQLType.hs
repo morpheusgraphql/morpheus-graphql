@@ -54,7 +54,7 @@ import Data.Morpheus.App.Internal.Resolving
   )
 import Data.Morpheus.Generic (Gmap)
 import Data.Morpheus.Internal.Ext (GQLResult)
-import Data.Morpheus.Internal.Utils (singleton)
+import Data.Morpheus.Internal.Utils (empty, singleton)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Type
   ( deriveInterfaceDefinition,
     fillTypeContent,
@@ -77,8 +77,7 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (..), KindedProxy (Ki
 import Data.Morpheus.Server.Deriving.Utils.Proxy (ContextValue (..), symbolName)
 import Data.Morpheus.Server.Deriving.Utils.Types (GQLTypeNode (..), GQLTypeNodeExtension (..))
 import Data.Morpheus.Server.Deriving.Utils.Use
-  ( FieldRep (..),
-    UseDeriving (..),
+  ( UseDeriving (..),
     UseGQLType (..),
     UseResolver (..),
     UseValue (..),
@@ -147,7 +146,7 @@ import Data.Sequence (Seq)
 import Data.Vector (Vector)
 import GHC.Generics
 import GHC.TypeLits (KnownSymbol)
-import Relude hiding (Seq, Undefined, fromList, intercalate)
+import Relude hiding (Seq, Undefined, empty, fromList, intercalate)
 
 ignoreUndefined :: forall f a. GQLType a => f a -> Maybe (f a)
 ignoreUndefined proxy
@@ -227,13 +226,10 @@ class GQLType a where
   default __exploreRef :: DERIVE_T a => CatType c a -> [ScanRef GQLType]
   __exploreRef = exploreKindedRefs withDir . lifted
 
-  __deriveFieldArguments :: CatType c a -> GQLResult (Maybe (ArgumentsDefinition CONST))
-  default __deriveFieldArguments ::
-    DeriveFieldArguments WITH_DERIVING (HasArguments a) =>
-    CatType c a ->
-    GQLResult (Maybe (ArgumentsDefinition CONST))
+  __deriveFieldArguments :: CatType c a -> GQLResult (ArgumentsDefinition CONST)
+  default __deriveFieldArguments :: DeriveFieldArguments WITH_DERIVING (HasArguments a) => CatType c a -> GQLResult (ArgumentsDefinition CONST)
   __deriveFieldArguments OutputType = deriveFieldArguments withDir (Proxy @(HasArguments a))
-  __deriveFieldArguments InputType = pure Nothing
+  __deriveFieldArguments InputType = pure empty
 
 instance GQLType Int where
   type KIND Int = SCALAR
@@ -420,7 +416,7 @@ withGQL =
       useTypeData = __type,
       useDeriveNode = __deriveType,
       useExploreRef,
-      useDeriveFieldArguments = fmap FieldRep . __deriveFieldArguments
+      useDeriveFieldArguments = __deriveFieldArguments
     }
   where
     useExploreRef p =

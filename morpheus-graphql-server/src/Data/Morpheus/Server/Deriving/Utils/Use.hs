@@ -11,7 +11,6 @@ module Data.Morpheus.Server.Deriving.Utils.Use
     UseResolver (..),
     UseNamedResolver (..),
     UseRef (..),
-    FieldRep (..),
   )
 where
 
@@ -38,16 +37,12 @@ import Relude
 data UseRef (c :: Type -> Constraint) where
   UseRef :: c a => CatType t a -> UseRef c
 
-newtype FieldRep = FieldRep
-  { unFieldRep :: Maybe (ArgumentsDefinition CONST)
-  }
-
 data UseGQLType gql = UseGQLType
   { useFingerprint :: forall c a. gql a => CatType c a -> TypeFingerprint,
     useTypename :: forall c a. gql a => CatType c a -> TypeName,
     useTypeData :: forall c a. gql a => CatType c a -> TypeData,
     useDeriveNode :: forall c a. gql a => CatType c a -> GQLResult (GQLTypeNode c),
-    useDeriveFieldArguments :: forall c a. gql a => CatType c a -> GQLResult FieldRep,
+    useDeriveFieldArguments :: forall c a. gql a => CatType c a -> GQLResult (ArgumentsDefinition CONST),
     useExploreRef :: forall c a. gql a => CatType c a -> [ScanRef gql]
   }
 
