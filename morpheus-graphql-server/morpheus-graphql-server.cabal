@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           morpheus-graphql-server
-version:        0.27.2
+version:        0.27.3
 synopsis:       Morpheus GraphQL
 description:    Build GraphQL APIs with your favourite functional language!
 category:       web, graphql
@@ -366,7 +366,7 @@ library
     , text >=1.2.3 && <3.0.0
     , transformers >=0.3.0 && <0.7.0
     , unordered-containers >=0.2.8 && <0.3.0
-    , vector >=0.12.0.1 && <0.13.0
+    , vector >=0.12.0.1 && <0.15.0
   default-language: Haskell2010
 
 test-suite morpheus-graphql-server-test
@@ -425,5 +425,5 @@ test-suite morpheus-graphql-server-test
     , text >=1.2.3 && <3.0.0
     , transformers >=0.3.0 && <0.7.0
     , unordered-containers >=0.2.8 && <0.3.0
-    , vector >=0.12.0.1 && <0.13.0
+    , vector >=0.12.0.1 && <0.15.0
   default-language: Haskell2010
