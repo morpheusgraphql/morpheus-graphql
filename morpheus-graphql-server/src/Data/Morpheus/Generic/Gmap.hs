@@ -13,10 +13,10 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Server.Deriving.Utils.Gmap
-  ( GmapContext (..),
-    useGmap,
-    Gmap (..),
+module Data.Morpheus.Generic.Gmap
+  ( Gmap,
+    GmapFun (..),
+    runGmap,
   )
 where
 
@@ -33,15 +33,18 @@ import GHC.Generics
   )
 import Relude
 
-newtype GmapContext (fun :: Type -> Constraint) (v :: Type) = GmapContext
+newtype GmapFun (fun :: Type -> Constraint) (v :: Type) = GmapFun
   { gmapFun :: forall f a. (fun a) => f a -> v
   }
 
-useGmap :: (Gmap c a, Monoid b) => f a -> GmapContext c b -> b
-useGmap x = runReader (gfmap x)
+runGmap :: (Gmap c a, Monoid b) => f a -> GmapFun c b -> b
+runGmap x = runReader (gfmap x)
+
+runFun :: fun a => f a -> GmapFun fun v -> v
+runFun x GmapFun {..} = gmapFun x
 
 class Gmap (c :: Type -> Constraint) a where
-  gfmap :: (Monoid v) => proxy a -> Reader (GmapContext c v) v
+  gfmap :: (Monoid v) => proxy a -> Reader (GmapFun c v) v
 
 instance (Datatype d, Gmap c a) => Gmap c (M1 D d a) where
   gfmap _ = gfmap (Proxy @a)
@@ -56,10 +59,7 @@ instance (Gmap c a, Gmap c b) => Gmap c (a :*: b) where
   gfmap _ = liftA2 (<>) (gfmap (Proxy @a)) (gfmap (Proxy @b))
 
 instance (c a) => Gmap c (M1 S s (K1 x a)) where
-  gfmap _ = runFun <$> ask
-    where
-      runFun :: GmapContext c v -> v
-      runFun GmapContext {..} = gmapFun (Proxy @a)
+  gfmap _ = runFun (Proxy @a) <$> ask
 
 instance Gmap c U1 where
   gfmap _ = pure mempty

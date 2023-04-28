@@ -18,7 +18,10 @@ import Control.Monad.Except (MonadError (throwError))
 import Data.Aeson.Key (Key)
 import qualified Data.Aeson.KeyMap as A
 #endif
+{- ORMOLU_DISABLE -}
 import qualified Data.HashMap.Lazy as HM
+import qualified Data.Map as M
+{- ORMOLU_ENABLE -}
 import Data.Mergeable.Internal.Merge (mergeNoDuplicates)
 import Data.Mergeable.Internal.NameCollision (NameCollision)
 import Relude
@@ -41,6 +44,13 @@ instance (Eq k, Hashable k) => IsMap k (HashMap k) where
   lookup = HM.lookup
   member = HM.member
   toAssoc = HM.toList
+
+instance (Eq k, Ord k) => IsMap k (Map k) where
+  unsafeFromList = M.fromList
+  singleton = M.singleton
+  lookup = M.lookup
+  member = M.member
+  toAssoc = M.toList
 
 #if MIN_VERSION_aeson(2,0,0)
 instance IsMap Key A.KeyMap where

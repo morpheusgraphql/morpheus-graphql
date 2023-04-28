@@ -12,6 +12,11 @@ module Data.Morpheus.Server.Deriving.Internal.Schema.Object
   )
 where
 
+import Data.Morpheus.Generic
+  ( GRepCons (..),
+    GRepField (..),
+  )
+import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Internal.Utils
   ( empty,
     singleton,
@@ -24,31 +29,35 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
     visitFieldName,
   )
 import Data.Morpheus.Server.Deriving.Internal.Schema.Enum
-  ( defineEnumUnit,
-  )
-import Data.Morpheus.Server.Deriving.Utils.GRep
-  ( ConsRep (..),
-    FieldRep (..),
+  (
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
   )
-import Data.Morpheus.Server.Types.SchemaT
-  ( SchemaT,
-    insertType,
+import Data.Morpheus.Server.Deriving.Utils.Types (NodeTypeVariant (..))
+import Data.Morpheus.Types.Internal.AST
+  ( ArgumentsDefinition,
+    CONST,
+    FieldContent (..),
+    FieldDefinition (..),
+    FieldsDefinition,
+    TRUE,
+    TypeContent (..),
+    mkField,
+    mkTypeRef,
+    toAny,
+    unitFieldName,
+    unitTypeName,
+    unsafeFromFields,
   )
-import Data.Morpheus.Types.Internal.AST (ArgumentsDefinition, CONST, FieldContent (..), FieldDefinition (..), FieldsDefinition, TRUE, TypeContent (..), mkField, mkType, mkTypeRef, unitFieldName, unitTypeName, unsafeFromFields)
-import Relude hiding (empty)
 
-defineObjectType ::
-  CatType kind a ->
-  ConsRep (Maybe (ArgumentsDefinition CONST)) ->
-  SchemaT cat ()
-defineObjectType proxy ConsRep {consName, consFields} = insertType . mkType consName . mkObjectTypeContent proxy =<< fields
+defineObjectType :: CatType kind a -> GRepCons (ArgumentsDefinition CONST) -> [NodeTypeVariant]
+defineObjectType proxy GRepCons {consName, consFields} =
+  [NodeTypeVariant consName (toAny (mkObjectTypeContent proxy fields))] <> [NodeUnitType | null consFields]
   where
     fields
-      | null consFields = defineEnumUnit $> singleton unitFieldName mkFieldUnit
-      | otherwise = pure $ unsafeFromFields $ map (repToFieldDefinition proxy) consFields
+      | null consFields = singleton unitFieldName mkFieldUnit
+      | otherwise = unsafeFromFields $ map (repToFieldDefinition proxy) consFields
 
 mkFieldUnit :: FieldDefinition cat s
 mkFieldUnit = mkField Nothing unitFieldName (mkTypeRef unitTypeName)
@@ -57,19 +66,23 @@ buildObjectTypeContent ::
   gql a =>
   UseDeriving gql args ->
   CatType cat a ->
-  [FieldRep (Maybe (ArgumentsDefinition CONST))] ->
-  SchemaT k (TypeContent TRUE cat CONST)
+  [GRepField (ArgumentsDefinition CONST)] ->
+  GQLResult (TypeContent TRUE cat CONST)
 buildObjectTypeContent options scope consFields = do
   xs <- traverse (setGQLTypeProps options scope . repToFieldDefinition scope) consFields
   pure $ mkObjectTypeContent scope $ unsafeFromFields xs
 
+mkObjectTypeContent :: CatType kind a -> FieldsDefinition kind CONST -> TypeContent TRUE kind CONST
+mkObjectTypeContent InputType = DataInputObject
+mkObjectTypeContent OutputType = DataObject []
+
 repToFieldDefinition ::
   CatType c a ->
-  FieldRep (Maybe (ArgumentsDefinition CONST)) ->
+  GRepField (ArgumentsDefinition CONST) ->
   FieldDefinition c CONST
 repToFieldDefinition
   x
-  FieldRep
+  GRepField
     { fieldSelector = fieldName,
       fieldTypeRef = fieldType,
       fieldValue
@@ -81,15 +94,11 @@ repToFieldDefinition
         ..
       }
 
-toFieldContent :: CatType c a -> Maybe (ArgumentsDefinition CONST) -> Maybe (FieldContent TRUE c CONST)
-toFieldContent OutputType (Just x) = Just (FieldArgs x)
+toFieldContent :: CatType c a -> ArgumentsDefinition CONST -> Maybe (FieldContent TRUE c CONST)
+toFieldContent OutputType x | not (null x) = Just (FieldArgs x)
 toFieldContent _ _ = Nothing
 
-mkObjectTypeContent :: CatType kind a -> FieldsDefinition kind CONST -> TypeContent TRUE kind CONST
-mkObjectTypeContent InputType = DataInputObject
-mkObjectTypeContent OutputType = DataObject []
-
-setGQLTypeProps :: gql a => UseDeriving gql args -> CatType kind a -> FieldDefinition kind CONST -> SchemaT k (FieldDefinition kind CONST)
+setGQLTypeProps :: gql a => UseDeriving gql args -> CatType kind a -> FieldDefinition kind CONST -> GQLResult (FieldDefinition kind CONST)
 setGQLTypeProps options proxy FieldDefinition {..} = do
   dirs <- deriveFieldDirectives options proxy fieldName
   pure

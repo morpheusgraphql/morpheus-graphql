@@ -311,13 +311,16 @@ library
       Data.Morpheus.Server.Resolvers
       Data.Morpheus.Server.Types
   other-modules:
+      Data.Morpheus.Generic
+      Data.Morpheus.Generic.CountFields
+      Data.Morpheus.Generic.Gmap
+      Data.Morpheus.Generic.GRep
       Data.Morpheus.Server.Deriving.App
       Data.Morpheus.Server.Deriving.Internal.Decode.Rep
       Data.Morpheus.Server.Deriving.Internal.Decode.Utils
       Data.Morpheus.Server.Deriving.Internal.Resolve.Explore
       Data.Morpheus.Server.Deriving.Internal.Schema.Directive
       Data.Morpheus.Server.Deriving.Internal.Schema.Enum
-      Data.Morpheus.Server.Deriving.Internal.Schema.Internal
       Data.Morpheus.Server.Deriving.Internal.Schema.Object
       Data.Morpheus.Server.Deriving.Internal.Schema.Type
       Data.Morpheus.Server.Deriving.Internal.Schema.Union
@@ -330,12 +333,11 @@ library
       Data.Morpheus.Server.Deriving.Kinded.Value
       Data.Morpheus.Server.Deriving.Resolvers
       Data.Morpheus.Server.Deriving.Schema
-      Data.Morpheus.Server.Deriving.Utils.AST
-      Data.Morpheus.Server.Deriving.Utils.Gmap
-      Data.Morpheus.Server.Deriving.Utils.GRep
       Data.Morpheus.Server.Deriving.Utils.GScan
       Data.Morpheus.Server.Deriving.Utils.Kinded
       Data.Morpheus.Server.Deriving.Utils.Proxy
+      Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
+      Data.Morpheus.Server.Deriving.Utils.Types
       Data.Morpheus.Server.Deriving.Utils.Use
       Data.Morpheus.Server.Playground
       Data.Morpheus.Server.Types.DirectiveDefinitions
@@ -344,7 +346,6 @@ library
       Data.Morpheus.Server.Types.Internal
       Data.Morpheus.Server.Types.Kind
       Data.Morpheus.Server.Types.NamedResolvers
-      Data.Morpheus.Server.Types.SchemaT
       Data.Morpheus.Server.Types.TypeName
       Data.Morpheus.Server.Types.Types
       Data.Morpheus.Server.Types.Visitors

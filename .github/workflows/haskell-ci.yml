@@ -28,6 +28,9 @@ jobs:
         run: stack build --fast --skip-ghc-check --no-terminal --test --only-dependencies
 
       - name: Build
+        run: stack build --fast
+
+      - name: Build Bench and Haddock
         run: stack build --fast --bench --no-run-benchmarks --haddock --no-haddock-deps
 
       - name: Test

@@ -1,82 +1,59 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.Internal.Schema.Union
-  ( buildUnionTypeContent,
+  ( buildUnionType,
   )
 where
 
 import Data.List (partition)
+import Data.Morpheus.Generic
+  ( GRepCons (..),
+  )
+import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Internal.Utils (fromElems)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Enum
-  ( defineEnumUnit,
+  (
   )
 import Data.Morpheus.Server.Deriving.Internal.Schema.Object
   ( defineObjectType,
   )
-import Data.Morpheus.Server.Deriving.Utils.GRep
-  ( ConsRep (..),
-    FieldRep (fieldTypeRef),
-    isEmptyConstraint,
-    isUnionRef,
-  )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
   )
-import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (..), useTypename)
-import Data.Morpheus.Server.Types.SchemaT
-  ( SchemaT,
+import Data.Morpheus.Server.Deriving.Utils.Types
+  ( GQLTypeNodeExtension (..),
+    NodeTypeVariant (..),
   )
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition,
     CONST,
-    IN,
     TRUE,
     TypeContent (..),
     TypeName,
-    TypeRef (..),
-    UnionMember (..),
     mkNullaryMember,
     mkUnionMember,
   )
 import Relude
 
-buildUnionTypeContent ::
-  (gql a) =>
-  UseGQLType gql ->
-  CatType kind a ->
-  [ConsRep (Maybe (ArgumentsDefinition CONST))] ->
-  SchemaT k (TypeContent TRUE kind CONST)
-buildUnionTypeContent gql scope cons = mkUnionType scope unionRef unionCons
-  where
-    unionRef = typeConName . fieldTypeRef <$> concatMap consFields unionRefRep
-    (unionRefRep, unionCons) = partition (isUnionRef (useTypename gql scope)) cons
-
-mkUnionType ::
+buildUnionType ::
   CatType kind a ->
   [TypeName] ->
-  [ConsRep (Maybe (ArgumentsDefinition CONST))] ->
-  SchemaT c (TypeContent TRUE kind CONST)
-mkUnionType p@InputType unionRef unionCons = DataInputUnion <$> (typeMembers >>= fromElems)
+  [GRepCons (ArgumentsDefinition CONST)] ->
+  GQLResult (TypeContent TRUE kind CONST, [GQLTypeNodeExtension])
+buildUnionType p@InputType variantRefs inlineVariants = do
+  let nodes = [UnionVariantsExtension ([NodeUnitType | not (null nullaryVariants)] <> typeDependencies p objectVariants)]
+  variants <- fromElems members
+  pure (DataInputUnion variants, nodes)
   where
-    (nullaryCons, cons) = partition isEmptyConstraint unionCons
-    nullaryMembers :: [UnionMember IN CONST]
-    nullaryMembers = mkNullaryMember . consName <$> nullaryCons
-    defineEnumEmpty
-      | null nullaryCons = pure ()
-      | otherwise = defineEnumUnit
-    typeMembers =
-      (<> nullaryMembers) . withRefs
-        <$> ( defineEnumEmpty *> buildUnions p cons
-            )
-      where
-        withRefs = fmap mkUnionMember . (unionRef <>)
-mkUnionType p@OutputType unionRef unionCons =
-  DataUnion <$> (buildUnions p unionCons >>= fromElems . map mkUnionMember . (unionRef <>))
+    (nullaryVariants, objectVariants) = partition null inlineVariants
+    members =
+      map mkUnionMember (variantRefs <> map consName objectVariants)
+        <> fmap (mkNullaryMember . consName) nullaryVariants
+buildUnionType p@OutputType unionRef unionCons = do
+  variants <- fromElems (map mkUnionMember (unionRef <> map consName unionCons))
+  pure (DataUnion variants, [UnionVariantsExtension (typeDependencies p unionCons)])
 
-buildUnions ::
-  CatType kind a ->
-  [ConsRep (Maybe (ArgumentsDefinition CONST))] ->
-  SchemaT c [TypeName]
-buildUnions proxy cons =
-  traverse_ (defineObjectType proxy) cons $> fmap consName cons
+typeDependencies :: CatType kind a -> [GRepCons (ArgumentsDefinition CONST)] -> [NodeTypeVariant]
+typeDependencies proxy cons = concat $ traverse (defineObjectType proxy) cons

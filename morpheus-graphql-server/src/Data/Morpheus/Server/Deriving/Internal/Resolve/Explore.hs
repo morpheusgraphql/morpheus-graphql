@@ -4,7 +4,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -29,18 +28,15 @@ import Data.Morpheus.App.Internal.Resolving
     mkUnion,
     requireObject,
   )
+import Data.Morpheus.Generic
+  ( GRep,
+    GRepContext (..),
+    GRepValue (..),
+    deriveValue,
+  )
 import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
   ( toFieldRes,
     visitEnumName,
-  )
-import Data.Morpheus.Server.Deriving.Utils.GRep
-  ( ConsRep (..),
-    FieldRep (..),
-    GRep,
-    RepContext (..),
-    TypeRep (..),
-    deriveValue,
-    isUnionRef,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded (inputType)
 import Data.Morpheus.Server.Deriving.Utils.Use
@@ -50,7 +46,6 @@ import Data.Morpheus.Server.Deriving.Utils.Use
   )
 import Data.Morpheus.Types.Internal.AST
   ( GQLError,
-    TypeRef (..),
   )
 import GHC.Generics (Generic (Rep))
 import Relude
@@ -60,33 +55,18 @@ convertNode ::
   (MonadError GQLError m) =>
   UseDeriving gql val ->
   f a ->
-  TypeRep (m (ResolverValue m)) ->
+  GRepValue (m (ResolverValue m)) ->
   ResolverValue m
-convertNode
-  drv
-  proxy
-  TypeRep
-    { dataTypeName,
-      tyIsUnion,
-      tyCons = cons@ConsRep {consFields, consName}
-    } = encodeTypeFields consFields
-    where
-      -- ENUM
-      encodeTypeFields :: (MonadError GQLError m) => [FieldRep (m (ResolverValue m))] -> ResolverValue m
-      encodeTypeFields [] = mkEnum (visitEnumName drv proxy consName)
-      encodeTypeFields fields
-        | not tyIsUnion = mkObject dataTypeName (toFieldRes drv proxy <$> fields)
-      -- Type References --------------------------------------------------------------
-      encodeTypeFields [FieldRep {fieldTypeRef, fieldValue}]
-        | isUnionRef dataTypeName cons = ResLazy (ResObject (Just (typeConName fieldTypeRef)) <$> (fieldValue >>= requireObject))
-      -- Inline Union Types ----------------------------------------------------------------------------
-      encodeTypeFields fields = mkUnion consName (toFieldRes drv proxy <$> fields)
+convertNode drv proxy GRepValueEnum {..} = mkEnum (visitEnumName drv proxy enumVariantName)
+convertNode drv proxy GRepValueObject {..} = mkObject objectTypeName (toFieldRes drv proxy <$> objectFields)
+convertNode drv proxy GRepValueUnion {..} = mkUnion unionVariantName (toFieldRes drv proxy <$> unionFields)
+convertNode _ _ GRepValueUnionRef {..} = ResLazy (ResObject (Just unionRefTypeName) <$> (unionRefValue >>= requireObject))
 
-toOptions :: UseResolver res gql val -> RepContext gql (res m) Identity (m (ResolverValue m))
+toOptions :: UseResolver res gql val -> GRepContext gql (res m) Identity (m (ResolverValue m))
 toOptions UseResolver {..} =
-  RepContext
+  GRepContext
     { optApply = useEncodeResolver . runIdentity,
-      optTypeData = useTypeData (dirGQL resDrv) . inputType
+      optTypeData = useTypeData (drvGQL resDrv) . inputType
     }
 
 useExploreResolvers ::

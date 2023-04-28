@@ -6,6 +6,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 
 module Data.Morpheus.Server.Deriving.Internal.Schema.Type
   ( fillTypeContent,
@@ -13,13 +14,24 @@ module Data.Morpheus.Server.Deriving.Internal.Schema.Type
     deriveScalarDefinition,
     deriveInterfaceDefinition,
     deriveTypeGuardUnions,
-    useDeriveObject,
-    injectType,
+    useDeriveRoot,
+    exploreTypes,
+    DERIVE_TYPE,
   )
 where
 
 import Control.Monad.Except
+  ( MonadError (..),
+  )
 import Data.Foldable
+import Data.Morpheus.Generic
+  ( GRep,
+    GRepContext (..),
+    GRepType (..),
+    deriveType,
+    scanTypes,
+  )
+import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
   ( UseDeriving (..),
     deriveTypeDirectives,
@@ -28,109 +40,133 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
 import Data.Morpheus.Server.Deriving.Internal.Schema.Enum
   ( buildEnumTypeContent,
   )
-import Data.Morpheus.Server.Deriving.Internal.Schema.Internal
-  ( CatType,
-    withObject,
-  )
 import Data.Morpheus.Server.Deriving.Internal.Schema.Object
   ( buildObjectTypeContent,
   )
-import Data.Morpheus.Server.Deriving.Internal.Schema.Union (buildUnionTypeContent)
-import Data.Morpheus.Server.Deriving.Utils.GRep
-  ( ConsRep (..),
-    GRep,
-    RepContext (..),
-    deriveTypeWith,
-    isEmptyConstraint,
-    unpackMonad,
+import Data.Morpheus.Server.Deriving.Internal.Schema.Union (buildUnionType)
+import Data.Morpheus.Server.Deriving.Utils.Kinded
+  ( CatContext,
+    addContext,
+    getCatContext,
+    mkScalar,
+    outputType,
   )
-import Data.Morpheus.Server.Deriving.Utils.Kinded (CatContext, addContext, getCatContext, mkScalar, outputType)
+import Data.Morpheus.Server.Deriving.Utils.Types
+  ( CatType,
+    GQLTypeNode (..),
+    GQLTypeNodeExtension,
+    nodeToType,
+    withObject,
+  )
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseGQLType (..),
-  )
-import Data.Morpheus.Server.Types.SchemaT
-  ( SchemaT,
-    updateSchema,
+    UseRef (UseRef),
   )
 import Data.Morpheus.Types.Internal.AST
+  ( ArgumentsDefinition,
+    CONST,
+    OBJECT,
+    OUT,
+    ScalarDefinition,
+    TRUE,
+    TypeContent (..),
+    TypeDefinition (..),
+    TypeName,
+    UnionMember (..),
+    mkType,
+  )
 import GHC.Generics (Rep)
 import Relude
+
+type DERIVE_TYPE gql a =
+  ( gql a,
+    GRep gql gql (GQLResult (ArgumentsDefinition CONST)) (Rep a)
+  )
 
 buildTypeContent ::
   (gql a) =>
   UseDeriving gql args ->
   CatType kind a ->
-  [ConsRep (Maybe (ArgumentsDefinition CONST))] ->
-  SchemaT kind (TypeContent TRUE kind CONST)
-buildTypeContent options scope cons | all isEmptyConstraint cons = buildEnumTypeContent options scope (consName <$> cons)
-buildTypeContent options scope [ConsRep {consFields}] = buildObjectTypeContent options scope consFields
-buildTypeContent options scope cons = buildUnionTypeContent (dirGQL options) scope cons
+  GRepType (ArgumentsDefinition CONST) ->
+  GQLResult (TypeContent TRUE kind CONST, [GQLTypeNodeExtension])
+buildTypeContent options scope (GRepTypeEnum variants) = (,[]) <$> buildEnumTypeContent options scope variants
+buildTypeContent options scope (GRepTypeObject fields) = (,[]) <$> buildObjectTypeContent options scope fields
+buildTypeContent _ scope GRepTypeUnion {..} = buildUnionType scope (map fst variantRefs) inlineVariants
 
-deriveTypeContentWith ::
-  (gql a, GRep gql gql (SchemaT kind (Maybe (ArgumentsDefinition CONST))) (Rep a)) =>
+exploreTypes ::
+  (gql a, GRep gql gql (UseRef gql) (Rep a)) =>
   UseDeriving gql args ->
   CatType kind a ->
-  SchemaT kind (TypeContent TRUE kind CONST)
-deriveTypeContentWith dir proxy =
-  unpackMonad (deriveTypeWith (toFieldContent (getCatContext proxy) dir) proxy)
-    >>= buildTypeContent dir proxy
+  [UseRef gql]
+exploreTypes UseDeriving {..} proxy =
+  scanTypes (scanCTX (getCatContext proxy) drvGQL) proxy
+
+scanCTX :: CatContext cat -> UseGQLType gql -> GRepContext gql gql Proxy (UseRef gql)
+scanCTX ctx gql =
+  GRepContext
+    { optTypeData = useTypeData gql . addContext ctx,
+      optApply = UseRef . addContext ctx
+    }
+
+deriveTypeContentWith ::
+  (DERIVE_TYPE gql a) =>
+  UseDeriving gql args ->
+  CatType kind a ->
+  GQLResult (TypeContent TRUE kind CONST, [GQLTypeNodeExtension])
+deriveTypeContentWith drv@UseDeriving {..} proxy = do
+  reps <- deriveType (toFieldContent (getCatContext proxy) drvGQL) proxy
+  buildTypeContent drv proxy reps
 
 deriveTypeGuardUnions ::
-  ( gql a,
-    GRep gql gql (SchemaT OUT (Maybe (ArgumentsDefinition CONST))) (Rep a)
-  ) =>
+  (DERIVE_TYPE gql a) =>
   UseDeriving gql args ->
   CatType OUT a ->
-  SchemaT OUT [TypeName]
-deriveTypeGuardUnions dir proxy = do
-  content <- deriveTypeContentWith dir proxy
+  GQLResult [TypeName]
+deriveTypeGuardUnions drv proxy = do
+  (content, _) <- deriveTypeContentWith drv proxy
   getUnionNames content
   where
-    getUnionNames :: TypeContent TRUE OUT CONST -> SchemaT OUT [TypeName]
+    getUnionNames :: TypeContent TRUE OUT CONST -> GQLResult [TypeName]
     getUnionNames DataUnion {unionMembers} = pure $ toList $ memberName <$> unionMembers
-    getUnionNames DataObject {} = pure [useTypename (dirGQL dir) proxy]
+    getUnionNames DataObject {} = pure [useTypename (drvGQL drv) proxy]
     getUnionNames _ = throwError "guarded type must be an union or object"
-
-insertType ::
-  forall c gql a args.
-  (gql a) =>
-  UseDeriving gql args ->
-  (UseDeriving gql args -> CatType c a -> SchemaT c (TypeDefinition c CONST)) ->
-  CatType c a ->
-  SchemaT c ()
-insertType dir f proxy = updateSchema (useFingerprint (dirGQL dir) proxy) (f dir) proxy
 
 deriveScalarDefinition ::
   gql a =>
   (CatType cat a -> ScalarDefinition) ->
   UseDeriving gql args ->
   CatType cat a ->
-  SchemaT kind (TypeDefinition cat CONST)
-deriveScalarDefinition f dir p = fillTypeContent dir p (mkScalar p (f p))
+  GQLResult (GQLTypeNode cat)
+deriveScalarDefinition f dir p = (`GQLTypeNode` []) <$> fillTypeContent dir p (mkScalar p (f p))
 
 deriveTypeDefinition ::
-  (gql a, GRep gql gql (SchemaT c (Maybe (ArgumentsDefinition CONST))) (Rep a)) =>
+  (DERIVE_TYPE gql a) =>
   UseDeriving gql args ->
   CatType c a ->
-  SchemaT c (TypeDefinition c CONST)
-deriveTypeDefinition dir proxy = deriveTypeContentWith dir proxy >>= fillTypeContent dir proxy
+  GQLResult (TypeDefinition c CONST, [GQLTypeNodeExtension])
+deriveTypeDefinition dir proxy = do
+  (content, ext) <- deriveTypeContentWith dir proxy
+  t <- fillTypeContent dir proxy content
+  pure (t, ext)
 
 deriveInterfaceDefinition ::
-  (gql a, GRep gql gql (SchemaT OUT (Maybe (ArgumentsDefinition CONST))) (Rep a)) =>
+  (DERIVE_TYPE gql a) =>
   UseDeriving gql args ->
   CatType OUT a ->
-  SchemaT OUT (TypeDefinition OUT CONST)
-deriveInterfaceDefinition dir proxy = do
-  fields <- deriveFields dir proxy
-  fillTypeContent dir proxy (DataInterface fields)
+  GQLResult (TypeDefinition OUT CONST, [GQLTypeNodeExtension])
+deriveInterfaceDefinition drv proxy = do
+  (content, ext) <- deriveTypeContentWith drv proxy
+  fields <- withObject (useTypename (drvGQL drv) proxy) content
+  t <- fillTypeContent drv proxy (DataInterface fields)
+  pure (t, ext)
 
 fillTypeContent ::
   gql a =>
   UseDeriving gql args ->
   CatType c a ->
   TypeContent TRUE cat CONST ->
-  SchemaT kind (TypeDefinition cat CONST)
-fillTypeContent options@UseDeriving {dirGQL = UseGQLType {..}} proxy content = do
+  GQLResult (TypeDefinition cat CONST)
+fillTypeContent options@UseDeriving {drvGQL = UseGQLType {..}} proxy content = do
   dirs <- deriveTypeDirectives options proxy
   pure $
     TypeDefinition
@@ -139,28 +175,16 @@ fillTypeContent options@UseDeriving {dirGQL = UseGQLType {..}} proxy content = d
       dirs
       content
 
-deriveFields ::
-  ( gql a,
-    GRep gql gql (SchemaT cat (Maybe (ArgumentsDefinition CONST))) (Rep a)
-  ) =>
-  UseDeriving gql args ->
-  CatType cat a ->
-  SchemaT cat (FieldsDefinition cat CONST)
-deriveFields dirs kindedType = deriveTypeContentWith dirs kindedType >>= withObject (dirGQL dirs) kindedType
-
-toFieldContent :: CatContext cat -> UseDeriving gql dir -> RepContext gql gql Proxy (SchemaT cat (Maybe (ArgumentsDefinition CONST)))
-toFieldContent ctx dir@UseDeriving {..} =
-  RepContext
-    { optTypeData = useTypeData dirGQL . addContext ctx,
-      optApply = \proxy -> injectType dir (addContext ctx proxy) *> useDeriveFieldArguments dirGQL (addContext ctx proxy)
+toFieldContent :: CatContext cat -> UseGQLType gql -> GRepContext gql gql Proxy (GQLResult (ArgumentsDefinition CONST))
+toFieldContent ctx gql =
+  GRepContext
+    { optTypeData = useTypeData gql . addContext ctx,
+      optApply = useDeriveFieldArguments gql . addContext ctx
     }
 
-injectType :: gql a => UseDeriving gql args -> CatType c a -> SchemaT c ()
-injectType dir = insertType dir (\_ y -> useDeriveType (dirGQL dir) y)
-
-useDeriveObject :: gql a => UseGQLType gql -> f a -> SchemaT OUT (TypeDefinition OBJECT CONST)
-useDeriveObject gql pr = do
-  fields <- useDeriveType gql proxy >>= withObject gql proxy . typeContent
+useDeriveRoot :: gql a => UseGQLType gql -> f a -> GQLResult (TypeDefinition OBJECT CONST)
+useDeriveRoot gql pr = do
+  fields <- useDeriveNode gql proxy >>= nodeToType >>= withObject (useTypename gql proxy) . typeContent
   pure $ mkType (useTypename gql (outputType proxy)) (DataObject [] fields)
   where
     proxy = outputType pr

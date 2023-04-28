@@ -15,9 +15,9 @@ module Data.Morpheus.Server.Deriving.Internal.Decode.Rep
 where
 
 import Control.Monad.Except (MonadError (throwError))
+import Data.Morpheus.Generic (CountFields (..))
 import Data.Morpheus.Server.Deriving.Internal.Decode.Utils
   ( Context (..),
-    CountFields (..),
     DecoderT,
     DescribeCons,
     decodeFieldWith,
@@ -86,10 +86,10 @@ instance (Datatype d, DecodeRep gql args f) => DecodeRep gql args (M1 D d f) whe
 instance (DescribeCons gql a, DescribeCons gql b, DecodeRep gql args a, DecodeRep gql args b) => DecodeRep gql args (a :+: b) where
   decodeRep dir (Object obj) =
     do
-      (kind, lr) <- getUnionInfos (dirGQL dir) (Proxy @(a :+: b))
+      (kind, lr) <- getUnionInfos (drvGQL dir) (Proxy @(a :+: b))
       setVariantRef kind $ withInputUnion (decodeInputUnionObject dir lr) obj
   decodeRep dir (Enum name) = do
-    (_, (l, r)) <- getUnionInfos (dirGQL dir) (Proxy @(a :+: b))
+    (_, (l, r)) <- getUnionInfos (drvGQL dir) (Proxy @(a :+: b))
     visitor <- asks enumVisitor
     decideEither dir (map visitor l, map visitor r) name (Enum name)
   decodeRep _ _ = throwError (internal "lists and scalars are not allowed in Union")
@@ -107,14 +107,14 @@ instance (DecodeFields gql args f, DecodeFields gql args g, CountFields g) => De
       <*> decodeFields dir (index + countFields (Proxy @g)) gql
 
 instance (Selector s, args a) => DecodeFields gql args (M1 S s (K1 i a)) where
-  decodeFields UseDeriving {dirArgs} index value =
+  decodeFields UseDeriving {drvArgs} index value =
     M1 . K1 <$> do
       Context {isVariantRef, fieldVisitor} <- ask
       if isVariantRef
-        then lift (useDecodeValue dirArgs value)
+        then lift (useDecodeValue drvArgs value)
         else
           let fieldName = fieldVisitor $ getFieldName (selNameProxy (Proxy @s)) index
-              fieldDecoder = decodeFieldWith (lift . useDecodeValue dirArgs) fieldName
+              fieldDecoder = decodeFieldWith (lift . useDecodeValue drvArgs) fieldName
            in withInputObject fieldDecoder value
 
 instance DecodeFields gql args U1 where

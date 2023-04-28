@@ -10,38 +10,40 @@ module Data.Morpheus.Server.Deriving.Utils.Use
     UseValue (..),
     UseResolver (..),
     UseNamedResolver (..),
+    UseRef (..),
   )
 where
 
 import Data.Morpheus.App.Internal.Resolving (NamedResolver (..), ResolverState, ResolverValue)
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef)
-import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType)
+import Data.Morpheus.Server.Deriving.Utils.Types
 import Data.Morpheus.Server.Types.Directives
   ( GDirectiveUsages (..),
   )
 import Data.Morpheus.Server.Types.Internal
-import Data.Morpheus.Server.Types.SchemaT
-  ( SchemaT,
-  )
 import Data.Morpheus.Server.Types.TypeName
   ( TypeFingerprint,
   )
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition,
     CONST,
-    TypeDefinition (..),
     TypeName,
     ValidValue,
     Value,
   )
+import Relude
+
+data UseRef (c :: Type -> Constraint) where
+  UseRef :: c a => CatType t a -> UseRef c
 
 data UseGQLType gql = UseGQLType
   { useFingerprint :: forall c a. gql a => CatType c a -> TypeFingerprint,
     useTypename :: forall c a. gql a => CatType c a -> TypeName,
     useTypeData :: forall c a. gql a => CatType c a -> TypeData,
-    useDeriveType :: forall c a. gql a => CatType c a -> SchemaT c (TypeDefinition c CONST),
-    useDeriveFieldArguments :: forall c a. gql a => CatType c a -> SchemaT c (Maybe (ArgumentsDefinition CONST))
+    useDeriveNode :: forall c a. gql a => CatType c a -> GQLResult (GQLTypeNode c),
+    useDeriveFieldArguments :: forall c a. gql a => CatType c a -> GQLResult (ArgumentsDefinition CONST),
+    useExploreRef :: forall c a. gql a => CatType c a -> [ScanRef gql]
   }
 
 data UseValue val = UseValue
@@ -56,8 +58,8 @@ data UseResolver res gql val = UseResolver
 
 data UseDeriving gql val = UseDeriving
   { __directives :: forall f a. gql a => f a -> GDirectiveUsages gql val,
-    dirArgs :: UseValue val,
-    dirGQL :: UseGQLType gql
+    drvArgs :: UseValue val,
+    drvGQL :: UseGQLType gql
   }
 
 data UseNamedResolver named fun gql val = UseNamedResolver

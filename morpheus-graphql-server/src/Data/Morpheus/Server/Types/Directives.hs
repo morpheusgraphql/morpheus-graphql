@@ -5,6 +5,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -27,16 +28,15 @@ module Data.Morpheus.Server.Types.Directives
     applyFieldDefaultValue,
     applyTypeFieldNames,
     applyTypeEnumNames,
-    typeDirective,
-    fieldDirective,
-    fieldDirective',
-    enumDirective,
-    enumDirective',
+    allUsages,
   )
 where
 
+{- ORMOLU_DISABLE -}
 import qualified Data.HashMap.Strict as M
 import qualified Data.Morpheus.Server.Types.Visitors as Visitors
+{- ORMOLU_ENABLE -}
+
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
     Description,
@@ -49,7 +49,6 @@ import Data.Morpheus.Types.Internal.AST
     packName,
     unpackName,
   )
-import qualified Language.Haskell.TH as TH
 import Relude
 
 type family OR (a :: Bool) (b :: Bool) where
@@ -255,6 +254,12 @@ data GDirectiveUsages gql args = GDirectiveUsages
     enumValueDirectives :: M.HashMap TypeName [GDirectiveUsage gql args]
   }
 
+allUsages :: GDirectiveUsages gql args -> [GDirectiveUsage gql args]
+allUsages GDirectiveUsages {..} =
+  join (toList enumValueDirectives)
+    <> join (toList fieldDirectives)
+    <> typeDirectives
+
 instance Monoid (GDirectiveUsages gql args) where
   mempty = GDirectiveUsages mempty mempty mempty
 
@@ -270,18 +275,3 @@ mergeDirs a b = update a (M.toList b)
 
 upsert :: (Eq k, Hashable k, Semigroup v) => (k, v) -> HashMap k v -> HashMap k v
 upsert (k, v) = M.alter (Just . maybe v (v <>)) k
-
-typeDirective :: (GQLDirective a, gql a, args a) => a -> GDirectiveUsages gql args
-typeDirective x = GDirectiveUsages [GDirectiveUsage x] mempty mempty
-
-fieldDirective :: (GQLDirective a, gql a, args a) => FieldName -> a -> GDirectiveUsages gql args
-fieldDirective name x = GDirectiveUsages mempty (M.singleton name [GDirectiveUsage x]) mempty
-
-fieldDirective' :: (GQLDirective a, gql a, args a) => TH.Name -> a -> GDirectiveUsages gql args
-fieldDirective' name = fieldDirective (packName name)
-
-enumDirective :: (GQLDirective a, gql a, args a) => TypeName -> a -> GDirectiveUsages gql args
-enumDirective name x = GDirectiveUsages mempty mempty (M.singleton name [GDirectiveUsage x])
-
-enumDirective' :: (GQLDirective a, gql a, args a) => TH.Name -> a -> GDirectiveUsages gql args
-enumDirective' name = enumDirective (packName name)
