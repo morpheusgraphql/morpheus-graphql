@@ -219,4 +219,4 @@ instance RefType gql U1 where
   refType _ _ = Nothing
 
 useDecodeArguments :: (val a) => UseDeriving gql val -> Arguments VALID -> ResolverState a
-useDecodeArguments drv = useDecodeValue (drvValue drv) . argumentsToObject
+useDecodeArguments drv = useDecodeValue (useValue drv) . argumentsToObject

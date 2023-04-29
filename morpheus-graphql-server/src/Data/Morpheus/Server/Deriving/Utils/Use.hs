@@ -51,15 +51,15 @@ data UseValue val = UseValue
     useDecodeValue :: forall a. (val a) => ValidValue -> ResolverState a
   }
 
+data UseDeriving gql val = UseDeriving
+  { useDirectives :: forall f a. (gql a) => f a -> GDirectiveUsages gql val,
+    useValue :: UseValue val,
+    useGQL :: UseGQLType gql
+  }
+
 data UseResolver res gql val = UseResolver
   { useEncodeResolver :: forall a m. (res m a) => a -> m (ResolverValue m),
     resDrv :: UseDeriving gql val
-  }
-
-data UseDeriving gql val = UseDeriving
-  { __directives :: forall f a. (gql a) => f a -> GDirectiveUsages gql val,
-    drvValue :: UseValue val,
-    drvGQL :: UseGQLType gql
   }
 
 data UseNamedResolver named fun gql val = UseNamedResolver

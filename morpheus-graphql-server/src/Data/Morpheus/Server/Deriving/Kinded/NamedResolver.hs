@@ -47,7 +47,7 @@ import Relude
 type DECODE_VALUES val m a = (ResolveNamed m a, val (Dependency a), MonadResolver m)
 
 decodeValues :: (DECODE_VALUES val m a) => UseDeriving gql val -> Proxy a -> [ValidValue] -> m [Maybe a]
-decodeValues ctx _ xs = traverse (liftState . useDecodeValue (drvValue ctx)) xs >>= resolveBatched
+decodeValues ctx _ xs = traverse (liftState . useDecodeValue (useValue ctx)) xs >>= resolveBatched
 
 class KindedNamedResolver ctx (k :: DerivingKind) (m :: Type -> Type) a where
   kindedNamedResolver :: (UseNamedResolver namedRes resFun gql val ~ ctx) => ctx -> f k a -> [NamedResolver m]
@@ -64,7 +64,7 @@ instance
   where
   kindedNamedResolver ctx _ =
     [ NamedResolver
-        { resolverName = useTypename (drvGQL $ namedDrv ctx) (outputType proxy),
+        { resolverName = useTypename (useGQL $ namedDrv ctx) (outputType proxy),
           resolverFun = decodeValues (namedDrv ctx) proxy >=> pure . map (maybe NamedNullResolver (NamedScalarResolver . encodeScalar))
         }
     ]
@@ -72,7 +72,7 @@ instance
       proxy = Proxy @a
   kindedNamedRefs ctx _ = [ScanLeaf fp (outputType proxy)]
     where
-      fp = useFingerprint (drvGQL $ namedDrv ctx) (outputType proxy)
+      fp = useFingerprint (useGQL $ namedDrv ctx) (outputType proxy)
       proxy = Proxy @a
 
 instance
@@ -89,14 +89,14 @@ instance
   where
   kindedNamedResolver ctx _ =
     [ NamedResolver
-        { resolverName = useTypename (drvGQL $ namedDrv ctx) (outputType proxy),
+        { resolverName = useTypename (useGQL $ namedDrv ctx) (outputType proxy),
           resolverFun = decodeValues (namedDrv ctx) proxy >=> deriveNamedResolverFun ctx
         }
     ]
     where
       proxy = Proxy @a
 
-  kindedNamedRefs ctx _ = [ScanNode True (useFingerprint (drvGQL $ namedDrv ctx) (outputType proxy)) (outputType proxy)]
+  kindedNamedRefs ctx _ = [ScanNode True (useFingerprint (useGQL $ namedDrv ctx) (outputType proxy)) (outputType proxy)]
     where
       proxy = Proxy @a
 

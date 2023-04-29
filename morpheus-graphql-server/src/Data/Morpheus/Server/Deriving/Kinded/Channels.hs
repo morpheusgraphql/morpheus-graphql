@@ -67,7 +67,7 @@ type CHANNELS gql val (subs :: (Type -> Type) -> Type) m =
 
 resolverChannels ::
   forall m subs gql val.
-  CHANNELS gql val subs m =>
+  (CHANNELS gql val subs m) =>
   UseDeriving gql val ->
   subs m ->
   Selection VALID ->
@@ -119,7 +119,7 @@ type family IsUndefined a :: Bool where
   IsUndefined a = FALSE
 
 class ExploreChannels ctx (t :: Bool) e a where
-  exploreChannels :: UseDeriving gql val ~ ctx => ctx -> f t -> a -> HashMap FieldName (ChannelRes e)
+  exploreChannels :: (UseDeriving gql val ~ ctx) => ctx -> f t -> a -> HashMap FieldName (ChannelRes e)
 
 instance (UseDeriving gql val ~ ctx, gql a, Generic a, GRep gql (GetChannel val e) (ChannelRes e) (Rep a)) => ExploreChannels ctx FALSE e a where
   exploreChannels drv _ =
@@ -129,7 +129,7 @@ instance (UseDeriving gql val ~ ctx, gql a, Generic a, GRep gql (GetChannel val 
       . deriveValue
         ( GRepContext
             { optApply = getChannel drv . runIdentity,
-              optTypeData = useTypeData (drvGQL drv) . outputType
+              optTypeData = useTypeData (useGQL drv) . outputType
             } ::
             GRepContext gql (GetChannel val e) Identity (ChannelRes e)
         )

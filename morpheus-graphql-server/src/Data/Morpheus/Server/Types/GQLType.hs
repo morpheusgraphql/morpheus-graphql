@@ -443,9 +443,9 @@ exploreDirective (GDirectiveUsage x) = __exploreRef $ inputType $ Identity x
 withDir :: WITH_DERIVING
 withDir =
   UseDeriving
-    { __directives = directives,
-      drvGQL = withGQL,
-      drvValue = withValue
+    { useDirectives = directives,
+      useGQL = withGQL,
+      useValue = withValue
     }
 
 type WITH_GQL = UseGQLType GQLType

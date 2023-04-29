@@ -62,12 +62,12 @@ import Relude
 
 -- | DeriveType With specific Kind: 'kind': object, scalar, enum ...
 class DeriveKindedType ctx (k :: DerivingKind) a where
-  deriveKindedType :: ctx ~ UseDeriving gql v => ctx -> CatType cat (f k a) -> GQLResult (GQLTypeNode cat)
-  exploreKindedRefs :: ctx ~ UseDeriving gql v => ctx -> CatType cat (f k a) -> [ScanRef gql]
+  deriveKindedType :: (ctx ~ UseDeriving gql v) => ctx -> CatType cat (f k a) -> GQLResult (GQLTypeNode cat)
+  exploreKindedRefs :: (ctx ~ UseDeriving gql v) => ctx -> CatType cat (f k a) -> [ScanRef gql]
 
 instance (gql a, ctx ~ UseDeriving gql v) => DeriveKindedType ctx WRAPPER (f a) where
-  deriveKindedType UseDeriving {..} = useDeriveNode drvGQL . catMap (Proxy @a)
-  exploreKindedRefs UseDeriving {..} = useExploreRef drvGQL . catMap (Proxy @a)
+  deriveKindedType UseDeriving {..} = useDeriveNode useGQL . catMap (Proxy @a)
+  exploreKindedRefs UseDeriving {..} = useExploreRef useGQL . catMap (Proxy @a)
 
 scanLeaf :: (c a, gql a) => UseGQLType gql -> CatType k a -> [ScanRef c]
 scanLeaf gql p = [ScanLeaf (useFingerprint gql p) p]
@@ -77,11 +77,11 @@ scanNode visible gql p = [ScanNode visible (useFingerprint gql p) p]
 
 instance (DecodeScalar a, gql a, ctx ~ UseDeriving gql v) => DeriveKindedType ctx SCALAR a where
   deriveKindedType drv = deriveScalarDefinition scalarValidator drv . unliftKind
-  exploreKindedRefs UseDeriving {..} proxy = scanLeaf drvGQL (catMap (Proxy @a) proxy)
+  exploreKindedRefs UseDeriving {..} proxy = scanLeaf useGQL (catMap (Proxy @a) proxy)
 
 instance (DERIVE_TYPE gql a, Gmap gql (Rep a), ctx ~ UseDeriving gql v) => DeriveKindedType ctx TYPE a where
   deriveKindedType drv = fmap (uncurry GQLTypeNode) . deriveTypeDefinition drv . unliftKind
-  exploreKindedRefs UseDeriving {..} proxy = scanNode True drvGQL (catMap (Proxy @a) proxy)
+  exploreKindedRefs UseDeriving {..} proxy = scanNode True useGQL (catMap (Proxy @a) proxy)
 
 instance (DERIVE_TYPE gql a, Gmap gql (Rep a), ctx ~ UseDeriving gql v, GQLDirective a, v a) => DeriveKindedType ctx DIRECTIVE a where
   deriveKindedType drv _ = GQLDirectiveNode <$> (deriveTypeDefinition drv proxy >>= deriveDirectiveDefinition drv proxy . fst)
@@ -89,4 +89,4 @@ instance (DERIVE_TYPE gql a, Gmap gql (Rep a), ctx ~ UseDeriving gql v, GQLDirec
       proxy = inputType (Proxy @a)
   exploreKindedRefs UseDeriving {..} proxy
     | excludeFromSchema (Proxy @a) = []
-    | otherwise = scanNode True drvGQL (catMap (Proxy @a) proxy)
+    | otherwise = scanNode True useGQL (catMap (Proxy @a) proxy)

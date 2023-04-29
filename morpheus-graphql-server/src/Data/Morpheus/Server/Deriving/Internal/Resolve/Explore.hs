@@ -51,7 +51,7 @@ import GHC.Generics (Generic (Rep))
 import Relude
 
 convertNode ::
-  gql a =>
+  (gql a) =>
   (MonadError GQLError m) =>
   UseDeriving gql val ->
   f a ->
@@ -66,7 +66,7 @@ toOptions :: UseResolver res gql val -> GRepContext gql (res m) Identity (m (Res
 toOptions UseResolver {..} =
   GRepContext
     { optApply = useEncodeResolver . runIdentity,
-      optTypeData = useTypeData (drvGQL resDrv) . inputType
+      optTypeData = useTypeData (useGQL resDrv) . inputType
     }
 
 useExploreResolvers ::

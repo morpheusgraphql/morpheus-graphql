@@ -98,12 +98,12 @@ class KindedValue ctx (k :: DerivingKind) (a :: Type) where
 
 instance (EncodeScalar a, DecodeScalar a, ctx ~ UseDeriving gql args, gql a) => KindedValue ctx SCALAR a where
   encodeKindedValue _ = pure . Scalar . encodeScalar . unContextValue
-  decodeKindedValue dir _ = withScalar (useTypename (drvGQL dir) (InputType :: CatType IN a)) decodeScalar
+  decodeKindedValue dir _ = withScalar (useTypename (useGQL dir) (InputType :: CatType IN a)) decodeScalar
 
 instance (ctx ~ UseDeriving gql args, DecodeWrapperConstraint f a, DecodeWrapper f, EncodeWrapperValue f, args a) => KindedValue ctx WRAPPER (f a) where
-  encodeKindedValue dir = encodeWrapperValue (useEncodeValue (drvValue dir)) . unContextValue
+  encodeKindedValue dir = encodeWrapperValue (useEncodeValue (useValue dir)) . unContextValue
   decodeKindedValue dir _ value =
-    runExceptT (decodeWrapper (useDecodeValue (drvValue dir)) value)
+    runExceptT (decodeWrapper (useDecodeValue (useValue dir)) value)
       >>= handleEither
 
 instance (ctx ~ UseDeriving gql args, gql a, Generic a, DecodeRep gql args (Rep a), GRep gql args (GQLResult (Value CONST)) (Rep a)) => KindedValue ctx TYPE a where
@@ -111,8 +111,8 @@ instance (ctx ~ UseDeriving gql args, gql a, Generic a, DecodeRep gql args (Rep 
     repValue
       . deriveValue
         ( GRepContext
-            { optApply = useEncodeValue drvValue . runIdentity,
-              optTypeData = useTypeData drvGQL . inputType
+            { optApply = useEncodeValue useValue . runIdentity,
+              optTypeData = useTypeData useGQL . inputType
             } ::
             GRepContext gql args Identity (GQLResult (Value CONST))
         )
@@ -122,7 +122,7 @@ instance (ctx ~ UseDeriving gql args, gql a, Generic a, DecodeRep gql args (Rep 
       context =
         Context
           { isVariantRef = False,
-            typeName = useTypename (drvGQL dir) (InputType :: CatType IN a),
+            typeName = useTypename (useGQL dir) (InputType :: CatType IN a),
             enumVisitor = visitEnumName dir proxy,
             fieldVisitor = visitFieldName dir proxy
           }
@@ -134,8 +134,8 @@ instance (ctx ~ UseDeriving gql args, gql a, Generic a, DecodeRep gql args (Rep 
     repValue
       . deriveValue
         ( GRepContext
-            { optApply = useEncodeValue drvValue . runIdentity,
-              optTypeData = useTypeData drvGQL . inputType
+            { optApply = useEncodeValue useValue . runIdentity,
+              optTypeData = useTypeData useGQL . inputType
             } ::
             GRepContext gql args Identity (GQLResult (Value CONST))
         )
@@ -145,7 +145,7 @@ instance (ctx ~ UseDeriving gql args, gql a, Generic a, DecodeRep gql args (Rep 
       context =
         Context
           { isVariantRef = False,
-            typeName = useTypename (drvGQL dir) (InputType :: CatType IN a),
+            typeName = useTypename (useGQL dir) (InputType :: CatType IN a),
             enumVisitor = visitEnumName dir proxy,
             fieldVisitor = visitFieldName dir proxy
           }
@@ -168,12 +168,12 @@ toConstValue (Object fields) = Object (fmap toEntry fields)
 
 instance (ctx ~ UseDeriving gql args, KnownSymbol name, args a) => KindedValue ctx CUSTOM (Arg name a) where
   encodeKindedValue _ _ = throwError "directives cant be tagged arguments"
-  decodeKindedValue UseDeriving {drvValue} _ value = Arg <$> withInputObject fieldDecoder value
+  decodeKindedValue UseDeriving {useValue} _ value = Arg <$> withInputObject fieldDecoder value
     where
-      fieldDecoder = decodeFieldWith (useDecodeValue drvValue) fieldName
+      fieldDecoder = decodeFieldWith (useDecodeValue useValue) fieldName
       fieldName = symbolName (Proxy @name)
 
 --  Map
 instance (ctx ~ UseDeriving gql args, Ord k, args [(k, v)]) => KindedValue ctx CUSTOM (Map k v) where
-  decodeKindedValue UseDeriving {..} _ v = unsafeFromList <$> (useDecodeValue drvValue v :: ResolverState [(k, v)])
-  encodeKindedValue UseDeriving {..} = useEncodeValue drvValue . toAssoc . unContextValue
+  decodeKindedValue UseDeriving {..} _ v = unsafeFromList <$> (useDecodeValue useValue v :: ResolverState [(k, v)])
+  encodeKindedValue UseDeriving {..} = useEncodeValue useValue . toAssoc . unContextValue
