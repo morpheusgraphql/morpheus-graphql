@@ -97,8 +97,8 @@ instance (DescribeCons gql a, DescribeCons gql b, DecodeRep gql val a, DecodeRep
 instance (Constructor c, DecodeFields val a) => DecodeRep gql val (M1 C c a) where
   decodeRep UseDeriving {drvValue} = fmap M1 . decodeFields drvValue 0
 
-class DecodeFields gql (f :: Type -> Type) where
-  decodeFields :: UseValue gql -> Int -> ValidValue -> DecoderT (f a)
+class DecodeFields val (f :: Type -> Type) where
+  decodeFields :: UseValue val -> Int -> ValidValue -> DecoderT (f a)
 
 instance (DecodeFields val f, DecodeFields val g, CountFields g) => DecodeFields val (f :*: g) where
   decodeFields drv index gql =
