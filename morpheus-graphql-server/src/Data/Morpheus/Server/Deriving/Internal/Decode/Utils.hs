@@ -91,7 +91,7 @@ repValue GRepValueObject {..} = Object <$> (traverse fromField objectFields >>= 
 repValue _ = throwError (internal "input unions are not supported")
 
 withInputObject ::
-  MonadError GQLError m =>
+  (MonadError GQLError m) =>
   (ValidObject -> m a) ->
   ValidValue ->
   m a
@@ -99,7 +99,7 @@ withInputObject f (Object object) = f object
 withInputObject _ isType = throwError (typeMismatch "InputObject" isType)
 
 -- | Useful for more restrictive instances of lists (non empty, size indexed etc)
-withEnum :: MonadError GQLError m => (TypeName -> m a) -> Value VALID -> m a
+withEnum :: (MonadError GQLError m) => (TypeName -> m a) -> Value VALID -> m a
 withEnum decode (Enum value) = decode value
 withEnum _ isType = throwError (typeMismatch "Enum" isType)
 
@@ -132,7 +132,7 @@ withScalar typename decodeScalar value = case toScalar value >>= decodeScalar of
 decodeFieldWith :: (Value VALID -> m a) -> FieldName -> ValidObject -> m a
 decodeFieldWith decoder = selectOr (decoder Null) (decoder . entryValue)
 
-handleEither :: MonadError GQLError m => Either GQLError a -> m a
+handleEither :: (MonadError GQLError m) => Either GQLError a -> m a
 handleEither = either throwError pure
 
 -- if value is already validated but value has different type
@@ -218,5 +218,5 @@ instance (Selector s, gql a) => RefType gql (M1 S s (K1 i a)) where
 instance RefType gql U1 where
   refType _ _ = Nothing
 
-useDecodeArguments :: val a => UseDeriving gql val -> Arguments VALID -> ResolverState a
-useDecodeArguments drv = useDecodeValue (drvArgs drv) . argumentsToObject
+useDecodeArguments :: (val a) => UseDeriving gql val -> Arguments VALID -> ResolverState a
+useDecodeArguments drv = useDecodeValue (drvValue drv) . argumentsToObject

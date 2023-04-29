@@ -445,7 +445,7 @@ withDir =
   UseDeriving
     { __directives = directives,
       drvGQL = withGQL,
-      drvArgs = withValue
+      drvValue = withValue
     }
 
 type WITH_GQL = UseGQLType GQLType

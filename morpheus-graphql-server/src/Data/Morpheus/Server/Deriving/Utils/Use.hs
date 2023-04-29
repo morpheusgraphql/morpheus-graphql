@@ -35,36 +35,36 @@ import Data.Morpheus.Types.Internal.AST
 import Relude
 
 data UseRef (c :: Type -> Constraint) where
-  UseRef :: c a => CatType t a -> UseRef c
+  UseRef :: (c a) => CatType t a -> UseRef c
 
 data UseGQLType gql = UseGQLType
-  { useFingerprint :: forall c a. gql a => CatType c a -> TypeFingerprint,
-    useTypename :: forall c a. gql a => CatType c a -> TypeName,
-    useTypeData :: forall c a. gql a => CatType c a -> TypeData,
-    useDeriveNode :: forall c a. gql a => CatType c a -> GQLResult (GQLTypeNode c),
-    useDeriveFieldArguments :: forall c a. gql a => CatType c a -> GQLResult (ArgumentsDefinition CONST),
-    useExploreRef :: forall c a. gql a => CatType c a -> [ScanRef gql]
+  { useFingerprint :: forall c a. (gql a) => CatType c a -> TypeFingerprint,
+    useTypename :: forall c a. (gql a) => CatType c a -> TypeName,
+    useTypeData :: forall c a. (gql a) => CatType c a -> TypeData,
+    useDeriveNode :: forall c a. (gql a) => CatType c a -> GQLResult (GQLTypeNode c),
+    useDeriveFieldArguments :: forall c a. (gql a) => CatType c a -> GQLResult (ArgumentsDefinition CONST),
+    useExploreRef :: forall c a. (gql a) => CatType c a -> [ScanRef gql]
   }
 
 data UseValue val = UseValue
-  { useEncodeValue :: forall a. val a => a -> GQLResult (Value CONST),
-    useDecodeValue :: forall a. val a => ValidValue -> ResolverState a
+  { useEncodeValue :: forall a. (val a) => a -> GQLResult (Value CONST),
+    useDecodeValue :: forall a. (val a) => ValidValue -> ResolverState a
   }
 
 data UseResolver res gql val = UseResolver
-  { useEncodeResolver :: forall a m. res m a => a -> m (ResolverValue m),
+  { useEncodeResolver :: forall a m. (res m a) => a -> m (ResolverValue m),
     resDrv :: UseDeriving gql val
   }
 
 data UseDeriving gql val = UseDeriving
-  { __directives :: forall f a. gql a => f a -> GDirectiveUsages gql val,
-    drvArgs :: UseValue val,
+  { __directives :: forall f a. (gql a) => f a -> GDirectiveUsages gql val,
+    drvValue :: UseValue val,
     drvGQL :: UseGQLType gql
   }
 
 data UseNamedResolver named fun gql val = UseNamedResolver
-  { useNamedFieldResolver :: forall a m. fun m a => a -> m (ResolverValue m),
-    useDeriveNamedResolvers :: forall f a m. named m a => f a -> [NamedResolver m],
-    useDeriveNamedRefs :: forall f a m. named m a => f a -> [ScanRef (named m)],
+  { useNamedFieldResolver :: forall a m. (fun m a) => a -> m (ResolverValue m),
+    useDeriveNamedResolvers :: forall f a m. (named m a) => f a -> [NamedResolver m],
+    useDeriveNamedRefs :: forall f a m. (named m a) => f a -> [ScanRef (named m)],
     namedDrv :: UseDeriving gql val
   }

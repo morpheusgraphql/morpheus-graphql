@@ -46,12 +46,12 @@ import Relude
 
 type DECODE_VALUES val m a = (ResolveNamed m a, val (Dependency a), MonadResolver m)
 
-decodeValues :: DECODE_VALUES val m a => UseDeriving gql val -> Proxy a -> [ValidValue] -> m [Maybe a]
-decodeValues ctx _ xs = traverse (liftState . useDecodeValue (drvArgs ctx)) xs >>= resolveBatched
+decodeValues :: (DECODE_VALUES val m a) => UseDeriving gql val -> Proxy a -> [ValidValue] -> m [Maybe a]
+decodeValues ctx _ xs = traverse (liftState . useDecodeValue (drvValue ctx)) xs >>= resolveBatched
 
 class KindedNamedResolver ctx (k :: DerivingKind) (m :: Type -> Type) a where
-  kindedNamedResolver :: UseNamedResolver namedRes resFun gql val ~ ctx => ctx -> f k a -> [NamedResolver m]
-  kindedNamedRefs :: UseNamedResolver namedRes resFun gql val ~ ctx => ctx -> f k a -> [ScanRef (namedRes m)]
+  kindedNamedResolver :: (UseNamedResolver namedRes resFun gql val ~ ctx) => ctx -> f k a -> [NamedResolver m]
+  kindedNamedRefs :: (UseNamedResolver namedRes resFun gql val ~ ctx) => ctx -> f k a -> [ScanRef (namedRes m)]
 
 instance
   ( UseNamedResolver namedRes resFun gql val ~ ctx,
