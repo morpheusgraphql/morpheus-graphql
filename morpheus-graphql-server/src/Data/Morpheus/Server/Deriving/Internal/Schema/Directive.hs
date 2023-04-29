@@ -87,13 +87,13 @@ import GHC.Generics ()
 import GHC.TypeLits ()
 import Relude hiding (empty)
 
-deriveDirectiveDefinition :: (MonadError GQLError m, gql a, GQLDirective a, args a) => UseDeriving gql args -> f a -> TypeDefinition IN CONST -> m (DirectiveDefinition CONST)
-deriveDirectiveDefinition options@UseDeriving {..} proxy t = do
+deriveDirectiveDefinition :: (MonadError GQLError m, gql a, GQLDirective a, val a) => UseDeriving gql val -> f a -> TypeDefinition IN CONST -> m (DirectiveDefinition CONST)
+deriveDirectiveDefinition drv@UseDeriving {useGQL} proxy t = do
   directiveDefinitionArgs <- typeToArguments t
   pure
     ( DirectiveDefinition
         { directiveDefinitionName = deriveDirectiveName useGQL proxy,
-          directiveDefinitionDescription = visitTypeDescription options proxy Nothing,
+          directiveDefinitionDescription = visitTypeDescription drv proxy Nothing,
           directiveDefinitionArgs,
           directiveDefinitionLocations = getLocations proxy
         }

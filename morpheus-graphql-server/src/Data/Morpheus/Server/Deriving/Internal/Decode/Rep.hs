@@ -84,12 +84,12 @@ instance (Datatype d, DecodeRep gql val f) => DecodeRep gql val (M1 D d f) where
   decodeRep drv value = M1 <$> decodeRep drv value
 
 instance (DescribeCons gql a, DescribeCons gql b, DecodeRep gql val a, DecodeRep gql val b) => DecodeRep gql val (a :+: b) where
-  decodeRep drv (Object obj) =
+  decodeRep drv@UseDeriving {useGQL} (Object obj) =
     do
-      (kind, lr) <- getUnionInfos (useGQL drv) (Proxy @(a :+: b))
+      (kind, lr) <- getUnionInfos useGQL (Proxy @(a :+: b))
       setVariantRef kind $ withInputUnion (decodeInputUnionObject drv lr) obj
-  decodeRep drv (Enum name) = do
-    (_, (l, r)) <- getUnionInfos (useGQL drv) (Proxy @(a :+: b))
+  decodeRep drv@UseDeriving {useGQL} (Enum name) = do
+    (_, (l, r)) <- getUnionInfos useGQL (Proxy @(a :+: b))
     visitor <- asks enumVisitor
     decideEither drv (map visitor l, map visitor r) name (Enum name)
   decodeRep _ _ = throwError (internal "lists and scalars are not allowed in Union")
