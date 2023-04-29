@@ -99,7 +99,7 @@ exploreTypes ::
   CatType kind a ->
   [UseRef gql]
 exploreTypes UseDeriving {..} proxy =
-  scanTypes (scanCTX (getCatContext proxy) drvGQL) proxy
+  scanTypes (scanCTX (getCatContext proxy) useGQL) proxy
 
 scanCTX :: CatContext cat -> UseGQLType gql -> GRepContext gql gql Proxy (UseRef gql)
 scanCTX ctx gql =
@@ -114,7 +114,7 @@ deriveTypeContentWith ::
   CatType kind a ->
   GQLResult (TypeContent TRUE kind CONST, [GQLTypeNodeExtension])
 deriveTypeContentWith drv@UseDeriving {..} proxy = do
-  reps <- deriveType (toFieldContent (getCatContext proxy) drvGQL) proxy
+  reps <- deriveType (toFieldContent (getCatContext proxy) useGQL) proxy
   buildTypeContent drv proxy reps
 
 deriveTypeGuardUnions ::
@@ -128,11 +128,11 @@ deriveTypeGuardUnions drv proxy = do
   where
     getUnionNames :: TypeContent TRUE OUT CONST -> GQLResult [TypeName]
     getUnionNames DataUnion {unionMembers} = pure $ toList $ memberName <$> unionMembers
-    getUnionNames DataObject {} = pure [useTypename (drvGQL drv) proxy]
+    getUnionNames DataObject {} = pure [useTypename (useGQL drv) proxy]
     getUnionNames _ = throwError "guarded type must be an union or object"
 
 deriveScalarDefinition ::
-  gql a =>
+  (gql a) =>
   (CatType cat a -> ScalarDefinition) ->
   UseDeriving gql args ->
   CatType cat a ->
@@ -156,17 +156,17 @@ deriveInterfaceDefinition ::
   GQLResult (TypeDefinition OUT CONST, [GQLTypeNodeExtension])
 deriveInterfaceDefinition drv proxy = do
   (content, ext) <- deriveTypeContentWith drv proxy
-  fields <- withObject (useTypename (drvGQL drv) proxy) content
+  fields <- withObject (useTypename (useGQL drv) proxy) content
   t <- fillTypeContent drv proxy (DataInterface fields)
   pure (t, ext)
 
 fillTypeContent ::
-  gql a =>
+  (gql a) =>
   UseDeriving gql args ->
   CatType c a ->
   TypeContent TRUE cat CONST ->
   GQLResult (TypeDefinition cat CONST)
-fillTypeContent options@UseDeriving {drvGQL = UseGQLType {..}} proxy content = do
+fillTypeContent options@UseDeriving {useGQL = UseGQLType {..}} proxy content = do
   dirs <- deriveTypeDirectives options proxy
   pure $
     TypeDefinition
@@ -182,7 +182,7 @@ toFieldContent ctx gql =
       optApply = useDeriveFieldArguments gql . addContext ctx
     }
 
-useDeriveRoot :: gql a => UseGQLType gql -> f a -> GQLResult (TypeDefinition OBJECT CONST)
+useDeriveRoot :: (gql a) => UseGQLType gql -> f a -> GQLResult (TypeDefinition OBJECT CONST)
 useDeriveRoot gql pr = do
   fields <- useDeriveNode gql proxy >>= nodeToType >>= withObject (useTypename gql proxy) . typeContent
   pure $ mkType (useTypename gql (outputType proxy)) (DataObject [] fields)

@@ -94,7 +94,7 @@ deriveNamedResolverFun ctx x = traverse encodeNode x
     encodeNode Nothing = pure NamedNullResolver
 
 class KindedNamedFunValue ctx (k :: DerivingKind) (m :: Type -> Type) (a :: Type) where
-  kindedNamedFunValue :: UseNamedResolver namedRes res gql val ~ ctx => ctx -> ContextValue k a -> m (ResolverValue m)
+  kindedNamedFunValue :: (UseNamedResolver namedRes res gql val ~ ctx) => ctx -> ContextValue k a -> m (ResolverValue m)
 
 instance (EncodeScalar a, Monad m) => KindedNamedFunValue ctx SCALAR m a where
   kindedNamedFunValue _ = pure . ResScalar . encodeScalar . unContextValue
@@ -113,15 +113,15 @@ instance (UseNamedResolver namedRes res gql val ~ ctx, Monad m, gql a, ToJSON (N
   kindedNamedFunValue ctx = encodeRef . unContextValue
     where
       name :: TypeName
-      name = useTypename (drvGQL (namedDrv ctx)) (OutputType :: CatType OUT a)
-      encodeRef :: Monad m => NamedResolverT m a -> m (ResolverValue m)
+      name = useTypename (useGQL (namedDrv ctx)) (OutputType :: CatType OUT a)
+      encodeRef :: (Monad m) => NamedResolverT m a -> m (ResolverValue m)
       encodeRef (NamedResolverT ref) = do
         value <- replaceValue . toJSON <$> ref
         case value of
           (List ls) -> pure $ mkList $ map (packRef name) ls
           _ -> pure $ packRef name value
 
-packRef :: Applicative m => TypeName -> ValidValue -> ResolverValue m
+packRef :: (Applicative m) => TypeName -> ValidValue -> ResolverValue m
 packRef name v = ResRef $ pure $ NamedResolverRef name [v]
 
 instance (UseNamedResolver namedRes res gql val ~ ctx, Monad m, val a, MonadResolver m, res m b) => KindedNamedFunValue ctx CUSTOM m (a -> b) where
@@ -134,7 +134,7 @@ getOptions :: UseNamedResolver namedRes res gql val -> GRepContext gql (res m) I
 getOptions UseNamedResolver {..} =
   GRepContext
     { optApply = useNamedFieldResolver . runIdentity,
-      optTypeData = useTypeData (drvGQL namedDrv) . outputType
+      optTypeData = useTypeData (useGQL namedDrv) . outputType
     }
 
 convertNamedNode ::
@@ -148,6 +148,6 @@ convertNamedNode drv proxy GRepValueObject {..} = pure $ NamedObjectResolver $ O
 convertNamedNode _ _ GRepValueUnionRef {..} = NamedUnionResolver <$> (unionRefValue >>= getRef)
 convertNamedNode _ _ GRepValueUnion {} = throwError "only union references are supported!"
 
-getRef :: MonadError GQLError m => ResolverValue m -> m NamedResolverRef
+getRef :: (MonadError GQLError m) => ResolverValue m -> m NamedResolverRef
 getRef (ResRef x) = x
 getRef _ = throwError "only resolver references are supported!"
