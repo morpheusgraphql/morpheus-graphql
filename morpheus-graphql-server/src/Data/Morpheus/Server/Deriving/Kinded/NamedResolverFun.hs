@@ -46,8 +46,7 @@ import Data.Morpheus.Server.Deriving.Utils.Proxy
   ( ContextValue (..),
   )
 import Data.Morpheus.Server.Deriving.Utils.Use
-  ( UseDeriving (..),
-    UseGQLType (..),
+  ( UseGQLType (..),
     UseNamedResolver (..),
   )
 import Data.Morpheus.Server.Types.Kind

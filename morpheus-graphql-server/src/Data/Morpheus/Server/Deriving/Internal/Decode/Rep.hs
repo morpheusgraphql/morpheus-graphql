@@ -16,20 +16,20 @@ module Data.Morpheus.Server.Deriving.Internal.Decode.Rep
 where
 
 import Control.Monad.Except (MonadError (throwError))
-import Data.Morpheus.Generic (CountFields (..))
+import Data.Morpheus.Generic
+  ( DecodeFields,
+    DecoderFun (..),
+    decodeFields,
+  )
 import Data.Morpheus.Server.Deriving.Internal.Decode.Utils
   ( Context (..),
     DecoderT,
     DescribeCons,
     decodeFieldWith,
-    getFieldName,
     getUnionInfos,
     setVariantRef,
     withInputObject,
     withInputUnion,
-  )
-import Data.Morpheus.Server.Deriving.Utils.Proxy
-  ( selNameProxy,
   )
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseDeriving (..),
@@ -96,28 +96,19 @@ instance (UseGQLType ctx gql, DescribeCons ctx a, DescribeCons ctx b, DecodeRep 
     decideEither ctx (map visitor l, map visitor r) name (Enum name)
   decodeRep _ _ = throwError (internal "lists and scalars are not allowed in Union")
 
-instance (Constructor c, UseDeriving gql val ~ ctx, DecodeFields ctx a) => DecodeRep ctx (M1 C c a) where
-  decodeRep ctx = fmap M1 . decodeFields ctx 0
+instance (Constructor c, UseDeriving gql val ~ ctx, DecodeFields val a) => DecodeRep ctx (M1 C c a) where
+  decodeRep ctx value = fmap M1 (decodeFields (decoder ctx value))
 
-class DecodeFields ctx (f :: Type -> Type) where
-  decodeFields :: ctx -> Int -> ValidValue -> DecoderT (f a)
-
-instance (DecodeFields val f, DecodeFields val g, CountFields g) => DecodeFields val (f :*: g) where
-  decodeFields drv index gql =
-    (:*:)
-      <$> decodeFields drv index gql
-      <*> decodeFields drv (index + countFields (Proxy @g)) gql
-
-instance (Selector s, UseGQLValue ctx val, val a) => DecodeFields ctx (M1 S s (K1 i a)) where
-  decodeFields val index value =
-    M1 . K1 <$> do
-      Context {isVariantRef, fieldVisitor} <- ask
-      if isVariantRef
-        then lift (useDecodeValue val value)
-        else
-          let fieldName = fieldVisitor $ getFieldName (selNameProxy (Proxy @s)) index
-              fieldDecoder = decodeFieldWith (lift . useDecodeValue val) fieldName
-           in withInputObject fieldDecoder value
-
-instance DecodeFields val U1 where
-  decodeFields _ _ _ = pure U1
+decoder :: (UseGQLValue ctx con) => ctx -> ValidValue -> DecoderFun con DecoderT
+decoder ctx value =
+  DecoderFun
+    ( \name ->
+        do
+          Context {isVariantRef, fieldVisitor} <- ask
+          if isVariantRef
+            then lift (useDecodeValue ctx value)
+            else
+              let fieldName = fieldVisitor name
+                  fieldDecoder = decodeFieldWith (lift . useDecodeValue ctx) fieldName
+               in withInputObject fieldDecoder value
+    )

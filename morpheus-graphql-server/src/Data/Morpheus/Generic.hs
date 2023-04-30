@@ -11,13 +11,19 @@ module Data.Morpheus.Generic
     deriveType,
     deriveValue,
     scanTypes,
-    -- Others
+    -- fields
+    DecoderFun (..),
+    DecodeFields,
+    decodeFields,
     CountFields (..),
   )
 where
 
-import Data.Morpheus.Generic.CountFields
+import Data.Morpheus.Generic.Fields
   ( CountFields (..),
+    DecodeFields,
+    DecoderFun (..),
+    decodeFields,
   )
 import Data.Morpheus.Generic.GRep
   ( GRep,

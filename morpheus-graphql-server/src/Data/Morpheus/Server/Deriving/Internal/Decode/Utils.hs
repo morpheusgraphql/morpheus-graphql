@@ -20,7 +20,6 @@ module Data.Morpheus.Server.Deriving.Internal.Decode.Utils
     decodeFieldWith,
     withScalar,
     handleEither,
-    getFieldName,
     DecoderT,
     setVariantRef,
     Context (..),
@@ -145,10 +144,6 @@ typeMismatch text jsType =
       <> ", got: "
       <> msg jsType
 
-getFieldName :: FieldName -> Int -> FieldName
-getFieldName "" index = "_" <> show index
-getFieldName label _ = label
-
 data VariantKind = InlineVariant | VariantRef deriving (Eq, Ord)
 
 data Info = Info
@@ -214,7 +209,7 @@ instance (RefType gql f, RefType gql g) => RefType gql (f :*: g) where
   refType _ _ = Nothing
 
 instance (Selector s, UseGQLType ctx gql, gql a) => RefType ctx (M1 S s (K1 i a)) where
-  refType dir _ = Just $ useTypename dir (InputType :: CatType IN a)
+  refType ctx _ = Just $ useTypename ctx (InputType :: CatType IN a)
 
 instance RefType gql U1 where
   refType _ _ = Nothing
