@@ -110,9 +110,9 @@ instance (ctx ~ UseDeriving gql args, gql a, Generic a, DecodeRep ctx (Rep a), G
     repValue
       . deriveValue
         ( GRepContext
-            { optFun = useEncodeValue ctx . runIdentity,
-              optTypename = useTypename ctx . inputType,
-              optWrappers = useWrappers ctx . inputType
+            { grepFun = useEncodeValue ctx . runIdentity,
+              grepTypename = useTypename ctx . inputType,
+              grepWrappers = useWrappers ctx . inputType
             } ::
             GRepContext gql args Identity (GQLResult (Value CONST))
         )
@@ -134,9 +134,9 @@ instance (ctx ~ UseDeriving gql args, gql a, Generic a, DecodeRep ctx (Rep a), G
     repValue
       . deriveValue
         ( GRepContext
-            { optFun = useEncodeValue ctx . runIdentity,
-              optTypename = useTypename ctx . inputType,
-              optWrappers = useWrappers ctx . inputType
+            { grepFun = useEncodeValue ctx . runIdentity,
+              grepTypename = useTypename ctx . inputType,
+              grepWrappers = useWrappers ctx . inputType
             } ::
             GRepContext gql args Identity (GQLResult (Value CONST))
         )

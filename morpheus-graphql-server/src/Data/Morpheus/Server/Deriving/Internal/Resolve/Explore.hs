@@ -65,9 +65,9 @@ convertNode _ _ GRepValueUnionRef {..} = ResLazy (ResObject (Just unionRefTypeNa
 toOptions :: UseResolver res gql val -> GRepContext gql (res m) Identity (m (ResolverValue m))
 toOptions ctx =
   GRepContext
-    { optFun = useEncodeResolver ctx . runIdentity,
-      optTypename = useTypename ctx . inputType,
-      optWrappers = useWrappers ctx . inputType
+    { grepFun = useEncodeResolver ctx . runIdentity,
+      grepTypename = useTypename ctx . inputType,
+      grepWrappers = useWrappers ctx . inputType
     }
 
 useExploreResolvers ::

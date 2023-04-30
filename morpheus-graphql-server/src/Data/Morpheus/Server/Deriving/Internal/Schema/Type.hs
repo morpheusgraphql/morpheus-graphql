@@ -103,9 +103,9 @@ exploreTypes cxt proxy = scanTypes (scanCTX (getCatContext proxy) cxt) proxy
 scanCTX :: (UseGQLType ctx gql) => CatContext cat -> ctx -> GRepContext gql gql Proxy (UseRef gql)
 scanCTX ctx gql =
   GRepContext
-    { optFun = UseRef . addContext ctx,
-      optTypename = useTypename gql . addContext ctx,
-      optWrappers = useWrappers gql . addContext ctx
+    { grepFun = UseRef . addContext ctx,
+      grepTypename = useTypename gql . addContext ctx,
+      grepWrappers = useWrappers gql . addContext ctx
     }
 
 deriveTypeContentWith ::
@@ -178,9 +178,9 @@ fillTypeContent ctx proxy content = do
 toFieldContent :: (UseGQLType ctx gql) => CatContext cat -> ctx -> GRepContext gql gql Proxy (GQLResult (ArgumentsDefinition CONST))
 toFieldContent ctx gql =
   GRepContext
-    { optTypename = useTypename gql . addContext ctx,
-      optWrappers = useWrappers gql . addContext ctx,
-      optFun = useDeriveFieldArgs gql . addContext ctx
+    { grepTypename = useTypename gql . addContext ctx,
+      grepWrappers = useWrappers gql . addContext ctx,
+      grepFun = useDeriveFieldArgs gql . addContext ctx
     }
 
 useDeriveRoot :: (UseGQLType ctx gql, gql a) => ctx -> f a -> GQLResult (TypeDefinition OBJECT CONST)

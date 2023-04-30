@@ -133,9 +133,9 @@ instance (UseNamedResolver namedRes res gql val ~ ctx, Monad m, val a, MonadReso
 getOptions :: UseNamedResolver namedRes res gql val -> GRepContext gql (res m) Identity (m (ResolverValue m))
 getOptions ctx =
   GRepContext
-    { optFun = useNamedFieldResolver ctx . runIdentity,
-      optTypename = useTypename ctx . outputType,
-      optWrappers = useWrappers ctx . outputType
+    { grepFun = useNamedFieldResolver ctx . runIdentity,
+      grepTypename = useTypename ctx . outputType,
+      grepWrappers = useWrappers ctx . outputType
     }
 
 convertNamedNode ::

@@ -60,9 +60,9 @@ import GHC.Generics
 import Relude hiding (undefined)
 
 data GRepContext gql fun f result = GRepContext
-  { optFun :: forall a. (fun a) => f a -> result,
-    optTypename :: forall proxy a. (gql a) => proxy a -> TypeName,
-    optWrappers :: forall proxy a. (gql a) => proxy a -> TypeWrapper
+  { grepFun :: forall a. (fun a) => f a -> result,
+    grepTypename :: forall proxy a. (gql a) => proxy a -> TypeName,
+    grepWrappers :: forall proxy a. (gql a) => proxy a -> TypeWrapper
   }
 
 deriveValue ::
@@ -78,7 +78,7 @@ deriveValue options value
   | otherwise = GRepValueObject typename (consFields cons)
   where
     (isUnion, cons) = deriveTypeValue options (from value)
-    typename = optTypename options (Identity value)
+    typename = grepTypename options (Identity value)
 
 toRep :: f a -> Proxy (Rep a)
 toRep _ = Proxy
@@ -100,7 +100,7 @@ deriveType ctx x = toType <$> unpackMonad (deriveTypeDefinition ctx (toRep x))
             toVer GRepField {..} = (typeConName fieldTypeRef, fieldValue)
         --
         (unionRefRep, unionCons) = partition (isUnionRef typename) cons
-        typename = optTypename ctx x
+        typename = grepTypename ctx x
 
 scanTypes ::
   forall kind gql c v kinded a.
@@ -159,19 +159,19 @@ instance (Selector s, gql a, c a) => DeriveFieldRep gql c v (M1 S s (Rec0 a)) wh
   toFieldRep GRepContext {..} (M1 (K1 src)) =
     [ GRepField
         { fieldSelector = selNameProxy (Proxy @s),
-          fieldTypeRef = TypeRef (optTypename (Proxy @a)) (optWrappers (Proxy @a)),
-          fieldValue = optFun (Identity src)
+          fieldTypeRef = TypeRef (grepTypename (Proxy @a)) (grepWrappers (Proxy @a)),
+          fieldValue = grepFun (Identity src)
         }
     ]
 
   conRep GRepContext {..} _ =
     [ GRepField
         { fieldSelector = selNameProxy (Proxy @s),
-          fieldTypeRef = TypeRef (optTypename (Proxy @a)) (optWrappers (Proxy @a)),
-          fieldValue = optFun (Proxy @a)
+          fieldTypeRef = TypeRef (grepTypename (Proxy @a)) (grepWrappers (Proxy @a)),
+          fieldValue = grepFun (Proxy @a)
         }
     ]
-  scanRec GRepContext {..} _ = [optFun (Proxy @a)]
+  scanRec GRepContext {..} _ = [grepFun (Proxy @a)]
 
 instance DeriveFieldRep gql c v U1 where
   toFieldRep _ _ = []

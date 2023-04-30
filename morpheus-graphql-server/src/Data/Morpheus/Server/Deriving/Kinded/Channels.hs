@@ -128,9 +128,9 @@ instance (UseDeriving gql val ~ ctx, gql a, Generic a, GRep gql (GetChannel val 
       . toFields
       . deriveValue
         ( GRepContext
-            { optFun = getChannel ctx . runIdentity,
-              optTypename = useTypename ctx . outputType,
-              optWrappers = useWrappers ctx . outputType
+            { grepFun = getChannel ctx . runIdentity,
+              grepTypename = useTypename ctx . outputType,
+              grepWrappers = useWrappers ctx . outputType
             } ::
             GRepContext gql (GetChannel val e) Identity (ChannelRes e)
         )
