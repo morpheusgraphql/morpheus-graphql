@@ -27,9 +27,8 @@ import Data.Morpheus.Server.Deriving.Utils.Proxy
   )
 import Data.Morpheus.Server.Deriving.Utils.Types
 import Data.Morpheus.Server.Deriving.Utils.Use
-  ( UseDeriving (..),
+  ( UseGQLValue (useDecodeValue),
     UseResolver (..),
-    UseValue (useDecodeValue),
   )
 import Data.Morpheus.Server.Types.Kind
   ( CUSTOM,
@@ -72,7 +71,7 @@ instance (UseResolver res gql val ~ ctx, EXPLORE gql res m guard, EXPLORE gql re
 instance (UseResolver res gql val ~ ctx, Generic a, res m b, val a) => KindedResolver ctx CUSTOM m (a -> b) where
   kindedResolver res (ContextValue f) =
     getArguments
-      >>= liftState . useDecodeValue (useValue $ resDrv res) . argumentsToObject
+      >>= liftState . useDecodeValue res . argumentsToObject
       >>= useEncodeResolver res . f
 
 instance (UseResolver res gql val ~ ctx, res m a) => KindedResolver ctx CUSTOM m (m a) where

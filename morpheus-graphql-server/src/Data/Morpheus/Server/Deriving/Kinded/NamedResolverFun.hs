@@ -113,7 +113,7 @@ instance (UseNamedResolver namedRes res gql val ~ ctx, Monad m, gql a, ToJSON (N
   kindedNamedFunValue ctx = encodeRef . unContextValue
     where
       name :: TypeName
-      name = useTypename (useGQL (namedDrv ctx)) (OutputType :: CatType OUT a)
+      name = useTypename ctx (OutputType :: CatType OUT a)
       encodeRef :: (Monad m) => NamedResolverT m a -> m (ResolverValue m)
       encodeRef (NamedResolverT ref) = do
         value <- replaceValue . toJSON <$> ref
@@ -131,10 +131,11 @@ instance (UseNamedResolver namedRes res gql val ~ ctx, Monad m, val a, MonadReso
       >>= useNamedFieldResolver ctx . f
 
 getOptions :: UseNamedResolver namedRes res gql val -> GRepContext gql (res m) Identity (m (ResolverValue m))
-getOptions UseNamedResolver {..} =
+getOptions ctx =
   GRepContext
-    { optApply = useNamedFieldResolver . runIdentity,
-      optTypeData = useTypeData (useGQL namedDrv) . outputType
+    { optFun = useNamedFieldResolver ctx . runIdentity,
+      optTypename = useTypename ctx . outputType,
+      optWrappers = useWrappers ctx . outputType
     }
 
 convertNamedNode ::

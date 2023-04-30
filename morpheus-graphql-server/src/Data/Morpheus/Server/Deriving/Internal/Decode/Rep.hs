@@ -7,6 +7,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.Internal.Decode.Rep
@@ -32,7 +33,8 @@ import Data.Morpheus.Server.Deriving.Utils.Proxy
   )
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseDeriving (..),
-    UseValue (..),
+    UseGQLType,
+    UseGQLValue (..),
   )
 import Data.Morpheus.Types.Internal.AST
   ( Object,
@@ -48,8 +50,8 @@ import GHC.Generics
 import Relude
 
 decideEither ::
-  (DecodeRep gql val f, DecodeRep gql val g) =>
-  UseDeriving gql val ->
+  (DecodeRep ctx f, DecodeRep ctx g) =>
+  ctx ->
   ([TypeName], [TypeName]) ->
   TypeName ->
   ValidValue ->
@@ -65,8 +67,8 @@ decideEither drv (left, right) name value
             <> "\" could not find in Union"
 
 decodeInputUnionObject ::
-  (DecodeRep gql val f, DecodeRep gql val g) =>
-  UseDeriving gql val ->
+  (DecodeRep ctx f, DecodeRep ctx g) =>
+  ctx ->
   ([TypeName], [TypeName]) ->
   TypeName ->
   Object VALID ->
@@ -77,28 +79,28 @@ decodeInputUnionObject drv (l, r) name unions object
   | [name] == r = R1 <$> decodeRep drv (Object object)
   | otherwise = decideEither drv (l, r) name (Object unions)
 
-class DecodeRep gql val (f :: Type -> Type) where
-  decodeRep :: UseDeriving gql val -> ValidValue -> DecoderT (f a)
+class DecodeRep ctx (f :: Type -> Type) where
+  decodeRep :: ctx -> ValidValue -> DecoderT (f a)
 
-instance (Datatype d, DecodeRep gql val f) => DecodeRep gql val (M1 D d f) where
+instance (Datatype d, DecodeRep ctx f) => DecodeRep ctx (M1 D d f) where
   decodeRep drv value = M1 <$> decodeRep drv value
 
-instance (DescribeCons gql a, DescribeCons gql b, DecodeRep gql val a, DecodeRep gql val b) => DecodeRep gql val (a :+: b) where
-  decodeRep drv@UseDeriving {useGQL} (Object obj) =
+instance (UseGQLType ctx gql, DescribeCons ctx a, DescribeCons ctx b, DecodeRep ctx a, DecodeRep ctx b) => DecodeRep ctx (a :+: b) where
+  decodeRep ctx (Object obj) =
     do
-      (kind, lr) <- getUnionInfos useGQL (Proxy @(a :+: b))
-      setVariantRef kind $ withInputUnion (decodeInputUnionObject drv lr) obj
-  decodeRep drv@UseDeriving {useGQL} (Enum name) = do
-    (_, (l, r)) <- getUnionInfos useGQL (Proxy @(a :+: b))
+      (kind, lr) <- getUnionInfos ctx (Proxy @(a :+: b))
+      setVariantRef kind $ withInputUnion (decodeInputUnionObject ctx lr) obj
+  decodeRep ctx (Enum name) = do
+    (_, (l, r)) <- getUnionInfos ctx (Proxy @(a :+: b))
     visitor <- asks enumVisitor
-    decideEither drv (map visitor l, map visitor r) name (Enum name)
+    decideEither ctx (map visitor l, map visitor r) name (Enum name)
   decodeRep _ _ = throwError (internal "lists and scalars are not allowed in Union")
 
-instance (Constructor c, DecodeFields val a) => DecodeRep gql val (M1 C c a) where
-  decodeRep UseDeriving {useValue} = fmap M1 . decodeFields useValue 0
+instance (Constructor c, UseDeriving gql val ~ ctx, DecodeFields ctx a) => DecodeRep ctx (M1 C c a) where
+  decodeRep ctx = fmap M1 . decodeFields ctx 0
 
-class DecodeFields val (f :: Type -> Type) where
-  decodeFields :: UseValue val -> Int -> ValidValue -> DecoderT (f a)
+class DecodeFields ctx (f :: Type -> Type) where
+  decodeFields :: ctx -> Int -> ValidValue -> DecoderT (f a)
 
 instance (DecodeFields val f, DecodeFields val g, CountFields g) => DecodeFields val (f :*: g) where
   decodeFields drv index gql =
@@ -106,7 +108,7 @@ instance (DecodeFields val f, DecodeFields val g, CountFields g) => DecodeFields
       <$> decodeFields drv index gql
       <*> decodeFields drv (index + countFields (Proxy @g)) gql
 
-instance (Selector s, val a) => DecodeFields val (M1 S s (K1 i a)) where
+instance (Selector s, UseGQLValue ctx val, val a) => DecodeFields ctx (M1 S s (K1 i a)) where
   decodeFields val index value =
     M1 . K1 <$> do
       Context {isVariantRef, fieldVisitor} <- ask

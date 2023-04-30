@@ -38,7 +38,7 @@ import Data.Morpheus.Internal.Utils
 import Data.Morpheus.Server.Deriving.Internal.Decode.Utils (useDecodeArguments)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Directive (UseDeriving (..), toFieldRes)
 import Data.Morpheus.Server.Deriving.Utils.Kinded (outputType)
-import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (useTypeData))
+import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (..))
 import Data.Morpheus.Server.Types.Types (Undefined)
 import Data.Morpheus.Types.Internal.AST
   ( FALSE,
@@ -122,14 +122,15 @@ class ExploreChannels ctx (t :: Bool) e a where
   exploreChannels :: (UseDeriving gql val ~ ctx) => ctx -> f t -> a -> HashMap FieldName (ChannelRes e)
 
 instance (UseDeriving gql val ~ ctx, gql a, Generic a, GRep gql (GetChannel val e) (ChannelRes e) (Rep a)) => ExploreChannels ctx FALSE e a where
-  exploreChannels drv _ =
+  exploreChannels ctx _ =
     fromList
-      . map (toFieldRes drv (Proxy @a))
+      . map (toFieldRes ctx (Proxy @a))
       . toFields
       . deriveValue
         ( GRepContext
-            { optApply = getChannel drv . runIdentity,
-              optTypeData = useTypeData (useGQL drv) . outputType
+            { optFun = getChannel ctx . runIdentity,
+              optTypename = useTypename ctx . outputType,
+              optWrappers = useWrappers ctx . outputType
             } ::
             GRepContext gql (GetChannel val e) Identity (ChannelRes e)
         )

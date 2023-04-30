@@ -63,10 +63,11 @@ convertNode drv proxy GRepValueUnion {..} = mkUnion unionVariantName (toFieldRes
 convertNode _ _ GRepValueUnionRef {..} = ResLazy (ResObject (Just unionRefTypeName) <$> (unionRefValue >>= requireObject))
 
 toOptions :: UseResolver res gql val -> GRepContext gql (res m) Identity (m (ResolverValue m))
-toOptions UseResolver {..} =
+toOptions ctx =
   GRepContext
-    { optApply = useEncodeResolver . runIdentity,
-      optTypeData = useTypeData (useGQL resDrv) . inputType
+    { optFun = useEncodeResolver ctx . runIdentity,
+      optTypename = useTypename ctx . inputType,
+      optWrappers = useWrappers ctx . inputType
     }
 
 useExploreResolvers ::

@@ -28,7 +28,12 @@ import Data.Morpheus.Server.Deriving.Kinded.NamedResolverFun
   )
 import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef (..))
 import Data.Morpheus.Server.Deriving.Utils.Kinded (outputType)
-import Data.Morpheus.Server.Deriving.Utils.Use (UseDeriving (..), UseGQLType (useFingerprint, useTypename), UseNamedResolver (..), UseValue (useDecodeValue))
+import Data.Morpheus.Server.Deriving.Utils.Use
+  ( UseDeriving (..),
+    UseGQLType (..),
+    UseGQLValue (..),
+    UseNamedResolver (..),
+  )
 import Data.Morpheus.Server.Types.Kind
   ( CUSTOM,
     DerivingKind,
@@ -47,7 +52,7 @@ import Relude
 type DECODE_VALUES val m a = (ResolveNamed m a, val (Dependency a), MonadResolver m)
 
 decodeValues :: (DECODE_VALUES val m a) => UseDeriving gql val -> Proxy a -> [ValidValue] -> m [Maybe a]
-decodeValues ctx _ xs = traverse (liftState . useDecodeValue (useValue ctx)) xs >>= resolveBatched
+decodeValues ctx _ xs = traverse (liftState . useDecodeValue ctx) xs >>= resolveBatched
 
 class KindedNamedResolver ctx (k :: DerivingKind) (m :: Type -> Type) a where
   kindedNamedResolver :: (UseNamedResolver namedRes resFun gql val ~ ctx) => ctx -> f k a -> [NamedResolver m]
@@ -64,7 +69,7 @@ instance
   where
   kindedNamedResolver ctx _ =
     [ NamedResolver
-        { resolverName = useTypename (useGQL $ namedDrv ctx) (outputType proxy),
+        { resolverName = useTypename ctx (outputType proxy),
           resolverFun = decodeValues (namedDrv ctx) proxy >=> pure . map (maybe NamedNullResolver (NamedScalarResolver . encodeScalar))
         }
     ]
@@ -72,7 +77,7 @@ instance
       proxy = Proxy @a
   kindedNamedRefs ctx _ = [ScanLeaf fp (outputType proxy)]
     where
-      fp = useFingerprint (useGQL $ namedDrv ctx) (outputType proxy)
+      fp = useFingerprint ctx (outputType proxy)
       proxy = Proxy @a
 
 instance
@@ -89,14 +94,14 @@ instance
   where
   kindedNamedResolver ctx _ =
     [ NamedResolver
-        { resolverName = useTypename (useGQL $ namedDrv ctx) (outputType proxy),
+        { resolverName = useTypename ctx (outputType proxy),
           resolverFun = decodeValues (namedDrv ctx) proxy >=> deriveNamedResolverFun ctx
         }
     ]
     where
       proxy = Proxy @a
 
-  kindedNamedRefs ctx _ = [ScanNode True (useFingerprint (useGQL $ namedDrv ctx) (outputType proxy)) (outputType proxy)]
+  kindedNamedRefs ctx _ = [ScanNode True (useFingerprint ctx (outputType proxy)) (outputType proxy)]
     where
       proxy = Proxy @a
 

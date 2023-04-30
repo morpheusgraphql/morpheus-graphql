@@ -47,7 +47,7 @@ import Data.Morpheus.Server.Deriving.Utils.Types
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseDeriving (..),
     UseGQLType (..),
-    UseValue (..),
+    UseGQLValue (..),
   )
 import Data.Morpheus.Server.Types.Directives
   ( GDirectiveUsage (..),
@@ -88,12 +88,12 @@ import GHC.TypeLits ()
 import Relude hiding (empty)
 
 deriveDirectiveDefinition :: (MonadError GQLError m, gql a, GQLDirective a, val a) => UseDeriving gql val -> f a -> TypeDefinition IN CONST -> m (DirectiveDefinition CONST)
-deriveDirectiveDefinition drv@UseDeriving {useGQL} proxy t = do
+deriveDirectiveDefinition ctx proxy t = do
   directiveDefinitionArgs <- typeToArguments t
   pure
     ( DirectiveDefinition
-        { directiveDefinitionName = deriveDirectiveName useGQL proxy,
-          directiveDefinitionDescription = visitTypeDescription drv proxy Nothing,
+        { directiveDefinitionName = deriveDirectiveName ctx proxy,
+          directiveDefinitionDescription = visitTypeDescription ctx proxy Nothing,
           directiveDefinitionArgs,
           directiveDefinitionLocations = getLocations proxy
         }
@@ -102,7 +102,7 @@ deriveDirectiveDefinition drv@UseDeriving {useGQL} proxy t = do
 deriveDirectiveUsages :: UseDeriving gql args -> [GDirectiveUsage gql args] -> GQLResult (Directives CONST)
 deriveDirectiveUsages options = fmap unsafeFromList . traverse (toDirectiveTuple options)
 
-encodeDirectiveArguments :: (val a) => UseValue val -> a -> GQLResult (Arguments CONST)
+encodeDirectiveArguments :: (val a, UseGQLValue ctx val) => ctx -> a -> GQLResult (Arguments CONST)
 encodeDirectiveArguments val x = resultOr (const $ throwError err) pure (useEncodeValue val x) >>= unpackValue
   where
     err = internal "could not encode arguments. Arguments should be an object like type!"
@@ -114,8 +114,8 @@ toDirectiveTuple ::
   UseDeriving gql args ->
   GDirectiveUsage gql args ->
   GQLResult (FieldName, Directive CONST)
-toDirectiveTuple drv (GDirectiveUsage x) = do
-  args <- toList <$> encodeDirectiveArguments (useValue drv) x
+toDirectiveTuple ctx (GDirectiveUsage x) = do
+  args <- toList <$> encodeDirectiveArguments ctx x
   directiveArgs <- fromElems (map editArg args)
   pure
     ( directiveName,
@@ -126,8 +126,8 @@ toDirectiveTuple drv (GDirectiveUsage x) = do
         }
     )
   where
-    directiveName = deriveDirectiveName (useGQL drv) (Identity x)
-    editArg Argument {..} = Argument {argumentName = applyGQLFieldOptions drv (Identity x) argumentName, ..}
+    directiveName = deriveDirectiveName ctx (Identity x)
+    editArg Argument {..} = Argument {argumentName = applyGQLFieldOptions ctx (Identity x) argumentName, ..}
 
 getDirHM :: (Ord k, Hashable k, Empty a) => k -> HashMap k a -> a
 getDirHM name xs = fromMaybe empty $ name `lookup` xs
@@ -193,5 +193,5 @@ visitTypeDescription options proxy desc = foldr applyTypeDescription desc (typeD
 toFieldRes :: (gql a) => UseDeriving gql args -> f a -> GRepField v -> (FieldName, v)
 toFieldRes options proxy GRepField {..} = (visitFieldName options proxy fieldSelector, fieldValue)
 
-deriveDirectiveName :: (gql a) => UseGQLType gql -> f a -> FieldName
+deriveDirectiveName :: (UseGQLType ctx gql, gql a) => ctx -> f a -> FieldName
 deriveDirectiveName options = coerce . useTypename options . inputType

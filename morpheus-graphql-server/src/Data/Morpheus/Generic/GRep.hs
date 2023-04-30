@@ -33,13 +33,11 @@ import Data.Morpheus.Server.Deriving.Utils.Proxy
     isRecordProxy,
     selNameProxy,
   )
-import Data.Morpheus.Server.Types.Internal
-  ( TypeData (..),
-  )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     TypeName,
     TypeRef (..),
+    TypeWrapper,
     packName,
   )
 import Data.Text (pack)
@@ -62,8 +60,9 @@ import GHC.Generics
 import Relude hiding (undefined)
 
 data GRepContext gql fun f result = GRepContext
-  { optApply :: forall a. fun a => f a -> result,
-    optTypeData :: forall proxy a. gql a => proxy a -> TypeData
+  { optFun :: forall a. (fun a) => f a -> result,
+    optTypename :: forall proxy a. (gql a) => proxy a -> TypeName,
+    optWrappers :: forall proxy a. (gql a) => proxy a -> TypeWrapper
   }
 
 deriveValue ::
@@ -79,7 +78,7 @@ deriveValue options value
   | otherwise = GRepValueObject typename (consFields cons)
   where
     (isUnion, cons) = deriveTypeValue options (from value)
-    typename = gqlTypeName (optTypeData options (Identity value))
+    typename = optTypename options (Identity value)
 
 toRep :: f a -> Proxy (Rep a)
 toRep _ = Proxy
@@ -90,7 +89,7 @@ deriveType ::
   GRepContext gql c Proxy (m v) ->
   kinded kind a ->
   m (GRepType v)
-deriveType options x = toType <$> unpackMonad (deriveTypeDefinition options (toRep x))
+deriveType ctx x = toType <$> unpackMonad (deriveTypeDefinition ctx (toRep x))
   where
     toType cons | all null cons = GRepTypeEnum (consName <$> cons)
     toType [GRepCons {consFields}] = GRepTypeObject consFields
@@ -101,7 +100,7 @@ deriveType options x = toType <$> unpackMonad (deriveTypeDefinition options (toR
             toVer GRepField {..} = (typeConName fieldTypeRef, fieldValue)
         --
         (unionRefRep, unionCons) = partition (isUnionRef typename) cons
-        typename = gqlTypeName (optTypeData options x)
+        typename = optTypename ctx x
 
 scanTypes ::
   forall kind gql c v kinded a.
@@ -135,7 +134,7 @@ instance (DeriveFieldRep gql con v f, Constructor c) => GRep gql con v (M1 C c f
   scanNodes ctx _ = scanRec ctx (Proxy @f)
 
 deriveConsRep ::
-  Constructor (c :: Meta) =>
+  (Constructor (c :: Meta)) =>
   f c ->
   [GRepField v] ->
   GRepCons v
@@ -160,22 +159,19 @@ instance (Selector s, gql a, c a) => DeriveFieldRep gql c v (M1 S s (Rec0 a)) wh
   toFieldRep GRepContext {..} (M1 (K1 src)) =
     [ GRepField
         { fieldSelector = selNameProxy (Proxy @s),
-          fieldTypeRef = TypeRef gqlTypeName gqlWrappers,
-          fieldValue = optApply (Identity src)
+          fieldTypeRef = TypeRef (optTypename (Proxy @a)) (optWrappers (Proxy @a)),
+          fieldValue = optFun (Identity src)
         }
     ]
-    where
-      TypeData {gqlTypeName, gqlWrappers} = optTypeData (Proxy @a)
+
   conRep GRepContext {..} _ =
     [ GRepField
         { fieldSelector = selNameProxy (Proxy @s),
-          fieldTypeRef = TypeRef gqlTypeName gqlWrappers,
-          fieldValue = optApply (Proxy @a)
+          fieldTypeRef = TypeRef (optTypename (Proxy @a)) (optWrappers (Proxy @a)),
+          fieldValue = optFun (Proxy @a)
         }
     ]
-    where
-      TypeData {gqlTypeName, gqlWrappers} = optTypeData (Proxy @a)
-  scanRec GRepContext {..} _ = [optApply (Proxy @a)]
+  scanRec GRepContext {..} _ = [optFun (Proxy @a)]
 
 instance DeriveFieldRep gql c v U1 where
   toFieldRep _ _ = []
@@ -242,13 +238,13 @@ isUnionRef baseName GRepCons {consName, consFields = [fieldRep]} =
   consName == baseName <> typeConName (fieldTypeRef fieldRep)
 isUnionRef _ _ = False
 
-unpackMonad :: Monad m => [GRepCons (m a)] -> m [GRepCons a]
+unpackMonad :: (Monad m) => [GRepCons (m a)] -> m [GRepCons a]
 unpackMonad = traverse unpackMonadFromCons
 
-unpackMonadFromField :: Monad m => GRepField (m a) -> m (GRepField a)
+unpackMonadFromField :: (Monad m) => GRepField (m a) -> m (GRepField a)
 unpackMonadFromField GRepField {..} = do
   cont <- fieldValue
   pure (GRepField {fieldValue = cont, ..})
 
-unpackMonadFromCons :: Monad m => GRepCons (m a) -> m (GRepCons a)
+unpackMonadFromCons :: (Monad m) => GRepCons (m a) -> m (GRepCons a)
 unpackMonadFromCons GRepCons {..} = GRepCons consName <$> traverse unpackMonadFromField consFields

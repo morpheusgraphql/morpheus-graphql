@@ -10,6 +10,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.Internal.Decode.Utils
@@ -53,7 +54,7 @@ import Data.Morpheus.Server.Deriving.Utils.Types (argumentsToObject)
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseDeriving (..),
     UseGQLType (..),
-    UseValue (..),
+    UseGQLValue (..),
   )
 import Data.Morpheus.Types.GQLScalar
   ( toScalar,
@@ -172,8 +173,8 @@ type DecoderT = ReaderT Context ResolverState
 setVariantRef :: Bool -> DecoderT a -> DecoderT a
 setVariantRef isVariantRef = local (\ctx -> ctx {isVariantRef})
 
-class DescribeCons gql (f :: Type -> Type) where
-  tags :: UseGQLType gql -> Proxy f -> Context -> Info
+class DescribeCons ctx (f :: Type -> Type) where
+  tags :: ctx -> Proxy f -> Context -> Info
 
 instance (Datatype d, DescribeCons gql f) => DescribeCons gql (M1 D d f) where
   tags ctx _ = tags ctx (Proxy @f)
@@ -181,7 +182,7 @@ instance (Datatype d, DescribeCons gql f) => DescribeCons gql (M1 D d f) where
 instance (DescribeCons gql a, DescribeCons gql b) => DescribeCons gql (a :+: b) where
   tags ctx _ = tags ctx (Proxy @a) <> tags ctx (Proxy @b)
 
-instance (Constructor c, CountFields a, RefType gql a) => DescribeCons gql (M1 C c a) where
+instance (UseGQLType ctx gql, Constructor c, CountFields a, RefType ctx a) => DescribeCons ctx (M1 C c a) where
   tags ctx _ Context {typeName} = getTag (refType ctx (Proxy @a))
     where
       getTag (Just memberRef)
@@ -194,9 +195,9 @@ instance (Constructor c, CountFields a, RefType gql a) => DescribeCons gql (M1 C
       isUnionRef x = typeName <> x == consName
 
 getUnionInfos ::
-  forall f a b gql.
-  (DescribeCons gql a, DescribeCons gql b) =>
-  UseGQLType gql ->
+  forall ctx f a b gql.
+  (UseGQLType ctx gql, DescribeCons ctx a, DescribeCons ctx b) =>
+  ctx ->
   f (a :+: b) ->
   DecoderT (Bool, ([TypeName], [TypeName]))
 getUnionInfos ctx _ = do
@@ -206,17 +207,17 @@ getUnionInfos ctx _ = do
   let k = kind (l <> r)
   pure (k == VariantRef, (tagName l, tagName r))
 
-class RefType gql (f :: Type -> Type) where
-  refType :: UseGQLType gql -> Proxy f -> Maybe TypeName
+class RefType ctx (f :: Type -> Type) where
+  refType :: ctx -> Proxy f -> Maybe TypeName
 
 instance (RefType gql f, RefType gql g) => RefType gql (f :*: g) where
   refType _ _ = Nothing
 
-instance (Selector s, gql a) => RefType gql (M1 S s (K1 i a)) where
+instance (Selector s, UseGQLType ctx gql, gql a) => RefType ctx (M1 S s (K1 i a)) where
   refType dir _ = Just $ useTypename dir (InputType :: CatType IN a)
 
 instance RefType gql U1 where
   refType _ _ = Nothing
 
 useDecodeArguments :: (val a) => UseDeriving gql val -> Arguments VALID -> ResolverState a
-useDecodeArguments drv = useDecodeValue (useValue drv) . argumentsToObject
+useDecodeArguments ctx = useDecodeValue ctx . argumentsToObject

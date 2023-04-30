@@ -76,10 +76,11 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (..), KindedProxy (Ki
 import Data.Morpheus.Server.Deriving.Utils.Proxy (ContextValue (..), symbolName)
 import Data.Morpheus.Server.Deriving.Utils.Types (GQLTypeNode (..), GQLTypeNodeExtension (..))
 import Data.Morpheus.Server.Deriving.Utils.Use
-  ( UseDeriving (..),
+  ( GQLTypeCTX (..),
+    GQLValueCTX (..),
+    UseDeriving (..),
     UseGQLType (..),
     UseResolver (..),
-    UseValue (..),
   )
 import Data.Morpheus.Server.Types.Directives
   ( GDirectiveUsage (..),
@@ -338,7 +339,7 @@ instance (KnownSymbol name, GQLType value) => GQLType (Arg name value) where
       argName = symbolName (Proxy @name)
       field :: FieldDefinition IN CONST
       field = mkField Nothing argName (TypeRef gqlTypeName gqlWrappers)
-      TypeData {gqlTypeName, gqlWrappers} = useTypeData withGQL (InputType :: CatType IN value)
+      TypeData {gqlTypeName, gqlWrappers} = __type (InputType :: CatType IN value)
 
   __exploreRef OutputType = []
   __exploreRef InputType = __exploreRef (InputType :: CatType IN value)
@@ -400,27 +401,23 @@ instance VisitType InputTypeNamespace where
     | isInput = inputTypeNamespace <> name
     | otherwise = name
 
-withValue :: UseValue GQLValue
+withValue :: GQLValueCTX GQLValue
 withValue =
-  UseValue
-    { useDecodeValue = decodeValue,
-      useEncodeValue = encodeValue
+  GQLValueCTX
+    { __useDecodeValue = decodeValue,
+      __useEncodeValue = encodeValue
     }
 
 withGQL :: WITH_GQL
 withGQL =
-  UseGQLType
-    { useFingerprint = gqlFingerprint . __type,
-      useTypename = gqlTypeName . __type,
-      useTypeData = __type,
-      useDeriveNode = __deriveType,
-      useExploreRef,
-      useDeriveFieldArguments = __deriveFieldArguments
+  GQLTypeCTX
+    { __useFingerprint = gqlFingerprint . __type,
+      __useTypename = gqlTypeName . __type,
+      __useTypeData = __type,
+      __useDeriveNode = __deriveType,
+      __useExploreRef = \p -> __exploreRef p <> concatMap exploreDirective (allUsages (directives p)),
+      __useDeriveFieldArgs = __deriveFieldArguments
     }
-  where
-    useExploreRef p =
-      __exploreRef p
-        <> concatMap exploreDirective (allUsages (directives p))
 
 typeDirective :: (DirectiveConstraint a) => a -> DirectiveUsages
 typeDirective x = GDirectiveUsages [GDirectiveUsage x] mempty mempty
@@ -444,11 +441,11 @@ withDir :: WITH_DERIVING
 withDir =
   UseDeriving
     { useDirectives = directives,
-      useGQL = withGQL,
-      useValue = withValue
+      __useGQL = withGQL,
+      __useValue = withValue
     }
 
-type WITH_GQL = UseGQLType GQLType
+type WITH_GQL = GQLTypeCTX GQLType
 
 type WITH_DERIVING = UseDeriving GQLType GQLValue
 
