@@ -21,7 +21,7 @@ module Data.Morpheus.Server.Deriving.Utils.GScan
 where
 
 import Data.HashMap.Strict (fromList, insert, member)
-import Data.Morpheus.Generic.Gmap
+import Data.Morpheus.Generic
   ( Gmap,
     GmapFun (..),
     runGmap,
@@ -67,7 +67,7 @@ scanRefs ctx lib (x : xs) = do
   scanRefs ctx newLib refs
 
 data ScanProxy (c :: Type -> Constraint) where
-  ScanProxy :: c a => CatType k a -> ScanProxy c
+  ScanProxy :: (c a) => CatType k a -> ScanProxy c
 
 runRef :: ScanRef c -> [ScanProxy c]
 runRef (ScanNode visible _ p)
