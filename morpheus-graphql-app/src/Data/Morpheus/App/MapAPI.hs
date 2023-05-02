@@ -11,13 +11,13 @@ import Control.Monad.Except (MonadError (throwError))
 import Data.Aeson
   ( encode,
   )
-import Data.Aeson.Internal
-  ( formatError,
-    ifromJSON,
-  )
 import Data.Aeson.Parser
   ( eitherDecodeWith,
     jsonNoDup,
+  )
+import Data.Aeson.Types
+  ( formatError,
+    ifromJSON,
   )
 import Data.ByteString.Lazy.Char8 (pack)
 import qualified Data.ByteString.Lazy.Char8 as LB
