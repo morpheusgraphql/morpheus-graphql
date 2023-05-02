@@ -17,8 +17,8 @@ module Data.Morpheus.Generic.Fields
   )
 where
 
-import Data.Morpheus.Server.Deriving.Utils.Proxy
-  ( selNameProxy,
+import Data.Morpheus.Generic.Proxy
+  ( selNameP,
   )
 import Data.Morpheus.Types.Internal.AST (FieldName)
 import GHC.Generics
@@ -51,7 +51,7 @@ instance (DecodeFields val f, DecodeFields val g, CountFields g) => DecodeFields
       <*> decodeFieldsWith ctx (index + countFields (Proxy @g))
 
 instance (Selector s, con a) => DecodeFields con (M1 S s (K1 i a)) where
-  decodeFieldsWith ctx index = M1 . K1 <$> decoderFun ctx (getFieldName (selNameProxy (Proxy @s)) index)
+  decodeFieldsWith ctx index = M1 . K1 <$> decoderFun ctx (getFieldName (selNameP (Proxy @s)) index)
 
 instance DecodeFields val U1 where
   decodeFieldsWith _ _ = pure U1

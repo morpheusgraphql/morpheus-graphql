@@ -14,7 +14,7 @@ module Data.Morpheus.Generic.Cons
 where
 
 import Data.Morpheus.Generic.Fields (CountFields)
-import Data.Morpheus.Generic.Proxy (CProxy, conNameProxy)
+import Data.Morpheus.Generic.Proxy (CProxy, conNameP)
 import Data.Morpheus.Generic.RefType (RefType (..))
 import GHC.Generics
 import Relude
@@ -29,4 +29,4 @@ instance (DescribeCons con a, DescribeCons con b) => DescribeCons con (a :+: b) 
   describeCons _ = describeCons (Proxy @a) <> describeCons (Proxy @b)
 
 instance (Constructor c, CountFields a, RefType con a) => DescribeCons con (M1 C c a) where
-  describeCons _ = [(conNameProxy (Proxy @c), refType (Proxy @a))]
+  describeCons _ = [(conNameP (Proxy @c), refType (Proxy @a))]

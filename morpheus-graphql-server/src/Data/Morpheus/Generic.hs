@@ -51,7 +51,7 @@ import Data.Morpheus.Generic.Gmap
   )
 import Data.Morpheus.Generic.Proxy
   ( CProxy (..),
-    isRecordProxy,
+    isRecordP,
     symbolName,
   )
 import Data.Morpheus.Generic.RefType

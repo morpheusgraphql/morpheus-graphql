@@ -29,8 +29,9 @@ where
 
 import Data.List (partition)
 import Data.Morpheus.Generic.Proxy
-import Data.Morpheus.Server.Deriving.Utils.Proxy
-  ( selNameProxy,
+  ( conNameP,
+    isRecordP,
+    selNameP,
   )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
@@ -139,9 +140,9 @@ deriveConsRep ::
   GRepCons v
 deriveConsRep proxy fields = GRepCons {..}
   where
-    consName = conNameProxy proxy
+    consName = conNameP proxy
     consFields
-      | isRecordProxy proxy = fields
+      | isRecordP proxy = fields
       | otherwise = enumerate fields
 
 class DeriveFieldRep (gql :: Type -> Constraint) (c :: Type -> Constraint) (v :: Type) f where
@@ -157,7 +158,7 @@ instance (DeriveFieldRep gql c v a, DeriveFieldRep gql c v b) => DeriveFieldRep 
 instance (Selector s, gql a, c a) => DeriveFieldRep gql c v (M1 S s (Rec0 a)) where
   toFieldRep GRepContext {..} (M1 (K1 src)) =
     [ GRepField
-        { fieldSelector = selNameProxy (Proxy @s),
+        { fieldSelector = selNameP (Proxy @s),
           fieldTypeRef = TypeRef (grepTypename (Proxy @a)) (grepWrappers (Proxy @a)),
           fieldValue = grepFun (Identity src)
         }
@@ -165,7 +166,7 @@ instance (Selector s, gql a, c a) => DeriveFieldRep gql c v (M1 S s (Rec0 a)) wh
 
   conRep GRepContext {..} _ =
     [ GRepField
-        { fieldSelector = selNameProxy (Proxy @s),
+        { fieldSelector = selNameP (Proxy @s),
           fieldTypeRef = TypeRef (grepTypename (Proxy @a)) (grepWrappers (Proxy @a)),
           fieldValue = grepFun (Proxy @a)
         }

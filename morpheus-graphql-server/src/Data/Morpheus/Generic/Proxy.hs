@@ -11,31 +11,44 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Generic.Proxy
-  ( conNameProxy,
-    isRecordProxy,
+  ( conNameP,
+    isRecordP,
+    selNameP,
     symbolName,
     CProxy (..),
   )
 where
 
+import Data.List (init, last)
 import GHC.Generics
   ( C,
     Constructor,
     M1 (..),
     Meta,
+    S,
+    Selector (..),
     U1 (..),
     conIsRecord,
     conName,
   )
 import GHC.TypeLits
-import Relude hiding (undefined)
+import Relude hiding (init, last, undefined)
 import Prelude (undefined)
 
-conNameProxy :: forall f t (c :: Meta). (Constructor c, IsString t) => f c -> t
-conNameProxy _ = fromString $ conName (undefined :: M1 C c U1 a)
+conNameP :: forall f t (c :: Meta). (Constructor c, IsString t) => f c -> t
+conNameP _ = fromString $ fromHaskellName $ conName (undefined :: M1 C c U1 a)
 
-isRecordProxy :: forall f (c :: Meta). (Constructor c) => f c -> Bool
-isRecordProxy _ = conIsRecord (undefined :: (M1 C c f a))
+fromHaskellName :: String -> String
+fromHaskellName name
+  | not (null name) && (last name == '\'') = init name
+  | otherwise = name
+{-# INLINE fromHaskellName #-}
+
+isRecordP :: forall f (c :: Meta). (Constructor c) => f c -> Bool
+isRecordP _ = conIsRecord (undefined :: (M1 C c f a))
+
+selNameP :: forall f t (s :: Meta). (Selector s, IsString t) => f s -> t
+selNameP _ = fromString $ selName (undefined :: M1 S s f a)
 
 symbolName :: (KnownSymbol a, IsString t) => f a -> t
 symbolName = fromString . symbolVal
