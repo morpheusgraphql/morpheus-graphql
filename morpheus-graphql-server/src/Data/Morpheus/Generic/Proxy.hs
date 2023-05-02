@@ -14,7 +14,7 @@ module Data.Morpheus.Generic.Proxy
   ( conNameProxy,
     isRecordProxy,
     symbolName,
-    ProxyCon (..),
+    CProxy (..),
   )
 where
 
@@ -40,5 +40,6 @@ isRecordProxy _ = conIsRecord (undefined :: (M1 C c f a))
 symbolName :: (KnownSymbol a, IsString t) => f a -> t
 symbolName = fromString . symbolVal
 
-data ProxyCon con where
-  ProxyCon :: forall f con a. (con a) => f a -> ProxyCon con
+-- | constrained proxy
+data CProxy constraint where
+  CProxy :: forall f constraint a. (constraint a) => f a -> CProxy constraint

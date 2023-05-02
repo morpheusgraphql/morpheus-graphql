@@ -17,9 +17,13 @@ module Data.Morpheus.Generic
     decodeFields,
     CountFields (..),
     RefType (..),
+    DescribeCons (..),
   )
 where
 
+import Data.Morpheus.Generic.Cons
+  ( DescribeCons (..),
+  )
 import Data.Morpheus.Generic.Fields
   ( CountFields (..),
     DecodeFields,

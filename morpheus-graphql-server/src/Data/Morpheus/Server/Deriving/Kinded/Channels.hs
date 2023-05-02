@@ -35,10 +35,9 @@ import Data.Morpheus.Generic
 import Data.Morpheus.Internal.Utils
   ( selectBy,
   )
-import Data.Morpheus.Server.Deriving.Internal.Decode.Utils (useDecodeArguments)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Directive (UseDeriving (..), toFieldRes)
 import Data.Morpheus.Server.Deriving.Utils.Kinded (outputType)
-import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (..))
+import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (..), useDecodeArguments)
 import Data.Morpheus.Server.Types.Types (Undefined)
 import Data.Morpheus.Types.Internal.AST
   ( FALSE,

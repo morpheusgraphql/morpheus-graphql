@@ -33,15 +33,11 @@ import Data.Morpheus.Internal.Ext
   )
 import Data.Morpheus.Internal.Utils (IsMap (toAssoc))
 import Data.Morpheus.Server.Deriving.Internal.Decode.Rep
-  ( DecodeRep (..),
+  ( Context (..),
+    DecodeRep (..),
   )
 import Data.Morpheus.Server.Deriving.Internal.Decode.Utils
-  ( Context (..),
-    coerceInputObject,
-    getField,
-    handleEither,
-    repValue,
-    withScalar,
+  ( repValue,
   )
 import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
   ( visitEnumName,
@@ -56,6 +52,7 @@ import Data.Morpheus.Server.Deriving.Utils.Proxy
     symbolName,
     unContextValue,
   )
+import Data.Morpheus.Server.Deriving.Utils.Types (coerceInputObject, coerceScalar, getField, handleEither)
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseDeriving (..),
     UseGQLType (..),
@@ -97,7 +94,7 @@ class KindedValue ctx (k :: DerivingKind) (a :: Type) where
 
 instance (EncodeScalar a, DecodeScalar a, ctx ~ UseDeriving gql args, gql a) => KindedValue ctx SCALAR a where
   encodeKindedValue _ = pure . Scalar . encodeScalar . unContextValue
-  decodeKindedValue ctx _ = withScalar (useTypename ctx (InputType :: CatType IN a)) decodeScalar
+  decodeKindedValue ctx _ = coerceScalar (useTypename ctx (InputType :: CatType IN a)) >=> handleEither . decodeScalar
 
 instance (ctx ~ UseDeriving gql args, DecodeWrapperConstraint f a, DecodeWrapper f, EncodeWrapperValue f, args a) => KindedValue ctx WRAPPER (f a) where
   encodeKindedValue ctx = encodeWrapperValue (useEncodeValue ctx) . unContextValue

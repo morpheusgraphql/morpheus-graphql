@@ -36,8 +36,10 @@ import Data.Morpheus.Generic
     GRepValue (..),
     deriveValue,
   )
-import Data.Morpheus.Server.Deriving.Internal.Decode.Utils (useDecodeArguments)
-import Data.Morpheus.Server.Deriving.Internal.Schema.Directive (UseDeriving, toFieldRes)
+import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
+  ( UseDeriving,
+    toFieldRes,
+  )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
     outputType,
@@ -48,6 +50,7 @@ import Data.Morpheus.Server.Deriving.Utils.Proxy
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseGQLType (..),
     UseNamedResolver (..),
+    useDecodeArguments,
   )
 import Data.Morpheus.Server.Types.Kind
   ( CUSTOM,

@@ -13,31 +13,30 @@
 
 module Data.Morpheus.Server.Deriving.Internal.Decode.Rep
   ( DecodeRep (..),
+    Context (..),
   )
 where
 
 import Control.Monad.Except (MonadError (throwError))
+import Data.Morpheus.App.Internal.Resolving (ResolverState)
 import Data.Morpheus.Generic
   ( DecodeFields,
     DecoderFun (..),
-    decodeFields,
-  )
-import Data.Morpheus.Server.Deriving.Internal.Decode.Utils
-  ( Context (..),
-    DecoderT,
     DescribeCons,
-    coerceInputObject,
-    getField,
-    getUnionInfos,
-    setVariantRef,
+    decodeFields,
+    describeCons,
   )
+import Data.Morpheus.Generic.Proxy (CProxy (..))
+import Data.Morpheus.Server.Deriving.Utils.Kinded (inputType)
+import Data.Morpheus.Server.Deriving.Utils.Types (coerceInputObject, getField)
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseDeriving (..),
-    UseGQLType,
+    UseGQLType (..),
     UseGQLValue (..),
   )
 import Data.Morpheus.Types.Internal.AST
-  ( TypeName,
+  ( FieldName,
+    TypeName,
     ValidObject,
     ValidValue,
     Value (..),
@@ -47,6 +46,18 @@ import Data.Morpheus.Types.Internal.AST
   )
 import GHC.Generics
 import Relude
+
+data Context = Context
+  { isVariantRef :: Bool,
+    typeName :: TypeName,
+    enumVisitor :: TypeName -> TypeName,
+    fieldVisitor :: FieldName -> FieldName
+  }
+
+type DecoderT = ReaderT Context ResolverState
+
+setVariantRef :: Bool -> DecoderT a -> DecoderT a
+setVariantRef isVariantRef = local (\ctx -> ctx {isVariantRef})
 
 decideEither ::
   (DecodeRep ctx f, DecodeRep ctx g) =>
@@ -73,10 +84,10 @@ decodeInputUnionObject ::
   ValidObject ->
   ValidValue ->
   DecoderT ((f :+: g) a)
-decodeInputUnionObject drv (l, r) name unions variant
-  | [name] == l = L1 <$> decodeRep drv variant
-  | [name] == r = R1 <$> decodeRep drv variant
-  | otherwise = decideEither drv (l, r) name (Object unions)
+decodeInputUnionObject ctx (l, r) name obj variant
+  | [name] == l = L1 <$> decodeRep ctx variant
+  | [name] == r = R1 <$> decodeRep ctx variant
+  | otherwise = decideEither ctx (l, r) name (Object obj)
 
 class DecodeRep ctx (f :: Type -> Type) where
   decodeRep :: ctx -> ValidValue -> DecoderT (f a)
@@ -84,16 +95,18 @@ class DecodeRep ctx (f :: Type -> Type) where
 instance (Datatype d, DecodeRep ctx f) => DecodeRep ctx (M1 D d f) where
   decodeRep drv value = M1 <$> decodeRep drv value
 
-instance (UseGQLType ctx gql, DescribeCons ctx a, DescribeCons ctx b, DecodeRep ctx a, DecodeRep ctx b) => DecodeRep ctx (a :+: b) where
+instance (UseGQLType ctx gql, DescribeCons gql a, DescribeCons gql b, DecodeRep ctx a, DecodeRep ctx b) => DecodeRep ctx (a :+: b) where
   decodeRep ctx (Object obj) =
     do
-      (kind, lr) <- getUnionInfos ctx (Proxy @(a :+: b))
+      typename <- asks typeName
+      let (kind, (l, r)) = getUnionTags ctx typename (Proxy @(a :+: b))
       setVariantRef kind $ do
         (name, value) <- getInputUnionValue obj
         variant <- coerceInputObject value
-        decodeInputUnionObject ctx lr name obj (Object variant)
+        decodeInputUnionObject ctx (l, r) name obj (Object variant)
   decodeRep ctx (Enum name) = do
-    (_, (l, r)) <- getUnionInfos ctx (Proxy @(a :+: b))
+    typename <- asks typeName
+    let (_, (l, r)) = getUnionTags ctx typename (Proxy @(a :+: b))
     visitor <- asks enumVisitor
     decideEither ctx (map visitor l, map visitor r) name (Enum name)
   decodeRep _ _ = throwError (internal "lists and scalars are not allowed in Union")
@@ -110,3 +123,24 @@ decoder ctx input =
           value <- if isVariantRef then pure input else getField (fieldVisitor name) <$> coerceInputObject input
           lift (useDecodeValue ctx value)
     )
+
+getUnionTags ::
+  forall ctx f a b gql.
+  (UseGQLType ctx gql, DescribeCons gql a, DescribeCons gql b) =>
+  ctx ->
+  TypeName ->
+  f (a :+: b) ->
+  (Bool, ([TypeName], [TypeName]))
+getUnionTags ctx typename _ = do
+  let left = map toInfo (describeCons (Proxy @a))
+  let right = map toInfo (describeCons (Proxy @b))
+  let varRef = find snd (left <> right)
+  (isJust varRef, (map fst left, map fst right))
+  where
+    toInfo :: (TypeName, Maybe (CProxy gql)) -> (TypeName, Bool)
+    toInfo (consName, Just (CProxy p))
+      | consName == typename <> typeVariant = (typeVariant, True)
+      | otherwise = (consName, False)
+      where
+        typeVariant = useTypename ctx (inputType p)
+    toInfo (consName, Nothing) = (consName, False)

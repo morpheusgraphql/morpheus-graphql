@@ -17,6 +17,7 @@ module Data.Morpheus.Server.Deriving.Utils.Use
     UseRef (..),
     UseGQLType (..),
     GQLValueCTX (..),
+    useDecodeArguments,
   )
 where
 
@@ -32,10 +33,12 @@ import Data.Morpheus.Server.Types.TypeName
   ( TypeFingerprint,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( ArgumentsDefinition,
+  ( Arguments,
+    ArgumentsDefinition,
     CONST,
     TypeName,
     TypeWrapper,
+    VALID,
     ValidValue,
     Value,
   )
@@ -131,3 +134,6 @@ instance UseGQLType (UseNamedResolver named res gql val) gql where
   useDeriveNode = useDeriveNode . namedDrv
   useDeriveFieldArgs = useDeriveFieldArgs . namedDrv
   useExploreRef = useExploreRef . namedDrv
+
+useDecodeArguments :: (val a) => UseDeriving gql val -> Arguments VALID -> ResolverState a
+useDecodeArguments ctx = useDecodeValue ctx . argumentsToObject
