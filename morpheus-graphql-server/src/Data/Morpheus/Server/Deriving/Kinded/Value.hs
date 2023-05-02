@@ -37,10 +37,10 @@ import Data.Morpheus.Server.Deriving.Internal.Decode.Rep
   )
 import Data.Morpheus.Server.Deriving.Internal.Decode.Utils
   ( Context (..),
+    coerceInputObject,
     decodeFieldWith,
     handleEither,
     repValue,
-    withInputObject,
     withScalar,
   )
 import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
@@ -169,7 +169,7 @@ toConstValue (Object fields) = Object (fmap toEntry fields)
 
 instance (ctx ~ UseDeriving gql args, KnownSymbol name, args a) => KindedValue ctx CUSTOM (Arg name a) where
   encodeKindedValue _ _ = throwError "directives cant be tagged arguments"
-  decodeKindedValue ctx _ value = Arg <$> withInputObject fieldDecoder value
+  decodeKindedValue ctx _ value = Arg <$> (coerceInputObject value >>= fieldDecoder)
     where
       fieldDecoder = decodeFieldWith (useDecodeValue ctx) fieldName
       fieldName = symbolName (Proxy @name)

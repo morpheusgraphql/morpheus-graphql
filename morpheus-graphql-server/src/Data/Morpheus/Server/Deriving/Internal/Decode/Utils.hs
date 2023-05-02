@@ -14,9 +14,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.Internal.Decode.Utils
-  ( withInputObject,
-    withEnum,
-    withInputUnion,
+  ( withEnum,
     decodeFieldWith,
     withScalar,
     handleEither,
@@ -28,6 +26,7 @@ module Data.Morpheus.Server.Deriving.Internal.Decode.Utils
     RefType (..),
     repValue,
     useDecodeArguments,
+    coerceInputObject,
   )
 where
 
@@ -73,7 +72,6 @@ import Data.Morpheus.Types.Internal.AST
     ValidObject,
     ValidValue,
     Value (..),
-    getInputUnionValue,
     internal,
   )
 import GHC.Generics
@@ -88,29 +86,14 @@ repValue GRepValueObject {..} = Object <$> (traverse fromField objectFields >>= 
       pure ObjectEntry {entryName = fieldSelector, entryValue}
 repValue _ = throwError (internal "input unions are not supported")
 
-withInputObject ::
-  (MonadError GQLError m) =>
-  (ValidObject -> m a) ->
-  ValidValue ->
-  m a
-withInputObject f (Object object) = f object
-withInputObject _ isType = throwError (typeMismatch "InputObject" isType)
+coerceInputObject :: (MonadError GQLError m) => ValidValue -> m ValidObject
+coerceInputObject (Object object) = pure object
+coerceInputObject isType = throwError (typeMismatch "InputObject" isType)
 
 -- | Useful for more restrictive instances of lists (non empty, size indexed etc)
 withEnum :: (MonadError GQLError m) => (TypeName -> m a) -> Value VALID -> m a
 withEnum decode (Enum value) = decode value
 withEnum _ isType = throwError (typeMismatch "Enum" isType)
-
-withInputUnion ::
-  (MonadError GQLError m, Monad m) =>
-  (TypeName -> ValidObject -> ValidObject -> m a) ->
-  ValidObject ->
-  m a
-withInputUnion decoder unions =
-  either onFail onSuccess (getInputUnionValue unions)
-  where
-    onSuccess (name, value) = withInputObject (decoder name unions) value
-    onFail = throwError . internal . msg
 
 withScalar ::
   (Applicative m, MonadError GQLError m) =>

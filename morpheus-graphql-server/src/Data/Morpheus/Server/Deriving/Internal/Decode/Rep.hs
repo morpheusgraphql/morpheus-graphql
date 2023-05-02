@@ -1,5 +1,6 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -25,11 +26,10 @@ import Data.Morpheus.Server.Deriving.Internal.Decode.Utils
   ( Context (..),
     DecoderT,
     DescribeCons,
+    coerceInputObject,
     decodeFieldWith,
     getUnionInfos,
     setVariantRef,
-    withInputObject,
-    withInputUnion,
   )
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseDeriving (..),
@@ -37,12 +37,11 @@ import Data.Morpheus.Server.Deriving.Utils.Use
     UseGQLValue (..),
   )
 import Data.Morpheus.Types.Internal.AST
-  ( Object,
-    TypeName,
-    VALID,
+  ( TypeName,
     ValidObject,
     ValidValue,
     Value (..),
+    getInputUnionValue,
     internal,
     msg,
   )
@@ -71,12 +70,12 @@ decodeInputUnionObject ::
   ctx ->
   ([TypeName], [TypeName]) ->
   TypeName ->
-  Object VALID ->
   ValidObject ->
+  ValidValue ->
   DecoderT ((f :+: g) a)
-decodeInputUnionObject drv (l, r) name unions object
-  | [name] == l = L1 <$> decodeRep drv (Object object)
-  | [name] == r = R1 <$> decodeRep drv (Object object)
+decodeInputUnionObject drv (l, r) name unions variant
+  | [name] == l = L1 <$> decodeRep drv variant
+  | [name] == r = R1 <$> decodeRep drv variant
   | otherwise = decideEither drv (l, r) name (Object unions)
 
 class DecodeRep ctx (f :: Type -> Type) where
@@ -89,7 +88,10 @@ instance (UseGQLType ctx gql, DescribeCons ctx a, DescribeCons ctx b, DecodeRep 
   decodeRep ctx (Object obj) =
     do
       (kind, lr) <- getUnionInfos ctx (Proxy @(a :+: b))
-      setVariantRef kind $ withInputUnion (decodeInputUnionObject ctx lr) obj
+      setVariantRef kind $ do
+        (name, value) <- getInputUnionValue obj
+        variant <- coerceInputObject value
+        decodeInputUnionObject ctx lr name obj (Object variant)
   decodeRep ctx (Enum name) = do
     (_, (l, r)) <- getUnionInfos ctx (Proxy @(a :+: b))
     visitor <- asks enumVisitor
@@ -104,11 +106,9 @@ decoder ctx value =
   DecoderFun
     ( \name ->
         do
+          let decode = lift . useDecodeValue ctx
           Context {isVariantRef, fieldVisitor} <- ask
           if isVariantRef
-            then lift (useDecodeValue ctx value)
-            else
-              let fieldName = fieldVisitor name
-                  fieldDecoder = decodeFieldWith (lift . useDecodeValue ctx) fieldName
-               in withInputObject fieldDecoder value
+            then decode value
+            else coerceInputObject value >>= decodeFieldWith decode (fieldVisitor name)
     )
