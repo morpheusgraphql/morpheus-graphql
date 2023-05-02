@@ -11,7 +11,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Server.Deriving.Internal.Decode.Rep
+module Data.Morpheus.Server.Deriving.Internal.Value
   ( DecodeRep (..),
     Context (..),
   )

@@ -33,7 +33,7 @@ import Data.Morpheus.Internal.Utils
   ( IsMap (toAssoc),
     fromElems,
   )
-import Data.Morpheus.Server.Deriving.Internal.Decode.Rep
+import Data.Morpheus.Server.Deriving.Internal.Value
   ( Context (..),
     DecodeRep (..),
   )

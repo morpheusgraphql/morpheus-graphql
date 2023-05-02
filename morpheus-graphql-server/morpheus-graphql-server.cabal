@@ -319,13 +319,13 @@ library
       Data.Morpheus.Generic.Proxy
       Data.Morpheus.Generic.RefType
       Data.Morpheus.Server.Deriving.App
-      Data.Morpheus.Server.Deriving.Internal.Decode.Rep
       Data.Morpheus.Server.Deriving.Internal.Resolve.Explore
       Data.Morpheus.Server.Deriving.Internal.Schema.Directive
       Data.Morpheus.Server.Deriving.Internal.Schema.Enum
       Data.Morpheus.Server.Deriving.Internal.Schema.Object
       Data.Morpheus.Server.Deriving.Internal.Schema.Type
       Data.Morpheus.Server.Deriving.Internal.Schema.Union
+      Data.Morpheus.Server.Deriving.Internal.Value
       Data.Morpheus.Server.Deriving.Kinded.Arguments
       Data.Morpheus.Server.Deriving.Kinded.Channels
       Data.Morpheus.Server.Deriving.Kinded.NamedResolver
