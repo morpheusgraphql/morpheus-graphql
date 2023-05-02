@@ -320,7 +320,6 @@ library
       Data.Morpheus.Generic.RefType
       Data.Morpheus.Server.Deriving.App
       Data.Morpheus.Server.Deriving.Internal.Decode.Rep
-      Data.Morpheus.Server.Deriving.Internal.Decode.Utils
       Data.Morpheus.Server.Deriving.Internal.Resolve.Explore
       Data.Morpheus.Server.Deriving.Internal.Schema.Directive
       Data.Morpheus.Server.Deriving.Internal.Schema.Enum

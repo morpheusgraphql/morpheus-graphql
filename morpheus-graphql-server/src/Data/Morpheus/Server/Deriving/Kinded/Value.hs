@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -16,28 +17,25 @@ module Data.Morpheus.Server.Deriving.Kinded.Value
   )
 where
 
-import Control.Monad.Except
-  ( MonadError (throwError),
-  )
+import Control.Monad.Except (MonadError (throwError))
 import Data.Morpheus.App.Internal.Resolving
   ( ResolverState,
   )
 import Data.Morpheus.Generic
   ( GRep,
     GRepContext (..),
+    GRepField (..),
+    GRepValue (..),
     deriveValue,
   )
-import Data.Morpheus.Internal.Ext
-  ( GQLResult,
-    unsafeFromList,
+import Data.Morpheus.Internal.Ext (GQLResult, unsafeFromList)
+import Data.Morpheus.Internal.Utils
+  ( IsMap (toAssoc),
+    fromElems,
   )
-import Data.Morpheus.Internal.Utils (IsMap (toAssoc))
 import Data.Morpheus.Server.Deriving.Internal.Decode.Rep
   ( Context (..),
     DecodeRep (..),
-  )
-import Data.Morpheus.Server.Deriving.Internal.Decode.Utils
-  ( repValue,
   )
 import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
   ( visitEnumName,
@@ -83,6 +81,7 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
     ValidValue,
     Value (..),
+    internal,
   )
 import GHC.Generics
 import GHC.TypeLits (KnownSymbol)
@@ -104,7 +103,7 @@ instance (ctx ~ UseDeriving gql args, DecodeWrapperConstraint f a, DecodeWrapper
 
 instance (ctx ~ UseDeriving gql args, gql a, Generic a, DecodeRep ctx (Rep a), GRep gql args (GQLResult (Value CONST)) (Rep a)) => KindedValue ctx TYPE a where
   encodeKindedValue ctx =
-    repValue
+    repToValue
       . deriveValue
         ( GRepContext
             { grepFun = useEncodeValue ctx . runIdentity,
@@ -128,7 +127,7 @@ instance (ctx ~ UseDeriving gql args, gql a, Generic a, DecodeRep ctx (Rep a), G
 
 instance (ctx ~ UseDeriving gql args, gql a, Generic a, DecodeRep ctx (Rep a), GRep gql args (GQLResult (Value CONST)) (Rep a)) => KindedValue ctx DIRECTIVE a where
   encodeKindedValue ctx =
-    repValue
+    repToValue
       . deriveValue
         ( GRepContext
             { grepFun = useEncodeValue ctx . runIdentity,
@@ -175,3 +174,13 @@ instance (ctx ~ UseDeriving gql args, KnownSymbol name, args a) => KindedValue c
 instance (ctx ~ UseDeriving gql args, Ord k, args [(k, v)]) => KindedValue ctx CUSTOM (Map k v) where
   decodeKindedValue ctx _ v = unsafeFromList <$> (useDecodeValue ctx v :: ResolverState [(k, v)])
   encodeKindedValue ctx = useEncodeValue ctx . toAssoc . unContextValue
+
+--
+repToValue :: GRepValue (GQLResult (Value CONST)) -> GQLResult (Value CONST)
+repToValue GRepValueEnum {..} = pure $ Enum enumVariantName
+repToValue GRepValueObject {..} = Object <$> (traverse fromField objectFields >>= fromElems)
+  where
+    fromField GRepField {fieldSelector, fieldValue} = do
+      entryValue <- fieldValue
+      pure ObjectEntry {entryName = fieldSelector, entryValue}
+repToValue _ = throwError (internal "input unions are not supported")
