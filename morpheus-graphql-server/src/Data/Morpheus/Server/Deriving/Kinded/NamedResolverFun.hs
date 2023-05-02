@@ -42,10 +42,8 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
+    ContextValue (..),
     outputType,
-  )
-import Data.Morpheus.Server.Deriving.Utils.Proxy
-  ( ContextValue (..),
   )
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseGQLType (..),

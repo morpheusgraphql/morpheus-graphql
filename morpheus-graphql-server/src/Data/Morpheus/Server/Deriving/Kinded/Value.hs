@@ -44,13 +44,15 @@ import Data.Morpheus.Server.Deriving.Internal.Value
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
+    ContextValue (..),
     inputType,
   )
-import Data.Morpheus.Server.Deriving.Utils.Proxy
-  ( ContextValue,
-    unContextValue,
+import Data.Morpheus.Server.Deriving.Utils.Types
+  ( coerceInputObject,
+    coerceScalar,
+    getField,
+    handleEither,
   )
-import Data.Morpheus.Server.Deriving.Utils.Types (coerceInputObject, coerceScalar, getField, handleEither)
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseDeriving (..),
     UseGQLType (..),

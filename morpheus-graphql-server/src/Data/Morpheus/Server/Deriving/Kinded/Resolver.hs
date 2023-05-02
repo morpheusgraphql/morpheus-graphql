@@ -25,7 +25,7 @@ import Data.Morpheus.Server.Deriving.Internal.Resolver
   ( EXPLORE,
     useExploreResolvers,
   )
-import Data.Morpheus.Server.Deriving.Utils.Proxy
+import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( ContextValue (..),
   )
 import Data.Morpheus.Server.Deriving.Utils.Types
