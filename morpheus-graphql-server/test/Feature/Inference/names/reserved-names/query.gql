@@ -1,0 +1,18 @@
+{
+  type(in: { data: "some data" })
+
+  query: __type(name: "Query") {
+    fields {
+      name
+      args {
+        name
+      }
+    }
+  }
+
+  input: __type(name: "TypeInput") {
+    inputFields {
+      name
+    }
+  }
+}
