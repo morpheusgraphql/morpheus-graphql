@@ -43,8 +43,7 @@ import Data.Morpheus.Internal.Utils
     selectOr,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
-  ( CatType (..),
-    inputType,
+  ( inputType,
   )
 import Data.Morpheus.Server.Deriving.Utils.Proxy
   ( conNameProxy,
@@ -63,7 +62,6 @@ import Data.Morpheus.Types.Internal.AST
     CONST,
     FieldName,
     GQLError,
-    IN,
     Msg (msg),
     ObjectEntry (..),
     ScalarValue,
@@ -146,7 +144,7 @@ setVariantRef :: Bool -> DecoderT a -> DecoderT a
 setVariantRef isVariantRef = local (\ctx -> ctx {isVariantRef})
 
 class DescribeCons ctx (f :: Type -> Type) where
-  tags :: ctx -> Proxy f -> Context -> Info
+  tags :: ctx -> Proxy f -> TypeName -> Info
 
 instance (Datatype d, DescribeCons gql f) => DescribeCons gql (M1 D d f) where
   tags ctx _ = tags ctx (Proxy @f)
@@ -155,7 +153,7 @@ instance (DescribeCons gql a, DescribeCons gql b) => DescribeCons gql (a :+: b) 
   tags ctx _ = tags ctx (Proxy @a) <> tags ctx (Proxy @b)
 
 instance (UseGQLType ctx gql, Constructor c, CountFields a, RefType gql a) => DescribeCons ctx (M1 C c a) where
-  tags ctx _ Context {typeName} = getTag (refType (Proxy @a))
+  tags ctx _ typeName = getTag (refType (Proxy @a))
     where
       getTag :: Maybe (ProxyCon gql) -> Info
       getTag (Just (ProxyCon p))
@@ -177,9 +175,9 @@ getUnionInfos ::
   f (a :+: b) ->
   DecoderT (Bool, ([TypeName], [TypeName]))
 getUnionInfos ctx _ = do
-  context <- ask
-  let l = tags ctx (Proxy @a) context
-  let r = tags ctx (Proxy @b) context
+  baseTypeName <- asks typeName
+  let l = tags ctx (Proxy @a) baseTypeName
+  let r = tags ctx (Proxy @b) baseTypeName
   let k = kind (l <> r)
   pure (k == VariantRef, (tagName l, tagName r))
 
