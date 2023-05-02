@@ -43,13 +43,13 @@ import Relude hiding
     encodeUtf8,
   )
 
-decodeNoDup :: MonadError LB.ByteString m => LB.ByteString -> m GQLRequest
+decodeNoDup :: (MonadError LB.ByteString m) => LB.ByteString -> m GQLRequest
 decodeNoDup str = case eitherDecodeWith jsonNoDup ifromJSON str of
   Left (path, x) -> throwError $ pack $ "Bad Request. Could not decode Request body: " <> formatError path x
   Right value -> pure value
 
 class MapAPI a b where
-  mapAPI :: Applicative m => (GQLRequest -> m GQLResponse) -> a -> m b
+  mapAPI :: (Applicative m) => (GQLRequest -> m GQLResponse) -> a -> m b
 
 instance MapAPI GQLRequest GQLResponse where
   mapAPI f = f

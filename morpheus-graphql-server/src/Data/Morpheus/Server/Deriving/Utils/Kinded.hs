@@ -33,7 +33,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeCategory (..),
     TypeContent (..),
   )
-import Data.Proxy (Proxy (..))
 import Prelude (Bool (..), Show)
 
 -- | context , like Proxy with multiple parameters
