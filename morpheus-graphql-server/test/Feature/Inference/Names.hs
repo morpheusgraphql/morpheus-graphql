@@ -1,8 +1,8 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -12,33 +12,30 @@ module Feature.Inference.Names
 where
 
 import Data.Morpheus.Server (interpreter)
-import Data.Morpheus.Server.Resolvers
-  ( constRes,
-  )
 import Data.Morpheus.Server.Types
   ( Arg (..),
     GQLRequest,
     GQLResponse,
     GQLType (..),
     RootResolver (..),
-    SubscriptionField,
     Undefined,
     defaultRootResolver,
-    subscribe,
   )
-import Data.Morpheus.Subscriptions (Event)
 import Relude hiding (Undefined)
 
 data MyEnum = MyEnum deriving (Generic, GQLType)
 
-newtype Input = Input {data' :: Text} deriving (Generic, GQLType)
+newtype Input = Input {data' :: Text}
+  deriving (Generic)
+  deriving anyclass (GQLType)
 
 newtype Query (m :: Type -> Type) = Query
   { type' ::
-      Arg "input" Input ->
+      Arg "in" Input ->
       Text
   }
-  deriving (Generic, GQLType)
+  deriving (Generic)
+  deriving anyclass (GQLType)
 
 root :: RootResolver IO () Query Undefined Undefined
 root =

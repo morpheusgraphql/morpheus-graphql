@@ -36,19 +36,19 @@ import Relude hiding (init, last, undefined)
 import Prelude (undefined)
 
 conNameP :: forall f t (c :: Meta). (Constructor c, IsString t) => f c -> t
-conNameP _ = fromString $ fromHaskellName $ conName (undefined :: M1 C c U1 a)
+conNameP _ = fromString $ conName (undefined :: M1 C c U1 a)
 
-fromHaskellName :: String -> String
-fromHaskellName name
+dropLiterals :: String -> String
+dropLiterals name
   | not (null name) && (last name == '\'') = init name
   | otherwise = name
-{-# INLINE fromHaskellName #-}
+{-# INLINE dropLiterals #-}
 
 isRecordP :: forall f (c :: Meta). (Constructor c) => f c -> Bool
 isRecordP _ = conIsRecord (undefined :: (M1 C c f a))
 
 selNameP :: forall f t (s :: Meta). (Selector s, IsString t) => f s -> t
-selNameP _ = fromString $ selName (undefined :: M1 S s f a)
+selNameP _ = fromString $ dropLiterals $ selName (undefined :: M1 S s f a)
 
 symbolName :: (KnownSymbol a, IsString t) => f a -> t
 symbolName = fromString . symbolVal
