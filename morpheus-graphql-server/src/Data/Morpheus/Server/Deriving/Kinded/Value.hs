@@ -27,19 +27,20 @@ import Data.Morpheus.Generic
     GRepField (..),
     GRepValue (..),
     deriveValue,
+    symbolName,
   )
 import Data.Morpheus.Internal.Ext (GQLResult, unsafeFromList)
 import Data.Morpheus.Internal.Utils
   ( IsMap (toAssoc),
     fromElems,
   )
-import Data.Morpheus.Server.Deriving.Internal.Value
-  ( Context (..),
-    DecodeRep (..),
-  )
 import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
   ( visitEnumName,
     visitFieldName,
+  )
+import Data.Morpheus.Server.Deriving.Internal.Value
+  ( Context (..),
+    DecodeRep (..),
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
@@ -47,7 +48,6 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
   )
 import Data.Morpheus.Server.Deriving.Utils.Proxy
   ( ContextValue,
-    symbolName,
     unContextValue,
   )
 import Data.Morpheus.Server.Deriving.Utils.Types (coerceInputObject, coerceScalar, getField, handleEither)

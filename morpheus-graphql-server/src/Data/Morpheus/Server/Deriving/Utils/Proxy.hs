@@ -9,10 +9,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.Utils.Proxy
-  ( conNameProxy,
-    isRecordProxy,
-    selNameProxy,
-    symbolName,
+  ( selNameProxy,
     ContextValue (..),
   )
 where
@@ -20,45 +17,29 @@ where
 import Data.Morpheus.Server.Types.Kind (DerivingKind)
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
-    TypeName,
     packName,
   )
-import qualified Data.Text as T
+import Data.Text (init, last, pack)
 import GHC.Generics
-  ( C,
-    Constructor,
-    M1 (..),
+  ( M1 (..),
     Meta,
     S,
     Selector,
-    U1 (..),
-    conIsRecord,
-    conName,
     selName,
   )
-import GHC.TypeLits
-import Relude hiding (undefined)
+import Relude hiding (init, last, undefined)
 import Prelude (undefined)
 
-conNameProxy :: forall f (c :: Meta). Constructor c => f c -> TypeName
-conNameProxy _ = fromString $ conName (undefined :: M1 C c U1 a)
-
-selNameProxy :: forall f (s :: Meta). Selector s => f s -> FieldName
+selNameProxy :: forall f (s :: Meta). (Selector s) => f s -> FieldName
 selNameProxy _ = fromHaskellName $ selName (undefined :: M1 S s f a)
 
 fromHaskellName :: String -> FieldName
 fromHaskellName hsName
-  | not (null hsName) && (T.last name == '\'') = packName (T.init name)
+  | not (null hsName) && (last name == '\'') = packName (init name)
   | otherwise = packName name
   where
-    name = T.pack hsName
+    name = pack hsName
 {-# INLINE fromHaskellName #-}
-
-isRecordProxy :: forall f (c :: Meta). Constructor c => f c -> Bool
-isRecordProxy _ = conIsRecord (undefined :: (M1 C c f a))
-
-symbolName :: KnownSymbol a => f a -> FieldName
-symbolName = fromString . symbolVal
 
 newtype ContextValue (kind :: DerivingKind) a = ContextValue
   { unContextValue :: a

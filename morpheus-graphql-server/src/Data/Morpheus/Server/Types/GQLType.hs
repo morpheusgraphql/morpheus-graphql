@@ -51,7 +51,10 @@ import Data.Morpheus.App.Internal.Resolving
     ResolverValue,
     SubscriptionField,
   )
-import Data.Morpheus.Generic (Gmap)
+import Data.Morpheus.Generic
+  ( Gmap,
+    symbolName,
+  )
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Internal.Utils (empty, singleton)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Type
@@ -73,7 +76,7 @@ import Data.Morpheus.Server.Deriving.Kinded.Type
 import Data.Morpheus.Server.Deriving.Kinded.Value (KindedValue (..))
 import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef (..))
 import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (..), KindedProxy (KindedProxy), catMap, inputType, isIN)
-import Data.Morpheus.Server.Deriving.Utils.Proxy (ContextValue (..), symbolName)
+import Data.Morpheus.Server.Deriving.Utils.Proxy (ContextValue (..))
 import Data.Morpheus.Server.Deriving.Utils.Types (GQLTypeNode (..), GQLTypeNodeExtension (..))
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( GQLTypeCTX (..),

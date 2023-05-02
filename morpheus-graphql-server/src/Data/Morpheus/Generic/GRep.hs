@@ -28,10 +28,9 @@ module Data.Morpheus.Generic.GRep
 where
 
 import Data.List (partition)
+import Data.Morpheus.Generic.Proxy
 import Data.Morpheus.Server.Deriving.Utils.Proxy
-  ( conNameProxy,
-    isRecordProxy,
-    selNameProxy,
+  ( selNameProxy,
   )
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,

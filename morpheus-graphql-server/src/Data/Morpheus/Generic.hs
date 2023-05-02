@@ -20,6 +20,7 @@ module Data.Morpheus.Generic
     DescribeCons (..),
     runGmap,
     CProxy (..),
+    symbolName,
   )
 where
 
@@ -50,6 +51,8 @@ import Data.Morpheus.Generic.Gmap
   )
 import Data.Morpheus.Generic.Proxy
   ( CProxy (..),
+    isRecordProxy,
+    symbolName,
   )
 import Data.Morpheus.Generic.RefType
   ( RefType (..),
