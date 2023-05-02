@@ -319,7 +319,7 @@ library
       Data.Morpheus.Generic.Proxy
       Data.Morpheus.Generic.RefType
       Data.Morpheus.Server.Deriving.App
-      Data.Morpheus.Server.Deriving.Internal.Resolve.Explore
+      Data.Morpheus.Server.Deriving.Internal.Resolver
       Data.Morpheus.Server.Deriving.Internal.Schema.Directive
       Data.Morpheus.Server.Deriving.Internal.Schema.Enum
       Data.Morpheus.Server.Deriving.Internal.Schema.Object

@@ -11,7 +11,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Server.Deriving.Internal.Resolve.Explore
+module Data.Morpheus.Server.Deriving.Internal.Resolver
   ( useExploreResolvers,
     useObjectResolvers,
     EXPLORE,

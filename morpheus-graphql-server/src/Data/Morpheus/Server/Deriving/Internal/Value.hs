@@ -19,7 +19,14 @@ where
 
 import Control.Monad.Except (MonadError (throwError))
 import Data.Morpheus.App.Internal.Resolving (ResolverState)
-import Data.Morpheus.Generic (CProxy (..), DecodeFields, DecoderFun (..), DescribeCons, decodeFields, describeCons)
+import Data.Morpheus.Generic
+  ( CProxy (..),
+    DecodeFields,
+    DecoderFun (..),
+    DescribeCons,
+    decodeFields,
+    describeCons,
+  )
 import Data.Morpheus.Server.Deriving.Utils.Kinded (inputType)
 import Data.Morpheus.Server.Deriving.Utils.Types (coerceInputObject, getField)
 import Data.Morpheus.Server.Deriving.Utils.Use

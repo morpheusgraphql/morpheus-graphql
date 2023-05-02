@@ -27,7 +27,7 @@ import Data.Morpheus.App.Internal.Resolving
     RootResolverValue (..),
   )
 import Data.Morpheus.Internal.Ext (GQLResult)
-import Data.Morpheus.Server.Deriving.Internal.Resolve.Explore
+import Data.Morpheus.Server.Deriving.Internal.Resolver
   ( EXPLORE,
     useObjectResolvers,
   )
@@ -74,7 +74,7 @@ class GQLNamedResolverFun (m :: Type -> Type) a where
 
 type NAMED = UseNamedResolver GQLNamedResolver GQLNamedResolverFun GQLType GQLValue
 
-class GQLType a => GQLNamedResolver (m :: Type -> Type) a where
+class (GQLType a) => GQLNamedResolver (m :: Type -> Type) a where
   deriveNamedRes :: f a -> [NamedResolver m]
   deriveNamedRefs :: f a -> [ScanRef (GQLNamedResolver m)]
 
@@ -82,7 +82,7 @@ instance (GQLType a, KindedNamedResolver NAMED (KIND a) m a) => GQLNamedResolver
   deriveNamedRes = kindedNamedResolver withNamed . kindedProxy
   deriveNamedRefs = kindedNamedRefs withNamed . kindedProxy
 
-instance KindedNamedFunValue NAMED (KIND a) m a => GQLNamedResolverFun m a where
+instance (KindedNamedFunValue NAMED (KIND a) m a) => GQLNamedResolverFun m a where
   deriveNamedResFun resolver = kindedNamedFunValue withNamed (ContextValue resolver :: ContextValue (KIND a) a)
 
 withNamed :: NAMED

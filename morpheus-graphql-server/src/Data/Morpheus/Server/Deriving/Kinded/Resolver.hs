@@ -21,7 +21,10 @@ import Data.Morpheus.App.Internal.Resolving
     getArguments,
   )
 import Data.Morpheus.Internal.Utils (toAssoc)
-import Data.Morpheus.Server.Deriving.Internal.Resolve.Explore
+import Data.Morpheus.Server.Deriving.Internal.Resolver
+  ( EXPLORE,
+    useExploreResolvers,
+  )
 import Data.Morpheus.Server.Deriving.Utils.Proxy
   ( ContextValue (..),
   )
