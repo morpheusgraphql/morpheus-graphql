@@ -3,6 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.App.Internal.Resolving.SchemaAPI
@@ -39,7 +40,7 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Relude hiding (empty)
 
-resolveSchema :: MonadResolver m => Schema VALID -> m (ResolverValue m)
+resolveSchema :: (MonadResolver m) => Schema VALID -> m (ResolverValue m)
 resolveSchema schema@Schema {..} =
   pure $
     mkObject
