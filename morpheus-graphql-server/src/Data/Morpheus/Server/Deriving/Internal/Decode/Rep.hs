@@ -27,7 +27,7 @@ import Data.Morpheus.Server.Deriving.Internal.Decode.Utils
     DecoderT,
     DescribeCons,
     coerceInputObject,
-    decodeFieldWith,
+    getField,
     getUnionInfos,
     setVariantRef,
   )
@@ -102,13 +102,11 @@ instance (Constructor c, UseDeriving gql val ~ ctx, DecodeFields val a) => Decod
   decodeRep ctx value = fmap M1 (decodeFields (decoder ctx value))
 
 decoder :: (UseGQLValue ctx con) => ctx -> ValidValue -> DecoderFun con DecoderT
-decoder ctx value =
+decoder ctx input =
   DecoderFun
     ( \name ->
         do
-          let decode = lift . useDecodeValue ctx
           Context {isVariantRef, fieldVisitor} <- ask
-          if isVariantRef
-            then decode value
-            else coerceInputObject value >>= decodeFieldWith decode (fieldVisitor name)
+          value <- if isVariantRef then pure input else getField (fieldVisitor name) <$> coerceInputObject input
+          lift (useDecodeValue ctx value)
     )

@@ -15,7 +15,6 @@
 
 module Data.Morpheus.Server.Deriving.Internal.Decode.Utils
   ( withEnum,
-    decodeFieldWith,
     withScalar,
     handleEither,
     DecoderT,
@@ -27,6 +26,7 @@ module Data.Morpheus.Server.Deriving.Internal.Decode.Utils
     repValue,
     useDecodeArguments,
     coerceInputObject,
+    getField,
   )
 where
 
@@ -110,8 +110,8 @@ withScalar typename decodeScalar value = case toScalar value >>= decodeScalar of
           value
       )
 
-decodeFieldWith :: (Value VALID -> m a) -> FieldName -> ValidObject -> m a
-decodeFieldWith decoder = selectOr (decoder Null) (decoder . entryValue)
+getField :: FieldName -> ValidObject -> ValidValue
+getField = selectOr Null entryValue
 
 handleEither :: (MonadError GQLError m) => Either GQLError a -> m a
 handleEither = either throwError pure

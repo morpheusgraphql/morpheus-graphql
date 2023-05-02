@@ -38,7 +38,7 @@ import Data.Morpheus.Server.Deriving.Internal.Decode.Rep
 import Data.Morpheus.Server.Deriving.Internal.Decode.Utils
   ( Context (..),
     coerceInputObject,
-    decodeFieldWith,
+    getField,
     handleEither,
     repValue,
     withScalar,
@@ -171,7 +171,7 @@ instance (ctx ~ UseDeriving gql args, KnownSymbol name, args a) => KindedValue c
   encodeKindedValue _ _ = throwError "directives cant be tagged arguments"
   decodeKindedValue ctx _ value = Arg <$> (coerceInputObject value >>= fieldDecoder)
     where
-      fieldDecoder = decodeFieldWith (useDecodeValue ctx) fieldName
+      fieldDecoder = useDecodeValue ctx . getField fieldName
       fieldName = symbolName (Proxy @name)
 
 --  Map
