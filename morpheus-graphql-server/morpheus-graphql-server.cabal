@@ -315,6 +315,8 @@ library
       Data.Morpheus.Generic.Fields
       Data.Morpheus.Generic.Gmap
       Data.Morpheus.Generic.GRep
+      Data.Morpheus.Generic.Proxy
+      Data.Morpheus.Generic.RefType
       Data.Morpheus.Server.Deriving.App
       Data.Morpheus.Server.Deriving.Internal.Decode.Rep
       Data.Morpheus.Server.Deriving.Internal.Decode.Utils

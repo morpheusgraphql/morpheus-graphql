@@ -14,15 +14,13 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.Internal.Decode.Utils
-  ( withEnum,
-    withScalar,
+  ( withScalar,
     handleEither,
     DecoderT,
     setVariantRef,
     Context (..),
     getUnionInfos,
     DescribeCons,
-    RefType (..),
     repValue,
     useDecodeArguments,
     coerceInputObject,
@@ -36,7 +34,9 @@ import Data.Morpheus.Generic
   ( CountFields,
     GRepField (..),
     GRepValue (..),
+    RefType (..),
   )
+import Data.Morpheus.Generic.Proxy (ProxyCon (..))
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Internal.Utils
   ( fromElems,
@@ -44,6 +44,7 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
+    inputType,
   )
 import Data.Morpheus.Server.Deriving.Utils.Proxy
   ( conNameProxy,
@@ -89,11 +90,6 @@ repValue _ = throwError (internal "input unions are not supported")
 coerceInputObject :: (MonadError GQLError m) => ValidValue -> m ValidObject
 coerceInputObject (Object object) = pure object
 coerceInputObject isType = throwError (typeMismatch "InputObject" isType)
-
--- | Useful for more restrictive instances of lists (non empty, size indexed etc)
-withEnum :: (MonadError GQLError m) => (TypeName -> m a) -> Value VALID -> m a
-withEnum decode (Enum value) = decode value
-withEnum _ isType = throwError (typeMismatch "Enum" isType)
 
 withScalar ::
   (Applicative m, MonadError GQLError m) =>
@@ -158,17 +154,21 @@ instance (Datatype d, DescribeCons gql f) => DescribeCons gql (M1 D d f) where
 instance (DescribeCons gql a, DescribeCons gql b) => DescribeCons gql (a :+: b) where
   tags ctx _ = tags ctx (Proxy @a) <> tags ctx (Proxy @b)
 
-instance (UseGQLType ctx gql, Constructor c, CountFields a, RefType ctx a) => DescribeCons ctx (M1 C c a) where
-  tags ctx _ Context {typeName} = getTag (refType ctx (Proxy @a))
+instance (UseGQLType ctx gql, Constructor c, CountFields a, RefType gql a) => DescribeCons ctx (M1 C c a) where
+  tags ctx _ Context {typeName} = getTag (refType (Proxy @a))
     where
-      getTag (Just memberRef)
-        | isUnionRef memberRef = Info {kind = VariantRef, tagName = [memberRef]}
+      getTag :: Maybe (ProxyCon gql) -> Info
+      getTag (Just (ProxyCon p))
+        | isUnionRef = Info {kind = VariantRef, tagName = [memberRef]}
         | otherwise = Info {kind = InlineVariant, tagName = [consName]}
+        where
+          memberRef = useTypename ctx (inputType p)
+          isUnionRef = typeName <> memberRef == consName
       getTag Nothing = Info {kind = InlineVariant, tagName = [consName]}
       --------
       consName = conNameProxy (Proxy @c)
-      ----------
-      isUnionRef x = typeName <> x == consName
+
+----------
 
 getUnionInfos ::
   forall ctx f a b gql.
@@ -182,18 +182,6 @@ getUnionInfos ctx _ = do
   let r = tags ctx (Proxy @b) context
   let k = kind (l <> r)
   pure (k == VariantRef, (tagName l, tagName r))
-
-class RefType ctx (f :: Type -> Type) where
-  refType :: ctx -> Proxy f -> Maybe TypeName
-
-instance (RefType gql f, RefType gql g) => RefType gql (f :*: g) where
-  refType _ _ = Nothing
-
-instance (Selector s, UseGQLType ctx gql, gql a) => RefType ctx (M1 S s (K1 i a)) where
-  refType ctx _ = Just $ useTypename ctx (InputType :: CatType IN a)
-
-instance RefType gql U1 where
-  refType _ _ = Nothing
 
 useDecodeArguments :: (val a) => UseDeriving gql val -> Arguments VALID -> ResolverState a
 useDecodeArguments ctx = useDecodeValue ctx . argumentsToObject

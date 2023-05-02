@@ -16,6 +16,7 @@ module Data.Morpheus.Generic
     DecodeFields,
     decodeFields,
     CountFields (..),
+    RefType (..),
   )
 where
 
@@ -39,4 +40,7 @@ import Data.Morpheus.Generic.GRep
 import Data.Morpheus.Generic.Gmap
   ( Gmap,
     GmapFun (..),
+  )
+import Data.Morpheus.Generic.RefType
+  ( RefType (..),
   )
