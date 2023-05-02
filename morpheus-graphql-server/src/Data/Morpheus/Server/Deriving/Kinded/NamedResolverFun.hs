@@ -138,7 +138,7 @@ getOptions ctx =
     }
 
 convertNamedNode ::
-  (gql a, MonadError GQLError m) =>
+  (MonadError GQLError m, gql a) =>
   UseDeriving gql val ->
   f a ->
   GRepValue (m (ResolverValue m)) ->

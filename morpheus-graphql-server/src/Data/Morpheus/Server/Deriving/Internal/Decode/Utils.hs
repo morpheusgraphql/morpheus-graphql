@@ -79,9 +79,7 @@ import Data.Morpheus.Types.Internal.AST
 import GHC.Generics
 import Relude
 
-repValue ::
-  GRepValue (GQLResult (Value CONST)) ->
-  GQLResult (Value CONST)
+repValue :: GRepValue (GQLResult (Value CONST)) -> GQLResult (Value CONST)
 repValue GRepValueEnum {..} = pure $ Enum enumVariantName
 repValue GRepValueObject {..} = Object <$> (traverse fromField objectFields >>= fromElems)
   where
