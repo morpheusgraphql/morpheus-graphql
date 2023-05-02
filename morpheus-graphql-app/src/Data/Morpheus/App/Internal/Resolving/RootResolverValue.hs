@@ -5,6 +5,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.App.Internal.Resolving.RootResolverValue
@@ -65,7 +66,7 @@ data RootResolverValue e m
   | NamedResolversValue
       {queryResolverMap :: ResolverMap (Resolver QUERY e m)}
 
-instance Monad m => FromJSON (RootResolverValue e m) where
+instance (Monad m) => FromJSON (RootResolverValue e m) where
   parseJSON res =
     pure
       RootResolverValue
@@ -80,7 +81,7 @@ rootResolver res selection = do
   root <- liftState (toResolverStateT res)
   resolvePlainRoot root selection
 
-runRootResolverValue :: Monad m => RootResolverValue e m -> ResolverContext -> ResponseStream e m (Value VALID)
+runRootResolverValue :: (Monad m) => RootResolverValue e m -> ResolverContext -> ResponseStream e m (Value VALID)
 runRootResolverValue
   RootResolverValue
     { queryResolver,
