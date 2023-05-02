@@ -1,6 +1,4 @@
 {
-  type(in: { data: "some data" })
-
   query: __type(name: "Query") {
     fields {
       name
@@ -10,7 +8,7 @@
     }
   }
 
-  input: __type(name: "TypeInput") {
+  input: __type(name: "Input") {
     inputFields {
       name
     }
