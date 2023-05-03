@@ -34,7 +34,8 @@ import Data.Morpheus.Generic
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
   ( UseDeriving (..),
-    deriveTypeDirectives,
+    getTypeDirectives,
+    serializeDirectives,
     visitTypeDescription,
   )
 import Data.Morpheus.Server.Deriving.Internal.Schema.Enum
@@ -167,7 +168,7 @@ fillTypeContent ::
   TypeContent TRUE cat CONST ->
   GQLResult (TypeDefinition cat CONST)
 fillTypeContent ctx proxy content = do
-  dirs <- deriveTypeDirectives ctx proxy
+  dirs <- serializeDirectives ctx (getTypeDirectives ctx proxy)
   pure $
     TypeDefinition
       (visitTypeDescription ctx proxy Nothing)

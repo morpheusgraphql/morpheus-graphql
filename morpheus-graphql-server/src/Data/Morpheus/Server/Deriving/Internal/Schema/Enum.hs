@@ -10,7 +10,8 @@ where
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
   ( UseDeriving,
-    deriveEnumDirectives,
+    getEnumDirectives,
+    serializeDirectives,
     visitEnumName,
     visitEnumValueDescription,
   )
@@ -25,16 +26,16 @@ import Data.Morpheus.Types.Internal.AST
     TypeName,
   )
 
-buildEnumTypeContent :: gql a => UseDeriving gql args -> CatType kind a -> [TypeName] -> GQLResult (TypeContent TRUE kind CONST)
+buildEnumTypeContent :: (gql a) => UseDeriving gql args -> CatType kind a -> [TypeName] -> GQLResult (TypeContent TRUE kind CONST)
 buildEnumTypeContent options p@InputType enumCons = DataEnum <$> traverse (mkEnumValue options p) enumCons
 buildEnumTypeContent options p@OutputType enumCons = DataEnum <$> traverse (mkEnumValue options p) enumCons
 
-mkEnumValue :: gql a => UseDeriving gql args -> f a -> TypeName -> GQLResult (DataEnumValue CONST)
-mkEnumValue options proxy enumName = do
-  enumDirectives <- deriveEnumDirectives options proxy enumName
+mkEnumValue :: (gql a) => UseDeriving gql args -> f a -> TypeName -> GQLResult (DataEnumValue CONST)
+mkEnumValue ctx proxy enumName = do
+  enumDirectives <- serializeDirectives ctx (getEnumDirectives ctx proxy enumName)
   pure
     DataEnumValue
-      { enumName = visitEnumName options proxy enumName,
-        enumDescription = visitEnumValueDescription options proxy enumName Nothing,
+      { enumName = visitEnumName ctx proxy enumName,
+        enumDescription = visitEnumValueDescription ctx proxy enumName Nothing,
         ..
       }

@@ -14,9 +14,9 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.Internal.Schema.Directive
-  ( deriveFieldDirectives,
-    deriveTypeDirectives,
-    deriveEnumDirectives,
+  ( getFieldDirectives,
+    getTypeDirectives,
+    getEnumDirectives,
     visitEnumValueDescription,
     visitFieldDescription,
     visitTypeDescription,
@@ -27,6 +27,7 @@ module Data.Morpheus.Server.Deriving.Internal.Schema.Directive
     toFieldRes,
     UseDeriving (..),
     deriveDirectiveDefinition,
+    serializeDirectives,
   )
 where
 
@@ -97,24 +98,15 @@ deriveDirectiveDefinition ctx proxy t = do
         }
     )
 
-deriveEnumDirectives :: (gql a) => UseDeriving gql args -> f a -> TypeName -> GQLResult (Directives CONST)
-deriveEnumDirectives ctx proxy = deriveDirectiveUsages ctx . getEnumDirectives ctx proxy
-
-deriveFieldDirectives :: (gql a) => UseDeriving gql args -> f a -> FieldName -> GQLResult (Directives CONST)
-deriveFieldDirectives ctx proxy = deriveDirectiveUsages ctx . getFieldDirectives ctx proxy
-
-deriveTypeDirectives :: (gql a) => UseDeriving gql args -> f a -> GQLResult (Directives CONST)
-deriveTypeDirectives ctx = deriveDirectiveUsages ctx . getTypeDirectives ctx
-
-deriveDirectiveUsages :: UseDeriving gql args -> [GDirectiveUsage gql args] -> GQLResult (Directives CONST)
-deriveDirectiveUsages options = fmap unsafeFromList . traverse (toDirective options) . filter isIncluded
+serializeDirectives :: UseDeriving gql args -> [GDirectiveUsage gql args] -> GQLResult (Directives CONST)
+serializeDirectives options = fmap unsafeFromList . traverse (serializeDirective options) . filter isIncluded
 
 -- others
-toDirective ::
+serializeDirective ::
   UseDeriving gql args ->
   GDirectiveUsage gql args ->
   GQLResult (FieldName, Directive CONST)
-toDirective ctx (GDirectiveUsage x) = do
+serializeDirective ctx (GDirectiveUsage x) = do
   args <- useEncodeValue ctx x >>= coerceArguments
   directiveArgs <- fromElems (map (visitArgument ctx x) (toList args))
   pure

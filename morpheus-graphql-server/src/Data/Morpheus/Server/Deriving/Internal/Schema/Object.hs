@@ -23,7 +23,8 @@ import Data.Morpheus.Internal.Utils
   )
 import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
   ( UseDeriving,
-    deriveFieldDirectives,
+    getFieldDirectives,
+    serializeDirectives,
     visitFieldContent,
     visitFieldDescription,
     visitFieldName,
@@ -63,7 +64,7 @@ mkFieldUnit :: FieldDefinition cat s
 mkFieldUnit = mkField Nothing unitFieldName (mkTypeRef unitTypeName)
 
 buildObjectTypeContent ::
-  gql a =>
+  (gql a) =>
   UseDeriving gql args ->
   CatType cat a ->
   [GRepField (ArgumentsDefinition CONST)] ->
@@ -98,14 +99,14 @@ toFieldContent :: CatType c a -> ArgumentsDefinition CONST -> Maybe (FieldConten
 toFieldContent OutputType x | not (null x) = Just (FieldArgs x)
 toFieldContent _ _ = Nothing
 
-setGQLTypeProps :: gql a => UseDeriving gql args -> CatType kind a -> FieldDefinition kind CONST -> GQLResult (FieldDefinition kind CONST)
-setGQLTypeProps options proxy FieldDefinition {..} = do
-  dirs <- deriveFieldDirectives options proxy fieldName
+setGQLTypeProps :: (gql a) => UseDeriving gql args -> CatType kind a -> FieldDefinition kind CONST -> GQLResult (FieldDefinition kind CONST)
+setGQLTypeProps ctx proxy FieldDefinition {..} = do
+  dirs <- serializeDirectives ctx (getFieldDirectives ctx proxy fieldName)
   pure
     FieldDefinition
-      { fieldName = visitFieldName options proxy fieldName,
-        fieldDescription = visitFieldDescription options proxy fieldName Nothing,
-        fieldContent = visitFieldContent options proxy fieldName fieldContent,
+      { fieldName = visitFieldName ctx proxy fieldName,
+        fieldDescription = visitFieldDescription ctx proxy fieldName Nothing,
+        fieldContent = visitFieldContent ctx proxy fieldName fieldContent,
         fieldDirectives = dirs,
         ..
       }
