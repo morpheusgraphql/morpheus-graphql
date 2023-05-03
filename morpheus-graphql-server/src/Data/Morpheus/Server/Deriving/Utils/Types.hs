@@ -22,6 +22,7 @@ module Data.Morpheus.Server.Deriving.Utils.Types
     coerceScalar,
     getField,
     handleEither,
+    coerceArguments,
   )
 where
 
@@ -49,6 +50,7 @@ import Data.Morpheus.Types.Internal.AST
     Msg (..),
     OUT,
     ObjectEntry (..),
+    Position (..),
     ScalarValue,
     Schema (..),
     TRUE,
@@ -110,6 +112,10 @@ coerceScalar typename value = case toScalar value of
           ("SCALAR(" <> msg typename <> ")" <> msg message)
           value
       )
+
+coerceArguments :: (MonadError GQLError m) => Value s -> m (Arguments s)
+coerceArguments (Object v) = pure $ fmap (\ObjectEntry {..} -> Argument (Position 0 0) entryName entryValue) v
+coerceArguments _ = throwError $ internal "could not encode arguments. Arguments should be an object like type!"
 
 argumentsToObject :: Arguments VALID -> Value VALID
 argumentsToObject = Object . fmap toEntry
