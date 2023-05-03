@@ -37,7 +37,6 @@ import Data.Morpheus.Server.Deriving.Utils.Use
 import Data.Morpheus.Types.Internal.AST
   ( FieldName,
     TypeName,
-    ValidObject,
     ValidValue,
     Value (..),
     getInputUnionValue,
@@ -59,14 +58,14 @@ type DecoderT = ReaderT Context ResolverState
 setVariantRef :: Bool -> DecoderT a -> DecoderT a
 setVariantRef isVariantRef = local (\ctx -> ctx {isVariantRef})
 
-decideEither ::
+decideUnion ::
   (DecodeRep ctx f, DecodeRep ctx g) =>
   ctx ->
   ([TypeName], [TypeName]) ->
   TypeName ->
   ValidValue ->
   DecoderT ((f :+: g) a)
-decideEither drv (left, right) name value
+decideUnion drv (left, right) name value
   | name `elem` left = L1 <$> decodeRep drv value
   | name `elem` right = R1 <$> decodeRep drv value
   | otherwise =
@@ -75,19 +74,6 @@ decideEither drv (left, right) name value
           "Constructor \""
             <> msg name
             <> "\" could not find in Union"
-
-decodeInputUnionObject ::
-  (DecodeRep ctx f, DecodeRep ctx g) =>
-  ctx ->
-  ([TypeName], [TypeName]) ->
-  TypeName ->
-  ValidObject ->
-  ValidValue ->
-  DecoderT ((f :+: g) a)
-decodeInputUnionObject ctx (l, r) name obj variant
-  | [name] == l = L1 <$> decodeRep ctx variant
-  | [name] == r = R1 <$> decodeRep ctx variant
-  | otherwise = decideEither ctx (l, r) name (Object obj)
 
 class DecodeRep ctx (f :: Type -> Type) where
   decodeRep :: ctx -> ValidValue -> DecoderT (f a)
@@ -105,10 +91,11 @@ instance (UseGQLType ctx gql, DescribeCons gql a, DescribeCons gql b, DecodeRep 
           (Object obj) -> do
             (name, value) <- getInputUnionValue obj
             variant <- coerceInputObject value
-            decodeInputUnionObject ctx (left, right) name obj (Object variant)
+            let isDone = [name] == left || [name] == left
+            decideUnion ctx (left, right) name (Object (if isDone then variant else obj))
           (Enum name) -> do
             visitor <- asks enumVisitor
-            decideEither ctx (map visitor left, map visitor right) name (Enum name)
+            decideUnion ctx (map visitor left, map visitor right) name (Enum name)
           _ -> throwError (internal "lists and scalars are not allowed in Union")
 
 instance (Constructor c, UseDeriving gql val ~ ctx, DecodeFields val a) => DecodeRep ctx (M1 C c a) where
