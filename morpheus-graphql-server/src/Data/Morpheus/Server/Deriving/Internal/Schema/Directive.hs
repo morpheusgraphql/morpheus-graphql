@@ -84,7 +84,7 @@ import GHC.Generics ()
 import GHC.TypeLits ()
 import Relude hiding (empty)
 
--- derive directives
+-- DERIVE
 deriveDirectiveDefinition :: (MonadError GQLError m, gql a, GQLDirective a, val a) => UseDeriving gql val -> f a -> TypeDefinition IN CONST -> m (DirectiveDefinition CONST)
 deriveDirectiveDefinition ctx proxy t = do
   directiveDefinitionArgs <- typeToArguments t
@@ -104,7 +104,7 @@ deriveFieldDirectives :: (gql a) => UseDeriving gql args -> f a -> FieldName -> 
 deriveFieldDirectives ctx proxy = deriveDirectiveUsages ctx . getFieldDirectives ctx proxy
 
 deriveTypeDirectives :: (gql a) => UseDeriving gql args -> f a -> GQLResult (Directives CONST)
-deriveTypeDirectives ctx = deriveDirectiveUsages ctx . typeDirectives . useDirectives ctx
+deriveTypeDirectives ctx = deriveDirectiveUsages ctx . getTypeDirectives ctx
 
 deriveDirectiveUsages :: UseDeriving gql args -> [GDirectiveUsage gql args] -> GQLResult (Directives CONST)
 deriveDirectiveUsages options = fmap unsafeFromList . traverse (toDirective options) . filter isIncluded
@@ -128,11 +128,7 @@ toDirective ctx (GDirectiveUsage x) = do
   where
     directiveName = deriveDirectiveName ctx (Identity x)
 
-lookupDirective :: (Ord k, Hashable k, Empty a) => k -> HashMap k a -> a
-lookupDirective name xs = fromMaybe empty $ name `lookup` xs
-
-isIncluded :: GDirectiveUsage gql args -> Bool
-isIncluded (GDirectiveUsage x) = not $ excludeFromSchema (Identity x)
+-- GET
 
 getEnumDirectives :: (gql a) => UseDeriving gql args -> f a -> TypeName -> [GDirectiveUsage gql args]
 getEnumDirectives UseDeriving {..} proxy name = lookupDirective name $ enumValueDirectives $ useDirectives proxy
@@ -140,14 +136,24 @@ getEnumDirectives UseDeriving {..} proxy name = lookupDirective name $ enumValue
 getFieldDirectives :: (gql a) => UseDeriving gql args -> f a -> FieldName -> [GDirectiveUsage gql args]
 getFieldDirectives UseDeriving {..} proxy name = lookupDirective name $ fieldDirectives $ useDirectives proxy
 
--- visit
+getTypeDirectives :: (gql a) => UseDeriving gql args -> f a -> [GDirectiveUsage gql args]
+getTypeDirectives ctx = typeDirectives . useDirectives ctx
+
+lookupDirective :: (Ord k, Hashable k, Empty a) => k -> HashMap k a -> a
+lookupDirective name xs = fromMaybe empty $ name `lookup` xs
+
+isIncluded :: GDirectiveUsage gql args -> Bool
+isIncluded (GDirectiveUsage x) = not $ excludeFromSchema (Identity x)
+
+-- VISIT
+
 visitEnumValueDescription :: (gql a) => UseDeriving gql args -> f a -> TypeName -> Maybe Description -> Maybe Description
 visitEnumValueDescription options proxy name desc = foldr applyEnumDescription desc (getEnumDirectives options proxy name)
 
 visitEnumName :: (gql a) => UseDeriving gql args -> f a -> TypeName -> TypeName
 visitEnumName options proxy name = foldr applyEnumName (withTypeDirectives name) (getEnumDirectives options proxy name)
   where
-    withTypeDirectives dirName = foldr applyTypeEnumNames dirName (typeDirectives $ useDirectives options proxy)
+    withTypeDirectives dirName = foldr applyTypeEnumNames dirName (getTypeDirectives options proxy)
 
 visitFieldDescription :: (gql a) => UseDeriving gql args -> f a -> FieldName -> Maybe Description -> Maybe Description
 visitFieldDescription options proxy name desc = foldr applyFieldDescription desc (getFieldDirectives options proxy name)
@@ -174,10 +180,10 @@ visitFieldName :: (gql a) => UseDeriving gql args -> f a -> FieldName -> FieldNa
 visitFieldName options proxy name = foldr applyFieldName (visitTypeFieldNames options proxy name) (getFieldDirectives options proxy name)
 
 visitTypeFieldNames :: (gql a) => UseDeriving gql args -> f a -> FieldName -> FieldName
-visitTypeFieldNames ctx proxy name = foldr applyTypeFieldNames name (typeDirectives $ useDirectives ctx proxy)
+visitTypeFieldNames ctx proxy name = foldr applyTypeFieldNames name (getTypeDirectives ctx proxy)
 
 visitTypeDescription :: (gql a) => UseDeriving gql args -> f a -> Maybe Description -> Maybe Description
-visitTypeDescription options proxy desc = foldr applyTypeDescription desc (typeDirectives $ useDirectives options proxy)
+visitTypeDescription options proxy desc = foldr applyTypeDescription desc (getTypeDirectives options proxy)
 
 toFieldRes :: (gql a) => UseDeriving gql args -> f a -> GRepField v -> (FieldName, v)
 toFieldRes options proxy GRepField {..} = (visitFieldName options proxy fieldSelector, fieldValue)
