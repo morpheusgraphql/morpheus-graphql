@@ -121,7 +121,6 @@ serializeDirective ctx (GDirectiveUsage x) = do
     directiveName = deriveDirectiveName ctx (Identity x)
 
 -- GET
-
 getEnumDirectives :: (gql a) => UseDeriving gql args -> f a -> TypeName -> [GDirectiveUsage gql args]
 getEnumDirectives UseDeriving {..} proxy name = lookupDirective name $ enumValueDirectives $ useDirectives proxy
 
