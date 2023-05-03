@@ -96,20 +96,20 @@ instance (Datatype d, DecodeRep ctx f) => DecodeRep ctx (M1 D d f) where
   decodeRep drv value = M1 <$> decodeRep drv value
 
 instance (UseGQLType ctx gql, DescribeCons gql a, DescribeCons gql b, DecodeRep ctx a, DecodeRep ctx b) => DecodeRep ctx (a :+: b) where
-  decodeRep ctx (Object obj) =
+  decodeRep ctx v =
     do
       typename <- asks typeName
-      let (kind, (l, r)) = getUnionTags ctx typename (Proxy @(a :+: b))
-      setVariantRef kind $ do
-        (name, value) <- getInputUnionValue obj
-        variant <- coerceInputObject value
-        decodeInputUnionObject ctx (l, r) name obj (Object variant)
-  decodeRep ctx (Enum name) = do
-    typename <- asks typeName
-    let (_, (l, r)) = getUnionTags ctx typename (Proxy @(a :+: b))
-    visitor <- asks enumVisitor
-    decideEither ctx (map visitor l, map visitor r) name (Enum name)
-  decodeRep _ _ = throwError (internal "lists and scalars are not allowed in Union")
+      let (kind, (left, right)) = getUnionTags ctx typename (Proxy @(a :+: b))
+      setVariantRef kind $
+        case v of
+          (Object obj) -> do
+            (name, value) <- getInputUnionValue obj
+            variant <- coerceInputObject value
+            decodeInputUnionObject ctx (left, right) name obj (Object variant)
+          (Enum name) -> do
+            visitor <- asks enumVisitor
+            decideEither ctx (map visitor left, map visitor right) name (Enum name)
+          _ -> throwError (internal "lists and scalars are not allowed in Union")
 
 instance (Constructor c, UseDeriving gql val ~ ctx, DecodeFields val a) => DecodeRep ctx (M1 C c a) where
   decodeRep ctx value = fmap M1 (decodeFields (decoder ctx value))
