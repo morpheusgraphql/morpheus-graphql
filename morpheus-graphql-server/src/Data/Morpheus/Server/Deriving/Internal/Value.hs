@@ -92,7 +92,7 @@ instance (UseGQLType ctx gql, DescribeCons gql a, DescribeCons gql b, DecodeRep 
             (name, value) <- getInputUnionValue obj
             variant <- coerceInputObject value
             let isDone = [name] == left || [name] == left
-            pure ((left, right), name, Object (if isDone then variant else obj))
+            pure ((left, right), name, if isDone then Object variant else input)
           (Enum name) -> do
             visitor <- asks enumVisitor
             pure ((map visitor left, map visitor right), name, Enum name)
