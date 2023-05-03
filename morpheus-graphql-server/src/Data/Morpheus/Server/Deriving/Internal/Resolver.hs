@@ -74,9 +74,7 @@ useExploreResolvers ::
   UseResolver res gql val ->
   a ->
   ResolverValue m
-useExploreResolvers res v = convertNode (resDrv res) proxy (deriveValue (toOptions res) v)
-  where
-    proxy = Identity v
+useExploreResolvers res v = convertNode (resDrv res) (Identity v) (deriveValue (toOptions res) v)
 
 useObjectResolvers ::
   (MonadError GQLError m, EXPLORE gql res m a) =>
