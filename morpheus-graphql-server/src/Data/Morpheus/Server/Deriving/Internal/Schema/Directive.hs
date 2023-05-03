@@ -98,17 +98,17 @@ deriveDirectiveDefinition ctx proxy t = do
         }
     )
 
-deriveDirectiveUsages :: UseDeriving gql args -> [GDirectiveUsage gql args] -> GQLResult (Directives CONST)
-deriveDirectiveUsages options = fmap unsafeFromList . traverse (toDirective options)
-
 deriveEnumDirectives :: (gql a) => UseDeriving gql args -> f a -> TypeName -> GQLResult (Directives CONST)
-deriveEnumDirectives options proxy name = deriveDirectiveUsages options $ filter isIncluded $ getEnumDirectiveUsages options proxy name
+deriveEnumDirectives ctx proxy = deriveDirectiveUsages ctx . getEnumDirectiveUsages ctx proxy
 
 deriveFieldDirectives :: (gql a) => UseDeriving gql args -> f a -> FieldName -> GQLResult (Directives CONST)
-deriveFieldDirectives options proxy name = deriveDirectiveUsages options $ filter isIncluded $ getFieldDirectiveUsages options name proxy
+deriveFieldDirectives ctx proxy = deriveDirectiveUsages ctx . getFieldDirectiveUsages ctx proxy
 
 deriveTypeDirectives :: (gql a) => UseDeriving gql args -> f a -> GQLResult (Directives CONST)
-deriveTypeDirectives options proxy = deriveDirectiveUsages options $ filter isIncluded $ typeDirectives $ useDirectives options proxy
+deriveTypeDirectives ctx = deriveDirectiveUsages ctx . typeDirectives . useDirectives ctx
+
+deriveDirectiveUsages :: UseDeriving gql args -> [GDirectiveUsage gql args] -> GQLResult (Directives CONST)
+deriveDirectiveUsages options = fmap unsafeFromList . traverse (toDirective options) . filter isIncluded
 
 -- others
 
@@ -139,11 +139,10 @@ isIncluded (GDirectiveUsage x) = not $ excludeFromSchema (Identity x)
 getEnumDirectiveUsages :: (gql a) => UseDeriving gql args -> f a -> TypeName -> [GDirectiveUsage gql args]
 getEnumDirectiveUsages UseDeriving {..} proxy name = getDirHM name $ enumValueDirectives $ useDirectives proxy
 
-getFieldDirectiveUsages :: (gql a) => UseDeriving gql args -> FieldName -> f a -> [GDirectiveUsage gql args]
-getFieldDirectiveUsages UseDeriving {..} name proxy = getDirHM name $ fieldDirectives $ useDirectives proxy
+getFieldDirectiveUsages :: (gql a) => UseDeriving gql args -> f a -> FieldName -> [GDirectiveUsage gql args]
+getFieldDirectiveUsages UseDeriving {..} proxy name = getDirHM name $ fieldDirectives $ useDirectives proxy
 
 -- visit
-
 visitEnumValueDescription :: (gql a) => UseDeriving gql args -> f a -> TypeName -> Maybe Description -> Maybe Description
 visitEnumValueDescription options proxy name desc = foldr applyEnumDescription desc (getEnumDirectiveUsages options proxy name)
 
@@ -153,10 +152,10 @@ visitEnumName options proxy name = foldr applyEnumName (withTypeDirectives name)
     withTypeDirectives dirName = foldr applyTypeEnumNames dirName (typeDirectives $ useDirectives options proxy)
 
 visitFieldDescription :: (gql a) => UseDeriving gql args -> f a -> FieldName -> Maybe Description -> Maybe Description
-visitFieldDescription options proxy name desc = foldr applyFieldDescription desc (getFieldDirectiveUsages options name proxy)
+visitFieldDescription options proxy name desc = foldr applyFieldDescription desc (getFieldDirectiveUsages options proxy name)
 
 visitFieldDefaultValue :: (gql a) => UseDeriving gql args -> f a -> FieldName -> Maybe (Value CONST) -> Maybe (Value CONST)
-visitFieldDefaultValue options proxy name desc = foldr applyFieldDefaultValue desc (getFieldDirectiveUsages options name proxy)
+visitFieldDefaultValue options proxy name desc = foldr applyFieldDefaultValue desc (getFieldDirectiveUsages options proxy name)
 
 visitFieldContent ::
   (gql a) =>
@@ -174,7 +173,7 @@ visitArgument :: (gql a) => UseDeriving gql args -> a -> Argument valid -> Argum
 visitArgument ctx x Argument {..} = Argument {argumentName = visitFieldName ctx (Identity x) argumentName, ..}
 
 visitFieldName :: (gql a) => UseDeriving gql args -> f a -> FieldName -> FieldName
-visitFieldName options proxy name = foldr applyFieldName (visitTypeFieldNames options proxy name) (getFieldDirectiveUsages options name proxy)
+visitFieldName options proxy name = foldr applyFieldName (visitTypeFieldNames options proxy name) (getFieldDirectiveUsages options proxy name)
 
 visitTypeFieldNames :: (gql a) => UseDeriving gql args -> f a -> FieldName -> FieldName
 visitTypeFieldNames ctx proxy name = foldr applyTypeFieldNames name (typeDirectives $ useDirectives ctx proxy)
