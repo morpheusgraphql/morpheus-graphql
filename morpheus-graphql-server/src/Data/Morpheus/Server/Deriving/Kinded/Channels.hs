@@ -28,8 +28,8 @@ import Data.Morpheus.App.Internal.Resolving
   )
 import Data.Morpheus.Generic
   ( GRep,
-    GRepContext (..),
     GRepField,
+    GRepFun (..),
     GRepValue (..),
     deriveValue,
   )
@@ -127,12 +127,12 @@ instance (UseDeriving gql val ~ ctx, gql a, Generic a, GRep gql (GetChannel val 
       . map (toFieldRes ctx (Proxy @a))
       . toFields
       . deriveValue
-        ( GRepContext
+        ( GRepFun
             { grepFun = getChannel ctx . runIdentity,
               grepTypename = useTypename ctx . outputType,
               grepWrappers = useWrappers ctx . outputType
             } ::
-            GRepContext gql (GetChannel val e) Identity (ChannelRes e)
+            GRepFun gql (GetChannel val e) Identity (ChannelRes e)
         )
 
 toFields :: GRepValue (ChannelRes e) -> [GRepField (ChannelRes e)]

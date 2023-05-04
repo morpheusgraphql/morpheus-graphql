@@ -4,7 +4,7 @@ module Data.Morpheus.Generic
     -- GRep
     GRep,
     GRepCons (..),
-    GRepContext (..),
+    GRepFun (..),
     GRepField (..),
     GRepType (..),
     GRepValue (..),
@@ -36,8 +36,8 @@ import Data.Morpheus.Generic.Fields
 import Data.Morpheus.Generic.GRep
   ( GRep,
     GRepCons (..),
-    GRepContext (..),
     GRepField (..),
+    GRepFun (..),
     GRepType (..),
     GRepValue (..),
     deriveType,

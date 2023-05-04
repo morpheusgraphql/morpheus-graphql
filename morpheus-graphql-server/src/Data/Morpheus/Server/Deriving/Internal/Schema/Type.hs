@@ -26,7 +26,7 @@ import Control.Monad.Except
 import Data.Foldable
 import Data.Morpheus.Generic
   ( GRep,
-    GRepContext (..),
+    GRepFun (..),
     GRepType (..),
     deriveType,
     scanTypes,
@@ -99,9 +99,9 @@ exploreTypes ::
   [UseRef gql]
 exploreTypes cxt proxy = scanTypes (scanCTX proxy cxt) proxy
 
-scanCTX :: (UseGQLType ctx gql) => CatType cat a -> ctx -> GRepContext gql gql Proxy (UseRef gql)
+scanCTX :: (UseGQLType ctx gql) => CatType cat a -> ctx -> GRepFun gql gql Proxy (UseRef gql)
 scanCTX cat gql =
-  GRepContext
+  GRepFun
     { grepFun = UseRef . (`mapCat` cat),
       grepTypename = useTypename gql . (`mapCat` cat),
       grepWrappers = useWrappers gql . (`mapCat` cat)
@@ -174,9 +174,9 @@ fillTypeContent ctx proxy content = do
       dirs
       content
 
-fieldGRep :: (UseGQLType ctx gql) => CatType cat a -> ctx -> GRepContext gql gql Proxy (GQLResult (ArgumentsDefinition CONST))
+fieldGRep :: (UseGQLType ctx gql) => CatType cat a -> ctx -> GRepFun gql gql Proxy (GQLResult (ArgumentsDefinition CONST))
 fieldGRep cat gql =
-  GRepContext
+  GRepFun
     { grepTypename = useTypename gql . (`mapCat` cat),
       grepWrappers = useWrappers gql . (`mapCat` cat),
       grepFun = useDeriveFieldArgs gql . (`mapCat` cat)

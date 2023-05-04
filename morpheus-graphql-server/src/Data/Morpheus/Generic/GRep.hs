@@ -16,7 +16,7 @@
 
 module Data.Morpheus.Generic.GRep
   ( GRep (..),
-    GRepContext (..),
+    GRepFun (..),
     GRepCons (..),
     GRepField (..),
     GRepValue (..),
@@ -59,7 +59,7 @@ import GHC.Generics
   )
 import Relude hiding (undefined)
 
-data GRepContext gql fun f result = GRepContext
+data GRepFun gql fun f result = GRepFun
   { grepFun :: forall a. (fun a) => f a -> result,
     grepTypename :: forall proxy a. (gql a) => proxy a -> TypeName,
     grepWrappers :: forall proxy a. (gql a) => proxy a -> TypeWrapper
@@ -67,7 +67,7 @@ data GRepContext gql fun f result = GRepContext
 
 deriveValue ::
   (Generic a, GRep gql constraint value (Rep a), gql a) =>
-  GRepContext gql constraint Identity value ->
+  GRepFun gql constraint Identity value ->
   a ->
   GRepValue value
 deriveValue options value
@@ -86,7 +86,7 @@ toRep _ = Proxy
 deriveType ::
   forall kind gql c v kinded m a.
   (GRep gql c (m v) (Rep a), Monad m, gql a) =>
-  GRepContext gql c Proxy (m v) ->
+  GRepFun gql c Proxy (m v) ->
   kinded kind a ->
   m (GRepType v)
 deriveType ctx x = toType <$> unpackMonad (deriveTypeDefinition ctx (toRep x))
@@ -105,16 +105,16 @@ deriveType ctx x = toType <$> unpackMonad (deriveTypeDefinition ctx (toRep x))
 scanTypes ::
   forall kind gql c v kinded a.
   (GRep gql c v (Rep a), gql a) =>
-  GRepContext gql c Proxy v ->
+  GRepFun gql c Proxy v ->
   kinded kind a ->
   [v]
 scanTypes ctx = scanNodes ctx . toRep
 
 --  GENERIC UNION
 class GRep (gql :: Type -> Constraint) (c :: Type -> Constraint) (v :: Type) f where
-  deriveTypeValue :: GRepContext gql c Identity v -> f a -> (Bool, GRepCons v)
-  deriveTypeDefinition :: GRepContext gql c Proxy v -> proxy f -> [GRepCons v]
-  scanNodes :: GRepContext gql c Proxy v -> proxy f -> [v]
+  deriveTypeValue :: GRepFun gql c Identity v -> f a -> (Bool, GRepCons v)
+  deriveTypeDefinition :: GRepFun gql c Proxy v -> proxy f -> [GRepCons v]
+  scanNodes :: GRepFun gql c Proxy v -> proxy f -> [v]
 
 instance (Datatype d, GRep gql c v f) => GRep gql c v (M1 D d f) where
   deriveTypeValue options (M1 src) = deriveTypeValue options src
@@ -146,9 +146,9 @@ deriveConsRep proxy fields = GRepCons {..}
       | otherwise = enumerate fields
 
 class DeriveFieldRep (gql :: Type -> Constraint) (c :: Type -> Constraint) (v :: Type) f where
-  toFieldRep :: GRepContext gql c Identity v -> f a -> [GRepField v]
-  conRep :: GRepContext gql c Proxy v -> proxy f -> [GRepField v]
-  scanRec :: GRepContext gql c Proxy v -> proxy f -> [v]
+  toFieldRep :: GRepFun gql c Identity v -> f a -> [GRepField v]
+  conRep :: GRepFun gql c Proxy v -> proxy f -> [GRepField v]
+  scanRec :: GRepFun gql c Proxy v -> proxy f -> [v]
 
 instance (DeriveFieldRep gql c v a, DeriveFieldRep gql c v b) => DeriveFieldRep gql c v (a :*: b) where
   toFieldRep options (a :*: b) = toFieldRep options a <> toFieldRep options b
@@ -156,7 +156,7 @@ instance (DeriveFieldRep gql c v a, DeriveFieldRep gql c v b) => DeriveFieldRep 
   scanRec ctx _ = scanRec ctx (Proxy @a) <> scanRec ctx (Proxy @b)
 
 instance (Selector s, gql a, c a) => DeriveFieldRep gql c v (M1 S s (Rec0 a)) where
-  toFieldRep GRepContext {..} (M1 (K1 src)) =
+  toFieldRep GRepFun {..} (M1 (K1 src)) =
     [ GRepField
         { fieldSelector = selNameP (Proxy @s),
           fieldTypeRef = TypeRef (grepTypename (Proxy @a)) (grepWrappers (Proxy @a)),
@@ -164,14 +164,14 @@ instance (Selector s, gql a, c a) => DeriveFieldRep gql c v (M1 S s (Rec0 a)) wh
         }
     ]
 
-  conRep GRepContext {..} _ =
+  conRep GRepFun {..} _ =
     [ GRepField
         { fieldSelector = selNameP (Proxy @s),
           fieldTypeRef = TypeRef (grepTypename (Proxy @a)) (grepWrappers (Proxy @a)),
           fieldValue = grepFun (Proxy @a)
         }
     ]
-  scanRec GRepContext {..} _ = [grepFun (Proxy @a)]
+  scanRec GRepFun {..} _ = [grepFun (Proxy @a)]
 
 instance DeriveFieldRep gql c v U1 where
   toFieldRep _ _ = []

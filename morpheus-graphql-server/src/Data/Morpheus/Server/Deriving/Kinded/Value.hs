@@ -24,8 +24,8 @@ import Data.Morpheus.App.Internal.Resolving
   )
 import Data.Morpheus.Generic
   ( GRep,
-    GRepContext (..),
     GRepField (..),
+    GRepFun (..),
     GRepValue (..),
     deriveValue,
     symbolName,
@@ -108,12 +108,12 @@ instance (ctx ~ UseDeriving gql args, gql a, Generic a, DecodeRep ctx (Rep a), G
   encodeKindedValue ctx =
     repToValue
       . deriveValue
-        ( GRepContext
+        ( GRepFun
             { grepFun = useEncodeValue ctx . runIdentity,
               grepTypename = useTypename ctx . inputType,
               grepWrappers = useWrappers ctx . inputType
             } ::
-            GRepContext gql args Identity (GQLResult (Value CONST))
+            GRepFun gql args Identity (GQLResult (Value CONST))
         )
       . unkind
   decodeKindedValue ctx _ = fmap to . (`runReaderT` context) . decodeRep ctx
@@ -132,12 +132,12 @@ instance (ctx ~ UseDeriving gql args, gql a, Generic a, DecodeRep ctx (Rep a), G
   encodeKindedValue ctx =
     repToValue
       . deriveValue
-        ( GRepContext
+        ( GRepFun
             { grepFun = useEncodeValue ctx . runIdentity,
               grepTypename = useTypename ctx . inputType,
               grepWrappers = useWrappers ctx . inputType
             } ::
-            GRepContext gql args Identity (GQLResult (Value CONST))
+            GRepFun gql args Identity (GQLResult (Value CONST))
         )
       . unkind
   decodeKindedValue ctx _ = fmap to . (`runReaderT` context) . decodeRep ctx

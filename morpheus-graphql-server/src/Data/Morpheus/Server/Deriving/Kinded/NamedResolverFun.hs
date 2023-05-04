@@ -33,7 +33,7 @@ import Data.Morpheus.App.Internal.Resolving
   )
 import Data.Morpheus.Generic
   ( GRep,
-    GRepContext (..),
+    GRepFun (..),
     GRepValue (..),
     deriveValue,
   )
@@ -131,9 +131,9 @@ instance (UseNamedResolver namedRes res gql val ~ ctx, Monad m, val a, MonadReso
       >>= liftState . useDecodeArguments (namedDrv ctx)
       >>= useNamedFieldResolver ctx . f
 
-getOptions :: UseNamedResolver namedRes res gql val -> GRepContext gql (res m) Identity (m (ResolverValue m))
+getOptions :: UseNamedResolver namedRes res gql val -> GRepFun gql (res m) Identity (m (ResolverValue m))
 getOptions ctx =
-  GRepContext
+  GRepFun
     { grepFun = useNamedFieldResolver ctx . runIdentity,
       grepTypename = useTypename ctx . outputType,
       grepWrappers = useWrappers ctx . outputType

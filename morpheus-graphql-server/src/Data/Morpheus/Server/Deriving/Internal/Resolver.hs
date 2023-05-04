@@ -30,7 +30,7 @@ import Data.Morpheus.App.Internal.Resolving
   )
 import Data.Morpheus.Generic
   ( GRep,
-    GRepContext (..),
+    GRepFun (..),
     GRepValue (..),
     deriveValue,
   )
@@ -56,9 +56,9 @@ fromGRep ctx prx GRepValueObject {..} = mkObject objectTypeName (toFieldRes ctx 
 fromGRep ctx prx GRepValueUnion {..} = mkUnion unionVariantName (toFieldRes ctx prx <$> unionFields)
 fromGRep _ _ GRepValueUnionRef {..} = ResLazy (ResObject (Just unionRefTypeName) <$> (unionRefValue >>= requireObject))
 
-toOptions :: UseResolver res gql val -> GRepContext gql (res m) Identity (m (ResolverValue m))
+toOptions :: UseResolver res gql val -> GRepFun gql (res m) Identity (m (ResolverValue m))
 toOptions ctx =
-  GRepContext
+  GRepFun
     { grepFun = useEncodeResolver ctx . runIdentity,
       grepTypename = useTypename ctx . inputType,
       grepWrappers = useWrappers ctx . inputType
