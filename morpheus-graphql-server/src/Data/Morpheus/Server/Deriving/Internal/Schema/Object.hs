@@ -57,8 +57,8 @@ defineObjectType proxy GRepCons {consName, consFields} =
   [NodeTypeVariant consName (toAny (object proxy fields))] <> [NodeUnitType | null consFields]
   where
     fields
-      | null consFields = singleton unitFieldName mkFieldUnit
-      | otherwise = unsafeFromFields $ map (repToFieldDefinition proxy) consFields
+      | null consFields = [mkFieldUnit]
+      | otherwise = map (repToFieldDefinition proxy) consFields
 
 mkFieldUnit :: FieldDefinition cat s
 mkFieldUnit = mkField Nothing unitFieldName (mkTypeRef unitTypeName)
@@ -69,12 +69,11 @@ buildObjectTypeContent ::
   CatType cat a ->
   [GRepField (ArgumentsDefinition CONST)] ->
   GQLResult (TypeContent TRUE cat CONST)
-buildObjectTypeContent ctx proxy consFields =
-  object proxy . unsafeFromFields <$> traverse (visitFieldDefinition ctx proxy . repToFieldDefinition proxy) consFields
+buildObjectTypeContent ctx proxy = fmap (object proxy) . traverse (visitFieldDefinition ctx proxy . repToFieldDefinition proxy)
 
-object :: CatType kind a -> FieldsDefinition kind CONST -> TypeContent TRUE kind CONST
-object InputType = DataInputObject
-object OutputType = DataObject []
+object :: CatType kind a -> [FieldDefinition kind CONST] -> TypeContent TRUE kind CONST
+object InputType = DataInputObject . unsafeFromFields
+object OutputType = DataObject [] . unsafeFromFields
 
 repToFieldDefinition ::
   CatType c a ->
