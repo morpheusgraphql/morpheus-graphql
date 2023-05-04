@@ -17,10 +17,7 @@ import Data.Morpheus.Generic
     GRepField (..),
   )
 import Data.Morpheus.Internal.Ext (GQLResult)
-import Data.Morpheus.Internal.Utils
-  ( empty,
-    singleton,
-  )
+import Data.Morpheus.Internal.Utils (empty)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
   ( UseDeriving,
     getFieldDirectives,
@@ -41,7 +38,6 @@ import Data.Morpheus.Types.Internal.AST
     CONST,
     FieldContent (..),
     FieldDefinition (..),
-    FieldsDefinition,
     TRUE,
     TypeContent (..),
     mkField,
@@ -72,27 +68,22 @@ object :: CatType kind a -> [FieldDefinition kind CONST] -> TypeContent TRUE kin
 object InputType = DataInputObject . unsafeFromFields
 object OutputType = DataObject [] . unsafeFromFields
 
+toFieldContent :: CatType c a -> ArgumentsDefinition CONST -> Maybe (FieldContent TRUE c CONST)
+toFieldContent OutputType x | not (null x) = Just (FieldArgs x)
+toFieldContent _ _ = Nothing
+
 repToFieldDefinition ::
   CatType c a ->
   GRepField (ArgumentsDefinition CONST) ->
   FieldDefinition c CONST
-repToFieldDefinition
-  proxy
-  GRepField
-    { fieldSelector = fieldName,
-      fieldTypeRef = fieldType,
-      fieldValue
-    } =
-    FieldDefinition
-      { fieldDescription = mempty,
-        fieldDirectives = empty,
-        fieldContent = toFieldContent proxy fieldValue,
-        ..
-      }
-
-toFieldContent :: CatType c a -> ArgumentsDefinition CONST -> Maybe (FieldContent TRUE c CONST)
-toFieldContent OutputType x | not (null x) = Just (FieldArgs x)
-toFieldContent _ _ = Nothing
+repToFieldDefinition proxy GRepField {..} =
+  FieldDefinition
+    { fieldDescription = mempty,
+      fieldDirectives = empty,
+      fieldContent = toFieldContent proxy fieldValue,
+      fieldName = fieldSelector,
+      fieldType = fieldTypeRef
+    }
 
 visitFieldDefinition :: (gql a) => UseDeriving gql args -> CatType kind a -> FieldDefinition kind CONST -> GQLResult (FieldDefinition kind CONST)
 visitFieldDefinition ctx proxy FieldDefinition {..} = do
