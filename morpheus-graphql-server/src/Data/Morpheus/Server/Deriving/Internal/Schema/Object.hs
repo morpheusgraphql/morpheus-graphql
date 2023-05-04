@@ -69,8 +69,8 @@ buildObjectTypeContent ::
   CatType cat a ->
   [GRepField (ArgumentsDefinition CONST)] ->
   GQLResult (TypeContent TRUE cat CONST)
-buildObjectTypeContent ctx scope consFields = do
-  mkObjectTypeContent scope . unsafeFromFields <$> traverse (visitFieldDefinition ctx scope . repToFieldDefinition scope) consFields
+buildObjectTypeContent ctx proxy consFields = do
+  mkObjectTypeContent proxy . unsafeFromFields <$> traverse (visitFieldDefinition ctx proxy . repToFieldDefinition proxy) consFields
 
 mkObjectTypeContent :: CatType kind a -> FieldsDefinition kind CONST -> TypeContent TRUE kind CONST
 mkObjectTypeContent InputType = DataInputObject
