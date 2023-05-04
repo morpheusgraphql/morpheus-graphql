@@ -23,7 +23,6 @@ module Data.Morpheus.Generic.GRep
     GRepType (..),
     deriveValue,
     deriveType,
-    scanTypes,
   )
 where
 
@@ -102,36 +101,24 @@ deriveType ctx x = toType <$> unpackMonad (deriveTypeDefinition ctx (toRep x))
         (unionRefRep, unionCons) = partition (isUnionRef typename) cons
         typename = grepTypename ctx x
 
-scanTypes ::
-  forall kind gql c v kinded a.
-  (GRep gql c v (Rep a), gql a) =>
-  GRepFun gql c Proxy v ->
-  kinded kind a ->
-  [v]
-scanTypes ctx = scanNodes ctx . toRep
-
 --  GENERIC UNION
 class GRep (gql :: Type -> Constraint) (c :: Type -> Constraint) (v :: Type) f where
   deriveTypeValue :: GRepFun gql c Identity v -> f a -> (Bool, GRepCons v)
   deriveTypeDefinition :: GRepFun gql c Proxy v -> proxy f -> [GRepCons v]
-  scanNodes :: GRepFun gql c Proxy v -> proxy f -> [v]
 
 instance (Datatype d, GRep gql c v f) => GRep gql c v (M1 D d f) where
   deriveTypeValue options (M1 src) = deriveTypeValue options src
   deriveTypeDefinition options _ = deriveTypeDefinition options (Proxy @f)
-  scanNodes ctx _ = scanNodes ctx (Proxy @f)
 
 -- | recursion for Object types, both of them : 'INPUT_OBJECT' and 'OBJECT'
 instance (GRep gql c v a, GRep gql c v b) => GRep gql c v (a :+: b) where
   deriveTypeValue f (L1 x) = (True, snd (deriveTypeValue f x))
   deriveTypeValue f (R1 x) = (True, snd (deriveTypeValue f x))
   deriveTypeDefinition options _ = deriveTypeDefinition options (Proxy @a) <> deriveTypeDefinition options (Proxy @b)
-  scanNodes ctx _ = scanNodes ctx (Proxy @a) <> scanNodes ctx (Proxy @b)
 
 instance (DeriveFieldRep gql con v f, Constructor c) => GRep gql con v (M1 C c f) where
   deriveTypeValue options (M1 src) = (False, deriveConsRep (Proxy @c) (toFieldRep options src))
   deriveTypeDefinition options _ = [deriveConsRep (Proxy @c) (conRep options (Proxy @f))]
-  scanNodes ctx _ = scanRec ctx (Proxy @f)
 
 deriveConsRep ::
   (Constructor (c :: Meta)) =>

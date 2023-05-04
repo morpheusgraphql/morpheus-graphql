@@ -10,7 +10,6 @@ module Data.Morpheus.Generic
     GRepValue (..),
     deriveType,
     deriveValue,
-    scanTypes,
     -- fields
     DecoderFun (..),
     DecodeFields,
@@ -42,7 +41,6 @@ import Data.Morpheus.Generic.GRep
     GRepValue (..),
     deriveType,
     deriveValue,
-    scanTypes,
   )
 import Data.Morpheus.Generic.Gmap
   ( Gmap,

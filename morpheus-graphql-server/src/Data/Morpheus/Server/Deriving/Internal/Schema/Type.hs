@@ -28,7 +28,6 @@ import Data.Morpheus.Generic
     GRepFun (..),
     GRepType (..),
     deriveType,
-    scanTypes,
   )
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
@@ -58,7 +57,6 @@ import Data.Morpheus.Server.Deriving.Utils.Types
   )
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseGQLType (..),
-    UseRef (UseRef),
   )
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition,
