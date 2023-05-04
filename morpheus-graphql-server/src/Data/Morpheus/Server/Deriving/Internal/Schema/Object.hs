@@ -57,11 +57,8 @@ defineObjectType proxy GRepCons {consName, consFields} =
   [NodeTypeVariant consName (toAny (object proxy fields))] <> [NodeUnitType | null consFields]
   where
     fields
-      | null consFields = [mkFieldUnit]
+      | null consFields = [mkField Nothing unitFieldName (mkTypeRef unitTypeName)]
       | otherwise = map (repToFieldDefinition proxy) consFields
-
-mkFieldUnit :: FieldDefinition cat s
-mkFieldUnit = mkField Nothing unitFieldName (mkTypeRef unitTypeName)
 
 buildObjectTypeContent ::
   (gql a) =>
