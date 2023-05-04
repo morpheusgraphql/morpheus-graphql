@@ -54,7 +54,7 @@ import Data.Morpheus.Types.Internal.AST
 
 defineObjectType :: CatType kind a -> GRepCons (ArgumentsDefinition CONST) -> [NodeTypeVariant]
 defineObjectType proxy GRepCons {consName, consFields} =
-  [NodeTypeVariant consName (toAny (mkObjectTypeContent proxy fields))] <> [NodeUnitType | null consFields]
+  [NodeTypeVariant consName (toAny (object proxy fields))] <> [NodeUnitType | null consFields]
   where
     fields
       | null consFields = singleton unitFieldName mkFieldUnit
@@ -69,12 +69,12 @@ buildObjectTypeContent ::
   CatType cat a ->
   [GRepField (ArgumentsDefinition CONST)] ->
   GQLResult (TypeContent TRUE cat CONST)
-buildObjectTypeContent ctx proxy consFields = do
-  mkObjectTypeContent proxy . unsafeFromFields <$> traverse (visitFieldDefinition ctx proxy . repToFieldDefinition proxy) consFields
+buildObjectTypeContent ctx proxy consFields =
+  object proxy . unsafeFromFields <$> traverse (visitFieldDefinition ctx proxy . repToFieldDefinition proxy) consFields
 
-mkObjectTypeContent :: CatType kind a -> FieldsDefinition kind CONST -> TypeContent TRUE kind CONST
-mkObjectTypeContent InputType = DataInputObject
-mkObjectTypeContent OutputType = DataObject []
+object :: CatType kind a -> FieldsDefinition kind CONST -> TypeContent TRUE kind CONST
+object InputType = DataInputObject
+object OutputType = DataObject []
 
 repToFieldDefinition ::
   CatType c a ->
