@@ -69,9 +69,8 @@ buildObjectTypeContent ::
   CatType cat a ->
   [GRepField (ArgumentsDefinition CONST)] ->
   GQLResult (TypeContent TRUE cat CONST)
-buildObjectTypeContent options scope consFields = do
-  xs <- traverse (setGQLTypeProps options scope . repToFieldDefinition scope) consFields
-  pure $ mkObjectTypeContent scope $ unsafeFromFields xs
+buildObjectTypeContent ctx scope consFields = do
+  mkObjectTypeContent scope . unsafeFromFields <$> traverse (visitFieldDefinition ctx scope . repToFieldDefinition scope) consFields
 
 mkObjectTypeContent :: CatType kind a -> FieldsDefinition kind CONST -> TypeContent TRUE kind CONST
 mkObjectTypeContent InputType = DataInputObject
@@ -82,7 +81,7 @@ repToFieldDefinition ::
   GRepField (ArgumentsDefinition CONST) ->
   FieldDefinition c CONST
 repToFieldDefinition
-  x
+  proxy
   GRepField
     { fieldSelector = fieldName,
       fieldTypeRef = fieldType,
@@ -91,7 +90,7 @@ repToFieldDefinition
     FieldDefinition
       { fieldDescription = mempty,
         fieldDirectives = empty,
-        fieldContent = toFieldContent x fieldValue,
+        fieldContent = toFieldContent proxy fieldValue,
         ..
       }
 
@@ -99,8 +98,8 @@ toFieldContent :: CatType c a -> ArgumentsDefinition CONST -> Maybe (FieldConten
 toFieldContent OutputType x | not (null x) = Just (FieldArgs x)
 toFieldContent _ _ = Nothing
 
-setGQLTypeProps :: (gql a) => UseDeriving gql args -> CatType kind a -> FieldDefinition kind CONST -> GQLResult (FieldDefinition kind CONST)
-setGQLTypeProps ctx proxy FieldDefinition {..} = do
+visitFieldDefinition :: (gql a) => UseDeriving gql args -> CatType kind a -> FieldDefinition kind CONST -> GQLResult (FieldDefinition kind CONST)
+visitFieldDefinition ctx proxy FieldDefinition {..} = do
   dirs <- serializeDirectives ctx (getFieldDirectives ctx proxy fieldName)
   pure
     FieldDefinition
