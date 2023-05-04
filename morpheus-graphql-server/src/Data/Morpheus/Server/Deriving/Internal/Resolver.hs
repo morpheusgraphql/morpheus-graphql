@@ -50,16 +50,11 @@ import Data.Morpheus.Types.Internal.AST
 import GHC.Generics (Generic (Rep))
 import Relude
 
-convertNode ::
-  (MonadError GQLError m, gql a) =>
-  UseDeriving gql val ->
-  f a ->
-  GRepValue (m (ResolverValue m)) ->
-  ResolverValue m
-convertNode drv proxy GRepValueEnum {..} = mkEnum (visitEnumName drv proxy enumVariantName)
-convertNode drv proxy GRepValueObject {..} = mkObject objectTypeName (toFieldRes drv proxy <$> objectFields)
-convertNode drv proxy GRepValueUnion {..} = mkUnion unionVariantName (toFieldRes drv proxy <$> unionFields)
-convertNode _ _ GRepValueUnionRef {..} = ResLazy (ResObject (Just unionRefTypeName) <$> (unionRefValue >>= requireObject))
+fromGRep :: (MonadError GQLError m, gql a) => UseDeriving gql val -> f a -> GRepValue (m (ResolverValue m)) -> ResolverValue m
+fromGRep ctx prx GRepValueEnum {..} = mkEnum (visitEnumName ctx prx enumVariantName)
+fromGRep ctx prx GRepValueObject {..} = mkObject objectTypeName (toFieldRes ctx prx <$> objectFields)
+fromGRep ctx prx GRepValueUnion {..} = mkUnion unionVariantName (toFieldRes ctx prx <$> unionFields)
+fromGRep _ _ GRepValueUnionRef {..} = ResLazy (ResObject (Just unionRefTypeName) <$> (unionRefValue >>= requireObject))
 
 toOptions :: UseResolver res gql val -> GRepContext gql (res m) Identity (m (ResolverValue m))
 toOptions ctx =
@@ -74,7 +69,7 @@ useExploreResolvers ::
   UseResolver res gql val ->
   a ->
   ResolverValue m
-useExploreResolvers res v = convertNode (resDrv res) (Identity v) (deriveValue (toOptions res) v)
+useExploreResolvers res v = fromGRep (resDrv res) (Identity v) (deriveValue (toOptions res) v)
 
 useObjectResolvers ::
   (MonadError GQLError m, EXPLORE gql res m a) =>
