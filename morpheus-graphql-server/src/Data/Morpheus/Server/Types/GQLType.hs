@@ -79,9 +79,9 @@ import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
     ContextValue (..),
     KindedProxy (..),
-    catMap,
     inputType,
     isIN,
+    mapCat,
   )
 import Data.Morpheus.Server.Deriving.Utils.Types (GQLTypeNode (..), GQLTypeNodeExtension (..))
 import Data.Morpheus.Server.Deriving.Utils.Use
@@ -279,32 +279,32 @@ instance (Typeable m) => GQLType (Undefined m) where
 
 instance (GQLType a) => GQLType (Maybe a) where
   type KIND (Maybe a) = WRAPPER
-  __type = wrapper toNullable . __type . catMap (Proxy @a)
+  __type = wrapper toNullable . __type . mapCat (Proxy @a)
 
 instance (GQLType a) => GQLType [a] where
   type KIND [a] = WRAPPER
-  __type = wrapper list . __type . catMap (Proxy @a)
+  __type = wrapper list . __type . mapCat (Proxy @a)
 
 instance (GQLType a) => GQLType (Set a) where
   type KIND (Set a) = WRAPPER
-  __type = __type . catMap (Proxy @[a])
+  __type = __type . mapCat (Proxy @[a])
 
 instance (GQLType a) => GQLType (NonEmpty a) where
   type KIND (NonEmpty a) = WRAPPER
-  __type = __type . catMap (Proxy @[a])
+  __type = __type . mapCat (Proxy @[a])
 
 instance (GQLType a) => GQLType (Seq a) where
   type KIND (Seq a) = WRAPPER
-  __type = __type . catMap (Proxy @[a])
+  __type = __type . mapCat (Proxy @[a])
 
 instance (GQLType a) => GQLType (Vector a) where
   type KIND (Vector a) = WRAPPER
-  __type = __type . catMap (Proxy @[a])
+  __type = __type . mapCat (Proxy @[a])
 
 instance (GQLType a) => GQLType (SubscriptionField a) where
   type KIND (SubscriptionField a) = WRAPPER
-  __type = __type . catMap (Proxy @a)
-  __exploreRef = __exploreRef . catMap (Proxy @a)
+  __type = __type . mapCat (Proxy @a)
+  __exploreRef = __exploreRef . mapCat (Proxy @a)
 
 instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (Pair a b) where
   directives _ = typeDirective InputTypeNamespace {inputTypeNamespace = "Input"}
@@ -313,7 +313,7 @@ instance (Typeable a, Typeable b, GQLType a, GQLType b) => GQLType (Pair a b) wh
 
 instance (GQLType b, GQLType a, Gmap GQLType (Rep a)) => GQLType (a -> b) where
   type KIND (a -> b) = CUSTOM
-  __type = __type . catMap (Proxy @b)
+  __type = __type . mapCat (Proxy @b)
   __deriveType OutputType = __deriveType (OutputType :: CatType OUT b)
   __deriveType proxy = cantBeInputType proxy
   __exploreRef _ =
@@ -322,24 +322,24 @@ instance (GQLType b, GQLType a, Gmap GQLType (Rep a)) => GQLType (a -> b) where
 
 instance (GQLType k, GQLType v, Typeable k, Typeable v) => GQLType (Map k v) where
   type KIND (Map k v) = CUSTOM
-  __type = __type . catMap (Proxy @[Pair k v])
-  __deriveType = __deriveType . catMap (Proxy @[(k, v)])
-  __exploreRef = __exploreRef . catMap (Proxy @(Pair k v))
+  __type = __type . mapCat (Proxy @[Pair k v])
+  __deriveType = __deriveType . mapCat (Proxy @[(k, v)])
+  __exploreRef = __exploreRef . mapCat (Proxy @(Pair k v))
 
 instance (GQLType a) => GQLType (Resolver o e m a) where
   type KIND (Resolver o e m a) = CUSTOM
-  __type = __type . catMap (Proxy @a)
-  __deriveType = __deriveType . catMap (Proxy @a)
-  __exploreRef = __exploreRef . catMap (Proxy @a)
+  __type = __type . mapCat (Proxy @a)
+  __deriveType = __deriveType . mapCat (Proxy @a)
+  __exploreRef = __exploreRef . mapCat (Proxy @a)
 
 instance (Typeable k, Typeable v, GQLType k, GQLType v) => GQLType (k, v) where
-  __type = __type . catMap (Proxy @(Pair k v))
+  __type = __type . mapCat (Proxy @(Pair k v))
   directives _ = typeDirective InputTypeNamespace {inputTypeNamespace = "Input"}
-  __exploreRef = __exploreRef . catMap (Proxy @(Pair k v))
+  __exploreRef = __exploreRef . mapCat (Proxy @(Pair k v))
 
 instance (KnownSymbol name, GQLType value) => GQLType (Arg name value) where
   type KIND (Arg name value) = CUSTOM
-  __type = __type . catMap (Proxy @value)
+  __type = __type . mapCat (Proxy @value)
   __deriveType OutputType = cantBeInputType (OutputType :: CatType OUT (Arg name value))
   __deriveType p@InputType = (`GQLTypeNode` []) <$> fillTypeContent withDir p content
     where
@@ -355,7 +355,7 @@ instance (KnownSymbol name, GQLType value) => GQLType (Arg name value) where
 
 instance (DERIVE_TYPE GQLType i, DERIVE_TYPE GQLType u) => GQLType (TypeGuard i u) where
   type KIND (TypeGuard i u) = CUSTOM
-  __type = __type . catMap (Proxy @i)
+  __type = __type . mapCat (Proxy @i)
   __deriveType OutputType = do
     unions <- deriveTypeGuardUnions withDir union
     let imp = ImplementsExtension (useTypename withGQL interface) unions
@@ -376,10 +376,10 @@ instance (DERIVE_TYPE GQLType i, DERIVE_TYPE GQLType u) => GQLType (TypeGuard i 
 
 instance (GQLType a) => GQLType (NamedResolverT m a) where
   type KIND (NamedResolverT m a) = CUSTOM
-  __type = __type . catMap (Proxy :: Proxy a)
-  __deriveType = __deriveType . catMap (Proxy @a)
-  __deriveFieldArguments = __deriveFieldArguments . catMap (Proxy @a)
-  __exploreRef = __exploreRef . catMap (Proxy :: Proxy a)
+  __type = __type . mapCat (Proxy :: Proxy a)
+  __deriveType = __deriveType . mapCat (Proxy @a)
+  __deriveFieldArguments = __deriveFieldArguments . mapCat (Proxy @a)
+  __exploreRef = __exploreRef . mapCat (Proxy :: Proxy a)
 
 type DirectiveUsages = GDirectiveUsages GQLType GQLValue
 

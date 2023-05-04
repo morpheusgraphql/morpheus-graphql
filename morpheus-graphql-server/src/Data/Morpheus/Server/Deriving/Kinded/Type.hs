@@ -36,8 +36,8 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Type
 import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef (..))
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
-    catMap,
     inputType,
+    mapCat,
     unliftKind,
   )
 import Data.Morpheus.Server.Deriving.Utils.Types (GQLTypeNode (..))
@@ -66,8 +66,8 @@ class DeriveKindedType ctx (k :: DerivingKind) a where
   exploreKindedRefs :: (ctx ~ UseDeriving gql v) => ctx -> CatType cat (f k a) -> [ScanRef gql]
 
 instance (gql a, ctx ~ UseDeriving gql v) => DeriveKindedType ctx WRAPPER (f a) where
-  deriveKindedType ctx = useDeriveNode ctx . catMap (Proxy @a)
-  exploreKindedRefs ctx = useExploreRef ctx . catMap (Proxy @a)
+  deriveKindedType ctx = useDeriveNode ctx . mapCat (Proxy @a)
+  exploreKindedRefs ctx = useExploreRef ctx . mapCat (Proxy @a)
 
 scanLeaf :: (c a, UseGQLType ctx gql, gql a) => ctx -> CatType k a -> [ScanRef c]
 scanLeaf gql p = [ScanLeaf (useFingerprint gql p) p]
@@ -77,11 +77,11 @@ scanNode visible gql p = [ScanNode visible (useFingerprint gql p) p]
 
 instance (DecodeScalar a, gql a, ctx ~ UseDeriving gql v) => DeriveKindedType ctx SCALAR a where
   deriveKindedType ctx = deriveScalarDefinition scalarValidator ctx . unliftKind
-  exploreKindedRefs ctx proxy = scanLeaf ctx (catMap (Proxy @a) proxy)
+  exploreKindedRefs ctx proxy = scanLeaf ctx (mapCat (Proxy @a) proxy)
 
 instance (DERIVE_TYPE gql a, Gmap gql (Rep a), ctx ~ UseDeriving gql v) => DeriveKindedType ctx TYPE a where
   deriveKindedType ctx = fmap (uncurry GQLTypeNode) . deriveTypeDefinition ctx . unliftKind
-  exploreKindedRefs ctx proxy = scanNode True ctx (catMap (Proxy @a) proxy)
+  exploreKindedRefs ctx proxy = scanNode True ctx (mapCat (Proxy @a) proxy)
 
 instance (DERIVE_TYPE gql a, Gmap gql (Rep a), ctx ~ UseDeriving gql v, GQLDirective a, v a) => DeriveKindedType ctx DIRECTIVE a where
   deriveKindedType drv _ = GQLDirectiveNode <$> (deriveTypeDefinition drv proxy >>= deriveDirectiveDefinition drv proxy . fst)
@@ -89,4 +89,4 @@ instance (DERIVE_TYPE gql a, Gmap gql (Rep a), ctx ~ UseDeriving gql v, GQLDirec
       proxy = inputType (Proxy @a)
   exploreKindedRefs ctx proxy
     | excludeFromSchema (Proxy @a) = []
-    | otherwise = scanNode True ctx (catMap (Proxy @a) proxy)
+    | otherwise = scanNode True ctx (mapCat (Proxy @a) proxy)

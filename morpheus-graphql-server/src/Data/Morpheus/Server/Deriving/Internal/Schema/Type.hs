@@ -46,9 +46,7 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Object
   )
 import Data.Morpheus.Server.Deriving.Internal.Schema.Union (buildUnionType)
 import Data.Morpheus.Server.Deriving.Utils.Kinded
-  ( CatContext,
-    addContext,
-    getCatContext,
+  ( mapCat,
     mkScalar,
     outputType,
   )
@@ -99,14 +97,14 @@ exploreTypes ::
   UseDeriving gql args ->
   CatType kind a ->
   [UseRef gql]
-exploreTypes cxt proxy = scanTypes (scanCTX (getCatContext proxy) cxt) proxy
+exploreTypes cxt proxy = scanTypes (scanCTX proxy cxt) proxy
 
-scanCTX :: (UseGQLType ctx gql) => CatContext cat -> ctx -> GRepContext gql gql Proxy (UseRef gql)
-scanCTX ctx gql =
+scanCTX :: (UseGQLType ctx gql) => CatType cat a -> ctx -> GRepContext gql gql Proxy (UseRef gql)
+scanCTX cat gql =
   GRepContext
-    { grepFun = UseRef . addContext ctx,
-      grepTypename = useTypename gql . addContext ctx,
-      grepWrappers = useWrappers gql . addContext ctx
+    { grepFun = UseRef . (`mapCat` cat),
+      grepTypename = useTypename gql . (`mapCat` cat),
+      grepWrappers = useWrappers gql . (`mapCat` cat)
     }
 
 deriveTypeContentWith ::
@@ -115,7 +113,7 @@ deriveTypeContentWith ::
   CatType kind a ->
   GQLResult (TypeContent TRUE kind CONST, [GQLTypeNodeExtension])
 deriveTypeContentWith cxt proxy = do
-  reps <- deriveType (toFieldContent (getCatContext proxy) cxt) proxy
+  reps <- deriveType (fieldGRep proxy cxt) proxy
   buildTypeContent cxt proxy reps
 
 deriveTypeGuardUnions ::
@@ -176,12 +174,12 @@ fillTypeContent ctx proxy content = do
       dirs
       content
 
-toFieldContent :: (UseGQLType ctx gql) => CatContext cat -> ctx -> GRepContext gql gql Proxy (GQLResult (ArgumentsDefinition CONST))
-toFieldContent ctx gql =
+fieldGRep :: (UseGQLType ctx gql) => CatType cat a -> ctx -> GRepContext gql gql Proxy (GQLResult (ArgumentsDefinition CONST))
+fieldGRep cat gql =
   GRepContext
-    { grepTypename = useTypename gql . addContext ctx,
-      grepWrappers = useWrappers gql . addContext ctx,
-      grepFun = useDeriveFieldArgs gql . addContext ctx
+    { grepTypename = useTypename gql . (`mapCat` cat),
+      grepWrappers = useWrappers gql . (`mapCat` cat),
+      grepFun = useDeriveFieldArgs gql . (`mapCat` cat)
     }
 
 useDeriveRoot :: (UseGQLType ctx gql, gql a) => ctx -> f a -> GQLResult (TypeDefinition OBJECT CONST)

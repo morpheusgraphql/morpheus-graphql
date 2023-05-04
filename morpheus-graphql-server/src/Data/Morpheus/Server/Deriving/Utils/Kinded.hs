@@ -9,15 +9,11 @@
 
 module Data.Morpheus.Server.Deriving.Utils.Kinded
   ( KindedProxy (..),
-    setType,
     CatType (..),
     inputType,
     outputType,
-    CatContext (..),
     unliftKind,
-    catMap,
-    addContext,
-    getCatContext,
+    mapCat,
     mkScalar,
     isIN,
     ContextValue (..),
@@ -41,13 +37,6 @@ import Prelude (Bool (..), Show)
 data KindedProxy k a
   = KindedProxy
 
-setType :: f a -> kinded (k :: t) a' -> KindedProxy k a
-setType _ _ = KindedProxy
-
-data CatContext (cat :: TypeCategory) where
-  InputContext :: CatContext IN
-  OutputContext :: CatContext OUT
-
 data CatType (cat :: TypeCategory) a where
   InputType :: CatType IN a
   OutputType :: CatType OUT a
@@ -64,17 +53,9 @@ unliftKind :: CatType cat (f k a) -> CatType cat a
 unliftKind InputType = InputType
 unliftKind OutputType = OutputType
 
-catMap :: f a -> CatType cat b -> CatType cat a
-catMap _ InputType = InputType
-catMap _ OutputType = OutputType
-
-addContext :: CatContext c -> f a -> CatType c a
-addContext InputContext _ = InputType
-addContext OutputContext _ = OutputType
-
-getCatContext :: CatType c a -> CatContext c
-getCatContext InputType = InputContext
-getCatContext OutputType = OutputContext
+mapCat :: f a -> CatType cat b -> CatType cat a
+mapCat _ InputType = InputType
+mapCat _ OutputType = OutputType
 
 mkScalar :: CatType c a -> ScalarDefinition -> TypeContent TRUE c s
 mkScalar InputType f = DataScalar f
