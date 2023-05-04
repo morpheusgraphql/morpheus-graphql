@@ -77,8 +77,7 @@ import Data.Morpheus.Server.Deriving.Kinded.Value (KindedValue (..))
 import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef (..))
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
-    ContextValue (..),
-    KindedProxy (..),
+    Kinded (..),
     inputType,
     isIN,
     mapCat,
@@ -183,12 +182,12 @@ wrapper f TypeData {..} = TypeData {gqlWrappers = f gqlWrappers, ..}
 
 type Lifted a = (PARAM (KIND a) a)
 
-kindedProxy :: f a -> KindedProxy (KIND a) a
-kindedProxy _ = KindedProxy
+kindedProxy :: f a -> Proxy (f' (KIND a) a)
+kindedProxy _ = Proxy
 
-lifted :: CatType cat a -> CatType cat (f (KIND a) (Lifted a))
-lifted InputType = InputType
-lifted OutputType = OutputType
+kindedCatType :: CatType cat a -> CatType cat (f (KIND a) (Lifted a))
+kindedCatType InputType = InputType
+kindedCatType OutputType = OutputType
 
 type IgnoredResolver = (Resolver QUERY () Identity)
 
@@ -229,11 +228,11 @@ class GQLType a where
 
   __deriveType :: CatType c a -> GQLResult (GQLTypeNode c)
   default __deriveType :: (DERIVE_T a) => CatType c a -> GQLResult (GQLTypeNode c)
-  __deriveType = deriveKindedType withDir . lifted
+  __deriveType = deriveKindedType withDir . kindedCatType
 
   __exploreRef :: CatType c a -> [ScanRef GQLType]
   default __exploreRef :: (DERIVE_T a) => CatType c a -> [ScanRef GQLType]
-  __exploreRef = exploreKindedRefs withDir . lifted
+  __exploreRef = exploreKindedRefs withDir . kindedCatType
 
   __deriveFieldArguments :: CatType c a -> GQLResult (ArgumentsDefinition CONST)
   default __deriveFieldArguments :: (DeriveFieldArguments WITH_GQL (HasArguments a)) => CatType c a -> GQLResult (ArgumentsDefinition CONST)
@@ -465,14 +464,14 @@ class (GQLType a) => GQLValue a where
   encodeValue :: a -> GQLResult (Value CONST)
 
 instance (GQLType a, KindedValue WITH_DERIVING (KIND a) a) => GQLValue a where
-  encodeValue value = encodeKindedValue withDir (ContextValue value :: ContextValue (KIND a) a)
+  encodeValue value = encodeKindedValue withDir (Kinded value :: Kinded (KIND a) a)
   decodeValue = decodeKindedValue withDir (Proxy @(KIND a))
 
 class (MonadResolver m) => GQLResolver (m :: Type -> Type) resolver where
   deriveResolver :: resolver -> m (ResolverValue m)
 
 instance (MonadResolver m, KindedResolver WITH_RESOLVER (KIND a) m a) => GQLResolver m a where
-  deriveResolver resolver = kindedResolver withRes (ContextValue resolver :: ContextValue (KIND a) a)
+  deriveResolver resolver = kindedResolver withRes (Kinded resolver :: Kinded (KIND a) a)
 
 withRes :: UseResolver GQLResolver GQLType GQLValue
 withRes =

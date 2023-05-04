@@ -8,15 +8,14 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.Utils.Kinded
-  ( KindedProxy (..),
-    CatType (..),
+  ( CatType (..),
     inputType,
     outputType,
     unliftKind,
     mapCat,
     mkScalar,
     isIN,
-    ContextValue (..),
+    Kinded (..),
   )
 where
 
@@ -30,12 +29,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeContent (..),
   )
 import Prelude (Bool (..), Show)
-
--- | context , like Proxy with multiple parameters
--- * 'kind': object, scalar, enum ...
--- * 'a': actual gql type
-data KindedProxy k a
-  = KindedProxy
 
 data CatType (cat :: TypeCategory) a where
   InputType :: CatType IN a
@@ -65,6 +58,4 @@ isIN :: CatType c a -> Bool
 isIN InputType = True
 isIN _ = False
 
-newtype ContextValue (kind :: DerivingKind) a = ContextValue
-  { unContextValue :: a
-  }
+newtype Kinded (kind :: DerivingKind) a = Kinded {unkind :: a}

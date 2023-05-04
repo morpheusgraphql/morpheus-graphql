@@ -56,8 +56,8 @@ decodeValues :: (DECODE_VALUES val m a) => UseDeriving gql val -> Proxy a -> [Va
 decodeValues ctx _ xs = traverse (liftState . useDecodeValue ctx) xs >>= resolveBatched
 
 class KindedNamedResolver ctx (k :: DerivingKind) (m :: Type -> Type) a where
-  kindedNamedResolver :: (UseNamedResolver namedRes resFun gql val ~ ctx) => ctx -> f k a -> [NamedResolver m]
-  kindedNamedRefs :: (UseNamedResolver namedRes resFun gql val ~ ctx) => ctx -> f k a -> [ScanRef (namedRes m)]
+  kindedNamedResolver :: (UseNamedResolver namedRes resFun gql val ~ ctx) => ctx -> p (f k a) -> [NamedResolver m]
+  kindedNamedRefs :: (UseNamedResolver namedRes resFun gql val ~ ctx) => ctx -> p (f k a) -> [ScanRef (namedRes m)]
 
 instance
   ( UseNamedResolver namedRes resFun gql val ~ ctx,

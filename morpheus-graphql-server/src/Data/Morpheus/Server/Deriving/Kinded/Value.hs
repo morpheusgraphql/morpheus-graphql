@@ -45,7 +45,7 @@ import Data.Morpheus.Server.Deriving.Internal.Value
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
-    ContextValue (..),
+    Kinded (..),
     inputType,
   )
 import Data.Morpheus.Server.Deriving.Utils.Types
@@ -91,15 +91,15 @@ import GHC.TypeLits (KnownSymbol)
 import Relude
 
 class KindedValue ctx (k :: DerivingKind) (a :: Type) where
-  encodeKindedValue :: (UseDeriving gql args ~ ctx) => ctx -> ContextValue k a -> GQLResult (Value CONST)
+  encodeKindedValue :: (UseDeriving gql args ~ ctx) => ctx -> Kinded k a -> GQLResult (Value CONST)
   decodeKindedValue :: (UseDeriving gql args ~ ctx) => ctx -> Proxy k -> ValidValue -> ResolverState a
 
 instance (EncodeScalar a, DecodeScalar a, ctx ~ UseDeriving gql args, gql a) => KindedValue ctx SCALAR a where
-  encodeKindedValue _ = pure . Scalar . encodeScalar . unContextValue
+  encodeKindedValue _ = pure . Scalar . encodeScalar . unkind
   decodeKindedValue ctx _ = coerceScalar (useTypename ctx (InputType :: CatType IN a)) >=> handleEither . decodeScalar
 
 instance (ctx ~ UseDeriving gql args, DecodeWrapperConstraint f a, DecodeWrapper f, EncodeWrapperValue f, args a) => KindedValue ctx WRAPPER (f a) where
-  encodeKindedValue ctx = encodeWrapperValue (useEncodeValue ctx) . unContextValue
+  encodeKindedValue ctx = encodeWrapperValue (useEncodeValue ctx) . unkind
   decodeKindedValue ctx _ value =
     runExceptT (decodeWrapper (useDecodeValue ctx) value)
       >>= handleEither
@@ -115,7 +115,7 @@ instance (ctx ~ UseDeriving gql args, gql a, Generic a, DecodeRep ctx (Rep a), G
             } ::
             GRepContext gql args Identity (GQLResult (Value CONST))
         )
-      . unContextValue
+      . unkind
   decodeKindedValue ctx _ = fmap to . (`runReaderT` context) . decodeRep ctx
     where
       context =
@@ -139,7 +139,7 @@ instance (ctx ~ UseDeriving gql args, gql a, Generic a, DecodeRep ctx (Rep a), G
             } ::
             GRepContext gql args Identity (GQLResult (Value CONST))
         )
-      . unContextValue
+      . unkind
   decodeKindedValue ctx _ = fmap to . (`runReaderT` context) . decodeRep ctx
     where
       context =
@@ -153,7 +153,7 @@ instance (ctx ~ UseDeriving gql args, gql a, Generic a, DecodeRep ctx (Rep a), G
           proxy = Proxy @a
 
 instance KindedValue ctx CUSTOM (Value CONST) where
-  encodeKindedValue _ = pure . unContextValue
+  encodeKindedValue _ = pure . unkind
   decodeKindedValue _ _ = pure . toConstValue
 
 toConstValue :: ValidValue -> Value CONST
@@ -176,7 +176,7 @@ instance (ctx ~ UseDeriving gql args, KnownSymbol name, args a) => KindedValue c
 --  Map
 instance (ctx ~ UseDeriving gql args, Ord k, args [(k, v)]) => KindedValue ctx CUSTOM (Map k v) where
   decodeKindedValue ctx _ v = unsafeFromList <$> (useDecodeValue ctx v :: ResolverState [(k, v)])
-  encodeKindedValue ctx = useEncodeValue ctx . toAssoc . unContextValue
+  encodeKindedValue ctx = useEncodeValue ctx . toAssoc . unkind
 
 --
 repToValue :: GRepValue (GQLResult (Value CONST)) -> GQLResult (Value CONST)

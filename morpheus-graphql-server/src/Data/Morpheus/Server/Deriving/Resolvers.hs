@@ -47,7 +47,7 @@ import Data.Morpheus.Server.Deriving.Utils.GScan
     useProxies,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
-  ( ContextValue (..),
+  ( Kinded (..),
   )
 import Data.Morpheus.Server.Deriving.Utils.Use (UseNamedResolver (..))
 import Data.Morpheus.Server.Resolvers
@@ -83,7 +83,7 @@ instance (GQLType a, KindedNamedResolver NAMED (KIND a) m a) => GQLNamedResolver
   deriveNamedRefs = kindedNamedRefs withNamed . kindedProxy
 
 instance (KindedNamedFunValue NAMED (KIND a) m a) => GQLNamedResolverFun m a where
-  deriveNamedResFun resolver = kindedNamedFunValue withNamed (ContextValue resolver :: ContextValue (KIND a) a)
+  deriveNamedResFun resolver = kindedNamedFunValue withNamed (Kinded resolver :: Kinded (KIND a) a)
 
 withNamed :: NAMED
 withNamed =
