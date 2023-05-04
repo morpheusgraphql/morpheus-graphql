@@ -15,7 +15,6 @@ module Data.Morpheus.Server.Deriving.Internal.Schema.Type
     deriveInterfaceDefinition,
     deriveTypeGuardUnions,
     useDeriveRoot,
-    exploreTypes,
     DERIVE_TYPE,
   )
 where
@@ -91,21 +90,6 @@ buildTypeContent ::
 buildTypeContent options scope (GRepTypeEnum variants) = (,[]) <$> buildEnumTypeContent options scope variants
 buildTypeContent options scope (GRepTypeObject fields) = (,[]) <$> buildObjectTypeContent options scope fields
 buildTypeContent _ scope GRepTypeUnion {..} = buildUnionType scope (map fst variantRefs) inlineVariants
-
-exploreTypes ::
-  (gql a, GRep gql gql (UseRef gql) (Rep a)) =>
-  UseDeriving gql args ->
-  CatType kind a ->
-  [UseRef gql]
-exploreTypes cxt proxy = scanTypes (scanCTX proxy cxt) proxy
-
-scanCTX :: (UseGQLType ctx gql) => CatType cat a -> ctx -> GRepFun gql gql Proxy (UseRef gql)
-scanCTX cat gql =
-  GRepFun
-    { grepFun = UseRef . (`mapCat` cat),
-      grepTypename = useTypename gql . (`mapCat` cat),
-      grepWrappers = useWrappers gql . (`mapCat` cat)
-    }
 
 deriveTypeContentWith ::
   (DERIVE_TYPE gql a) =>
