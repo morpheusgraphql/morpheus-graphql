@@ -16,12 +16,14 @@ module Data.Morpheus.Server.Deriving.Utils.Kinded
     mkScalar,
     isIN,
     Kinded (..),
+    mkEnum,
   )
 where
 
 import Data.Morpheus.Server.Types.Kind (DerivingKind)
 import Data.Morpheus.Types.Internal.AST
-  ( IN,
+  ( DataEnumValue,
+    IN,
     OUT,
     ScalarDefinition,
     TRUE,
@@ -53,6 +55,10 @@ mapCat _ OutputType = OutputType
 mkScalar :: CatType c a -> ScalarDefinition -> TypeContent TRUE c s
 mkScalar InputType f = DataScalar f
 mkScalar OutputType f = DataScalar f
+
+mkEnum :: CatType c a -> [DataEnumValue s] -> TypeContent TRUE c s
+mkEnum InputType x = DataEnum x
+mkEnum OutputType x = DataEnum x
 
 isIN :: CatType c a -> Bool
 isIN InputType = True

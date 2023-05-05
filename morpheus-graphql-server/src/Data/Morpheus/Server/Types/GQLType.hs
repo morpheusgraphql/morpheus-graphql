@@ -356,7 +356,7 @@ instance (DERIVE_TYPE GQLType i, DERIVE_TYPE GQLType u) => GQLType (TypeGuard i 
   type KIND (TypeGuard i u) = CUSTOM
   __type = __type . mapCat (Proxy @i)
   __deriveType OutputType = do
-    unions <- deriveTypeGuardUnions withDir union
+    unions <- deriveTypeGuardUnions (withDir, union)
     let imp = ImplementsExtension (useTypename withGQL interface) unions
     (cont, ext) <- deriveInterfaceDefinition withDir interface
     pure $ GQLTypeNode cont (imp : ext)

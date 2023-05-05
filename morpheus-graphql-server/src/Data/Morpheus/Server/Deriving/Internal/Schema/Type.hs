@@ -14,7 +14,6 @@ module Data.Morpheus.Server.Deriving.Internal.Schema.Type
     deriveScalarDefinition,
     deriveInterfaceDefinition,
     deriveTypeGuardUnions,
-    useDeriveRoot,
     DERIVE_TYPE,
   )
 where
@@ -32,12 +31,12 @@ import Data.Morpheus.Generic
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
   ( UseDeriving (..),
+    getEnumDirectives,
     getTypeDirectives,
     serializeDirectives,
+    visitEnumName,
+    visitEnumValueDescription,
     visitTypeDescription,
-  )
-import Data.Morpheus.Server.Deriving.Internal.Schema.Enum
-  ( buildEnumTypeContent,
   )
 import Data.Morpheus.Server.Deriving.Internal.Schema.Object
   ( buildObjectTypeContent,
@@ -45,15 +44,13 @@ import Data.Morpheus.Server.Deriving.Internal.Schema.Object
 import Data.Morpheus.Server.Deriving.Internal.Schema.Union (buildUnionType)
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( mapCat,
+    mkEnum,
     mkScalar,
-    outputType,
   )
 import Data.Morpheus.Server.Deriving.Utils.Types
-  ( CatType,
+  ( CatType (..),
     GQLTypeNode (..),
     GQLTypeNodeExtension,
-    nodeToType,
-    typeToObject,
     withObject,
   )
 import Data.Morpheus.Server.Deriving.Utils.Use
@@ -62,7 +59,7 @@ import Data.Morpheus.Server.Deriving.Utils.Use
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition,
     CONST,
-    OBJECT,
+    DataEnumValue (..),
     OUT,
     ScalarDefinition,
     TRUE,
@@ -70,7 +67,6 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeName,
     UnionMember (..),
-    mkType,
   )
 import GHC.Generics (Rep)
 import Relude
@@ -80,38 +76,38 @@ type DERIVE_TYPE gql a =
     GRep gql gql (GQLResult (ArgumentsDefinition CONST)) (Rep a)
   )
 
-buildTypeContent ::
+toEnumValue :: (gql a) => UseDeriving gql args -> f a -> TypeName -> GQLResult (DataEnumValue CONST)
+toEnumValue ctx proxy enumName = do
+  enumDirectives <- serializeDirectives ctx (getEnumDirectives ctx proxy enumName)
+  pure
+    DataEnumValue
+      { enumName = visitEnumName ctx proxy enumName,
+        enumDescription = visitEnumValueDescription ctx proxy enumName Nothing,
+        ..
+      }
+
+toTypeContent ::
   (gql a) =>
   UseDeriving gql args ->
   CatType kind a ->
   GRepType (ArgumentsDefinition CONST) ->
   GQLResult (TypeContent TRUE kind CONST, [GQLTypeNodeExtension])
-buildTypeContent options scope (GRepTypeEnum variants) = (,[]) <$> buildEnumTypeContent options scope variants
-buildTypeContent options scope (GRepTypeObject fields) = (,[]) <$> buildObjectTypeContent options scope fields
-buildTypeContent _ scope GRepTypeUnion {..} = buildUnionType scope (map fst variantRefs) inlineVariants
+toTypeContent ctx prx (GRepTypeEnum variants) = (,[]) . mkEnum prx <$> traverse (toEnumValue ctx prx) variants
+toTypeContent ctx prx (GRepTypeObject fields) = (,[]) <$> buildObjectTypeContent ctx prx fields
+toTypeContent _ prx GRepTypeUnion {..} = buildUnionType prx (map fst variantRefs) inlineVariants
 
-deriveTypeContentWith ::
-  (DERIVE_TYPE gql a) =>
-  UseDeriving gql args ->
-  CatType kind a ->
-  GQLResult (TypeContent TRUE kind CONST, [GQLTypeNodeExtension])
-deriveTypeContentWith cxt proxy = do
-  reps <- deriveType (fieldGRep proxy cxt) proxy
-  buildTypeContent cxt proxy reps
+type TypeProxy gql args kind a = (UseDeriving gql args, CatType kind a)
 
-deriveTypeGuardUnions ::
-  (DERIVE_TYPE gql a) =>
-  UseDeriving gql args ->
-  CatType OUT a ->
-  GQLResult [TypeName]
-deriveTypeGuardUnions ctx proxy = do
-  (content, _) <- deriveTypeContentWith ctx proxy
-  getUnionNames content
-  where
-    getUnionNames :: TypeContent TRUE OUT CONST -> GQLResult [TypeName]
-    getUnionNames DataUnion {unionMembers} = pure $ toList $ memberName <$> unionMembers
-    getUnionNames DataObject {} = pure [useTypename ctx proxy]
-    getUnionNames _ = throwError "guarded type must be an union or object"
+deriveTypeContent :: (DERIVE_TYPE gql a) => TypeProxy gql args kind a -> GQLResult (TypeContent TRUE kind CONST, [GQLTypeNodeExtension])
+deriveTypeContent (cxt, prx) = deriveType (fieldGRep prx cxt) prx >>= toTypeContent cxt prx
+
+deriveTypeGuardUnions :: (DERIVE_TYPE gql a) => TypeProxy gql args OUT a -> GQLResult [TypeName]
+deriveTypeGuardUnions prx = deriveTypeContent prx >>= getUnionNames prx . fst
+
+getUnionNames :: (DERIVE_TYPE gql a) => TypeProxy gql args kind a -> TypeContent TRUE OUT CONST -> GQLResult [TypeName]
+getUnionNames _ DataUnion {unionMembers} = pure $ toList $ memberName <$> unionMembers
+getUnionNames (ctx, prx) DataObject {} = pure [useTypename ctx prx]
+getUnionNames _ _ = throwError "guarded type must be an union or object"
 
 deriveScalarDefinition ::
   (gql a) =>
@@ -126,9 +122,9 @@ deriveTypeDefinition ::
   UseDeriving gql args ->
   CatType c a ->
   GQLResult (TypeDefinition c CONST, [GQLTypeNodeExtension])
-deriveTypeDefinition dir proxy = do
-  (content, ext) <- deriveTypeContentWith dir proxy
-  t <- fillTypeContent dir proxy content
+deriveTypeDefinition ctx proxy = do
+  (content, ext) <- deriveTypeContent (ctx, proxy)
+  t <- fillTypeContent ctx proxy content
   pure (t, ext)
 
 deriveInterfaceDefinition ::
@@ -137,7 +133,7 @@ deriveInterfaceDefinition ::
   CatType OUT a ->
   GQLResult (TypeDefinition OUT CONST, [GQLTypeNodeExtension])
 deriveInterfaceDefinition ctx proxy = do
-  (content, ext) <- deriveTypeContentWith ctx proxy
+  (content, ext) <- deriveTypeContent (ctx, proxy)
   fields <- withObject (useTypename ctx proxy) content
   t <- fillTypeContent ctx proxy (DataInterface fields)
   pure (t, ext)
@@ -164,6 +160,3 @@ fieldGRep cat gql =
       grepWrappers = useWrappers gql . (`mapCat` cat),
       grepFun = useDeriveFieldArgs gql . (`mapCat` cat)
     }
-
-useDeriveRoot :: (UseGQLType ctx gql, gql a) => ctx -> f a -> GQLResult (TypeDefinition OBJECT CONST)
-useDeriveRoot gql prx = useDeriveNode gql (outputType prx) >>= nodeToType >>= typeToObject
