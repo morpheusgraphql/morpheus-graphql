@@ -59,6 +59,7 @@ import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Internal.Utils (empty, singleton)
 import Data.Morpheus.Server.Deriving.Internal.Type
   ( deriveInterfaceDefinition,
+    toTypeDefinition,
   )
 import Data.Morpheus.Server.Deriving.Kinded.Arguments
   ( DeriveFieldArguments (..),
