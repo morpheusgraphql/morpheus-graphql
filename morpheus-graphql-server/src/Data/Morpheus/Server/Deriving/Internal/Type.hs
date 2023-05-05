@@ -13,6 +13,7 @@ module Data.Morpheus.Server.Deriving.Internal.Type
     deriveScalarDefinition,
     deriveInterfaceDefinition,
     deriveTypeGuardUnions,
+    toTypeDefinition,
     DERIVE_TYPE,
   )
 where
@@ -181,7 +182,7 @@ toTypeDefinition ctx proxy content = do
       content
 
 deriveTypeGuardUnions :: (DERIVE_TYPE gql a) => TypeProxy gql args OUT a -> GQLResult [TypeName]
-deriveTypeGuardUnions prx = deriveTypeDefinition prx >>= toUnionNames . fst
+deriveTypeGuardUnions prx = uncurry deriveTypeDefinition prx >>= toUnionNames . fst
 
 toUnionNames :: TypeDefinition OUT CONST -> GQLResult [TypeName]
 toUnionNames TypeDefinition {..} =
@@ -200,9 +201,10 @@ deriveScalarDefinition f ctx p = (`GQLTypeNode` []) <$> toTypeDefinition ctx p (
 
 deriveTypeDefinition ::
   (DERIVE_TYPE gql a) =>
-  TypeProxy gql args c a ->
+  UseDeriving gql args ->
+  CatType c a ->
   GQLResult (TypeDefinition c CONST, [GQLTypeNodeExtension])
-deriveTypeDefinition (ctx, prx) = do
+deriveTypeDefinition ctx prx = do
   (content, ext) <- deriveType (fieldGRep ctx prx) prx >>= toTypeContent ctx prx
   (,ext) <$> toTypeDefinition ctx prx content
 
@@ -212,7 +214,7 @@ deriveInterfaceDefinition ::
   CatType OUT a ->
   GQLResult (TypeDefinition OUT CONST, [GQLTypeNodeExtension])
 deriveInterfaceDefinition ctx proxy = do
-  (typeDef, ext) <- deriveTypeDefinition (ctx, proxy)
+  (typeDef, ext) <- deriveTypeDefinition ctx proxy
   (,ext) <$> mapTypeContent (fmap DataInterface . withObject (typeName typeDef)) typeDef
 
 fieldGRep :: (UseGQLType ctx gql) => ctx -> CatType cat a -> GRepFun gql gql Proxy (GQLResult (ArgumentsDefinition CONST))
