@@ -25,6 +25,7 @@ module Data.Morpheus.Server.Deriving.Utils.Types
     coerceArguments,
     coerceObject,
     toFieldContent,
+    mapTypeContent,
   )
 where
 
@@ -147,6 +148,11 @@ coerceObject :: (DerivingMonad m) => TypeDefinition c CONST -> m (TypeDefinition
 coerceObject TypeDefinition {..} = do
   x <- withObject typeName typeContent
   pure (TypeDefinition {typeContent = DataObject [] x, ..})
+
+mapTypeContent :: (DerivingMonad m) => (TypeContent TRUE c s -> m (TypeContent TRUE c' s)) -> TypeDefinition c s -> m (TypeDefinition c' s)
+mapTypeContent f TypeDefinition {..} = do
+  content <- f typeContent
+  pure TypeDefinition {typeContent = content, ..}
 
 data NodeTypeVariant
   = NodeTypeVariant TypeName (TypeContent TRUE ANY CONST)
