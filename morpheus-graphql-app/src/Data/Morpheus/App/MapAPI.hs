@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -15,10 +16,11 @@ import Data.Aeson.Parser
   ( eitherDecodeWith,
     jsonNoDup,
   )
-import Data.Aeson.Types
-  ( formatError,
-    ifromJSON,
-  )
+#if MIN_VERSION_aeson(2,1,0) 
+import Data.Aeson.Types ( formatError,ifromJSON,)
+#else 
+import Data.Aeson.Internal ( formatError,ifromJSON,)
+#endif
 import Data.ByteString.Lazy.Char8 (pack)
 import qualified Data.ByteString.Lazy.Char8 as LB
   ( ByteString,
