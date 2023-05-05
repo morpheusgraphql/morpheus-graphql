@@ -17,20 +17,23 @@ module Data.Morpheus.Server.Deriving.Utils.Kinded
     isIN,
     Kinded (..),
     mkEnum,
+    mkObject,
   )
 where
 
 import Data.Morpheus.Server.Types.Kind (DerivingKind)
 import Data.Morpheus.Types.Internal.AST
   ( DataEnumValue,
+    FieldDefinition,
     IN,
     OUT,
     ScalarDefinition,
     TRUE,
     TypeCategory (..),
     TypeContent (..),
+    unsafeFromFields,
   )
-import Prelude (Bool (..), Show)
+import Prelude
 
 data CatType (cat :: TypeCategory) a where
   InputType :: CatType IN a
@@ -59,6 +62,10 @@ mkScalar OutputType f = DataScalar f
 mkEnum :: CatType c a -> [DataEnumValue s] -> TypeContent TRUE c s
 mkEnum InputType x = DataEnum x
 mkEnum OutputType x = DataEnum x
+
+mkObject :: CatType kind a -> [FieldDefinition kind s] -> TypeContent TRUE kind s
+mkObject InputType = DataInputObject . unsafeFromFields
+mkObject OutputType = DataObject [] . unsafeFromFields
 
 isIN :: CatType c a -> Bool
 isIN InputType = True

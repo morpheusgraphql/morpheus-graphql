@@ -35,7 +35,7 @@ import Data.Morpheus.Internal.Utils
   ( IsMap (toAssoc),
     fromElems,
   )
-import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
+import Data.Morpheus.Server.Deriving.Internal.Directive
   ( visitEnumName,
     visitFieldName,
   )

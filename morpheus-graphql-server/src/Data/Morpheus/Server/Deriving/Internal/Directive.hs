@@ -13,7 +13,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Server.Deriving.Internal.Schema.Directive
+module Data.Morpheus.Server.Deriving.Internal.Directive
   ( getFieldDirectives,
     getTypeDirectives,
     getEnumDirectives,

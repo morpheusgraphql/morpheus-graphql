@@ -26,8 +26,8 @@ import Data.Morpheus.Generic
   ( Gmap,
   )
 import Data.Morpheus.Internal.Ext (GQLResult)
-import Data.Morpheus.Server.Deriving.Internal.Schema.Directive (deriveDirectiveDefinition)
-import Data.Morpheus.Server.Deriving.Internal.Schema.Type
+import Data.Morpheus.Server.Deriving.Internal.Directive (deriveDirectiveDefinition)
+import Data.Morpheus.Server.Deriving.Internal.Type
   ( DERIVE_TYPE,
     deriveScalarDefinition,
     deriveTypeDefinition,

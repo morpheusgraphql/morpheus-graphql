@@ -8,7 +8,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 
-module Data.Morpheus.Server.Deriving.Internal.Schema.Type
+module Data.Morpheus.Server.Deriving.Internal.Type
   ( fillTypeContent,
     deriveTypeDefinition,
     deriveScalarDefinition,
@@ -22,35 +22,42 @@ import Control.Monad.Except
   ( MonadError (..),
   )
 import Data.Foldable
+import Data.List (partition)
 import Data.Morpheus.Generic
   ( GRep,
+    GRepCons (..),
+    GRepField (..),
     GRepFun (..),
     GRepType (..),
     deriveType,
   )
 import Data.Morpheus.Internal.Ext (GQLResult)
-import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
+import Data.Morpheus.Internal.Utils (Empty (..), fromElems)
+import Data.Morpheus.Server.Deriving.Internal.Directive
   ( UseDeriving (..),
     getEnumDirectives,
+    getFieldDirectives,
     getTypeDirectives,
     serializeDirectives,
     visitEnumName,
     visitEnumValueDescription,
+    visitFieldContent,
+    visitFieldDescription,
+    visitFieldName,
     visitTypeDescription,
   )
-import Data.Morpheus.Server.Deriving.Internal.Schema.Object
-  ( buildObjectTypeContent,
-  )
-import Data.Morpheus.Server.Deriving.Internal.Schema.Union (buildUnionType)
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( mapCat,
     mkEnum,
+    mkObject,
     mkScalar,
   )
 import Data.Morpheus.Server.Deriving.Utils.Types
   ( CatType (..),
     GQLTypeNode (..),
-    GQLTypeNodeExtension,
+    GQLTypeNodeExtension (..),
+    NodeTypeVariant (..),
+    toFieldContent,
     withObject,
   )
 import Data.Morpheus.Server.Deriving.Utils.Use
@@ -60,6 +67,7 @@ import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition,
     CONST,
     DataEnumValue (..),
+    FieldDefinition (..),
     OUT,
     ScalarDefinition,
     TRUE,
@@ -67,9 +75,16 @@ import Data.Morpheus.Types.Internal.AST
     TypeDefinition (..),
     TypeName,
     UnionMember (..),
+    mkField,
+    mkNullaryMember,
+    mkTypeRef,
+    mkUnionMember,
+    toAny,
+    unitFieldName,
+    unitTypeName,
   )
 import GHC.Generics (Rep)
-import Relude
+import Relude hiding (empty)
 
 type DERIVE_TYPE gql a =
   ( gql a,
@@ -86,6 +101,57 @@ toEnumValue ctx proxy enumName = do
         ..
       }
 
+repToField ::
+  CatType c a ->
+  GRepField (ArgumentsDefinition CONST) ->
+  FieldDefinition c CONST
+repToField proxy GRepField {..} =
+  FieldDefinition
+    { fieldDescription = mempty,
+      fieldDirectives = empty,
+      fieldContent = toFieldContent proxy fieldValue,
+      fieldName = fieldSelector,
+      fieldType = fieldTypeRef
+    }
+
+visitField :: (gql a) => UseDeriving gql args -> CatType kind a -> FieldDefinition kind CONST -> GQLResult (FieldDefinition kind CONST)
+visitField ctx proxy FieldDefinition {..} = do
+  dirs <- serializeDirectives ctx (getFieldDirectives ctx proxy fieldName)
+  pure
+    FieldDefinition
+      { fieldName = visitFieldName ctx proxy fieldName,
+        fieldDescription = visitFieldDescription ctx proxy fieldName Nothing,
+        fieldContent = visitFieldContent ctx proxy fieldName fieldContent,
+        fieldDirectives = dirs,
+        ..
+      }
+
+toUnion ::
+  CatType kind a ->
+  [TypeName] ->
+  [GRepCons (ArgumentsDefinition CONST)] ->
+  GQLResult (TypeContent TRUE kind CONST, [GQLTypeNodeExtension])
+toUnion prx@InputType variantRefs inlineVariants = do
+  let nodes = [UnionVariantsExtension ([NodeUnitType | not (null nullaryVariants)] <> concat (traverse (toTypeVariants prx) objectVariants))]
+  variants <- fromElems members
+  pure (DataInputUnion variants, nodes)
+  where
+    (nullaryVariants, objectVariants) = partition null inlineVariants
+    members =
+      map mkUnionMember (variantRefs <> map consName objectVariants)
+        <> fmap (mkNullaryMember . consName) nullaryVariants
+toUnion prx@OutputType unionRef unionCons = do
+  variants <- fromElems (map mkUnionMember (unionRef <> map consName unionCons))
+  pure (DataUnion variants, [UnionVariantsExtension (concat $ traverse (toTypeVariants prx) unionCons)])
+
+toTypeVariants :: CatType kind a -> GRepCons (ArgumentsDefinition CONST) -> [NodeTypeVariant]
+toTypeVariants proxy GRepCons {consName, consFields} =
+  [NodeTypeVariant consName (toAny (mkObject proxy fields))] <> [NodeUnitType | null consFields]
+  where
+    fields
+      | null consFields = [mkField Nothing unitFieldName (mkTypeRef unitTypeName)]
+      | otherwise = map (repToField proxy) consFields
+
 toTypeContent ::
   (gql a) =>
   UseDeriving gql args ->
@@ -93,8 +159,8 @@ toTypeContent ::
   GRepType (ArgumentsDefinition CONST) ->
   GQLResult (TypeContent TRUE kind CONST, [GQLTypeNodeExtension])
 toTypeContent ctx prx (GRepTypeEnum variants) = (,[]) . mkEnum prx <$> traverse (toEnumValue ctx prx) variants
-toTypeContent ctx prx (GRepTypeObject fields) = (,[]) <$> buildObjectTypeContent ctx prx fields
-toTypeContent _ prx GRepTypeUnion {..} = buildUnionType prx (map fst variantRefs) inlineVariants
+toTypeContent ctx prx (GRepTypeObject fields) = (,[]) . mkObject prx <$> traverse (visitField ctx prx . repToField prx) fields
+toTypeContent _ prx GRepTypeUnion {..} = toUnion prx (map fst variantRefs) inlineVariants
 
 type TypeProxy gql args kind a = (UseDeriving gql args, CatType kind a)
 

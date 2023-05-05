@@ -24,6 +24,7 @@ module Data.Morpheus.Server.Deriving.Utils.Types
     handleEither,
     coerceArguments,
     coerceObject,
+    toFieldContent,
   )
 where
 
@@ -44,6 +45,7 @@ import Data.Morpheus.Types.Internal.AST
     ArgumentsDefinition,
     CONST,
     DirectiveDefinition (..),
+    FieldContent (..),
     FieldName,
     FieldsDefinition,
     GQLError,
@@ -91,6 +93,10 @@ handleEither = either (throwError . msg) pure
 typeToArguments :: (DerivingMonad m) => TypeDefinition IN CONST -> m (ArgumentsDefinition CONST)
 typeToArguments TypeDefinition {typeContent = DataInputObject {inputObjectFields}} = pure $ fieldsToArguments inputObjectFields
 typeToArguments TypeDefinition {typeName} = failureOnlyObject typeName
+
+toFieldContent :: CatType c a -> ArgumentsDefinition CONST -> Maybe (FieldContent TRUE c CONST)
+toFieldContent OutputType x | not (null x) = Just (FieldArgs x)
+toFieldContent _ _ = Nothing
 
 -- if value is already validated but value has different type
 typeMismatch :: GQLError -> Value s -> GQLError

@@ -37,7 +37,7 @@ import Data.Morpheus.Generic
     GRepValue (..),
     deriveValue,
   )
-import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
+import Data.Morpheus.Server.Deriving.Internal.Directive
   ( UseDeriving,
     toFieldRes,
   )
