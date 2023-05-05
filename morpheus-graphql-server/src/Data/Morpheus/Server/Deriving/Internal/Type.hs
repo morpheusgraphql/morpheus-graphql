@@ -9,7 +9,7 @@
 {-# LANGUAGE TupleSections #-}
 
 module Data.Morpheus.Server.Deriving.Internal.Type
-  ( fillTypeContent,
+  ( toTypeDefinition,
     deriveTypeDefinition,
     deriveScalarDefinition,
     deriveInterfaceDefinition,
@@ -181,7 +181,7 @@ deriveScalarDefinition ::
   UseDeriving gql args ->
   CatType cat a ->
   GQLResult (GQLTypeNode cat)
-deriveScalarDefinition f dir p = (`GQLTypeNode` []) <$> fillTypeContent dir p (mkScalar p (f p))
+deriveScalarDefinition f ctx p = (`GQLTypeNode` []) <$> toTypeDefinition ctx p (mkScalar p (f p))
 
 deriveTypeDefinition ::
   (DERIVE_TYPE gql a) =>
@@ -190,8 +190,7 @@ deriveTypeDefinition ::
   GQLResult (TypeDefinition c CONST, [GQLTypeNodeExtension])
 deriveTypeDefinition ctx proxy = do
   (content, ext) <- deriveTypeContent (ctx, proxy)
-  t <- fillTypeContent ctx proxy content
-  pure (t, ext)
+  (,ext) <$> toTypeDefinition ctx proxy content
 
 deriveInterfaceDefinition ::
   (DERIVE_TYPE gql a) =>
@@ -201,16 +200,15 @@ deriveInterfaceDefinition ::
 deriveInterfaceDefinition ctx proxy = do
   (content, ext) <- deriveTypeContent (ctx, proxy)
   fields <- withObject (useTypename ctx proxy) content
-  t <- fillTypeContent ctx proxy (DataInterface fields)
-  pure (t, ext)
+  (,ext) <$> toTypeDefinition ctx proxy (DataInterface fields)
 
-fillTypeContent ::
+toTypeDefinition ::
   (gql a) =>
   UseDeriving gql args ->
   CatType c a ->
   TypeContent TRUE cat CONST ->
   GQLResult (TypeDefinition cat CONST)
-fillTypeContent ctx proxy content = do
+toTypeDefinition ctx proxy content = do
   dirs <- serializeDirectives ctx (getTypeDirectives ctx proxy)
   pure $
     TypeDefinition

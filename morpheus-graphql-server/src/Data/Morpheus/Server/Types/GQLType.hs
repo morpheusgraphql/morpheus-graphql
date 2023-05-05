@@ -59,7 +59,7 @@ import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Internal.Utils (empty, singleton)
 import Data.Morpheus.Server.Deriving.Internal.Type
   ( deriveInterfaceDefinition,
-    fillTypeContent,
+    toTypeDefinition,
   )
 import Data.Morpheus.Server.Deriving.Kinded.Arguments
   ( DeriveFieldArguments (..),
@@ -340,7 +340,7 @@ instance (KnownSymbol name, GQLType value) => GQLType (Arg name value) where
   type KIND (Arg name value) = CUSTOM
   __type = __type . mapCat (Proxy @value)
   __deriveType OutputType = cantBeInputType (OutputType :: CatType OUT (Arg name value))
-  __deriveType p@InputType = (`GQLTypeNode` []) <$> fillTypeContent withDir p content
+  __deriveType p@InputType = (`GQLTypeNode` []) <$> toTypeDefinition withDir p content
     where
       content :: TypeContent TRUE IN CONST
       content = DataInputObject (singleton argName field)
