@@ -53,6 +53,7 @@ import Data.Morpheus.Server.Deriving.Utils.Types
     GQLTypeNode (..),
     GQLTypeNodeExtension,
     nodeToType,
+    typeToObject,
     withObject,
   )
 import Data.Morpheus.Server.Deriving.Utils.Use
@@ -165,8 +166,4 @@ fieldGRep cat gql =
     }
 
 useDeriveRoot :: (UseGQLType ctx gql, gql a) => ctx -> f a -> GQLResult (TypeDefinition OBJECT CONST)
-useDeriveRoot gql pr = do
-  fields <- useDeriveNode gql proxy >>= nodeToType >>= withObject (useTypename gql proxy) . typeContent
-  pure $ mkType (useTypename gql (outputType proxy)) (DataObject [] fields)
-  where
-    proxy = outputType pr
+useDeriveRoot gql prx = useDeriveNode gql (outputType prx) >>= nodeToType >>= typeToObject

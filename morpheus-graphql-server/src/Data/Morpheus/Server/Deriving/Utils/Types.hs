@@ -23,6 +23,7 @@ module Data.Morpheus.Server.Deriving.Utils.Types
     getField,
     handleEither,
     coerceArguments,
+    typeToObject,
   )
 where
 
@@ -48,6 +49,7 @@ import Data.Morpheus.Types.Internal.AST
     GQLError,
     IN,
     Msg (..),
+    OBJECT,
     OUT,
     ObjectEntry (..),
     Position (..),
@@ -130,10 +132,15 @@ data GQLTypeNode c
   = GQLTypeNode (TypeDefinition c CONST) [GQLTypeNodeExtension]
   | GQLDirectiveNode (DirectiveDefinition CONST)
 
-nodeToType :: (Applicative f, MonadError GQLError f) => GQLTypeNode c -> f (TypeDefinition c CONST)
+nodeToType :: (DerivingMonad m) => GQLTypeNode c -> m (TypeDefinition c CONST)
 nodeToType node = case node of
   GQLTypeNode x _ -> pure x
   GQLDirectiveNode dir -> throwError $ "expected " <> msg (directiveDefinitionName dir) <> " to be a type but its directive!"
+
+typeToObject :: (DerivingMonad m) => TypeDefinition c CONST -> m (TypeDefinition OBJECT CONST)
+typeToObject TypeDefinition {..} = do
+  x <- withObject typeName typeContent
+  pure (TypeDefinition {typeContent = DataObject [] x, ..})
 
 data NodeTypeVariant
   = NodeTypeVariant TypeName (TypeContent TRUE ANY CONST)
