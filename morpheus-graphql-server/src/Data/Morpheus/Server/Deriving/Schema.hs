@@ -23,15 +23,13 @@ where
 import Data.Morpheus.Core (defaultConfig, validateSchema)
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Internal.Utils (toAssoc)
-import Data.Morpheus.Server.Deriving.Internal.Schema.Type
-  ( useDeriveRoot,
-  )
 import Data.Morpheus.Server.Deriving.Utils.GScan
   ( ScanProxy (..),
     ScanRef,
     Scanner (..),
     scan,
   )
+import Data.Morpheus.Server.Deriving.Utils.Kinded (outputType)
 import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
   ( NodeDerivation (..),
     SchemaState (..),
@@ -40,7 +38,7 @@ import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
     execNode,
     insertImplements,
   )
-import Data.Morpheus.Server.Deriving.Utils.Types (CatType (OutputType), GQLTypeNode (..), fromSchema)
+import Data.Morpheus.Server.Deriving.Utils.Types (CatType (OutputType), GQLTypeNode (..), coerceObject, fromSchema, nodeToType)
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseGQLType (useDeriveNode, useExploreRef, useFingerprint),
   )
@@ -74,10 +72,10 @@ type SCHEMA qu mu su =
 compileTimeSchemaValidation :: (SCHEMA qu mu su) => proxy (root m event qu mu su) -> Q Exp
 compileTimeSchemaValidation = fromSchema . (deriveSchema >=> validateSchema True defaultConfig)
 
-exploreRef :: GQLType a => CatType c a -> [ScanRef GQLType]
+exploreRef :: (GQLType a) => CatType c a -> [ScanRef GQLType]
 exploreRef = useExploreRef withGQL
 
-explore :: forall f (a :: (Type -> Type) -> Type). GQLType (a IgnoredResolver) => f a -> [ScanProxy GQLType]
+explore :: forall f (a :: (Type -> Type) -> Type). (GQLType (a IgnoredResolver)) => f a -> [ScanProxy GQLType]
 explore _ = scan (Scanner exploreRef) (exploreRef (OutputType :: CatType OUT (a IgnoredResolver)))
 
 toDerivation :: TypeFingerprint -> GQLTypeNode c -> [NodeDerivation]
@@ -87,10 +85,10 @@ toDerivation fp (GQLDirectiveNode node) = [DirectiveDerivation fp node]
 resolveNode :: ScanProxy GQLType -> GQLResult [NodeDerivation]
 resolveNode (ScanProxy proxy) = toDerivation (useFingerprint withGQL proxy) <$> useDeriveNode withGQL proxy
 
-deriveRoot :: GQLType a => f a -> GQLResult (TypeDefinition OBJECT CONST)
-deriveRoot = useDeriveRoot withGQL
+deriveRoot :: (GQLType a) => f a -> GQLResult (TypeDefinition OBJECT CONST)
+deriveRoot prx = useDeriveNode withGQL (outputType prx) >>= nodeToType >>= coerceObject
 
-deriveSchema :: forall root f m e qu mu su. SCHEMA qu mu su => f (root m e qu mu su) -> GQLResult (Schema CONST)
+deriveSchema :: forall root f m e qu mu su. (SCHEMA qu mu su) => f (root m e qu mu su) -> GQLResult (Schema CONST)
 deriveSchema _ = do
   query <- deriveRoot (Proxy @(qu IgnoredResolver))
   mutation <- traverse deriveRoot (ignoreUndefined (Proxy @(mu IgnoredResolver)))

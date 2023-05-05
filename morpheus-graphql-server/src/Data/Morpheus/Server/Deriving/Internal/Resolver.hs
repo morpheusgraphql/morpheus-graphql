@@ -11,7 +11,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Data.Morpheus.Server.Deriving.Internal.Resolve.Explore
+module Data.Morpheus.Server.Deriving.Internal.Resolver
   ( useExploreResolvers,
     useObjectResolvers,
     EXPLORE,
@@ -30,11 +30,11 @@ import Data.Morpheus.App.Internal.Resolving
   )
 import Data.Morpheus.Generic
   ( GRep,
-    GRepContext (..),
+    GRepFun (..),
     GRepValue (..),
     deriveValue,
   )
-import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
+import Data.Morpheus.Server.Deriving.Internal.Directive
   ( toFieldRes,
     visitEnumName,
   )
@@ -50,23 +50,18 @@ import Data.Morpheus.Types.Internal.AST
 import GHC.Generics (Generic (Rep))
 import Relude
 
-convertNode ::
-  (gql a) =>
-  (MonadError GQLError m) =>
-  UseDeriving gql val ->
-  f a ->
-  GRepValue (m (ResolverValue m)) ->
-  ResolverValue m
-convertNode drv proxy GRepValueEnum {..} = mkEnum (visitEnumName drv proxy enumVariantName)
-convertNode drv proxy GRepValueObject {..} = mkObject objectTypeName (toFieldRes drv proxy <$> objectFields)
-convertNode drv proxy GRepValueUnion {..} = mkUnion unionVariantName (toFieldRes drv proxy <$> unionFields)
-convertNode _ _ GRepValueUnionRef {..} = ResLazy (ResObject (Just unionRefTypeName) <$> (unionRefValue >>= requireObject))
+fromGRep :: (MonadError GQLError m, gql a) => UseDeriving gql val -> f a -> GRepValue (m (ResolverValue m)) -> ResolverValue m
+fromGRep ctx prx GRepValueEnum {..} = mkEnum (visitEnumName ctx prx enumVariantName)
+fromGRep ctx prx GRepValueObject {..} = mkObject objectTypeName (toFieldRes ctx prx <$> objectFields)
+fromGRep ctx prx GRepValueUnion {..} = mkUnion unionVariantName (toFieldRes ctx prx <$> unionFields)
+fromGRep _ _ GRepValueUnionRef {..} = ResLazy (ResObject (Just unionRefTypeName) <$> (unionRefValue >>= requireObject))
 
-toOptions :: UseResolver res gql val -> GRepContext gql (res m) Identity (m (ResolverValue m))
-toOptions UseResolver {..} =
-  GRepContext
-    { optApply = useEncodeResolver . runIdentity,
-      optTypeData = useTypeData (useGQL resDrv) . inputType
+toOptions :: UseResolver res gql val -> GRepFun gql (res m) Identity (m (ResolverValue m))
+toOptions ctx =
+  GRepFun
+    { grepFun = useEncodeResolver ctx . runIdentity,
+      grepTypename = useTypename ctx . inputType,
+      grepWrappers = useWrappers ctx . inputType
     }
 
 useExploreResolvers ::
@@ -74,9 +69,7 @@ useExploreResolvers ::
   UseResolver res gql val ->
   a ->
   ResolverValue m
-useExploreResolvers res v = convertNode (resDrv res) proxy (deriveValue (toOptions res) v)
-  where
-    proxy = Identity v
+useExploreResolvers res v = fromGRep (resDrv res) (Identity v) (deriveValue (toOptions res) v)
 
 useObjectResolvers ::
   (MonadError GQLError m, EXPLORE gql res m a) =>

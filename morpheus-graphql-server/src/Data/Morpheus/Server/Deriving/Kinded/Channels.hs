@@ -9,6 +9,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -27,18 +28,17 @@ import Data.Morpheus.App.Internal.Resolving
   )
 import Data.Morpheus.Generic
   ( GRep,
-    GRepContext (..),
     GRepField,
+    GRepFun (..),
     GRepValue (..),
     deriveValue,
   )
 import Data.Morpheus.Internal.Utils
   ( selectBy,
   )
-import Data.Morpheus.Server.Deriving.Internal.Decode.Utils (useDecodeArguments)
-import Data.Morpheus.Server.Deriving.Internal.Schema.Directive (UseDeriving (..), toFieldRes)
+import Data.Morpheus.Server.Deriving.Internal.Directive (UseDeriving (..), toFieldRes)
 import Data.Morpheus.Server.Deriving.Utils.Kinded (outputType)
-import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (useTypeData))
+import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (..), useDecodeArguments)
 import Data.Morpheus.Server.Types.Types (Undefined)
 import Data.Morpheus.Types.Internal.AST
   ( FALSE,
@@ -122,16 +122,17 @@ class ExploreChannels ctx (t :: Bool) e a where
   exploreChannels :: (UseDeriving gql val ~ ctx) => ctx -> f t -> a -> HashMap FieldName (ChannelRes e)
 
 instance (UseDeriving gql val ~ ctx, gql a, Generic a, GRep gql (GetChannel val e) (ChannelRes e) (Rep a)) => ExploreChannels ctx FALSE e a where
-  exploreChannels drv _ =
+  exploreChannels ctx _ =
     fromList
-      . map (toFieldRes drv (Proxy @a))
+      . map (toFieldRes ctx (Proxy @a))
       . toFields
       . deriveValue
-        ( GRepContext
-            { optApply = getChannel drv . runIdentity,
-              optTypeData = useTypeData (useGQL drv) . outputType
+        ( GRepFun
+            { grepFun = getChannel ctx . runIdentity,
+              grepTypename = useTypename ctx . outputType,
+              grepWrappers = useWrappers ctx . outputType
             } ::
-            GRepContext gql (GetChannel val e) Identity (ChannelRes e)
+            GRepFun gql (GetChannel val e) Identity (ChannelRes e)
         )
 
 toFields :: GRepValue (ChannelRes e) -> [GRepField (ChannelRes e)]

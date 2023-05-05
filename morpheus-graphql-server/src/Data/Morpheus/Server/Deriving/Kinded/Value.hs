@@ -9,6 +9,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -17,50 +18,46 @@ module Data.Morpheus.Server.Deriving.Kinded.Value
   )
 where
 
-import Control.Monad.Except
-  ( MonadError (throwError),
-  )
+import Control.Monad.Except (MonadError (throwError))
 import Data.Morpheus.App.Internal.Resolving
   ( ResolverState,
   )
 import Data.Morpheus.Generic
   ( GRep,
-    GRepContext (..),
+    GRepField (..),
+    GRepFun (..),
+    GRepValue (..),
     deriveValue,
+    symbolName,
   )
-import Data.Morpheus.Internal.Ext
-  ( GQLResult,
-    unsafeFromList,
+import Data.Morpheus.Internal.Ext (GQLResult, unsafeFromList)
+import Data.Morpheus.Internal.Utils
+  ( IsMap (toAssoc),
+    fromElems,
   )
-import Data.Morpheus.Internal.Utils (IsMap (toAssoc))
-import Data.Morpheus.Server.Deriving.Internal.Decode.Rep
-  ( DecodeRep (..),
-  )
-import Data.Morpheus.Server.Deriving.Internal.Decode.Utils
-  ( Context (..),
-    decodeFieldWith,
-    handleEither,
-    repValue,
-    withInputObject,
-    withScalar,
-  )
-import Data.Morpheus.Server.Deriving.Internal.Schema.Directive
+import Data.Morpheus.Server.Deriving.Internal.Directive
   ( visitEnumName,
     visitFieldName,
   )
+import Data.Morpheus.Server.Deriving.Internal.Value
+  ( Context (..),
+    DecodeRep (..),
+  )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
+    Kinded (..),
     inputType,
   )
-import Data.Morpheus.Server.Deriving.Utils.Proxy
-  ( ContextValue,
-    symbolName,
-    unContextValue,
+import Data.Morpheus.Server.Deriving.Utils.Types
+  ( coerceInputObject,
+    coerceScalar,
+    getField,
+    handleEither,
   )
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseDeriving (..),
     UseGQLType (..),
-    UseValue (..),
+    UseGQLValue (..),
   )
 import Data.Morpheus.Server.Types.Kind
   ( CUSTOM,
@@ -87,73 +84,76 @@ import Data.Morpheus.Types.Internal.AST
     VALID,
     ValidValue,
     Value (..),
+    internal,
   )
 import GHC.Generics
 import GHC.TypeLits (KnownSymbol)
 import Relude
 
 class KindedValue ctx (k :: DerivingKind) (a :: Type) where
-  encodeKindedValue :: (UseDeriving gql args ~ ctx) => ctx -> ContextValue k a -> GQLResult (Value CONST)
+  encodeKindedValue :: (UseDeriving gql args ~ ctx) => ctx -> Kinded k a -> GQLResult (Value CONST)
   decodeKindedValue :: (UseDeriving gql args ~ ctx) => ctx -> Proxy k -> ValidValue -> ResolverState a
 
 instance (EncodeScalar a, DecodeScalar a, ctx ~ UseDeriving gql args, gql a) => KindedValue ctx SCALAR a where
-  encodeKindedValue _ = pure . Scalar . encodeScalar . unContextValue
-  decodeKindedValue dir _ = withScalar (useTypename (useGQL dir) (InputType :: CatType IN a)) decodeScalar
+  encodeKindedValue _ = pure . Scalar . encodeScalar . unkind
+  decodeKindedValue ctx _ = coerceScalar (useTypename ctx (InputType :: CatType IN a)) >=> handleEither . decodeScalar
 
 instance (ctx ~ UseDeriving gql args, DecodeWrapperConstraint f a, DecodeWrapper f, EncodeWrapperValue f, args a) => KindedValue ctx WRAPPER (f a) where
-  encodeKindedValue dir = encodeWrapperValue (useEncodeValue (useValue dir)) . unContextValue
-  decodeKindedValue dir _ value =
-    runExceptT (decodeWrapper (useDecodeValue (useValue dir)) value)
+  encodeKindedValue ctx = encodeWrapperValue (useEncodeValue ctx) . unkind
+  decodeKindedValue ctx _ value =
+    runExceptT (decodeWrapper (useDecodeValue ctx) value)
       >>= handleEither
 
-instance (ctx ~ UseDeriving gql args, gql a, Generic a, DecodeRep gql args (Rep a), GRep gql args (GQLResult (Value CONST)) (Rep a)) => KindedValue ctx TYPE a where
-  encodeKindedValue UseDeriving {..} =
-    repValue
+instance (ctx ~ UseDeriving gql args, gql a, Generic a, DecodeRep ctx (Rep a), GRep gql args (GQLResult (Value CONST)) (Rep a)) => KindedValue ctx TYPE a where
+  encodeKindedValue ctx =
+    repToValue
       . deriveValue
-        ( GRepContext
-            { optApply = useEncodeValue useValue . runIdentity,
-              optTypeData = useTypeData useGQL . inputType
+        ( GRepFun
+            { grepFun = useEncodeValue ctx . runIdentity,
+              grepTypename = useTypename ctx . inputType,
+              grepWrappers = useWrappers ctx . inputType
             } ::
-            GRepContext gql args Identity (GQLResult (Value CONST))
+            GRepFun gql args Identity (GQLResult (Value CONST))
         )
-      . unContextValue
-  decodeKindedValue dir _ = fmap to . (`runReaderT` context) . decodeRep dir
+      . unkind
+  decodeKindedValue ctx _ = fmap to . (`runReaderT` context) . decodeRep ctx
     where
       context =
         Context
           { isVariantRef = False,
-            typeName = useTypename (useGQL dir) (InputType :: CatType IN a),
-            enumVisitor = visitEnumName dir proxy,
-            fieldVisitor = visitFieldName dir proxy
+            typeName = useTypename ctx (InputType :: CatType IN a),
+            enumVisitor = visitEnumName ctx proxy,
+            fieldVisitor = visitFieldName ctx proxy
           }
         where
           proxy = Proxy @a
 
-instance (ctx ~ UseDeriving gql args, gql a, Generic a, DecodeRep gql args (Rep a), GRep gql args (GQLResult (Value CONST)) (Rep a)) => KindedValue ctx DIRECTIVE a where
-  encodeKindedValue UseDeriving {..} =
-    repValue
+instance (ctx ~ UseDeriving gql args, gql a, Generic a, DecodeRep ctx (Rep a), GRep gql args (GQLResult (Value CONST)) (Rep a)) => KindedValue ctx DIRECTIVE a where
+  encodeKindedValue ctx =
+    repToValue
       . deriveValue
-        ( GRepContext
-            { optApply = useEncodeValue useValue . runIdentity,
-              optTypeData = useTypeData useGQL . inputType
+        ( GRepFun
+            { grepFun = useEncodeValue ctx . runIdentity,
+              grepTypename = useTypename ctx . inputType,
+              grepWrappers = useWrappers ctx . inputType
             } ::
-            GRepContext gql args Identity (GQLResult (Value CONST))
+            GRepFun gql args Identity (GQLResult (Value CONST))
         )
-      . unContextValue
-  decodeKindedValue dir _ = fmap to . (`runReaderT` context) . decodeRep dir
+      . unkind
+  decodeKindedValue ctx _ = fmap to . (`runReaderT` context) . decodeRep ctx
     where
       context =
         Context
           { isVariantRef = False,
-            typeName = useTypename (useGQL dir) (InputType :: CatType IN a),
-            enumVisitor = visitEnumName dir proxy,
-            fieldVisitor = visitFieldName dir proxy
+            typeName = useTypename ctx (InputType :: CatType IN a),
+            enumVisitor = visitEnumName ctx proxy,
+            fieldVisitor = visitFieldName ctx proxy
           }
         where
           proxy = Proxy @a
 
 instance KindedValue ctx CUSTOM (Value CONST) where
-  encodeKindedValue _ = pure . unContextValue
+  encodeKindedValue _ = pure . unkind
   decodeKindedValue _ _ = pure . toConstValue
 
 toConstValue :: ValidValue -> Value CONST
@@ -168,12 +168,22 @@ toConstValue (Object fields) = Object (fmap toEntry fields)
 
 instance (ctx ~ UseDeriving gql args, KnownSymbol name, args a) => KindedValue ctx CUSTOM (Arg name a) where
   encodeKindedValue _ _ = throwError "directives cant be tagged arguments"
-  decodeKindedValue UseDeriving {useValue} _ value = Arg <$> withInputObject fieldDecoder value
+  decodeKindedValue ctx _ value = Arg <$> (coerceInputObject value >>= fieldDecoder)
     where
-      fieldDecoder = decodeFieldWith (useDecodeValue useValue) fieldName
+      fieldDecoder = useDecodeValue ctx . getField fieldName
       fieldName = symbolName (Proxy @name)
 
 --  Map
 instance (ctx ~ UseDeriving gql args, Ord k, args [(k, v)]) => KindedValue ctx CUSTOM (Map k v) where
-  decodeKindedValue UseDeriving {..} _ v = unsafeFromList <$> (useDecodeValue useValue v :: ResolverState [(k, v)])
-  encodeKindedValue UseDeriving {..} = useEncodeValue useValue . toAssoc . unContextValue
+  decodeKindedValue ctx _ v = unsafeFromList <$> (useDecodeValue ctx v :: ResolverState [(k, v)])
+  encodeKindedValue ctx = useEncodeValue ctx . toAssoc . unkind
+
+--
+repToValue :: GRepValue (GQLResult (Value CONST)) -> GQLResult (Value CONST)
+repToValue GRepValueEnum {..} = pure $ Enum enumVariantName
+repToValue GRepValueObject {..} = Object <$> (traverse fromField objectFields >>= fromElems)
+  where
+    fromField GRepField {fieldSelector, fieldValue} = do
+      entryValue <- fieldValue
+      pure ObjectEntry {entryName = fieldSelector, entryValue}
+repToValue _ = throwError (internal "input unions are not supported")

@@ -36,6 +36,8 @@ data-files:
     test/Feature/Directive/field-visitor/name-encode/query.gql
     test/Feature/Directive/field-visitor/name-introspection/query.gql
     test/Feature/Directive/type-visitor/description/query.gql
+    test/Feature/Inference/names/reserved-names-introspection/query.gql
+    test/Feature/Inference/names/reserved-names-resolving/query.gql
     test/Feature/Inference/object-and-enum/introspection/query.gql
     test/Feature/Inference/object-and-enum/resolving/query.gql
     test/Feature/Inference/tagged-arguments-fail/introspection/query.gql
@@ -168,6 +170,8 @@ data-files:
     test/Feature/Directive/field-visitor/name-encode/response.json
     test/Feature/Directive/field-visitor/name-introspection/response.json
     test/Feature/Directive/type-visitor/description/response.json
+    test/Feature/Inference/names/reserved-names-introspection/response.json
+    test/Feature/Inference/names/reserved-names-resolving/response.json
     test/Feature/Inference/object-and-enum/introspection/response.json
     test/Feature/Inference/object-and-enum/resolving/response.json
     test/Feature/Inference/tagged-arguments-fail/introspection/response.json
@@ -312,18 +316,17 @@ library
       Data.Morpheus.Server.Types
   other-modules:
       Data.Morpheus.Generic
-      Data.Morpheus.Generic.CountFields
+      Data.Morpheus.Generic.Cons
+      Data.Morpheus.Generic.Fields
       Data.Morpheus.Generic.Gmap
       Data.Morpheus.Generic.GRep
+      Data.Morpheus.Generic.Proxy
+      Data.Morpheus.Generic.RefType
       Data.Morpheus.Server.Deriving.App
-      Data.Morpheus.Server.Deriving.Internal.Decode.Rep
-      Data.Morpheus.Server.Deriving.Internal.Decode.Utils
-      Data.Morpheus.Server.Deriving.Internal.Resolve.Explore
-      Data.Morpheus.Server.Deriving.Internal.Schema.Directive
-      Data.Morpheus.Server.Deriving.Internal.Schema.Enum
-      Data.Morpheus.Server.Deriving.Internal.Schema.Object
-      Data.Morpheus.Server.Deriving.Internal.Schema.Type
-      Data.Morpheus.Server.Deriving.Internal.Schema.Union
+      Data.Morpheus.Server.Deriving.Internal.Directive
+      Data.Morpheus.Server.Deriving.Internal.Resolver
+      Data.Morpheus.Server.Deriving.Internal.Type
+      Data.Morpheus.Server.Deriving.Internal.Value
       Data.Morpheus.Server.Deriving.Kinded.Arguments
       Data.Morpheus.Server.Deriving.Kinded.Channels
       Data.Morpheus.Server.Deriving.Kinded.NamedResolver
@@ -335,7 +338,6 @@ library
       Data.Morpheus.Server.Deriving.Schema
       Data.Morpheus.Server.Deriving.Utils.GScan
       Data.Morpheus.Server.Deriving.Utils.Kinded
-      Data.Morpheus.Server.Deriving.Utils.Proxy
       Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
       Data.Morpheus.Server.Deriving.Utils.Types
       Data.Morpheus.Server.Deriving.Utils.Use
@@ -381,6 +383,7 @@ test-suite morpheus-graphql-server-test
       Feature.Directive.EnumVisitor
       Feature.Directive.FieldVisitor
       Feature.Directive.TypeVisitor
+      Feature.Inference.Names
       Feature.Inference.ObjectAndEnum
       Feature.Inference.TaggedArguments
       Feature.Inference.TaggedArgumentsFail

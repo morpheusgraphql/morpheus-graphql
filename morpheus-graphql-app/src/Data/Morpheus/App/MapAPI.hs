@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -11,14 +12,15 @@ import Control.Monad.Except (MonadError (throwError))
 import Data.Aeson
   ( encode,
   )
-import Data.Aeson.Internal
-  ( formatError,
-    ifromJSON,
-  )
 import Data.Aeson.Parser
   ( eitherDecodeWith,
     jsonNoDup,
   )
+#if MIN_VERSION_aeson(2,1,0) 
+import Data.Aeson.Types ( formatError,ifromJSON,)
+#else 
+import Data.Aeson.Internal ( formatError,ifromJSON,)
+#endif
 import Data.ByteString.Lazy.Char8 (pack)
 import qualified Data.ByteString.Lazy.Char8 as LB
   ( ByteString,
@@ -43,13 +45,13 @@ import Relude hiding
     encodeUtf8,
   )
 
-decodeNoDup :: MonadError LB.ByteString m => LB.ByteString -> m GQLRequest
+decodeNoDup :: (MonadError LB.ByteString m) => LB.ByteString -> m GQLRequest
 decodeNoDup str = case eitherDecodeWith jsonNoDup ifromJSON str of
   Left (path, x) -> throwError $ pack $ "Bad Request. Could not decode Request body: " <> formatError path x
   Right value -> pure value
 
 class MapAPI a b where
-  mapAPI :: Applicative m => (GQLRequest -> m GQLResponse) -> a -> m b
+  mapAPI :: (Applicative m) => (GQLRequest -> m GQLResponse) -> a -> m b
 
 instance MapAPI GQLRequest GQLResponse where
   mapAPI f = f

@@ -1,0 +1,8 @@
+{
+  "data": {
+    "query": {
+      "fields": [{ "name": "type", "args": [{ "name": "in" }] }]
+    },
+    "input": { "inputFields": [{ "name": "data" }] }
+  }
+}

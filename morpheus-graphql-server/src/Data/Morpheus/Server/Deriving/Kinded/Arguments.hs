@@ -38,13 +38,13 @@ type family HasArguments a where
   HasArguments a = ()
 
 class DeriveFieldArguments ctx a where
-  deriveFieldArguments :: (UseGQLType gql ~ ctx) => ctx -> f a -> GQLResult (ArgumentsDefinition CONST)
+  deriveFieldArguments :: ctx -> f a -> GQLResult (ArgumentsDefinition CONST)
 
 instance DeriveFieldArguments ctx () where
   deriveFieldArguments _ _ = pure empty
 
-instance (UseGQLType gql ~ ctx, gql b, gql a) => DeriveFieldArguments ctx (a -> b) where
+instance (UseGQLType ctx gql, gql b, gql a) => DeriveFieldArguments ctx (a -> b) where
   deriveFieldArguments gql _ = do
     a <- useDeriveNode gql (inputType (Proxy @a)) >>= nodeToType >>= typeToArguments
-    b <- useDeriveFieldArguments gql (OutputType :: CatType OUT b)
+    b <- useDeriveFieldArgs gql (OutputType :: CatType OUT b)
     a <:> b
