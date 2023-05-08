@@ -32,8 +32,8 @@ type ScannerMap c = HashMap TypeFingerprint (ScanProxy c)
 useProxies :: (Hashable k, Eq k) => (ScanProxy c -> [v]) -> (v -> k) -> [ScanProxy c] -> HashMap k v
 useProxies toValue toKey = fromList . map (\x -> (toKey x, x)) . concatMap toValue
 
-scan :: Scanner c -> [ScanRef c] -> [ScanProxy c]
-scan ctx = toList . scanRefs ctx mempty
+scan :: forall c k a. (c a) => Scanner c -> CatType k a -> [ScanProxy c]
+scan ctx@(Scanner f) = toList . scanRefs ctx mempty . f
 
 runProxy :: CatType k a -> Scanner c -> CProxy c -> [ScanRef c]
 runProxy cat scanner (CProxy prx) = runScanner scanner (mapCat prx cat)

@@ -47,7 +47,8 @@ import Data.Morpheus.Server.Deriving.Utils.GScan
     useProxies,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
-  ( Kinded (..),
+  ( CatType (OutputType),
+    Kinded (..),
   )
 import Data.Morpheus.Server.Deriving.Utils.Use (UseNamedResolver (..))
 import Data.Morpheus.Server.Resolvers
@@ -65,7 +66,8 @@ import Data.Morpheus.Server.Types.GQLType
     withRes,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( QUERY,
+  ( OUT,
+    QUERY,
   )
 import Relude
 
@@ -93,9 +95,6 @@ withNamed =
       useDeriveNamedResolvers = deriveNamedRes,
       useDeriveNamedRefs = deriveNamedRefs
     }
-
-deriveNamedResolver :: Scanner (GQLNamedResolver m)
-deriveNamedResolver = Scanner deriveNamedRefs
 
 type ROOT (m :: Type -> Type) a = EXPLORE GQLType GQLResolver m (a m)
 
@@ -137,7 +136,4 @@ deriveNamedResolvers ::
 deriveNamedResolvers NamedResolvers =
   NamedResolversValue (useProxies runProxy resolverName proxies)
   where
-    proxies =
-      scan
-        deriveNamedResolver
-        (deriveNamedRefs (Proxy @(query (NamedResolverT (Resolver QUERY e m)))))
+    proxies = scan (Scanner deriveNamedRefs) (OutputType :: CatType OUT (query (NamedResolverT (Resolver QUERY e m))))
