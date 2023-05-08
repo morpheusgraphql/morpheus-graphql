@@ -21,12 +21,13 @@ module Data.Morpheus.Server.Deriving.Utils.GScan
 where
 
 import Data.HashMap.Strict (fromList, insert, member)
-import Data.Morpheus.Generic (Gmap, gmap)
-import Data.Morpheus.Generic.Proxy (CProxy (..))
+import Data.Morpheus.Generic (CProxy (..), Gmap, gmap)
 import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType, mapCat)
 import Data.Morpheus.Server.Types.TypeName (TypeFingerprint)
 import GHC.Generics (Generic (Rep))
 import Relude hiding (fromList)
+
+type ScannerMap c = HashMap TypeFingerprint (ScanProxy c)
 
 useProxies :: (Hashable k, Eq k) => (ScanProxy c -> [v]) -> (v -> k) -> [ScanProxy c] -> HashMap k v
 useProxies toValue toKey = fromList . map (\x -> (toKey x, x)) . concatMap toValue
@@ -35,7 +36,7 @@ scan :: Scanner c -> [ScanRef c] -> [ScanProxy c]
 scan ctx = toList . scanRefs ctx mempty
 
 runProxy :: CatType k a -> Scanner c -> CProxy c -> [ScanRef c]
-runProxy cat (Scanner f) (CProxy prx) = f (mapCat prx cat)
+runProxy cat scanner (CProxy prx) = runScanner scanner (mapCat prx cat)
 
 fieldRefs :: Scanner c -> ScanRef c -> [ScanRef c]
 fieldRefs scanner (ScanNode _ _ prx) = concatMap (runProxy prx scanner) (gmap prx)
@@ -49,9 +50,7 @@ getFingerprint :: ScanRef c -> TypeFingerprint
 getFingerprint (ScanNode _ fp _) = fp
 getFingerprint (ScanLeaf fp _) = fp
 
-type ProxyLib c = HashMap TypeFingerprint (ScanProxy c)
-
-scanRefs :: Scanner c -> ProxyLib c -> [ScanRef c] -> ProxyLib c
+scanRefs :: Scanner c -> ScannerMap c -> [ScanRef c] -> ScannerMap c
 scanRefs _ lib [] = lib
 scanRefs ctx lib (x : xs) = do
   let values = runRef x
@@ -73,5 +72,5 @@ data ScanRef (c :: Type -> Constraint) where
   ScanLeaf :: forall k a c. (c a) => TypeFingerprint -> CatType k a -> ScanRef c
 
 newtype Scanner (c :: Type -> Constraint) = Scanner
-  { scannerRefs :: forall k a. (c a) => CatType k a -> [ScanRef c]
+  { runScanner :: forall k a. (c a) => CatType k a -> [ScanRef c]
   }
