@@ -25,7 +25,6 @@ import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Internal.Utils (toAssoc)
 import Data.Morpheus.Server.Deriving.Utils.GScan
   ( ScanProxy (..),
-    Scanner (..),
     scan,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded (outputType)
@@ -72,7 +71,7 @@ compileTimeSchemaValidation :: (SCHEMA qu mu su) => proxy (root m event qu mu su
 compileTimeSchemaValidation = fromSchema . (deriveSchema >=> validateSchema True defaultConfig)
 
 explore :: forall f (a :: (Type -> Type) -> Type). (GQLType (a IgnoredResolver)) => f a -> [ScanProxy GQLType]
-explore _ = scan (Scanner (useExploreRef withGQL)) (OutputType :: CatType OUT (a IgnoredResolver))
+explore _ = scan (useExploreRef withGQL) (OutputType :: CatType OUT (a IgnoredResolver))
 
 toDerivation :: TypeFingerprint -> GQLTypeNode c -> [NodeDerivation]
 toDerivation fp (GQLTypeNode node xs) = TypeDerivation fp (toAny node) : map NodeExtension xs

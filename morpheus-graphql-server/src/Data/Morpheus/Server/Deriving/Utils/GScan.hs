@@ -12,11 +12,10 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.Utils.GScan
-  ( Scanner (..),
-    ScanRef (..),
+  ( ScanRef (..),
+    ScanProxy (..),
     scan,
     useProxies,
-    ScanProxy (..),
   )
 where
 
@@ -32,8 +31,8 @@ type ScannerMap c = HashMap TypeFingerprint (ScanProxy c)
 useProxies :: (Hashable k, Eq k) => (ScanProxy c -> [v]) -> (v -> k) -> [ScanProxy c] -> HashMap k v
 useProxies toValue toKey = fromList . map (\x -> (toKey x, x)) . concatMap toValue
 
-scan :: forall c k a. (c a) => Scanner c -> CatType k a -> [ScanProxy c]
-scan ctx@(Scanner f) = toList . scanRefs ctx mempty . f
+scan :: (c a) => (forall k' a'. (c a') => CatType k' a' -> [ScanRef c]) -> CatType k a -> [ScanProxy c]
+scan f = toList . scanRefs (Scanner f) mempty . f
 
 runProxy :: CatType k a -> Scanner c -> CProxy c -> [ScanRef c]
 runProxy cat scanner (CProxy prx) = runScanner scanner (mapCat prx cat)

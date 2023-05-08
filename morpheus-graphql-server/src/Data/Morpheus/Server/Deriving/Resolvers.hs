@@ -42,7 +42,6 @@ import Data.Morpheus.Server.Deriving.Kinded.NamedResolverFun (KindedNamedFunValu
 import Data.Morpheus.Server.Deriving.Utils.GScan
   ( ScanProxy (..),
     ScanRef,
-    Scanner (..),
     scan,
     useProxies,
   )
@@ -136,4 +135,4 @@ deriveNamedResolvers ::
 deriveNamedResolvers NamedResolvers =
   NamedResolversValue (useProxies runProxy resolverName proxies)
   where
-    proxies = scan (Scanner deriveNamedRefs) (OutputType :: CatType OUT (query (NamedResolverT (Resolver QUERY e m))))
+    proxies = scan deriveNamedRefs (OutputType :: CatType OUT (query (NamedResolverT (Resolver QUERY e m))))
