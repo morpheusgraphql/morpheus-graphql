@@ -29,19 +29,29 @@ import Data.Morpheus.Server.Types.TypeName (TypeFingerprint)
 import GHC.Generics (Generic (Rep))
 import Relude hiding (fromList)
 
-type ScannerMap f c = HashMap TypeFingerprint (ScanProxy f c)
-
-class FreeMap p where
-  freeMap :: f b -> p a -> p b
-
 instance FreeMap FreeCatType where
   freeMap prx (FreeCatType cat) = FreeCatType (mapCat prx cat)
 
 useProxies :: (Hashable k, Eq k) => (ScanProxy f c -> [v]) -> (v -> k) -> [ScanProxy f c] -> HashMap k v
 useProxies toValue toKey = fromList . map (\x -> (toKey x, x)) . concatMap toValue
 
+data FreeCatType a where
+  FreeCatType :: forall c a. CatType c a -> FreeCatType a
+
+leafRef :: (c1 a) => TypeFingerprint -> CatType c2 a -> ScanRef FreeCatType c1
+leafRef fp p = ScanLeaf fp (FreeCatType p)
+
+nodeRef :: (c1 a, Gmap c1 (Rep a)) => Bool -> TypeFingerprint -> CatType c2 a -> ScanRef FreeCatType c1
+nodeRef visible fp p = ScanNode visible fp (FreeCatType p)
+
 scan :: (c a) => (forall k' a'. (c a') => CatType k' a' -> [ScanRef FreeCatType c]) -> CatType k a -> [ScanProxy FreeCatType c]
 scan f = toList . scanRefs (Scanner (\(FreeCatType x) -> f x)) mempty . f
+
+--  GENERIC
+type ScannerMap f c = HashMap TypeFingerprint (ScanProxy f c)
+
+class FreeMap p where
+  freeMap :: f b -> p a -> p b
 
 runProxy :: (FreeMap f) => f a -> Scanner f c -> CProxy c -> [ScanRef f c]
 runProxy cat scanner (CProxy prx) = runScanner scanner (freeMap prx cat)
@@ -75,19 +85,9 @@ runRef (ScanNode visible _ p)
   | otherwise = []
 runRef (ScanLeaf _ p) = [ScanProxy p]
 
-data FreeCatType a where
-  FreeCatType :: forall c a. CatType c a -> FreeCatType a
-
 data ScanRef f (c :: Type -> Constraint) where
   ScanNode :: forall a f c. (Gmap c (Rep a), c a) => Bool -> TypeFingerprint -> f a -> ScanRef f c
   ScanLeaf :: forall a f c. (c a) => TypeFingerprint -> f a -> ScanRef f c
 
-leafRef :: (c1 a) => TypeFingerprint -> CatType c2 a -> ScanRef FreeCatType c1
-leafRef fp p = ScanLeaf fp (FreeCatType p)
-
-nodeRef :: (c1 a, Gmap c1 (Rep a)) => Bool -> TypeFingerprint -> CatType c2 a -> ScanRef FreeCatType c1
-nodeRef visible fp p = ScanNode visible fp (FreeCatType p)
-
 newtype Scanner f (c :: Type -> Constraint) = Scanner
-  { runScanner :: forall a. (c a) => f a -> [ScanRef f c]
-  }
+  {runScanner :: forall a. (c a) => f a -> [ScanRef f c]}
