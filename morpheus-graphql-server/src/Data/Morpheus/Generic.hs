@@ -1,6 +1,6 @@
 module Data.Morpheus.Generic
   ( Gmap,
-    GmapFun (..),
+    gmap,
     -- GRep
     GRep,
     GRepCons (..),
@@ -17,10 +17,8 @@ module Data.Morpheus.Generic
     CountFields (..),
     RefType (..),
     DescribeCons (..),
-    runGmap,
     CProxy (..),
     symbolName,
-    gmapProxy,
   )
 where
 
@@ -45,9 +43,7 @@ import Data.Morpheus.Generic.GRep
   )
 import Data.Morpheus.Generic.Gmap
   ( Gmap,
-    GmapFun (..),
-    gmapProxy,
-    runGmap,
+    gmap,
   )
 import Data.Morpheus.Generic.Proxy
   ( CProxy (..),

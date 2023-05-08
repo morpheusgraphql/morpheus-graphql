@@ -21,10 +21,7 @@ module Data.Morpheus.Server.Deriving.Utils.GScan
 where
 
 import Data.HashMap.Strict (fromList, insert, member)
-import Data.Morpheus.Generic
-  ( Gmap,
-    gmapProxy,
-  )
+import Data.Morpheus.Generic (Gmap, gmap)
 import Data.Morpheus.Generic.Proxy (CProxy (..))
 import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (InputType, OutputType), inputType, outputType)
 import Data.Morpheus.Server.Types.TypeName (TypeFingerprint)
@@ -42,7 +39,7 @@ runProxy OutputType (Scanner f) (CProxy p) = f (outputType p)
 runProxy InputType (Scanner f) (CProxy p) = f (inputType p)
 
 fieldRefs :: Scanner c -> ScanRef c -> [ScanRef c]
-fieldRefs scanner (ScanNode _ _ prx) = concatMap (runProxy prx scanner) (gmapProxy prx)
+fieldRefs scanner (ScanNode _ _ prx) = concatMap (runProxy prx scanner) (gmap prx)
 fieldRefs _ ScanLeaf {} = []
 
 visited :: HashMap TypeFingerprint v -> ScanRef c -> Bool

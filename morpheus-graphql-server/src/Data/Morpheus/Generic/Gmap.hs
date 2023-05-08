@@ -16,8 +16,7 @@
 module Data.Morpheus.Generic.Gmap
   ( Gmap,
     GmapFun (..),
-    runGmap,
-    gmapProxy,
+    gmap,
   )
 where
 
@@ -43,8 +42,8 @@ newtype GmapFun (fun :: Type -> Constraint) (v :: Type) = GmapFun
   { gmapFun :: forall f a. (fun a) => f a -> v
   }
 
-gmapProxy :: (Gmap c (Rep a)) => f a -> [CProxy c]
-gmapProxy p = runGmap (rep p) gmapProxyFun
+gmap :: (Gmap c (Rep a)) => f a -> [CProxy c]
+gmap p = runGmap (rep p) gmapProxyFun
 
 runGmap :: (Gmap c a, Monoid b) => f a -> GmapFun c b -> b
 runGmap x = runReader (gfmap x)
