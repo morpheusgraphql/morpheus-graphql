@@ -23,9 +23,9 @@ where
 import Data.HashMap.Strict (fromList, insert, member)
 import Data.Morpheus.Generic
   ( Gmap,
-    GmapFun (..),
-    runGmap,
+    gmapProxy,
   )
+import Data.Morpheus.Generic.Proxy (CProxy (..))
 import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (InputType, OutputType), inputType, outputType)
 import Data.Morpheus.Server.Types.TypeName (TypeFingerprint)
 import GHC.Generics (Generic (Rep))
@@ -37,16 +37,13 @@ useProxies toValue toKey = fromList . map (\x -> (toKey x, x)) . concatMap toVal
 scan :: Scanner c -> [ScanRef c] -> [ScanProxy c]
 scan ctx = toList . scanRefs ctx mempty
 
-mapContext :: CatType k a -> Scanner c -> GmapFun c [ScanRef c]
-mapContext OutputType (Scanner f) = GmapFun (f . outputType)
-mapContext InputType (Scanner f) = GmapFun (f . inputType)
+runProxy :: CatType k a -> Scanner c -> CProxy c -> [ScanRef c]
+runProxy OutputType (Scanner f) (CProxy p) = f (outputType p)
+runProxy InputType (Scanner f) (CProxy p) = f (inputType p)
 
 fieldRefs :: Scanner c -> ScanRef c -> [ScanRef c]
-fieldRefs ctx (ScanNode _ _ x) = runGmap (rep x) (mapContext x ctx)
+fieldRefs scanner (ScanNode _ _ prx) = concatMap (runProxy prx scanner) (gmapProxy prx)
 fieldRefs _ ScanLeaf {} = []
-
-rep :: f a -> Proxy (Rep a)
-rep _ = Proxy
 
 visited :: HashMap TypeFingerprint v -> ScanRef c -> Bool
 visited lib (ScanNode _ fp _) = member fp lib

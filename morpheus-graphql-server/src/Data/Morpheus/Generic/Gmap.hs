@@ -17,13 +17,19 @@ module Data.Morpheus.Generic.Gmap
   ( Gmap,
     GmapFun (..),
     runGmap,
+    gmapProxy,
   )
 where
 
+import Data.Morpheus.Generic.Proxy
+  ( CProxy (..),
+    rep,
+  )
 import GHC.Generics
   ( C,
     D,
     Datatype,
+    Generic (..),
     K1,
     M1,
     S,
@@ -37,11 +43,17 @@ newtype GmapFun (fun :: Type -> Constraint) (v :: Type) = GmapFun
   { gmapFun :: forall f a. (fun a) => f a -> v
   }
 
+gmapProxy :: (Gmap c (Rep a)) => f a -> [CProxy c]
+gmapProxy p = runGmap (rep p) gmapProxyFun
+
 runGmap :: (Gmap c a, Monoid b) => f a -> GmapFun c b -> b
 runGmap x = runReader (gfmap x)
 
-runFun :: fun a => f a -> GmapFun fun v -> v
+runFun :: (fun a) => f a -> GmapFun fun v -> v
 runFun x GmapFun {..} = gmapFun x
+
+gmapProxyFun :: GmapFun c [CProxy c]
+gmapProxyFun = GmapFun (pure . CProxy)
 
 class Gmap (c :: Type -> Constraint) a where
   gfmap :: (Monoid v) => proxy a -> Reader (GmapFun c v) v

@@ -20,6 +20,7 @@ module Data.Morpheus.Generic
     runGmap,
     CProxy (..),
     symbolName,
+    gmapProxy,
   )
 where
 
@@ -45,6 +46,7 @@ import Data.Morpheus.Generic.GRep
 import Data.Morpheus.Generic.Gmap
   ( Gmap,
     GmapFun (..),
+    gmapProxy,
     runGmap,
   )
 import Data.Morpheus.Generic.Proxy
