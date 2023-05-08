@@ -33,7 +33,7 @@ import Data.Morpheus.Server.Deriving.Internal.Type
     deriveTypeDefinition,
     deriveTypeGuardUnions,
   )
-import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef (..))
+import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef (..), leafRef, nodeRef)
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
     inputType,
@@ -70,10 +70,10 @@ instance (gql a, ctx ~ UseDeriving gql v) => DeriveKindedType ctx WRAPPER (f a) 
   exploreKindedRefs ctx = useExploreRef ctx . mapCat (Proxy @a)
 
 scanLeaf :: (c a, UseGQLType ctx gql, gql a) => ctx -> CatType k a -> [ScanRef c]
-scanLeaf gql p = [ScanLeaf (useFingerprint gql p) p]
+scanLeaf gql p = [leafRef (useFingerprint gql p) p]
 
 scanNode :: (c a, gql a, UseGQLType ctx gql, Gmap c (Rep a)) => Bool -> ctx -> CatType k a -> [ScanRef c]
-scanNode visible gql p = [ScanNode visible (useFingerprint gql p) p]
+scanNode visible gql p = [nodeRef visible (useFingerprint gql p) p]
 
 instance (DecodeScalar a, gql a, ctx ~ UseDeriving gql v) => DeriveKindedType ctx SCALAR a where
   deriveKindedType ctx = deriveScalarDefinition scalarValidator ctx . unliftKind

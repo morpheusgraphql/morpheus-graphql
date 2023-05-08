@@ -74,7 +74,7 @@ import Data.Morpheus.Server.Deriving.Kinded.Type
     scanNode,
   )
 import Data.Morpheus.Server.Deriving.Kinded.Value (KindedValue (..))
-import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef (..))
+import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef (..), leafRef)
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
     Kinded (..),
@@ -366,7 +366,7 @@ instance (DERIVE_TYPE GQLType i, DERIVE_TYPE GQLType u) => GQLType (TypeGuard i 
   __deriveType proxy = cantBeInputType proxy
   __exploreRef InputType = []
   __exploreRef ref@OutputType =
-    [ScanLeaf (useFingerprint withGQL ref) ref]
+    [leafRef (useFingerprint withGQL ref) ref]
       <> __exploreRef union
       <> __exploreRef interface
     where

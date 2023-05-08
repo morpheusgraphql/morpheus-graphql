@@ -27,7 +27,11 @@ import Data.Morpheus.Generic (GRep, Gmap)
 import Data.Morpheus.Server.Deriving.Kinded.NamedResolverFun
   ( deriveNamedResolverFun,
   )
-import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef (..))
+import Data.Morpheus.Server.Deriving.Utils.GScan
+  ( ScanRef (..),
+    leafRef,
+    nodeRef,
+  )
 import Data.Morpheus.Server.Deriving.Utils.Kinded (outputType)
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseDeriving (..),
@@ -76,7 +80,7 @@ instance
     ]
     where
       proxy = Proxy @a
-  kindedNamedRefs ctx _ = [ScanLeaf fp (outputType proxy)]
+  kindedNamedRefs ctx _ = [leafRef fp (outputType proxy)]
     where
       fp = useFingerprint ctx (outputType proxy)
       proxy = Proxy @a
@@ -102,7 +106,7 @@ instance
     where
       proxy = Proxy @a
 
-  kindedNamedRefs ctx _ = [ScanNode True (useFingerprint ctx (outputType proxy)) (outputType proxy)]
+  kindedNamedRefs ctx _ = [nodeRef True (useFingerprint ctx (outputType proxy)) (outputType proxy)]
     where
       proxy = Proxy @a
 

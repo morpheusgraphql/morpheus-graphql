@@ -24,7 +24,8 @@ import Data.Morpheus.Core (defaultConfig, validateSchema)
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Internal.Utils (toAssoc)
 import Data.Morpheus.Server.Deriving.Utils.GScan
-  ( ScanProxy (..),
+  ( FreeCatType (..),
+    ScanProxy (..),
     scan,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded (outputType)
@@ -78,7 +79,7 @@ toDerivation fp (GQLTypeNode node xs) = TypeDerivation fp (toAny node) : map Nod
 toDerivation fp (GQLDirectiveNode node) = [DirectiveDerivation fp node]
 
 resolveNode :: ScanProxy GQLType -> GQLResult [NodeDerivation]
-resolveNode (ScanProxy proxy) = toDerivation (useFingerprint withGQL proxy) <$> useDeriveNode withGQL proxy
+resolveNode (ScanProxy (FreeCatType proxy)) = toDerivation (useFingerprint withGQL proxy) <$> useDeriveNode withGQL proxy
 
 deriveRoot :: (GQLType a) => f a -> GQLResult (TypeDefinition OBJECT CONST)
 deriveRoot prx = useDeriveNode withGQL (outputType prx) >>= nodeToType >>= coerceObject
