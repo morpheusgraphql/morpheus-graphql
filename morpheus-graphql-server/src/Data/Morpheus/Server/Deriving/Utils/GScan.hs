@@ -23,7 +23,7 @@ where
 import Data.HashMap.Strict (fromList, insert, member)
 import Data.Morpheus.Generic (Gmap, gmap)
 import Data.Morpheus.Generic.Proxy (CProxy (..))
-import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (InputType, OutputType), inputType, outputType)
+import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType, mapCat)
 import Data.Morpheus.Server.Types.TypeName (TypeFingerprint)
 import GHC.Generics (Generic (Rep))
 import Relude hiding (fromList)
@@ -35,8 +35,7 @@ scan :: Scanner c -> [ScanRef c] -> [ScanProxy c]
 scan ctx = toList . scanRefs ctx mempty
 
 runProxy :: CatType k a -> Scanner c -> CProxy c -> [ScanRef c]
-runProxy OutputType (Scanner f) (CProxy p) = f (outputType p)
-runProxy InputType (Scanner f) (CProxy p) = f (inputType p)
+runProxy cat (Scanner f) (CProxy prx) = f (mapCat prx cat)
 
 fieldRefs :: Scanner c -> ScanRef c -> [ScanRef c]
 fieldRefs scanner (ScanNode _ _ prx) = concatMap (runProxy prx scanner) (gmap prx)
