@@ -28,7 +28,8 @@ import Data.Morpheus.Server.Deriving.Kinded.NamedResolverFun
   ( deriveNamedResolverFun,
   )
 import Data.Morpheus.Server.Deriving.Utils.GScan
-  ( ScanRef (..),
+  ( FreeCatType,
+    ScanRef (..),
     leafRef,
     nodeRef,
   )
@@ -61,7 +62,7 @@ decodeValues ctx _ xs = traverse (liftState . useDecodeValue ctx) xs >>= resolve
 
 class KindedNamedResolver ctx (k :: DerivingKind) (m :: Type -> Type) a where
   kindedNamedResolver :: (UseNamedResolver namedRes resFun gql val ~ ctx) => ctx -> p (f k a) -> [NamedResolver m]
-  kindedNamedRefs :: (UseNamedResolver namedRes resFun gql val ~ ctx) => ctx -> p (f k a) -> [ScanRef (namedRes m)]
+  kindedNamedRefs :: (UseNamedResolver namedRes resFun gql val ~ ctx) => ctx -> p (f k a) -> [ScanRef FreeCatType (namedRes m)]
 
 instance
   ( UseNamedResolver namedRes resFun gql val ~ ctx,

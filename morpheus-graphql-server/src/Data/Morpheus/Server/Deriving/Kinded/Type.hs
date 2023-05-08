@@ -33,7 +33,12 @@ import Data.Morpheus.Server.Deriving.Internal.Type
     deriveTypeDefinition,
     deriveTypeGuardUnions,
   )
-import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef (..), leafRef, nodeRef)
+import Data.Morpheus.Server.Deriving.Utils.GScan
+  ( FreeCatType,
+    ScanRef (..),
+    leafRef,
+    nodeRef,
+  )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
     inputType,
@@ -63,16 +68,16 @@ import Relude
 -- | DeriveType With specific Kind: 'kind': object, scalar, enum ...
 class DeriveKindedType ctx (k :: DerivingKind) a where
   deriveKindedType :: (ctx ~ UseDeriving gql v) => ctx -> CatType cat (f k a) -> GQLResult (GQLTypeNode cat)
-  exploreKindedRefs :: (ctx ~ UseDeriving gql v) => ctx -> CatType cat (f k a) -> [ScanRef gql]
+  exploreKindedRefs :: (ctx ~ UseDeriving gql v) => ctx -> CatType cat (f k a) -> [ScanRef FreeCatType gql]
 
 instance (gql a, ctx ~ UseDeriving gql v) => DeriveKindedType ctx WRAPPER (f a) where
   deriveKindedType ctx = useDeriveNode ctx . mapCat (Proxy @a)
   exploreKindedRefs ctx = useExploreRef ctx . mapCat (Proxy @a)
 
-scanLeaf :: (c a, UseGQLType ctx gql, gql a) => ctx -> CatType k a -> [ScanRef c]
+scanLeaf :: (c a, UseGQLType ctx gql, gql a) => ctx -> CatType k a -> [ScanRef FreeCatType c]
 scanLeaf gql p = [leafRef (useFingerprint gql p) p]
 
-scanNode :: (c a, gql a, UseGQLType ctx gql, Gmap c (Rep a)) => Bool -> ctx -> CatType k a -> [ScanRef c]
+scanNode :: (c a, gql a, UseGQLType ctx gql, Gmap c (Rep a)) => Bool -> ctx -> CatType k a -> [ScanRef FreeCatType c]
 scanNode visible gql p = [nodeRef visible (useFingerprint gql p) p]
 
 instance (DecodeScalar a, gql a, ctx ~ UseDeriving gql v) => DeriveKindedType ctx SCALAR a where

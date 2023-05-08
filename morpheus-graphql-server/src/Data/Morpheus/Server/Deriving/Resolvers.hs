@@ -40,7 +40,8 @@ import Data.Morpheus.Server.Deriving.Kinded.NamedResolver
   )
 import Data.Morpheus.Server.Deriving.Kinded.NamedResolverFun (KindedNamedFunValue (..))
 import Data.Morpheus.Server.Deriving.Utils.GScan
-  ( ScanProxy (..),
+  ( FreeCatType,
+    ScanProxy (..),
     ScanRef,
     scan,
     useProxies,
@@ -77,7 +78,7 @@ type NAMED = UseNamedResolver GQLNamedResolver GQLNamedResolverFun GQLType GQLVa
 
 class (GQLType a) => GQLNamedResolver (m :: Type -> Type) a where
   deriveNamedRes :: f a -> [NamedResolver m]
-  deriveNamedRefs :: f a -> [ScanRef (GQLNamedResolver m)]
+  deriveNamedRefs :: f a -> [ScanRef FreeCatType (GQLNamedResolver m)]
 
 instance (GQLType a, KindedNamedResolver NAMED (KIND a) m a) => GQLNamedResolver m a where
   deriveNamedRes = kindedNamedResolver withNamed . kindedProxy
@@ -124,7 +125,7 @@ deriveResolvers RootResolver {..} =
             $> resolverChannels withDir subscriptionResolver
       }
 
-runProxy :: ScanProxy (GQLNamedResolver m) -> [NamedResolver m]
+runProxy :: ScanProxy FreeCatType (GQLNamedResolver m) -> [NamedResolver m]
 runProxy (ScanProxy x) = deriveNamedRes x
 
 deriveNamedResolvers ::
