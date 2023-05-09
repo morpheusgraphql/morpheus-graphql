@@ -25,7 +25,7 @@ where
 import Data.HashMap.Strict (fromList, insert, member)
 import Data.Morpheus.Generic (CProxy (..), Gmap, gmap)
 import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType, mapCat)
-import Data.Morpheus.Server.Types.TypeName (TypeFingerprint)
+import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder (TypeFingerprint)
 import GHC.Generics (Generic (Rep))
 import Relude hiding (fromList)
 
@@ -36,22 +36,24 @@ data FreeCatType a where
   FreeCatType :: forall c a. CatType c a -> FreeCatType a
 
 leafRef :: (c1 a) => TypeFingerprint -> CatType c2 a -> ScanRef FreeCatType c1
-leafRef fp p = ScanLeaf fp (FreeCatType p)
+leafRef fp p = ScanLeaf (show fp) (FreeCatType p)
 
 nodeRef :: (c1 a, Gmap c1 (Rep a)) => Bool -> TypeFingerprint -> CatType c2 a -> ScanRef FreeCatType c1
-nodeRef visible fp p = ScanNode visible fp (FreeCatType p)
+nodeRef visible fp p = ScanNode visible (show fp) (FreeCatType p)
 
 scan :: (c a) => (forall k' a'. (c a') => CatType k' a' -> [ScanRef FreeCatType c]) -> CatType k a -> [ScanProxy FreeCatType c]
 scan f = gScan (\(FreeCatType x) -> f x) . FreeCatType
 
 --  GENERIC
+type Key = Text
+
 useProxies :: (Hashable k, Eq k) => (ScanProxy f c -> [v]) -> (v -> k) -> [ScanProxy f c] -> HashMap k v
 useProxies toValue toKey = fromList . map (\x -> (toKey x, x)) . concatMap toValue
 
 gScan :: (c a, FreeMap f) => (forall a'. (c a') => f a' -> [ScanRef f c]) -> f a -> [ScanProxy f c]
 gScan f = toList . scanRefs (Scanner f) mempty . f
 
-type ScannerMap f c = HashMap TypeFingerprint (ScanProxy f c)
+type ScannerMap f c = HashMap Key (ScanProxy f c)
 
 class FreeMap p where
   freeMap :: f b -> p a -> p b
@@ -63,11 +65,11 @@ fieldRefs :: (FreeMap f) => Scanner f c -> ScanRef f c -> [ScanRef f c]
 fieldRefs scanner (ScanNode _ _ prx) = concatMap (runProxy prx scanner) (gmap prx)
 fieldRefs _ ScanLeaf {} = []
 
-visited :: HashMap TypeFingerprint v -> ScanRef f c -> Bool
+visited :: HashMap Key v -> ScanRef f c -> Bool
 visited lib (ScanNode _ fp _) = member fp lib
 visited lib (ScanLeaf fp _) = member fp lib
 
-getFingerprint :: ScanRef f c -> TypeFingerprint
+getFingerprint :: ScanRef f c -> Key
 getFingerprint (ScanNode _ fp _) = fp
 getFingerprint (ScanLeaf fp _) = fp
 
@@ -83,14 +85,12 @@ data ScanProxy f (c :: Type -> Constraint) where
   ScanProxy :: (c a) => f a -> ScanProxy f c
 
 runRef :: ScanRef f c -> [ScanProxy f c]
-runRef (ScanNode visible _ p)
-  | visible = [ScanProxy p]
-  | otherwise = []
+runRef (ScanNode visible _ p) = [ScanProxy p | visible]
 runRef (ScanLeaf _ p) = [ScanProxy p]
 
 data ScanRef f (c :: Type -> Constraint) where
-  ScanNode :: forall a f c. (Gmap c (Rep a), c a) => Bool -> TypeFingerprint -> f a -> ScanRef f c
-  ScanLeaf :: forall a f c. (c a) => TypeFingerprint -> f a -> ScanRef f c
+  ScanNode :: forall a f c. (Gmap c (Rep a), c a) => Bool -> Key -> f a -> ScanRef f c
+  ScanLeaf :: forall a f c. (c a) => Key -> f a -> ScanRef f c
 
 newtype Scanner f (c :: Type -> Constraint) = Scanner
   {runScanner :: forall a. (c a) => f a -> [ScanRef f c]}
