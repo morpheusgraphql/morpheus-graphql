@@ -320,6 +320,7 @@ library
       Data.Morpheus.Generic.Fields
       Data.Morpheus.Generic.Gmap
       Data.Morpheus.Generic.GRep
+      Data.Morpheus.Generic.GScan
       Data.Morpheus.Generic.Proxy
       Data.Morpheus.Generic.RefType
       Data.Morpheus.Server.Deriving.App

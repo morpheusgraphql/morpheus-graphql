@@ -19,6 +19,15 @@ module Data.Morpheus.Generic
     DescribeCons (..),
     CProxy (..),
     symbolName,
+    CBox (..),
+    -- x
+    ScanRef (..),
+    FreeMap (..),
+    IsFingerprint (..),
+    useProxies,
+    scan,
+    scanNode,
+    scanLeaf,
   )
 where
 
@@ -41,12 +50,14 @@ import Data.Morpheus.Generic.GRep
     deriveType,
     deriveValue,
   )
+import Data.Morpheus.Generic.GScan
 import Data.Morpheus.Generic.Gmap
   ( Gmap,
     gmap,
   )
 import Data.Morpheus.Generic.Proxy
-  ( CProxy (..),
+  ( CBox (..),
+    CProxy (..),
     symbolName,
   )
 import Data.Morpheus.Generic.RefType
