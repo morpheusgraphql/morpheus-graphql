@@ -31,9 +31,6 @@ import Data.Morpheus.Generic.Proxy
 import GHC.Generics (Generic (Rep))
 import Relude hiding (fromList)
 
-class IsFingerprint a where
-  toFingerprint :: a -> Fingerprint
-
 --  GENERIC
 type Fingerprint = Text
 
