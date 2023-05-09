@@ -14,7 +14,6 @@
 module Data.Morpheus.Generic.GScan
   ( ScanRef (..),
     ProxyMap (..),
-    IsFingerprint (..),
     useProxies,
     scan,
     scanNode,
