@@ -32,9 +32,6 @@ import Relude hiding (fromList)
 instance FreeMap FreeCatType where
   freeMap prx (FreeCatType cat) = FreeCatType (mapCat prx cat)
 
-useProxies :: (Hashable k, Eq k) => (ScanProxy f c -> [v]) -> (v -> k) -> [ScanProxy f c] -> HashMap k v
-useProxies toValue toKey = fromList . map (\x -> (toKey x, x)) . concatMap toValue
-
 data FreeCatType a where
   FreeCatType :: forall c a. CatType c a -> FreeCatType a
 
@@ -45,9 +42,15 @@ nodeRef :: (c1 a, Gmap c1 (Rep a)) => Bool -> TypeFingerprint -> CatType c2 a ->
 nodeRef visible fp p = ScanNode visible fp (FreeCatType p)
 
 scan :: (c a) => (forall k' a'. (c a') => CatType k' a' -> [ScanRef FreeCatType c]) -> CatType k a -> [ScanProxy FreeCatType c]
-scan f = toList . scanRefs (Scanner (\(FreeCatType x) -> f x)) mempty . f
+scan f = gScan (\(FreeCatType x) -> f x) . FreeCatType
 
 --  GENERIC
+useProxies :: (Hashable k, Eq k) => (ScanProxy f c -> [v]) -> (v -> k) -> [ScanProxy f c] -> HashMap k v
+useProxies toValue toKey = fromList . map (\x -> (toKey x, x)) . concatMap toValue
+
+gScan :: (c a, FreeMap f) => (forall a'. (c a') => f a' -> [ScanRef f c]) -> f a -> [ScanProxy f c]
+gScan f = toList . scanRefs (Scanner f) mempty . f
+
 type ScannerMap f c = HashMap TypeFingerprint (ScanProxy f c)
 
 class FreeMap p where
