@@ -22,7 +22,7 @@ module Data.Morpheus.Generic
     CBox (..),
     -- x
     ScanRef (..),
-    FreeMap (..),
+    ProxyMap (..),
     IsFingerprint (..),
     useProxies,
     scan,

@@ -26,6 +26,12 @@ import Data.Morpheus.App.Internal.Resolving
     ResolverValue,
     RootResolverValue (..),
   )
+import Data.Morpheus.Generic (CBox (..))
+import Data.Morpheus.Generic.GScan
+  ( ScanRef,
+    scan,
+    useProxies,
+  )
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Server.Deriving.Internal.Resolver
   ( EXPLORE,
@@ -39,17 +45,7 @@ import Data.Morpheus.Server.Deriving.Kinded.NamedResolver
   ( KindedNamedResolver (..),
   )
 import Data.Morpheus.Server.Deriving.Kinded.NamedResolverFun (KindedNamedFunValue (..))
-import Data.Morpheus.Server.Deriving.Utils.GScan
-  ( FreeCatType,
-    ScanProxy (..),
-    ScanRef,
-    scan,
-    useProxies,
-  )
-import Data.Morpheus.Server.Deriving.Utils.Kinded
-  ( CatType (OutputType),
-    Kinded (..),
-  )
+import Data.Morpheus.Server.Deriving.Utils.Kinded (Kinded (..))
 import Data.Morpheus.Server.Deriving.Utils.Use (UseNamedResolver (..))
 import Data.Morpheus.Server.Resolvers
   ( NamedResolverT (..),
@@ -66,8 +62,7 @@ import Data.Morpheus.Server.Types.GQLType
     withRes,
   )
 import Data.Morpheus.Types.Internal.AST
-  ( OUT,
-    QUERY,
+  ( QUERY,
   )
 import Relude
 
@@ -78,7 +73,7 @@ type NAMED = UseNamedResolver GQLNamedResolver GQLNamedResolverFun GQLType GQLVa
 
 class (GQLType a) => GQLNamedResolver (m :: Type -> Type) a where
   deriveNamedRes :: f a -> [NamedResolver m]
-  deriveNamedRefs :: f a -> [ScanRef FreeCatType (GQLNamedResolver m)]
+  deriveNamedRefs :: f a -> [ScanRef Proxy (GQLNamedResolver m)]
 
 instance (GQLType a, KindedNamedResolver NAMED (KIND a) m a) => GQLNamedResolver m a where
   deriveNamedRes = kindedNamedResolver withNamed . kindedProxy
@@ -125,8 +120,8 @@ deriveResolvers RootResolver {..} =
             $> resolverChannels withDir subscriptionResolver
       }
 
-runProxy :: ScanProxy FreeCatType (GQLNamedResolver m) -> [NamedResolver m]
-runProxy (ScanProxy x) = deriveNamedRes x
+runProxy :: CBox Proxy (GQLNamedResolver m) -> [NamedResolver m]
+runProxy (CBox x) = deriveNamedRes x
 
 deriveNamedResolvers ::
   forall e m query mut sub.
@@ -136,4 +131,4 @@ deriveNamedResolvers ::
 deriveNamedResolvers NamedResolvers =
   NamedResolversValue (useProxies runProxy resolverName proxies)
   where
-    proxies = scan deriveNamedRefs (OutputType :: CatType OUT (query (NamedResolverT (Resolver QUERY e m))))
+    proxies = scan deriveNamedRefs (Proxy @(query (NamedResolverT (Resolver QUERY e m))))

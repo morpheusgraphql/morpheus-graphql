@@ -22,8 +22,9 @@ module Data.Morpheus.Server.Deriving.Utils.Use
 where
 
 import Data.Morpheus.App.Internal.Resolving (NamedResolver (..), ResolverState, ResolverValue)
+import Data.Morpheus.Generic (ScanRef)
 import Data.Morpheus.Internal.Ext (GQLResult)
-import Data.Morpheus.Server.Deriving.Utils.GScan (FreeCatType, ScanRef)
+import Data.Morpheus.Server.Deriving.Utils.GScan (FreeCatType)
 import Data.Morpheus.Server.Deriving.Utils.Types
 import Data.Morpheus.Server.Types.Directives
   ( GDirectiveUsages (..),
@@ -123,7 +124,7 @@ instance UseGQLValue (UseResolver res gql val) val where
 data UseNamedResolver named fun gql val = UseNamedResolver
   { useNamedFieldResolver :: forall a m. (fun m a) => a -> m (ResolverValue m),
     useDeriveNamedResolvers :: forall f a m. (named m a) => f a -> [NamedResolver m],
-    useDeriveNamedRefs :: forall f a m. (named m a) => f a -> [ScanRef FreeCatType (named m)],
+    useDeriveNamedRefs :: forall f a m. (named m a) => f a -> [ScanRef Proxy (named m)],
     namedDrv :: UseDeriving gql val
   }
 

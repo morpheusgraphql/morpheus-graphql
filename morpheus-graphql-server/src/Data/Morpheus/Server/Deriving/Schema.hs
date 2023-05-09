@@ -21,12 +21,12 @@ module Data.Morpheus.Server.Deriving.Schema
 where
 
 import Data.Morpheus.Core (defaultConfig, validateSchema)
+import Data.Morpheus.Generic (CBox (..))
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Internal.Utils (toAssoc)
 import Data.Morpheus.Server.Deriving.Utils.GScan
   ( FreeCatType (..),
-    ScanProxy (..),
-    scan,
+    scanFree,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded (outputType)
 import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
@@ -71,15 +71,15 @@ type SCHEMA qu mu su =
 compileTimeSchemaValidation :: (SCHEMA qu mu su) => proxy (root m event qu mu su) -> Q Exp
 compileTimeSchemaValidation = fromSchema . (deriveSchema >=> validateSchema True defaultConfig)
 
-explore :: forall f (a :: (Type -> Type) -> Type). (GQLType (a IgnoredResolver)) => f a -> [ScanProxy FreeCatType GQLType]
-explore _ = scan (useExploreRef withGQL) (OutputType :: CatType OUT (a IgnoredResolver))
+explore :: forall f (a :: (Type -> Type) -> Type). (GQLType (a IgnoredResolver)) => f a -> [CBox FreeCatType GQLType]
+explore _ = scanFree (useExploreRef withGQL) (OutputType :: CatType OUT (a IgnoredResolver))
 
 toDerivation :: TypeFingerprint -> GQLTypeNode c -> [NodeDerivation]
 toDerivation fp (GQLTypeNode node xs) = TypeDerivation fp (toAny node) : map NodeExtension xs
 toDerivation fp (GQLDirectiveNode node) = [DirectiveDerivation fp node]
 
-resolveNode :: ScanProxy FreeCatType GQLType -> GQLResult [NodeDerivation]
-resolveNode (ScanProxy (FreeCatType proxy)) = toDerivation (useFingerprint withGQL proxy) <$> useDeriveNode withGQL proxy
+resolveNode :: CBox FreeCatType GQLType -> GQLResult [NodeDerivation]
+resolveNode (CBox (FreeCatType proxy)) = toDerivation (useFingerprint withGQL proxy) <$> useDeriveNode withGQL proxy
 
 deriveRoot :: (GQLType a) => f a -> GQLResult (TypeDefinition OBJECT CONST)
 deriveRoot prx = useDeriveNode withGQL (outputType prx) >>= nodeToType >>= coerceObject

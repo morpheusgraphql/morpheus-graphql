@@ -13,7 +13,7 @@
 
 module Data.Morpheus.Generic.GScan
   ( ScanRef (..),
-    FreeMap (..),
+    ProxyMap (..),
     IsFingerprint (..),
     useProxies,
     scan,
@@ -40,18 +40,24 @@ type Fingerprint = Text
 useProxies :: (Hashable k, Eq k) => (CBox f c -> [v]) -> (v -> k) -> [CBox f c] -> HashMap k v
 useProxies toValue toKey = fromList . map (\x -> (toKey x, x)) . concatMap toValue
 
-scan :: (c a, FreeMap f) => (forall a'. (c a') => f a' -> [ScanRef f c]) -> f a -> [CBox f c]
+scan :: (c a, ProxyMap f) => (forall a'. (c a') => f a' -> [ScanRef f c]) -> f a -> [CBox f c]
 scan f = toList . scanRefs (Scanner f) mempty . f
 
 type ScannerMap f c = HashMap Fingerprint (CBox f c)
 
-class FreeMap p where
-  freeMap :: f b -> p a -> p b
+class ProxyMap p where
+  proxyMap :: f b -> p a -> p b
 
-runProxy :: (FreeMap f) => f a -> Scanner f c -> CProxy c -> [ScanRef f c]
-runProxy cat scanner (CProxy prx) = runScanner scanner (freeMap prx cat)
+instance ProxyMap Proxy where
+  proxyMap p _ = toProxy p
+    where
+      toProxy :: f a -> Proxy a
+      toProxy _ = Proxy
 
-fieldRefs :: (FreeMap f) => Scanner f c -> ScanRef f c -> [ScanRef f c]
+runProxy :: (ProxyMap f) => f a -> Scanner f c -> CProxy c -> [ScanRef f c]
+runProxy cat scanner (CProxy prx) = runScanner scanner (proxyMap prx cat)
+
+fieldRefs :: (ProxyMap f) => Scanner f c -> ScanRef f c -> [ScanRef f c]
 fieldRefs scanner (ScanNode _ _ prx) = concatMap (runProxy prx scanner) (gmap prx)
 fieldRefs _ ScanLeaf {} = []
 
@@ -63,7 +69,7 @@ getFingerprint :: ScanRef f c -> Fingerprint
 getFingerprint (ScanNode _ fp _) = fp
 getFingerprint (ScanLeaf fp _) = fp
 
-scanRefs :: (FreeMap f) => Scanner f c -> ScannerMap f c -> [ScanRef f c] -> ScannerMap f c
+scanRefs :: (ProxyMap f) => Scanner f c -> ScannerMap f c -> [ScanRef f c] -> ScannerMap f c
 scanRefs _ lib [] = lib
 scanRefs ctx lib (x : xs) = do
   let values = runRef x
