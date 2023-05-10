@@ -23,11 +23,16 @@ import Data.Morpheus.App.Internal.Resolving
     NamedResolverResult (..),
     ResolverValue,
   )
-import Data.Morpheus.Generic (GRep, Gmap, scanLeaf, scanNode)
+import Data.Morpheus.Generic
+  ( GRep,
+    Gmap,
+    ScanRef,
+    scanLeaf,
+    scanNode,
+  )
 import Data.Morpheus.Server.Deriving.Kinded.NamedResolverFun
   ( deriveNamedResolverFun,
   )
-import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef)
 import Data.Morpheus.Server.Deriving.Utils.Kinded (outputType)
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseDeriving (..),
