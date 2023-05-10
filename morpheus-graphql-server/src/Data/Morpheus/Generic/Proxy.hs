@@ -19,6 +19,7 @@ module Data.Morpheus.Generic.Proxy
     CBox (..),
     rep,
     foldProxy,
+    runCBox,
   )
 where
 
@@ -66,6 +67,9 @@ foldProxy f (CProxy x) = f x
 
 data CBox box constraint where
   CBox :: forall constraint box a. (constraint a) => box a -> CBox box constraint
+
+runCBox :: (forall a. (c a) => f a -> b) -> CBox f c -> b
+runCBox f (CBox x) = f x
 
 rep :: f a -> Proxy (Rep a)
 rep _ = Proxy

@@ -21,7 +21,7 @@ module Data.Morpheus.Server.Deriving.Utils.GScan
 where
 
 import Data.Morpheus.Generic
-  ( CBox (..),
+  ( CBox,
     Gmap,
     ProxyMap (..),
     ScanRef (..),

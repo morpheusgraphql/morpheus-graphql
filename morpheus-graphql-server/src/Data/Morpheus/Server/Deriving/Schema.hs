@@ -21,7 +21,7 @@ module Data.Morpheus.Server.Deriving.Schema
 where
 
 import Data.Morpheus.Core (defaultConfig, validateSchema)
-import Data.Morpheus.Generic (CBox (..))
+import Data.Morpheus.Generic (CBox, runCBox)
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Internal.Utils (toAssoc)
 import Data.Morpheus.Server.Deriving.Utils.GScan
@@ -78,8 +78,8 @@ toDerivation :: TypeFingerprint -> GQLTypeNode c -> [NodeDerivation]
 toDerivation fp (GQLTypeNode node xs) = TypeDerivation fp (toAny node) : map NodeExtension xs
 toDerivation fp (GQLDirectiveNode node) = [DirectiveDerivation fp node]
 
-resolveNode :: CBox FreeCatType GQLType -> GQLResult [NodeDerivation]
-resolveNode (CBox (FreeCatType proxy)) = toDerivation (useFingerprint withGQL proxy) <$> useDeriveNode withGQL proxy
+resolveNode :: (GQLType a) => FreeCatType a -> GQLResult [NodeDerivation]
+resolveNode (FreeCatType proxy) = toDerivation (useFingerprint withGQL proxy) <$> useDeriveNode withGQL proxy
 
 deriveRoot :: (GQLType a) => f a -> GQLResult (TypeDefinition OBJECT CONST)
 deriveRoot prx = useDeriveNode withGQL (outputType prx) >>= nodeToType >>= coerceObject
@@ -89,7 +89,7 @@ deriveSchema _ = do
   query <- deriveRoot (Proxy @(qu IgnoredResolver))
   mutation <- traverse deriveRoot (ignoreUndefined (Proxy @(mu IgnoredResolver)))
   subscription <- traverse deriveRoot (ignoreUndefined (Proxy @(su IgnoredResolver)))
-  typeNodes <- fmap join (traverse resolveNode (explore (Proxy @qu) <> explore (Proxy @mu) <> explore (Proxy @su)))
+  typeNodes <- fmap join (traverse (runCBox resolveNode) (explore (Proxy @qu) <> explore (Proxy @mu) <> explore (Proxy @su)))
   SchemaState {..} <- foldlM (&) mempty (map execNode typeNodes)
   types <- map (insertImplements implements) <$> checkTypeCollisions (toAssoc typeDefinitions)
   schema <- defineSchemaWith types (Just query, mutation, subscription)

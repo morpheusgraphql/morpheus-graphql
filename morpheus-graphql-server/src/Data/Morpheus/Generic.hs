@@ -19,7 +19,7 @@ module Data.Morpheus.Generic
     DescribeCons (..),
     CProxy (..),
     symbolName,
-    CBox (..),
+    CBox,
     -- x
     ScanRef (..),
     ProxyMap (..),
@@ -27,6 +27,7 @@ module Data.Morpheus.Generic
     scan,
     scanNode,
     scanLeaf,
+    runCBox,
   )
 where
 
@@ -55,8 +56,9 @@ import Data.Morpheus.Generic.Gmap
     gmap,
   )
 import Data.Morpheus.Generic.Proxy
-  ( CBox (..),
+  ( CBox,
     CProxy (..),
+    runCBox,
     symbolName,
   )
 import Data.Morpheus.Generic.RefType

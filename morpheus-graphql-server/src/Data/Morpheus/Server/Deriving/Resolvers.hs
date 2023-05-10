@@ -26,7 +26,7 @@ import Data.Morpheus.App.Internal.Resolving
     ResolverValue,
     RootResolverValue (..),
   )
-import Data.Morpheus.Generic (CBox (..))
+import Data.Morpheus.Generic (CBox, runCBox)
 import Data.Morpheus.Generic.GScan
   ( ScanRef,
     scan,
@@ -121,7 +121,7 @@ deriveResolvers RootResolver {..} =
       }
 
 runProxy :: CBox Proxy (GQLNamedResolver m) -> [NamedResolver m]
-runProxy (CBox x) = deriveNamedRes x
+runProxy = runCBox deriveNamedRes
 
 deriveNamedResolvers ::
   forall e m query mut sub.
