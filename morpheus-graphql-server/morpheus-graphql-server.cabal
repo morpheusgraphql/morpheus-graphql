@@ -339,7 +339,6 @@ library
       Data.Morpheus.Server.Deriving.Schema
       Data.Morpheus.Server.Deriving.Utils.GScan
       Data.Morpheus.Server.Deriving.Utils.Kinded
-      Data.Morpheus.Server.Deriving.Utils.SchemaBuilder
       Data.Morpheus.Server.Deriving.Utils.Types
       Data.Morpheus.Server.Deriving.Utils.Use
       Data.Morpheus.Server.Playground

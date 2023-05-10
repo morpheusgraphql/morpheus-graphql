@@ -28,8 +28,8 @@ import Data.Morpheus.Generic
     scan,
   )
 import Data.Morpheus.Server.Deriving.Utils.Kinded (mapCat)
-import Data.Morpheus.Server.Deriving.Utils.SchemaBuilder (TypeFingerprint)
 import Data.Morpheus.Server.Deriving.Utils.Types (CatType (..))
+import Data.Morpheus.Server.Types.TypeName (TypeFingerprint (..))
 import GHC.Generics (Generic (Rep))
 import Relude hiding (fromList)
 
