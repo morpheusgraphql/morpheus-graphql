@@ -123,12 +123,15 @@ deriveResolvers RootResolver {..} =
 runProxy :: CBox Proxy (GQLNamedResolver m) -> [NamedResolver m]
 runProxy = runCBox deriveNamedRes
 
+queryProxy :: NamedResolvers m e query mut sub -> Proxy (query (NamedResolverT (Resolver QUERY e m)))
+queryProxy _ = Proxy
+
 deriveNamedResolvers ::
-  forall e m query mut sub.
   (Monad m, DERIVE_NAMED_RESOLVERS (Resolver QUERY e m) query) =>
   NamedResolvers m e query mut sub ->
   RootResolverValue e m
-deriveNamedResolvers NamedResolvers =
-  NamedResolversValue (useProxies runProxy resolverName proxies)
-  where
-    proxies = scan deriveNamedRefs (Proxy @(query (NamedResolverT (Resolver QUERY e m))))
+deriveNamedResolvers =
+  NamedResolversValue
+    . useProxies runProxy resolverName
+    . scan deriveNamedRefs
+    . queryProxy
