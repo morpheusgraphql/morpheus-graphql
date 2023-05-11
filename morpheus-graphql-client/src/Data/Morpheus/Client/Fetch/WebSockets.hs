@@ -24,6 +24,7 @@ import Data.Morpheus.Client.Fetch.GQLClient (Headers)
 import Data.Morpheus.Client.Fetch.RequestType (Request, RequestType (..), processResponse, toRequest)
 import Data.Morpheus.Client.Fetch.Types (FetchError (..), GQLClientResult)
 import Data.Morpheus.Client.Schema.JSON.Types (JSONResponse (..))
+import Data.Morpheus.Subscriptions (ApolloMessageType (..))
 import Data.Morpheus.Subscriptions.Internal (ApolloSubscription (..))
 import qualified Data.Text as T
 import Network.WebSockets.Client (runClientWith)
@@ -101,19 +102,19 @@ decodeMessage :: A.FromJSON a => ByteString -> GQLClientResult a
 decodeMessage = (first FetchErrorParseFailure . A.eitherDecode) >=> processMessage
 
 initialMessage :: ApolloSubscription ()
-initialMessage = ApolloSubscription {apolloType = "connection_init", apolloPayload = Nothing, apolloId = Nothing}
+initialMessage = ApolloSubscription {apolloType = GqlConnectionInit, apolloPayload = Nothing, apolloId = Nothing}
 
 encodeRequestMessage :: (RequestType a, A.ToJSON (RequestArgs a)) => Text -> Request a -> ByteString
 encodeRequestMessage uid r =
   A.encode
     ApolloSubscription
       { apolloPayload = Just (toRequest r),
-        apolloType = "start",
+        apolloType = GqlSubscribe,
         apolloId = Just uid
       }
 
 endMessage :: Text -> ApolloSubscription ()
-endMessage uid = ApolloSubscription {apolloType = "stop", apolloPayload = Nothing, apolloId = Just uid}
+endMessage uid = ApolloSubscription {apolloType = GqlComplete, apolloPayload = Nothing, apolloId = Just uid}
 
 endSession :: MonadIO m => Connection -> Text -> m ()
 endSession conn uid = liftIO $ sendTextData conn $ A.encode $ endMessage uid

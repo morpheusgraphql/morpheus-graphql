@@ -9,11 +9,11 @@
 {-# LANGUAGE TupleSections #-}
 
 module Data.Morpheus.Server.Deriving.Internal.Type
-  ( toTypeDefinition,
-    deriveTypeDefinition,
+  ( deriveTypeDefinition,
     deriveScalarDefinition,
     deriveInterfaceDefinition,
     deriveTypeGuardUnions,
+    toTypeDefinition,
     DERIVE_TYPE,
   )
 where
@@ -57,6 +57,7 @@ import Data.Morpheus.Server.Deriving.Utils.Types
     GQLTypeNode (..),
     GQLTypeNodeExtension (..),
     NodeTypeVariant (..),
+    mapTypeContent,
     toFieldContent,
     withObject,
   )
@@ -68,6 +69,7 @@ import Data.Morpheus.Types.Internal.AST
     CONST,
     DataEnumValue (..),
     FieldDefinition (..),
+    Msg (msg),
     OUT,
     ScalarDefinition,
     TRUE,
@@ -164,44 +166,6 @@ toTypeContent _ prx GRepTypeUnion {..} = toUnion prx (map fst variantRefs) inlin
 
 type TypeProxy gql args kind a = (UseDeriving gql args, CatType kind a)
 
-deriveTypeContent :: (DERIVE_TYPE gql a) => TypeProxy gql args kind a -> GQLResult (TypeContent TRUE kind CONST, [GQLTypeNodeExtension])
-deriveTypeContent (cxt, prx) = deriveType (fieldGRep prx cxt) prx >>= toTypeContent cxt prx
-
-deriveTypeGuardUnions :: (DERIVE_TYPE gql a) => TypeProxy gql args OUT a -> GQLResult [TypeName]
-deriveTypeGuardUnions prx = deriveTypeContent prx >>= getUnionNames prx . fst
-
-getUnionNames :: (DERIVE_TYPE gql a) => TypeProxy gql args kind a -> TypeContent TRUE OUT CONST -> GQLResult [TypeName]
-getUnionNames _ DataUnion {unionMembers} = pure $ toList $ memberName <$> unionMembers
-getUnionNames (ctx, prx) DataObject {} = pure [useTypename ctx prx]
-getUnionNames _ _ = throwError "guarded type must be an union or object"
-
-deriveScalarDefinition ::
-  (gql a) =>
-  (CatType cat a -> ScalarDefinition) ->
-  UseDeriving gql args ->
-  CatType cat a ->
-  GQLResult (GQLTypeNode cat)
-deriveScalarDefinition f ctx p = (`GQLTypeNode` []) <$> toTypeDefinition ctx p (mkScalar p (f p))
-
-deriveTypeDefinition ::
-  (DERIVE_TYPE gql a) =>
-  UseDeriving gql args ->
-  CatType c a ->
-  GQLResult (TypeDefinition c CONST, [GQLTypeNodeExtension])
-deriveTypeDefinition ctx proxy = do
-  (content, ext) <- deriveTypeContent (ctx, proxy)
-  (,ext) <$> toTypeDefinition ctx proxy content
-
-deriveInterfaceDefinition ::
-  (DERIVE_TYPE gql a) =>
-  UseDeriving gql args ->
-  CatType OUT a ->
-  GQLResult (TypeDefinition OUT CONST, [GQLTypeNodeExtension])
-deriveInterfaceDefinition ctx proxy = do
-  (content, ext) <- deriveTypeContent (ctx, proxy)
-  fields <- withObject (useTypename ctx proxy) content
-  (,ext) <$> toTypeDefinition ctx proxy (DataInterface fields)
-
 toTypeDefinition ::
   (gql a) =>
   UseDeriving gql args ->
@@ -217,8 +181,44 @@ toTypeDefinition ctx proxy content = do
       dirs
       content
 
-fieldGRep :: (UseGQLType ctx gql) => CatType cat a -> ctx -> GRepFun gql gql Proxy (GQLResult (ArgumentsDefinition CONST))
-fieldGRep cat gql =
+deriveTypeGuardUnions :: (DERIVE_TYPE gql a) => TypeProxy gql args OUT a -> GQLResult [TypeName]
+deriveTypeGuardUnions prx = uncurry deriveTypeDefinition prx >>= toUnionNames . fst
+
+toUnionNames :: TypeDefinition OUT CONST -> GQLResult [TypeName]
+toUnionNames TypeDefinition {..} =
+  case typeContent of
+    DataUnion {unionMembers} -> pure $ toList $ memberName <$> unionMembers
+    DataObject {} -> pure [typeName]
+    _ -> throwError ("guarded type \"" <> msg typeName <> "\" must be an union or object")
+
+deriveScalarDefinition ::
+  (gql a) =>
+  (CatType cat a -> ScalarDefinition) ->
+  UseDeriving gql args ->
+  CatType cat a ->
+  GQLResult (GQLTypeNode cat)
+deriveScalarDefinition f ctx p = (`GQLTypeNode` []) <$> toTypeDefinition ctx p (mkScalar p (f p))
+
+deriveTypeDefinition ::
+  (DERIVE_TYPE gql a) =>
+  UseDeriving gql args ->
+  CatType c a ->
+  GQLResult (TypeDefinition c CONST, [GQLTypeNodeExtension])
+deriveTypeDefinition ctx prx = do
+  (content, ext) <- deriveType (fieldGRep ctx prx) prx >>= toTypeContent ctx prx
+  (,ext) <$> toTypeDefinition ctx prx content
+
+deriveInterfaceDefinition ::
+  (DERIVE_TYPE gql a) =>
+  UseDeriving gql args ->
+  CatType OUT a ->
+  GQLResult (TypeDefinition OUT CONST, [GQLTypeNodeExtension])
+deriveInterfaceDefinition ctx proxy = do
+  (typeDef, ext) <- deriveTypeDefinition ctx proxy
+  (,ext) <$> mapTypeContent (fmap DataInterface . withObject (typeName typeDef)) typeDef
+
+fieldGRep :: (UseGQLType ctx gql) => ctx -> CatType cat a -> GRepFun gql gql Proxy (GQLResult (ArgumentsDefinition CONST))
+fieldGRep gql cat =
   GRepFun
     { grepTypename = useTypename gql . (`mapCat` cat),
       grepWrappers = useWrappers gql . (`mapCat` cat),

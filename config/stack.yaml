@@ -10,6 +10,7 @@ examples:
   - scotty-haxl
   - scotty-freer-simple
   - servant
+  - yesod-pubsub
 packages:
   - morpheus-graphql-tests
   - morpheus-graphql-core

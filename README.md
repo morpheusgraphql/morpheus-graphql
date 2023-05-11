@@ -10,6 +10,8 @@ Just open an issue here on GitHub, or join [our Slack channel](https://morpheus-
 
 Please note that this readme file provides only a brief introduction to the library. If you are interested in more advanced topics, visit [Docs](https://morpheusgraphql.com/).
 
+Since version v0.28.0, Morpheus GraphQL implements the [https://github.com/enisdenjo/graphql-ws/blob/master/PROTOCOL.md](graphql-ws GraphQL over WebSocket Protocol), and *no longer* uses the [https://github.com/apollographql/subscriptions-transport-ws/blob/master/PROTOCOL.md](subscriptions-transport-ws) protocol.
+
 ## Getting Started
 
 ### Setup
@@ -33,14 +35,14 @@ _stack.yml_
 resolver: lts-16.2
 
 extra-deps:
-- morpheus-graphql-0.27.0
-- morpheus-graphql-core-0.27.0
-- morpheus-graphql-app-0.27.0
-- morpheus-graphql-code-gen-0.27.0
-- morpheus-graphql-code-gen-utils-0.27.0
-- morpheus-graphql-server-0.27.0
-- morpheus-graphql-client-0.27.0
-- morpheus-graphql-subscriptions-0.27.0
+- morpheus-graphql-0.28.0
+- morpheus-graphql-core-0.28.0
+- morpheus-graphql-app-0.28.0
+- morpheus-graphql-code-gen-0.28.0
+- morpheus-graphql-code-gen-utils-0.28.0
+- morpheus-graphql-server-0.28.0
+- morpheus-graphql-client-0.28.0
+- morpheus-graphql-subscriptions-0.28.0
 ```
 
 ### Building your first GraphQL API
