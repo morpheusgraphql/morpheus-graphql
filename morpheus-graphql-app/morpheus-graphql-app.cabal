@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           morpheus-graphql-app
-version:        0.27.0
+version:        0.27.3
 synopsis:       Morpheus GraphQL App
 description:    Build GraphQL APIs with your favourite functional language!
 category:       web, graphql
@@ -46,6 +46,9 @@ data-files:
     test/batching/objects-fields/query.gql
     test/batching/objects-lists-fields/query.gql
     test/batching/schema.gql
+    test/execution/many/query.gql
+    test/execution/schema.gql
+    test/execution/single/query.gql
     test/merge/schema/query-subscription-mutation/app-1.gql
     test/merge/schema/query-subscription-mutation/app-2.gql
     test/merge/schema/query-subscription-mutation/mutation/query.gql
@@ -96,6 +99,8 @@ data-files:
     test/batching/objects-fields/response.json
     test/batching/objects-lists-fields/batching.json
     test/batching/objects-lists-fields/response.json
+    test/execution/many/response.json
+    test/execution/single/response.json
     test/merge/schema/query-subscription-mutation/app-1.json
     test/merge/schema/query-subscription-mutation/app-2.json
     test/merge/schema/query-subscription-mutation/mutation/response.json
@@ -128,8 +133,10 @@ library
       Data.Morpheus.Types.GQLWrapper
   other-modules:
       Data.Morpheus.App.Internal.Resolving.Batching
+      Data.Morpheus.App.Internal.Resolving.Cache
       Data.Morpheus.App.Internal.Resolving.Event
       Data.Morpheus.App.Internal.Resolving.MonadResolver
+      Data.Morpheus.App.Internal.Resolving.Refs
       Data.Morpheus.App.Internal.Resolving.Resolver
       Data.Morpheus.App.Internal.Resolving.ResolverState
       Data.Morpheus.App.Internal.Resolving.ResolveValue
@@ -156,11 +163,11 @@ library
     , relude >=0.3.0 && <2.0.0
     , scientific >=0.3.6.2 && <0.4.0
     , template-haskell >=2.0.0 && <3.0.0
-    , text >=1.2.3 && <1.3.0
+    , text >=1.2.3 && <3.0.0
     , th-lift-instances >=0.1.1 && <0.3.0
-    , transformers >=0.3.0 && <0.6.0
+    , transformers >=0.3.0 && <0.7.0
     , unordered-containers >=0.2.8 && <0.3.0
-    , vector >=0.12.0.1 && <0.13.0
+    , vector >=0.12.0.1 && <0.15.0
   default-language: Haskell2010
 
 test-suite morpheus-graphql-app-test
@@ -169,6 +176,7 @@ test-suite morpheus-graphql-app-test
   other-modules:
       APIConstraints
       Batching
+      Execution
       NamedResolvers
       Paths_morpheus_graphql_app
   hs-source-dirs:
@@ -191,9 +199,9 @@ test-suite morpheus-graphql-app-test
     , tasty >=0.1.0 && <1.5.0
     , tasty-hunit >=0.1.0 && <1.0.0
     , template-haskell >=2.0.0 && <3.0.0
-    , text >=1.2.3 && <1.3.0
+    , text >=1.2.3 && <3.0.0
     , th-lift-instances >=0.1.1 && <0.3.0
-    , transformers >=0.3.0 && <0.6.0
+    , transformers >=0.3.0 && <0.7.0
     , unordered-containers >=0.2.8 && <0.3.0
-    , vector >=0.12.0.1 && <0.13.0
+    , vector >=0.12.0.1 && <0.15.0
   default-language: Haskell2010

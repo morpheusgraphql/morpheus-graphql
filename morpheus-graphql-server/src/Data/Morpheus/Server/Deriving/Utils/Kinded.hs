@@ -8,46 +8,32 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.Utils.Kinded
-  ( KindedProxy (..),
-    setType,
-    CatType (..),
+  ( CatType (..),
     inputType,
     outputType,
-    CatContext (..),
     unliftKind,
-    catMap,
-    addContext,
-    getCatContext,
+    mapCat,
     mkScalar,
     isIN,
-    ForAll (..),
-    unForAll,
+    Kinded (..),
+    mkEnum,
+    mkObject,
   )
 where
 
+import Data.Morpheus.Server.Types.Kind (DerivingKind)
 import Data.Morpheus.Types.Internal.AST
-  ( IN,
+  ( DataEnumValue,
+    FieldDefinition,
+    IN,
     OUT,
     ScalarDefinition,
     TRUE,
     TypeCategory (..),
     TypeContent (..),
+    unsafeFromFields,
   )
-import Data.Proxy (Proxy (..))
-import Prelude (Bool (..), Show)
-
--- | context , like Proxy with multiple parameters
--- * 'kind': object, scalar, enum ...
--- * 'a': actual gql type
-data KindedProxy k a
-  = KindedProxy
-
-setType :: f a -> kinded (k :: t) a' -> KindedProxy k a
-setType _ _ = KindedProxy
-
-data CatContext (cat :: TypeCategory) where
-  InputContext :: CatContext IN
-  OutputContext :: CatContext OUT
+import Prelude
 
 data CatType (cat :: TypeCategory) a where
   InputType :: CatType IN a
@@ -65,27 +51,24 @@ unliftKind :: CatType cat (f k a) -> CatType cat a
 unliftKind InputType = InputType
 unliftKind OutputType = OutputType
 
-catMap :: f a -> CatType cat b -> CatType cat a
-catMap _ InputType = InputType
-catMap _ OutputType = OutputType
-
-addContext :: CatContext c -> f a -> CatType c a
-addContext InputContext _ = InputType
-addContext OutputContext _ = OutputType
-
-getCatContext :: CatType c a -> CatContext c
-getCatContext InputType = InputContext
-getCatContext OutputType = OutputContext
+mapCat :: f a -> CatType cat b -> CatType cat a
+mapCat _ InputType = InputType
+mapCat _ OutputType = OutputType
 
 mkScalar :: CatType c a -> ScalarDefinition -> TypeContent TRUE c s
 mkScalar InputType f = DataScalar f
 mkScalar OutputType f = DataScalar f
 
+mkEnum :: CatType c a -> [DataEnumValue s] -> TypeContent TRUE c s
+mkEnum InputType x = DataEnum x
+mkEnum OutputType x = DataEnum x
+
+mkObject :: CatType kind a -> [FieldDefinition kind s] -> TypeContent TRUE kind s
+mkObject InputType = DataInputObject . unsafeFromFields
+mkObject OutputType = DataObject [] . unsafeFromFields
+
 isIN :: CatType c a -> Bool
 isIN InputType = True
 isIN _ = False
 
-newtype ForAll a = ForAll a
-
-unForAll :: f (ForAll a) -> Proxy a
-unForAll _ = Proxy
+newtype Kinded (kind :: DerivingKind) a = Kinded {unkind :: a}

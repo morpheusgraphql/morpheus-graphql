@@ -130,40 +130,13 @@ toTHDefinitions namespace defs = do
             currentKind = Just (kindOf typeDef),
             hasNamespace = namespace
           }
-    generateTypes (RawDirectiveDefinition DirectiveDefinition {..}) =
+    generateTypes (RawDirectiveDefinition dirDef) =
       runCodeGenT
-        ( do
-            fields <- traverse renderDataField (argument <$> toList directiveDefinitionArgs)
-            let typename = coerce directiveDefinitionName
-            namespaceDirs <- getNamespaceDirs (unpackName typename)
-            let cgTypeName = fromTypeName typename
-            pure
-              [ DataType
-                  CodeGenType
-                    { cgTypeName,
-                      cgConstructors = [CodeGenConstructor (fromTypeName typename) fields],
-                      cgDerivations = [SHOW, GENERIC]
-                    },
-                GQLDirectiveInstance
-                  TypeClassInstance
-                    { typeClassName = ''GQLDirective,
-                      typeClassContext = [],
-                      typeClassTarget = cgTypeName,
-                      assoc = [(''DIRECTIVE_LOCATIONS, AssociatedLocations directiveDefinitionLocations)],
-                      typeClassMethods = []
-                    },
-                gqlTypeToInstance
-                  GQLTypeDefinition
-                    { gqlTarget = cgTypeName,
-                      gqlKind = Type,
-                      gqlTypeDirectiveUses = namespaceDirs
-                    }
-              ]
-        )
+        (genDirectiveDefinition dirDef)
         ServerCodeGenContext
           { toArgsTypeName = coerce,
             typeDefinitions,
-            currentTypeName = Just (coerce directiveDefinitionName),
+            currentTypeName = Just (coerce directiveDefinitionName dirDef),
             directiveDefinitions,
             currentKind = Nothing,
             hasNamespace = namespace
@@ -175,6 +148,35 @@ mkInterfaceName = ("Interface" <>)
 
 mkPossibleTypesName :: TypeName -> TypeName
 mkPossibleTypesName = ("PossibleTypes" <>)
+
+genDirectiveDefinition :: CodeGenM m => DirectiveDefinition CONST -> m [ServerDeclaration]
+genDirectiveDefinition DirectiveDefinition {..} = do
+  fields <- traverse renderDataField (argument <$> toList directiveDefinitionArgs)
+  let typename = coerce directiveDefinitionName
+  namespaceDirs <- getNamespaceDirs (unpackName typename)
+  let cgTypeName = fromTypeName typename
+  pure
+    [ DataType
+        CodeGenType
+          { cgTypeName,
+            cgConstructors = [CodeGenConstructor (fromTypeName typename) fields],
+            cgDerivations = [SHOW, GENERIC]
+          },
+      GQLDirectiveInstance
+        TypeClassInstance
+          { typeClassName = ''GQLDirective,
+            typeClassContext = [],
+            typeClassTarget = cgTypeName,
+            assoc = [(''DIRECTIVE_LOCATIONS, AssociatedLocations directiveDefinitionLocations)],
+            typeClassMethods = []
+          },
+      gqlTypeToInstance
+        GQLTypeDefinition
+          { gqlTarget = cgTypeName,
+            gqlKind = Directive,
+            gqlTypeDirectiveUses = namespaceDirs
+          }
+    ]
 
 genTypeDefinition ::
   CodeGenM m =>

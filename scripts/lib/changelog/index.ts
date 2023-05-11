@@ -1,4 +1,4 @@
-import { getPullRequesrs } from "./get-pull-requests";
+import { getPullRequests } from "./get-pull-requests";
 import { renderChangelog } from "./render-changelog";
 import { commitsAfter, getDate, lastTag } from "../utils/git";
 import { genVersion, parseVersion } from "../utils/version";
@@ -8,13 +8,13 @@ export const getChangelog = async () => {
   const date = getDate();
   const version = lastTag();
   const commits = commitsAfter(version);
-  const pullRequesrs = await getPullRequesrs(commits);
-  const isBreaking = Boolean(pullRequesrs.find(propEq("type", "breaking")));
+  const pullRequests = await getPullRequests(commits);
+  const isBreaking = Boolean(pullRequests.find(propEq("type", "breaking")));
   const nextVersion = genVersion(parseVersion(version), isBreaking);
   const newTag = nextVersion.join(".");
 
   return {
-    body: renderChangelog(newTag, date, pullRequesrs),
+    body: renderChangelog(newTag, date, pullRequests),
     version: {
       next: newTag,
       prev: version,

@@ -17,6 +17,7 @@
 
 module Data.Mergeable.OrdMap
   ( OrdMap,
+    ordMapDelete,
   )
 where
 
@@ -73,7 +74,7 @@ instance (Eq k, Hashable k) => IsMap k (OrdMap k) where
 instance (NameCollision e a, Eq k, Hashable k, Monad m, MonadError e m) => Merge m (OrdMap k a) where
   merge (OrdMap ks1 x) (OrdMap ks2 y) = OrdMap (mergeOrder ks1 ks2) <$> merge x y
 
-mergeOrder :: Eq a => [a] -> [a] -> [a]
+mergeOrder :: (Eq a) => [a] -> [a] -> [a]
 mergeOrder ks1 ks2 = ks1 <> (ks2 \\ ks1)
 
 instance
@@ -85,3 +86,7 @@ instance
   FromList m OrdMap k a
   where
   fromList xs = OrdMap (map fst xs) <$> fromList xs
+
+ordMapDelete :: (Eq k, Hashable k) => k -> OrdMap k a -> OrdMap k a
+ordMapDelete k (OrdMap order entries) =
+  OrdMap (filter (k /=) order) (HM.delete k entries)

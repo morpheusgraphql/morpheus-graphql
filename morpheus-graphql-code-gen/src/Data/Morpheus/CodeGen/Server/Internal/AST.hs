@@ -39,7 +39,7 @@ import Data.Morpheus.CodeGen.Printer
     (.<>),
   )
 import Data.Morpheus.CodeGen.TH (PrintDec (..), PrintExp (..), ToName (..), apply, m', m_, printTypeSynonym)
-import Data.Morpheus.Server.Types (SCALAR, TYPE, TypeGuard, enumDirective, fieldDirective, typeDirective)
+import Data.Morpheus.Server.Types (DIRECTIVE, SCALAR, TYPE, TypeGuard, enumDirective, fieldDirective, typeDirective)
 import Data.Morpheus.Types.Internal.AST
   ( CONST,
     DirectiveLocation (..),
@@ -51,11 +51,13 @@ import Data.Morpheus.Types.Internal.AST
     Value,
     unpackName,
   )
-import Data.Text.Prettyprint.Doc (concatWith, indent, line)
 import Language.Haskell.TH.Lib (appE, varE)
 import Prettyprinter
   ( Pretty (..),
     align,
+    concatWith,
+    indent,
+    line,
     pretty,
     (<+>),
   )
@@ -65,15 +67,18 @@ import Prelude (Show (..))
 data Kind
   = Scalar
   | Type
+  | Directive
   deriving (Show, Eq)
 
 instance Pretty Kind where
   pretty Type = "TYPE"
   pretty Scalar = "SCALAR"
+  pretty Directive = "DIRECTIVE"
 
 instance ToName Kind where
   toName Scalar = ''SCALAR
   toName Type = ''TYPE
+  toName Directive = ''DIRECTIVE
 
 data ServerDirectiveUsage
   = TypeDirectiveUsage TypeValue

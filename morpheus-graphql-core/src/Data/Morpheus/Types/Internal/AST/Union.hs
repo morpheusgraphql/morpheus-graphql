@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveLift #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -20,7 +21,7 @@ module Data.Morpheus.Types.Internal.AST.Union
   )
 where
 
-import Control.Monad.Except (throwError)
+import Control.Monad.Except (MonadError (..))
 import Data.Mergeable (NameCollision (..), OrdMap)
 import Data.Morpheus.Internal.Utils
   ( Empty (empty),
@@ -91,10 +92,7 @@ instance Msg (UnionMember cat s) where
 instance KeyOf TypeName (UnionMember cat s) where
   keyOf = memberName
 
-getInputUnionValue ::
-  forall stage.
-  Object stage ->
-  Either GQLError (TypeName, Value stage)
+getInputUnionValue :: (MonadError GQLError m) => Object stage -> m (TypeName, Value stage)
 getInputUnionValue hm =
   case toList hm of
     [] -> throwError "Exclusive input objects must provide a value for at least one field."
@@ -117,7 +115,7 @@ isPossibleInputUnion tags name =
     name
     tags
 
-mkInputUnionFields :: Foldable t => t (UnionMember IN s) -> FieldsDefinition IN s
+mkInputUnionFields :: (Foldable t) => t (UnionMember IN s) -> FieldsDefinition IN s
 mkInputUnionFields = unsafeFromFields . fmap mkInputUnionField . toList
 
 mkInputUnionField :: UnionMember IN s -> FieldDefinition IN s

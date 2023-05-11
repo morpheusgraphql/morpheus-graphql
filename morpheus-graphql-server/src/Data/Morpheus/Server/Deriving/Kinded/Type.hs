@@ -6,73 +6,87 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.Kinded.Type
   ( DeriveKindedType (..),
     DERIVE_TYPE,
-    deriveInterfaceDefinition,
     deriveScalarDefinition,
     deriveTypeGuardUnions,
+    scanNode,
   )
 where
 
-import Data.Morpheus.Server.Deriving.Internal.Schema.Type
-  ( deriveInterfaceDefinition,
+import Data.Morpheus.Generic
+  ( Gmap,
+  )
+import Data.Morpheus.Internal.Ext (GQLResult)
+import Data.Morpheus.Server.Deriving.Internal.Directive (deriveDirectiveDefinition)
+import Data.Morpheus.Server.Deriving.Internal.Type
+  ( DERIVE_TYPE,
     deriveScalarDefinition,
     deriveTypeDefinition,
     deriveTypeGuardUnions,
   )
-import Data.Morpheus.Server.Deriving.Utils.GRep
-  ( GRep,
-  )
+import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef (..))
 import Data.Morpheus.Server.Deriving.Utils.Kinded
-  ( CatType,
-    catMap,
+  ( CatType (..),
+    inputType,
+    mapCat,
     unliftKind,
   )
+import Data.Morpheus.Server.Deriving.Utils.Types (GQLTypeNode (..))
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseDeriving (..),
     UseGQLType (..),
   )
+import Data.Morpheus.Server.Types.Directives (GQLDirective (..))
 import Data.Morpheus.Server.Types.Kind
-  ( DerivingKind,
+  ( DIRECTIVE,
+    DerivingKind,
     SCALAR,
     TYPE,
     WRAPPER,
-  )
-import Data.Morpheus.Server.Types.SchemaT
-  ( SchemaT,
   )
 import Data.Morpheus.Types.GQLScalar
   ( DecodeScalar (..),
     scalarValidator,
   )
-import Data.Morpheus.Types.Internal.AST
-  ( ArgumentsDefinition,
-    CONST,
-    TypeCategory,
-    TypeDefinition (..),
-  )
-import GHC.Generics
+import GHC.Generics (Generic (Rep))
 import Relude
 
-type DERIVE_TYPE gql c a = (gql a, GRep gql gql (SchemaT c (Maybe (ArgumentsDefinition CONST))) (Rep a))
-
 -- | DeriveType With specific Kind: 'kind': object, scalar, enum ...
-class DeriveKindedType gql val (cat :: TypeCategory) (kind :: DerivingKind) a where
-  deriveKindedType :: UseDeriving gql val -> CatType cat (f kind a) -> SchemaT cat (TypeDefinition cat CONST)
+class DeriveKindedType ctx (k :: DerivingKind) a where
+  deriveKindedType :: (ctx ~ UseDeriving gql v) => ctx -> CatType cat (f k a) -> GQLResult (GQLTypeNode cat)
+  exploreKindedRefs :: (ctx ~ UseDeriving gql v) => ctx -> CatType cat (f k a) -> [ScanRef gql]
 
-instance (gql a) => DeriveKindedType gql val cat WRAPPER (f a) where
-  deriveKindedType UseDeriving {..} = useDeriveType dirGQL . catMap (Proxy @a)
+instance (gql a, ctx ~ UseDeriving gql v) => DeriveKindedType ctx WRAPPER (f a) where
+  deriveKindedType ctx = useDeriveNode ctx . mapCat (Proxy @a)
+  exploreKindedRefs ctx = useExploreRef ctx . mapCat (Proxy @a)
 
-instance (DecodeScalar a, gql a) => DeriveKindedType gql val cat SCALAR a where
-  deriveKindedType drv = deriveScalarDefinition scalarValidator drv . unliftKind
+scanLeaf :: (c a, UseGQLType ctx gql, gql a) => ctx -> CatType k a -> [ScanRef c]
+scanLeaf gql p = [ScanLeaf (useFingerprint gql p) p]
 
-instance DERIVE_TYPE gql cat a => DeriveKindedType gql val cat TYPE a where
-  deriveKindedType drv = deriveTypeDefinition drv . unliftKind
+scanNode :: (c a, gql a, UseGQLType ctx gql, Gmap c (Rep a)) => Bool -> ctx -> CatType k a -> [ScanRef c]
+scanNode visible gql p = [ScanNode visible (useFingerprint gql p) p]
+
+instance (DecodeScalar a, gql a, ctx ~ UseDeriving gql v) => DeriveKindedType ctx SCALAR a where
+  deriveKindedType ctx = deriveScalarDefinition scalarValidator ctx . unliftKind
+  exploreKindedRefs ctx proxy = scanLeaf ctx (mapCat (Proxy @a) proxy)
+
+instance (DERIVE_TYPE gql a, Gmap gql (Rep a), ctx ~ UseDeriving gql v) => DeriveKindedType ctx TYPE a where
+  deriveKindedType ctx = fmap (uncurry GQLTypeNode) . deriveTypeDefinition ctx . unliftKind
+  exploreKindedRefs ctx proxy = scanNode True ctx (mapCat (Proxy @a) proxy)
+
+instance (DERIVE_TYPE gql a, Gmap gql (Rep a), ctx ~ UseDeriving gql v, GQLDirective a, v a) => DeriveKindedType ctx DIRECTIVE a where
+  deriveKindedType drv _ = GQLDirectiveNode <$> (deriveTypeDefinition drv proxy >>= deriveDirectiveDefinition drv proxy . fst)
+    where
+      proxy = inputType (Proxy @a)
+  exploreKindedRefs ctx proxy
+    | excludeFromSchema (Proxy @a) = []
+    | otherwise = scanNode True ctx (mapCat (Proxy @a) proxy)

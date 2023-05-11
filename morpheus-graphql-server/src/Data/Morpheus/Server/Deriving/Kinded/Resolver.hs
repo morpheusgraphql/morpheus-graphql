@@ -7,6 +7,7 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -15,22 +16,23 @@ module Data.Morpheus.Server.Deriving.Kinded.Resolver
   )
 where
 
-import Control.Monad.Except (MonadError)
-import qualified Data.Map as M
 import Data.Morpheus.App.Internal.Resolving
   ( MonadResolver (..),
     ResolverValue (..),
     getArguments,
   )
-import Data.Morpheus.Server.Deriving.Internal.Resolve.Explore
-import Data.Morpheus.Server.Deriving.Utils.AST
-import Data.Morpheus.Server.Deriving.Utils.Proxy
-  ( ContextValue (..),
+import Data.Morpheus.Internal.Utils (toAssoc)
+import Data.Morpheus.Server.Deriving.Internal.Resolver
+  ( EXPLORE,
+    useExploreResolvers,
   )
+import Data.Morpheus.Server.Deriving.Utils.Kinded
+  ( Kinded (..),
+  )
+import Data.Morpheus.Server.Deriving.Utils.Types
 import Data.Morpheus.Server.Deriving.Utils.Use
-  ( UseDeriving (dirArgs),
+  ( UseGQLValue (useDecodeValue),
     UseResolver (..),
-    UseValue (useDecodeValue),
   )
 import Data.Morpheus.Server.Types.Kind
   ( CUSTOM,
@@ -46,38 +48,35 @@ import Data.Morpheus.Types.GQLScalar
   ( EncodeScalar (..),
   )
 import Data.Morpheus.Types.GQLWrapper (EncodeWrapper (..))
-import Data.Morpheus.Types.Internal.AST
-  ( GQLError,
-  )
 import Relude
 
 -- ENCODE GQL KIND
-class KindedResolver gql res val (kind :: DerivingKind) (m :: Type -> Type) (a :: Type) where
-  kindedResolver :: UseResolver res gql val -> ContextValue kind a -> m (ResolverValue m)
+class KindedResolver ctx (k :: DerivingKind) (m :: Type -> Type) (a :: Type) where
+  kindedResolver :: (MonadResolver m, UseResolver res gql val ~ ctx) => ctx -> Kinded k a -> m (ResolverValue m)
 
-instance (EncodeWrapper f, Monad m, res m a) => KindedResolver gql res val WRAPPER m (f a) where
-  kindedResolver res = encodeWrapper (useEncodeResolver res) . unContextValue
+instance (UseResolver res gql val ~ ctx, EncodeWrapper f, res m a) => KindedResolver ctx WRAPPER m (f a) where
+  kindedResolver res = encodeWrapper (useEncodeResolver res) . unkind
 
-instance (EncodeScalar a, Monad m) => KindedResolver gql res val SCALAR m a where
-  kindedResolver _ = pure . ResScalar . encodeScalar . unContextValue
+instance (EncodeScalar a) => KindedResolver ctx SCALAR m a where
+  kindedResolver _ = pure . ResScalar . encodeScalar . unkind
 
-instance (MonadError GQLError m, EXPLORE gql res m a) => KindedResolver gql res val TYPE m a where
-  kindedResolver ctx = pure . useExploreResolvers ctx . unContextValue
+instance (UseResolver res gql val ~ ctx, EXPLORE gql res m a) => KindedResolver ctx TYPE m a where
+  kindedResolver ctx = pure . useExploreResolvers ctx . unkind
 
 --  Map
-instance (Monad m, res m [(k, v)]) => KindedResolver gql res val CUSTOM m (Map k v) where
-  kindedResolver res = useEncodeResolver res . M.toList . unContextValue
+instance (UseResolver res gql val ~ ctx, res m [(k, v)], Ord k) => KindedResolver ctx CUSTOM m (Map k v) where
+  kindedResolver res = useEncodeResolver res . toAssoc . unkind
 
 --  INTERFACE Types
-instance (MonadError GQLError m, EXPLORE gql res m guard, EXPLORE gql res m union) => KindedResolver gql res val CUSTOM m (TypeGuard guard union) where
-  kindedResolver ctx (ContextValue (ResolveType value)) = pure (useExploreResolvers ctx value)
-  kindedResolver ctx (ContextValue (ResolveInterface value)) = pure (useExploreResolvers ctx value)
+instance (UseResolver res gql val ~ ctx, EXPLORE gql res m guard, EXPLORE gql res m union) => KindedResolver ctx CUSTOM m (TypeGuard guard union) where
+  kindedResolver ctx (Kinded (ResolveType value)) = pure (useExploreResolvers ctx value)
+  kindedResolver ctx (Kinded (ResolveInterface value)) = pure (useExploreResolvers ctx value)
 
-instance (Generic a, res m b, MonadResolver m, val a) => KindedResolver gql res val CUSTOM m (a -> b) where
-  kindedResolver res (ContextValue f) =
+instance (UseResolver res gql val ~ ctx, Generic a, res m b, val a) => KindedResolver ctx CUSTOM m (a -> b) where
+  kindedResolver res (Kinded f) =
     getArguments
-      >>= liftState . useDecodeValue (dirArgs $ resDrv res) . argumentsToObject
+      >>= liftState . useDecodeValue res . argumentsToObject
       >>= useEncodeResolver res . f
 
-instance (MonadResolver m, res m a) => KindedResolver gql res val CUSTOM m (m a) where
-  kindedResolver res (ContextValue value) = value >>= useEncodeResolver res
+instance (UseResolver res gql val ~ ctx, res m a) => KindedResolver ctx CUSTOM m (m a) where
+  kindedResolver res (Kinded value) = value >>= useEncodeResolver res

@@ -1,8 +1,9 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.App.Internal.Resolving.SchemaAPI
@@ -12,91 +13,58 @@ where
 
 import Data.Morpheus.App.Internal.Resolving.MonadResolver
   ( MonadResolver (..),
-    withArguments,
+    ResolverContext (..),
+    getArgument,
   )
 import Data.Morpheus.App.Internal.Resolving.Types
   ( ObjectTypeResolver (..),
     ResolverValue,
-    mkList,
     mkNull,
     mkObject,
   )
 import Data.Morpheus.App.RenderIntrospection
-  ( createObjectType,
-    render,
+  ( renderI,
   )
 import Data.Morpheus.Internal.Utils
-  ( empty,
-    selectOr,
+  ( IsMap (..),
   )
 import Data.Morpheus.Types.Internal.AST
-  ( Argument (..),
-    DirectiveDefinition (..),
-    FieldName,
-    OBJECT,
+  ( DirectiveDefinition (..),
     QUERY,
     ScalarValue (..),
     Schema (..),
-    TypeDefinition (..),
-    TypeName,
     VALID,
     Value (..),
     packName,
     typeDefinitions,
   )
 import Relude hiding (empty)
-import qualified Relude as HM
 
-resolveTypes :: MonadResolver m => Schema VALID -> m (ResolverValue m)
-resolveTypes schema = mkList <$> traverse render (toList $ typeDefinitions schema)
-
-renderOperation ::
-  MonadResolver m =>
-  Maybe (TypeDefinition OBJECT VALID) ->
-  m (ResolverValue m)
-renderOperation (Just TypeDefinition {typeName}) = pure $ createObjectType typeName Nothing [] empty
-renderOperation Nothing = pure mkNull
-
-findType ::
-  MonadResolver m =>
-  TypeName ->
-  Schema VALID ->
-  m (ResolverValue m)
-findType name = selectOr (pure mkNull) render name . typeDefinitions
-
-schemaResolver ::
-  MonadResolver m =>
-  Schema VALID ->
-  m (ResolverValue m)
-schemaResolver schema@Schema {query, mutation, subscription, directiveDefinitions} =
+resolveSchema :: (MonadResolver m) => Schema VALID -> m (ResolverValue m)
+resolveSchema schema@Schema {..} =
   pure $
     mkObject
       "__Schema"
-      [ ("types", resolveTypes schema),
-        ("queryType", renderOperation (Just query)),
-        ("mutationType", renderOperation mutation),
-        ("subscriptionType", renderOperation subscription),
-        ("directives", render $ sortWith directiveDefinitionName $ toList directiveDefinitions)
+      [ ("types", renderI $ toList $ typeDefinitions schema),
+        ("queryType", renderI (Just query)),
+        ("mutationType", renderI mutation),
+        ("subscriptionType", renderI subscription),
+        ("directives", renderI $ sortWith directiveDefinitionName $ toList directiveDefinitions)
       ]
+
+resolveType :: (MonadResolver m) => Value VALID -> m (ResolverValue m)
+resolveType (Scalar (String typename)) = asks (typeDefinitions . schema) >>= renderI . lookup (packName typename)
+resolveType _ = pure mkNull
 
 schemaAPI ::
   ( MonadOperation m ~ QUERY,
     MonadResolver m
   ) =>
-  Schema VALID ->
   ObjectTypeResolver m
-schemaAPI schema =
+schemaAPI =
   ObjectTypeResolver
-    ( HM.fromList
-        [ ("__type", withArguments typeResolver),
-          ("__schema", schemaResolver schema)
+    ( fromList
+        [ ("__type", getArgument "name" >>= resolveType),
+          ("__schema", asks schema >>= resolveSchema)
         ]
     )
-  where
-    typeResolver = selectOr (pure mkNull) handleArg ("name" :: FieldName)
-      where
-        handleArg
-          Argument
-            { argumentValue = (Scalar (String typename))
-            } = findType (packName typename) schema
-        handleArg _ = pure mkNull

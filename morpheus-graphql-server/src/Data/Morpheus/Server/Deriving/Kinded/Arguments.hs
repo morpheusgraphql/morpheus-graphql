@@ -6,7 +6,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -19,43 +18,33 @@ module Data.Morpheus.Server.Deriving.Kinded.Arguments
   )
 where
 
-import Data.Morpheus.Internal.Ext ((<:>))
-import Data.Morpheus.Server.Deriving.Internal.Schema.Internal
-  ( CatType,
-    deriveTypeAsArguments,
-  )
+import Data.Morpheus.Internal.Ext (GQLResult, (<:>))
+import Data.Morpheus.Internal.Utils (empty)
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
+    inputType,
   )
-import Data.Morpheus.Server.Deriving.Utils.Use
-  ( UseDeriving (..),
-    UseGQLType (..),
-  )
-import Data.Morpheus.Server.Types.SchemaT
-  ( SchemaT,
-    withInput,
-  )
+import Data.Morpheus.Server.Deriving.Utils.Types (nodeToType, typeToArguments)
+import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (..))
 import Data.Morpheus.Types.Internal.AST
   ( ArgumentsDefinition,
     CONST,
     OUT,
   )
-import Relude
+import Relude hiding (empty)
 
 type family HasArguments a where
   HasArguments (a -> b) = (a -> b)
   HasArguments a = ()
 
-class DeriveFieldArguments gql a where
-  deriveFieldArguments :: UseDeriving gql val -> f a -> SchemaT OUT (Maybe (ArgumentsDefinition CONST))
+class DeriveFieldArguments ctx a where
+  deriveFieldArguments :: ctx -> f a -> GQLResult (ArgumentsDefinition CONST)
 
-instance DeriveFieldArguments gql () where
-  deriveFieldArguments _ _ = pure Nothing
+instance DeriveFieldArguments ctx () where
+  deriveFieldArguments _ _ = pure empty
 
-instance (gql b, gql a) => DeriveFieldArguments gql (a -> b) where
-  deriveFieldArguments UseDeriving {..} _ = do
-    a <- withInput $ deriveTypeAsArguments dirGQL (Proxy @a)
-    b <- useDeriveFieldArguments dirGQL (OutputType :: CatType OUT b)
-    case b of
-      Just x -> Just <$> (a <:> x)
-      Nothing -> pure $ Just a
+instance (UseGQLType ctx gql, gql b, gql a) => DeriveFieldArguments ctx (a -> b) where
+  deriveFieldArguments gql _ = do
+    a <- useDeriveNode gql (inputType (Proxy @a)) >>= nodeToType >>= typeToArguments
+    b <- useDeriveFieldArgs gql (OutputType :: CatType OUT b)
+    a <:> b

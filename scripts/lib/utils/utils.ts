@@ -5,20 +5,19 @@ export const getPRNumber = (msg: string) => {
   return num ? parseInt(num, 10) : undefined;
 };
 
-export const batchMap = async <T>(
-  f: (_: unknown[]) => Promise<T[]>,
-  commits: unknown[]
-) => {
-  // Split commits into batches of 50 to prevent timeouts
-  const commitInfoPromises: Promise<T[]>[] = [];
+const chunks = <T>(commits: T[]): T[][] => {
+  const batches: T[][] = [];
 
   for (let i = 0; i < commits.length; i += 50) {
     const batch = commits.slice(i, i + 50);
-    commitInfoPromises.push(f(batch));
+    batches.push(batch);
   }
 
-  return (await Promise.all(commitInfoPromises)).flat();
+  return batches;
 };
+
+export const batchMap = <I, O>(f: (_: I[]) => Promise<O[]>, commits: I[]) =>
+  Promise.all(chunks(commits).map((batch) => f(batch))).then((x) => x.flat());
 
 export const isKey = <T extends string>(
   obj: Record<T, unknown>,

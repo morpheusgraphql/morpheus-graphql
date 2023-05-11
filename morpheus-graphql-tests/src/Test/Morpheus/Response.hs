@@ -18,14 +18,13 @@ import Data.Aeson
     Value (..),
     decode,
     eitherDecode,
-    encode,
     fromJSON,
     object,
     (.=),
   )
 import Relude hiding (ByteString)
 import Test.Morpheus.File (FileUrl (fileName), readGQL, readJSON)
-import Test.Morpheus.Utils (requireEq)
+import Test.Morpheus.JSONDiff
 import Test.Tasty
   ( TestTree,
   )
@@ -57,7 +56,7 @@ assertResponse ::
 assertResponse f url = testCase (fileName url) $ do
   actual <- f url
   expected <- getResponse url
-  requireEq encode expected actual
+  jsonEQ expected actual
 
 runResult :: Result a -> IO a
 runResult (Success x) = pure x

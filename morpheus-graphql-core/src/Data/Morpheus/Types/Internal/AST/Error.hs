@@ -186,6 +186,9 @@ instance Msg GQLError where
 instance Msg String where
   msg = msg . T.pack
 
+instance Msg Int where
+  msg = msg . T.pack . show
+
 instance Msg Text where
   msg message =
     GQLError

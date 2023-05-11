@@ -14,7 +14,8 @@ where
 import Data.Kind (Type)
 import Data.Morpheus.Server (interpreter)
 import Data.Morpheus.Server.Types
-  ( Deprecated (..),
+  ( DIRECTIVE,
+    Deprecated (..),
     DirectiveLocation (..),
     GQLDirective (..),
     GQLRequest,
@@ -43,7 +44,10 @@ data Power = Power
   { name :: Text,
     isLimited :: Bool
   }
-  deriving (GQLType, Generic)
+  deriving (Generic)
+
+instance GQLType Power where
+  type KIND Power = DIRECTIVE
 
 instance GQLDirective Power where
   type DIRECTIVE_LOCATIONS Power = '[ 'LOCATION_OBJECT]

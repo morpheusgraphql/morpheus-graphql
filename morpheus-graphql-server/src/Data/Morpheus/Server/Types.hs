@@ -59,6 +59,7 @@ module Data.Morpheus.Server.Types
     TYPE,
     CUSTOM,
     WRAPPER,
+    DIRECTIVE,
     RootResolver (..),
     defaultRootResolver,
     Rename (..),
@@ -105,18 +106,19 @@ import Data.Morpheus.Server.Types.DirectiveDefinitions
   )
 import Data.Morpheus.Server.Types.Directives
   ( GQLDirective (..),
+  )
+import Data.Morpheus.Server.Types.GQLType
+  ( GQLType (..),
+    InputTypeNamespace (..),
     enumDirective,
     enumDirective',
     fieldDirective,
     fieldDirective',
     typeDirective,
   )
-import Data.Morpheus.Server.Types.GQLType
-  ( GQLType (..),
-    InputTypeNamespace (..),
-  )
 import Data.Morpheus.Server.Types.Kind
   ( CUSTOM,
+    DIRECTIVE,
     DerivingKind,
     SCALAR,
     TYPE,

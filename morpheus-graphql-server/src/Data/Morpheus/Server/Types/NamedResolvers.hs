@@ -6,6 +6,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -86,15 +87,15 @@ instance ResolveNamed m ID where
   type Dep ID = ID
   resolveBatched = forward
 
-class ToJSON (Dependency a) => ResolveNamed (m :: Type -> Type) (a :: Type) where
+class (ToJSON (Dependency a)) => ResolveNamed (m :: Type -> Type) (a :: Type) where
   type Dep a :: Type
-  resolveBatched :: MonadError GQLError m => [Dependency a] -> m [Maybe a]
+  resolveBatched :: (MonadError GQLError m) => [Dependency a] -> m [Maybe a]
 
-  resolveNamed :: MonadError GQLError m => Dependency a -> m a
+  resolveNamed :: (MonadError GQLError m) => Dependency a -> m a
   resolveNamed = useBatched
 
 data NamedResolverT (m :: Type -> Type) a where
-  NamedResolverT :: ResolveNamed m (Target a) => m (NamedRef a) -> NamedResolverT m a
+  NamedResolverT :: (ResolveNamed m (Target a)) => m (NamedRef a) -> NamedResolverT m a
 
 type family NamedRef a :: Type where
   NamedRef [a] = [Dependency a]
@@ -104,5 +105,5 @@ type family NamedRef a :: Type where
   NamedRef (Vector a) = [Dependency a]
   NamedRef a = Dependency a
 
-resolve :: ResolveNamed m (Target a) => m (NamedRef a) -> NamedResolverT m a
+resolve :: (ResolveNamed m (Target a)) => m (NamedRef a) -> NamedResolverT m a
 resolve = NamedResolverT

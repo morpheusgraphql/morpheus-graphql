@@ -16,14 +16,15 @@ module Data.Morpheus.Validation.Query.UnionSelection
 where
 
 import Control.Monad.Except (MonadError (throwError))
-import qualified Data.HashMap.Lazy as HM
-import Data.Mergeable (OrdMap)
+import Data.Mergeable (IsMap (toAssoc), OrdMap)
+import Data.Mergeable.OrdMap (ordMapDelete)
 import Data.Morpheus.Internal.Utils
   ( empty,
     fromElems,
     mergeConcat,
     selectOr,
     startHistory,
+    unsafeFromList,
   )
 import Data.Morpheus.Types.Internal.AST.DirectiveLocation (DirectiveLocation (..))
 import Data.Morpheus.Types.Internal.AST.Name (TypeName)
@@ -100,11 +101,11 @@ exploreFragments validateFragment types selectionSet = do
 tagUnionFragments ::
   [UnionTag] ->
   OrdMap TypeName (TypeDefinition IMPLEMENTABLE VALID) ->
-  HashMap TypeName [SelectionSet VALID]
+  OrdMap TypeName [SelectionSet VALID]
 tagUnionFragments fragments types = fmap categorizeType getSelectedTypes
   where
-    getSelectedTypes :: HashMap TypeName [TypeName]
-    getSelectedTypes = fromList (map select fragments)
+    getSelectedTypes :: OrdMap TypeName [TypeName]
+    getSelectedTypes = unsafeFromList (map select fragments)
       where
         select UnionTag {unionTagName} =
           ( unionTagName,
@@ -135,19 +136,19 @@ noEmptySelection = throwError "empty selection sets are not supported."
 
 joinClusters ::
   Maybe (SelectionSet VALID) ->
-  HashMap TypeName [SelectionSet VALID] ->
+  OrdMap TypeName [SelectionSet VALID] ->
   FragmentValidator s (SelectionContent VALID)
 joinClusters maybeSelSet typedSelections
   | null typedSelections = maybe noEmptySelection (pure . SelectionSet) maybeSelSet
   | otherwise =
-      traverse mkUnionTag (HM.toList typedSelections)
+      traverse mkUnionTag (toAssoc typedSelections)
         >>= fmap (UnionSelection maybeSelSet) . startHistory . fromElems
   where
     mkUnionTag :: (TypeName, [SelectionSet VALID]) -> FragmentValidator s UnionTag
     mkUnionTag (typeName, fragments) = UnionTag typeName <$> (maybeMerge (toList maybeSelSet <> fragments) >>= maybe noEmptySelection pure)
 
 validateInterfaceSelection ::
-  ValidateFragmentSelection s =>
+  (ValidateFragmentSelection s) =>
   (Fragment RAW -> FragmentValidator s (SelectionSet VALID)) ->
   (TypeDefinition IMPLEMENTABLE VALID -> SelectionSet RAW -> FragmentValidator s (SelectionSet VALID)) ->
   TypeDefinition IMPLEMENTABLE VALID ->
@@ -163,13 +164,13 @@ validateInterfaceSelection
     validSelectionSet <- traverse (validate typeDef) selectionSet
     let tags = tagUnionFragments spreads possibleTypes
     defaultSelection <- maybeMerge (toList validSelectionSet <> selectOr [] id typeName tags)
-    joinClusters defaultSelection (HM.delete typeName tags)
+    joinClusters defaultSelection (ordMapDelete typeName tags)
 
 mkUnionRootType :: FragmentValidator s (TypeDefinition IMPLEMENTABLE VALID)
 mkUnionRootType = (`mkType` DataObject [] empty) <$> asksScope currentTypeName
 
 validateUnionSelection ::
-  ValidateFragmentSelection s =>
+  (ValidateFragmentSelection s) =>
   (Fragment RAW -> FragmentValidator s (SelectionSet VALID)) ->
   (TypeDefinition IMPLEMENTABLE VALID -> SelectionSet RAW -> FragmentValidator s (SelectionSet VALID)) ->
   UnionTypeDefinition OUT VALID ->

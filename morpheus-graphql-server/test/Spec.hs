@@ -14,6 +14,7 @@ import qualified Feature.Directive.Definition as DirectiveDefinition
 import qualified Feature.Directive.EnumVisitor as EnumVisitor
 import qualified Feature.Directive.FieldVisitor as FieldVisitor
 import qualified Feature.Directive.TypeVisitor as TypeVisitor
+import qualified Feature.Inference.Names as Names
 import qualified Feature.Inference.ObjectAndEnum as ObjectAndEnum
 import qualified Feature.Inference.TaggedArguments as TaggedArguments
 import qualified Feature.Inference.TaggedArgumentsFail as TaggedArgumentsFail
@@ -80,7 +81,8 @@ main =
           (TypeInference.api, "type-inference"),
           (TaggedArguments.api, "tagged-arguments"),
           (TaggedArgumentsFail.api, "tagged-arguments-fail"),
-          (ObjectAndEnum.api, "object-and-enum")
+          (ObjectAndEnum.api, "object-and-enum"),
+          (Names.api, "names")
         ],
       testFeatures
         "Directive"

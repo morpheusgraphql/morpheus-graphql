@@ -5,9 +5,11 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -18,27 +20,25 @@ module Data.Morpheus.Server.Deriving.Kinded.Channels
 where
 
 import Control.Monad.Except (throwError)
-import qualified Data.HashMap.Lazy as HM
 import Data.Morpheus.App.Internal.Resolving
   ( Channel,
     MonadResolver (..),
     ResolverState,
     SubscriptionField (..),
   )
+import Data.Morpheus.Generic
+  ( GRep,
+    GRepField,
+    GRepFun (..),
+    GRepValue (..),
+    deriveValue,
+  )
 import Data.Morpheus.Internal.Utils
   ( selectBy,
   )
-import Data.Morpheus.Server.Deriving.Internal.Decode.Utils (useDecodeArguments)
-import Data.Morpheus.Server.Deriving.Internal.Schema.Directive (UseDeriving (..), toFieldRes)
-import Data.Morpheus.Server.Deriving.Utils.GRep
-  ( ConsRep (..),
-    GRep,
-    RepContext (..),
-    TypeRep (..),
-    deriveValue,
-  )
+import Data.Morpheus.Server.Deriving.Internal.Directive (UseDeriving (..), toFieldRes)
 import Data.Morpheus.Server.Deriving.Utils.Kinded (outputType)
-import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (useTypeData))
+import Data.Morpheus.Server.Deriving.Utils.Use (UseGQLType (..), useDecodeArguments)
 import Data.Morpheus.Server.Types.Types (Undefined)
 import Data.Morpheus.Types.Internal.AST
   ( FALSE,
@@ -62,12 +62,12 @@ type ChannelRes (e :: Type) = Selection VALID -> ResolverState (DerivedChannel e
 type CHANNELS gql val (subs :: (Type -> Type) -> Type) m =
   ( MonadResolver m,
     MonadOperation m ~ SUBSCRIPTION,
-    ExploreChannels gql val (IsUndefined (subs m)) (MonadEvent m) (subs m)
+    ExploreChannels (UseDeriving gql val) (IsUndefined (subs m)) (MonadEvent m) (subs m)
   )
 
 resolverChannels ::
   forall m subs gql val.
-  CHANNELS gql val subs m =>
+  (CHANNELS gql val subs m) =>
   UseDeriving gql val ->
   subs m ->
   Selection VALID ->
@@ -118,22 +118,26 @@ type family IsUndefined a :: Bool where
   IsUndefined (Undefined m) = TRUE
   IsUndefined a = FALSE
 
-class ExploreChannels gql val (t :: Bool) e a where
-  exploreChannels :: UseDeriving gql val -> f t -> a -> HashMap FieldName (ChannelRes e)
+class ExploreChannels ctx (t :: Bool) e a where
+  exploreChannels :: (UseDeriving gql val ~ ctx) => ctx -> f t -> a -> HashMap FieldName (ChannelRes e)
 
-instance (gql a, Generic a, GRep gql (GetChannel val e) (ChannelRes e) (Rep a)) => ExploreChannels gql val FALSE e a where
-  exploreChannels drv _ =
-    HM.fromList
-      . map (toFieldRes drv (Proxy @a))
-      . consFields
-      . tyCons
+instance (UseDeriving gql val ~ ctx, gql a, Generic a, GRep gql (GetChannel val e) (ChannelRes e) (Rep a)) => ExploreChannels ctx FALSE e a where
+  exploreChannels ctx _ =
+    fromList
+      . map (toFieldRes ctx (Proxy @a))
+      . toFields
       . deriveValue
-        ( RepContext
-            { optApply = getChannel drv . runIdentity,
-              optTypeData = useTypeData (dirGQL drv) . outputType
+        ( GRepFun
+            { grepFun = getChannel ctx . runIdentity,
+              grepTypename = useTypename ctx . outputType,
+              grepWrappers = useWrappers ctx . outputType
             } ::
-            RepContext gql (GetChannel val e) Identity (ChannelRes e)
+            GRepFun gql (GetChannel val e) Identity (ChannelRes e)
         )
 
-instance ExploreChannels drv val TRUE e (Undefined m) where
-  exploreChannels _ _ = pure HM.empty
+toFields :: GRepValue (ChannelRes e) -> [GRepField (ChannelRes e)]
+toFields GRepValueObject {..} = objectFields
+toFields _ = []
+
+instance ExploreChannels ctx TRUE e (Undefined m) where
+  exploreChannels _ _ = pure mempty

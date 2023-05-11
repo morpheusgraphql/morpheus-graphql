@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -18,12 +19,13 @@ module Data.Morpheus.Server.Types.DirectiveDefinitions
 where
 
 import Data.Morpheus.Server.Types.Directives (GQLDirective (..))
-import Data.Morpheus.Server.Types.GQLType (GQLType (__type))
+import Data.Morpheus.Server.Types.GQLType (GQLType (..))
 import Data.Morpheus.Server.Types.Internal
   ( mkTypeData,
     stripConstructorNamespace,
     stripFieldNamespace,
   )
+import Data.Morpheus.Server.Types.Kind (DIRECTIVE)
 import Data.Morpheus.Server.Types.Visitors
   ( VisitEnum (..),
     VisitField (..),
@@ -39,7 +41,10 @@ data Prefixes = Prefixes
   { addPrefix :: Text,
     removePrefix :: Text
   }
-  deriving (Generic, GQLType)
+  deriving (Generic)
+
+instance GQLType Prefixes where
+  type KIND Prefixes = DIRECTIVE
 
 instance GQLDirective Prefixes where
   type
@@ -61,13 +66,14 @@ instance VisitType Prefixes where
 newtype Deprecated = Deprecated
   { reason :: Maybe Text
   }
-  deriving
-    ( Generic,
-      VisitEnum,
+  deriving (Generic)
+  deriving anyclass
+    ( VisitEnum,
       VisitField
     )
 
 instance GQLType Deprecated where
+  type KIND Deprecated = DIRECTIVE
   __type = mkTypeData "deprecated"
 
 instance GQLDirective Deprecated where
@@ -79,9 +85,11 @@ instance GQLDirective Deprecated where
 
 newtype Describe = Describe {text :: Text}
   deriving
-    ( GQLType,
-      Generic
+    ( Generic
     )
+
+instance GQLType Describe where
+  type KIND Describe = DIRECTIVE
 
 instance GQLDirective Describe where
   type
@@ -111,9 +119,11 @@ instance VisitType Describe where
 -- of prefixes
 newtype Rename = Rename {newName :: Text}
   deriving
-    ( Generic,
-      GQLType
+    ( Generic
     )
+
+instance GQLType Rename where
+  type KIND Rename = DIRECTIVE
 
 instance GQLDirective Rename where
   excludeFromSchema _ = True
@@ -145,9 +155,11 @@ newtype DropNamespace = DropNamespace
   { dropNamespace :: Text
   }
   deriving
-    ( Generic,
-      GQLType
+    ( Generic
     )
+
+instance GQLType DropNamespace where
+  type KIND DropNamespace = DIRECTIVE
 
 instance GQLDirective DropNamespace where
   type
@@ -168,10 +180,10 @@ instance VisitType DropNamespace where
 newtype DefaultValue = DefaultValue
   { defaultValue :: Value CONST
   }
-  deriving
-    ( Generic,
-      GQLType
-    )
+  deriving (Generic)
+
+instance GQLType DefaultValue where
+  type KIND DefaultValue = DIRECTIVE
 
 instance GQLDirective DefaultValue where
   type DIRECTIVE_LOCATIONS DefaultValue = '[ 'LOCATION_INPUT_FIELD_DEFINITION]
