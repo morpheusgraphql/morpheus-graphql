@@ -19,6 +19,10 @@ module Subscription.Utils
     apolloStop,
     apolloRes,
     apolloInit,
+    apolloConnectionAck,
+    apolloConnectionErr,
+    apolloPing,
+    apolloPong,
     testSimulation,
   )
 where
@@ -159,7 +163,7 @@ storedSingle cStore
   | otherwise =
       testCase "stored single connection" $
         assertFailure $
-          "connectionStore must store single connection"
+          "connectionStore must store single connection, but stored: "
             <> show
               cStore
 
@@ -209,13 +213,26 @@ storeSubscriptions
                 cStore
 
 apolloStart :: ByteString -> ByteString -> ByteString
-apolloStart query sid = "{\"id\":\"" <> sid <> "\",\"type\":\"start\",\"payload\":{\"variables\":{},\"operationName\":\"MySubscription\",\"query\":\"" <> query <> "\"}}"
+apolloStart query sid =
+  "{\"id\":\"" <> sid <> "\",\"type\":\"subscribe\",\"payload\":{\"variables\":{},\"operationName\":\"MySubscription\",\"query\":\"" <> query <> "\"}}"
 
 apolloStop :: ByteString -> ByteString
-apolloStop x = "{\"id\":\"" <> x <> "\",\"type\":\"stop\"}"
+apolloStop x = "{\"id\":\"" <> x <> "\",\"type\":\"complete\"}"
 
 apolloRes :: ByteString -> ByteString -> ByteString
-apolloRes sid value = "{\"id\":\"" <> sid <> "\",\"type\":\"data\",\"payload\":{\"data\":" <> value <> "}}"
+apolloRes sid value = "{\"id\":\"" <> sid <> "\",\"type\":\"next\",\"payload\":{\"data\":" <> value <> "}}"
 
 apolloInit :: ByteString
-apolloInit = "{ \"type\":\"connection_init\" }"
+apolloInit = "{\"type\":\"connection_init\"}"
+
+apolloConnectionAck :: ByteString
+apolloConnectionAck = "{\"type\":\"connection_ack\"}"
+
+apolloConnectionErr :: ByteString
+apolloConnectionErr = "{\"type\":\"connection_error\"}"
+
+apolloPing :: ByteString
+apolloPing = "{\"type\":\"ping\"}"
+
+apolloPong :: ByteString
+apolloPong = "{\"type\":\"pong\"}"

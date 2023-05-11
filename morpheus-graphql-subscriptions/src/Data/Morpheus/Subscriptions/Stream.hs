@@ -36,6 +36,7 @@ import Data.Morpheus.App.Internal.Resolving
   )
 import Data.Morpheus.Subscriptions.Apollo
   ( ApolloAction (..),
+    ApolloMessageType (..),
     apolloFormat,
     toApolloResponse,
   )
@@ -88,6 +89,10 @@ data ApiContext (api :: API) event (m :: Type -> Type) where
     } ->
     ApiContext SUB event m
 
+data WSOutputEvent e m
+  = WSUpdate (Updates e m)
+  | WSMessage ByteString
+
 data
   Output
     (api :: API)
@@ -95,7 +100,7 @@ data
     (m :: Type -> Type)
   where
   SubOutput ::
-    { streamWS :: ApiContext SUB e m -> m (Either ByteString [Updates e m])
+    { streamWS :: ApiContext SUB e m -> m (Either ByteString [WSOutputEvent e m])
     } ->
     Output SUB e m
   PubOutput ::
@@ -117,13 +122,16 @@ handleResponseStream session (ResultT res) =
     execute Publish {} =
       apolloError
         ["websocket can only handle subscriptions, not mutations"]
-    execute (Subscribe ch subRes) = Right $ startSession ch subRes session
+    execute (Subscribe ch subRes) =
+      Right . WSUpdate $ startSession ch subRes session
     --------------------------
-    unfoldR Success {result = (events, _)} = traverse execute events
-    unfoldR Failure {errors} = apolloError (toList errors)
+    unfoldR Success {result = (events, _)} =
+      traverse execute events
+    unfoldR Failure {errors} =
+      apolloError (toList errors)
     --------------------------
     apolloError :: [GQLError] -> Either ByteString a
-    apolloError = Left . toApolloResponse (sid session) . Errors
+    apolloError = Left . toApolloResponse GqlError (Just $ sid session) . Just . Errors
 
 handleWSRequest ::
   ( Monad m,
@@ -143,16 +151,19 @@ handleWSRequest gqlApp clientId = handle . apolloFormat
     handle = either (liftWS . Left) handleAction
     --------------------------------------------------
     -- handleAction :: ApolloAction -> Stream SUB e m
-    handleAction ConnectionInit = liftWS $ Right []
+    handleAction ConnectionInit = do
+      liftWS $ Right [WSMessage $ toApolloResponse GqlConnectionAck Nothing Nothing]
+    handleAction Ping = do
+      liftWS $ Right [WSMessage $ toApolloResponse GqlPong Nothing Nothing]
     handleAction (SessionStart sessionId request) =
       handleResponseStream (SessionID clientId sessionId) (gqlApp request)
     handleAction (SessionStop sessionId) =
       liftWS $
-        Right [endSession (SessionID clientId sessionId)]
+        Right [WSUpdate $ endSession (SessionID clientId sessionId)]
 
 liftWS ::
   Applicative m =>
-  Either ByteString [Updates e m] ->
+  Either ByteString [WSOutputEvent e m] ->
   Output SUB e m
 liftWS = SubOutput . const . pure
 
@@ -163,7 +174,11 @@ runStreamWS ::
   m ()
 runStreamWS scope@SubContext {callback} SubOutput {streamWS} =
   streamWS scope
-    >>= either callback (traverse_ (run scope))
+    >>= either callback (traverse_ eventRunner)
+  where
+    -- eventRunner :: Monad m => WSOutputEvent e m -> m ()
+    eventRunner (WSUpdate updates) = run scope updates
+    eventRunner (WSMessage msg) = callback msg
 
 runStreamHTTP ::
   (Monad m) =>
@@ -189,7 +204,7 @@ toOutStream app (InitConnection clientId) =
     handle ws@SubContext {listener, callback} = do
       let runS (SubOutput x) = x ws
       bla <- listener >>= runS . handleWSRequest app clientId
-      pure $ (Updates (insertConnection clientId callback) :) <$> bla
+      pure $ ((WSUpdate $ Updates (insertConnection clientId callback)) :) <$> bla
 toOutStream app (Request req) =
   PubOutput $ handleResponseHTTP (app req)
 

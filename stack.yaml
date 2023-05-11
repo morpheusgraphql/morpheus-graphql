@@ -8,6 +8,8 @@ packages:
   - examples/scotty
   - examples/scotty-haxl
   - examples/servant
+  - examples/yesod-pubsub
+  - morpheus-graphql-benchmarks
   - morpheus-graphql-tests
   - morpheus-graphql-core
   - morpheus-graphql-code-gen-utils

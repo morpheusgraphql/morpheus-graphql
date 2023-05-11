@@ -1,0 +1,19 @@
+{
+  "name": "client",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "graphql-client": "^2.0.1",
+    "graphql-ws": "^5.11.2",
+    "https-proxy-agent": "^5.0.1",
+    "ws": "^8.11.0"
+  }
+}

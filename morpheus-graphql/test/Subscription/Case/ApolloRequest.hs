@@ -18,7 +18,11 @@ import Relude hiding (ByteString)
 import Subscription.Utils
   ( SimulationState (..),
     SubM,
+    apolloConnectionAck,
+    apolloConnectionErr,
     apolloInit,
+    apolloPing,
+    apolloPong,
     apolloStart,
     apolloStop,
     inputsAreConsumed,
@@ -50,7 +54,7 @@ testUnknownType =
         "unknown request type"
         [ inputsAreConsumed inputs,
           testResponse
-            ["Unknown Request type \"bla\"."]
+            ["Error in $.type: Invalid type encountered."]
             outputs,
           storeIsEmpty store
         ]
@@ -66,10 +70,25 @@ testConnectionInit = testSimulation test [apolloInit]
         "connection init"
         [ inputsAreConsumed inputs,
           testResponse
-            []
+            [apolloConnectionAck]
             outputs,
           stored input store,
           storedSingle store
+        ]
+
+testPingPong ::
+  (Eq ch, Show ch, Hashable ch) =>
+  App (Event ch a) (SubM (Event ch a)) ->
+  IO TestTree
+testPingPong = testSimulation test [apolloInit, apolloPing]
+  where
+    test input SimulationState {inputs, outputs, store} =
+      testGroup
+        "ping pong"
+        [ inputsAreConsumed inputs,
+          testResponse
+            [apolloConnectionAck, apolloPong]
+            outputs
         ]
 
 startSub :: ByteString -> ByteString
@@ -92,7 +111,7 @@ testSubscriptionStart =
         "subscription start"
         [ inputsAreConsumed inputs,
           testResponse
-            []
+            [apolloConnectionAck]
             outputs,
           storeSubscriptions
             input
@@ -118,7 +137,7 @@ testSubscriptionStop =
         "stop subscription"
         [ inputsAreConsumed inputs,
           testResponse
-            []
+            [apolloConnectionAck]
             outputs,
           storeSubscriptions
             input
@@ -137,5 +156,6 @@ testApolloRequest app =
       [ testUnknownType,
         testConnectionInit,
         testSubscriptionStart,
-        testSubscriptionStop
+        testSubscriptionStop,
+        testPingPong
       ]
