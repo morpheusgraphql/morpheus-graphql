@@ -33,8 +33,8 @@ import Data.Morpheus.Server.Types.Visitors
     VisitType (..),
   )
 import Data.Morpheus.Types.Internal.AST (CONST, DirectiveLocation (..), Value)
-import Data.Text (take, drop, length, pack, unpack)
-import Relude hiding (take, drop, length)
+import Data.Text (drop, length, pack, take, unpack)
+import Relude hiding (drop, length, take)
 
 -- | a custom GraphQL directive for adding or removing
 -- of prefixes
@@ -57,6 +57,7 @@ instance GQLDirective Prefixes where
          'LOCATION_SCALAR,
          'LOCATION_INTERFACE
        ]
+  excludeFromSchema _ = True
 
 instance VisitType Prefixes where
   visitTypeName Prefixes {addPrefix, removePrefix} _ name = addPrefix <> drop (length removePrefix) name
@@ -198,7 +199,7 @@ instance VisitField DefaultValue where
 data Suffixes = Suffixes
   { addSuffix :: Text,
     removeSuffix :: Text
-  } 
+  }
   deriving (Generic)
 
 instance GQLType Suffixes where
@@ -214,8 +215,9 @@ instance GQLDirective Suffixes where
          'LOCATION_SCALAR,
          'LOCATION_INTERFACE
        ]
+  excludeFromSchema _ = True
 
 instance VisitType Suffixes where
-  visitTypeName Suffixes {addSuffix, removeSuffix} _ name = 
+  visitTypeName Suffixes {addSuffix, removeSuffix} _ name =
     take (length name - length removeSuffix) name <> addSuffix
   visitTypeDescription _ = id

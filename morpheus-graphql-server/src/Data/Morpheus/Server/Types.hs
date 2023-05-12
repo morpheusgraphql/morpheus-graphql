@@ -103,8 +103,8 @@ import Data.Morpheus.Server.Types.DirectiveDefinitions
     Describe (..),
     DropNamespace (..),
     Prefixes (..),
-    Suffixes (..),
     Rename (..),
+    Suffixes (..),
   )
 import Data.Morpheus.Server.Types.Directives
   ( GQLDirective (..),

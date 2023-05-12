@@ -22,8 +22,8 @@ import Data.Morpheus.Server.Types
     GQLResponse,
     GQLType (..),
     Prefixes (..),
-    Suffixes (..),
     RootResolver (..),
+    Suffixes (..),
     Undefined,
     VisitType (..),
     defaultRootResolver,
@@ -43,7 +43,7 @@ data MythologyDeity' = MythologyDeity'
 
 data Power = Power
   { name :: Text,
-    isLimited :: Bool 
+    isLimited :: Bool
   }
   deriving (Generic)
 
