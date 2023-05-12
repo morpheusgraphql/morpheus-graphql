@@ -7,7 +7,6 @@
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -26,6 +25,12 @@ import Data.Morpheus.App.Internal.Resolving
     ResolverValue,
     RootResolverValue (..),
   )
+import Data.Morpheus.Generic (CBox, runCBox)
+import Data.Morpheus.Generic.GScan
+  ( ScanRef,
+    scan,
+    useProxies,
+  )
 import Data.Morpheus.Internal.Ext (GQLResult)
 import Data.Morpheus.Server.Deriving.Internal.Resolver
   ( EXPLORE,
@@ -39,16 +44,7 @@ import Data.Morpheus.Server.Deriving.Kinded.NamedResolver
   ( KindedNamedResolver (..),
   )
 import Data.Morpheus.Server.Deriving.Kinded.NamedResolverFun (KindedNamedFunValue (..))
-import Data.Morpheus.Server.Deriving.Utils.GScan
-  ( ScanProxy (..),
-    ScanRef,
-    Scanner (..),
-    scan,
-    useProxies,
-  )
-import Data.Morpheus.Server.Deriving.Utils.Kinded
-  ( Kinded (..),
-  )
+import Data.Morpheus.Server.Deriving.Utils.Kinded (Kinded (..))
 import Data.Morpheus.Server.Deriving.Utils.Use (UseNamedResolver (..))
 import Data.Morpheus.Server.Resolvers
   ( NamedResolverT (..),
@@ -76,7 +72,7 @@ type NAMED = UseNamedResolver GQLNamedResolver GQLNamedResolverFun GQLType GQLVa
 
 class (GQLType a) => GQLNamedResolver (m :: Type -> Type) a where
   deriveNamedRes :: f a -> [NamedResolver m]
-  deriveNamedRefs :: f a -> [ScanRef (GQLNamedResolver m)]
+  deriveNamedRefs :: f a -> [ScanRef Proxy (GQLNamedResolver m)]
 
 instance (GQLType a, KindedNamedResolver NAMED (KIND a) m a) => GQLNamedResolver m a where
   deriveNamedRes = kindedNamedResolver withNamed . kindedProxy
@@ -93,9 +89,6 @@ withNamed =
       useDeriveNamedResolvers = deriveNamedRes,
       useDeriveNamedRefs = deriveNamedRefs
     }
-
-deriveNamedResolver :: Scanner (GQLNamedResolver m)
-deriveNamedResolver = Scanner deriveNamedRefs
 
 type ROOT (m :: Type -> Type) a = EXPLORE GQLType GQLResolver m (a m)
 
@@ -126,18 +119,18 @@ deriveResolvers RootResolver {..} =
             $> resolverChannels withDir subscriptionResolver
       }
 
-runProxy :: ScanProxy (GQLNamedResolver m) -> [NamedResolver m]
-runProxy (ScanProxy x) = deriveNamedRes x
+runProxy :: CBox Proxy (GQLNamedResolver m) -> [NamedResolver m]
+runProxy = runCBox deriveNamedRes
+
+queryProxy :: NamedResolvers m e query mut sub -> Proxy (query (NamedResolverT (Resolver QUERY e m)))
+queryProxy _ = Proxy
 
 deriveNamedResolvers ::
-  forall e m query mut sub.
   (Monad m, DERIVE_NAMED_RESOLVERS (Resolver QUERY e m) query) =>
   NamedResolvers m e query mut sub ->
   RootResolverValue e m
-deriveNamedResolvers NamedResolvers =
-  NamedResolversValue (useProxies runProxy resolverName proxies)
-  where
-    proxies =
-      scan
-        deriveNamedResolver
-        (deriveNamedRefs (Proxy @(query (NamedResolverT (Resolver QUERY e m)))))
+deriveNamedResolvers =
+  NamedResolversValue
+    . useProxies runProxy resolverName
+    . scan deriveNamedRefs
+    . queryProxy

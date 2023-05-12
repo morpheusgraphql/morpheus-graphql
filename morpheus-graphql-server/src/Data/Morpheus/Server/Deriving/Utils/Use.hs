@@ -22,8 +22,9 @@ module Data.Morpheus.Server.Deriving.Utils.Use
 where
 
 import Data.Morpheus.App.Internal.Resolving (NamedResolver (..), ResolverState, ResolverValue)
+import Data.Morpheus.Generic (ScanRef)
 import Data.Morpheus.Internal.Ext (GQLResult)
-import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef)
+import Data.Morpheus.Server.Deriving.Utils.GScan (FreeCatType)
 import Data.Morpheus.Server.Deriving.Utils.Types
 import Data.Morpheus.Server.Types.Directives
   ( GDirectiveUsages (..),
@@ -53,7 +54,7 @@ class UseGQLType ctx con | ctx -> con where
   useWrappers :: (con a) => ctx -> CatType c a -> TypeWrapper
   useDeriveNode :: (con a) => ctx -> CatType c a -> GQLResult (GQLTypeNode c)
   useDeriveFieldArgs :: (con a) => ctx -> CatType c a -> GQLResult (ArgumentsDefinition CONST)
-  useExploreRef :: (con a) => ctx -> CatType c a -> [ScanRef con]
+  useExploreRef :: (con a) => ctx -> CatType c a -> [ScanRef FreeCatType con]
 
 data GQLTypeCTX gql = GQLTypeCTX
   { __useFingerprint :: forall c a. (gql a) => CatType c a -> TypeFingerprint,
@@ -61,7 +62,7 @@ data GQLTypeCTX gql = GQLTypeCTX
     __useTypeData :: forall c a. (gql a) => CatType c a -> TypeData,
     __useDeriveNode :: forall c a. (gql a) => CatType c a -> GQLResult (GQLTypeNode c),
     __useDeriveFieldArgs :: forall c a. (gql a) => CatType c a -> GQLResult (ArgumentsDefinition CONST),
-    __useExploreRef :: forall c a. (gql a) => CatType c a -> [ScanRef gql]
+    __useExploreRef :: forall c a. (gql a) => CatType c a -> [ScanRef FreeCatType gql]
   }
 
 instance UseGQLType (GQLTypeCTX gql) gql where
@@ -123,7 +124,7 @@ instance UseGQLValue (UseResolver res gql val) val where
 data UseNamedResolver named fun gql val = UseNamedResolver
   { useNamedFieldResolver :: forall a m. (fun m a) => a -> m (ResolverValue m),
     useDeriveNamedResolvers :: forall f a m. (named m a) => f a -> [NamedResolver m],
-    useDeriveNamedRefs :: forall f a m. (named m a) => f a -> [ScanRef (named m)],
+    useDeriveNamedRefs :: forall f a m. (named m a) => f a -> [ScanRef Proxy (named m)],
     namedDrv :: UseDeriving gql val
   }
 

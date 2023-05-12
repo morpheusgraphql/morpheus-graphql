@@ -16,6 +16,10 @@ module Data.Morpheus.Generic.Proxy
     selNameP,
     symbolName,
     CProxy (..),
+    CBox (..),
+    rep,
+    foldProxy,
+    runCBox,
   )
 where
 
@@ -23,6 +27,7 @@ import Data.List (init, last)
 import GHC.Generics
   ( C,
     Constructor,
+    Generic (..),
     M1 (..),
     Meta,
     S,
@@ -56,3 +61,15 @@ symbolName = fromString . symbolVal
 -- | constrained proxy
 data CProxy constraint where
   CProxy :: forall f constraint a. (constraint a) => f a -> CProxy constraint
+
+foldProxy :: (forall f a. (c a) => f a -> b) -> CProxy c -> b
+foldProxy f (CProxy x) = f x
+
+data CBox box constraint where
+  CBox :: forall constraint box a. (constraint a) => box a -> CBox box constraint
+
+runCBox :: (forall a. (c a) => f a -> b) -> CBox f c -> b
+runCBox f (CBox x) = f x
+
+rep :: f a -> Proxy (Rep a)
+rep _ = Proxy

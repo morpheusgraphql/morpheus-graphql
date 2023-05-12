@@ -1,6 +1,6 @@
 module Data.Morpheus.Generic
   ( Gmap,
-    GmapFun (..),
+    gmap,
     -- GRep
     GRep,
     GRepCons (..),
@@ -17,9 +17,17 @@ module Data.Morpheus.Generic
     CountFields (..),
     RefType (..),
     DescribeCons (..),
-    runGmap,
     CProxy (..),
     symbolName,
+    CBox,
+    -- x
+    ScanRef (..),
+    ProxyMap (..),
+    useProxies,
+    scan,
+    scanNode,
+    scanLeaf,
+    runCBox,
   )
 where
 
@@ -42,13 +50,15 @@ import Data.Morpheus.Generic.GRep
     deriveType,
     deriveValue,
   )
+import Data.Morpheus.Generic.GScan
 import Data.Morpheus.Generic.Gmap
   ( Gmap,
-    GmapFun (..),
-    runGmap,
+    gmap,
   )
 import Data.Morpheus.Generic.Proxy
-  ( CProxy (..),
+  ( CBox,
+    CProxy (..),
+    runCBox,
     symbolName,
   )
 import Data.Morpheus.Generic.RefType

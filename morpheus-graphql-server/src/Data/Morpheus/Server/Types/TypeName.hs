@@ -33,10 +33,12 @@ import Data.Morpheus.Types.Internal.AST
   ( TypeCategory (..),
     TypeName,
     packName,
+    unpackName,
   )
 import Data.Text
   ( intercalate,
     pack,
+    unpack,
   )
 import Data.Typeable
   ( TyCon,
@@ -47,8 +49,8 @@ import Data.Typeable
     typeRepTyCon,
   )
 import GHC.Fingerprint
-import Relude hiding (Seq, Undefined, intercalate, show)
-import Prelude (show)
+import Relude hiding (Seq, Show, Undefined, intercalate, show)
+import Prelude (Show (..))
 
 data TypeFingerprint
   = TypeableFingerprint
@@ -59,10 +61,14 @@ data TypeFingerprint
   | CustomFingerprint TypeName
   deriving
     ( Generic,
-      Show,
       Eq,
       Ord
     )
+
+instance Show TypeFingerprint where
+  show TypeableFingerprint {..} = "TYPEABLE:" <> unpack (intercalate ":" (pack (show category) : map (pack . show) fingerprints))
+  show (InternalFingerprint name) = "INTERNAL:" <> unpack (unpackName name)
+  show (CustomFingerprint name) = "CUSTOM:" <> unpack (unpackName name)
 
 instance Hashable TypeFingerprint where
   hashWithSalt s TypeableFingerprint {..} = hashWithSalt s (1 :: Int, category, map show fingerprints)
