@@ -10,6 +10,7 @@
 
 module Data.Morpheus.Server.Types.DirectiveDefinitions
   ( Prefixes (..),
+    Suffixes (..),
     Deprecated (..),
     Describe (..),
     Rename (..),
@@ -32,8 +33,8 @@ import Data.Morpheus.Server.Types.Visitors
     VisitType (..),
   )
 import Data.Morpheus.Types.Internal.AST (CONST, DirectiveLocation (..), Value)
-import Data.Text (drop, length, pack, unpack)
-import Relude hiding (drop, length)
+import Data.Text (take, drop, length, pack, unpack)
+import Relude hiding (take, drop, length)
 
 -- | a custom GraphQL directive for adding or removing
 -- of prefixes
@@ -191,3 +192,30 @@ instance GQLDirective DefaultValue where
 
 instance VisitField DefaultValue where
   visitFieldDefaultValue DefaultValue {defaultValue} _ = Just defaultValue
+
+-- | a custom GraphQL directive for adding or removing
+-- of suffixes
+data Suffixes = Suffixes
+  { addSuffix :: Text,
+    removeSuffix :: Text
+  } 
+  deriving (Generic)
+
+instance GQLType Suffixes where
+  type KIND Suffixes = DIRECTIVE
+
+instance GQLDirective Suffixes where
+  type
+    DIRECTIVE_LOCATIONS Suffixes =
+      '[ 'LOCATION_OBJECT,
+         'LOCATION_ENUM,
+         'LOCATION_INPUT_OBJECT,
+         'LOCATION_UNION,
+         'LOCATION_SCALAR,
+         'LOCATION_INTERFACE
+       ]
+
+instance VisitType Suffixes where
+  visitTypeName Suffixes {addSuffix, removeSuffix} _ name = 
+    take (length name - length removeSuffix) name <> addSuffix
+  visitTypeDescription _ = id

@@ -67,6 +67,38 @@
           "args": [
             {
               "defaultValue": null,
+              "name": "addSuffix",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": { "kind": "SCALAR", "name": "String", "ofType": null }
+              }
+            },
+            {
+              "defaultValue": null,
+              "name": "removeSuffix",
+              "type": {
+                "kind": "NON_NULL",
+                "name": null,
+                "ofType": { "kind": "SCALAR", "name": "String", "ofType": null }
+              }
+            }
+          ],
+          "description": null,
+          "locations": [
+            "OBJECT",
+            "ENUM",
+            "INPUT_OBJECT",
+            "UNION",
+            "SCALAR",
+            "INTERFACE"
+          ],
+          "name": "Suffixes"
+        },
+        {
+          "args": [
+            {
+              "defaultValue": null,
               "name": "reason",
               "type": { "kind": "SCALAR", "name": "String", "ofType": null }
             }

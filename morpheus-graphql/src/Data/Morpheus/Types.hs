@@ -41,6 +41,7 @@ module Data.Morpheus.Types
 
     -- * GQL directives API
     Prefixes (..),
+    Suffixes (..),
     VisitType (..),
     VisitField (..),
     Describe (..),
@@ -88,6 +89,7 @@ import Data.Morpheus.Server.Types
     MonadIOResolver,
     MonadResolver (..),
     Prefixes (..),
+    Suffixes (..),
     QUERY,
     Rename (..),
     RenderGQL,

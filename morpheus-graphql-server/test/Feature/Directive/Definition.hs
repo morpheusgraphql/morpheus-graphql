@@ -22,6 +22,7 @@ import Data.Morpheus.Server.Types
     GQLResponse,
     GQLType (..),
     Prefixes (..),
+    Suffixes (..),
     RootResolver (..),
     Undefined,
     VisitType (..),
@@ -33,7 +34,7 @@ import Data.Morpheus.Server.Types
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
-data MythologyDeity = MythologyDeity
+data MythologyDeity' = MythologyDeity'
   { deityName :: Text,
     deprecatedField :: Maybe Text,
     deprecatedFieldWithReason :: Bool
@@ -42,7 +43,7 @@ data MythologyDeity = MythologyDeity
 
 data Power = Power
   { name :: Text,
-    isLimited :: Bool
+    isLimited :: Bool 
   }
   deriving (Generic)
 
@@ -55,10 +56,11 @@ instance GQLDirective Power where
 instance VisitType Power where
   visitTypeName _ _ = id
 
-instance GQLType MythologyDeity where
+instance GQLType MythologyDeity' where
   directives _ =
     typeDirective Power {name = "Lightning bolts", isLimited = False}
       <> typeDirective Prefixes {addPrefix = "", removePrefix = "Mythology"}
+      <> typeDirective Suffixes {addSuffix = "", removeSuffix = "'"}
       <> fieldDirective' 'deprecatedField Deprecated {reason = Nothing}
       <> fieldDirective' 'deprecatedFieldWithReason Deprecated {reason = Just "this should be deprecated"}
 
@@ -78,7 +80,7 @@ instance GQLType City where
       <> enumDirective' 'Argos Deprecated {reason = Just "for some reason"}
 
 data Query (m :: Type -> Type) = Query
-  { deity :: MythologyDeity,
+  { deity :: MythologyDeity',
     city :: City
   }
   deriving (Generic, GQLType)
@@ -89,7 +91,7 @@ root =
     { queryResolver =
         Query
           { deity =
-              MythologyDeity
+              MythologyDeity'
                 { deityName = "morpheus",
                   deprecatedField = Nothing,
                   deprecatedFieldWithReason = False
