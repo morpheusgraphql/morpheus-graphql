@@ -103,14 +103,10 @@ instance Monoid SchemaState where
   mempty = SchemaState mempty mempty mempty
 
 insertImplements :: Map TypeName [TypeName] -> TypeDefinition c CONST -> TypeDefinition c CONST
-insertImplements x TypeDefinition {typeContent = DataObject {..}, ..} =
-  TypeDefinition
-    { typeContent = DataObject {objectImplements = objectImplements <> implements, ..},
-      ..
-    }
+insertImplements implementsMap TypeDefinition {typeContent = DataObject {..}, ..} = TypeDefinition {..}
   where
-    implements :: [TypeName]
-    implements = findWithDefault [] typeName x
+    typeContent = DataObject {objectImplements = objectImplements <> implements, ..}
+    implements = findWithDefault [] typeName implementsMap
 insertImplements _ t = t
 
 checkTypeCollisions :: [(TypeFingerprint, TypeDefinition k a)] -> GQLResult [TypeDefinition k a]
