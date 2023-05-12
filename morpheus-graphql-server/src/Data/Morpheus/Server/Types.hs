@@ -41,6 +41,7 @@ module Data.Morpheus.Server.Types
 
     -- * GQL directives API
     Prefixes (..),
+    Suffixes (..),
     VisitType (..),
     VisitField (..),
     VisitEnum (..),
@@ -103,6 +104,7 @@ import Data.Morpheus.Server.Types.DirectiveDefinitions
     DropNamespace (..),
     Prefixes (..),
     Rename (..),
+    Suffixes (..),
   )
 import Data.Morpheus.Server.Types.Directives
   ( GQLDirective (..),
