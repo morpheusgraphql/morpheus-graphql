@@ -23,11 +23,16 @@ import Data.Morpheus.App.Internal.Resolving
     NamedResolverResult (..),
     ResolverValue,
   )
-import Data.Morpheus.Generic (GRep, Gmap)
+import Data.Morpheus.Generic
+  ( GRep,
+    Gmap,
+    ScanRef,
+    scanLeaf,
+    scanNode,
+  )
 import Data.Morpheus.Server.Deriving.Kinded.NamedResolverFun
   ( deriveNamedResolverFun,
   )
-import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef (..))
 import Data.Morpheus.Server.Deriving.Utils.Kinded (outputType)
 import Data.Morpheus.Server.Deriving.Utils.Use
   ( UseDeriving (..),
@@ -57,7 +62,7 @@ decodeValues ctx _ xs = traverse (liftState . useDecodeValue ctx) xs >>= resolve
 
 class KindedNamedResolver ctx (k :: DerivingKind) (m :: Type -> Type) a where
   kindedNamedResolver :: (UseNamedResolver namedRes resFun gql val ~ ctx) => ctx -> p (f k a) -> [NamedResolver m]
-  kindedNamedRefs :: (UseNamedResolver namedRes resFun gql val ~ ctx) => ctx -> p (f k a) -> [ScanRef (namedRes m)]
+  kindedNamedRefs :: (UseNamedResolver namedRes resFun gql val ~ ctx) => ctx -> p (f k a) -> [ScanRef Proxy (namedRes m)]
 
 instance
   ( UseNamedResolver namedRes resFun gql val ~ ctx,
@@ -76,7 +81,7 @@ instance
     ]
     where
       proxy = Proxy @a
-  kindedNamedRefs ctx _ = [ScanLeaf fp (outputType proxy)]
+  kindedNamedRefs ctx _ = [scanLeaf fp proxy]
     where
       fp = useFingerprint ctx (outputType proxy)
       proxy = Proxy @a
@@ -102,7 +107,7 @@ instance
     where
       proxy = Proxy @a
 
-  kindedNamedRefs ctx _ = [ScanNode True (useFingerprint ctx (outputType proxy)) (outputType proxy)]
+  kindedNamedRefs ctx _ = [scanNode True (useFingerprint ctx (outputType proxy)) proxy]
     where
       proxy = Proxy @a
 

@@ -12,73 +12,38 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Server.Deriving.Utils.GScan
-  ( Scanner (..),
-    ScanRef (..),
-    scan,
-    useProxies,
-    ScanProxy (..),
+  ( scanFree,
+    FreeCatType (..),
+    freeLeaf,
+    freeNode,
+    ScanRef,
   )
 where
 
-import Data.HashMap.Strict (fromList, insert, member)
 import Data.Morpheus.Generic
-  ( Gmap,
-    GmapFun (..),
-    runGmap,
+  ( CBox,
+    Gmap,
+    ProxyMap (..),
+    ScanRef (..),
+    scan,
   )
-import Data.Morpheus.Server.Deriving.Utils.Kinded (CatType (InputType, OutputType), inputType, outputType)
-import Data.Morpheus.Server.Types.TypeName (TypeFingerprint)
+import Data.Morpheus.Server.Deriving.Utils.Kinded (mapCat)
+import Data.Morpheus.Server.Deriving.Utils.Types (CatType (..))
+import Data.Morpheus.Server.Types.TypeName (TypeFingerprint (..))
 import GHC.Generics (Generic (Rep))
 import Relude hiding (fromList)
 
-useProxies :: (Hashable k, Eq k) => (ScanProxy c -> [v]) -> (v -> k) -> [ScanProxy c] -> HashMap k v
-useProxies toValue toKey = fromList . map (\x -> (toKey x, x)) . concatMap toValue
+instance ProxyMap FreeCatType where
+  proxyMap prx (FreeCatType cat) = FreeCatType (mapCat prx cat)
 
-scan :: Scanner c -> [ScanRef c] -> [ScanProxy c]
-scan ctx = toList . scanRefs ctx mempty
+data FreeCatType a where
+  FreeCatType :: forall c a. CatType c a -> FreeCatType a
 
-mapContext :: CatType k a -> Scanner c -> GmapFun c [ScanRef c]
-mapContext OutputType (Scanner f) = GmapFun (f . outputType)
-mapContext InputType (Scanner f) = GmapFun (f . inputType)
+freeLeaf :: (c1 a) => TypeFingerprint -> CatType c2 a -> ScanRef FreeCatType c1
+freeLeaf fp p = ScanLeaf (show fp) (FreeCatType p)
 
-fieldRefs :: Scanner c -> ScanRef c -> [ScanRef c]
-fieldRefs ctx (ScanNode _ _ x) = runGmap (rep x) (mapContext x ctx)
-fieldRefs _ ScanLeaf {} = []
+freeNode :: (c a, Gmap c (Rep a)) => Bool -> TypeFingerprint -> CatType c2 a -> ScanRef FreeCatType c
+freeNode visible fp p = ScanNode visible (show fp) (FreeCatType p)
 
-rep :: f a -> Proxy (Rep a)
-rep _ = Proxy
-
-visited :: HashMap TypeFingerprint v -> ScanRef c -> Bool
-visited lib (ScanNode _ fp _) = member fp lib
-visited lib (ScanLeaf fp _) = member fp lib
-
-getFingerprint :: ScanRef c -> TypeFingerprint
-getFingerprint (ScanNode _ fp _) = fp
-getFingerprint (ScanLeaf fp _) = fp
-
-type ProxyLib c = HashMap TypeFingerprint (ScanProxy c)
-
-scanRefs :: Scanner c -> ProxyLib c -> [ScanRef c] -> ProxyLib c
-scanRefs _ lib [] = lib
-scanRefs ctx lib (x : xs) = do
-  let values = runRef x
-  let newLib = foldr (insert (getFingerprint x)) lib values
-  let refs = filter (not . visited newLib) (xs <> fieldRefs ctx x)
-  scanRefs ctx newLib refs
-
-data ScanProxy (c :: Type -> Constraint) where
-  ScanProxy :: (c a) => CatType k a -> ScanProxy c
-
-runRef :: ScanRef c -> [ScanProxy c]
-runRef (ScanNode visible _ p)
-  | visible = [ScanProxy p]
-  | otherwise = []
-runRef (ScanLeaf _ p) = [ScanProxy p]
-
-data ScanRef (c :: Type -> Constraint) where
-  ScanNode :: forall k a c. (Gmap c (Rep a), c a) => Bool -> TypeFingerprint -> CatType k a -> ScanRef c
-  ScanLeaf :: forall k a c. (c a) => TypeFingerprint -> CatType k a -> ScanRef c
-
-newtype Scanner (c :: Type -> Constraint) = Scanner
-  { scannerRefs :: forall k a. (c a) => CatType k a -> [ScanRef c]
-  }
+scanFree :: (c a) => (forall k' a'. (c a') => CatType k' a' -> [ScanRef FreeCatType c]) -> CatType k a -> [CBox FreeCatType c]
+scanFree f = scan (\(FreeCatType x) -> f x) . FreeCatType

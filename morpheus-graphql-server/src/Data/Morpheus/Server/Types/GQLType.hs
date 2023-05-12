@@ -74,7 +74,11 @@ import Data.Morpheus.Server.Deriving.Kinded.Type
     scanNode,
   )
 import Data.Morpheus.Server.Deriving.Kinded.Value (KindedValue (..))
-import Data.Morpheus.Server.Deriving.Utils.GScan (ScanRef (..))
+import Data.Morpheus.Server.Deriving.Utils.GScan
+  ( FreeCatType,
+    ScanRef,
+    freeLeaf,
+  )
 import Data.Morpheus.Server.Deriving.Utils.Kinded
   ( CatType (..),
     Kinded (..),
@@ -230,8 +234,8 @@ class GQLType a where
   default __deriveType :: (DERIVE_T a) => CatType c a -> GQLResult (GQLTypeNode c)
   __deriveType = deriveKindedType withDir . kindedCatType
 
-  __exploreRef :: CatType c a -> [ScanRef GQLType]
-  default __exploreRef :: (DERIVE_T a) => CatType c a -> [ScanRef GQLType]
+  __exploreRef :: CatType c a -> [ScanRef FreeCatType GQLType]
+  default __exploreRef :: (DERIVE_T a) => CatType c a -> [ScanRef FreeCatType GQLType]
   __exploreRef = exploreKindedRefs withDir . kindedCatType
 
   __deriveFieldArguments :: CatType c a -> GQLResult (ArgumentsDefinition CONST)
@@ -366,7 +370,7 @@ instance (DERIVE_TYPE GQLType i, DERIVE_TYPE GQLType u) => GQLType (TypeGuard i 
   __deriveType proxy = cantBeInputType proxy
   __exploreRef InputType = []
   __exploreRef ref@OutputType =
-    [ScanLeaf (useFingerprint withGQL ref) ref]
+    [freeLeaf (useFingerprint withGQL ref) ref]
       <> __exploreRef union
       <> __exploreRef interface
     where
@@ -442,7 +446,7 @@ enumDirective name x = GDirectiveUsages mempty mempty (M.singleton name [GDirect
 enumDirective' :: (DirectiveConstraint a) => TH.Name -> a -> DirectiveUsages
 enumDirective' name = enumDirective (packName name)
 
-exploreDirective :: DirectiveUsage -> [ScanRef GQLType]
+exploreDirective :: DirectiveUsage -> [ScanRef FreeCatType GQLType]
 exploreDirective (GDirectiveUsage x) = __exploreRef $ inputType $ Identity x
 
 withDir :: WITH_DERIVING
