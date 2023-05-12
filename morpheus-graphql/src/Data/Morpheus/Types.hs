@@ -41,6 +41,7 @@ module Data.Morpheus.Types
 
     -- * GQL directives API
     Prefixes (..),
+    Suffixes (..),
     VisitType (..),
     VisitField (..),
     Describe (..),
@@ -96,6 +97,7 @@ import Data.Morpheus.Server.Types
     SUBSCRIPTION,
     ScalarValue (..),
     SubscriptionField,
+    Suffixes (..),
     TypeGuard (..),
     Undefined,
     VisitEnum (..),
