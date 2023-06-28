@@ -10,7 +10,7 @@ let client = GqlClient({
 })
 
 gql.subscribe(
-	"subscription { sub_counter() }",
+	"subscription { subCounter() }",
 	(res) => {
 		console.log(">>> Result", JSON.stringify(res));
 	}
