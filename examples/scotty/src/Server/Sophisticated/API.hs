@@ -139,6 +139,7 @@ root =
     queryResolver =
       Query
         { queryUser = resolveUser,
+          queryStory = resolveStory,
           queryAnimal = resolveAnimal,
           querySet = const $ pure $ S.fromList [1, 2, 4],
           querySomeMap = pure $ M.fromList [("Robin", 1), ("carl", 2)],
@@ -200,6 +201,9 @@ alwaysFail = pure $ Left "fail example"
 
 resolveUser :: ResolverQ EVENT IO User
 resolveUser = liftEither (getDBUser (Content 2))
+
+resolveStory :: ResolverQ EVENT IO (Prod Global_env Term)
+resolveStory = liftEither (rec_def_term)
 
 resolveAnimal :: Arg "animal" (Maybe Animal) -> ResolverQ EVENT IO Text
 resolveAnimal (Arg animal) =

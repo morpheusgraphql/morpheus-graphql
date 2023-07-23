@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.0.
+-- This file has been generated from package.yaml by hpack version 0.35.2.
 --
 -- see: https://github.com/sol/hpack
 
@@ -24,6 +24,9 @@ source-repository head
 executable scotty-server
   main-is: Main.hs
   other-modules:
+      Server.MetaCoq.TestMeta
+      Server.MetaCoq.TestMeta2
+      Server.MetaCoq.TestMeta3
       Server.MonadIO.API
       Server.Mythology.API
       Server.Mythology.Character
@@ -51,6 +54,7 @@ executable scotty-server
     , morpheus-graphql
     , morpheus-graphql-app
     , morpheus-graphql-core
+    , morpheus-graphql-server
     , morpheus-graphql-subscriptions
     , mtl >=2.0 && <=2.3
     , scotty

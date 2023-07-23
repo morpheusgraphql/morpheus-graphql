@@ -11,6 +11,7 @@ module Server.Mythology.Character
     dbDeity,
     Human (..),
     someHuman,
+    dbDeityStory,
     someDeity,
     Person,
     PersonGuard,
@@ -26,6 +27,9 @@ import Server.Mythology.Place
     Realm (..),
   )
 
+import Server.MetaCoq.TestMeta
+import Server.MetaCoq.TestMeta2
+
 newtype Person = Person {name :: Text}
   deriving (Generic, GQLType)
 
@@ -33,13 +37,15 @@ data Deity = Deity
   { name :: Text, -- Non-Nullable Field
     power :: Maybe Text, -- Nullable Field
     realm :: Realm,
-    bornAt :: Maybe City
+    bornAt :: Maybe City,
+    storyOf :: Maybe (Prod Global_env Term)
   }
   deriving (Generic, GQLType)
 
 data Human m = Human
   { name :: m Text,
-    bornAt :: m City
+    bornAt :: m City,
+    storyOf :: m (Maybe (Prod Global_env Term))
   }
   deriving (Generic, GQLType)
 
@@ -75,3 +81,6 @@ dbDeity _ bornAt =
           realm = Dream,
           bornAt
         }
+dbDeityStory :: Text -> Maybe City -> IO (Either String (Prod Global_env Term))
+dbDeityStory _ storyOf =
+  return $ Right $ rec_def_term
