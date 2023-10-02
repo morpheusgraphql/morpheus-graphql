@@ -6,7 +6,7 @@ Morpheus GraphQL (Server & Client) helps you to build GraphQL APIs in Haskell wi
 Morpheus will convert your Haskell types to a GraphQL schema and all your resolvers are just native Haskell functions. Morpheus GraphQL can also convert your GraphQL Schema or Query to Haskell types and validate them in compile time.
 
 Morpheus is still in an early stage of development, so any feedback is more than welcome, and we appreciate any contribution!
-Just open an issue here on GitHub, or join [our Slack channel](https://morpheus-graphql-slack-invite.herokuapp.com/) to get in touch.
+Just open an issue here on GitHub, or join [our Slack channel](https://morpheus-graphql.slack.com) to get in touch.
 
 Please note that this readme file provides only a brief introduction to the library. If you are interested in more advanced topics, visit [Docs](https://morpheusgraphql.com/).
 
