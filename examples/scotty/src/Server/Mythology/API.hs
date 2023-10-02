@@ -28,11 +28,14 @@ import Server.Mythology.Character
     Human,
     PersonGuard,
     dbDeity,
+    dbDeityStory,
     resolvePersons,
     someDeity,
     someHuman,
   )
 import Server.Mythology.Place (City)
+import Server.MetaCoq.TestMeta
+import Server.MetaCoq.TestMeta2
 
 data Character m
   = CharacterHuman (Human m) -- Only <tyconName><conName> should generate direct link
@@ -53,7 +56,9 @@ data Character m
 data Query m = Query
   { deity :: DeityArgs -> m Deity,
     character :: [Character m],
-    persons :: [PersonGuard m]
+    persons :: [PersonGuard m],
+    deity_story :: DeityArgs -> m (Prod Global_env Term)
+               
   }
   deriving (Generic, GQLType)
 
@@ -66,6 +71,13 @@ data DeityArgs = DeityArgs
 resolveDeity :: DeityArgs -> ResolverQ e IO Deity
 resolveDeity DeityArgs {name, bornPlace} =
   liftEither $ dbDeity name bornPlace
+
+resolveDeityStory :: DeityArgs -> ResolverQ e IO ( Prod Global_env Term )
+resolveDeityStory DeityArgs {name, bornPlace}=
+  liftEither $ dbDeityStory name bornPlace
+
+--dbDeity :: Text -> Maybe City -> IO (Either String Deity)
+
 
 resolveCharacter :: Applicative m => [Character m]
 resolveCharacter =
@@ -80,6 +92,8 @@ resolveCharacter =
     SomeMutli 21 "some text",
     Zeus,
     Cronus
+    -- Introspector
+    --Introspector rec_def_term
   ]
 
 rootResolver :: RootResolver IO () Query Undefined Undefined
@@ -89,7 +103,8 @@ rootResolver =
         Query
           { deity = resolveDeity,
             character = resolveCharacter,
-            persons = resolvePersons
+            persons = resolvePersons,
+            deity_story = resolveDeityStory
           }
     }
 
