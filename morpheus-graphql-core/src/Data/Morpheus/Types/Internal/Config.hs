@@ -17,7 +17,8 @@ data VALIDATION_MODE
 
 data Config = Config
   { debug :: Bool,
-    validationMode :: VALIDATION_MODE
+    validationMode :: VALIDATION_MODE,
+    introspection :: Bool
   }
   deriving (Show)
 
@@ -25,12 +26,14 @@ defaultConfig :: Config
 defaultConfig =
   Config
     { debug = False,
-      validationMode = FULL_VALIDATION
+      validationMode = FULL_VALIDATION,
+      introspection = False
     }
 
 debugConfig :: Config
 debugConfig =
   Config
     { debug = True,
-      validationMode = FULL_VALIDATION
+      validationMode = FULL_VALIDATION,
+      introspection = False
     }
