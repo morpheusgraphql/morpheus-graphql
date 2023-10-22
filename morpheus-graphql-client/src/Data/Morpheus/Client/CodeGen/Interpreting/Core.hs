@@ -84,7 +84,7 @@ clientConfig :: Config
 clientConfig =
   Config
     { debug = False,
-      disableIntrospection = False,
+      introspection = True,
       validationMode = WITHOUT_VARIABLES
     }
 

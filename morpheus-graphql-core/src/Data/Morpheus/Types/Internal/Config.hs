@@ -27,7 +27,7 @@ defaultConfig =
   Config
     { debug = False,
       validationMode = FULL_VALIDATION,
-      introspection = False
+      introspection = True
     }
 
 debugConfig :: Config
@@ -35,5 +35,5 @@ debugConfig =
   Config
     { debug = True,
       validationMode = FULL_VALIDATION,
-      introspection = False
+      introspection = True
     }
