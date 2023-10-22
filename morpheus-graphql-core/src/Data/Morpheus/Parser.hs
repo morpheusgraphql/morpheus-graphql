@@ -19,7 +19,7 @@ import Data.Morpheus.Parsing.Document.TypeSystem
   ( parseDefinitions,
     parseTypeDefinitions,
   )
-import qualified Data.Morpheus.Parsing.Document.TypeSystem as P
+import Data.Morpheus.Parsing.Document.TypeSystem qualified as P
   ( parseSchema,
   )
 import Data.Morpheus.Parsing.Request.Parser
@@ -55,6 +55,7 @@ parseSchema =
             True
             Config
               { debug = False,
+                disableIntrospection = False,
                 validationMode = FULL_VALIDATION
               }
       )

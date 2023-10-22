@@ -81,7 +81,12 @@ import Data.Set (insert, member)
 import Relude hiding (empty)
 
 clientConfig :: Config
-clientConfig = Config {debug = False, validationMode = WITHOUT_VARIABLES}
+clientConfig =
+  Config
+    { debug = False,
+      disableIntrospection = False,
+      validationMode = WITHOUT_VARIABLES
+    }
 
 data LocalContext = LocalContext
   { ctxSchema :: Schema VALID,
