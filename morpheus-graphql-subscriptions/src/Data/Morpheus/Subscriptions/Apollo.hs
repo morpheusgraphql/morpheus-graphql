@@ -87,7 +87,7 @@ data ApolloSubscription payload = ApolloSubscription
   }
   deriving (Show, Generic)
 
-instance FromJSON a => FromJSON (ApolloSubscription a) where
+instance (FromJSON a) => FromJSON (ApolloSubscription a) where
   parseJSON = withObject "ApolloSubscription" objectParser
     where
       objectParser o =
@@ -112,7 +112,7 @@ instance FromJSON RequestPayload where
           <*> o .:? "query"
           <*> o .:? "variables"
 
-instance ToJSON a => ToJSON (ApolloSubscription a) where
+instance (ToJSON a) => ToJSON (ApolloSubscription a) where
   toEncoding (ApolloSubscription id' type' payload') =
     pairs $
       encodeMaybe "id" id'
@@ -128,7 +128,7 @@ instance ToJSON a => ToJSON (ApolloSubscription a) where
       encodeMaybe k (Just v) = k .= v
 
 acceptApolloRequest ::
-  MonadIO m =>
+  (MonadIO m) =>
   PendingConnection ->
   m Connection
 acceptApolloRequest pending =
@@ -177,7 +177,7 @@ instance FromJSON ApolloMessageType where
       txtParser "subscribe" = return GqlSubscribe
       txtParser "ping" = return GqlPing
       txtParser "pong" = return GqlPong
-      txtParser other = fail "Invalid type encountered."
+      txtParser other = fail ("unknown type " <> other <> ".")
 
 instance ToJSON ApolloMessageType where
   toEncoding = toEncoding . apolloResponseToProtocolMsgType
