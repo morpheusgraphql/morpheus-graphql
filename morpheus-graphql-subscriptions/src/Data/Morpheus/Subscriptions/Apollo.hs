@@ -20,7 +20,6 @@ import Control.Monad.Fail (fail)
 import Control.Monad.IO.Class (MonadIO (..))
 import Data.Aeson
   ( FromJSON (..),
-    Series,
     ToJSON (..),
     Value (..),
     eitherDecode,
@@ -124,7 +123,7 @@ instance (ToJSON a) => ToJSON (ApolloSubscription a) where
       -- extraneous data in the payload.
       -- Aeson < 2.0.0 has Keys as Text, >= 2.0.0 has Data.Aeson.Key.Key
       -- encodeMaybe :: ToJSON b => Text -> Maybe b -> Series
-      encodeMaybe k Nothing = Prelude.mempty
+      encodeMaybe _ Nothing = Prelude.mempty
       encodeMaybe k (Just v) = k .= v
 
 acceptApolloRequest ::
@@ -177,7 +176,7 @@ instance FromJSON ApolloMessageType where
       txtParser "subscribe" = return GqlSubscribe
       txtParser "ping" = return GqlPing
       txtParser "pong" = return GqlPong
-      txtParser other = fail ("unknown type " <> other <> ".")
+      txtParser _ = fail "unknown type"
 
 instance ToJSON ApolloMessageType where
   toEncoding = toEncoding . apolloResponseToProtocolMsgType
