@@ -176,7 +176,7 @@ instance FromJSON ApolloMessageType where
       txtParser "subscribe" = return GqlSubscribe
       txtParser "ping" = return GqlPing
       txtParser "pong" = return GqlPong
-      txtParser _ = fail "unknown type"
+      txtParser _ = fail "Invalid type encountered."
 
 instance ToJSON ApolloMessageType where
   toEncoding = toEncoding . apolloResponseToProtocolMsgType
