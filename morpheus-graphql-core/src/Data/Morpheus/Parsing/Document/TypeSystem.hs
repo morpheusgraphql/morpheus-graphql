@@ -8,7 +8,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Data.Morpheus.Parsing.Document.TypeSystem
-  ( parseSchema,
+  ( parseSchemaWithoutValidation,
     parseTypeDefinitions,
     parseDefinitions,
   )
@@ -106,7 +106,7 @@ mkObject typeDescription typeName objectImplements typeDirectives objectFields =
 --    Description(opt) scalar Name Directives(Const)(opt)
 --
 scalarTypeDefinition ::
-  Parse (Value s) =>
+  (Parse (Value s)) =>
   Maybe Description ->
   Parser (TypeDefinition ANY s)
 scalarTypeDefinition typeDescription =
@@ -133,7 +133,7 @@ scalarTypeDefinition typeDescription =
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
 --
 objectTypeDefinition ::
-  Parse (Value s) =>
+  (Parse (Value s)) =>
   Maybe Description ->
   Parser (TypeDefinition ANY s)
 objectTypeDefinition typeDescription =
@@ -158,7 +158,7 @@ optionalImplementsInterfaces = implements <|> pure []
 --    Description(opt) interface Name Directives(Const)(opt) FieldsDefinition(opt)
 --
 interfaceTypeDefinition ::
-  Parse (Value s) =>
+  (Parse (Value s)) =>
   Maybe Description ->
   Parser (TypeDefinition ANY s)
 interfaceTypeDefinition typeDescription =
@@ -179,7 +179,7 @@ interfaceTypeDefinition typeDescription =
 --      UnionMemberTypes | NamedType
 --
 unionTypeDefinition ::
-  Parse (Value s) =>
+  (Parse (Value s)) =>
   Maybe Description ->
   Parser (TypeDefinition ANY s)
 unionTypeDefinition typeDescription =
@@ -207,7 +207,7 @@ unionTypeDefinition typeDescription =
 --    Description(opt) EnumValue Directives(Const)(opt)
 --
 enumTypeDefinition ::
-  Parse (Value s) =>
+  (Parse (Value s)) =>
   Maybe Description ->
   Parser (TypeDefinition ANY s)
 enumTypeDefinition typeDescription =
@@ -227,7 +227,7 @@ enumTypeDefinition typeDescription =
 --     { InputValueDefinition(list) }
 --
 inputObjectTypeDefinition ::
-  Parse (Value s) =>
+  (Parse (Value s)) =>
   Maybe Description ->
   Parser (TypeDefinition ANY s)
 inputObjectTypeDefinition typeDescription =
@@ -248,7 +248,7 @@ inputObjectTypeDefinition typeDescription =
 --    DirectiveLocations | DirectiveLocation
 --    |[opt] DirectiveLocation
 parseDirectiveDefinition ::
-  Parse (Value s) =>
+  (Parse (Value s)) =>
   Maybe Description ->
   Parser (DirectiveDefinition s)
 parseDirectiveDefinition directiveDefinitionDescription =
@@ -372,5 +372,5 @@ parseDefinitions = processParser parseRawTypeDefinitions
 parseTypeDefinitions :: ByteString -> GQLResult [TypeDefinition ANY CONST]
 parseTypeDefinitions = fmap (\d -> [td | RawTypeDefinition td <- d]) . parseDefinitions
 
-parseSchema :: ByteString -> GQLResult (Schema CONST)
-parseSchema = typeSystemDefinition >=> buildSchema
+parseSchemaWithoutValidation :: ByteString -> GQLResult (Schema CONST)
+parseSchemaWithoutValidation = typeSystemDefinition >=> buildSchema

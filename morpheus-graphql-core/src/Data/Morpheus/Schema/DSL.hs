@@ -21,7 +21,7 @@ import Data.Morpheus.Ext.Result
   ( Result (..),
   )
 import Data.Morpheus.Parsing.Document.TypeSystem
-  ( parseSchema,
+  ( parseSchemaWithoutValidation,
   )
 import Language.Haskell.TH
 import Language.Haskell.TH.Quote
@@ -39,6 +39,6 @@ dsl =
     notHandled things = error $ things <> " are not supported by the GraphQL QuasiQuoter"
 
 dslExpression :: ByteString -> Q Exp
-dslExpression doc = case parseSchema doc of
+dslExpression doc = case parseSchemaWithoutValidation doc of
   Failure errors -> fail (renderGQLErrors errors)
   Success {result, warnings} -> gqlWarnings warnings >> [|result|]

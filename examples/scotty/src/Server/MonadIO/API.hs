@@ -18,6 +18,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Server.MonadIO.API where
 
@@ -221,7 +222,7 @@ addDogResolver (Arg name) = do
   dogResolver dogToAdd
 
 -------------------------------------------------------------------------------
-userResolver :: RESOLVER t => UserRow -> Value t User
+userResolver :: (RESOLVER t) => UserRow -> Value t User
 userResolver UserRow {userId = thisUserId, userFullName} =
   pure $
     User
@@ -233,7 +234,7 @@ userResolver UserRow {userId = thisUserId, userFullName} =
   where
     idResolver = pure thisUserId
     nameResolver = pure userFullName
-    favoriteDogResolver :: RESOLVER t => Wrapped t Maybe Dog
+    favoriteDogResolver :: (RESOLVER t) => Wrapped t Maybe Dog
     favoriteDogResolver = do
       dogs <- fmap dogTable getDB
       -- the 1st dog is the favorite dog
@@ -242,7 +243,7 @@ userResolver UserRow {userId = thisUserId, userFullName} =
           dog <- dogResolver dogRow
           return . Just $ dog
         Nothing -> return Nothing
-    followsResolver :: RESOLVER t => Wrapped t [] User
+    followsResolver :: (RESOLVER t) => Wrapped t [] User
     followsResolver = do
       follows <- fmap followTable getDB
       users <- fmap userTable getDB
@@ -251,13 +252,13 @@ userResolver UserRow {userId = thisUserId, userFullName} =
       let userFollowees = filter ((`elem` userFolloweeIds) . userId) users
       traverse userResolver userFollowees
 
-dogResolver :: RESOLVER t => DogRow -> Value t Dog
+dogResolver :: (RESOLVER t) => DogRow -> Value t Dog
 dogResolver (DogRow dogId dogName ownerId) =
   pure $ Dog {id = idResolver, name = nameResolver, owner = ownerResolver}
   where
     idResolver = pure dogId
     nameResolver = pure dogName
-    ownerResolver :: RESOLVER t => Value t User
+    ownerResolver :: (RESOLVER t) => Value t User
     ownerResolver = do
       users <- fmap userTable getDB
       let userRow = fromJust . find ((== ownerId) . userId) $ users
