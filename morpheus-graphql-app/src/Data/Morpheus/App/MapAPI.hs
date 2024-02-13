@@ -16,9 +16,9 @@ import Data.Aeson.Parser
   ( eitherDecodeWith,
     jsonNoDup,
   )
-#if MIN_VERSION_aeson(2,1,0) 
+#if MIN_VERSION_aeson(2,1,0)
 import Data.Aeson.Types ( formatError,ifromJSON,)
-#else 
+#else
 import Data.Aeson.Internal ( formatError,ifromJSON,)
 #endif
 import Data.ByteString.Lazy.Char8 (pack)
