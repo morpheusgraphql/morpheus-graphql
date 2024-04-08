@@ -151,7 +151,7 @@ mkPossibleTypesName = ("PossibleTypes" <>)
 
 genDirectiveDefinition :: CodeGenM m => DirectiveDefinition CONST -> m [ServerDeclaration]
 genDirectiveDefinition DirectiveDefinition {..} = do
-  fields <- traverse renderDataField (argument <$> toList directiveDefinitionArgs)
+  fields <- traverse (renderDataField . argument) (toList directiveDefinitionArgs)
   let typename = coerce directiveDefinitionName
   namespaceDirs <- getNamespaceDirs (unpackName typename)
   let cgTypeName = fromTypeName typename
