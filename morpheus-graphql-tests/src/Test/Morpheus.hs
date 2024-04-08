@@ -153,7 +153,7 @@ getAppsWIth ::
   [FilePath] ->
   IO b
 getAppsWIth f url [] = getAppBy f url
-getAppsWIth f url (x : xs) = sconcat <$> traverse (getAppBy f) (file url <$> (x :| xs))
+getAppsWIth f url (x : xs) = sconcat <$> traverse (getAppBy f . file url) (x :| xs)
 
 getAppsBy ::
   (Semigroup b, Show err, FromJSON resolvers) =>
