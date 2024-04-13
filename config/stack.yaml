@@ -74,6 +74,9 @@ rules:
   aeson:
     - 1.4.4
     - 3.0.0
+  attoparsec-aeson:
+    - 2.1.0.0
+    - 3.0.0
   base:
     - 4.7.0
     - 5.0.0
