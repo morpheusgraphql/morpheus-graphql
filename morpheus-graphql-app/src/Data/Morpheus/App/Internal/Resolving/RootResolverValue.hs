@@ -89,11 +89,15 @@ runRootResolverValue
       subscriptionResolver,
       channelMap
     }
-  ctx@ResolverContext {operation = Operation {..}} =
+  ctx@ResolverContext {operation = Operation {..}, config} =
     selectByOperation operationType
     where
       selectByOperation OPERATION_QUERY =
-        runResolver channelMap (rootResolver (withIntroFields <$> queryResolver) operationSelection) ctx
+        runResolver channelMap (rootResolver fields operationSelection) ctx
+        where
+          fields
+            | introspection config = defaultFields <$> queryResolver
+            | otherwise = queryResolver
       selectByOperation OPERATION_MUTATION =
         runResolver channelMap (rootResolver mutationResolver operationSelection) ctx
       selectByOperation OPERATION_SUBSCRIPTION =
