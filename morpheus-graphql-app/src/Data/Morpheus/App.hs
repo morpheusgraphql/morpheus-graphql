@@ -15,6 +15,7 @@ module Data.Morpheus.App
     AppData (..),
     runApp,
     withDebugger,
+    disableIntrospection
     mkApp,
     runAppStream,
     MapAPI (..),
@@ -74,7 +75,7 @@ import Data.Morpheus.Types.Internal.AST
 import qualified Data.Morpheus.Types.Internal.AST as AST
 import Relude hiding (ByteString, empty)
 
-mkApp :: ValidateSchema s => Schema s -> RootResolverValue e m -> App e m
+mkApp :: (ValidateSchema s) => Schema s -> RootResolverValue e m -> App e m
 mkApp appSchema appResolvers =
   resultOr
     FailApp
@@ -89,7 +90,7 @@ instance RenderGQL (App e m) where
   renderGQL App {app} = renderGQL app
   renderGQL FailApp {appErrors} = renderGQL $ A.encode $ toList appErrors
 
-instance Monad m => Semigroup (App e m) where
+instance (Monad m) => Semigroup (App e m) where
   (FailApp err1) <> (FailApp err2) = FailApp (err1 <> err2)
   FailApp {appErrors} <> App {} = FailApp appErrors
   App {} <> FailApp {appErrors} = FailApp appErrors
@@ -107,7 +108,7 @@ data AppData event (m :: Type -> Type) s = AppData
 instance RenderGQL (AppData e m s) where
   renderGQL = renderGQL . appSchema
 
-instance Monad m => Stitching (AppData e m s) where
+instance (Monad m) => Stitching (AppData e m s) where
   stitch x y =
     AppData
       (appConfig y)
@@ -177,12 +178,12 @@ rootType OPERATION_MUTATION = mutation
 rootType OPERATION_SUBSCRIPTION = subscription
 
 stateless ::
-  Functor m =>
+  (Functor m) =>
   ResponseStream event m (Value VALID) ->
   m GQLResponse
 stateless = fmap (renderResponse . fmap snd) . runResultT
 
-runAppStream :: Monad m => App event m -> GQLRequest -> ResponseStream event m (Value VALID)
+runAppStream :: (Monad m) => App event m -> GQLRequest -> ResponseStream event m (Value VALID)
 runAppStream App {app} = runAppData app
 runAppStream FailApp {appErrors} = const $ throwErrors appErrors
 
@@ -194,10 +195,16 @@ mapApp f App {app} =
   App {app = f app}
 mapApp _ x = x
 
-withDebugger :: App e m -> App e m
-withDebugger = mapApp f
+mapConfig :: (Config -> Config) -> App e m -> App e m
+mapConfig g = mapApp f
   where
-    f AppData {appConfig = Config {..}, ..} = AppData {appConfig = Config {debug = True, ..}, ..}
+    f AppData {appConfig, ..} = AppData {appConfig = g appConfig, ..}
+
+withDebugger :: App e m -> App e m
+withDebugger = mapConfig (\c -> c {debug = True})
+
+disableIntrospection :: App e m -> App e m
+disableIntrospection = mapConfig (\c -> c {introspection = False})
 
 withConstraint :: APIConstraint -> App e m -> App e m
 withConstraint constraint = mapApp f
