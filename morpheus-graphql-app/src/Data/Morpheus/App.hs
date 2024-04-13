@@ -15,7 +15,7 @@ module Data.Morpheus.App
     AppData (..),
     runApp,
     withDebugger,
-    disableIntrospection
+    disableIntrospection,
     mkApp,
     runAppStream,
     MapAPI (..),
