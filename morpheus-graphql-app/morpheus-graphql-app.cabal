@@ -46,6 +46,7 @@ data-files:
     test/batching/objects-fields/query.gql
     test/batching/objects-lists-fields/query.gql
     test/batching/schema.gql
+    test/disable-intropsection/schema.gql
     test/execution/many/query.gql
     test/execution/schema.gql
     test/execution/single/query.gql
@@ -176,6 +177,7 @@ test-suite morpheus-graphql-app-test
   other-modules:
       APIConstraints
       Batching
+      DisableIntrospection
       Execution
       NamedResolvers
       Paths_morpheus_graphql_app

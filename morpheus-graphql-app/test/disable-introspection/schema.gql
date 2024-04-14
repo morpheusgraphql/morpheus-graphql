@@ -1,0 +1,13 @@
+enum Power {
+  Shapeshifting
+  Thunderbolt
+}
+
+type Deity {
+  name: String!
+  power: [String!]
+}
+
+type Query {
+  name: String
+}
