@@ -46,7 +46,7 @@ data-files:
     test/batching/objects-fields/query.gql
     test/batching/objects-lists-fields/query.gql
     test/batching/schema.gql
-    test/disable-intropsection/schema.gql
+    test/disable-introspection/schema.gql
     test/execution/many/query.gql
     test/execution/schema.gql
     test/execution/single/query.gql
