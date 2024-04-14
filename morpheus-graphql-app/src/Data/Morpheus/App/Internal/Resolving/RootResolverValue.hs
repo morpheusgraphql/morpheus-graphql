@@ -93,34 +93,32 @@ runRootResolverValue
     selectByOperation operationType
     where
       selectByOperation OPERATION_QUERY =
-        runResolver channelMap (rootResolver fields operationSelection) ctx
-        where
-          fields
-            | introspection config = defaultFields <$> queryResolver
-            | otherwise = queryResolver
+        runResolver channelMap (rootResolver (withIntroFields config <$> queryResolver) operationSelection) ctx
       selectByOperation OPERATION_MUTATION =
         runResolver channelMap (rootResolver mutationResolver operationSelection) ctx
       selectByOperation OPERATION_SUBSCRIPTION =
         runResolver channelMap (rootResolver subscriptionResolver operationSelection) ctx
 runRootResolverValue
   NamedResolversValue {queryResolverMap}
-  ctx@ResolverContext {operation = Operation {..}} =
+  ctx@ResolverContext {operation = Operation {..}, config} =
     selectByOperation operationType
     where
       selectByOperation OPERATION_QUERY = runResolver Nothing queryResolver ctx
         where
           queryResolver = do
             name <- asks (typeName . query . schema)
-            resolveNamedRoot name (withNamedIntroFields name queryResolverMap) operationSelection
+            resolveNamedRoot name (withNamedIntroFields config name queryResolverMap) operationSelection
       selectByOperation _ = throwError "mutation and subscription is not supported for namedResolvers"
 
-withNamedIntroFields :: (MonadResolver m, MonadOperation m ~ QUERY) => TypeName -> ResolverMap m -> ResolverMap m
-withNamedIntroFields = adjust updateNamed
+withNamedIntroFields :: (MonadResolver m, MonadOperation m ~ QUERY) => Config -> TypeName -> ResolverMap m -> ResolverMap m
+withNamedIntroFields config = adjust updateNamed
   where
     updateNamed NamedResolver {..} = NamedResolver {resolverFun = const (updateResult <$> resolverFun ["ROOT"]), ..}
       where
-        updateResult [NamedObjectResolver obj] = [NamedObjectResolver (withIntroFields obj)]
+        updateResult [NamedObjectResolver obj] = [NamedObjectResolver (withIntroFields config obj)]
         updateResult value = value
 
-withIntroFields :: (MonadResolver m, MonadOperation m ~ QUERY) => ObjectTypeResolver m -> ObjectTypeResolver m
-withIntroFields (ObjectTypeResolver fields) = ObjectTypeResolver (fields <> objectFields schemaAPI)
+withIntroFields :: Config -> (MonadResolver m, MonadOperation m ~ QUERY) => ObjectTypeResolver m -> ObjectTypeResolver m
+withIntroFields config (ObjectTypeResolver fields)
+  | introspection config = ObjectTypeResolver (fields <> objectFields schemaAPI)
+  | otherwise = ObjectTypeResolver fields
