@@ -35,6 +35,7 @@ import Data.Morpheus.App.Internal.Resolving.Types
 import Data.Morpheus.App.Internal.Resolving.Utils
   ( lookupResJSON,
   )
+import Data.Morpheus.Core (Config (..))
 import Data.Morpheus.Types.Internal.AST
   ( MUTATION,
     Operation (..),
