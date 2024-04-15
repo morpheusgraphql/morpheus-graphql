@@ -53,17 +53,17 @@ getSchema :: String -> IO (Schema VALID)
 getSchema url = LBS.readFile url >>= resultOr (fail . show) pure . parseSchema
 
 runNamedDisableIntrospectionTest :: FileUrl -> FileUrl -> TestTree
-runNamedDisableIntrospectionTest url = testApi api
+runNamedDisableIntrospectionTest _ = testApi api
   where
     api :: GQLRequest -> IO GQLResponse
-    api req = app url >>= (`runApp` req)
-    app = do
+    api req = do
       schemaRealms <- getSchema "test/disable-introspection/realms.gql"
       let resolvers = queryResolvers [("Query", traverse (const $ object [("name", pure "some text")]))]
-      pure $ mkApp schemaDeities resolvers
+      let app = mkApp schemaDeities resolvers
+      runApp req
 
 runDisableIntrospectionTest :: FileUrl -> FileUrl -> TestTree
-runDisableIntrospectionTest = testApi api
+runDisableIntrospectionTest _ = testApi api
   where
     api :: GQLRequest -> IO GQLResponse
     api req = getAppsBy (toEither . parseSchema, mkApp) (mkUrl "disable-introspection") >>= (`runApp` req)
