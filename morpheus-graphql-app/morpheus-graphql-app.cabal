@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.0.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -46,6 +46,7 @@ data-files:
     test/batching/objects-fields/query.gql
     test/batching/objects-lists-fields/query.gql
     test/batching/schema.gql
+    test/disable-introspection/name/query.gql
     test/disable-introspection/schema.gql
     test/execution/many/query.gql
     test/execution/schema.gql
@@ -100,6 +101,7 @@ data-files:
     test/batching/objects-fields/response.json
     test/batching/objects-lists-fields/batching.json
     test/batching/objects-lists-fields/response.json
+    test/disable-introspection/name/response.json
     test/disable-introspection/resolvers.json
     test/execution/many/response.json
     test/execution/single/response.json

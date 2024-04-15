@@ -25,6 +25,7 @@ import Data.Morpheus.Types.IO
   ( GQLRequest (..),
     GQLResponse,
   )
+import DisableIntrospection (runDisableIntrospectionTest, runNamedDisableIntrospectionTest)
 import Execution (runExecutionTest)
 import NamedResolvers (runNamedResolversTest)
 import Relude hiding (ByteString)
@@ -69,4 +70,6 @@ main =
       deepScan (map . runAPIConstraints) (mkUrl "api-constraints"),
       deepScan (map . runBatchingTest) (mkUrl "batching"),
       deepScan (map . runExecutionTest) (mkUrl "execution"),
+      deepScan (map . runNamedDisableIntrospectionTest) (mkUrl "disable-introspection"),
+      deepScan (map . runDisableIntrospectionTest) (mkUrl "disable-introspection")
     ]
