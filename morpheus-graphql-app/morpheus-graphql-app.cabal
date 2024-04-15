@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.2.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -46,6 +46,10 @@ data-files:
     test/batching/objects-fields/query.gql
     test/batching/objects-lists-fields/query.gql
     test/batching/schema.gql
+    test/disable-introspection/name/query.gql
+    test/disable-introspection/schema.gql
+    test/disable-introspection/schema/query.gql
+    test/disable-introspection/type/query.gql
     test/execution/many/query.gql
     test/execution/schema.gql
     test/execution/single/query.gql
@@ -99,6 +103,10 @@ data-files:
     test/batching/objects-fields/response.json
     test/batching/objects-lists-fields/batching.json
     test/batching/objects-lists-fields/response.json
+    test/disable-introspection/name/response.json
+    test/disable-introspection/resolvers.json
+    test/disable-introspection/schema/response.json
+    test/disable-introspection/type/response.json
     test/execution/many/response.json
     test/execution/single/response.json
     test/merge/schema/query-subscription-mutation/app-1.json
@@ -177,6 +185,7 @@ test-suite morpheus-graphql-app-test
   other-modules:
       APIConstraints
       Batching
+      DisableIntrospection
       Execution
       NamedResolvers
       Paths_morpheus_graphql_app

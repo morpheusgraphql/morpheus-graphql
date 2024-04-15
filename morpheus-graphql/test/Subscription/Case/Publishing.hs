@@ -29,7 +29,6 @@ import Subscription.API
 import Subscription.Utils
   ( SimulationState (..),
     apolloConnectionAck,
-    apolloConnectionErr,
     apolloInit,
     apolloRes,
     apolloStart,

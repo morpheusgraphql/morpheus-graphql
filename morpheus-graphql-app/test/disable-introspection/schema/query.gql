@@ -1,0 +1,12 @@
+query Get__Type {
+  __schema {
+    types {
+      name
+    }
+    directives {
+      name
+      description
+      locations
+    }
+  }
+}

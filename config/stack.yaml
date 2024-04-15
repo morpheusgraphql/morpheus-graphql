@@ -161,7 +161,4 @@ rules:
   yaml:
     - 0.8.32
     - 1.0.0
-  attoparsec-aeson:
-    - 2.1.0
-    - 3
 version: 0.27.3

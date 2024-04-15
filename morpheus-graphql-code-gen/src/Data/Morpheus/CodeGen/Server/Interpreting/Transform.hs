@@ -96,7 +96,7 @@ import Data.Morpheus.Types.Internal.AST
   )
 import Relude hiding (ByteString, get)
 
-parseServerTypeDefinitions :: CodeGenMonad m => CodeGenConfig -> ByteString -> m ([ServerDeclaration], Flags)
+parseServerTypeDefinitions :: (CodeGenMonad m) => CodeGenConfig -> ByteString -> m ([ServerDeclaration], Flags)
 parseServerTypeDefinitions ctx txt =
   case parseDefinitions txt of
     Failure errors -> fail (renderGQLErrors errors)
@@ -108,7 +108,7 @@ getExternals xs =
     <> [FlagExternal (unpackName $ getFullName $ typeClassTarget v) | GQLTypeInstance Scalar v <- xs]
 
 toTHDefinitions ::
-  CodeGenMonad m =>
+  (CodeGenMonad m) =>
   Bool ->
   [RawTypeDefinition] ->
   m ([ServerDeclaration], Flags)
@@ -118,7 +118,7 @@ toTHDefinitions namespace defs = do
   where
     typeDefinitions = [td | RawTypeDefinition td <- defs]
     directiveDefinitions = [td | RawDirectiveDefinition td <- defs]
-    generateTypes :: CodeGenMonad m => RawTypeDefinition -> m ([ServerDeclaration], Flags)
+    generateTypes :: (CodeGenMonad m) => RawTypeDefinition -> m ([ServerDeclaration], Flags)
     generateTypes (RawTypeDefinition typeDef) =
       runCodeGenT
         (genTypeDefinition typeDef)
@@ -149,7 +149,7 @@ mkInterfaceName = ("Interface" <>)
 mkPossibleTypesName :: TypeName -> TypeName
 mkPossibleTypesName = ("PossibleTypes" <>)
 
-genDirectiveDefinition :: CodeGenM m => DirectiveDefinition CONST -> m [ServerDeclaration]
+genDirectiveDefinition :: (CodeGenM m) => DirectiveDefinition CONST -> m [ServerDeclaration]
 genDirectiveDefinition DirectiveDefinition {..} = do
   fields <- traverse (renderDataField . argument) (toList directiveDefinitionArgs)
   let typename = coerce directiveDefinitionName
@@ -179,7 +179,7 @@ genDirectiveDefinition DirectiveDefinition {..} = do
     ]
 
 genTypeDefinition ::
-  CodeGenM m =>
+  (CodeGenM m) =>
   TypeDefinition ANY CONST ->
   m [ServerDeclaration]
 genTypeDefinition
@@ -235,7 +235,7 @@ mkArgsTypeName namespace typeName fieldName
     argTName = camelCaseTypeName [fieldName] "Args"
 
 mkObjectField ::
-  CodeGenM m =>
+  (CodeGenM m) =>
   FieldDefinition OUT CONST ->
   m CodeGenField
 mkObjectField
@@ -263,7 +263,7 @@ mkObjectField
           ..
         }
 
-mkFieldArguments :: CodeGenM m => FieldName -> (FieldName -> TypeName) -> [ArgumentDefinition s] -> m [FIELD_TYPE_WRAPPER]
+mkFieldArguments :: (CodeGenM m) => FieldName -> (FieldName -> TypeName) -> [ArgumentDefinition s] -> m [FIELD_TYPE_WRAPPER]
 mkFieldArguments _ _ [] = pure []
 mkFieldArguments
   _
@@ -297,7 +297,7 @@ gqlTypeToInstance GQLTypeDefinition {..} =
           ]
       }
 
-genInterfaceUnion :: CodeGenM m => TypeName -> m [ServerDeclaration]
+genInterfaceUnion :: (CodeGenM m) => TypeName -> m [ServerDeclaration]
 genInterfaceUnion interfaceName =
   asks typeDefinitions >>= mkInterface . map typeName . mapMaybe (isPossibleInterfaceType interfaceName)
   where
@@ -325,12 +325,12 @@ genInterfaceUnion interfaceName =
     mkGuardWithPossibleType = InterfaceType . InterfaceDefinition interfaceName (mkInterfaceName interfaceName)
     tName = mkPossibleTypesName interfaceName
 
-mkConsEnum :: CodeGenM m => DataEnumValue CONST -> m CodeGenConstructor
+mkConsEnum :: (CodeGenM m) => DataEnumValue CONST -> m CodeGenConstructor
 mkConsEnum DataEnumValue {enumName} = do
   constructorName <- getEnumName enumName
   pure CodeGenConstructor {constructorName, constructorFields = []}
 
-renderDataField :: CodeGenM m => FieldDefinition c CONST -> m CodeGenField
+renderDataField :: (CodeGenM m) => FieldDefinition c CONST -> m CodeGenField
 renderDataField FieldDefinition {fieldType = TypeRef {typeConName, typeWrappers}, fieldName = fName} = do
   fieldName <- getFieldName fName
   let wrappers = [GQL_WRAPPER typeWrappers]
@@ -338,7 +338,7 @@ renderDataField FieldDefinition {fieldType = TypeRef {typeConName, typeWrappers}
   let fieldIsNullable = isNullable typeWrappers
   pure CodeGenField {..}
 
-genTypeContent :: CodeGenM m => TypeName -> TypeContent TRUE ANY CONST -> m BuildPlan
+genTypeContent :: (CodeGenM m) => TypeName -> TypeContent TRUE ANY CONST -> m BuildPlan
 genTypeContent _ DataScalar {} = pure (ConsIN [])
 genTypeContent _ (DataEnum tags) = ConsIN <$> traverse mkConsEnum tags
 genTypeContent typeName (DataInputObject fields) =
@@ -366,7 +366,7 @@ genTypeContent typeName (DataUnion members) = do
   where
     unionCon UnionMember {memberName} = mkUnionFieldDefinition typeName memberName
 
-mkUnionFieldDefinition :: CodeGenM m => TypeName -> TypeName -> m CodeGenConstructor
+mkUnionFieldDefinition :: (CodeGenM m) => TypeName -> TypeName -> m CodeGenConstructor
 mkUnionFieldDefinition typeName memberName = do
   fieldType <- getFieldTypeName memberName
   pure $
@@ -384,10 +384,10 @@ mkUnionFieldDefinition typeName memberName = do
   where
     constructorName = CodeGenTypeName [coerce typeName] [] memberName
 
-genArgumentTypes :: CodeGenM m => FieldsDefinition OUT CONST -> m [ServerDeclaration]
+genArgumentTypes :: (CodeGenM m) => FieldsDefinition OUT CONST -> m [ServerDeclaration]
 genArgumentTypes = fmap concat . traverse genArgumentType . toList
 
-genArgumentType :: CodeGenM m => FieldDefinition OUT CONST -> m [ServerDeclaration]
+genArgumentType :: (CodeGenM m) => FieldDefinition OUT CONST -> m [ServerDeclaration]
 genArgumentType
   FieldDefinition
     { fieldName,
