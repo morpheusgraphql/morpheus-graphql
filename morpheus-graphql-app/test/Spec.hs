@@ -68,5 +68,5 @@ main =
       deepScan (map . runNamedResolversTest) (mkUrl "named-resolvers"),
       deepScan (map . runAPIConstraints) (mkUrl "api-constraints"),
       deepScan (map . runBatchingTest) (mkUrl "batching"),
-      deepScan (map . runExecutionTest) (mkUrl "execution")
+      deepScan (map . runExecutionTest) (mkUrl "execution"),
     ]

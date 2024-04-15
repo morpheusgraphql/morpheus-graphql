@@ -3,6 +3,7 @@
 
 module DisableIntrospection
   ( runNamedDisableIntrospectionTest,
+    runDisableIntrospectionTest,
   )
 where
 
@@ -40,6 +41,7 @@ import Data.Morpheus.Types.Internal.AST
 import Relude hiding (ByteString)
 import Test.Morpheus
   ( FileUrl,
+    getAppsBy,
     testApi,
   )
 import Test.Tasty
@@ -47,12 +49,6 @@ import Test.Tasty
   )
 
 -- REALMS
-namedQuery :: (Monad m) => RootResolverValue e m
-namedQuery = queryResolvers [("Query", traverse (const $ object [("name", pure "some text")]))]
-
-resolveQuery :: (Monad m) => RootResolverValue e m
-resolveQuery = queryResolvers [("Query", traverse (const $ object [("name", pure "some text")]))]
-
 getSchema :: String -> IO (Schema VALID)
 getSchema url = LBS.readFile url >>= resultOr (fail . show) pure . parseSchema
 
@@ -60,19 +56,14 @@ runNamedDisableIntrospectionTest :: FileUrl -> FileUrl -> TestTree
 runNamedDisableIntrospectionTest url = testApi api
   where
     api :: GQLRequest -> IO GQLResponse
-    api req = getApps url >>= (`runApp` req)
-    where 
-      app = do
-        schemaRealms <- getSchema "test/disable-introspection/realms.gql"
-        pure (mkApp schemaDeities namedQuery)
+    api req = app url >>= (`runApp` req)
+    app = do
+      schemaRealms <- getSchema "test/disable-introspection/realms.gql"
+      let resolvers = queryResolvers [("Query", traverse (const $ object [("name", pure "some text")]))]
+      pure $ mkApp schemaDeities resolvers
 
 runDisableIntrospectionTest :: FileUrl -> FileUrl -> TestTree
-runDisableIntrospectionTest url = testApi api
+runDisableIntrospectionTest = testApi api
   where
     api :: GQLRequest -> IO GQLResponse
-    api req = getApps url >>= (`runApp` req)
-    where 
-      app = do
-        schemaRealms <- getSchema "test/disable-introspection/realms.gql"
-        pure (mkApp schemaDeities resolveQuery)
-
+    api req = getAppsBy (toEither . parseSchema, mkApp) (mkUrl "disable-introspection") >>= (`runApp` req)

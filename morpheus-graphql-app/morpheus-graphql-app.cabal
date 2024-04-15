@@ -100,6 +100,7 @@ data-files:
     test/batching/objects-fields/response.json
     test/batching/objects-lists-fields/batching.json
     test/batching/objects-lists-fields/response.json
+    test/disable-introspection/resolvers.json
     test/execution/many/response.json
     test/execution/single/response.json
     test/merge/schema/query-subscription-mutation/app-1.json
