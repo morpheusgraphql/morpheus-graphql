@@ -21,6 +21,7 @@ module Data.Morpheus.Server
     deriveApp,
     runApp,
     withDebugger,
+    disableIntrospection,
   )
 where
 
@@ -31,6 +32,7 @@ import Data.ByteString.Lazy.Char8
 import Data.Morpheus.App
   ( App (..),
     MapAPI,
+    disableIntrospection,
     runApp,
     withDebugger,
   )
@@ -56,7 +58,7 @@ import Relude hiding (ByteString)
 
 -- | Generates schema.gql file from 'RootResolver'
 printSchema ::
-  RootResolverConstraint m event query mut sub =>
+  (RootResolverConstraint m event query mut sub) =>
   proxy (RootResolver m event query mut sub) ->
   ByteString
 printSchema =

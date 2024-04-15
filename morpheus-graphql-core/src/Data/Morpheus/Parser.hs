@@ -17,10 +17,8 @@ import Data.Morpheus.Ext.Result
 import Data.Morpheus.Internal.Utils ((<:>))
 import Data.Morpheus.Parsing.Document.TypeSystem
   ( parseDefinitions,
+    parseSchemaWithoutValidation,
     parseTypeDefinitions,
-  )
-import qualified Data.Morpheus.Parsing.Document.TypeSystem as P
-  ( parseSchema,
   )
 import Data.Morpheus.Parsing.Request.Parser
   ( parseRequest,
@@ -50,11 +48,12 @@ parseSchema ::
   ByteString -> GQLResult (Schema VALID)
 parseSchema =
   sortErrors
-    . ( P.parseSchema
+    . ( parseSchemaWithoutValidation
           >=> validateSchema
             True
             Config
               { debug = False,
+                introspection = True,
                 validationMode = FULL_VALIDATION
               }
       )

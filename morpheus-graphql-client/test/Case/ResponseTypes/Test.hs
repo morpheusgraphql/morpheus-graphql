@@ -6,6 +6,7 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Case.ResponseTypes.Test

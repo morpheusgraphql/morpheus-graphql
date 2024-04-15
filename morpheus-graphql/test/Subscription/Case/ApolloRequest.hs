@@ -19,7 +19,6 @@ import Subscription.Utils
   ( SimulationState (..),
     SubM,
     apolloConnectionAck,
-    apolloConnectionErr,
     apolloInit,
     apolloPing,
     apolloPong,
@@ -82,7 +81,7 @@ testPingPong ::
   IO TestTree
 testPingPong = testSimulation test [apolloInit, apolloPing]
   where
-    test input SimulationState {inputs, outputs, store} =
+    test _ SimulationState {inputs, outputs} =
       testGroup
         "ping pong"
         [ inputsAreConsumed inputs,
