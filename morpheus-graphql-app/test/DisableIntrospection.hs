@@ -8,7 +8,7 @@ module DisableIntrospection
 where
 
 import qualified Data.ByteString.Lazy.Char8 as LBS
-import Data.Morpheus.App (mkApp, runApp)
+import Data.Morpheus.App (disableIntrospection, mkApp, runApp)
 import Data.Morpheus.App.Internal.Resolving (resultOr)
 import Data.Morpheus.App.NamedResolvers (object, queryResolvers)
 import Data.Morpheus.Core (parseSchema)
@@ -30,11 +30,13 @@ runNamedDisableIntrospectionTest url = testApi api
     api req = do
       schema <- LBS.readFile (toString (file url "schema.gql")) >>= resultOr (fail . show) pure . parseSchema
       let resolvers = queryResolvers [("Query", traverse (const $ object [("name", pure "Morpheus")]))]
-      let app = mkApp schema resolvers
+      let app = disableIntrospection (mkApp schema resolvers)
       runApp app req
 
 runDisableIntrospectionTest :: FileUrl -> FileUrl -> TestTree
 runDisableIntrospectionTest url = testApi api
   where
     api :: GQLRequest -> IO GQLResponse
-    api req = getAppsBy (toEither . parseSchema, mkApp) url >>= (`runApp` req)
+    api req = do
+      app <- getAppsBy (toEither . parseSchema, mkApp) url
+      runApp (disableIntrospection app) req
