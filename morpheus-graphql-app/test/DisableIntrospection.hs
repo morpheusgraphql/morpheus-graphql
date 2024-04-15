@@ -48,6 +48,8 @@ import Test.Tasty
   ( TestTree,
   )
 
+root = mkUrl "disable-introspection"
+
 -- REALMS
 getSchema :: String -> IO (Schema VALID)
 getSchema url = LBS.readFile url >>= resultOr (fail . show) pure . parseSchema
@@ -57,7 +59,7 @@ runNamedDisableIntrospectionTest _ = testApi api
   where
     api :: GQLRequest -> IO GQLResponse
     api req = do
-      schemaRealms <- getSchema "test/disable-introspection/realms.gql"
+      schemaRealms <- getSchema (file root "schema.gql")
       let resolvers = queryResolvers [("Query", traverse (const $ object [("name", pure "some text")]))]
       let app = mkApp schemaDeities resolvers
       runApp req
@@ -66,4 +68,4 @@ runDisableIntrospectionTest :: FileUrl -> FileUrl -> TestTree
 runDisableIntrospectionTest _ = testApi api
   where
     api :: GQLRequest -> IO GQLResponse
-    api req = getAppsBy (toEither . parseSchema, mkApp) (mkUrl "disable-introspection") >>= (`runApp` req)
+    api req = getAppsBy (toEither . parseSchema, mkApp) root >>= (`runApp` req)
