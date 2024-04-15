@@ -48,6 +48,8 @@ data-files:
     test/batching/schema.gql
     test/disable-introspection/name/query.gql
     test/disable-introspection/schema.gql
+    test/disable-introspection/schema/query.gql
+    test/disable-introspection/type/query.gql
     test/execution/many/query.gql
     test/execution/schema.gql
     test/execution/single/query.gql
@@ -103,6 +105,8 @@ data-files:
     test/batching/objects-lists-fields/response.json
     test/disable-introspection/name/response.json
     test/disable-introspection/resolvers.json
+    test/disable-introspection/schema/response.json
+    test/disable-introspection/type/response.json
     test/execution/many/response.json
     test/execution/single/response.json
     test/merge/schema/query-subscription-mutation/app-1.json
