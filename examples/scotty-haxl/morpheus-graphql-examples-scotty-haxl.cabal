@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.0.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -33,12 +33,12 @@ executable scotty-server-haxl
   ghc-options: -Wall
   build-depends:
       base >=4.7 && <5
-    , containers >=0.4.2.1 && <0.7
+    , containers >=0.4.2.1
     , hashable
     , haxl
     , morpheus-graphql
     , morpheus-graphql-app
-    , mtl >=2.0 && <=2.3
+    , mtl >=2.0
     , scotty
-    , text >=1.2.3.0 && <1.3
+    , text >=1.2.3.0
   default-language: Haskell2010

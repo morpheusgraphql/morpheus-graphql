@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.0.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -229,8 +229,9 @@ library
   ghc-options: -Wall
   build-depends:
       aeson >=1.4.4 && <3.0.0
+    , attoparsec-aeson >=2.1.0.0 && <3.0.0
     , base >=4.7.0 && <5.0.0
-    , bytestring >=0.10.4 && <0.12.0
+    , bytestring >=0.10.4 && <0.15.0
     , containers >=0.4.2.1 && <0.7.0
     , morpheus-graphql-app >=0.27.0 && <0.28.0
     , morpheus-graphql-code-gen >=0.27.0 && <0.28.0
@@ -264,8 +265,9 @@ test-suite morpheus-graphql-test
   ghc-options: -Wall
   build-depends:
       aeson >=1.4.4 && <3.0.0
+    , attoparsec-aeson >=2.1.0.0 && <3.0.0
     , base >=4.7.0 && <5.0.0
-    , bytestring >=0.10.4 && <0.12.0
+    , bytestring >=0.10.4 && <0.15.0
     , containers >=0.4.2.1 && <0.7.0
     , morpheus-graphql
     , morpheus-graphql-app >=0.27.0 && <0.28.0

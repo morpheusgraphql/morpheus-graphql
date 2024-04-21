@@ -14,7 +14,7 @@ extra-source-files:
   - changelog.md
 dependencies:
   - base                             >=  4.7.0    &&  <  5.0.0
-  - bytestring                       >=  0.10.4   &&  <  0.12.0
+  - bytestring                       >=  0.10.4   &&  <  0.15.0
   - containers                       >=  0.4.2.1  &&  <  0.7.0
   - file-embed                       >=  0.0.10   &&  <  1.0.0
   - morpheus-graphql-core            >=  0.27.0   &&  <  0.28.0
@@ -42,5 +42,5 @@ executables:
       - morpheus-graphql-code-gen
       - morpheus-graphql-client
       - morpheus-graphql-code-gen-utils
-      - optparse-applicative             >=  0.12.0  &&  <  0.18.0
+      - optparse-applicative             >=  0.12.0  &&  <  0.20.0
       - yaml                             >=  0.8.32  &&  <  1.0.0

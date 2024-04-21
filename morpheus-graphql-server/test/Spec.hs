@@ -6,6 +6,7 @@ module Main
   )
 where
 
+import Data.Aeson (FromJSON, ToJSON)
 import Data.Morpheus.Server.Types (GQLRequest (..), GQLResponse (..))
 import qualified Feature.Collision.CategoryCollisionFail as TypeCategoryCollisionFail
 import qualified Feature.Collision.CategoryCollisionSuccess as TypeCategoryCollisionSuccess
@@ -45,10 +46,10 @@ import Test.Tasty
 mkFeatureUrl :: FilePath -> FilePath -> FileUrl
 mkFeatureUrl groupName = cd (cd (mkUrl "Feature") groupName)
 
-testFeature :: FilePath -> (GQLRequest -> IO GQLResponse, FilePath) -> IO TestTree
+testFeature :: (FromJSON a, ToJSON b) => FilePath -> (a -> IO b, FilePath) -> IO TestTree
 testFeature groupName (api, name) = scan (testApi api) (mkFeatureUrl groupName name)
 
-testFeatures :: FilePath -> [(GQLRequest -> IO GQLResponse, FilePath)] -> IO TestTree
+testFeatures :: (FromJSON a, ToJSON b) => FilePath -> [(a -> IO b, FilePath)] -> IO TestTree
 testFeatures name cases =
   testGroup name
     <$> traverse
