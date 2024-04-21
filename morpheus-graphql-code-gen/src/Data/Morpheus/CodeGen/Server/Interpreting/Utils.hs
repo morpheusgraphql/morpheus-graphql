@@ -91,16 +91,16 @@ getFieldTypeName name = checkTypeExistence name $> packName (toHaskellTypeName n
 getFieldName :: (CodeGenM m) => FieldName -> m FieldName
 getFieldName fieldName = do
   ServerCodeGenContext {hasNamespace, currentTypeName} <- ask
-  pure $
-    if hasNamespace
+  pure
+    $ if hasNamespace
       then maybe fieldName (`camelCaseFieldName` fieldName) currentTypeName
       else fieldName
 
 getEnumName :: (MonadReader ServerCodeGenContext m) => TypeName -> m CodeGenTypeName
 getEnumName enumName = do
   ServerCodeGenContext {hasNamespace, currentTypeName} <- ask
-  pure $
-    if hasNamespace
+  pure
+    $ if hasNamespace
       then CodeGenTypeName (map coerce $ maybeToList currentTypeName) [] enumName
       else fromTypeName enumName
 
@@ -124,6 +124,8 @@ instance CodeGenMonad GQLResult where
 
 #if MIN_VERSION_template_haskell(2,17,0)
 getTypeVariables :: Dec -> [TH.TyVarBndr TH.BndrVis]
+#elif MIN_VERSION_template_haskell(2,16,0)
+getTypeVariables :: Dec -> [TH.TyVarBndr ()]
 #else
 getTypeVariables :: Dec -> [TH.TyVarBndr]
 #endif
