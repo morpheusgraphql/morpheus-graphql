@@ -5,11 +5,24 @@ import { getConfig, readYAML, writeConfig, writeYAML } from "../utils/file";
 import { genVersion, parseVersion, VersionUpdate } from "../utils/version";
 import { log } from "../utils/utils";
 
-const checkPackage = (config: Config) => async (name: string) => {
-  const url = path.join(name, "package.yaml");
+const checkPackage = async (
+  config: Config,
+  isExample: boolean,
+  name: string
+) => {
+  const url = path.join(
+    isExample ? path.join("examples", name) : name,
+    "package.yaml"
+  );
   const pkg = await readYAML<StackPackage>(url);
 
-  const fixedPackage = updateDeps(config, { ...pkg, version: config.version });
+  const fixedPackage = updateDeps(
+    { ...config, allowUnknownLib: isExample },
+    {
+      ...pkg,
+      version: config.version,
+    }
+  );
 
   await writeYAML(url, fixedPackage);
 
@@ -40,9 +53,16 @@ const updateConfig = async ({
 export const checkPackages = async (change?: VersionUpdate) => {
   const config = await (change ? updateConfig(change) : getConfig());
 
-  const versions = await Promise.all(config.packages.map(checkPackage(config)));
+  const examples = await Promise.all(
+    config.examples.map((name) => checkPackage(config, true, name))
+  );
+
+  const libs = await Promise.all(
+    config.packages.map((name) => checkPackage(config, false, name))
+  );
   await writeConfig(config);
 
   log(` - package.yaml (v${config.version})\n`, "success");
-  log(versions.join(""), "success");
+  log(examples.join(""), "success");
+  log(libs.join(""), "success");
 };
