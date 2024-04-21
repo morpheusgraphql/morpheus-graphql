@@ -46,7 +46,6 @@ plan:
     resolver: lts-16.2
   8.10.7:
     deps:
-      attoparsec-aeson: 2.1.0.0
       fastsum: 0.1.1.1
       graphql: 0.11.1.0
     include:
@@ -54,6 +53,7 @@ plan:
     resolver: lts-18.10
   9.0.2:
     deps:
+      attoparsec-aeson: 2.1.0.0
       dependent-map: 0.2.4.0
       dependent-sum: 0.4
     resolver: lts-19.28
