@@ -57,13 +57,12 @@ import Data.Morpheus.Types.Internal.AST
     unpackName,
   )
 import Language.Haskell.TH
-  ( BndrVis,
-    Dec (..),
+  ( Dec (..),
     Info (..),
     Q,
-    TyVarBndr,
     reify,
   )
+import qualified Language.Haskell.TH as TH
 import Relude hiding (ByteString, get)
 
 class (MonadReader ServerCodeGenContext m, Monad m, MonadFail m, CodeGenMonad m, MonadState Flags m) => CodeGenM m
@@ -92,16 +91,16 @@ getFieldTypeName name = checkTypeExistence name $> packName (toHaskellTypeName n
 getFieldName :: (CodeGenM m) => FieldName -> m FieldName
 getFieldName fieldName = do
   ServerCodeGenContext {hasNamespace, currentTypeName} <- ask
-  pure $
-    if hasNamespace
+  pure
+    $ if hasNamespace
       then maybe fieldName (`camelCaseFieldName` fieldName) currentTypeName
       else fieldName
 
 getEnumName :: (MonadReader ServerCodeGenContext m) => TypeName -> m CodeGenTypeName
 getEnumName enumName = do
   ServerCodeGenContext {hasNamespace, currentTypeName} <- ask
-  pure $
-    if hasNamespace
+  pure
+    $ if hasNamespace
       then CodeGenTypeName (map coerce $ maybeToList currentTypeName) [] enumName
       else fromTypeName enumName
 
@@ -124,9 +123,9 @@ instance CodeGenMonad GQLResult where
 -- Utils: is Parametrized type
 
 #if MIN_VERSION_template_haskell(2,17,0)
-getTypeVariables :: Dec -> [TyVarBndr BndrVis]
+getTypeVariables :: Dec -> [TH.TyVarBndr TH.BndrVis]
 #else
-getTypeVariables :: Dec -> [TyVarBndr]
+getTypeVariables :: Dec -> [TH.TyVarBndr]
 #endif
 getTypeVariables (DataD _ _ args _ _ _) = args
 getTypeVariables (NewtypeD _ _ args _ _ _) = args
