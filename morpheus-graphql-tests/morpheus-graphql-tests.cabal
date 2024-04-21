@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.0.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -35,7 +35,7 @@ library
   build-depends:
       aeson >=1.4.4 && <3.0.0
     , base >=4.7.0 && <5.0.0
-    , bytestring >=0.10.4 && <0.12.0
+    , bytestring >=0.10.4 && <0.15.0
     , directory >=1.0.0 && <2.0.0
     , relude >=0.3.0 && <2.0.0
     , tasty >=0.1.0 && <1.5.0
