@@ -122,9 +122,9 @@ instance CodeGenMonad GQLResult where
 
 -- Utils: is Parametrized type
 
-#if MIN_VERSION_template_haskell(2,17,0)
+#if MIN_VERSION_template_haskell(2,21,0)
 getTypeVariables :: Dec -> [TH.TyVarBndr TH.BndrVis]
-#elif MIN_VERSION_template_haskell(2,16,0)
+#elif MIN_VERSION_template_haskell(2,17,0)
 getTypeVariables :: Dec -> [TH.TyVarBndr ()]
 #else
 getTypeVariables :: Dec -> [TH.TyVarBndr]
