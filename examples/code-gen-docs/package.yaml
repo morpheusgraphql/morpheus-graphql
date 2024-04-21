@@ -1,25 +1,23 @@
 name: morpheus-graphql-examples-code-gen-docs
-version: 0.1.0
-github: "nalchevanidze/morpheus-graphql"
+version: 0.27.3
+github: nalchevanidze/morpheus-graphql
 license: MIT
-author: "Daviti Nalchevanidze"
+author: Daviti Nalchevanidze
 category: web, graphql , code-gen
 synopsis: examples
-copyright: "(c) 2019 Daviti Nalchevanidze"
+copyright: (c) 2019 Daviti Nalchevanidze
 description: examples of GraphQL APIs
-
 dependencies:
-  - base                            >= 4.7       && <  5
-  - bytestring                      >= 0.10.4
-  - text                            >= 1.2.3.0
+  - base                     >=  4.7.0    &&  <  5.0.0
+  - bytestring               >=  0.10.4   &&  <  0.15.0
+  - containers               >=  0.4.2.1  &&  <  0.7.0
   - morpheus-graphql
   - morpheus-graphql-server
   - morpheus-graphql-client
   - scotty
-  - containers                      >= 0.4.2.1
-
+  - text                     >=  1.2.3    &&  <  3.0.0
 executables:
   code-gen-docs-server:
     main: Main.hs
     source-dirs: src
-    ghc-options: -Wall
+    ghc-options: '-Wall'

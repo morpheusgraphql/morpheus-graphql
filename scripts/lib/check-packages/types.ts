@@ -20,6 +20,7 @@ export type Config = {
   packages: PackageName[];
   plan: Record<string, StackPlan>;
   examples: string[];
+  allowUnknownLib: boolean;
 };
 
 export type Table = string[][];
