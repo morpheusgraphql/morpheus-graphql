@@ -42,5 +42,5 @@ executables:
       - morpheus-graphql-code-gen
       - morpheus-graphql-client
       - morpheus-graphql-code-gen-utils
-      - optparse-applicative             >=  0.12.0  &&  <  0.18.0
+      - optparse-applicative             >=  0.12.0  &&  <  0.20.0
       - yaml                             >=  0.8.32  &&  <  1.0.0
