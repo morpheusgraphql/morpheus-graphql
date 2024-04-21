@@ -57,7 +57,8 @@ import Data.Morpheus.Types.Internal.AST
     unpackName,
   )
 import Language.Haskell.TH
-  ( Dec (..),
+  ( BndrVis,
+    Dec (..),
     Info (..),
     Q,
     TyVarBndr,
@@ -67,7 +68,7 @@ import Relude hiding (ByteString, get)
 
 class (MonadReader ServerCodeGenContext m, Monad m, MonadFail m, CodeGenMonad m, MonadState Flags m) => CodeGenM m
 
-instance CodeGenMonad m => CodeGenM (CodeGenT ServerCodeGenContext m)
+instance (CodeGenMonad m) => CodeGenM (CodeGenT ServerCodeGenContext m)
 
 data ServerCodeGenContext = ServerCodeGenContext
   { toArgsTypeName :: FieldName -> TypeName,
@@ -78,17 +79,17 @@ data ServerCodeGenContext = ServerCodeGenContext
     hasNamespace :: Bool
   }
 
-checkTypeExistence :: CodeGenM m => TypeName -> m ()
+checkTypeExistence :: (CodeGenM m) => TypeName -> m ()
 checkTypeExistence name = do
   exists <- isJust <$> lookupType name
   if exists
     then pure ()
     else requireExternal (unpackName name)
 
-getFieldTypeName :: CodeGenM m => TypeName -> m TypeName
+getFieldTypeName :: (CodeGenM m) => TypeName -> m TypeName
 getFieldTypeName name = checkTypeExistence name $> packName (toHaskellTypeName name)
 
-getFieldName :: CodeGenM m => FieldName -> m FieldName
+getFieldName :: (CodeGenM m) => FieldName -> m FieldName
 getFieldName fieldName = do
   ServerCodeGenContext {hasNamespace, currentTypeName} <- ask
   pure $
@@ -96,7 +97,7 @@ getFieldName fieldName = do
       then maybe fieldName (`camelCaseFieldName` fieldName) currentTypeName
       else fieldName
 
-getEnumName :: MonadReader ServerCodeGenContext m => TypeName -> m CodeGenTypeName
+getEnumName :: (MonadReader ServerCodeGenContext m) => TypeName -> m CodeGenTypeName
 getEnumName enumName = do
   ServerCodeGenContext {hasNamespace, currentTypeName} <- ask
   pure $
@@ -108,7 +109,7 @@ class (Monad m, MonadFail m) => CodeGenMonad m where
   isParametrizedType :: TypeName -> m Bool
   printWarnings :: [GQLError] -> m ()
 
-instance CodeGenMonad m => CodeGenMonad (CodeGenT ctx m) where
+instance (CodeGenMonad m) => CodeGenMonad (CodeGenT ctx m) where
   isParametrizedType = lift . isParametrizedType
   printWarnings = lift . printWarnings
 
@@ -123,7 +124,7 @@ instance CodeGenMonad GQLResult where
 -- Utils: is Parametrized type
 
 #if MIN_VERSION_template_haskell(2,17,0)
-getTypeVariables :: Dec -> [TyVarBndr ()]
+getTypeVariables :: Dec -> [TyVarBndr BndrVis]
 #else
 getTypeVariables :: Dec -> [TyVarBndr]
 #endif
@@ -136,7 +137,7 @@ isParametrizedHaskellType :: Info -> Bool
 isParametrizedHaskellType (TyConI x) = not $ null $ getTypeVariables x
 isParametrizedHaskellType _ = False
 
-isParametrizedResolverType :: CodeGenM m => TypeName -> [TypeDefinition ANY s] -> m Bool
+isParametrizedResolverType :: (CodeGenM m) => TypeName -> [TypeDefinition ANY s] -> m Bool
 isParametrizedResolverType "__TypeKind" _ = pure False
 isParametrizedResolverType "Boolean" _ = pure False
 isParametrizedResolverType "String" _ = pure False
@@ -146,19 +147,19 @@ isParametrizedResolverType name lib = case lookupWith typeName name lib of
   Just x -> pure (isResolverType x)
   Nothing -> isParametrizedType name
 
-isParamResolverType :: CodeGenM m => TypeName -> m Bool
+isParamResolverType :: (CodeGenM m) => TypeName -> m Bool
 isParamResolverType typeConName =
   isParametrizedResolverType typeConName =<< asks typeDefinitions
 
-notFoundError :: MonadFail m => String -> String -> m a
+notFoundError :: (MonadFail m) => String -> String -> m a
 notFoundError name at = fail $ "can't found " <> name <> "at " <> at <> "!"
 
-lookupType :: CodeGenM m => TypeName -> m (Maybe (TypeDefinition ANY CONST))
+lookupType :: (CodeGenM m) => TypeName -> m (Maybe (TypeDefinition ANY CONST))
 lookupType name = do
   types <- asks typeDefinitions
   pure $ find (\t -> typeName t == name) types
 
-lookupFieldType :: CodeGenM m => TypeName -> FieldName -> m TypeRef
+lookupFieldType :: (CodeGenM m) => TypeName -> FieldName -> m TypeRef
 lookupFieldType name fieldName = do
   TypeDefinition {typeContent} <- lookupType name >>= maybe (notFoundError (show name) "type definitions") pure
   case typeContent of
@@ -171,5 +172,5 @@ isSubscription :: TypeKind -> Bool
 isSubscription (KIND_OBJECT (Just OPERATION_SUBSCRIPTION)) = True
 isSubscription _ = False
 
-inType :: MonadReader ServerCodeGenContext m => Maybe TypeName -> m a -> m a
+inType :: (MonadReader ServerCodeGenContext m) => Maybe TypeName -> m a -> m a
 inType name = local (\x -> x {currentTypeName = name, currentKind = Nothing})
