@@ -22,14 +22,6 @@ packages:
   - morpheus-graphql-server
   - morpheus-graphql
 plan:
-  8.10.7:
-    deps:
-      attoparsec-aeson: 2.1.0.0
-      fastsum: 0.1.1.1
-      graphql: 0.11.1.0
-    include:
-      - morpheus-graphql-benchmarks
-    resolver: lts-18.10
   8.2.2:
     resolver: lts-11.10
   8.4.4:
@@ -52,6 +44,14 @@ plan:
     deps:
       prettyprinter: 1.7.0
     resolver: lts-16.2
+  8.10.7:
+    deps:
+      attoparsec-aeson: 2.1.0.0
+      fastsum: 0.1.1.1
+      graphql: 0.11.1.0
+    include:
+      - morpheus-graphql-benchmarks
+    resolver: lts-18.10
   9.0.2:
     deps:
       dependent-map: 0.2.4.0
@@ -69,9 +69,6 @@ plan:
       - examples/scotty-fraxl
       - examples/scotty-freer-simple
 rules:
-  Glob:
-    - 0.7.0
-    - 1.0.0
   aeson:
     - 1.4.4
     - 3.0.0
@@ -96,6 +93,9 @@ rules:
   filepath:
     - 1.1.0
     - 1.5.0
+  Glob:
+    - 0.7.0
+    - 1.0.0
   hashable:
     - 1.0.0
     - 2.0.0
