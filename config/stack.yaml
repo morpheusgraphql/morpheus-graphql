@@ -34,6 +34,7 @@ plan:
   8.4.4:
     deps:
       aeson: 1.4.4.0
+      attoparsec-aeson: 2.1.0.0
       base-orphans: 0.8.1
       fastsum: 0.1.0.0
       megaparsec: 7.0.5
@@ -63,7 +64,7 @@ plan:
       fraxl: 0.3.0.0
       haxl: 2.4.0.0
       type-aligned: 0.9.6
-    resolver: nightly-2023-04-23
+    resolver: nightly-2024-04-20
     skip:
       - examples/scotty-fraxl
       - examples/scotty-freer-simple
