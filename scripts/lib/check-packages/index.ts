@@ -16,13 +16,7 @@ const checkPackage = async (
   );
   const pkg = await readYAML<StackPackage>(url);
 
-  const fixedPackage = updateDeps(
-    { ...config, allowUnknownLib: isExample },
-    {
-      ...pkg,
-      version: config.version,
-    }
-  );
+  const fixedPackage = updateDeps(config, { ...pkg, version: config.version });
 
   await writeYAML(url, fixedPackage);
 

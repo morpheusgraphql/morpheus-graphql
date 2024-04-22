@@ -7,11 +7,11 @@ export const parseBound = (s: string): Bounds => {
   return [min, max];
 };
 
-export const parseRule = (s: string): Rule =>
-  s === "true" ? true : parseBound(s);
+export const parseRule = (s: string | true): Rule =>
+  s === true ? true : parseBound(s);
 
 export const formatRule = (rule: Rule) => {
-  if (typeof rule === "boolean") return "true";
+  if (typeof rule === "boolean") return true;
 
   const [min, max] = rule;
 

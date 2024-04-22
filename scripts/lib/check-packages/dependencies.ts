@@ -1,4 +1,3 @@
-import { log } from "../utils/utils";
 import { formatTable } from "./formating";
 import { Config } from "./types";
 
@@ -12,7 +11,7 @@ const withRule = (name: string, [min, max]: [string, string]) => [
 ];
 
 const updateDependency =
-  ({ bounds, rules, allowUnknownLib }: Config) =>
+  ({ bounds, rules }: Config) =>
   ([name, ...args]: string[]): string[] => {
     if (name.startsWith(PROJECT_PREFIX)) {
       if (!args.length) {
@@ -24,11 +23,6 @@ const updateDependency =
 
     if (rule) {
       return typeof rule === "boolean" ? [name] : withRule(name, rule);
-    }
-
-    if (allowUnknownLib) {
-      log(` - unknown dependency: ${name}\n`, "warning");
-      return [name];
     }
 
     throw new Error(`Unknown package: ${name}`);

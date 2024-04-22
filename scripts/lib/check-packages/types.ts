@@ -3,7 +3,7 @@ export type VersionNumber = string;
 export type PackageName = string;
 
 export type Rule<Raw extends boolean = false> = Raw extends true
-  ? string
+  ? string | true
   : Bounds | true;
 
 export type Rules<Raw extends boolean = false> = Record<PackageName, Rule<Raw>>;
@@ -24,7 +24,6 @@ export type Config<R extends boolean = false> = {
   packages: PackageName[];
   plan: Record<string, StackPlan>;
   examples: string[];
-  allowUnknownLib: boolean;
 };
 
 export type Table = string[][];
