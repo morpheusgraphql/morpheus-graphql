@@ -60,6 +60,7 @@ export const checkPackages = async (change?: VersionUpdate) => {
   const libs = await Promise.all(
     config.packages.map((name) => checkPackage(config, false, name))
   );
+
   await writeConfig(config);
 
   log(` - package.yaml (v${config.version})\n`, "success");

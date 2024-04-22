@@ -1,10 +1,10 @@
 export type VersionNumber = string;
 
-export type DepsMap = Record<string, Bounds>;
+export type PackageName = string;
+
+export type Rules<T = Bounds> = Record<PackageName, T>;
 
 export type Bounds = [VersionNumber, VersionNumber];
-
-export type PackageName = string;
 
 export type StackPlan = {
   deps?: Record<string, string>;
@@ -13,10 +13,10 @@ export type StackPlan = {
   skip?: string[];
 };
 
-export type Config = {
+export type Config<T = Bounds> = {
   version: VersionNumber;
   bounds: Bounds;
-  rules: Record<PackageName, Bounds>;
+  rules: Rules<T>;
   packages: PackageName[];
   plan: Record<string, StackPlan>;
   examples: string[];
