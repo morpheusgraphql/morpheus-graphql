@@ -2,7 +2,7 @@ import { log } from "../utils/utils";
 import { formatTable } from "./formating";
 import { Config } from "./types";
 
-const projectPefix = "morpheus-graphql";
+const projectPrefix = "morpheus-graphql";
 
 const withRule = (name: string, [min, max]: [string, string]) => [
   name,
@@ -14,7 +14,7 @@ const withRule = (name: string, [min, max]: [string, string]) => [
 const updateDependency =
   ({ bounds, rules, allowUnknownLib }: Config) =>
   ([name, ...args]: string[]): string[] => {
-    if (name.startsWith(projectPefix)) {
+    if (name.startsWith(projectPrefix)) {
       if (!args.length) {
         return [name, ...args];
       }

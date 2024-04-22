@@ -1,6 +1,4 @@
-bounds:
-  - 0.27.0
-  - 0.28.0
+bounds: 0.27.0-0.28.0
 examples:
   - client
   - code-gen

@@ -27,10 +27,13 @@ export const readJSON = <T>(name: string) =>
 export const writeYAML = <T>(url: string, obj: T) => write(url, dump(obj));
 
 export const getConfig = async (): Promise<Config> => {
-  const { rules, ...rest } = await readYAML<Config<string>>(STACK_CONFIG_URL);
+  const { rules, bounds, ...rest } = await readYAML<Config<string>>(
+    STACK_CONFIG_URL
+  );
 
   return {
     ...rest,
+    bounds: parseRule(bounds),
     rules: map<Rules<string>, Rules>(parseRule, rules),
   };
 };
@@ -51,11 +54,15 @@ const compareConfigKeys = (a: string, b: string) => {
   }
 };
 
-export const writeConfig = (config: Config) => {
+export const writeConfig = ({ rules, bounds, ...config }: Config) => {
   write(
     STACK_CONFIG_URL,
     dump(
-      { ...config, rules: map<Rules, Rules<string>>(formatRule, config.rules) },
+      {
+        ...config,
+        bounds: formatRule(bounds),
+        rules: map<Rules, Rules<string>>(formatRule, rules),
+      },
       {
         sortKeys: compareConfigKeys,
         lineWidth: 240,

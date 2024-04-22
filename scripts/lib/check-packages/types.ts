@@ -15,7 +15,7 @@ export type StackPlan = {
 
 export type Config<T = Bounds> = {
   version: VersionNumber;
-  bounds: Bounds;
+  bounds: T;
   rules: Rules<T>;
   packages: PackageName[];
   plan: Record<string, StackPlan>;

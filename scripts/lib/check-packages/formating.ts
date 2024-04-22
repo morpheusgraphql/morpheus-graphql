@@ -7,8 +7,8 @@ const fill = (size: number): string =>
     .join("");
 
 export const formatTable = (table: Table) => {
-  const sizes = transpose(table).map((collums) =>
-    Math.max(...collums.map((item) => item.length))
+  const sizes = transpose(table).map((colum) =>
+    Math.max(...colum.map((item) => item.length))
   );
 
   return table.map((row) =>
