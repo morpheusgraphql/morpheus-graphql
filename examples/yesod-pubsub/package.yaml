@@ -24,9 +24,9 @@ dependencies:
   - text                            >=  1.2.3     &&  <  3.0.0
   - unliftio-core                   >=  0.0.1     &&  <  0.4.0
   - warp                            >=  1.0.0
-  - wai
+  - wai                             >=  1.0.0
   - wai-cors
-  - wai-websockets
+  - wai-websockets                  >=  1.0.0
   - websockets                      >=  0.12.6.0  &&  <  1.0.0
   - yesod
   - yesod-core

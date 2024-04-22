@@ -24,7 +24,7 @@ dependencies:
   - text                            >=  1.2.3     &&  <  3.0.0
   - transformers                    >=  0.3.0     &&  <  0.7.0
   - websockets                      >=  0.12.6.0  &&  <  1.0.0
-  - wai-websockets
+  - wai-websockets                  >=  1.0.0
   - warp                            >=  1.0.0
 executables:
   scotty-server:

@@ -15,7 +15,7 @@ dependencies:
   - scotty
   - text              >=  1.2.3   &&  <  3.0.0
   - transformers      >=  0.3.0   &&  <  0.7.0
-  - wai
+  - wai               >=  1.0.0
   - warp              >=  1.0.0
 executables:
   scotty-freer-server:
