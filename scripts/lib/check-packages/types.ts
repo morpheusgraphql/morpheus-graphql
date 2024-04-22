@@ -2,6 +2,8 @@ export type VersionNumber = string;
 
 export type PackageName = string;
 
+export type Rule = Bounds | true;
+
 export type Rules<T = Bounds> = Record<PackageName, T>;
 
 export type Bounds = [VersionNumber, VersionNumber];
