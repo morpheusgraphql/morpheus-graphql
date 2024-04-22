@@ -9,4 +9,4 @@ export const parseRule = (s: string): Bounds => {
 };
 
 export const formatRule = ([min, max]: Bounds) =>
-  `${min}${RULE_SEPARATOR}${max}`;
+  max ? `${min}${RULE_SEPARATOR}${max}` : min;

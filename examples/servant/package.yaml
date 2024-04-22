@@ -19,7 +19,7 @@ dependencies:
   - text                            >=  1.2.3     &&  <  3.0.0
   - wai-websockets
   - websockets                      >=  0.12.6.0  &&  <  1.0.0
-  - warp
+  - warp                            >=  1.0.0
 executables:
   servant-server:
     main: Main.hs

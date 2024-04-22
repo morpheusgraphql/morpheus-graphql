@@ -8,9 +8,7 @@ const withRule = (name: string, [min, max]: [string, string]) => [
   name,
   ">=",
   min,
-  "&&",
-  "<",
-  max,
+  ...(max ? ["&&", "<", max] : []),
 ];
 
 const updateDependency =
