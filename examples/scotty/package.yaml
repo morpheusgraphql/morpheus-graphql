@@ -19,7 +19,7 @@ dependencies:
   - morpheus-graphql-core
   - morpheus-graphql-app
   - morpheus-graphql-subscriptions
-  - scotty
+  - scotty                          >=  0.6.0
   - stm
   - text                            >=  1.2.3     &&  <  3.0.0
   - transformers                    >=  0.3.0     &&  <  0.7.0

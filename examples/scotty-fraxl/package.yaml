@@ -13,7 +13,7 @@ dependencies:
   - fraxl
   - mtl               >=  2.0.0    &&  <  3.0.0
   - morpheus-graphql
-  - scotty
+  - scotty            >=  0.6.0
   - text              >=  1.2.3    &&  <  3.0.0
 executables:
   scotty-server-fraxl:

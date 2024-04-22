@@ -14,7 +14,7 @@ dependencies:
   - morpheus-graphql
   - morpheus-graphql-server
   - morpheus-graphql-client
-  - scotty
+  - scotty                   >=  0.6.0
   - text                     >=  1.2.3    &&  <  3.0.0
 executables:
   code-gen-docs-server:

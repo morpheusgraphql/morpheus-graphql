@@ -87,6 +87,7 @@ rules:
   relude: 0.3.0-2.0.0
   req: 3.0.0-4.0.0
   scientific: 0.3.6.2-0.4.0
+  scotty: 0.6.0
   tasty: 0.1.0-1.5.0
   tasty-hunit: 0.1.0-1.0.0
   template-haskell: 2.0.0-3.0.0
