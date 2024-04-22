@@ -23,7 +23,7 @@ const updateDependency =
     const rule = rules[name];
 
     if (rule) {
-      return withRule(name, rule);
+      return typeof rule === "boolean" ? [name] : withRule(name, rule);
     }
 
     if (allowUnknownLib) {

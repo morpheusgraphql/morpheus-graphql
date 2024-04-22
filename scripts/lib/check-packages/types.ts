@@ -2,7 +2,11 @@ export type VersionNumber = string;
 
 export type PackageName = string;
 
-export type Rules<T = Bounds> = Record<PackageName, T>;
+export type Rule<Raw extends boolean = false> = Raw extends true
+  ? string
+  : Bounds | true;
+
+export type Rules<Raw extends boolean = false> = Record<PackageName, Rule<Raw>>;
 
 export type Bounds = [VersionNumber, VersionNumber];
 
@@ -13,10 +17,10 @@ export type StackPlan = {
   skip?: string[];
 };
 
-export type Config<T = Bounds> = {
+export type Config<R extends boolean = false> = {
   version: VersionNumber;
-  bounds: T;
-  rules: Rules<T>;
+  bounds: R extends true ? string : Bounds;
+  rules: Rules<R>;
   packages: PackageName[];
   plan: Record<string, StackPlan>;
   examples: string[];
