@@ -48,14 +48,14 @@ plan:
     deps:
       fastsum: 0.1.1.1
       graphql: 0.11.1.0
-    include:
-      - morpheus-graphql-benchmarks
     resolver: lts-18.10
   9.0.2:
     deps:
       attoparsec-aeson: 2.1.0.0
       dependent-map: 0.2.4.0
       dependent-sum: 0.4
+    include:
+      - morpheus-graphql-benchmarks
     resolver: lts-19.28
     skip:
       - examples/scotty-fraxl
