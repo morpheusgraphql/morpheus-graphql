@@ -1,15 +1,14 @@
-import { Rule } from "../check-packages/types";
+import { Bounds, Rule } from "../check-packages/types";
 
 const RULE_SEPARATOR = "-";
 
-export const parseRule = (s: string): Rule => {
-  if (s === "true") {
-    return true;
-  }
-
+export const parseBound = (s: string): Bounds => {
   const [min, max] = s.split(RULE_SEPARATOR);
   return [min, max];
 };
+
+export const parseRule = (s: string): Rule =>
+  s === "true" ? true : parseBound(s);
 
 export const formatRule = (rule: Rule) => {
   if (typeof rule === "boolean") return "true";

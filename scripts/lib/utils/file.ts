@@ -5,7 +5,7 @@ import { dump, load } from "js-yaml";
 import { Config, Rules } from "../check-packages/types";
 import { map } from "ramda";
 import { compareVersion } from "./version";
-import { formatRule, parseRule } from "./rule";
+import { formatRule, parseBound, parseRule } from "./rule";
 
 const ROOT_DIR = join(dirname(require.main?.filename ?? ""), "../");
 
@@ -27,14 +27,14 @@ export const readJSON = <T>(name: string) =>
 export const writeYAML = <T>(url: string, obj: T) => write(url, dump(obj));
 
 export const getConfig = async (): Promise<Config> => {
-  const { rules, bounds, ...rest } = await readYAML<Config<string>>(
+  const { rules, bounds, ...rest } = await readYAML<Config<true>>(
     STACK_CONFIG_URL
   );
 
   return {
     ...rest,
-    bounds: parseRule(bounds),
-    rules: map<Rules<string>, Rules>(parseRule, rules),
+    bounds: parseBound(bounds),
+    rules: map<Rules<true>, Rules>(parseRule, rules),
   };
 };
 
@@ -61,7 +61,7 @@ export const writeConfig = ({ rules, bounds, ...config }: Config) => {
       {
         ...config,
         bounds: formatRule(bounds),
-        rules: map<Rules, Rules<string>>(formatRule, rules),
+        rules: map<Rules, Rules<true>>(formatRule, rules),
       },
       {
         sortKeys: compareConfigKeys,
