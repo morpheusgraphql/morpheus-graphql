@@ -4,7 +4,7 @@ export type PackageName = string;
 
 export type Bounds<R extends boolean = false> = R extends true
   ? string
-  : Bounds;
+  : [VersionNumber, VersionNumber];
 
 export type Rule<R extends boolean = false> = true | Bounds<R>;
 
