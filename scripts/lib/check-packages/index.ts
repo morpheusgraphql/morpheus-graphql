@@ -1,7 +1,8 @@
 import path from "path";
-import { Bounds, Config, StackPackage } from "../utils/types";
+import { Bounds, StackPackage } from "../utils/types";
 import { updateDeps } from "./dependencies";
-import { getConfig, readYAML, writeConfig, writeYAML } from "../utils/file";
+import { getConfig, writeConfig, Config } from "../utils/config";
+import { readYAML, writeYAML } from "../utils/file";
 import { genVersion, parseVersion, VersionUpdate } from "../utils/version";
 import { log } from "../utils/utils";
 

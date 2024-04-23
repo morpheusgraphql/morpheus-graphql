@@ -1,6 +1,7 @@
 import { difference } from "ramda";
 import { checkPackages } from "../lib/check-packages";
-import { getConfig, writeYAML } from "../lib/utils/file";
+import { writeYAML } from "../lib/utils/file";
+import { getConfig } from "../lib/utils/config";
 import { log } from "../lib/utils/utils";
 import { compareVersion } from "../lib/utils/version";
 import { hie } from "./hie";

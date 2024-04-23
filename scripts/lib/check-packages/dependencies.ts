@@ -1,5 +1,5 @@
 import { formatTable } from "./formating";
-import { Config } from "../utils/types";
+import { Config } from "../utils/config";
 
 const PROJECT_PREFIX = "morpheus-graphql";
 
