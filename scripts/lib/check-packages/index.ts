@@ -1,20 +1,21 @@
 import path from "path";
 import { updateDeps } from "./dependencies";
 import { getConfig, writeConfig, Config, updateConfig } from "../utils/config";
-import { writeYAML } from "../utils/file";
 import { VersionUpdate } from "../utils/version";
 import { log } from "../utils/utils";
-import { getPackage } from "../utils/package";
+import { getPackage, writePackage } from "../utils/package";
 
 const checkPackage = (config: Config) => async (name: string) => {
-  const isExample = !name.startsWith("morpheus-graphql");
-  const url = path.join(
-    isExample ? path.join("examples", name) : name,
-    "package.yaml"
-  );
-  const pkg = await getPackage(url);
+  const dir = name.startsWith("morpheus-graphql")
+    ? name
+    : path.join("examples", name);
 
-  await writeYAML(url, updateDeps(config, { ...pkg, version: config.version }));
+  const pkg = await getPackage(dir);
+
+  await writePackage(
+    dir,
+    updateDeps(config, { ...pkg, version: config.version })
+  );
 
   return `  - ${pkg.name}\n`;
 };

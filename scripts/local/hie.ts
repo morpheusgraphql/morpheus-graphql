@@ -33,10 +33,10 @@ const scanLib = (configs: Pkg[]) =>
 
 export const hie = async (sources: string[]) => {
   const packages = await Promise.all(
-    sources.map(async (name) => {
+    sources.map(async (dir) => {
       return {
-        ...(await getPackage(join(name, "package.yaml"))),
-        path: name,
+        ...(await getPackage(dir)),
+        path: dir,
       };
     })
   );
