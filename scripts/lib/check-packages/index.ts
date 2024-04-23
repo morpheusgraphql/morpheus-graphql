@@ -1,10 +1,11 @@
 import path from "path";
-import { Bounds, StackPackage } from "../utils/types";
+import { StackPackage } from "../utils/types";
 import { updateDeps } from "./dependencies";
 import { getConfig, writeConfig, Config } from "../utils/config";
 import { readYAML, writeYAML } from "../utils/file";
 import { genVersion, parseVersion, VersionUpdate } from "../utils/version";
 import { log } from "../utils/utils";
+import { Bounds } from "../utils/rule";
 
 const checkPackage = async (
   config: Config,

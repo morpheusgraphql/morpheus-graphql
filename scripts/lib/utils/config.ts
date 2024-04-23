@@ -1,9 +1,9 @@
 import { readYAML, write } from "./file";
-import { Dict, PkgName, Version, Bounds, Rules } from "./types";
+import { Dict, PkgName, Version } from "./types";
 import { map } from "ramda";
 import { compareVersion } from "./version";
 import { dump } from "js-yaml";
-import { formatRule, parseBound, parseRule } from "./rule";
+import { Bounds, Rules, formatRule, parseBound, parseRule } from "./rule";
 
 const STACK_CONFIG_URL = "./config/stack.yaml";
 

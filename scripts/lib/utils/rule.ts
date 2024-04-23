@@ -1,4 +1,12 @@
-import { Bounds, Rule } from "./types";
+import { PkgName, Version } from "./types";
+
+export type Bounds<R extends boolean = false> = R extends true
+  ? string
+  : [Version, Version];
+
+export type Rule<R extends boolean = false> = true | Bounds<R>;
+
+export type Rules<Raw extends boolean = false> = Record<PkgName, Rule<Raw>>;
 
 const RULE_SEPARATOR = "-";
 
