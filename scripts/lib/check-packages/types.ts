@@ -1,6 +1,6 @@
 export type Version = string;
 
-export type PackageName = string;
+export type PkgName = string;
 
 export type Bounds<R extends boolean = false> = R extends true
   ? string
@@ -8,24 +8,24 @@ export type Bounds<R extends boolean = false> = R extends true
 
 export type Rule<R extends boolean = false> = true | Bounds<R>;
 
-export type Rules<Raw extends boolean = false> = Record<PackageName, Rule<Raw>>;
+export type Rules<Raw extends boolean = false> = Record<PkgName, Rule<Raw>>;
 
 type Dict<T> = Record<string, T>;
 
 export type StackPlan = {
-  deps?: Dict<PackageName>;
+  deps?: Dict<PkgName>;
   resolver: string;
-  include?: PackageName[];
-  skip?: PackageName[];
+  include?: PkgName[];
+  skip?: PkgName[];
 };
 
 export type Config<R extends boolean = false> = {
   version: Version;
   bounds: Bounds<R>;
   rules: Rules<R>;
-  packages: PackageName[];
+  packages: PkgName[];
   plan: Dict<StackPlan>;
-  examples: PackageName[];
+  examples: PkgName[];
 };
 
 export type Table = string[][];
@@ -33,9 +33,9 @@ export type Table = string[][];
 type Src = { "source-dirs": string };
 
 export type StackPackage = {
-  name: PackageName;
+  name: PkgName;
   version: Version;
-  dependencies: PackageName[];
+  dependencies: PkgName[];
   library: Src;
   tests: Dict<Src>;
   executables: Dict<Src>;
