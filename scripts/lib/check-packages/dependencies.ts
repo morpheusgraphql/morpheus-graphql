@@ -47,7 +47,7 @@ export const updateObjectDeps = <T extends object>(config: Config, value: T) =>
     })
   ) as T;
 
-export const updateDeps = <T extends object>(config: Config, value: T): T => {
+const updateDeps = <T extends object>(config: Config, value: T): T => {
   if (!value) return value;
   if (typeof value === "object") {
     if (Array.isArray(value)) {
@@ -59,5 +59,5 @@ export const updateDeps = <T extends object>(config: Config, value: T): T => {
   return value;
 };
 
-export const updatePackage = (config: Config, value: StackPackage) =>
-  updateDeps(config, value);
+export const updatePackage = (config: Config, pkg: StackPackage) =>
+  updateDeps(config, { ...pkg, version: config.version });

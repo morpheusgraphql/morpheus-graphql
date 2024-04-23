@@ -1,5 +1,5 @@
 import path from "path";
-import { updateDeps } from "./dependencies";
+import { updatePackage } from "./dependencies";
 import { getConfig, writeConfig, Config, updateConfig } from "../utils/config";
 import { VersionUpdate } from "../utils/version";
 import { log } from "../utils/utils";
@@ -12,10 +12,7 @@ const checkPackage = (config: Config) => async (name: string) => {
 
   const pkg = await getPackage(dir);
 
-  await writePackage(
-    dir,
-    updateDeps(config, { ...pkg, version: config.version })
-  );
+  await writePackage(dir, updatePackage(config, pkg));
 
   return `  - ${pkg.name}\n`;
 };
