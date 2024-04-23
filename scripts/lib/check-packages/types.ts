@@ -2,13 +2,13 @@ export type VersionNumber = string;
 
 export type PackageName = string;
 
-export type Rule<Raw extends boolean = false> = Raw extends true
-  ? string | true
-  : Bounds | true;
+export type Bounds<R extends boolean = false> = R extends true
+  ? string
+  : Bounds;
+
+export type Rule<R extends boolean = false> = true | Bounds<R>;
 
 export type Rules<Raw extends boolean = false> = Record<PackageName, Rule<Raw>>;
-
-export type Bounds = [VersionNumber, VersionNumber];
 
 export type StackPlan = {
   deps?: Record<string, string>;
@@ -19,7 +19,7 @@ export type StackPlan = {
 
 export type Config<R extends boolean = false> = {
   version: VersionNumber;
-  bounds: R extends true ? string : Bounds;
+  bounds: Bounds<R>;
   rules: Rules<R>;
   packages: PackageName[];
   plan: Record<string, StackPlan>;
