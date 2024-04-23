@@ -23,8 +23,8 @@ export type Config<R extends boolean = false> = {
   version: Version;
   bounds: Bounds<R>;
   rules: Rules<R>;
-  packages: PkgName[];
   plan: Dict<StackPlan>;
+  packages: PkgName[];
   examples: PkgName[];
 };
 
