@@ -1,4 +1,4 @@
-import { formatTable } from "./formating";
+import { formatTable } from "./formatting";
 import { Config } from "../utils/config";
 import { StackPackage } from "../utils/package";
 
