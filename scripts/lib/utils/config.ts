@@ -1,7 +1,12 @@
 import { readYAML, write } from "./file";
 import { Dict, PkgName, Version } from "./types";
 import { map } from "ramda";
-import { compareVersion } from "./version";
+import {
+  VersionUpdate,
+  compareVersion,
+  genVersion,
+  parseVersion,
+} from "./version";
 import { dump } from "js-yaml";
 import { Bounds, Rules, formatRule, parseBound, parseRule } from "./rule";
 
@@ -66,5 +71,26 @@ export const getConfig = async (): Promise<Config> => {
     ...rest,
     bounds: parseBound(bounds),
     rules: map<Rules<true>, Rules>(parseRule, rules),
+  };
+};
+
+export const updateConfig = async ({
+  next,
+  prev,
+  isBreaking,
+}: VersionUpdate): Promise<Config> => {
+  const { version, bounds, ...rest } = await getConfig();
+
+  if (prev !== version) {
+    throw new Error(`invalid versions ${version} and ${prev}`);
+  }
+
+  const upper = genVersion(parseVersion(next), true).join(".");
+  const newBounds: Bounds = isBreaking ? [next, upper] : bounds;
+
+  return {
+    ...rest,
+    bounds: newBounds,
+    version: next,
   };
 };
