@@ -1,5 +1,5 @@
 import { join } from "path";
-import { StackPackage } from "../lib/check-packages/types";
+import { StackPackage } from "../lib/utils/types";
 import { readYAML, writeYAML } from "../lib/utils/file";
 
 type Pkg = { path: string } & StackPackage;

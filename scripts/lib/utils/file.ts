@@ -2,7 +2,7 @@ import { promisify } from "util";
 import { readFile, writeFile } from "fs";
 import { dirname, join } from "path";
 import { dump, load } from "js-yaml";
-import { Config, Rules } from "../check-packages/types";
+import { Config, Rules } from "./types";
 import { map } from "ramda";
 import { compareVersion } from "./version";
 import { formatRule, parseBound, parseRule } from "./rule";

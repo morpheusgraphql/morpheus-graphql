@@ -1,5 +1,5 @@
 import { range, transpose } from "ramda";
-import { Table } from "./types";
+import { Table } from "../utils/types";
 
 const fill = (size: number): string =>
   range(0, size)

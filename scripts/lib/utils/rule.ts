@@ -1,4 +1,4 @@
-import { Bounds, Rule } from "../check-packages/types";
+import { Bounds, Rule } from "./types";
 
 const RULE_SEPARATOR = "-";
 

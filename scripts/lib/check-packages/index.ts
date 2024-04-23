@@ -1,5 +1,5 @@
 import path from "path";
-import { Bounds, Config, StackPackage } from "./types";
+import { Bounds, Config, StackPackage } from "../utils/types";
 import { updateDeps } from "./dependencies";
 import { getConfig, readYAML, writeConfig, writeYAML } from "../utils/file";
 import { genVersion, parseVersion, VersionUpdate } from "../utils/version";
