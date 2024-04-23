@@ -46,19 +46,14 @@ const updateConfig = async ({
 
 export const checkPackages = async (change?: VersionUpdate) => {
   const config = await (change ? updateConfig(change) : getConfig());
+  const { version, examples, packages } = config;
 
-  const examples = await Promise.all(
-    config.examples.map((name) => checkPackage(config, true, name))
-  );
-
-  const libs = await Promise.all(
-    config.packages.map((name) => checkPackage(config, false, name))
-  );
+  const libs = await Promise.all([
+    ...examples.map((name) => checkPackage(config, true, name)),
+    ...packages.map((name) => checkPackage(config, false, name)),
+  ]);
 
   await writeConfig(config);
 
-  log(
-    [` - package.yaml (v${config.version})\n`, ...libs, ...examples].join(""),
-    "success"
-  );
+  log([` - package.yaml (v${version})\n`, ...libs].join(""), "success");
 };
