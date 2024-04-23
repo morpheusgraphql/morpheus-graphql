@@ -7,11 +7,8 @@ import { log } from "../utils/utils";
 import { Bounds } from "../utils/rule";
 import { getPackage } from "../utils/package";
 
-const checkPackage = async (
-  config: Config,
-  isExample: boolean,
-  name: string
-) => {
+const checkPackage = (config: Config) => async (name: string) => {
+  const isExample = !name.startsWith("morpheus-graphql");
   const url = path.join(
     isExample ? path.join("examples", name) : name,
     "package.yaml"
@@ -48,10 +45,9 @@ export const checkPackages = async (change?: VersionUpdate) => {
   const config = await (change ? updateConfig(change) : getConfig());
   const { version, examples, packages } = config;
 
-  const libs = await Promise.all([
-    ...examples.map((name) => checkPackage(config, true, name)),
-    ...packages.map((name) => checkPackage(config, false, name)),
-  ]);
+  const libs = await Promise.all(
+    [...packages, ...examples].map(checkPackage(config))
+  );
 
   await writeConfig(config);
 
