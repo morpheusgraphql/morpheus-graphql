@@ -1,11 +1,11 @@
 import path from "path";
-import { StackPackage } from "../utils/types";
 import { updateDeps } from "./dependencies";
 import { getConfig, writeConfig, Config } from "../utils/config";
-import { readYAML, writeYAML } from "../utils/file";
+import { writeYAML } from "../utils/file";
 import { genVersion, parseVersion, VersionUpdate } from "../utils/version";
 import { log } from "../utils/utils";
 import { Bounds } from "../utils/rule";
+import { getPackage } from "../utils/package";
 
 const checkPackage = async (
   config: Config,
@@ -16,7 +16,7 @@ const checkPackage = async (
     isExample ? path.join("examples", name) : name,
     "package.yaml"
   );
-  const pkg = await readYAML<StackPackage>(url);
+  const pkg = await getPackage(url);
 
   const fixedPackage = updateDeps(config, { ...pkg, version: config.version });
 
