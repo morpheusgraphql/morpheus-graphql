@@ -18,9 +18,7 @@ const checkPackage = async (
   );
   const pkg = await getPackage(url);
 
-  const fixedPackage = updateDeps(config, { ...pkg, version: config.version });
-
-  await writeYAML(url, fixedPackage);
+  await writeYAML(url, updateDeps(config, { ...pkg, version: config.version }));
 
   return `  - ${pkg.name}\n`;
 };

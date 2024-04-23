@@ -1,5 +1,6 @@
 import { formatTable } from "./formating";
 import { Config } from "../utils/config";
+import { StackPackage } from "../utils/package";
 
 const PROJECT_PREFIX = "morpheus-graphql";
 
@@ -36,20 +37,27 @@ const formatDeps = (config: Config) => (dependencies: string[]) =>
       .map(updateDependency(config))
   );
 
-export const updateDeps = (config: Config, value: unknown): unknown => {
+export const updateObjectDeps = <T extends object>(config: Config, value: T) =>
+  Object.fromEntries(
+    Object.entries(value).map(([key, v]) => {
+      if (key === "dependencies") {
+        return [key, formatDeps(config)(v)];
+      }
+      return [key, updateDeps(config, v)];
+    })
+  ) as T;
+
+export const updateDeps = <T extends unknown>(config: Config, value: T): T => {
   if (!value) return value;
   if (typeof value === "object") {
     if (Array.isArray(value)) {
       return value.sort();
     }
-    return Object.fromEntries(
-      Object.entries(value).map(([key, v]) => {
-        if (key === "dependencies") {
-          return [key, formatDeps(config)(v)];
-        }
-        return [key, updateDeps(config, v)];
-      })
-    );
+
+    return updateObjectDeps(config, value);
   }
   return value;
 };
+
+export const updatePackage = (config: Config, value: StackPackage) =>
+  updateDeps(config, value);
