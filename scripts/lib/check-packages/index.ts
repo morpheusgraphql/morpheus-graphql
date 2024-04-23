@@ -58,6 +58,5 @@ export const checkPackages = async (change?: VersionUpdate) => {
   await writeConfig(config);
 
   log(` - package.yaml (v${config.version})\n`, "success");
-  log(examples.join(""), "success");
-  log(libs.join(""), "success");
+  log([...libs, ...examples].join(""), "success");
 };
