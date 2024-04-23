@@ -1,43 +1,43 @@
-export type VersionNumber = string;
+export type Version = string;
 
 export type PackageName = string;
 
 export type Bounds<R extends boolean = false> = R extends true
   ? string
-  : [VersionNumber, VersionNumber];
+  : [Version, Version];
 
 export type Rule<R extends boolean = false> = true | Bounds<R>;
 
 export type Rules<Raw extends boolean = false> = Record<PackageName, Rule<Raw>>;
 
+type Dict<T> = Record<string, T>;
+
 export type StackPlan = {
-  deps?: Record<string, string>;
+  deps?: Dict<PackageName>;
   resolver: string;
-  include?: string[];
-  skip?: string[];
+  include?: PackageName[];
+  skip?: PackageName[];
 };
 
 export type Config<R extends boolean = false> = {
-  version: VersionNumber;
+  version: Version;
   bounds: Bounds<R>;
   rules: Rules<R>;
   packages: PackageName[];
-  plan: Record<string, StackPlan>;
-  examples: string[];
+  plan: Dict<StackPlan>;
+  examples: PackageName[];
 };
 
 export type Table = string[][];
 
-type Src = {
-  "source-dirs": string;
-};
+type Src = { "source-dirs": string };
 
 export type StackPackage = {
-  name: string;
-  version: string;
-  dependencies: string[];
+  name: PackageName;
+  version: Version;
+  dependencies: PackageName[];
   library: Src;
-  tests: Record<string, Src>;
-  executables: Record<string, Src>;
-  benchmarks: Record<string, Src>;
+  tests: Dict<Src>;
+  executables: Dict<Src>;
+  benchmarks: Dict<Src>;
 };

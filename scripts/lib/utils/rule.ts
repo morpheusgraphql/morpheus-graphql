@@ -10,7 +10,7 @@ export const parseBound = (s: Bounds<true>): Bounds => {
 export const parseRule = (s: Rule<true>): Rule =>
   s === true ? true : parseBound(s);
 
-export const formatRule = (rule: Rule) => {
+export const formatRule = (rule: Rule): Rule<true> => {
   if (typeof rule === "boolean") return true;
 
   const [min, max] = rule;
