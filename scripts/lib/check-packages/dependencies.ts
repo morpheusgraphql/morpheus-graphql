@@ -47,7 +47,7 @@ export const updateObjectDeps = <T extends object>(config: Config, value: T) =>
     })
   ) as T;
 
-export const updateDeps = <T extends unknown>(config: Config, value: T): T => {
+export const updateDeps = <T extends object>(config: Config, value: T): T => {
   if (!value) return value;
   if (typeof value === "object") {
     if (Array.isArray(value)) {
