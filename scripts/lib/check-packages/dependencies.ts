@@ -12,15 +12,15 @@ const withRule = (name: string, [min, max]: [string, string]) => [
 ];
 
 const updateDependency =
-  ({ bounds, rules }: Config) =>
+  (config: Config) =>
   ([name, ...args]: string[]): string[] => {
     if (name.startsWith(PROJECT_PREFIX)) {
       if (!args.length) {
-        return [name, ...args];
+        return [name];
       }
-      return withRule(name, bounds);
+      return withRule(name, config.bounds);
     }
-    const rule = rules[name];
+    const rule = config.rule(name);
 
     if (rule) {
       return typeof rule === "boolean" ? [name] : withRule(name, rule);

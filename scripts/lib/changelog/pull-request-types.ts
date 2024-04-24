@@ -5,7 +5,7 @@ const config = {
     server: "morpheus-graphql",
     client: "morpheus-graphql-client",
     core: "morpheus-graphql-core",
-    subsriptions: "morpheus-graphql-subscriptions",
+    subscriptions: "morpheus-graphql-subscriptions",
     tests: "morpheus-graphql-tests",
     app: "morpheus-graphql-app",
   },

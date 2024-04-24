@@ -1,31 +1,21 @@
-import path from "path";
 import { updatePackage } from "./dependencies";
-import { getConfig, writeConfig, Config, updateConfig } from "../utils/config";
+import { Config } from "../utils/config";
 import { VersionUpdate } from "../utils/version";
 import { log } from "../utils/utils";
 import { getPackage, writePackage } from "../utils/package";
 
-const checkPackage = (config: Config) => async (name: string) => {
-  const dir = name.startsWith("morpheus-graphql")
-    ? name
-    : path.join("examples", name);
-
+const checkPackage = (config: Config) => async (dir: string) => {
   const pkg = await getPackage(dir);
-
   await writePackage(dir, updatePackage(config, pkg));
-
   return `  - ${pkg.name}\n`;
 };
 
 export const checkPackages = async (change?: VersionUpdate) => {
-  const config = await (change ? updateConfig(change) : getConfig());
-  const { version, examples, packages } = config;
+  const config = await Config.read(change);
 
-  const libs = await Promise.all(
-    [...packages, ...examples].map(checkPackage(config))
-  );
+  const names = await Promise.all(config.packages().map(checkPackage(config)));
 
-  await writeConfig(config);
+  await config.write();
 
-  log([` - package.yaml (v${version})\n`, ...libs].join(""), "success");
+  log([` - package.yaml (v${config.version})\n`, ...names].join(""), "success");
 };

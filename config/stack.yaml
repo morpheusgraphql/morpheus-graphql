@@ -9,16 +9,16 @@ examples:
   - scotty-freer-simple
   - servant
   - yesod-pubsub
-packages:
-  - morpheus-graphql-tests
-  - morpheus-graphql-core
-  - morpheus-graphql-code-gen-utils
-  - morpheus-graphql-code-gen
-  - morpheus-graphql-app
-  - morpheus-graphql-client
-  - morpheus-graphql-subscriptions
-  - morpheus-graphql-server
-  - morpheus-graphql
+libs:
+  - tests
+  - core
+  - code-gen-utils
+  - code-gen
+  - app
+  - client
+  - subscriptions
+  - server
+  - main
 plan:
   8.2.2:
     resolver: lts-11.10

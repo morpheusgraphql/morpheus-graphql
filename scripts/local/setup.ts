@@ -1,42 +1,26 @@
 import { difference } from "ramda";
 import { checkPackages } from "../lib/check-packages";
 import { writeYAML } from "../lib/utils/file";
-import { getConfig } from "../lib/utils/config";
+import { Config } from "../lib/utils/config";
 import { log } from "../lib/utils/utils";
 import { compareVersion } from "../lib/utils/version";
 import { hie } from "./hie";
 
 const getStack = async (version: string) => {
-  const { plan, examples, packages } = await getConfig();
-  const plans = Object.keys(plan).sort((a, b) => compareVersion(b, a));
-  const current = plan[version];
-
-  if (!current) {
-    throw new Error(
-      `ghc version ${version} is not supported! supported versions are: \n - ${plans.join(
-        "\n - "
-      )}`
-    );
-  }
-
-  const higher = (v: string) => compareVersion(v, version) >= 0;
-
-  const matchingVersions = plans.filter(higher);
+  const config = await Config.read();
+  const plans = config.plans();
+  const { include = [], resolver, skip = [] } = config.plan(version);
+  const versions = plans.filter((v) => compareVersion(v, version) >= 0);
 
   const extraDeps: Record<string, string> = Object.fromEntries(
-    matchingVersions.flatMap((v) => Object.entries(plan[v].deps ?? {}))
+    versions.flatMap((v) => Object.entries(config.plan(v).deps ?? {}))
   );
-
-  const { include = [], skip = [] } = current;
 
   return {
     ...(version === "latest" ? { "allow-newer": true } : {}),
-    resolver: current.resolver,
+    resolver,
     "save-hackage-creds": false,
-    packages: difference(
-      [...examples.map((e) => `examples/${e}`), ...include, ...packages],
-      skip
-    ),
+    packages: difference([...config.packages(), ...include], skip),
     "extra-deps": Object.entries(extraDeps)
       .map(([key, val]) => `${key}-${val}`)
       .sort(),
@@ -46,7 +30,7 @@ const getStack = async (version: string) => {
 const ok = (msg: string) => log(` - ${msg}\n`, "success");
 
 export const setup = async (version: string) => {
-  const { packages, examples } = await getConfig();
+  const config = await Config.read();
 
   log("generating:\n");
 
@@ -54,11 +38,7 @@ export const setup = async (version: string) => {
 
   ok(`stack.yaml (ghc ${version})`);
 
-  hie([
-    ...packages,
-    ...examples.map((key) => `examples/${key}`),
-    "morpheus-graphql-benchmarks",
-  ]);
+  hie([...config.packages(), "morpheus-graphql-benchmarks"]);
 
   ok("hie.yaml");
 

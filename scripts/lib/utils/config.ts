@@ -9,6 +9,7 @@ import {
 } from "./version";
 import { dump } from "js-yaml";
 import { Bounds, Rules, formatRule, parseBound, parseRule } from "./rule";
+import path from "path";
 
 const STACK_CONFIG_URL = "./config/stack.yaml";
 
@@ -19,12 +20,12 @@ export type StackPlan = {
   skip?: PkgName[];
 };
 
-export type Config<R extends boolean = false> = {
+type _Config<R extends boolean = false> = {
   version: Version;
   bounds: Bounds<R>;
   rules: Rules<R>;
   plan: Dict<StackPlan>;
-  packages: PkgName[];
+  libs: PkgName[];
   examples: PkgName[];
 };
 
@@ -44,7 +45,7 @@ const compareConfigKeys = (a: string, b: string) => {
   }
 };
 
-export const writeConfig = ({ rules, bounds, ...config }: Config) => {
+const writeConfig = ({ rules, bounds, ...config }: _Config) => {
   write(
     STACK_CONFIG_URL,
     dump(
@@ -62,8 +63,8 @@ export const writeConfig = ({ rules, bounds, ...config }: Config) => {
   );
 };
 
-export const getConfig = async (): Promise<Config> => {
-  const { rules, bounds, ...rest } = await readYAML<Config<true>>(
+const getConfig = async (): Promise<_Config> => {
+  const { rules, bounds, ...rest } = await readYAML<_Config<true>>(
     STACK_CONFIG_URL
   );
 
@@ -74,11 +75,11 @@ export const getConfig = async (): Promise<Config> => {
   };
 };
 
-export const updateConfig = async ({
+const updateConfig = async ({
   next,
   prev,
   isBreaking,
-}: VersionUpdate): Promise<Config> => {
+}: VersionUpdate): Promise<_Config> => {
   const { version, bounds, ...rest } = await getConfig();
 
   if (prev !== version) {
@@ -94,3 +95,52 @@ export const updateConfig = async ({
     version: next,
   };
 };
+
+const PREFIX = "morpheus-graphql";
+
+const required = <T>(p: T, message: string) => {
+  if (!p) {
+    throw new Error(message);
+  }
+
+  return p;
+};
+
+export class Config {
+  constructor(private config: _Config) {}
+
+  static read = async (change?: VersionUpdate) =>
+    new Config(await (change ? updateConfig(change) : getConfig()));
+
+  packages = () => [
+    ...this.config.libs.map((name) =>
+      name === "main" ? PREFIX : `${PREFIX}-${name}`
+    ),
+    ...this.config.examples.map((name) => path.join("examples", name)),
+  ];
+
+  get version() {
+    return this.config.version;
+  }
+
+  get bounds() {
+    return this.config.bounds;
+  }
+
+  plan = (version: string) =>
+    required(
+      this.config.plan[version],
+      `ghc version ${version} is not supported! supported versions are: \n - ${this.plans().join(
+        "\n - "
+      )}`
+    );
+
+  rule = (name: string) => this.config.rules[name];
+
+  plans = () =>
+    Object.keys(this.config.plan).sort((a, b) => compareVersion(b, a));
+
+  write = () => writeConfig(this.config);
+
+  update = updateConfig;
+}

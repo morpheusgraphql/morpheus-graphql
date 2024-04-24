@@ -5,7 +5,7 @@ import * as core from "@actions/core";
 import { getChangelog } from "./lib/changelog";
 import { checkPackages } from "./lib/check-packages";
 import { Command } from "commander";
-import { getConfig } from "./lib/utils/config";
+import { Config } from "./lib/utils/config";
 
 const cli = new Command();
 
@@ -35,7 +35,7 @@ const draftRelease = async () => {
 };
 
 const describe = async () => {
-  const { version } = await getConfig();
+  const { version } = await Config.read();
   core.setOutput("version", version);
 };
 
