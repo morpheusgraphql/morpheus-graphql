@@ -7,9 +7,7 @@ const formatDeps = (config: Config) => (dependencies: string[]) =>
     dependencies
       .map((d) => d.split(/\s+/))
       .sort(([a], [b]) => a.charCodeAt(0) - b.charCodeAt(0))
-      .map(([name, ...args]: string[]) =>
-        config.checkDependency(name, !args.length)
-      )
+      .map(([name, ...args]) => config.checkDependency(name, !args.length))
   );
 
 export const updateObjectDeps = <T extends object>(config: Config, value: T) =>
