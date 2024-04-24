@@ -8,7 +8,14 @@ import {
   parseVersion,
 } from "./version";
 import { dump } from "js-yaml";
-import { Bounds, Rules, formatRule, parseBound, parseRule } from "./rule";
+import {
+  Bounds,
+  Rules,
+  formatRule,
+  parseBound,
+  parseRule,
+  withRule,
+} from "./rule";
 import path from "path";
 
 const STACK_CONFIG_URL = "./config/stack.yaml";
@@ -123,8 +130,21 @@ export class Config {
     return this.config.version;
   }
 
-  get bounds() {
-    return this.config.bounds;
+  checkDependency(name: string, hasNoBounds: boolean): string[] {
+    if (name.startsWith(PREFIX)) {
+      if (hasNoBounds) {
+        return [name];
+      }
+      return withRule(name, this.config.bounds);
+    }
+
+    const rule = this.rule(name);
+
+    if (rule) {
+      return typeof rule === "boolean" ? [name] : withRule(name, rule);
+    }
+
+    throw new Error(`Unknown package: ${name}`);
   }
 
   plan = (version: string) =>

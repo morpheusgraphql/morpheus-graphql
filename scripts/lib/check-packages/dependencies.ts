@@ -2,39 +2,14 @@ import { formatTable } from "./formatting";
 import { Config } from "../utils/config";
 import { StackPackage } from "../utils/package";
 
-const PROJECT_PREFIX = "morpheus-graphql";
-
-const withRule = (name: string, [min, max]: [string, string]) => [
-  name,
-  ">=",
-  min,
-  ...(max ? ["&&", "<", max] : []),
-];
-
-const updateDependency =
-  (config: Config) =>
-  ([name, ...args]: string[]): string[] => {
-    if (name.startsWith(PROJECT_PREFIX)) {
-      if (!args.length) {
-        return [name];
-      }
-      return withRule(name, config.bounds);
-    }
-    const rule = config.rule(name);
-
-    if (rule) {
-      return typeof rule === "boolean" ? [name] : withRule(name, rule);
-    }
-
-    throw new Error(`Unknown package: ${name}`);
-  };
-
 const formatDeps = (config: Config) => (dependencies: string[]) =>
   formatTable(
     dependencies
       .map((d) => d.split(/\s+/))
       .sort(([a], [b]) => a.charCodeAt(0) - b.charCodeAt(0))
-      .map(updateDependency(config))
+      .map(([name, ...args]: string[]) =>
+        config.checkDependency(name, !args.length)
+      )
   );
 
 export const updateObjectDeps = <T extends object>(config: Config, value: T) =>

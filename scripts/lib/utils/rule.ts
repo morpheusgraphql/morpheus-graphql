@@ -25,3 +25,10 @@ export const formatRule = (rule: Rule): Rule<true> => {
 
   return max ? `${min}${RULE_SEPARATOR}${max}` : min;
 };
+
+export const withRule = (name: string, [min, max]: [string, string]) => [
+  name,
+  ">=",
+  min,
+  ...(max ? ["&&", "<", max] : []),
+];
