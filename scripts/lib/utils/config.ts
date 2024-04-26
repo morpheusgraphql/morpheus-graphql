@@ -118,12 +118,14 @@ export class Config {
   plans = () =>
     Object.keys(this.config.plan).sort((a, b) => compareVersion(b, a));
 
-  write = ({ rules, bounds, ...config }: _Config) =>
-    write(
+  write = () => {
+    const { rules, bounds, ...fields } = this.config;
+
+    return write(
       PATH,
       dump(
         {
-          ...config,
+          ...fields,
           bounds: formatRule(bounds),
           rules: map<Rules, Rules<true>>(formatRule, rules),
         },
@@ -134,8 +136,9 @@ export class Config {
         }
       )
     );
+  };
 
-  update = ({ next, prev, isBreaking }: VersionUpdate): _Config => {
+  update = ({ next, prev, isBreaking }: VersionUpdate): Config => {
     const { version, bounds, ...rest } = this.config;
 
     if (prev !== version) {
@@ -145,10 +148,10 @@ export class Config {
     const upper = genVersion(parseVersion(next), true).join(".");
     const newBounds: Bounds = isBreaking ? [next, upper] : bounds;
 
-    return {
+    return new Config({
       ...rest,
       bounds: newBounds,
       version: next,
-    };
+    });
   };
 }
