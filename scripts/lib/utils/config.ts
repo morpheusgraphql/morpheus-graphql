@@ -18,7 +18,7 @@ import {
 } from "./rule";
 import path from "path";
 
-const STACK_CONFIG_URL = "./config/stack.yaml";
+const PATH = "./config/stack.yaml";
 
 export type StackPlan = {
   deps?: Dict<PkgName>;
@@ -52,57 +52,6 @@ const compareConfigKeys = (a: string, b: string) => {
   }
 };
 
-const writeConfig = ({ rules, bounds, ...config }: _Config) => {
-  write(
-    STACK_CONFIG_URL,
-    dump(
-      {
-        ...config,
-        bounds: formatRule(bounds),
-        rules: map<Rules, Rules<true>>(formatRule, rules),
-      },
-      {
-        sortKeys: compareConfigKeys,
-        lineWidth: 240,
-        condenseFlow: true,
-      }
-    )
-  );
-};
-
-const getConfig = async (): Promise<_Config> => {
-  const { rules, bounds, ...rest } = await readYAML<_Config<true>>(
-    STACK_CONFIG_URL
-  );
-
-  return {
-    ...rest,
-    bounds: parseBound(bounds),
-    rules: map<Rules<true>, Rules>(parseRule, rules),
-  };
-};
-
-const updateConfig = async ({
-  next,
-  prev,
-  isBreaking,
-}: VersionUpdate): Promise<_Config> => {
-  const { version, bounds, ...rest } = await getConfig();
-
-  if (prev !== version) {
-    throw new Error(`invalid versions ${version} and ${prev}`);
-  }
-
-  const upper = genVersion(parseVersion(next), true).join(".");
-  const newBounds: Bounds = isBreaking ? [next, upper] : bounds;
-
-  return {
-    ...rest,
-    bounds: newBounds,
-    version: next,
-  };
-};
-
 const PREFIX = "morpheus-graphql";
 
 const required = <T>(p: T, message: string) => {
@@ -116,8 +65,17 @@ const required = <T>(p: T, message: string) => {
 export class Config {
   constructor(private config: _Config) {}
 
-  static read = async (change?: VersionUpdate) =>
-    new Config(await (change ? updateConfig(change) : getConfig()));
+  static read = async (change?: VersionUpdate) => {
+    const { rules, bounds, ...rest } = await readYAML<_Config<true>>(PATH);
+
+    const config = new Config({
+      ...rest,
+      bounds: parseBound(bounds),
+      rules: map<Rules<true>, Rules>(parseRule, rules),
+    });
+
+    return change ? config.update(change) : config;
+  };
 
   packages = () => [
     ...this.config.libs.map((name) =>
@@ -160,7 +118,37 @@ export class Config {
   plans = () =>
     Object.keys(this.config.plan).sort((a, b) => compareVersion(b, a));
 
-  write = () => writeConfig(this.config);
+  write = ({ rules, bounds, ...config }: _Config) =>
+    write(
+      PATH,
+      dump(
+        {
+          ...config,
+          bounds: formatRule(bounds),
+          rules: map<Rules, Rules<true>>(formatRule, rules),
+        },
+        {
+          sortKeys: compareConfigKeys,
+          lineWidth: 240,
+          condenseFlow: true,
+        }
+      )
+    );
 
-  update = updateConfig;
+  update = ({ next, prev, isBreaking }: VersionUpdate): _Config => {
+    const { version, bounds, ...rest } = this.config;
+
+    if (prev !== version) {
+      throw new Error(`invalid versions ${version} and ${prev}`);
+    }
+
+    const upper = genVersion(parseVersion(next), true).join(".");
+    const newBounds: Bounds = isBreaking ? [next, upper] : bounds;
+
+    return {
+      ...rest,
+      bounds: newBounds,
+      version: next,
+    };
+  };
 }
