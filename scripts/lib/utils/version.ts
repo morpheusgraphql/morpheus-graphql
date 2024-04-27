@@ -35,17 +35,17 @@ const parse = (versionTag: string): VersionTuple => {
   return [major, minor, revision];
 };
 
-export class ParsedVersion {
+export class Version {
   private tuple: VersionTuple;
 
   constructor(v: string | VersionTuple) {
     this.tuple = typeof v === "string" ? parse(v) : v;
   }
 
-  up(isBreaking: boolean) {
+  next(isBreaking: boolean) {
     const [major, minor, revision] = this.tuple;
 
-    return new ParsedVersion(
+    return new Version(
       isBreaking ? [major, minor + 1, 0] : [major, minor, revision + 1]
     );
   }

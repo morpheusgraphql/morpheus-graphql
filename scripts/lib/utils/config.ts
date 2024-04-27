@@ -1,7 +1,7 @@
 import { readYAML, write } from "./file";
 import { Dict, PkgName } from "./types";
 import { map } from "ramda";
-import { VersionUpdate, ParsedVersion, StrVersion } from "./version";
+import { VersionUpdate, Version, StrVersion } from "./version";
 import { dump } from "js-yaml";
 import {
   Bounds,
@@ -33,7 +33,7 @@ type _Config<R extends boolean = false> = {
 
 const compareConfigKeys = (a: string, b: string) => {
   try {
-    return ParsedVersion.compare(a, b);
+    return Version.compare(a, b);
   } catch {
     const x = a.toLowerCase();
     const y = b.toLowerCase();
@@ -111,7 +111,7 @@ export class Config {
   rule = (name: string) => this.config.rules[name];
 
   plans = () =>
-    Object.keys(this.config.plan).sort((a, b) => ParsedVersion.compare(b, a));
+    Object.keys(this.config.plan).sort((a, b) => Version.compare(b, a));
 
   write = () => {
     const { rules, bounds, ...fields } = this.config;
@@ -141,7 +141,7 @@ export class Config {
     }
 
     const newBounds: Bounds = isBreaking
-      ? [next, new ParsedVersion(next).up(true).format()]
+      ? [next, new Version(next).next(true).format()]
       : bounds;
 
     return new Config({
