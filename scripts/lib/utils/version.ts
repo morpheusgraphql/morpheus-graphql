@@ -6,12 +6,12 @@ export type VersionUpdate = {
 
 export type StrVersion = string;
 
-type Version = [number, number, number];
+type VersionTuple = [number, number, number];
 
-const toVersion = (x: string): Version =>
+const toVersion = (x: string): VersionTuple =>
   x === "latest" ? [Infinity, 0, 0] : parse(x);
 
-export const compare = ([x, ...xs]: number[], [y, ...ys]: number[]): number => {
+const compare = ([x, ...xs]: number[], [y, ...ys]: number[]): number => {
   if (x === undefined && y == undefined) {
     return 0;
   }
@@ -23,7 +23,7 @@ export const compare = ([x, ...xs]: number[], [y, ...ys]: number[]): number => {
   return x - y;
 };
 
-const parse = (versionTag: string): Version => {
+const parse = (versionTag: string): VersionTuple => {
   const vs = versionTag.split(".").map((v) => parseInt(v, 10));
 
   if (vs.length !== 3 || vs.find(isNaN) !== undefined) {
@@ -35,24 +35,22 @@ const parse = (versionTag: string): Version => {
   return [major, minor, revision];
 };
 
-const genVersion = (
-  [major, minor, revision]: Version,
-  isBreaking: boolean
-): Version =>
-  isBreaking ? [major, minor + 1, 0] : [major, minor, revision + 1];
-
 export class ParsedVersion {
-  private v: Version;
+  private tuple: VersionTuple;
 
-  constructor(v: string | Version) {
-    this.v = typeof v === "string" ? parse(v) : v;
+  constructor(v: string | VersionTuple) {
+    this.tuple = typeof v === "string" ? parse(v) : v;
   }
 
   up(isBreaking: boolean) {
-    return new ParsedVersion(genVersion(this.v, isBreaking));
+    const [major, minor, revision] = this.tuple;
+
+    return new ParsedVersion(
+      isBreaking ? [major, minor + 1, 0] : [major, minor, revision + 1]
+    );
   }
 
-  format = () => this.v.join(".");
+  format = () => this.tuple.join(".");
 
   static compare = (x: string, y: string) =>
     compare(toVersion(x), toVersion(y));
