@@ -1,8 +1,9 @@
-import { PkgName, Version } from "./types";
+import { PkgName } from "./types";
+import { StrVersion } from "./version";
 
 export type Bounds<R extends boolean = false> = R extends true
   ? string
-  : [Version, Version];
+  : [StrVersion, StrVersion];
 
 export type Rule<R extends boolean = false> = true | Bounds<R>;
 

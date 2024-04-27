@@ -1,7 +1,7 @@
 import { getPullRequests } from "./get-pull-requests";
 import { renderChangelog } from "./render-changelog";
 import { commitsAfter, getDate, lastTag } from "../utils/git";
-import { formatVersion, genVersion, parseVersion } from "../utils/version";
+import { ParsedVersion } from "../utils/version";
 import { propEq } from "ramda";
 
 export const getChangelog = async () => {
@@ -10,7 +10,7 @@ export const getChangelog = async () => {
   const commits = commitsAfter(version);
   const pullRequests = await getPullRequests(commits);
   const isBreaking = Boolean(pullRequests.find(propEq("type", "breaking")));
-  const newTag = formatVersion(genVersion(parseVersion(version), isBreaking));
+  const newTag = new ParsedVersion(version).up(isBreaking).format();
 
   return {
     body: renderChangelog(newTag, date, pullRequests),

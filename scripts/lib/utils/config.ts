@@ -1,12 +1,11 @@
 import { readYAML, write } from "./file";
-import { Dict, PkgName, Version } from "./types";
+import { Dict, PkgName } from "./types";
 import { map } from "ramda";
 import {
   VersionUpdate,
   compareVersion,
-  formatVersion,
-  genVersion,
-  parseVersion,
+  ParsedVersion,
+  StrVersion,
 } from "./version";
 import { dump } from "js-yaml";
 import {
@@ -29,7 +28,7 @@ export type StackPlan = {
 };
 
 type _Config<R extends boolean = false> = {
-  version: Version;
+  version: StrVersion;
   bounds: Bounds<R>;
   rules: Rules<R>;
   plan: Dict<StackPlan>;
@@ -146,8 +145,9 @@ export class Config {
       throw new Error(`invalid versions ${version} and ${prev}`);
     }
 
-    const upper = formatVersion(genVersion(parseVersion(next), true));
-    const newBounds: Bounds = isBreaking ? [next, upper] : bounds;
+    const newBounds: Bounds = isBreaking
+      ? [next, new ParsedVersion(next).up(true).format()]
+      : bounds;
 
     return new Config({
       ...rest,

@@ -4,6 +4,8 @@ export type VersionUpdate = {
   isBreaking: boolean;
 };
 
+export type StrVersion = string;
+
 type Version = [number, number, number];
 
 export const compareVersion = (x: string, y: string) =>
@@ -45,6 +47,16 @@ const genVersion = (
 ): Version =>
   isBreaking ? [major, minor + 1, 0] : [major, minor, revision + 1];
 
-export { parseVersion, genVersion };
+export class ParsedVersion {
+  private v: Version;
 
-export const formatVersion = (v: Version) => v.join(".");
+  constructor(v: string | Version) {
+    this.v = typeof v === "string" ? parseVersion(v) : v;
+  }
+
+  up(isBreaking: boolean) {
+    return new ParsedVersion(genVersion(this.v, isBreaking));
+  }
+
+  format = () => this.v.join(".");
+}

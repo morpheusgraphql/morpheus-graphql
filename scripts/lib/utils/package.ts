@@ -1,12 +1,13 @@
 import { readYAML, writeYAML } from "./file";
-import { Dict, PkgName, Version } from "./types";
+import { Dict, PkgName } from "./types";
 import path from "path";
+import { StrVersion } from "./version";
 
 type Src = { "source-dirs": string };
 
 export type StackPackage = {
   name: PkgName;
-  version: Version;
+  version: StrVersion;
   dependencies: PkgName[];
   library: Src;
   tests: Dict<Src>;
