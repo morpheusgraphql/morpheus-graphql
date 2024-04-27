@@ -39,7 +39,12 @@ const parseVersion = (versionTag: string): Version => {
   return [major, minor, revision];
 };
 
-const genVersion = ([major, minor, revision]: Version, isBreaking: boolean) =>
+const genVersion = (
+  [major, minor, revision]: Version,
+  isBreaking: boolean
+): Version =>
   isBreaking ? [major, minor + 1, 0] : [major, minor, revision + 1];
 
 export { parseVersion, genVersion };
+
+export const formatVersion = (v: Version) => v.join(".");

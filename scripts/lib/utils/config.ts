@@ -4,6 +4,7 @@ import { map } from "ramda";
 import {
   VersionUpdate,
   compareVersion,
+  formatVersion,
   genVersion,
   parseVersion,
 } from "./version";
@@ -145,7 +146,7 @@ export class Config {
       throw new Error(`invalid versions ${version} and ${prev}`);
     }
 
-    const upper = genVersion(parseVersion(next), true).join(".");
+    const upper = formatVersion(genVersion(parseVersion(next), true));
     const newBounds: Bounds = isBreaking ? [next, upper] : bounds;
 
     return new Config({
