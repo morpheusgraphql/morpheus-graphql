@@ -1,12 +1,7 @@
 import { readYAML, write } from "./file";
 import { Dict, PkgName } from "./types";
 import { map } from "ramda";
-import {
-  VersionUpdate,
-  compareVersion,
-  ParsedVersion,
-  StrVersion,
-} from "./version";
+import { VersionUpdate, ParsedVersion, StrVersion } from "./version";
 import { dump } from "js-yaml";
 import {
   Bounds,
@@ -38,7 +33,7 @@ type _Config<R extends boolean = false> = {
 
 const compareConfigKeys = (a: string, b: string) => {
   try {
-    return compareVersion(a, b);
+    return ParsedVersion.compare(a, b);
   } catch {
     const x = a.toLowerCase();
     const y = b.toLowerCase();
@@ -116,7 +111,7 @@ export class Config {
   rule = (name: string) => this.config.rules[name];
 
   plans = () =>
-    Object.keys(this.config.plan).sort((a, b) => compareVersion(b, a));
+    Object.keys(this.config.plan).sort((a, b) => ParsedVersion.compare(b, a));
 
   write = () => {
     const { rules, bounds, ...fields } = this.config;

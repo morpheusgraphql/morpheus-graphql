@@ -8,28 +8,22 @@ export type StrVersion = string;
 
 type Version = [number, number, number];
 
-export const compareVersion = (x: string, y: string) =>
-  compareSeries(parseX(x), parseX(y));
+const toVersion = (x: string): Version =>
+  x === "latest" ? [Infinity, 0, 0] : parse(x);
 
-const parseX = (x: string): Version =>
-  x === "latest" ? [Infinity, 0, 0] : parseVersion(x);
-
-export const compareSeries = (
-  [x, ...xs]: number[],
-  [y, ...ys]: number[]
-): number => {
+export const compare = ([x, ...xs]: number[], [y, ...ys]: number[]): number => {
   if (x === undefined && y == undefined) {
     return 0;
   }
 
   if (x === y) {
-    return compareSeries(xs, ys);
+    return compare(xs, ys);
   }
 
   return x - y;
 };
 
-const parseVersion = (versionTag: string): Version => {
+const parse = (versionTag: string): Version => {
   const vs = versionTag.split(".").map((v) => parseInt(v, 10));
 
   if (vs.length !== 3 || vs.find(isNaN) !== undefined) {
@@ -51,7 +45,7 @@ export class ParsedVersion {
   private v: Version;
 
   constructor(v: string | Version) {
-    this.v = typeof v === "string" ? parseVersion(v) : v;
+    this.v = typeof v === "string" ? parse(v) : v;
   }
 
   up(isBreaking: boolean) {
@@ -59,4 +53,7 @@ export class ParsedVersion {
   }
 
   format = () => this.v.join(".");
+
+  static compare = (x: string, y: string) =>
+    compare(toVersion(x), toVersion(y));
 }
