@@ -33,7 +33,7 @@ const parseVersion = (versionTag: string): Version => {
   const vs = versionTag.split(".").map((v) => parseInt(v, 10));
 
   if (vs.length !== 3 || vs.find(isNaN) !== undefined) {
-    throw new Error(`Invalid verion : ${versionTag}`);
+    throw new Error(`invalid version : ${versionTag}`);
   }
 
   const [major, minor, revision] = vs;
