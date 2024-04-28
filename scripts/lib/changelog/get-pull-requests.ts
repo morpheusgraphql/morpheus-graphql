@@ -54,17 +54,6 @@ const batchPRInfo = (xs: unknown[]) =>
   getGithub<{ labels: { nodes: { name: string }[] } }>(
     (number) => `
     pr_${number}: pullRequest(number: ${number}) {
-        number
-        title
-        url
-        body
-        author {
-            login
-            url
-            ... on User {
-            name
-            }
-        }
         labels(first: 10) {
             nodes {
               name
@@ -73,12 +62,7 @@ const batchPRInfo = (xs: unknown[]) =>
     }
     `
   )(xs).then((prs) =>
-    prs.map(
-      ({ labels, ...rest }): GithubPR => ({
-        ...rest,
-        labels: pluck("name", labels.nodes),
-      })
-    )
+    prs.map(({ labels }): GithubPR => ({ labels: pluck("name", labels.nodes) }))
   );
 
 const getAssociatedPR = ({
