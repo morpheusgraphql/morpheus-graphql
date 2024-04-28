@@ -4,7 +4,7 @@ import { Maybe } from "../utils/types";
 import { batchMap, getPRNumber } from "../utils/utils";
 import { parseLabel, PR_TYPE, SCOPE } from "./pull-request-types";
 
-type AsoccRP = {
+type AssocRP = {
   number: number;
   repository: { nameWithOwner: string };
 };
@@ -12,7 +12,7 @@ type AsoccRP = {
 type Commit = {
   oid: string;
   message: string;
-  associatedPullRequests: { nodes: AsoccRP[] };
+  associatedPullRequests: { nodes: AssocRP[] };
 };
 
 type Author = {
