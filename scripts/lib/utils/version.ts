@@ -43,15 +43,15 @@ export class Version {
     this.tuple = typeof v === "string" ? parse(v) : v;
   }
 
-  next(isBreaking: boolean) {
+  public next = (isBreaking: boolean) => {
     const [major, minor, revision] = this.tuple;
 
     return new Version(
       isBreaking ? [major, minor + 1, 0] : [major, minor, revision + 1]
     );
-  }
+  };
 
-  format = () => this.tuple.join(SEPARATOR);
+  public format = () => this.tuple.join(SEPARATOR);
 
   static compare = (x: string, y: string) =>
     compare(toVersion(x), toVersion(y));
