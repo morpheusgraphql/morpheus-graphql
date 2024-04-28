@@ -10,25 +10,11 @@ type AssocRP = {
 };
 
 type Commit = {
-  oid: string;
   message: string;
   associatedPullRequests: { nodes: AssocRP[] };
 };
 
-type Author = {
-  login: string;
-  url: string;
-  name: string;
-};
-
-type GithubPR = {
-  number: number;
-  title: string;
-  url: string;
-  author: Author;
-  labels: string[];
-  body: string;
-};
+type GithubPR = { labels: string[] };
 
 const getGithub =
   <O>(f: (_: unknown) => string) =>
@@ -65,11 +51,7 @@ const batchCommitInfo = getGithub<Commit>(
 );
 
 const batchPRInfo = (xs: unknown[]) =>
-  getGithub<
-    Omit<GithubPR, "labels"> & {
-      labels: { nodes: { name: string }[] };
-    }
-  >(
+  getGithub<{ labels: { nodes: { name: string }[] } }>(
     (number) => `
     pr_${number}: pullRequest(number: ${number}) {
         number
@@ -127,7 +109,7 @@ const getPullRequests = (commits: string[]) =>
     )
   );
 
-type PullRequest = Omit<GithubPR, "labels"> & {
+type PullRequest = {
   type: PR_TYPE;
   scopes: SCOPE[];
 };
