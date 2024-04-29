@@ -72,11 +72,8 @@ const batchPRInfo = (xs: unknown[]) =>
         url
         body
         author {
-            login
-            url
-            ... on User {
-            name
-            }
+          login
+          url
         }
         labels(first: 10) {
             nodes {
