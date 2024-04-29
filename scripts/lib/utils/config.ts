@@ -1,8 +1,7 @@
-import { readYAML, write } from "./file";
+import { readYAML, writeYAML } from "./file";
 import { Dict, PkgName } from "./types";
 import { map } from "ramda";
 import { VersionUpdate, Version, StrVersion } from "./version";
-import { dump } from "js-yaml";
 import {
   Bounds,
   Rules,
@@ -115,20 +114,18 @@ export class Config {
   write = () => {
     const { rules, bounds, ...fields } = this.config;
 
-    return write(
+    return writeYAML(
       PATH,
-      dump(
-        {
-          ...fields,
-          bounds: formatRule(bounds),
-          rules: map<Rules, Rules<true>>(formatRule, rules),
-        },
-        {
-          sortKeys: compareConfigKeys,
-          lineWidth: 240,
-          condenseFlow: true,
-        }
-      )
+      {
+        ...fields,
+        bounds: formatRule(bounds),
+        rules: map<Rules, Rules<true>>(formatRule, rules),
+      },
+      {
+        sortKeys: compareConfigKeys,
+        lineWidth: 240,
+        condenseFlow: true,
+      }
     );
   };
 
