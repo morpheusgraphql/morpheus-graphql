@@ -10,11 +10,7 @@ const formatDeps = <T extends string[]>(config: Config, deps: T) =>
       .map(([name, ...args]) => config.checkDependency(name, !args.length))
   ) as T;
 
-const updateDeps = <T extends object>(
-  config: Config,
-  value: T,
-  isDeps?: boolean
-): T => {
+const updateDeps = <T>(config: Config, value: T, isDeps?: boolean): T => {
   if (!value) return value;
   if (typeof value === "object") {
     if (Array.isArray(value)) {
