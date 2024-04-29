@@ -38,7 +38,7 @@ export const setup = async (version: string) => {
 
   Stack.write(await getStack(version));
 
-  ok(`stack.yaml (ghc ${version})`);
+  ok(`${defs.STACK} (ghc ${version})`);
 
   hie([...config.packages(), "morpheus-graphql-benchmarks"]);
 
