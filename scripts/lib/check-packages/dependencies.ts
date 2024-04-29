@@ -10,7 +10,7 @@ const formatDeps = <T extends string[]>(config: Config, deps: T) =>
       .map(([name, ...args]) => config.checkDependency(name, !args.length))
   ) as T;
 
-const updateDeps = <T>(config: Config, value: T, isDeps?: boolean): T => {
+const update = <T>(config: Config, value: T, isDeps?: boolean): T => {
   if (!value) return value;
   if (typeof value === "object") {
     if (Array.isArray(value)) {
@@ -18,13 +18,14 @@ const updateDeps = <T>(config: Config, value: T, isDeps?: boolean): T => {
     }
 
     Object.fromEntries(
-      Object.entries(value).map(([k, v]) => {
-        return [k, updateDeps(config, v, k === "dependencies")];
-      })
+      Object.entries(value).map(([k, v]) => [
+        k,
+        update(config, v, k === "dependencies"),
+      ])
     ) as T;
   }
   return value;
 };
 
 export const updatePackage = (config: Config, pkg: StackPackage) =>
-  updateDeps(config, { ...pkg, version: config.version });
+  update(config, { ...pkg, version: config.version });
