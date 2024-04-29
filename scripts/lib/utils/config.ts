@@ -74,7 +74,7 @@ export class Config {
 
   packages = () => [
     ...this.config.libs.map((name) =>
-      name === "main" ? PREFIX : `${PREFIX}-${name}`
+      name === "." ? PREFIX : `${PREFIX}-${name}`
     ),
     ...this.config.examples.map((name) => path.join("examples", name)),
   ];

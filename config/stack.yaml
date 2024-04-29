@@ -18,7 +18,7 @@ libs:
   - client
   - subscriptions
   - server
-  - main
+  - .
 plan:
   8.2.2:
     resolver: lts-11.10

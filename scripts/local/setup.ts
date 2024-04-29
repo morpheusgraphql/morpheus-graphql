@@ -3,14 +3,14 @@ import { checkPackages } from "../lib/check-packages";
 import { writeYAML } from "../lib/utils/file";
 import { Config } from "../lib/utils/config";
 import { log } from "../lib/utils/utils";
-import { compareVersion } from "../lib/utils/version";
+import { Version } from "../lib/utils/version";
 import { hie } from "./hie";
 
 const getStack = async (version: string) => {
   const config = await Config.read();
   const plans = config.plans();
   const { include = [], resolver, skip = [] } = config.plan(version);
-  const versions = plans.filter((v) => compareVersion(v, version) >= 0);
+  const versions = plans.filter((v) => Version.compare(v, version) >= 0);
 
   const extraDeps: Record<string, string> = Object.fromEntries(
     versions.flatMap((v) => Object.entries(config.plan(v).deps ?? {}))
