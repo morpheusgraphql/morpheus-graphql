@@ -1,6 +1,6 @@
 import { join } from "path";
 import { writeYAML } from "../lib/utils/file";
-import { getPackage, StackPackage } from "../lib/utils/package";
+import { Package, StackPackage } from "../lib/utils/package";
 
 type Pkg = { path: string } & StackPackage;
 
@@ -35,7 +35,7 @@ export const hie = async (sources: string[]) => {
   const packages = await Promise.all(
     sources.map(async (dir) => {
       return {
-        ...(await getPackage(dir)),
+        ...(await Package.read(dir)),
         path: dir,
       };
     })

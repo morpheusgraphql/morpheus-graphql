@@ -1,4 +1,4 @@
-import { readYAML, writeYAML } from "./file";
+import { Yaml } from "./file";
 import { Dict, PkgName } from "./types";
 import path from "path";
 import { StrVersion } from "./version";
@@ -15,10 +15,6 @@ export type StackPackage = {
   benchmarks: Dict<Src>;
 };
 
-const FILE = "package.yaml";
-
-export const getPackage = (dir: string) =>
-  readYAML<StackPackage>(path.join(dir, FILE));
-
-export const writePackage = (dir: string, pkg: StackPackage) =>
-  writeYAML(path.join(dir, FILE), pkg);
+export const Package = new Yaml<StackPackage>((dir) =>
+  path.join(dir, "package.yaml")
+);

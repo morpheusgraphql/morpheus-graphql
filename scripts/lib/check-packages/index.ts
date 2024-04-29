@@ -2,11 +2,11 @@ import { updatePackage } from "./dependencies";
 import { Config } from "../utils/config";
 import { VersionUpdate } from "../utils/version";
 import { log } from "../utils/utils";
-import { getPackage, writePackage } from "../utils/package";
+import { Package } from "../utils/package";
 
 const checkPackage = (config: Config) => async (dir: string) => {
-  const pkg = await getPackage(dir);
-  await writePackage(dir, updatePackage(config, pkg));
+  const pkg = await Package.read(dir);
+  await Package.write(dir, updatePackage(config, pkg));
   return `  - ${pkg.name}\n`;
 };
 
