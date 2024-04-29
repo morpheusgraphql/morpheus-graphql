@@ -1,3 +1,5 @@
+name: morpheus-graphql
+version: 0.27.3
 bounds: 0.27.0-0.28.0
 examples:
   - client
@@ -19,7 +21,6 @@ libs:
   - subscriptions
   - server
   - .
-name: morpheus-graphql
 plan:
   8.2.2:
     resolver: lts-11.10
@@ -116,4 +117,3 @@ rules:
   yaml: 0.8.32-1.0.0
   yesod: true
   yesod-core: true
-version: 0.27.3

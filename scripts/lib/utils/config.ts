@@ -32,12 +32,21 @@ type _Config<R extends boolean = false> = {
   examples: PkgName[];
 };
 
+const ORDER = ["name", "version", "bounds"].reverse();
+
 const compareConfigKeys = (a: string, b: string) => {
   try {
     return Version.compare(a, b);
   } catch {
     const x = a.toLowerCase();
     const y = b.toLowerCase();
+
+    const order = ORDER.indexOf(y) - ORDER.indexOf(x);
+
+    if (order !== 0) {
+      return Math.sign(order);
+    }
+
     if (x < y) {
       return -1;
     }
