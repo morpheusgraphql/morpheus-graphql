@@ -65,13 +65,13 @@ const required = <T>(p: T, message: string) => {
   return p;
 };
 
-const ConfigYaml = new Yaml<Configuration<true>>();
+const yaml = new Yaml<Configuration<true>>();
 
 export class Config {
   constructor(private config: Configuration) {}
 
   static read = async (change?: VersionUpdate) => {
-    const { rules, bounds, ...rest } = await ConfigYaml.read(PATH);
+    const { rules, bounds, ...rest } = await yaml.read(PATH);
 
     const config = new Config({
       ...rest,
@@ -126,7 +126,7 @@ export class Config {
   write = () => {
     const { rules, bounds, ...fields } = this.config;
 
-    return ConfigYaml.write(
+    return yaml.write(
       PATH,
       {
         ...fields,
