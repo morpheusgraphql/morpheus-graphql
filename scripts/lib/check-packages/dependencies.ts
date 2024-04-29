@@ -10,16 +10,6 @@ const formatDeps = (config: Config) => (dependencies: string[]) =>
       .map(([name, ...args]) => config.checkDependency(name, !args.length))
   );
 
-export const updateObjectDeps = <T extends object>(config: Config, value: T) =>
-  Object.fromEntries(
-    Object.entries(value).map(([k, v]) => {
-      return [
-        k,
-        k === "dependencies" ? formatDeps(config)(v) : updateDeps(config, v),
-      ];
-    })
-  ) as T;
-
 const updateDeps = <T extends object>(config: Config, value: T): T => {
   if (!value) return value;
   if (typeof value === "object") {
@@ -27,7 +17,14 @@ const updateDeps = <T extends object>(config: Config, value: T): T => {
       return value.sort();
     }
 
-    return updateObjectDeps(config, value);
+    Object.fromEntries(
+      Object.entries(value).map(([k, v]) => {
+        return [
+          k,
+          k === "dependencies" ? formatDeps(config)(v) : updateDeps(config, v),
+        ];
+      })
+    ) as T;
   }
   return value;
 };
