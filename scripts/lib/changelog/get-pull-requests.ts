@@ -15,16 +15,11 @@ type Commit = {
   associatedPullRequests: { nodes: AssocRP[] };
 };
 
-type Author = {
-  login: string;
-  url: string;
-  name: string;
-};
+type Author = { login: string; url: string };
 
 type GithubPR = {
   number: number;
   title: string;
-  url: string;
   author: Author;
   labels: string[];
   body: string;
