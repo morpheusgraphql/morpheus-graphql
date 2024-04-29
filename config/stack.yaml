@@ -19,6 +19,7 @@ libs:
   - subscriptions
   - server
   - .
+name: morpheus-graphql
 plan:
   8.2.2:
     resolver: lts-11.10

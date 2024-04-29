@@ -23,6 +23,7 @@ export type StackPlan = {
 };
 
 type _Config<R extends boolean = false> = {
+  name: string;
   version: StrVersion;
   bounds: Bounds<R>;
   rules: Rules<R>;
@@ -46,8 +47,6 @@ const compareConfigKeys = (a: string, b: string) => {
     return 0;
   }
 };
-
-const PREFIX = "morpheus-graphql";
 
 const required = <T>(p: T, message: string) => {
   if (!p) {
@@ -74,7 +73,7 @@ export class Config {
 
   packages = () => [
     ...this.config.libs.map((name) =>
-      name === "." ? PREFIX : `${PREFIX}-${name}`
+      name === "." ? this.config.name : `${this.config.name}-${name}`
     ),
     ...this.config.examples.map((name) => path.join("examples", name)),
   ];
@@ -84,7 +83,7 @@ export class Config {
   }
 
   checkDependency(name: string, hasNoBounds: boolean): string[] {
-    if (name.startsWith(PREFIX)) {
+    if (name.startsWith(this.config.name)) {
       if (hasNoBounds) {
         return [name];
       }
