@@ -13,8 +13,6 @@ import {
 } from "./rule";
 import { join } from "path";
 
-const PATH = "./config/stack.yaml";
-
 export type StackPlan = {
   deps?: Dict<PkgName>;
   resolver: string;
@@ -65,13 +63,13 @@ const required = <T>(p: T, message: string) => {
   return p;
 };
 
-const yaml = new Yaml<Configuration<true>>();
+const file = new Yaml<Configuration<true>, []>(() => "./config/stack.yaml");
 
 export class Config {
   constructor(private config: Configuration) {}
 
   static read = async (change?: VersionUpdate) => {
-    const { rules, bounds, ...rest } = await yaml.read(PATH);
+    const { rules, bounds, ...rest } = await file.read();
 
     const config = new Config({
       ...rest,
@@ -126,8 +124,7 @@ export class Config {
   write = () => {
     const { rules, bounds, ...fields } = this.config;
 
-    return yaml.write(
-      PATH,
+    return file.write(
       {
         ...fields,
         bounds: formatBounds(bounds),

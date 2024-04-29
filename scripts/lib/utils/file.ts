@@ -14,8 +14,9 @@ export const write = (url: string, file: string) =>
 export const writeYAML = <T>(url: string, obj: T, ops?: DumpOptions) =>
   write(url, dump(obj, ops));
 
-export class Yaml<T> {
-  constructor(private f: (x: string) => string = (x) => x) {}
-  read = (p: string) => read(this.f(p)).then(load) as Promise<T>;
-  write = (p: string, o: T, ops?: DumpOptions) => writeYAML(this.f(p), o, ops);
+export class Yaml<T, A extends string[] = [string]> {
+  constructor(private file: (...x: A) => string) {}
+  read = (...p: A) => read(this.file(...p)).then(load) as Promise<T>;
+  write = (o: T, ops?: DumpOptions, ...p: A) =>
+    writeYAML(this.file(...p), o, ops);
 }
