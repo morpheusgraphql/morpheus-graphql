@@ -2,9 +2,9 @@ import { formatTable } from "./formatting";
 import { Config } from "../utils/config";
 import { StackPackage } from "../utils/package";
 
-const formatDeps = <T extends string[]>(config: Config, dependencies: T) =>
+const formatDeps = <T extends string[]>(config: Config, deps: T) =>
   formatTable(
-    dependencies
+    deps
       .map((d) => d.split(/\s+/))
       .sort(([a], [b]) => a.charCodeAt(0) - b.charCodeAt(0))
       .map(([name, ...args]) => config.checkDependency(name, !args.length))
