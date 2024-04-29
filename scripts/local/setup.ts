@@ -1,10 +1,13 @@
 import { difference } from "ramda";
 import { checkPackages } from "../lib/check-packages";
-import { writeYAML } from "../lib/utils/file";
+import { Yaml } from "../lib/utils/file";
 import { Config } from "../lib/utils/config";
 import { log } from "../lib/utils/utils";
 import { Version } from "../lib/utils/version";
 import { hie } from "./hie";
+import { defs } from "../lib/utils/defs";
+
+const Stack = new Yaml<unknown, []>(() => defs.STACK);
 
 const getStack = async (version: string) => {
   const config = await Config.read();
@@ -33,13 +36,13 @@ export const setup = async (version: string) => {
 
   log("generating:\n");
 
-  writeYAML("stack.yaml", await getStack(version));
+  Stack.write(await getStack(version));
 
   ok(`stack.yaml (ghc ${version})`);
 
   hie([...config.packages(), "morpheus-graphql-benchmarks"]);
 
-  ok("hie.yaml");
+  ok(defs.HIE);
 
   checkPackages();
 };

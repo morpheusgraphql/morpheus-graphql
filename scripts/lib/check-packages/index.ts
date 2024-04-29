@@ -3,6 +3,7 @@ import { Config } from "../utils/config";
 import { VersionUpdate } from "../utils/version";
 import { log } from "../utils/utils";
 import { Package } from "../utils/package";
+import { defs } from "../utils/defs";
 
 const checkPackage = (config: Config) => async (dir: string) => {
   const pkg = await Package.read(dir);
@@ -17,5 +18,8 @@ export const checkPackages = async (change?: VersionUpdate) => {
 
   await config.write();
 
-  log([` - package.yaml (v${config.version})\n`, ...names].join(""), "success");
+  log(
+    [` - ${defs.PACKAGE} (v${config.version})\n`, ...names].join(""),
+    "success"
+  );
 };

@@ -2,6 +2,7 @@ import { Yaml } from "./file";
 import { Dict, PkgName } from "./types";
 import path from "path";
 import { StrVersion } from "./version";
+import { defs } from "./defs";
 
 type Src = { "source-dirs": string };
 
@@ -16,5 +17,5 @@ export type StackPackage = {
 };
 
 export const Package = new Yaml<StackPackage>((dir) =>
-  path.join(dir, "package.yaml")
+  path.join(dir, defs.PACKAGE)
 );

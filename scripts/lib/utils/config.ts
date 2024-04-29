@@ -12,6 +12,7 @@ import {
   withRule,
 } from "./rule";
 import { join } from "path";
+import { defs } from "./defs";
 
 export type StackPlan = {
   deps?: Dict<PkgName>;
@@ -63,7 +64,7 @@ const required = <T>(p: T, message: string) => {
   return p;
 };
 
-const file = new Yaml<Configuration<true>, []>(() => "./config/stack.yaml");
+const file = new Yaml<Configuration<true>, []>(() => defs.CONFIG);
 
 export class Config {
   constructor(private config: Configuration) {}
