@@ -11,7 +11,7 @@ import {
   parseRule,
   withRule,
 } from "./rule";
-import path from "path";
+import { join } from "path";
 
 const PATH = "./config/stack.yaml";
 
@@ -74,10 +74,10 @@ export class Config {
   };
 
   packages = () => [
-    ...this.config.libs.map((name) =>
-      name === "." ? this.config.name : `${this.config.name}-${name}`
+    ...this.config.libs.map((p) =>
+      p === "." ? this.config.name : `${this.config.name}-${p}`
     ),
-    ...this.config.examples.map((name) => path.join("examples", name)),
+    ...this.config.examples.map((p) => join("examples", p)),
   ];
 
   get version() {
