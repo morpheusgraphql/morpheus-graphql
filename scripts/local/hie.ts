@@ -1,8 +1,10 @@
 import { join } from "path";
-import { writeYAML } from "../lib/utils/file";
+import { Yaml } from "../lib/utils/file";
 import { Package, StackPackage } from "../lib/utils/package";
 
 type Pkg = { path: string } & StackPackage;
+
+const Hie = new Yaml<unknown, []>(() => "hie.yaml");
 
 const getPath = (path: string, src: StackPackage["library"]) =>
   "./" + join(path, src["source-dirs"]);
@@ -41,7 +43,7 @@ export const hie = async (sources: string[]) => {
     })
   );
 
-  writeYAML("hie.yaml", {
+  Hie.write({
     cradle: {
       stack: {
         stackYaml: "./stack.yaml",
