@@ -14,7 +14,4 @@ export const write = (url: string, file: string) =>
 export const readYAML = <T>(name: string) =>
   read(name).then(load) as Promise<T>;
 
-export const readJSON = <T>(name: string) =>
-  read(name).then((x) => JSON.parse(x)) as Promise<T>;
-
 export const writeYAML = <T>(url: string, obj: T) => write(url, dump(obj));
