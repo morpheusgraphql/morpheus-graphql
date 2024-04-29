@@ -18,7 +18,7 @@ export const writeYAML = <T>(url: string, obj: T, ops?: DumpOptions) =>
   write(url, dump(obj, ops));
 
 export class Yaml<T> {
-  constructor(private f: (x: string) => string) {}
+  constructor(private f: (x: string) => string = (x) => x) {}
   read = (p: string) => readYAML<T>(this.f(p));
   write = (p: string, o: T, ops?: DumpOptions) => writeYAML(this.f(p), o, ops);
 }

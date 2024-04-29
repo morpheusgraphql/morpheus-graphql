@@ -1,10 +1,11 @@
-import { readYAML, writeYAML } from "./file";
+import { Yaml } from "./file";
 import { Dict, PkgName } from "./types";
 import { map } from "ramda";
 import { VersionUpdate, Version, StrVersion } from "./version";
 import {
   Bounds,
   Rules,
+  formatBounds,
   formatRule,
   parseBound,
   parseRule,
@@ -55,11 +56,13 @@ const required = <T>(p: T, message: string) => {
   return p;
 };
 
+const ConfigYaml = new Yaml<_Config<true>>();
+
 export class Config {
   constructor(private config: _Config) {}
 
   static read = async (change?: VersionUpdate) => {
-    const { rules, bounds, ...rest } = await readYAML<_Config<true>>(PATH);
+    const { rules, bounds, ...rest } = await ConfigYaml.read(PATH);
 
     const config = new Config({
       ...rest,
@@ -114,11 +117,11 @@ export class Config {
   write = () => {
     const { rules, bounds, ...fields } = this.config;
 
-    return writeYAML(
+    return ConfigYaml.write(
       PATH,
       {
         ...fields,
-        bounds: formatRule(bounds),
+        bounds: formatBounds(bounds),
         rules: map<Rules, Rules<true>>(formatRule, rules),
       },
       {

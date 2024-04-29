@@ -19,13 +19,14 @@ export const parseBound = (s: Bounds<true>): Bounds => {
 export const parseRule = (s: Rule<true>): Rule =>
   s === true ? true : parseBound(s);
 
-export const formatRule = (rule: Rule): Rule<true> => {
-  if (typeof rule === "boolean") return true;
-
-  const [min, max] = rule;
+export const formatBounds = (s: Bounds): Bounds<true> => {
+  const [min, max] = s;
 
   return max ? `${min}${RULE_SEPARATOR}${max}` : min;
 };
+
+export const formatRule = (rule: Rule): Rule<true> =>
+  typeof rule === "boolean" ? true : formatBounds(rule);
 
 export const withRule = (name: string, [min, max]: [string, string]) => [
   name,
