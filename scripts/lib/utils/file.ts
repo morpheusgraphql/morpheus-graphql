@@ -1,17 +1,15 @@
-import { promisify } from "util";
-import { readFile, writeFile } from "fs";
+import { readFile, writeFile } from "fs/promises";
 import { dirname, join } from "path";
 import { dump, load } from "js-yaml";
 
-const ROOT_DIR = join(dirname(require.main?.filename ?? ""), "../");
+const ROOT = join(dirname(require.main?.filename ?? ""), "../");
 
-const absolutePath = (p: string) => join(ROOT_DIR, p);
+const absolute = (p: string) => join(ROOT, p);
 
-export const read = (url: string) =>
-  promisify(readFile)(absolutePath(url), "utf8");
+export const read = (url: string) => readFile(absolute(url), "utf8");
 
 export const write = (url: string, file: string) =>
-  promisify(writeFile)(absolutePath(url), file);
+  writeFile(absolute(url), file, "utf8");
 
 export const readYAML = <T>(name: string) =>
   read(name).then(load) as Promise<T>;
