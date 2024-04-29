@@ -2,7 +2,7 @@ import { formatTable } from "./formatting";
 import { Config } from "../utils/config";
 import { StackPackage } from "../utils/package";
 
-const formatDeps = <T extends string[]>(config: Config, deps: T) =>
+const format = <T extends string[]>(config: Config, deps: T) =>
   formatTable(
     deps
       .map((d) => d.split(/\s+/))
@@ -14,9 +14,7 @@ const update = <T>(config: Config, value: T, k?: string): T => {
   if (!value) return value;
   if (typeof value === "object") {
     if (Array.isArray(value)) {
-      return k === "dependencies"
-        ? formatDeps(config, value.sort())
-        : value.sort();
+      return k === "dependencies" ? format(config, value.sort()) : value.sort();
     }
 
     Object.fromEntries(
