@@ -8,9 +8,11 @@ import { hie } from "./hie";
 
 const getStack = async (version: string) => {
   const config = await Config.read();
-  const plans = config.plans();
+
   const { include = [], resolver, skip = [] } = config.plan(version);
-  const versions = plans.filter((v) => Version.compare(v, version) >= 0);
+  const versions = config
+    .plans()
+    .filter((v) => Version.compare(v, version) >= 0);
 
   const extraDeps: Record<string, string> = Object.fromEntries(
     versions.flatMap((v) => Object.entries(config.plan(v).deps ?? {}))
