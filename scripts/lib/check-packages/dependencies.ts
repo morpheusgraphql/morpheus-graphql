@@ -12,11 +12,11 @@ const formatDeps = (config: Config) => (dependencies: string[]) =>
 
 export const updateObjectDeps = <T extends object>(config: Config, value: T) =>
   Object.fromEntries(
-    Object.entries(value).map(([key, v]) => {
-      if (key === "dependencies") {
-        return [key, formatDeps(config)(v)];
-      }
-      return [key, updateDeps(config, v)];
+    Object.entries(value).map(([k, v]) => {
+      return [
+        k,
+        k === "dependencies" ? formatDeps(config)(v) : updateDeps(config, v),
+      ];
     })
   ) as T;
 
