@@ -10,11 +10,11 @@ description: examples of GraphQL APIs
 dependencies:
   - base                  >=  4.7.0    &&  <  5.0.0
   - containers            >=  0.4.2.1  &&  <  0.7.0
-  - haxl
   - hashable              >=  1.0.0    &&  <  2.0.0
-  - mtl                   >=  2.0.0    &&  <  3.0.0
+  - haxl
   - morpheus-graphql
   - morpheus-graphql-app
+  - mtl                   >=  2.0.0    &&  <  3.0.0
   - scotty                >=  0.6.0
   - text                  >=  1.2.3    &&  <  3.0.0
 executables:

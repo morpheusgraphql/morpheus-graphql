@@ -14,18 +14,18 @@ dependencies:
   - containers                      >=  0.4.2.1   &&  <  0.7.0
   - extra
   - http-types
-  - mtl                             >=  2.0.0     &&  <  3.0.0
   - morpheus-graphql
-  - morpheus-graphql-core
   - morpheus-graphql-app
+  - morpheus-graphql-core
   - morpheus-graphql-subscriptions
+  - mtl                             >=  2.0.0     &&  <  3.0.0
   - scotty                          >=  0.6.0
   - stm
   - text                            >=  1.2.3     &&  <  3.0.0
   - transformers                    >=  0.3.0     &&  <  0.7.0
-  - websockets                      >=  0.12.6.0  &&  <  1.0.0
   - wai-websockets                  >=  1.0.0
   - warp                            >=  1.0.0
+  - websockets                      >=  0.12.6.0  &&  <  1.0.0
 executables:
   scotty-server:
     main: Main.hs

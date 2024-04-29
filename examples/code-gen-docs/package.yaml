@@ -12,8 +12,8 @@ dependencies:
   - bytestring               >=  0.10.4   &&  <  0.15.0
   - containers               >=  0.4.2.1  &&  <  0.7.0
   - morpheus-graphql
-  - morpheus-graphql-server
   - morpheus-graphql-client
+  - morpheus-graphql-server
   - scotty                   >=  0.6.0
   - text                     >=  1.2.3    &&  <  3.0.0
 executables:
