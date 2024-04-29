@@ -34,7 +34,7 @@ type Configuration<R extends boolean = false> = {
 
 const ORDER = ["name", "version", "bounds"].reverse();
 
-const compareConfigKeys = (a: string, b: string) => {
+const sortKeys = (a: string, b: string) => {
   try {
     return Version.compare(a, b);
   } catch {
@@ -133,11 +133,7 @@ export class Config {
         bounds: formatBounds(bounds),
         rules: map<Rules, Rules<true>>(formatRule, rules),
       },
-      {
-        sortKeys: compareConfigKeys,
-        lineWidth: 240,
-        condenseFlow: true,
-      }
+      { sortKeys, lineWidth: 240, condenseFlow: true }
     );
   };
 
