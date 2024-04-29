@@ -8,24 +8,21 @@ import { hie } from "./hie";
 
 const getStack = async (version: string) => {
   const config = await Config.read();
-
   const { include = [], resolver, skip = [] } = config.plan(version);
-  const versions = config
+  const extra = config
     .plans()
-    .filter((v) => Version.compare(v, version) >= 0);
-
-  const extraDeps: Record<string, string> = Object.fromEntries(
-    versions.flatMap((v) => Object.entries(config.plan(v).deps ?? {}))
-  );
+    .filter((v) => Version.compare(v, version) >= 0)
+    .flatMap((v) => Object.entries(config.plan(v).deps ?? {}))
+    .map(([key, val]) => `${key}-${val}`)
+    .sort();
+  const packages = difference([...config.packages(), ...include], skip);
 
   return {
     ...(version === "latest" ? { "allow-newer": true } : {}),
     resolver,
     "save-hackage-creds": false,
-    packages: difference([...config.packages(), ...include], skip),
-    "extra-deps": Object.entries(extraDeps)
-      .map(([key, val]) => `${key}-${val}`)
-      .sort(),
+    packages,
+    "extra-deps": extra,
   };
 };
 
