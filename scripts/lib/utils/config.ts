@@ -22,7 +22,7 @@ export type StackPlan = {
   skip?: PkgName[];
 };
 
-type _Config<R extends boolean = false> = {
+type Configuration<R extends boolean = false> = {
   name: string;
   version: StrVersion;
   bounds: Bounds<R>;
@@ -65,10 +65,10 @@ const required = <T>(p: T, message: string) => {
   return p;
 };
 
-const ConfigYaml = new Yaml<_Config<true>>();
+const ConfigYaml = new Yaml<Configuration<true>>();
 
 export class Config {
-  constructor(private config: _Config) {}
+  constructor(private config: Configuration) {}
 
   static read = async (change?: VersionUpdate) => {
     const { rules, bounds, ...rest } = await ConfigYaml.read(PATH);

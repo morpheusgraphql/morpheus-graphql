@@ -11,14 +11,11 @@ export const read = (url: string) => readFile(absolute(url), "utf8");
 export const write = (url: string, file: string) =>
   writeFile(absolute(url), file, "utf8");
 
-export const readYAML = <T>(name: string) =>
-  read(name).then(load) as Promise<T>;
-
 export const writeYAML = <T>(url: string, obj: T, ops?: DumpOptions) =>
   write(url, dump(obj, ops));
 
 export class Yaml<T> {
   constructor(private f: (x: string) => string = (x) => x) {}
-  read = (p: string) => readYAML<T>(this.f(p));
+  read = (p: string) => read(this.f(p)).then(load) as Promise<T>;
   write = (p: string, o: T, ops?: DumpOptions) => writeYAML(this.f(p), o, ops);
 }
