@@ -32,7 +32,7 @@ type Configuration<R extends boolean = false> = {
   version: StrVersion;
   bounds: Bounds<R>;
   dependencies: Rules<R>;
-  plan: Dict<StackPlan>;
+  builds: Dict<StackPlan>;
   packages: [Pkg];
 };
 
@@ -120,7 +120,7 @@ export class Config {
 
   plan = (version: string) =>
     required(
-      this.config.plan[version],
+      this.config.builds[version],
       `ghc version ${version} is not supported! supported versions are: \n - ${this.plans().join(
         "\n - "
       )}`
@@ -129,7 +129,7 @@ export class Config {
   rule = (name: string) => this.config.dependencies[name];
 
   plans = () =>
-    Object.keys(this.config.plan).sort((a, b) => Version.compare(b, a));
+    Object.keys(this.config.builds).sort((a, b) => Version.compare(b, a));
 
   write = () => {
     const { dependencies, bounds, ...fields } = this.config;
