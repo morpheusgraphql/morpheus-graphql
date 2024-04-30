@@ -15,7 +15,7 @@ import { join } from "path";
 import { defs } from "./defs";
 
 export type StackPlan = {
-  deps?: Dict<PkgName>;
+  extra?: Dict<PkgName>;
   resolver: string;
   include?: PkgName[];
   skip?: PkgName[];

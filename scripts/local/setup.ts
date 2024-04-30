@@ -15,7 +15,7 @@ const getStack = async (version: string) => {
   const extra = config
     .plans()
     .filter((v) => Version.compare(v, version) >= 0)
-    .flatMap((v) => Object.entries(config.plan(v).deps ?? {}))
+    .flatMap((v) => Object.entries(config.plan(v).extra ?? {}))
     .map(([key, val]) => `${key}-${val}`)
     .sort();
   const packages = difference([...config.packages(), ...include], skip);
