@@ -77,7 +77,7 @@ const withPrefix = (prefix: string, s: string) =>
 export class Config {
   constructor(private config: Configuration) {}
 
-  static read = async (change?: VersionUpdate) => {
+  static load = async (change?: VersionUpdate) => {
     const { dependencies, bounds, ...rest } = await file.read();
 
     const config = new Config({

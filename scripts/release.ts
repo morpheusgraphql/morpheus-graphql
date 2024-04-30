@@ -35,7 +35,7 @@ const draftRelease = async () => {
 };
 
 const describe = async () => {
-  const { version } = await Config.read();
+  const { version } = await Config.load();
   core.setOutput("version", version);
 };
 

@@ -12,7 +12,7 @@ const checkPackage = (config: Config) => async (dir: string) => {
 };
 
 export const checkPackages = async (change?: VersionUpdate) => {
-  const config = await Config.read(change);
+  const config = await Config.load(change);
 
   const names = await Promise.all(config.packages().map(checkPackage(config)));
 

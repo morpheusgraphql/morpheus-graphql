@@ -10,7 +10,7 @@ import { defs } from "../lib/utils/defs";
 const Stack = new Yaml<unknown, []>(() => defs.STACK);
 
 const getStack = async (version: string) => {
-  const config = await Config.read();
+  const config = await Config.load();
   const { include = [], resolver, skip = [] } = config.plan(version);
   const extra = config
     .plans()
@@ -32,7 +32,7 @@ const getStack = async (version: string) => {
 const ok = (msg: string) => log(` - ${msg}\n`, "success");
 
 export const setup = async (version: string) => {
-  const config = await Config.read();
+  const config = await Config.load();
 
   log("generating:\n");
 
