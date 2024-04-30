@@ -29,7 +29,7 @@ library
   exposed-modules:
       Config
   other-modules:
-      Coinfig.Types
+      Config.Types
       Paths_stack_config
   hs-source-dirs:
       src
