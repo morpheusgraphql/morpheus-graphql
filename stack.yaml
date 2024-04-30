@@ -18,6 +18,7 @@ packages:
   - morpheus-graphql-subscriptions
   - morpheus-graphql-server
   - morpheus-graphql
+  - stack-config
 extra-deps:
   - fraxl-0.3.0.0
   - haxl-2.4.0.0
