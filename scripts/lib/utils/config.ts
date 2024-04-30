@@ -25,7 +25,7 @@ type Configuration<R extends boolean = false> = {
   name: string;
   version: StrVersion;
   bounds: Bounds<R>;
-  rules: Rules<R>;
+  dependencies: Rules<R>;
   plan: Dict<StackPlan>;
   libs: PkgName[];
   examples: PkgName[];
@@ -70,12 +70,12 @@ export class Config {
   constructor(private config: Configuration) {}
 
   static read = async (change?: VersionUpdate) => {
-    const { rules, bounds, ...rest } = await file.read();
+    const { dependencies, bounds, ...rest } = await file.read();
 
     const config = new Config({
       ...rest,
       bounds: parseBound(bounds),
-      rules: map<Rules<true>, Rules>(parseRule, rules),
+      dependencies: map<Rules<true>, Rules>(parseRule, dependencies),
     });
 
     return change ? config.update(change) : config;
@@ -117,19 +117,19 @@ export class Config {
       )}`
     );
 
-  rule = (name: string) => this.config.rules[name];
+  rule = (name: string) => this.config.dependencies[name];
 
   plans = () =>
     Object.keys(this.config.plan).sort((a, b) => Version.compare(b, a));
 
   write = () => {
-    const { rules, bounds, ...fields } = this.config;
+    const { dependencies, bounds, ...fields } = this.config;
 
     return file.write(
       {
         ...fields,
         bounds: formatBounds(bounds),
-        rules: map<Rules, Rules<true>>(formatRule, rules),
+        dependencies: map<Rules, Rules<true>>(formatRule, dependencies),
       },
       { sortKeys, lineWidth: 240, condenseFlow: true }
     );
