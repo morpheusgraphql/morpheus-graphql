@@ -2,6 +2,8 @@ cradle:
   stack:
     stackYaml: ./stack.yaml
     components:
+      - path: ./examples/yesod-pubsub/src
+        component: morpheus-graphql-examples-yesod-pubsub:lib
       - path: ./morpheus-graphql-tests/src
         component: morpheus-graphql-tests:lib
       - path: ./morpheus-graphql-core/src
@@ -20,8 +22,8 @@ cradle:
         component: morpheus-graphql-server:lib
       - path: ./morpheus-graphql/src
         component: morpheus-graphql:lib
-      - path: ./examples/yesod-pubsub/src
-        component: morpheus-graphql-examples-yesod-pubsub:lib
+      - path: ./examples/yesod-pubsub/test
+        component: morpheus-graphql-examples-yesod-pubsub:test:yesod-gql-example-test
       - path: ./morpheus-graphql-core/test
         component: morpheus-graphql-core:test:morpheus-graphql-core-test
       - path: ./morpheus-graphql-app/test
@@ -32,10 +34,6 @@ cradle:
         component: morpheus-graphql-server:test:morpheus-graphql-server-test
       - path: ./morpheus-graphql/test
         component: morpheus-graphql:test:morpheus-graphql-test
-      - path: ./examples/yesod-pubsub/test
-        component: morpheus-graphql-examples-yesod-pubsub:test:yesod-gql-example-test
-      - path: ./morpheus-graphql-code-gen/app
-        component: morpheus-graphql-code-gen:exe:morpheus
       - path: ./examples/client/src
         component: morpheus-graphql-examples-client:exe:morpheus-client-example
       - path: ./examples/code-gen/src
@@ -54,5 +52,7 @@ cradle:
         component: morpheus-graphql-examples-servant:exe:servant-server
       - path: ./examples/yesod-pubsub/app
         component: morpheus-graphql-examples-yesod-pubsub:exe:yesod-gql-example
+      - path: ./morpheus-graphql-code-gen/app
+        component: morpheus-graphql-code-gen:exe:morpheus
       - path: ./morpheus-graphql-benchmarks/src
         component: morpheus-graphql-benchmarks:bench:morpheus-graphql-bench

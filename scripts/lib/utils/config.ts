@@ -21,14 +21,19 @@ export type StackPlan = {
   skip?: PkgName[];
 };
 
+type Pkg = {
+  include: string[];
+  dir: string;
+  prefix?: string;
+};
+
 type Configuration<R extends boolean = false> = {
   name: string;
   version: StrVersion;
   bounds: Bounds<R>;
   dependencies: Rules<R>;
   plan: Dict<StackPlan>;
-  libs: PkgName[];
-  examples: PkgName[];
+  packages: [Pkg];
 };
 
 const ORDER = ["name", "version", "bounds"].reverse();
@@ -66,6 +71,9 @@ const required = <T>(p: T, message: string) => {
 
 const file = new Yaml<Configuration<true>, []>(() => defs.CONFIG);
 
+const withPrefix = (prefix: string, s: string) =>
+  s === "." ? prefix : `${prefix}-${s}`;
+
 export class Config {
   constructor(private config: Configuration) {}
 
@@ -81,12 +89,13 @@ export class Config {
     return change ? config.update(change) : config;
   };
 
-  packages = () => [
-    ...this.config.libs.map((p) =>
-      p === "." ? this.config.name : `${this.config.name}-${p}`
-    ),
-    ...this.config.examples.map((p) => join("examples", p)),
-  ];
+  packages = () => {
+    const { packages } = this.config;
+
+    return packages.flatMap(({ dir, include, prefix }) =>
+      include.map((s) => join(dir, prefix?.length ? withPrefix(prefix, s) : s))
+    );
+  };
 
   get version() {
     return this.config.version;
