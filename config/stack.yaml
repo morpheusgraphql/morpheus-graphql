@@ -1,6 +1,55 @@
 name: morpheus-graphql
 version: 0.27.3
 bounds: 0.27.0-0.28.0
+dependencies:
+  aeson: 1.4.4-3.0.0
+  attoparsec-aeson: 2.1.0.0-3.0.0
+  base: 4.7.0-5.0.0
+  blaze-html: true
+  bytestring: 0.10.4-0.15.0
+  containers: 0.4.2.1-0.7.0
+  directory: 1.0.0-2.0.0
+  extra: true
+  file-embed: 0.0.10-1.0.0
+  filepath: 1.1.0-1.5.0
+  fraxl: true
+  freer-simple: true
+  Glob: 0.7.0-1.0.0
+  hashable: 1.0.0-2.0.0
+  haxl: true
+  http-media: true
+  http-types: true
+  megaparsec: 7.0.0-10.0.0
+  modern-uri: 0.1.0.0-1.0.0
+  mtl: 2.0.0-3.0.0
+  optparse-applicative: 0.12.0-0.20.0
+  prettyprinter: 1.7.0-2.0.0
+  relude: 0.3.0-2.0.0
+  req: 3.0.0-4.0.0
+  scientific: 0.3.6.2-0.4.0
+  scotty: 0.6.0
+  servant-server: true
+  shakespeare: true
+  stm: true
+  tasty: 0.1.0-1.5.0
+  tasty-hunit: 0.1.0-1.0.0
+  template-haskell: 2.0.0-3.0.0
+  text: 1.2.3-3.0.0
+  th-lift-instances: 0.1.1-0.3.0
+  transformers: 0.3.0-0.7.0
+  unliftio-core: 0.0.1-0.4.0
+  unordered-containers: 0.2.8-0.3.0
+  uuid: 1.0.0-1.4.0
+  vector: 0.12.0.1-0.15.0
+  wai: 1.0.0
+  wai-cors: true
+  wai-websockets: 1.0.0
+  warp: 1.0.0
+  websockets: 0.12.6.0-1.0.0
+  wuss: 1.0.0-3.0.0
+  yaml: 0.8.32-1.0.0
+  yesod: true
+  yesod-core: true
 examples:
   - client
   - code-gen
@@ -68,52 +117,3 @@ plan:
     skip:
       - examples/scotty-fraxl
       - examples/scotty-freer-simple
-dependencies:
-  aeson: 1.4.4-3.0.0
-  attoparsec-aeson: 2.1.0.0-3.0.0
-  base: 4.7.0-5.0.0
-  blaze-html: true
-  bytestring: 0.10.4-0.15.0
-  containers: 0.4.2.1-0.7.0
-  directory: 1.0.0-2.0.0
-  extra: true
-  file-embed: 0.0.10-1.0.0
-  filepath: 1.1.0-1.5.0
-  fraxl: true
-  freer-simple: true
-  Glob: 0.7.0-1.0.0
-  hashable: 1.0.0-2.0.0
-  haxl: true
-  http-media: true
-  http-types: true
-  megaparsec: 7.0.0-10.0.0
-  modern-uri: 0.1.0.0-1.0.0
-  mtl: 2.0.0-3.0.0
-  optparse-applicative: 0.12.0-0.20.0
-  prettyprinter: 1.7.0-2.0.0
-  relude: 0.3.0-2.0.0
-  req: 3.0.0-4.0.0
-  scientific: 0.3.6.2-0.4.0
-  scotty: 0.6.0
-  servant-server: true
-  shakespeare: true
-  stm: true
-  tasty: 0.1.0-1.5.0
-  tasty-hunit: 0.1.0-1.0.0
-  template-haskell: 2.0.0-3.0.0
-  text: 1.2.3-3.0.0
-  th-lift-instances: 0.1.1-0.3.0
-  transformers: 0.3.0-0.7.0
-  unliftio-core: 0.0.1-0.4.0
-  unordered-containers: 0.2.8-0.3.0
-  uuid: 1.0.0-1.4.0
-  vector: 0.12.0.1-0.15.0
-  wai: 1.0.0
-  wai-cors: true
-  wai-websockets: 1.0.0
-  warp: 1.0.0
-  websockets: 0.12.6.0-1.0.0
-  wuss: 1.0.0-3.0.0
-  yaml: 0.8.32-1.0.0
-  yesod: true
-  yesod-core: true
