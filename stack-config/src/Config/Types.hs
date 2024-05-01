@@ -1,24 +1,35 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | GQL Types
 module Config.Types
   ( Config (..),
-    Libs (..),
+    PkgGroup (..),
   )
 where
 
+import Data.Aeson (FromJSON)
 import Relude hiding (Undefined)
 
-data Libs = Libs
+data PkgGroup = PkgGroup
   { dir :: Text,
     include :: Text
   }
-  deriving (Show)
+  deriving
+    ( Generic,
+      FromJSON,
+      Show
+    )
 
 data Config = Config
   { name :: Text,
     version :: Text,
     bounds :: Text,
-    packages :: [Text]
+    packages :: [PkgGroup]
   }
-  deriving (Show)
+  deriving
+    ( Generic,
+      FromJSON,
+      Show
+    )
