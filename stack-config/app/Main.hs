@@ -42,21 +42,11 @@ runApp App {..}
   | otherwise = runOperation operations
   where
     runOperation About = putStrLn $ "Morpheus GraphQL CLI, version " <> currentVersion
-    runOperation (Setup source) = processAll (scan . Context) source
+    runOperation (Setup source) = do
+      putStrLn "something"
+      config <- readConfig ""
+      putStrLn (show config)
 
 data Context = Context {configDir :: FilePath}
 
 type CommandResult = Bool
-
-processAll :: (Traversable t, MonadIO m) => (a1 -> m Bool) -> t a1 -> m b
-processAll f xs = do
-  res <- traverse f xs
-  if and res
-    then putStr "\x1b[32mOK\x1b[0m\n" >> exitSuccess
-    else exitWith (ExitFailure 1)
-
-scan :: Context -> IO CommandResult
-scan ctx = do
-  config <- readConfig (configDir ctx)
-  putStrLn (show config)
-  pure (traceShow config True)

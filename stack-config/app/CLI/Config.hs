@@ -29,5 +29,5 @@ import System.FilePath.Posix
 
 readConfig :: FilePath -> IO Config
 readConfig path = do
-  file <- L.readFile (path </> "./config/stack.yaml")
+  file <- L.readFile "./config/stack.yaml"
   decodeThrow file

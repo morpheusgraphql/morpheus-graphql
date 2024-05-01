@@ -14,7 +14,20 @@ import Relude hiding (Undefined)
 
 data PkgGroup = PkgGroup
   { dir :: Text,
-    include :: Text
+    include :: [Text],
+    prefix :: Maybe Text
+  }
+  deriving
+    ( Generic,
+      FromJSON,
+      Show
+    )
+
+data Build = Build
+  { resolver :: Text,
+    extra :: Map Text Text,
+    -- include :: [Text],
+    skip :: Maybe [Text]
   }
   deriving
     ( Generic,
@@ -26,7 +39,8 @@ data Config = Config
   { name :: Text,
     version :: Text,
     bounds :: Text,
-    packages :: [PkgGroup]
+    packages :: [PkgGroup],
+    builds :: Map Text Build
   }
   deriving
     ( Generic,
