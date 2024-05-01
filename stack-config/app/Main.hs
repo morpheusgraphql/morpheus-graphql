@@ -45,13 +45,9 @@ runApp App {..}
   | otherwise = runOperation operations
   where
     runOperation About = putStrLn $ "Morpheus GraphQL CLI, version " <> currentVersion
-    runOperation (Build source) = processAll (scan . Context False) source
-    runOperation (Check source) = processAll (scan . Context True) source
+    runOperation (Setup source) = processAll (scan . Context) source
 
-data Context = Context
-  { isCheck :: Bool,
-    configDir :: FilePath
-  }
+data Context = Context {configDir :: FilePath}
 
 type CommandResult = Bool
 
@@ -69,40 +65,12 @@ scan ctx = do
   clients <- traverse (handleClientService ctx) (concat $ maybeToList client)
   pure $ and (servers <> clients)
 
-getImports :: Maybe ServiceOptions -> [Text]
-getImports = concatMap optionImports . maybeToList
-
-expandSource :: FilePath -> Source -> IO [Source]
-expandSource root (Source p o) = do
-  files <- glob $ normalise (root </> p)
-  pure $ map (`Source` o) files
-
-parseServiceData :: Context -> Service -> IO (FilePath, [Source], ServiceOptions)
-parseServiceData ctx Service {source, includes, options} = do
-  let root = normalise (configDir ctx </> source)
-  let namespaces = maybe False optionNamespace options
-  let externals = maybe mempty optionExternals options
-  files <- concat <$> traverse (expandSource root) includes
-  pure
-    ( root,
-      files,
-      ServiceOptions namespaces (getImports options) externals
-    )
-
-getSchemaPath :: FilePath -> String -> Maybe Source -> IO Source
-getSchemaPath root _ (Just Source {..}) = do
-  pure Source {sourcePath = normalise $ root </> sourcePath, ..}
-getSchemaPath _ name _ = fail $ "client service " <> name <> " should provide schema!"
-
 handleClientService :: Context -> Service -> IO CommandResult
 handleClientService ctx s@Service {name, schema} = do
-  (root, files, buildOptions) <- parseServiceData ctx s
   putStrLn ("\n build:" <> name)
-  schemaPath <- getSchemaPath root name schema
   pure True
 
 handleServerService :: Context -> Service -> IO CommandResult
 handleServerService ctx s@Service {name} = do
-  (root, files, buildOptions) <- parseServiceData ctx s
   putStrLn ("\n build:" <> name)
   pure True

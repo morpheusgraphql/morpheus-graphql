@@ -4,7 +4,7 @@
 
 module CLI.File where
 
-import Data.ByteString.Lazy.Char8 (ByteString, readFile, writeFile)
+import Data.ByteString.Lazy.Char8 (ByteString, readFile)
 import Data.Char
 import Data.Text (pack)
 import Relude hiding (ByteString, readFile, writeFile)

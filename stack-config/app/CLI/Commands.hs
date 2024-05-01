@@ -30,8 +30,7 @@ import qualified Options.Applicative as OA
 import Relude hiding (ByteString)
 
 data Command
-  = Build [FilePath]
-  | Check [FilePath]
+  = Setup [FilePath]
   | About
   deriving (Show)
 
@@ -49,8 +48,7 @@ newtype GlobalOptions = GlobalOptions
 commandParser :: Parser Command
 commandParser =
   buildOperation
-    [ ("build", "builds Haskell code from GQL source", Build <$> readFiles),
-      ("check", "check if built Haskell code represent GQL source", Check <$> readFiles),
+    [ ("build", "builds Haskell code from GQL source", Setup <$> readFiles),
       ("about", "api information", pure About)
     ]
 
