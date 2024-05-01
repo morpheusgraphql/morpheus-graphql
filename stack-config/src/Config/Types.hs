@@ -7,7 +7,6 @@ module Config.Types
   )
 where
 
-import Control.Monad.Except (MonadError (..))
 import Relude hiding (Undefined)
 
 data Libs = Libs
