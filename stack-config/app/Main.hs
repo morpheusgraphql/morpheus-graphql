@@ -15,10 +15,7 @@ import CLI.Commands
     parseCLI,
   )
 import CLI.Config
-  ( Config (..),
-    Service (..),
-    ServiceOptions (..),
-    Source (..),
+  ( Config,
     readConfig,
   )
 import CLI.File (getModuleNameByPath, processFileName)
@@ -60,17 +57,6 @@ processAll f xs = do
 
 scan :: Context -> IO CommandResult
 scan ctx = do
-  Config {server, client} <- readConfig (configDir ctx)
-  servers <- traverse (handleServerService ctx) (concat $ maybeToList server)
-  clients <- traverse (handleClientService ctx) (concat $ maybeToList client)
-  pure $ and (servers <> clients)
-
-handleClientService :: Context -> Service -> IO CommandResult
-handleClientService ctx s@Service {name, schema} = do
-  putStrLn ("\n build:" <> name)
-  pure True
-
-handleServerService :: Context -> Service -> IO CommandResult
-handleServerService ctx s@Service {name} = do
-  putStrLn ("\n build:" <> name)
-  pure True
+  config <- readConfig (configDir ctx)
+  putStrLn (show config)
+  pure (traceShow config True)

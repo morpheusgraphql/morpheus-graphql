@@ -48,7 +48,7 @@ newtype GlobalOptions = GlobalOptions
 commandParser :: Parser Command
 commandParser =
   buildOperation
-    [ ("build", "builds Haskell code from GQL source", Setup <$> readFiles),
+    [ ("setup", "builds Haskell code from GQL source", Setup <$> readFiles),
       ("about", "api information", pure About)
     ]
 

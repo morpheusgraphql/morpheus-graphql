@@ -11,7 +11,6 @@ license-file: LICENSE
 description: stack config
 extra-source-files:
   - README.md
-  - changelog.md
 dependencies:
   - aeson                      >=  1.4.4     &&  <  3.0.0
   - attoparsec-aeson           >=  2.1.0.0   &&  <  3.0.0
@@ -28,12 +27,12 @@ library:
   source-dirs: src
   exposed-modules:
     - Config
-  ghc-options: '-Wall'
+  ghc-options: "-Wall"
 executables:
-  morpheus:
+  stack-config:
     main: Main.hs
     source-dirs: app
-    ghc-options: '-Wall'
+    ghc-options: "-Wall"
     dependencies:
       - Glob                             >=  0.7.0   &&  <  1.0.0
       - filepath                         >=  1.1.0   &&  <  1.5.0
