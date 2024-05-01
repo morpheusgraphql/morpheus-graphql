@@ -13,6 +13,7 @@ module CLI.Config
   )
 where
 
+import Config.Types (Config)
 import qualified Data.ByteString as L
   ( readFile,
   )
@@ -57,36 +58,6 @@ data Source = Source
     sourceOptions :: Maybe ServiceOptions
   }
   deriving (Show)
-
-instance FromJSON Source where
-  parseJSON (Object o) = do
-    path <- o .: "path"
-    ops <- parseJSON (Object o)
-    pure (Source path ops)
-  parseJSON x = (`Source` Nothing) <$> parseJSON x
-
-data Service = Service
-  { name :: String,
-    includes :: [Source],
-    source :: FilePath,
-    options :: Maybe ServiceOptions,
-    schema :: Maybe Source
-  }
-  deriving
-    ( Generic,
-      FromJSON,
-      Show
-    )
-
-data Config = Config
-  { server :: Maybe [Service],
-    client :: Maybe [Service]
-  }
-  deriving
-    ( Generic,
-      FromJSON,
-      Show
-    )
 
 readConfig :: FilePath -> IO Config
 readConfig path = do

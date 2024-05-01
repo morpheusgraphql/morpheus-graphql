@@ -28,12 +28,12 @@ library:
   source-dirs: src
   exposed-modules:
     - Config
-  ghc-options: '-Wall'
+  ghc-options: "-Wall"
 executables:
   morpheus:
     main: Main.hs
     source-dirs: app
-    ghc-options: '-Wall'
+    ghc-options: "-Wall"
     dependencies:
       - Glob                             >=  0.7.0   &&  <  1.0.0
       - filepath                         >=  1.1.0   &&  <  1.5.0
@@ -42,3 +42,4 @@ executables:
       - morpheus-graphql-code-gen-utils
       - optparse-applicative             >=  0.12.0  &&  <  0.20.0
       - yaml                             >=  0.8.32  &&  <  1.0.0
+      - stack-config
