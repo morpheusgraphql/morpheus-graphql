@@ -27,12 +27,12 @@ library:
   source-dirs: src
   exposed-modules:
     - Config
-  ghc-options: "-Wall"
+  ghc-options: '-Wall'
 executables:
   stack-config:
     main: Main.hs
     source-dirs: app
-    ghc-options: "-Wall"
+    ghc-options: '-Wall'
     dependencies:
       - Glob                             >=  0.7.0   &&  <  1.0.0
       - filepath                         >=  1.1.0   &&  <  1.5.0

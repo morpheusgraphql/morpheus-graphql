@@ -57,6 +57,6 @@ cradle:
       - path: ./morpheus-graphql-code-gen/app
         component: morpheus-graphql-code-gen:exe:morpheus
       - path: ./stack-config/app
-        component: stack-config:exe:morpheus
+        component: stack-config:exe:stack-config
       - path: ./morpheus-graphql-benchmarks/src
         component: morpheus-graphql-benchmarks:bench:morpheus-graphql-bench
