@@ -11,7 +11,7 @@ module CLI.Config
   )
 where
 
-import Config (Config (..), compareFields)
+import Config (Config (..), parseYaml, serializeYaml)
 import qualified Data.ByteString as L
   ( readFile,
     writeFile,
@@ -21,11 +21,7 @@ import Data.Yaml.Pretty (defConfig, encodePretty, setConfCompare, setConfDropNul
 import Relude
 
 readConfig :: FilePath -> IO Config
-readConfig path = do
-  file <- L.readFile path
-  decodeThrow file
+readConfig = L.readFile >=> parseYaml
 
 writeConfig :: FilePath -> Config -> IO ()
-writeConfig path config = do
-  let file = encodePretty (setConfDropNull True $ setConfCompare compareFields defConfig) config
-  L.writeFile path file
+writeConfig path = L.writeFile path . serializeYaml

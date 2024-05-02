@@ -23,6 +23,7 @@ dependencies:
   - transformers               >=  0.3.0     &&  <  0.7.0
   - unordered-containers       >=  0.2.8     &&  <  0.3.0
   - vector                     >=  0.12.0.1  &&  <  0.15.0
+  - yaml                       >=  0.8.32  &&  <  1.0.0
 library:
   source-dirs: src
   exposed-modules:
@@ -41,4 +42,3 @@ executables:
       - morpheus-graphql-code-gen-utils
       - optparse-applicative             >=  0.12.0  &&  <  0.20.0
       - stack-config
-      - yaml                             >=  0.8.32  &&  <  1.0.0
