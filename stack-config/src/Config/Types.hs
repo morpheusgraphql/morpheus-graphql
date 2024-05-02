@@ -9,8 +9,22 @@ module Config.Types
   )
 where
 
-import Data.Aeson (FromJSON)
+import Data.Aeson (FromJSON (..), Value (..))
 import Relude hiding (Undefined)
+
+data Version
+  = VBounds String (Maybe String)
+  | VAny
+  deriving
+    ( Generic,
+      Show
+    )
+
+instance FromJSON Version where
+  parseJSON (Bool True) = pure VAny
+  parseJSON (String s) = pure $ (VBounds (show s)) Nothing
+  parseJSON (Number n) = pure $ VBounds (show n) Nothing
+  parseJSON v = fail $ "version should be either true or string" <> (show v)
 
 data PkgGroup = PkgGroup
   { dir :: Text,
@@ -23,9 +37,11 @@ data PkgGroup = PkgGroup
       Show
     )
 
+type Deps = Map Text Version
+
 data Build = Build
   { resolver :: Text,
-    extra :: Map Text Text,
+    extra :: Maybe Deps,
     -- include :: [Text],
     skip :: Maybe [Text]
   }
@@ -40,7 +56,8 @@ data Config = Config
     version :: Text,
     bounds :: Text,
     packages :: [PkgGroup],
-    builds :: Map Text Build
+    builds :: Map Text Build,
+    dependencies :: Deps
   }
   deriving
     ( Generic,
