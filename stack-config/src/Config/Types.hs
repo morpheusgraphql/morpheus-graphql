@@ -23,8 +23,8 @@ data Version
     )
 
 parseBounds :: Text -> Version
-parseBounds x =
-  let (minV, maxV) = (breakOn x "-")
+parseBounds s =
+  let (minV, maxV) = (breakOn "-" s)
    in VBounds minV (Just maxV)
 
 instance FromJSON Version where
