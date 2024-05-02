@@ -3,7 +3,7 @@ version: 0.27.3
 bounds: 0.27.0-0.28.0
 packages:
   - dir: examples
-    include:
+    names:
       - client
       - code-gen
       - code-gen-docs
@@ -14,7 +14,7 @@ packages:
       - servant
       - yesod-pubsub
   - dir: ./
-    include:
+    names:
       - tests
       - core
       - code-gen-utils
@@ -26,7 +26,7 @@ packages:
       - .
     prefix: morpheus-graphql
   - dir: ./
-    include:
+    names:
       - stack-config
 builds:
   8.2.2:

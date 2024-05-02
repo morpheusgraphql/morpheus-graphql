@@ -49,7 +49,7 @@ instance FromJSON VersionBounds where
 
 data PkgGroup = PkgGroup
   { dir :: Text,
-    include :: [Text],
+    names :: [Text],
     prefix :: Maybe Text
   }
   deriving
@@ -63,7 +63,7 @@ type Deps = Map Text VersionBounds
 data Build = Build
   { resolver :: Text,
     extra :: Maybe Deps,
-    -- include :: [Text],
+    include :: Maybe [Text],
     skip :: Maybe [Text]
   }
   deriving
