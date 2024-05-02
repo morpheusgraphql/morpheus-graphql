@@ -10,9 +10,9 @@ module Config.Types
   )
 where
 
-import Data.Aeson (FromJSON (..), Value (..))
-import Data.Text (split, unpack)
-import Relude hiding (Undefined)
+import Data.Aeson (FromJSON (..), ToJSON (toJSON), Value (..))
+import Data.Text (intercalate, pack, split, unpack)
+import Relude hiding (Undefined, intercalate)
 import Prelude (read)
 
 data Version = Version [Int]
@@ -26,6 +26,9 @@ parseInt x = read (unpack x)
 
 parseVersion :: Text -> Version
 parseVersion s = Version $ map parseInt $ (split (== '.') s)
+
+formatVersion :: Version -> Text
+formatVersion (Version ns) = intercalate "." $ map (pack . show) ns
 
 data VersionBounds
   = VersionBounds Version (Maybe Version)
@@ -41,11 +44,19 @@ parseBounds s = case (split (== '-') s) of
   [minV] -> pure $ VersionBounds (parseVersion minV) Nothing
   _ -> fail ("invalid version: " <> show s)
 
+formatBounds :: Version -> Maybe Version -> Text
+formatBounds mi Nothing = formatVersion mi
+formatBounds mi (Just ma) = formatVersion mi <> "-" <> formatVersion ma
+
 instance FromJSON VersionBounds where
   parseJSON (Bool True) = pure NoBounds
   parseJSON (String s) = parseBounds s
   parseJSON (Number n) = pure $ VersionBounds (parseVersion $ show n) Nothing
   parseJSON v = fail $ "version should be either true or string" <> (show v)
+
+instance ToJSON VersionBounds where
+  toJSON NoBounds = (Bool True)
+  toJSON (VersionBounds mi ma) = String $ formatBounds mi ma
 
 data PkgGroup = PkgGroup
   { dir :: Text,
@@ -55,7 +66,8 @@ data PkgGroup = PkgGroup
   deriving
     ( Generic,
       FromJSON,
-      Show
+      Show,
+      ToJSON
     )
 
 type Deps = Map Text VersionBounds
@@ -69,7 +81,8 @@ data Build = Build
   deriving
     ( Generic,
       FromJSON,
-      Show
+      Show,
+      ToJSON
     )
 
 data Config = Config
@@ -83,5 +96,6 @@ data Config = Config
   deriving
     ( Generic,
       FromJSON,
-      Show
+      Show,
+      ToJSON
     )

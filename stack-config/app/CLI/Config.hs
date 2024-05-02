@@ -7,27 +7,27 @@
 module CLI.Config
   ( Config (..),
     readConfig,
+    writeConfig,
   )
 where
 
 import Config (Config (..))
 import qualified Data.ByteString as L
   ( readFile,
+    writeFile,
   )
 import Data.Yaml
-  ( FromJSON (..),
-    Value (..),
-    decodeThrow,
-    withObject,
-    (.:),
-    (.:?),
+  ( decodeThrow,
+    encode,
   )
 import Relude
-import System.FilePath.Posix
-  ( (</>),
-  )
 
 readConfig :: FilePath -> IO Config
 readConfig path = do
-  file <- L.readFile "./config/stack.yaml"
+  file <- L.readFile path
   decodeThrow file
+
+writeConfig :: FilePath -> Config -> IO ()
+writeConfig path config = do
+  let file = encode config
+  L.writeFile path file

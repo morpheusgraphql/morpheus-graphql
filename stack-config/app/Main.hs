@@ -15,20 +15,12 @@ import CLI.Commands
     parseCLI,
   )
 import CLI.Config
-  ( Config,
-    readConfig,
+  ( readConfig,
+    writeConfig,
   )
-import CLI.File (getModuleNameByPath, processFileName)
-import qualified Data.ByteString.Lazy as L
-  ( readFile,
-  )
-import qualified Data.Text.IO as TIO
 import Data.Version (showVersion)
 import qualified Paths_stack_config as CLI
 import Relude hiding (ByteString)
-import System.Exit (ExitCode (..))
-import System.FilePath (normalise, (</>))
-import System.FilePath.Glob (glob)
 
 currentVersion :: String
 currentVersion = showVersion CLI.version
@@ -42,11 +34,9 @@ runApp App {..}
   | otherwise = runOperation operations
   where
     runOperation About = putStrLn $ "Morpheus GraphQL CLI, version " <> currentVersion
-    runOperation (Setup source) = do
+    runOperation (Setup _) = do
       putStrLn "something"
-      config <- readConfig ""
+      let configPath = "./config/stack.yaml"
+      config <- readConfig configPath
+      writeConfig configPath config
       putStrLn (show config)
-
-data Context = Context {configDir :: FilePath}
-
-type CommandResult = Bool
