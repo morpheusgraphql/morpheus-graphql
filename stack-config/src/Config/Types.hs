@@ -20,8 +20,18 @@ import Relude hiding (Undefined, intercalate)
 data Version = Version [Int]
   deriving
     ( Generic,
-      Show
+      Show,
+      Eq
     )
+
+instance Ord Version where
+  compare (Version v1) (Version v2) = compareSeries v1 v2
+    where
+      compareSeries [] _ = EQ
+      compareSeries _ [] = EQ
+      compareSeries (x : xs) (y : ys)
+        | x == y = compareSeries xs ys
+        | otherwise = compare x y
 
 parseMaybeVersion :: Text -> Maybe Version
 parseMaybeVersion s = Version <$> (traverse (readMaybe . unpack) $ (split (== '.') s))
@@ -113,7 +123,9 @@ fields = ["name", "version", "bounds", "packages"]
 
 compareFieldNames :: Text -> Text -> Ordering
 compareFieldNames x y = case (findIndex (== x) fields, findIndex (== y) fields) of
-  (Nothing, Nothing) -> compare x y
+  (Nothing, Nothing) -> case (parseVersion x, parseVersion y) of
+    (Just v1, Just v2) -> compare v1 v2
+    _ -> compare x y
   (Nothing, _) -> GT
   (_, Nothing) -> LT
   (i1, i2) -> compare i1 i2
