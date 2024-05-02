@@ -67,9 +67,11 @@ data PkgGroup = PkgGroup
   deriving
     ( Generic,
       FromJSON,
-      Show,
-      ToJSON
+      Show
     )
+
+instance ToJSON PkgGroup where
+  toJSON = genericToJSON defaultOptions {omitNothingFields = True}
 
 type Deps = Map Text VersionBounds
 
