@@ -126,14 +126,16 @@ getPackages Config {..} = concatMap toPkg packages
   where
     toPkg PkgGroup {..} = map fullName names
       where
-        fullName s = dir <> "./" <> withPrefix s prefix
+        fullName s 
+        | length dir > 0 = dir <> "/" <> withPrefix s prefix
+        | otherwise =  withPrefix s prefix
 
 getBuild :: (MonadFail m) => Text -> Config -> m Build
 getBuild key Config {builds} = maybe (fail "invalid version") pure (M.lookup key builds)
 
 withPrefix :: Text -> Maybe Text -> Text
 withPrefix "." (Just prefix) = prefix
-withPrefix s (Just prefix) = prefix <> s
+withPrefix s (Just prefix) = prefix <> "-" <> s
 withPrefix s _ = s
 
 instance ToJSON Config where
