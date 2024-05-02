@@ -10,7 +10,8 @@ module Config.Types
   )
 where
 
-import Data.Aeson (FromJSON (..), ToJSON (toJSON), Value (..))
+import Data.Aeson (FromJSON (..), Options (..), ToJSON (toJSON), Value (..), genericToJSON)
+import Data.Aeson.Types (defaultOptions)
 import Data.Text (intercalate, pack, split, unpack)
 import Relude hiding (Undefined, intercalate)
 import Prelude (read)
@@ -81,9 +82,11 @@ data Build = Build
   deriving
     ( Generic,
       FromJSON,
-      Show,
-      ToJSON
+      Show
     )
+
+instance ToJSON Build where
+  toJSON = genericToJSON defaultOptions {omitNothingFields = True}
 
 data Config = Config
   { name :: Text,
@@ -96,6 +99,8 @@ data Config = Config
   deriving
     ( Generic,
       FromJSON,
-      Show,
-      ToJSON
+      Show
     )
+
+instance ToJSON Config where
+  toJSON = genericToJSON defaultOptions {omitNothingFields = True}
