@@ -16,8 +16,6 @@ import qualified Data.ByteString as L
   ( readFile,
     writeFile,
   )
-import Data.List (findIndex)
-import Data.Text (toLower)
 import Data.Yaml (decodeThrow)
 import Data.Yaml.Pretty (defConfig, encodePretty, setConfCompare, setConfDropNull)
 import Relude
