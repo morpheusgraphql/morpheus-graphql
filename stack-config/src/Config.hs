@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Config (Config (..), PkgGroup (..)) where
+module Config (Config (..), PkgGroup (..), compareFields) where
 
-import Config.Types (Config (..), PkgGroup (..))
+import Config.Types

@@ -7,14 +7,15 @@
 module Config.Types
   ( Config (..),
     PkgGroup (..),
+    compareFields,
   )
 where
 
 import Data.Aeson (FromJSON (..), Options (..), ToJSON (toJSON), Value (..), genericToJSON)
 import Data.Aeson.Types (defaultOptions)
-import Data.Text (intercalate, pack, split, unpack)
+import Data.List (findIndex)
+import Data.Text (intercalate, pack, split, toLower, unpack)
 import Relude hiding (Undefined, intercalate)
-import Prelude (read)
 
 data Version = Version [Int]
   deriving
@@ -22,8 +23,11 @@ data Version = Version [Int]
       Show
     )
 
-parseVersion :: Text -> Version
-parseVersion s = Version $ map (read . unpack) $ (split (== '.') s)
+parseMaybeVersion :: Text -> Maybe Version
+parseMaybeVersion s = Version <$> (traverse (readMaybe . unpack) $ (split (== '.') s))
+
+parseVersion :: (MonadFail m) => Text -> m Version
+parseVersion = maybe (fail "invalid version") pure . parseMaybeVersion
 
 formatVersion :: Version -> Text
 formatVersion (Version ns) = intercalate "." $ map (pack . show) ns
@@ -38,8 +42,8 @@ data VersionBounds
 
 parseBounds :: (MonadFail m) => Text -> m VersionBounds
 parseBounds s = case (split (== '-') s) of
-  [minV, maxV] -> pure $ VersionBounds (parseVersion minV) (Just (parseVersion maxV))
-  [minV] -> pure $ VersionBounds (parseVersion minV) Nothing
+  [minV, maxV] -> VersionBounds <$> (parseVersion minV) <*> (fmap Just (parseVersion maxV))
+  [minV] -> flip VersionBounds Nothing <$> (parseVersion minV)
   _ -> fail ("invalid version: " <> show s)
 
 formatBounds :: Version -> Maybe Version -> Text
@@ -49,7 +53,7 @@ formatBounds mi (Just ma) = formatVersion mi <> "-" <> formatVersion ma
 instance FromJSON VersionBounds where
   parseJSON (Bool True) = pure NoBounds
   parseJSON (String s) = parseBounds s
-  parseJSON (Number n) = pure $ VersionBounds (parseVersion $ show n) Nothing
+  parseJSON (Number n) = flip VersionBounds Nothing <$> (parseVersion $ show n)
   parseJSON v = fail $ "version should be either true or string" <> (show v)
 
 instance ToJSON VersionBounds where
@@ -103,3 +107,16 @@ data Config = Config
 
 instance ToJSON Config where
   toJSON = genericToJSON defaultOptions {omitNothingFields = True}
+
+fields :: [Text]
+fields = ["name", "version", "bounds", "packages"]
+
+compareFieldNames :: Text -> Text -> Ordering
+compareFieldNames x y = case (findIndex (== x) fields, findIndex (== y) fields) of
+  (Nothing, Nothing) -> compare x y
+  (Nothing, _) -> GT
+  (_, Nothing) -> LT
+  (i1, i2) -> compare i1 i2
+
+compareFields :: Text -> Text -> Ordering
+compareFields x y = compareFieldNames (toLower x) (toLower y)
