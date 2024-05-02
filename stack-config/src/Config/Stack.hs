@@ -29,15 +29,15 @@ newtype Stack = Stack (KeyMap Value)
 set :: (Applicative f) => KeyMap v -> (Key, v) -> f (KeyMap v)
 set v (k, p) = alterF (\_ -> pure (Just p)) k v
 
-fields :: (Monad f) => [(Key, v)] -> KeyMap v -> f (KeyMap v)
-fields fs stack = foldM set stack fs
+setFields :: (Monad f) => [(Key, v)] -> KeyMap v -> f (KeyMap v)
+setFields fs stack = foldM set stack fs
 
 updateStack :: (MonadFail m) => Config -> Stack -> m Stack
 updateStack config (Stack stack) = do
   let packages = Array $ fromList $ map String $ getPackages config
   Build {..} <- getBuild "9.0.2" config
   Stack
-    <$> fields
+    <$> setFields
       [ ("packages", packages),
         ("resolver", String resolver)
       ]
