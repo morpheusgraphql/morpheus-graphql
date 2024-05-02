@@ -14,7 +14,8 @@ module Config.Stack
 where
 
 import Config.Types (Build (..), Config, getBuild, getPackages)
-import Data.Aeson (FromJSON (..), ToJSON (..), Value (..))
+import Control.Monad (foldM)
+import Data.Aeson (FromJSON (..), Key, ToJSON (..), Value (..))
 import Data.Aeson.KeyMap (KeyMap, alterF)
 import Relude hiding (Undefined, intercalate)
 
@@ -25,17 +26,22 @@ newtype Stack = Stack (KeyMap Value)
       Show
     )
 
+set :: (Applicative f) => KeyMap v -> (Key, v) -> f (KeyMap v)
+set v (k, p) = alterF (\_ -> pure (Just p)) k v
+
+fields :: (Monad f) => [(Key, v)] -> KeyMap v -> f (KeyMap v)
+fields fs stack = foldM set stack fs
+
 updateStack :: (MonadFail m) => Config -> Stack -> m Stack
 updateStack config (Stack stack) = do
-  let packages = getPackages config
+  let packages = Array $ fromList $ map String $ getPackages config
   Build {..} <- getBuild "9.0.2" config
   Stack
-    <$> ( alterF (f packages) "packages" stack
-            >>= alterF (res resolver) "resolver"
-        )
-  where
-    f packages _ = pure (Just (Array $ fromList $ map String packages))
-    res r _ = pure (Just (String r))
+    <$> fields
+      [ ("packages", packages),
+        ("resolver", String resolver)
+      ]
+      stack
 
 -- const getStack = async (version: string) => {
 --   const config = await Config.load();
