@@ -15,7 +15,7 @@ import CLI.Commands
     GlobalOptions (..),
     parseCLI,
   )
-import Config (Config, Stack, parseYaml, serializeYaml)
+import Config (Config, Stack, parseYaml, serializeYaml, updateStack)
 import Data.Aeson
 import qualified Data.ByteString as L
   ( readFile,
@@ -34,8 +34,8 @@ main = parseCLI >>= runApp
 readYaml :: (FromJSON a) => FilePath -> IO a
 readYaml = L.readFile >=> parseYaml
 
-writeYaml :: (ToJSON a) => FilePath -> a -> IO ()
-writeYaml path = L.writeFile path . serializeYaml
+writeYaml :: (ToJSON a) => Bool -> FilePath -> a -> IO ()
+writeYaml pretty path = L.writeFile path . serializeYaml pretty
 
 runApp :: App -> IO ()
 runApp App {..}
@@ -47,6 +47,8 @@ runApp App {..}
       putStrLn "something"
       let configPath = "./config/stack.yaml"
       config :: Config <- readYaml configPath
-      writeYaml configPath config
+      writeYaml True configPath config
       stack :: Stack <- readYaml "./stack.yaml"
+      updateStack config stack
+      writeYaml False "./stack.yaml" stack
       putStrLn (show stack)

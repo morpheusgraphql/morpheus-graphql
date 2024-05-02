@@ -7,21 +7,24 @@ module Config
     parseYaml,
     serializeYaml,
     Stack (..),
+    updateStack,
   )
 where
 
 import Config.Stack
 import Config.Types
 import Data.Aeson (FromJSON, ToJSON)
-import Data.Yaml (decodeThrow)
+import Data.Yaml (decodeThrow, encode)
 import Data.Yaml.Pretty (defConfig, encodePretty, setConfCompare, setConfDropNull)
 import Relude
 
 parseYaml :: (FromJSON a) => ByteString -> IO a
 parseYaml = decodeThrow
 
-serializeYaml :: (ToJSON a) => a -> ByteString
-serializeYaml = encodePretty (setConfDropNull True $ setConfCompare compareFields defConfig)
+serializeYaml :: (ToJSON a) => Bool -> a -> ByteString
+serializeYaml sort
+  | sort = encodePretty (setConfDropNull True $ setConfCompare compareFields defConfig)
+  | otherwise = encode
 
 -- export const setup = async (version: string) => {
 --   const config = await Config.load();
