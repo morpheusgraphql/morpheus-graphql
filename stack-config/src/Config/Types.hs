@@ -11,7 +11,7 @@ module Config.Types
 where
 
 import Data.Aeson (FromJSON (..), Value (..))
-import Data.Text (breakOn)
+import Data.Text (split)
 import Relude hiding (Undefined)
 
 data Version
@@ -22,14 +22,15 @@ data Version
       Show
     )
 
-parseBounds :: Text -> Version
-parseBounds s =
-  let (minV, maxV) = (breakOn "-" s)
-   in VBounds minV (Just maxV)
+parseBounds :: (MonadFail m) => Text -> m Version
+parseBounds s = case (split (== '-') s) of
+  [minV, maxV] -> pure $ VBounds minV (Just maxV)
+  [minV] -> pure $ VBounds minV Nothing
+  _ -> fail ("invalid version: " <> show s)
 
 instance FromJSON Version where
   parseJSON (Bool True) = pure VAny
-  parseJSON (String s) = pure $ parseBounds s
+  parseJSON (String s) = parseBounds s
   parseJSON (Number n) = pure $ VBounds (show n) Nothing
   parseJSON v = fail $ "version should be either true or string" <> (show v)
 
