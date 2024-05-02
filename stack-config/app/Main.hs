@@ -15,7 +15,13 @@ import CLI.Commands
     GlobalOptions (..),
     parseCLI,
   )
-import Config (Config, Stack, parseYaml, serializeYaml, updateStack)
+import Config
+  ( Config,
+    Stack,
+    parseYaml,
+    serializeYaml,
+    updateStack,
+  )
 import Data.Aeson
 import qualified Data.ByteString as L
   ( readFile,
@@ -49,6 +55,5 @@ runApp App {..}
       config :: Config <- readYaml configPath
       writeYaml True configPath config
       stack :: Stack <- readYaml "./stack.yaml"
-      updateStack config stack
-      writeYaml True "./stack.yaml" stack
+      updateStack config stack >>= writeYaml True "./stack.yaml"
       putStrLn (show stack)

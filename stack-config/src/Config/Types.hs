@@ -11,12 +11,15 @@ module Config.Types
     PkgGroup (..),
     compareFields,
     getPackages,
+    getBuild,
+    Build (..),
   )
 where
 
 import Data.Aeson (FromJSON (..), Options (..), ToJSON (toJSON), Value (..), genericToJSON)
 import Data.Aeson.Types (defaultOptions)
 import Data.List (findIndex)
+import qualified Data.Map as M
 import Data.Text (intercalate, pack, split, toLower, unpack)
 import Relude hiding (Undefined, intercalate)
 
@@ -124,6 +127,9 @@ getPackages Config {..} = concatMap toPkg packages
     toPkg PkgGroup {..} = map fullName names
       where
         fullName s = dir <> "./" <> withPrefix s prefix
+
+getBuild :: (MonadFail m) => Text -> Config -> m Build
+getBuild key Config {builds} = maybe (fail "invalid version") pure (M.lookup key builds)
 
 withPrefix :: Text -> Maybe Text -> Text
 withPrefix "." (Just prefix) = prefix

@@ -13,7 +13,7 @@ module Config.Stack
   )
 where
 
-import Config.Types (Config, getPackages)
+import Config.Types (Build (..), Config, getBuild, getPackages)
 import Data.Aeson (FromJSON (..), ToJSON (..), Value (..))
 import Data.Aeson.KeyMap (KeyMap, alterF)
 import Relude hiding (Undefined, intercalate)
@@ -25,12 +25,17 @@ newtype Stack = Stack (KeyMap Value)
       Show
     )
 
-updateStack :: (Monad m) => Config -> Stack -> m Stack
+updateStack :: (MonadFail m) => Config -> Stack -> m Stack
 updateStack config (Stack stack) = do
   let packages = getPackages config
-  Stack <$> (alterF (f packages) (fromString "packages") stack)
+  Build {..} <- getBuild "9.0.2" config
+  Stack
+    <$> ( alterF (f packages) "packages" stack
+            >>= alterF (res resolver) "resolver"
+        )
   where
     f packages _ = pure (Just (Array $ fromList $ map String packages))
+    res r _ = pure (Just (String r))
 
 -- const getStack = async (version: string) => {
 --   const config = await Config.load();
