@@ -1,6 +1,8 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | GQL Types
@@ -8,6 +10,7 @@ module Config.Types
   ( Config (..),
     PkgGroup (..),
     compareFields,
+    getPackages,
   )
 where
 
@@ -114,6 +117,18 @@ data Config = Config
       FromJSON,
       Show
     )
+
+getPackages :: Config -> [Text]
+getPackages Config {..} = concatMap toPkg packages
+  where
+    toPkg PkgGroup {..} = map fullName names
+      where
+        fullName s = dir <> "./" <> withPrefix s prefix
+
+withPrefix :: Text -> Maybe Text -> Text
+withPrefix "." (Just prefix) = prefix
+withPrefix s (Just prefix) = prefix <> s
+withPrefix s _ = s
 
 instance ToJSON Config where
   toJSON = genericToJSON defaultOptions {omitNothingFields = True}

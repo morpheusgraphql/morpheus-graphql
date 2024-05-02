@@ -1,6 +1,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module Main
@@ -14,7 +15,8 @@ import CLI.Commands
     GlobalOptions (..),
     parseCLI,
   )
-import Config (Config, parseYaml, serializeYaml)
+import Config (Config, Stack, parseYaml, serializeYaml)
+import Data.Aeson
 import qualified Data.ByteString as L
   ( readFile,
     writeFile,
@@ -29,11 +31,11 @@ currentVersion = showVersion CLI.version
 main :: IO ()
 main = parseCLI >>= runApp
 
-readConfig :: FilePath -> IO Config
-readConfig = L.readFile >=> parseYaml
+readYaml :: (FromJSON a) => FilePath -> IO a
+readYaml = L.readFile >=> parseYaml
 
-writeConfig :: FilePath -> Config -> IO ()
-writeConfig path = L.writeFile path . serializeYaml
+writeYaml :: (ToJSON a) => FilePath -> a -> IO ()
+writeYaml path = L.writeFile path . serializeYaml
 
 runApp :: App -> IO ()
 runApp App {..}
@@ -44,6 +46,7 @@ runApp App {..}
     runOperation (Setup _) = do
       putStrLn "something"
       let configPath = "./config/stack.yaml"
-      config <- readConfig configPath
-      writeConfig configPath config
-      putStrLn (show config)
+      config :: Config <- readYaml configPath
+      writeYaml configPath config
+      stack :: Stack <- readYaml "./stack.yaml"
+      putStrLn (show stack)

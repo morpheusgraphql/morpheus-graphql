@@ -28,6 +28,7 @@ library
   exposed-modules:
       Config
   other-modules:
+      Config.Stack
       Config.Types
       Paths_stack_config
   hs-source-dirs:
