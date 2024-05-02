@@ -14,24 +14,24 @@ import Data.Aeson (FromJSON (..), Value (..))
 import Data.Text (split)
 import Relude hiding (Undefined)
 
-data Version
-  = VBounds Text (Maybe Text)
-  | VAny
+data VersionBounds
+  = VersionBounds Text (Maybe Text)
+  | NoBounds
   deriving
     ( Generic,
       Show
     )
 
-parseBounds :: (MonadFail m) => Text -> m Version
+parseBounds :: (MonadFail m) => Text -> m VersionBounds
 parseBounds s = case (split (== '-') s) of
-  [minV, maxV] -> pure $ VBounds minV (Just maxV)
-  [minV] -> pure $ VBounds minV Nothing
+  [minV, maxV] -> pure $ VersionBounds minV (Just maxV)
+  [minV] -> pure $ VersionBounds minV Nothing
   _ -> fail ("invalid version: " <> show s)
 
-instance FromJSON Version where
-  parseJSON (Bool True) = pure VAny
+instance FromJSON VersionBounds where
+  parseJSON (Bool True) = pure NoBounds
   parseJSON (String s) = parseBounds s
-  parseJSON (Number n) = pure $ VBounds (show n) Nothing
+  parseJSON (Number n) = pure $ VersionBounds (show n) Nothing
   parseJSON v = fail $ "version should be either true or string" <> (show v)
 
 data PkgGroup = PkgGroup
@@ -45,7 +45,7 @@ data PkgGroup = PkgGroup
       Show
     )
 
-type Deps = Map Text Version
+type Deps = Map Text VersionBounds
 
 data Build = Build
   { resolver :: Text,
