@@ -11,27 +11,40 @@ module Config.Types
 where
 
 import Data.Aeson (FromJSON (..), Value (..))
-import Data.Text (split)
+import Data.Text (split, unpack)
 import Relude hiding (Undefined)
+import Prelude (read)
 
 data VersionBounds
-  = VersionBounds Text (Maybe Text)
+  = VersionBounds Version (Maybe Text)
   | NoBounds
   deriving
     ( Generic,
       Show
     )
 
+data Version = Version [Int]
+  deriving
+    ( Generic,
+      Show
+    )
+
+parseInt :: Text -> Int
+parseInt x = read (unpack x)
+
+parseVersion :: Text -> Version
+parseVersion s = Version $ map parseInt $ (split (== '.') s)
+
 parseBounds :: (MonadFail m) => Text -> m VersionBounds
 parseBounds s = case (split (== '-') s) of
-  [minV, maxV] -> pure $ VersionBounds minV (Just maxV)
-  [minV] -> pure $ VersionBounds minV Nothing
+  [minV, maxV] -> pure $ VersionBounds (parseVersion minV) (Just maxV)
+  [minV] -> pure $ VersionBounds (parseVersion minV) Nothing
   _ -> fail ("invalid version: " <> show s)
 
 instance FromJSON VersionBounds where
   parseJSON (Bool True) = pure NoBounds
   parseJSON (String s) = parseBounds s
-  parseJSON (Number n) = pure $ VersionBounds (show n) Nothing
+  parseJSON (Number n) = pure $ VersionBounds (parseVersion $ show n) Nothing
   parseJSON v = fail $ "version should be either true or string" <> (show v)
 
 data PkgGroup = PkgGroup
