@@ -52,7 +52,6 @@ executable stack-config
   main-is: Main.hs
   other-modules:
       CLI.Commands
-      CLI.Config
       CLI.File
       Paths_stack_config
   hs-source-dirs:
