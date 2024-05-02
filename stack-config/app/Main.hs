@@ -14,9 +14,10 @@ import CLI.Commands
     GlobalOptions (..),
     parseCLI,
   )
-import CLI.Config
-  ( readConfig,
-    writeConfig,
+import Config (Config, parseYaml, serializeYaml)
+import qualified Data.ByteString as L
+  ( readFile,
+    writeFile,
   )
 import Data.Version (showVersion)
 import qualified Paths_stack_config as CLI
@@ -27,6 +28,12 @@ currentVersion = showVersion CLI.version
 
 main :: IO ()
 main = parseCLI >>= runApp
+
+readConfig :: FilePath -> IO Config
+readConfig = L.readFile >=> parseYaml
+
+writeConfig :: FilePath -> Config -> IO ()
+writeConfig path = L.writeFile path . serializeYaml
 
 runApp :: App -> IO ()
 runApp App {..}
