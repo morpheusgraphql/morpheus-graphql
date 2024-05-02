@@ -22,11 +22,8 @@ data Version = Version [Int]
       Show
     )
 
-parseInt :: Text -> Int
-parseInt x = read (unpack x)
-
 parseVersion :: Text -> Version
-parseVersion s = Version $ map parseInt $ (split (== '.') s)
+parseVersion s = Version $ map (read . unpack) $ (split (== '.') s)
 
 formatVersion :: Version -> Text
 formatVersion (Version ns) = intercalate "." $ map (pack . show) ns
