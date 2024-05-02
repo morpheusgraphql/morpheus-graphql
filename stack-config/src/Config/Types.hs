@@ -15,14 +15,6 @@ import Data.Text (split, unpack)
 import Relude hiding (Undefined)
 import Prelude (read)
 
-data VersionBounds
-  = VersionBounds Version (Maybe Text)
-  | NoBounds
-  deriving
-    ( Generic,
-      Show
-    )
-
 data Version = Version [Int]
   deriving
     ( Generic,
@@ -35,9 +27,17 @@ parseInt x = read (unpack x)
 parseVersion :: Text -> Version
 parseVersion s = Version $ map parseInt $ (split (== '.') s)
 
+data VersionBounds
+  = VersionBounds Version (Maybe Version)
+  | NoBounds
+  deriving
+    ( Generic,
+      Show
+    )
+
 parseBounds :: (MonadFail m) => Text -> m VersionBounds
 parseBounds s = case (split (== '-') s) of
-  [minV, maxV] -> pure $ VersionBounds (parseVersion minV) (Just maxV)
+  [minV, maxV] -> pure $ VersionBounds (parseVersion minV) (Just (parseVersion maxV))
   [minV] -> pure $ VersionBounds (parseVersion minV) Nothing
   _ -> fail ("invalid version: " <> show s)
 
