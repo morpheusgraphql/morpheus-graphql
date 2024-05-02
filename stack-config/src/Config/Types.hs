@@ -64,7 +64,7 @@ data Build = Build
   { resolver :: Text,
     extra :: Maybe Deps,
     include :: Maybe [Text],
-    skip :: Maybe [Text]
+    exclude :: Maybe [Text]
   }
   deriving
     ( Generic,
