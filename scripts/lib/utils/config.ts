@@ -18,11 +18,11 @@ export type StackPlan = {
   extra?: Dict<PkgName>;
   resolver: string;
   include?: PkgName[];
-  skip?: PkgName[];
+  exclude?: PkgName[];
 };
 
 type Pkg = {
-  include: string[];
+  names: string[];
   dir: string;
   prefix?: string;
 };
@@ -92,8 +92,8 @@ export class Config {
   packages = () => {
     const { packages } = this.config;
 
-    return packages.flatMap(({ dir, include, prefix }) =>
-      include.map((s) => join(dir, prefix?.length ? withPrefix(prefix, s) : s))
+    return packages.flatMap(({ dir, names, prefix }) =>
+      names.map((s) => join(dir, prefix?.length ? withPrefix(prefix, s) : s))
     );
   };
 

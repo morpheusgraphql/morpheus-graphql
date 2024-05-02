@@ -11,14 +11,14 @@ const Stack = new Yaml<unknown, []>(() => defs.STACK);
 
 const getStack = async (version: string) => {
   const config = await Config.load();
-  const { include = [], resolver, skip = [] } = config.plan(version);
+  const { include = [], resolver, exclude = [] } = config.plan(version);
   const extra = config
     .plans()
     .filter((v) => Version.compare(v, version) >= 0)
     .flatMap((v) => Object.entries(config.plan(v).extra ?? {}))
     .map(([key, val]) => `${key}-${val}`)
     .sort();
-  const packages = difference([...config.packages(), ...include], skip);
+  const packages = difference([...config.packages(), ...include], exclude);
 
   return {
     ...(version === "latest" ? { "allow-newer": true } : {}),
