@@ -43,7 +43,7 @@ updateStack version config (Stack stack) = do
         ("resolver", String resolver),
         ("allow-newer", Bool $ allowNewer version),
         ("save-hackage-creds", Bool False),
-        ("extra-deps", extra)
+        ("extra-deps", Null)
       ]
       stack
 

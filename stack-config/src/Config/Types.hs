@@ -17,7 +17,7 @@ module Config.Types
   )
 where
 
-import Config.Version
+import Config.Version (Deps, parseVersion)
 import Data.Aeson (FromJSON (..), Options (..), ToJSON (toJSON), genericToJSON)
 import Data.Aeson.Types (defaultOptions)
 import Data.List (findIndex)
@@ -38,8 +38,6 @@ data PkgGroup = PkgGroup
 
 instance ToJSON PkgGroup where
   toJSON = genericToJSON defaultOptions {omitNothingFields = True}
-
-type Deps = Map Text VersionBounds
 
 data Build = Build
   { resolver :: Text,

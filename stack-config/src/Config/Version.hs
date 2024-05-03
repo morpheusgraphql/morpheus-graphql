@@ -10,6 +10,7 @@ module Config.Version
   ( Version (..),
     parseVersion,
     VersionBounds,
+    Deps,
   )
 where
 
@@ -81,3 +82,5 @@ instance FromJSON VersionBounds where
 instance ToJSON VersionBounds where
   toJSON NoBounds = (Bool True)
   toJSON (VersionBounds mi ma) = String $ formatBounds mi ma
+
+type Deps = Map Text VersionBounds
