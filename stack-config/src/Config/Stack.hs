@@ -19,6 +19,7 @@ import Control.Monad (foldM)
 import Data.Aeson (FromJSON (..), Key, ToJSON (..), Value (..))
 import Data.Aeson.KeyMap (KeyMap, alterF)
 import Data.List ((\\))
+import qualified Data.Map as M
 import Relude hiding (Undefined, intercalate)
 
 newtype Stack = Stack (KeyMap Value)
@@ -38,7 +39,7 @@ updateStack :: (MonadFail m) => Text -> Config -> Stack -> m Stack
 updateStack v config (Stack stack) = do
   version <- parseVersion v
   Build {..} <- getBuild version config
-  extraDeps <- getExtraDeps <$> getBuilds config
+  extraDeps <- getExtraDeps version <$> getBuilds config
   Stack
     <$> setFields
       [ ("packages", Array $ fromList $ map String $ (getPackages config <> fromMaybe [] include) \\ fromMaybe [] exclude),
@@ -53,8 +54,13 @@ allowNewer :: Version -> Bool
 allowNewer LatestVersion = True
 allowNewer _ = False
 
-getExtraDeps :: [(Version, Build)] -> [Text]
-getExtraDeps _ = []
+getExtraDeps :: Version -> [(Version, Build)] -> [Text]
+getExtraDeps v xs =
+  concatMap f
+    $ filter (\(k, _) -> v > k) xs
+  where
+    f (_, b) = map printExtra $ maybe [] M.toList (extra b)
+    printExtra (k, ver) = k <> show ver
 
 --     .plans()
 --     .filter((v) => Version.compare(v, version) >= 0)

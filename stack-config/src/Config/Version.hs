@@ -42,6 +42,14 @@ instance Show Version where
   show (Version ns) = intercalate "." $ map show ns
   show LatestVersion = "latest"
 
+instance FromJSON Version where
+  parseJSON (String s) = parseVersion s
+  parseJSON (Number n) = parseVersion $ pack $ show n
+  parseJSON v = fail $ "version should be either true or string" <> (show v)
+
+instance ToJSON Version where
+  toJSON = String . pack . show
+
 instance Ord Version where
   compare LatestVersion LatestVersion = EQ
   compare LatestVersion (Version _) = GT

@@ -42,7 +42,7 @@ instance ToJSON PkgGroup where
 
 data Build = Build
   { resolver :: Text,
-    extra :: Maybe Deps,
+    extra :: Maybe (Map Text Version),
     include :: Maybe [Text],
     exclude :: Maybe [Text]
   }
