@@ -41,7 +41,8 @@ updateStack version config (Stack stack) = do
       [ ("packages", Array $ fromList $ map String $ (getPackages config <> fromMaybe [] include) \\ fromMaybe [] exclude),
         ("resolver", String resolver),
         ("allow-newer", Bool $ allowNewer version),
-        ("save-hackage-creds", Bool False)
+        ("save-hackage-creds", Bool False),
+        ("extra-deps", extra)
       ]
       stack
 
@@ -49,14 +50,9 @@ allowNewer :: (Eq a, IsString a) => a -> Bool
 allowNewer "latest" = True
 allowNewer _ = False
 
--- const getStack = async (version: string) => {
---   const { include = [], resolver, exclude = [] } = config.plan(version);
 --   const extra = config
 --     .plans()
 --     .filter((v) => Version.compare(v, version) >= 0)
 --     .flatMap((v) => Object.entries(config.plan(v).extra ?? {}))
 --     .map(([key, val]) => `${key}-${val}`)
 --     .sort();
-
---   return { "extra-deps": extra };
--- };
