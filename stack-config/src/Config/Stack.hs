@@ -13,7 +13,7 @@ module Config.Stack
   )
 where
 
-import Config.Types (Build (..), Config, getBuild, getPackages)
+import Config.Types (Build (..), Config, getBuild, getBuilds, getPackages)
 import Control.Monad (foldM)
 import Data.Aeson (FromJSON (..), Key, ToJSON (..), Value (..))
 import Data.Aeson.KeyMap (KeyMap, alterF)
@@ -36,6 +36,7 @@ setFields fs stack = foldM set stack fs
 updateStack :: (MonadFail m) => Text -> Config -> Stack -> m Stack
 updateStack version config (Stack stack) = do
   Build {..} <- getBuild version config
+  let extra = getBuilds config
   Stack
     <$> setFields
       [ ("packages", Array $ fromList $ map String $ (getPackages config <> fromMaybe [] include) \\ fromMaybe [] exclude),

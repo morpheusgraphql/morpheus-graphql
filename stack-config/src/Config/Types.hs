@@ -13,6 +13,7 @@ module Config.Types
     getPackages,
     getBuild,
     Build (..),
+    getBuilds,
   )
 where
 
@@ -132,6 +133,9 @@ getPackages Config {..} = concatMap toPkg packages
 
 getBuild :: (MonadFail m) => Text -> Config -> m Build
 getBuild key Config {builds} = maybe (fail "invalid version") pure (M.lookup key builds)
+
+getBuilds :: Config -> [(Text, Build)]
+getBuilds key Config {builds} = M.toList builds
 
 withPrefix :: Text -> Maybe Text -> Text
 withPrefix "." (Just prefix) = prefix
