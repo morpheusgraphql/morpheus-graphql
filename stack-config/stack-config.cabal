@@ -30,6 +30,7 @@ library
   other-modules:
       Config.Stack
       Config.Types
+      Config.Version
       Paths_stack_config
   hs-source-dirs:
       src
