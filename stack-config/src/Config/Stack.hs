@@ -14,7 +14,7 @@ module Config.Stack
 where
 
 import Config.Types (Build (..), Config, getBuild, getBuilds, getPackages)
-import Config.Version (parseVersion)
+import Config.Version (Version (..), parseVersion)
 import Control.Monad (foldM)
 import Data.Aeson (FromJSON (..), Key, ToJSON (..), Value (..))
 import Data.Aeson.KeyMap (KeyMap, alterF)
