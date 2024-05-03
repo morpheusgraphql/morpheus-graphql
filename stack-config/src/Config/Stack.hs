@@ -34,11 +34,10 @@ setFields fs stack = foldM set stack fs
 
 updateStack :: (MonadFail m) => Config -> Stack -> m Stack
 updateStack config (Stack stack) = do
-  let packages = Array $ fromList $ map String $ getPackages config
   Build {..} <- getBuild "9.0.2" config
   Stack
     <$> setFields
-      [ ("packages", packages),
+      [ ("packages", Array $ fromList $ map String $ getPackages config),
         ("resolver", String resolver)
       ]
       stack
