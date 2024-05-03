@@ -17,6 +17,7 @@ import Config.Types (Build (..), Config, getBuild, getPackages)
 import Control.Monad (foldM)
 import Data.Aeson (FromJSON (..), Key, ToJSON (..), Value (..))
 import Data.Aeson.KeyMap (KeyMap, alterF)
+import Data.List ((\\))
 import Relude hiding (Undefined, intercalate)
 
 newtype Stack = Stack (KeyMap Value)
@@ -37,7 +38,7 @@ updateStack version config (Stack stack) = do
   Build {..} <- getBuild version config
   Stack
     <$> setFields
-      [ ("packages", Array $ fromList $ map String $ getPackages config <> fromMaybe [] include),
+      [ ("packages", Array $ fromList $ map String $ (getPackages config <> fromMaybe [] include) \\ fromMaybe [] exclude),
         ("resolver", String resolver),
         ("allow-newer", Bool $ allowNewer version),
         ("save-hackage-creds", Bool False)
@@ -58,9 +59,5 @@ allowNewer _ = False
 --     .sort();
 --   const packages = difference([...config.packages(), ...include], exclude);
 
---   return {
---     "save-hackage-creds": false,
---     packages,
---     "extra-deps": extra,
---   };
+--   return { packages, "extra-deps": extra };
 -- };
