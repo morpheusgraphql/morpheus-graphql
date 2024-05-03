@@ -55,5 +55,5 @@ runApp App {..}
       config :: Config <- readYaml configPath
       writeYaml True configPath config
       stack :: Stack <- readYaml "./stack.yaml"
-      updateStack config stack >>= writeYaml True "./stack.yaml"
+      updateStack "latest" config stack >>= writeYaml True "./stack.yaml"
       putStrLn (show stack)
