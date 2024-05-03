@@ -3,6 +3,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | GQL Types
@@ -80,8 +81,8 @@ getPackages Config {..} = concatMap toPkg packages
 getBuild :: (MonadFail m) => Version -> Config -> m Build
 getBuild key Config {builds} = maybe (fail "invalid version") pure (M.lookup (show key) builds)
 
-getBuilds :: Config -> [(Text, Build)]
-getBuilds Config {builds} = M.toList builds
+getBuilds :: (MonadFail m) => Config -> m [(Version, Build)]
+getBuilds Config {builds} = traverse (\(k, v) -> (,v) <$> parseVersion k) (M.toList builds)
 
 withPrefix :: Text -> Maybe Text -> Text
 withPrefix "." (Just prefix) = prefix
