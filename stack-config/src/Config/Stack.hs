@@ -38,14 +38,14 @@ updateStack :: (MonadFail m) => Text -> Config -> Stack -> m Stack
 updateStack v config (Stack stack) = do
   version <- parseVersion v
   Build {..} <- getBuild version config
-  extra <- getExtraDeps <$> getBuilds config
+  extraDeps <- getExtraDeps <$> getBuilds config
   Stack
     <$> setFields
       [ ("packages", Array $ fromList $ map String $ (getPackages config <> fromMaybe [] include) \\ fromMaybe [] exclude),
         ("resolver", String resolver),
         ("allow-newer", Bool (allowNewer version)),
         ("save-hackage-creds", Bool False),
-        ("extra-deps", Array $ fromList $ map String $ extra)
+        ("extra-deps", Array $ fromList $ map String $ extraDeps)
       ]
       stack
 
