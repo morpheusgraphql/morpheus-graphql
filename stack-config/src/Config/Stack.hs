@@ -14,6 +14,7 @@ module Config.Stack
 where
 
 import Config.Types (Build (..), Config, getBuild, getBuilds, getPackages)
+import Config.Version (parseVersion)
 import Control.Monad (foldM)
 import Data.Aeson (FromJSON (..), Key, ToJSON (..), Value (..))
 import Data.Aeson.KeyMap (KeyMap, alterF)
@@ -34,7 +35,8 @@ setFields :: (Monad f) => [(Key, v)] -> KeyMap v -> f (KeyMap v)
 setFields fs stack = foldM set stack fs
 
 updateStack :: (MonadFail m) => Text -> Config -> Stack -> m Stack
-updateStack version config (Stack stack) = do
+updateStack v config (Stack stack) = do
+  version <- parseVersion v
   Build {..} <- getBuild version config
   let extra = getBuilds config
   Stack

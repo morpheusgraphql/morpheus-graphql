@@ -17,7 +17,7 @@ module Config.Types
   )
 where
 
-import Config.Version (Deps, parseVersion)
+import Config.Version (Deps, Version, parseVersion)
 import Data.Aeson (FromJSON (..), Options (..), ToJSON (toJSON), genericToJSON)
 import Data.Aeson.Types (defaultOptions)
 import Data.List (findIndex)
@@ -77,8 +77,8 @@ getPackages Config {..} = concatMap toPkg packages
           | dir /= "./" = dir <> "/" <> withPrefix s prefix
           | otherwise = withPrefix s prefix
 
-getBuild :: (MonadFail m) => Text -> Config -> m Build
-getBuild key Config {builds} = maybe (fail "invalid version") pure (M.lookup key builds)
+getBuild :: (MonadFail m) => Version -> Config -> m Build
+getBuild key Config {builds} = maybe (fail "invalid version") pure (M.lookup (show key) builds)
 
 getBuilds :: Config -> [(Text, Build)]
 getBuilds Config {builds} = M.toList builds

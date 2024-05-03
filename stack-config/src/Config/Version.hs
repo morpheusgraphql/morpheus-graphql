@@ -20,24 +20,32 @@ import Data.Aeson
     Value (..),
   )
 import Data.Text
-  ( intercalate,
-    pack,
+  ( pack,
     split,
     unpack,
   )
+import GHC.Show (Show (show))
 import Relude hiding
   ( Undefined,
-    intercalate,
+    show,
   )
 
-data Version = Version [Int]
+data Version
+  = Version [Int]
+  | LatestVersion
   deriving
     ( Generic,
-      Show,
       Eq
     )
 
+instance Show Version where
+  show (Version ns) = intercalate "." $ map show ns
+  show LatestVersion = "latest"
+
 instance Ord Version where
+  compare LatestVersion LatestVersion = EQ
+  compare LatestVersion (Version _) = GT
+  compare (Version _) LatestVersion = LT
   compare (Version v1) (Version v2) = compareSeries v1 v2
     where
       compareSeries [] _ = EQ
@@ -51,9 +59,6 @@ parseMaybeVersion s = Version <$> (traverse (readMaybe . unpack) $ (split (== '.
 
 parseVersion :: (MonadFail m) => Text -> m Version
 parseVersion = maybe (fail "invalid version") pure . parseMaybeVersion
-
-formatVersion :: Version -> Text
-formatVersion (Version ns) = intercalate "." $ map (pack . show) ns
 
 data VersionBounds
   = VersionBounds Version (Maybe Version)
@@ -70,13 +75,13 @@ parseBounds s = case (split (== '-') s) of
   _ -> fail ("invalid version: " <> show s)
 
 formatBounds :: Version -> Maybe Version -> Text
-formatBounds mi Nothing = formatVersion mi
-formatBounds mi (Just ma) = formatVersion mi <> "-" <> formatVersion ma
+formatBounds mi Nothing = pack $ show mi
+formatBounds mi (Just ma) = pack $ show mi <> "-" <> show ma
 
 instance FromJSON VersionBounds where
   parseJSON (Bool True) = pure NoBounds
   parseJSON (String s) = parseBounds s
-  parseJSON (Number n) = flip VersionBounds Nothing <$> (parseVersion $ show n)
+  parseJSON (Number n) = flip VersionBounds Nothing <$> (parseVersion $ pack $ show n)
   parseJSON v = fail $ "version should be either true or string" <> (show v)
 
 instance ToJSON VersionBounds where
