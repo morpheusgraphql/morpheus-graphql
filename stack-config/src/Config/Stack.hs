@@ -43,7 +43,7 @@ updateStack v config (Stack stack) = do
     <$> setFields
       [ ("packages", Array $ fromList $ map String $ (getPackages config <> fromMaybe [] include) \\ fromMaybe [] exclude),
         ("resolver", String resolver),
-        ("allow-newer", Bool $ allowNewer version),
+        ("allow-newer", Bool (allowNewer version)),
         ("save-hackage-creds", Bool False),
         ("extra-deps", Null)
       ]
