@@ -43,14 +43,14 @@ updateStack v config (Stack stack) = do
     <$> setFields
       [ ("packages", Array $ fromList $ map String $ (getPackages config <> fromMaybe [] include) \\ fromMaybe [] exclude),
         ("resolver", String resolver),
-        ("allow-newer", Bool $ allowNewer $ show version),
+        ("allow-newer", Bool $ allowNewer version),
         ("save-hackage-creds", Bool False),
         ("extra-deps", Null)
       ]
       stack
 
-allowNewer :: (Eq a, IsString a) => a -> Bool
-allowNewer "latest" = True
+allowNewer :: Version -> Bool
+allowNewer LatestVersion = True
 allowNewer _ = False
 
 --   const extra = config
