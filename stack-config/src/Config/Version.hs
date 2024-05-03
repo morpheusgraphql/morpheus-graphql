@@ -58,7 +58,8 @@ parseMaybeVersion :: Text -> Maybe Version
 parseMaybeVersion s = Version <$> (traverse (readMaybe . unpack) $ (split (== '.') s))
 
 parseVersion :: (MonadFail m) => Text -> m Version
-parseVersion = maybe (fail "invalid version") pure . parseMaybeVersion
+parseVersion "latest" = pure LatestVersion
+parseVersion s = maybe (fail "invalid version") pure (parseMaybeVersion s)
 
 data VersionBounds
   = VersionBounds Version (Maybe Version)
