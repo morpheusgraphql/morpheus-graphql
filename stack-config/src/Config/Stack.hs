@@ -32,18 +32,23 @@ set v (k, p) = alterF (\_ -> pure (Just p)) k v
 setFields :: (Monad f) => [(Key, v)] -> KeyMap v -> f (KeyMap v)
 setFields fs stack = foldM set stack fs
 
-updateStack :: (MonadFail m) => Config -> Stack -> m Stack
-updateStack config (Stack stack) = do
-  Build {..} <- getBuild "9.0.2" config
+updateStack :: (MonadFail m) => Text -> Config -> Stack -> m Stack
+updateStack version config (Stack stack) = do
+  Build {..} <- getBuild version config
   Stack
     <$> setFields
-      [ ("packages", Array $ fromList $ map String $ getPackages config),
-        ("resolver", String resolver)
+      [ ("packages", Array $ fromList $ map String $ getPackages config <> fromMaybe [] include),
+        ("resolver", String resolver),
+        ("allow-newer", Bool $ allowNewer version),
+        ("save-hackage-creds", Bool False)
       ]
       stack
 
+allowNewer :: (Eq a, IsString a) => a -> Bool
+allowNewer "latest" = True
+allowNewer _ = False
+
 -- const getStack = async (version: string) => {
---   const config = await Config.load();
 --   const { include = [], resolver, exclude = [] } = config.plan(version);
 --   const extra = config
 --     .plans()
@@ -54,12 +59,8 @@ updateStack config (Stack stack) = do
 --   const packages = difference([...config.packages(), ...include], exclude);
 
 --   return {
---     ...(version === "latest" ? { "allow-newer": true } : {}),
---     resolver,
 --     "save-hackage-creds": false,
 --     packages,
 --     "extra-deps": extra,
 --   };
 -- };
-
--- const ok = (msg: string) => log(` - ${msg}\n`, "success");
