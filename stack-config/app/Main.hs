@@ -27,6 +27,7 @@ import qualified Data.ByteString as L
   ( readFile,
     writeFile,
   )
+import Data.Text (pack)
 import Data.Version (showVersion)
 import qualified Paths_stack_config as CLI
 import Relude hiding (ByteString)
@@ -49,11 +50,11 @@ runApp App {..}
   | otherwise = runOperation operations
   where
     runOperation About = putStrLn $ "Morpheus GraphQL CLI, version " <> currentVersion
-    runOperation (Setup _) = do
+    runOperation (Setup (x : _)) = do
       putStrLn "something"
       let configPath = "./config/stack.yaml"
       config :: Config <- readYaml configPath
       writeYaml True configPath config
       stack :: Stack <- readYaml "./stack.yaml"
-      updateStack "latest" config stack >>= writeYaml True "./stack.yaml"
+      updateStack (pack x) config stack >>= writeYaml True "./stack.yaml"
       putStrLn (show stack)

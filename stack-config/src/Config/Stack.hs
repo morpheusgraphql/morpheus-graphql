@@ -57,7 +57,6 @@ allowNewer _ = False
 --     .flatMap((v) => Object.entries(config.plan(v).extra ?? {}))
 --     .map(([key, val]) => `${key}-${val}`)
 --     .sort();
---   const packages = difference([...config.packages(), ...include], exclude);
 
---   return { packages, "extra-deps": extra };
+--   return { "extra-deps": extra };
 -- };
