@@ -41,8 +41,8 @@ main = parseCLI >>= runApp
 readYaml :: (FromJSON a) => FilePath -> IO a
 readYaml = L.readFile >=> parseYaml
 
-writeYaml :: (ToJSON a) => Bool -> FilePath -> a -> IO ()
-writeYaml pretty path = L.writeFile path . serializeYaml pretty
+writeYaml :: (ToJSON a) => FilePath -> a -> IO ()
+writeYaml path = L.writeFile path . serializeYaml
 
 runApp :: App -> IO ()
 runApp App {..}
@@ -54,7 +54,7 @@ runApp App {..}
       putStrLn "something"
       let configPath = "./config/stack.yaml"
       config :: Config <- readYaml configPath
-      writeYaml True configPath config
+      writeYaml configPath config
       stack :: Stack <- readYaml "./stack.yaml"
-      updateStack (pack x) config stack >>= writeYaml True "./stack.yaml"
+      updateStack (pack x) config stack >>= writeYaml "./stack.yaml"
       putStrLn (show stack)
