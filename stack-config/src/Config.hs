@@ -7,6 +7,7 @@ module Config
     parseYaml,
     serializeYaml,
     updateStack,
+    Stack,
   )
 where
 
