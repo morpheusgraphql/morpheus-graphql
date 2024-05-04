@@ -55,8 +55,10 @@ allowNewer LatestVersion = True
 allowNewer _ = False
 
 getExtraDeps :: Version -> [(Version, Build)] -> [Text]
-getExtraDeps v xs = sort $ concatMap f $ filter includeVersion xs
+getExtraDeps v xs = sort $ map printExtra $ concatMap f $ filter includeVersion xs
   where
     includeVersion (k, _) = v <= k
-    f (_, b) = map printExtra $ maybe [] M.toList (extra b)
-    printExtra (k, ver) = k <> "-" <> show ver
+    f (_, b) = maybe [] M.toList (extra b)
+
+printExtra :: (Text, Version) -> Text
+printExtra (k, ver) = k <> "-" <> show ver
