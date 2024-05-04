@@ -51,7 +51,6 @@ runApp App {..}
   where
     runOperation About = putStrLn $ "Morpheus GraphQL CLI, version " <> currentVersion
     runOperation (Setup (x : _)) = do
-      putStrLn "something"
       let configPath = "./config/stack.yaml"
       config :: Config <- readYaml configPath
       writeYaml configPath config
