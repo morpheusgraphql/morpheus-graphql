@@ -53,11 +53,16 @@ runApp App {..}
     runOperation (Setup []) = setup "latest"
     runOperation (Setup (version : _)) = setup version
 
+configPath :: FilePath
+configPath = "./config/stack.yaml"
+
+stackPath :: String
+stackPath = "./stack.yaml"
+
 setup :: String -> IO ()
 setup version = do
-  let configPath = "./config/stack.yaml"
   config :: Config <- readYaml configPath
   writeYaml configPath config
-  stack :: Stack <- readYaml "./stack.yaml"
-  updateStack (pack version) config stack >>= writeYaml "./stack.yaml"
+  stack :: Stack <- readYaml stackPath
+  updateStack (pack version) config stack >>= writeYaml stackPath
   putStrLn "Ok"
