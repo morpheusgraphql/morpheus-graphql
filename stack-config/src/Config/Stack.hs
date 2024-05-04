@@ -55,11 +55,11 @@ allowNewer LatestVersion = True
 allowNewer _ = False
 
 getExtraDeps :: Version -> [(Version, Build)] -> [Text]
-getExtraDeps v xs = concatMap f $ filter includeVersion xs
+getExtraDeps v xs = traceShow v $ concatMap f $ filter includeVersion xs
   where
     includeVersion (k, _) = v > k
     f (_, b) = map printExtra $ maybe [] M.toList (extra b)
-    printExtra (k, ver) = k <> show ver
+    printExtra (k, ver) = k <> "-"<>show ver
 
 --     .plans()
 --     .filter((v) => Version.compare(v, version) >= 0)
