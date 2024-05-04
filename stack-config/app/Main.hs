@@ -60,4 +60,4 @@ setup version = do
   writeYaml configPath config
   stack :: Stack <- readYaml "./stack.yaml"
   updateStack (pack version) config stack >>= writeYaml "./stack.yaml"
-  putStrLn (show stack)
+  putStrLn "Ok"
