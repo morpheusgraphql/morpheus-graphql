@@ -50,10 +50,14 @@ runApp App {..}
   | otherwise = runOperation operations
   where
     runOperation About = putStrLn $ "Morpheus GraphQL CLI, version " <> currentVersion
-    runOperation (Setup (x : _)) = do
-      let configPath = "./config/stack.yaml"
-      config :: Config <- readYaml configPath
-      writeYaml configPath config
-      stack :: Stack <- readYaml "./stack.yaml"
-      updateStack (pack x) config stack >>= writeYaml "./stack.yaml"
-      putStrLn (show stack)
+    runOperation (Setup []) = setup "latest"
+    runOperation (Setup (version : _)) = setup version
+
+setup :: String -> IO ()
+setup version = do
+  let configPath = "./config/stack.yaml"
+  config :: Config <- readYaml configPath
+  writeYaml configPath config
+  stack :: Stack <- readYaml "./stack.yaml"
+  updateStack (pack version) config stack >>= writeYaml "./stack.yaml"
+  putStrLn (show stack)
