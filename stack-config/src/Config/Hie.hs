@@ -15,10 +15,12 @@ module Config.Hie
 where
 
 import Config.File
-import Config.Package (LibType (..), Package, PackageType (..), readPackage)
+import Config.Package (LibType (..), PackageType (..), readPackage)
 import Config.Types (Config, getPackages)
 import Data.Aeson (FromJSON (..), ToJSON (..), Value (..), object)
+import qualified Data.Aeson.Key as K
 import Data.Aeson.KeyMap (KeyMap)
+import qualified Data.Aeson.KeyMap as KM
 import Data.Text (unpack)
 import Relude hiding (Undefined, intercalate)
 
@@ -31,7 +33,7 @@ newtype Hie = Hie (KeyMap Value)
 
 genHie :: Text -> Config -> IO Hie
 genHie stack config = do
-  packages <- traverse (\p -> (p,) <$> readPackage (unpack p)) (getPackages config)
+  packages <- traverse (\p -> (p,) . getData <$> readPackage (unpack p)) (getPackages config)
   pure
     $ Hie
     $ fromList
@@ -40,18 +42,28 @@ genHie stack config = do
             [ ( "stack",
                 object
                   [ ("stackYaml", String stack),
-                    ("components", Array $ fromList $ concatMap toComponent packages)
+                    ("components", Array $ fromList $ (concatMap toLib packages <> concatMap toTests packages))
                   ]
               )
             ]
         )
       ]
 
-toComponent :: (Text, Package) -> [Value]
-toComponent (path, Yaml PackageType {library = Just (Yaml LibType {..} _), name} _) =
+toComp :: Text -> Text -> Maybe (Yaml LibType) -> Text -> [Value]
+toComp path name (Just (Yaml LibType {..} _)) lib =
   [ object
       [ ("path", String ("./" <> path <> "/" <> sourceDirs)),
-        ("component", String (name <> ":lib"))
+        ("component", String (name <> ":" <> lib))
       ]
   ]
-toComponent _ = []
+toComp _ _ _ _ = []
+
+groupComp :: Text -> Text -> Text -> KeyMap (Yaml LibType) -> [Value]
+groupComp path name pref libs = concatMap (\(k, lib) -> toComp path name (Just lib) (pref <> ":" <> K.toText k)) (KM.toList libs)
+
+toLib :: (Text, PackageType) -> [Value]
+toLib (path, PackageType {library, name}) = toComp path name library "lib"
+
+toTests :: (Text, PackageType) -> [Value]
+toTests (path, PackageType {tests = Just m, name}) = groupComp path name "test" m
+toTests _ = []

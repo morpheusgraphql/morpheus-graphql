@@ -17,6 +17,7 @@ where
 
 import Config.File (Yaml, aesonYAMLOptions, readYaml)
 import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
+import Data.Aeson.KeyMap (KeyMap)
 import Relude hiding (Undefined, intercalate)
 
 type Package = Yaml PackageType
@@ -40,7 +41,8 @@ instance ToJSON LibType where
 
 data PackageType = PackageType
   { name :: Text,
-    library :: Maybe Lib
+    library :: Maybe Lib,
+    tests :: Maybe (KeyMap Lib)
   }
   deriving
     ( Show,
