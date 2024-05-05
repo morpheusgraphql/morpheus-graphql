@@ -48,6 +48,9 @@ configPath = "./config/stack.yaml"
 stackPath :: FilePath
 stackPath = "./stack.yaml"
 
+hiePath :: FilePath
+hiePath = "./hie.yaml"
+
 setup :: String -> IO ()
 setup version = do
   config :: Config <- readYaml configPath
@@ -55,5 +58,5 @@ setup version = do
   readYaml stackPath
     >>= updateStack (pack version) config
     >>= writeYaml stackPath
-  genHie (pack stackPath) config >>= writeYaml "hie.yaml"
+  genHie (pack stackPath) config >>= writeYaml hiePath
   putStrLn "Ok"
