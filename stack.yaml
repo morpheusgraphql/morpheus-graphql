@@ -15,6 +15,7 @@ packages:
 - morpheus-graphql-client
 - morpheus-graphql-subscriptions
 - morpheus-graphql-server
+- morpheus-graphql-benchmarks
 - morpheus-graphql
 - stack-config
 allow-newer: true
