@@ -16,7 +16,7 @@ module Config.Package
   )
 where
 
-import Config.File (Yaml, aesonYAMLOptions, readYaml, writeYaml)
+import Config.File (Yaml (..), aesonYAMLOptions, readYaml, writeYaml)
 import Config.Types (Config, getPackages)
 import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import Data.Aeson.KeyMap (KeyMap)
@@ -63,8 +63,8 @@ instance ToJSON PackageType where
 readPackage :: FilePath -> IO Package
 readPackage file = readYaml (file <> "/package.yaml")
 
-updatePackage :: Config -> PackageType -> PackageType
-updatePackage _ = id
+updatePackage :: Config -> Package -> Package
+updatePackage _ (Yaml v props) = (Yaml v props)
 
 checkPackage :: Config -> Text -> IO ()
 checkPackage config path =
