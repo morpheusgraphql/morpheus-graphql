@@ -50,8 +50,8 @@ genHie stack config = do
 toComponent :: (Text, Package) -> [Value]
 toComponent (path, Yaml PackageType {library = Just (Yaml LibType {..} _), name} _) =
   [ object
-      [ ("path", String ("./" <> path)),
-        ("component", String (name <> ":" <> sourceDirs))
+      [ ("path", String ("./" <> path <> "/" <> sourceDirs)),
+        ("component", String (name <> ":lib"))
       ]
   ]
 toComponent _ = []
