@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections #-}
@@ -14,7 +15,7 @@ module Config.Hie
 where
 
 import Config.File
-import Config.Package (Package, PackageType (..), readPackage)
+import Config.Package (LibType (..), Package, PackageType (..), readPackage)
 import Config.Types (Config, getPackages)
 import Data.Aeson (FromJSON (..), ToJSON (..), Value (..), object)
 import Data.Aeson.KeyMap (KeyMap)
@@ -47,9 +48,10 @@ genHie stack config = do
       ]
 
 toComponent :: (Text, Package) -> [Value]
-toComponent (path, Yaml PackageType {..} _) =
+toComponent (path, Yaml PackageType {library = Just (Yaml LibType {..} _), name} _) =
   [ object
-      [ ("path", String path),
-        ("component", String name)
+      [ ("path", String ("./" <> path)),
+        ("component", String (name <> ":" <> sourceDirs))
       ]
   ]
+toComponent _ = []

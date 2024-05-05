@@ -93,7 +93,7 @@ instance ToJSON Config where
   toJSON = genericToJSON defaultOptions {omitNothingFields = True}
 
 fields :: [Text]
-fields = ["name", "version", "bounds", "resolver", "packages", "include", "exclude", "allow-newer", "save-hackage-creds", "extra-deps"]
+fields = ["name", "version", "bounds", "resolver", "packages", "include", "exclude", "allow-newer", "save-hackage-creds", "extra-deps", "stackyaml", "components", "path", "component"]
 
 compareFieldNames :: Text -> Text -> Ordering
 compareFieldNames x y = case (findIndex (== x) fields, findIndex (== y) fields) of

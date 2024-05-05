@@ -11,6 +11,7 @@ module Config.Package
   ( readPackage,
     PackageType (..),
     Package,
+    LibType (..),
   )
 where
 
@@ -20,7 +21,27 @@ import Relude hiding (Undefined, intercalate)
 
 type Package = Yaml PackageType
 
-data PackageType = PackageType {name :: Text}
+data LibType = LibType
+  { sourceDirs :: Text,
+    dependencies :: Maybe [Text]
+  }
+  deriving
+    ( Show,
+      Generic
+    )
+
+type Lib = Yaml LibType
+
+instance FromJSON LibType where
+  parseJSON = genericParseJSON aesonYAMLOptions
+
+instance ToJSON LibType where
+  toJSON = genericToJSON aesonYAMLOptions
+
+data PackageType = PackageType
+  { name :: Text,
+    library :: Maybe Lib
+  }
   deriving
     ( Show,
       Generic
