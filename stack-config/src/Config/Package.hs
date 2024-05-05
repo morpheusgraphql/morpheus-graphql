@@ -42,7 +42,8 @@ instance ToJSON LibType where
 data PackageType = PackageType
   { name :: Text,
     library :: Maybe Lib,
-    tests :: Maybe (KeyMap Lib)
+    tests :: Maybe (KeyMap Lib),
+    executables :: Maybe (KeyMap Lib)
   }
   deriving
     ( Show,

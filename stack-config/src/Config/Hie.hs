@@ -42,7 +42,14 @@ genHie stack config = do
             [ ( "stack",
                 object
                   [ ("stackYaml", String stack),
-                    ("components", Array $ fromList $ (concatMap toLib packages <> concatMap toTests packages))
+                    ( "components",
+                      Array
+                        $ fromList
+                        $ ( concatMap toLib packages
+                              <> concatMap toTests packages
+                              <> concatMap toExec packages
+                          )
+                    )
                   ]
               )
             ]
@@ -67,3 +74,7 @@ toLib (path, PackageType {library, name}) = toComp path name library "lib"
 toTests :: (Text, PackageType) -> [Value]
 toTests (path, PackageType {tests = Just m, name}) = groupComp path name "test" m
 toTests _ = []
+
+toExec :: (Text, PackageType) -> [Value]
+toExec (path, PackageType {executables = Just m, name}) = groupComp path name "exe" m
+toExec _ = []
