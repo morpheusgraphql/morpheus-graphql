@@ -54,7 +54,7 @@ instance (FromJSON t) => FromJSON (Yaml t) where
 instance (ToJSON t) => ToJSON (Yaml t) where
   toJSON (Yaml t v) = do
     let override = toObject (toJSON t)
-    (Object (v <> override))
+    (Object (override <> v))
 
 toObject :: Value -> Object
 toObject (Object x) = x
