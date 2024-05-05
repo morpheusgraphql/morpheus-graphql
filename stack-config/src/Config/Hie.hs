@@ -31,9 +31,9 @@ newtype Hie = Hie (KeyMap Value)
       Show
     )
 
-genHie :: [Text] -> Text -> Config -> IO Hie
-genHie extra stack config = do
-  packages <- traverse (\p -> (p,) . getData <$> readPackage (unpack p)) (getPackages config <> extra)
+genHie :: Text -> Config -> IO Hie
+genHie stack config = do
+  packages <- traverse (\p -> (p,) . getData <$> readPackage (unpack p)) (getPackages config)
   pure
     $ Hie
     $ fromList

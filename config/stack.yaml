@@ -23,6 +23,7 @@ packages:
   - client
   - subscriptions
   - server
+  - benchmarks
   - .
   prefix: morpheus-graphql
 - dir: ./
