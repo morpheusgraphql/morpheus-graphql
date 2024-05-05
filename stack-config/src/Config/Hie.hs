@@ -4,6 +4,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | GQL Types
@@ -29,7 +30,7 @@ newtype Hie = Hie (KeyMap Value)
 
 genHie :: Text -> Config -> IO Hie
 genHie stack config = do
-  packages <- traverse (readPackage . unpack) (getPackages config)
+  packages <- traverse (\p -> (p,) <$> readPackage (unpack p)) (getPackages config)
   pure
     $ Hie
     $ fromList
@@ -45,10 +46,10 @@ genHie stack config = do
         )
       ]
 
-toComponent :: Package -> [Value]
-toComponent (Yaml PackageType {..} _) =
+toComponent :: (Text, Package) -> [Value]
+toComponent (path, Yaml PackageType {..} _) =
   [ object
-      [ ("path", String name),
-        ("component", String "")
+      [ ("path", String path),
+        ("component", String name)
       ]
   ]
