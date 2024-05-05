@@ -67,7 +67,10 @@ updatePackage :: Config -> PackageType -> PackageType
 updatePackage _ = id
 
 checkPackage :: Config -> Text -> IO ()
-checkPackage config path = readPackage (unpack path) >>= writeYaml (unpack path <> "/package.yaml") . updatePackage config
+checkPackage config path =
+  readPackage (unpack path)
+    >>= writeYaml (unpack path <> "/package.yaml")
+    . updatePackage config
 
 checkPackages :: Config -> IO ()
 checkPackages config = traverse_ (checkPackage config) (getPackages config)
