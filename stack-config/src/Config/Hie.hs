@@ -48,6 +48,7 @@ genHie extra stack config = do
                         $ ( concatMap toLib packages
                               <> concatMap toTests packages
                               <> concatMap toExec packages
+                              <> concatMap toBench packages
                           )
                     )
                   ]
@@ -78,3 +79,7 @@ toTests _ = []
 toExec :: (Text, PackageType) -> [Value]
 toExec (path, PackageType {executables = Just m, name}) = groupComp path name "exe" m
 toExec _ = []
+
+toBench :: (Text, PackageType) -> [Value]
+toBench (path, PackageType {benchmarks = Just m, name}) = groupComp path name "bench" m
+toBench _ = []

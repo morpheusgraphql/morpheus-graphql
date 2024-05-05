@@ -43,7 +43,8 @@ data PackageType = PackageType
   { name :: Text,
     library :: Maybe Lib,
     tests :: Maybe (KeyMap Lib),
-    executables :: Maybe (KeyMap Lib)
+    executables :: Maybe (KeyMap Lib),
+    benchmarks :: Maybe (KeyMap Lib)
   }
   deriving
     ( Show,
