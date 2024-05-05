@@ -63,8 +63,11 @@ instance ToJSON PackageType where
 readPackage :: FilePath -> IO Package
 readPackage file = readYaml (file <> "/package.yaml")
 
+updatePackage :: Config -> PackageType -> PackageType
+updatePackage _ = id
+
 checkPackage :: Config -> Text -> IO ()
-checkPackage _ path = readPackage (unpack path) >>= writeYaml (unpack path <> "/package.yaml") 
+checkPackage config path = readPackage (unpack path) >>= writeYaml (unpack path <> "/package.yaml") . updatePackage config
 
 checkPackages :: Config -> IO ()
 checkPackages config = traverse_ (checkPackage config) (getPackages config)
