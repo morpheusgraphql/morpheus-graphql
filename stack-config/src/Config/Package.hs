@@ -16,7 +16,7 @@ module Config.Package
   )
 where
 
-import Config.File (Yaml, aesonYAMLOptions, readYaml)
+import Config.File (Yaml, aesonYAMLOptions, readYaml, writeYaml)
 import Config.Types (Config, getPackages)
 import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import Data.Aeson.KeyMap (KeyMap)
@@ -64,9 +64,7 @@ readPackage :: FilePath -> IO Package
 readPackage file = readYaml (file <> "/package.yaml")
 
 checkPackage :: Config -> Text -> IO ()
-checkPackage _ path = do
-  p <- readPackage (unpack path)
-  traceShow p $ pure ()
+checkPackage _ path = readPackage (unpack path) >>= writeYaml (unpack path <> "/package.yaml") 
 
 checkPackages :: Config -> IO ()
 checkPackages config = traverse_ (checkPackage config) (getPackages config)
