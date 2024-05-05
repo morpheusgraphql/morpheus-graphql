@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -13,46 +14,54 @@ module Config.Stack
   )
 where
 
+import Config.File
 import Config.Types (Build (..), Config, getBuild, getBuilds, getPackages)
 import Config.Version (Version (..), parseVersion)
-import Control.Monad (foldM)
-import Data.Aeson (FromJSON (..), Key, ToJSON (..), Value (..))
-import Data.Aeson.KeyMap (KeyMap, alterF)
+import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import Data.List ((\\))
 import qualified Data.Map as M
 import Relude hiding (Undefined, intercalate)
 
-newtype Stack = Stack (KeyMap Value)
-  deriving newtype
-    ( ToJSON,
-      FromJSON,
-      Show
+type Stack = Yaml StackType
+
+data StackType = StackType
+  { packages :: [Text],
+    resolver :: Text,
+    allowNewer :: Maybe Bool,
+    saveHackageCreds :: Maybe Bool,
+    extraDeps :: [Text]
+  }
+  deriving
+    ( Show,
+      Generic
     )
 
-set :: (Applicative f) => KeyMap v -> (Key, v) -> f (KeyMap v)
-set v (k, p) = alterF (\_ -> pure (Just p)) k v
+instance FromJSON StackType where
+  parseJSON = genericParseJSON aesonYAMLOptions
 
-setFields :: (Monad f) => [(Key, v)] -> KeyMap v -> f (KeyMap v)
-setFields fs stack = foldM set stack fs
+instance ToJSON StackType where
+  toJSON = genericToJSON aesonYAMLOptions
 
 updateStack :: (MonadFail m) => Text -> Config -> Stack -> m Stack
-updateStack v config (Stack stack) = do
+updateStack v config (Yaml _ yaml) = do
   version <- parseVersion v
   Build {..} <- getBuild version config
   extraDeps <- getExtraDeps version <$> getBuilds config
-  Stack
-    <$> setFields
-      [ ("packages", Array $ fromList $ map String $ (getPackages config <> fromMaybe [] include) \\ fromMaybe [] exclude),
-        ("resolver", String resolver),
-        ("allow-newer", Bool (allowNewer version)),
-        ("save-hackage-creds", Bool False),
-        ("extra-deps", Array $ fromList $ map String $ extraDeps)
-      ]
-      stack
+  let packages = (getPackages config <> maybeList include) \\ maybeList exclude
+  pure
+    $ Yaml
+      StackType
+        { packages,
+          resolver,
+          allowNewer = Just (getAllowNewer version),
+          saveHackageCreds = Just False,
+          extraDeps
+        }
+      yaml
 
-allowNewer :: Version -> Bool
-allowNewer LatestVersion = True
-allowNewer _ = False
+getAllowNewer :: Version -> Bool
+getAllowNewer LatestVersion = True
+getAllowNewer _ = False
 
 getExtraDeps :: Version -> [(Version, Build)] -> [Text]
 getExtraDeps v xs = sort $ map printExtra $ concatMap f $ filter includeVersion xs
