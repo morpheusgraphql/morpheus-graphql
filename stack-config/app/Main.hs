@@ -55,5 +55,5 @@ setup version = do
   readYaml stackPath
     >>= updateStack (pack version) config
     >>= writeYaml stackPath
-  genHie (pack stackPath) config >>= writeYaml "hie.yaml"
+  genHie ["morpheus-graphql-benchmarks"] (pack stackPath) config >>= writeYaml "hie.yaml"
   putStrLn "Ok"
