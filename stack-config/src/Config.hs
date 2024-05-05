@@ -9,14 +9,12 @@ module Config
     Stack,
     writeYaml,
     readYaml,
+    checkPackages,
   )
 where
 
 import Config.File (readYaml, writeYaml)
 import Config.Hie
+import Config.Package (checkPackages)
 import Config.Stack
 import Config.Types
-
--- export const setup = async (version: string) => {
---   checkPackages();
--- };

@@ -17,6 +17,7 @@ import CLI.Commands
   )
 import Config
   ( Config,
+    checkPackages,
     genHie,
     readYaml,
     updateStack,
@@ -59,4 +60,5 @@ setup version = do
     >>= updateStack (pack version) config
     >>= writeYaml stackPath
   genHie (pack stackPath) config >>= writeYaml hiePath
+  checkPackages config
   putStrLn "Ok"

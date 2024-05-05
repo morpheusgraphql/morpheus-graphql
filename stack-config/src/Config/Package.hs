@@ -12,10 +12,12 @@ module Config.Package
     PackageType (..),
     Package,
     LibType (..),
+    checkPackages,
   )
 where
 
 import Config.File (Yaml, aesonYAMLOptions, readYaml)
+import Config.Types
 import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import Data.Aeson.KeyMap (KeyMap)
 import Relude hiding (Undefined, intercalate)
@@ -59,3 +61,6 @@ instance ToJSON PackageType where
 
 readPackage :: FilePath -> IO Package
 readPackage file = readYaml (file <> "/package.yaml")
+
+checkPackages :: Config -> IO ()
+checkPackages _ = pure ()
