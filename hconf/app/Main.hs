@@ -18,8 +18,7 @@ import CLI.Commands
 import Data.Text (pack)
 import Data.Version (showVersion)
 import HConf
-  ( Config,
-    checkPackages,
+  ( checkPackages,
     genHie,
     readYaml,
     setupStack,
@@ -43,13 +42,11 @@ runApp App {..}
     runOperation (Setup []) = setup "latest"
     runOperation (Setup (version : _)) = setup version
 
-hconfPath :: FilePath
-hconfPath = "./hconf.yaml"
-
 setup :: String -> IO ()
 setup version = do
+  let hconfPath = "./hconf.yaml"
   let stackPath = "./stack.yaml"
-  config :: Config <- readYaml hconfPath
+  config <- readYaml hconfPath
   writeYaml hconfPath config
   setupStack stackPath (pack version) config
   genHie "./hie.yaml" (pack stackPath) config
