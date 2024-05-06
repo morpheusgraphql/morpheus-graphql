@@ -60,8 +60,11 @@ instance FromJSON PackageType where
 instance ToJSON PackageType where
   toJSON = genericToJSON aesonYAMLOptions
 
+toPath :: FilePath -> FilePath
+toPath = (<> "/package.yaml")
+
 readPackage :: FilePath -> IO Package
-readPackage file = readYaml (file <> "/package.yaml")
+readPackage = readYaml . toPath
 
 updatePackage :: Config -> Package -> Package
 updatePackage _ (Yaml v props) = (Yaml v props)
@@ -69,7 +72,7 @@ updatePackage _ (Yaml v props) = (Yaml v props)
 checkPackage :: Config -> Text -> IO ()
 checkPackage config path =
   readPackage (unpack path)
-    >>= writeYaml (unpack path <> "/package.yaml")
+    >>= writeYaml (toPath $ unpack path)
     . updatePackage config
 
 checkPackages :: Config -> IO ()

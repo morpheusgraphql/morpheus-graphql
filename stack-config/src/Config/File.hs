@@ -11,7 +11,6 @@ module Config.File
     Yaml (..),
     maybeList,
     aesonYAMLOptions,
-    getData,
   )
 where
 
@@ -40,10 +39,7 @@ readYaml = L.readFile >=> parseYaml
 writeYaml :: (ToJSON a) => FilePath -> a -> IO ()
 writeYaml path = L.writeFile path . serializeYaml
 
-data Yaml t = Yaml t (KeyMap Value) deriving (Generic)
-
-getData :: Yaml t -> t
-getData (Yaml d _) = d
+data Yaml t = Yaml {getData :: t, rawValue :: (KeyMap Value)} deriving (Generic)
 
 instance (Show t) => Show (Yaml t) where
   show (Yaml t _) = show t
