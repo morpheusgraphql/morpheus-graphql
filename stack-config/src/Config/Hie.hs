@@ -44,13 +44,7 @@ genHie stack config = do
                 object
                   [ ("stackYaml", String stack),
                     ( "components",
-                      Array
-                        $ fromList
-                        $ ( concatMap toLib packages
-                              <> concatMap toTests packages
-                              <> concatMap toExec packages
-                              <> concatMap toBench packages
-                          )
+                      Array $ fromList $ (concatMap toLib packages)
                     )
                   ]
               )
@@ -67,20 +61,13 @@ toComp path name (Just (Yaml LibType {..} _)) lib =
   ]
 toComp _ _ _ _ = []
 
-groupComp :: Text -> Text -> Text -> KeyMap (Yaml LibType) -> [Value]
-groupComp path name pref libs = concatMap (\(k, lib) -> toComp path name (Just lib) (pref <> ":" <> K.toText k)) (KM.toList libs)
+groupComp :: Text -> Text -> Text -> Maybe (KeyMap (Yaml LibType)) -> [Value]
+groupComp path name pref (Just libs) = concatMap (\(k, lib) -> toComp path name (Just lib) (pref <> ":" <> K.toText k)) (KM.toList libs)
+groupComp _ _ _ _ = []
 
 toLib :: (Text, Package) -> [Value]
-toLib (path, Package {library, name}) = toComp path name library "lib"
-
-toTests :: (Text, Package) -> [Value]
-toTests (path, Package {tests = Just m, name}) = groupComp path name "test" m
-toTests _ = []
-
-toExec :: (Text, Package) -> [Value]
-toExec (path, Package {executables = Just m, name}) = groupComp path name "exe" m
-toExec _ = []
-
-toBench :: (Text, Package) -> [Value]
-toBench (path, Package {benchmarks = Just m, name}) = groupComp path name "bench" m
-toBench _ = []
+toLib (path, Package {..}) =
+  toComp path name library "lib"
+    <> groupComp path name "test" tests
+    <> groupComp path name "exe" executables
+    <> groupComp path name "bench" benchmarks
