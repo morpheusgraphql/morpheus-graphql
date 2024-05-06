@@ -72,14 +72,10 @@ updatePackage config (Yaml v props) =
   )
 
 updateDeps :: Config -> Libs -> Libs
-updateDeps config (Just x) = Just (fmap (updateLib config) x)
-updateDeps _ Nothing = Nothing
+updateDeps config = fmap (fmap (updateLib config))
 
-checkPackage :: Config -> Text -> IO ()
-checkPackage config path =
-  readPackage (unpack path)
-    >>= writeYaml (toPath $ unpack path)
-    . updatePackage config
+checkPackage :: Config -> FilePath -> IO ()
+checkPackage config path = readPackage path >>= writeYaml (toPath path) . updatePackage config
 
 checkPackages :: Config -> IO ()
-checkPackages config = traverse_ (checkPackage config) (getPackages config)
+checkPackages config = traverse_ (checkPackage config . unpack) (getPackages config)
