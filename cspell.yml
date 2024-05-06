@@ -49,6 +49,7 @@ words:
   - hlint
   - hpack
   - hsep
+  - hconf
   - hunit
   - ifromJSON
   - inlineable

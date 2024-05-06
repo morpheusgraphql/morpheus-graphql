@@ -17,7 +17,7 @@ packages:
 - morpheus-graphql-server
 - morpheus-graphql-benchmarks
 - morpheus-graphql
-- stack-config
+- hconf
 allow-newer: true
 save-hackage-creds: false
 extra-deps:

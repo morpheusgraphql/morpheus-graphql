@@ -28,7 +28,7 @@ packages:
   prefix: morpheus-graphql
 - dir: ./
   names:
-  - stack-config
+  - hconf
 builds:
   8.2.2:
     resolver: lts-11.10

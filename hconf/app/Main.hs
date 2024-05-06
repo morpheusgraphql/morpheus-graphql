@@ -25,7 +25,7 @@ import Config
   )
 import Data.Text (pack)
 import Data.Version (showVersion)
-import qualified Paths_stack_config as CLI
+import qualified Paths_hconf as CLI
 import Relude hiding (ByteString)
 
 currentVersion :: String
