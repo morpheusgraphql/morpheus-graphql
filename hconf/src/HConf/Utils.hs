@@ -11,6 +11,7 @@ module HConf.Utils
   ( compareFields,
     maybeList,
     toKebabCase,
+    Name,
   )
 where
 
@@ -19,6 +20,8 @@ import Data.List (findIndex)
 import Data.Text (toTitle)
 import HConf.Version (parseVersion)
 import Relude hiding (Undefined, intercalate)
+
+type Name = Text
 
 fields :: [Text]
 fields =

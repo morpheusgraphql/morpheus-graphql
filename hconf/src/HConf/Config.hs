@@ -22,6 +22,7 @@ import Data.Aeson (FromJSON (..), Options (..), ToJSON (toJSON), genericToJSON)
 import Data.Aeson.Types (defaultOptions)
 import qualified Data.Map as M
 import Data.Text (unpack)
+import HConf.Utils
 import HConf.Version (Deps, Version, VersionBounds, parseVersion)
 import Relude hiding (Undefined, intercalate)
 
@@ -55,7 +56,7 @@ instance ToJSON Build where
   toJSON = genericToJSON defaultOptions {omitNothingFields = True}
 
 data Config = Config
-  { name :: Text,
+  { name :: Name,
     version :: Version,
     bounds :: VersionBounds,
     packages :: [PkgGroup],
