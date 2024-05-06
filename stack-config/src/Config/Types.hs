@@ -15,6 +15,7 @@ module Config.Types
     getBuild,
     Build (..),
     getBuilds,
+    getVersion,
   )
 where
 
@@ -57,7 +58,7 @@ instance ToJSON Build where
 
 data Config = Config
   { name :: Text,
-    version :: Text,
+    version :: Version,
     bounds :: Text,
     packages :: [PkgGroup],
     builds :: Map Text Build,
@@ -68,6 +69,9 @@ data Config = Config
       FromJSON,
       Show
     )
+
+getVersion :: Config -> Version
+getVersion = version
 
 getPackages :: Config -> [Text]
 getPackages Config {..} = concatMap toPkg packages
