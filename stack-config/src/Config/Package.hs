@@ -15,7 +15,7 @@ module Config.Package
   )
 where
 
-import Config.File (Yaml (..), aesonYAMLOptions, readYaml, writeYaml)
+import Config.File (Yaml (..), aesonYAMLOptions, mapYaml, readYaml, writeYaml)
 import Config.Lib (Lib, updateDependencies, updateLib)
 import Config.Types (Config, getPackages, getVersion)
 import Config.Version (Version)
@@ -56,26 +56,23 @@ toPath = (<> "/package.yaml")
 readPackage :: FilePath -> IO Package
 readPackage = readYaml . toPath
 
-updatePackage :: Config -> Package -> Package
-updatePackage config (Yaml v props) =
-  ( Yaml
-      ( v
-          { version = getVersion config,
-            library = fmap (updateLib config) (library v),
-            tests = updateDeps config (tests v),
-            executables = updateDeps config (executables v),
-            benchmarks = updateDeps config (benchmarks v),
-            dependencies = updateDependencies config (dependencies v)
-          }
-      )
-      props
-  )
+updatePackage :: Config -> PackageType -> PackageType
+updatePackage config PackageType {..} =
+  PackageType
+    { version = getVersion config,
+      library = fmap (updateLib config) library,
+      tests = updateDeps config tests,
+      executables = updateDeps config executables,
+      benchmarks = updateDeps config benchmarks,
+      dependencies = updateDependencies config dependencies,
+      ..
+    }
 
 updateDeps :: Config -> Libs -> Libs
 updateDeps config = fmap (fmap (updateLib config))
 
 checkPackage :: Config -> FilePath -> IO ()
-checkPackage config path = readPackage path >>= writeYaml (toPath path) . updatePackage config
+checkPackage config path = readPackage path >>= writeYaml (toPath path) . mapYaml (updatePackage config)
 
 checkPackages :: Config -> IO ()
 checkPackages config = traverse_ (checkPackage config . unpack) (getPackages config)

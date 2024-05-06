@@ -11,6 +11,7 @@ module Config.File
     Yaml (..),
     maybeList,
     aesonYAMLOptions,
+    mapYaml,
   )
 where
 
@@ -69,3 +70,6 @@ toKebabCase = concatMap toKebab
 
 aesonYAMLOptions :: Options
 aesonYAMLOptions = defaultOptions {fieldLabelModifier = toKebabCase}
+
+mapYaml :: (t -> t) -> Yaml t -> Yaml t
+mapYaml f (Yaml v props) = Yaml (f v) props
