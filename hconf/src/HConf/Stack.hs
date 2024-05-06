@@ -20,7 +20,7 @@ import qualified Data.Map as M
 import HConf.Config (Build (..), Config, getBuild, getBuilds, getPackages)
 import HConf.Utils (maybeList)
 import HConf.Version (Version (..), parseVersion)
-import HConf.Yaml (Yaml (..), aesonYAMLOptions, mapYaml, mapYamlM, readYaml, writeYaml)
+import HConf.Yaml (Yaml (..), aesonYAMLOptions, mapYaml, mapYamlM, readYaml, rewriteYaml, writeYaml)
 import Relude hiding (Undefined, intercalate)
 
 type StackYaml = Yaml Stack
@@ -44,10 +44,7 @@ instance ToJSON Stack where
   toJSON = genericToJSON aesonYAMLOptions
 
 setupStack :: FilePath -> Text -> Config -> IO ()
-setupStack path version config =
-  readYaml path
-    >>= mapYamlM (updateStack version config)
-    >>= writeYaml path
+setupStack path version config = rewriteYaml path (updateStack version config)
 
 updateStack :: (MonadFail m) => Text -> Config -> Stack -> m Stack
 updateStack v config _ = do

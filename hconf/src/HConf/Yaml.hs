@@ -12,6 +12,7 @@ module HConf.Yaml
     aesonYAMLOptions,
     mapYaml,
     mapYamlM,
+    rewriteYaml,
   )
 where
 
@@ -77,3 +78,9 @@ mapYaml f (Yaml v props) = Yaml (f v) props
 
 mapYamlM :: (Functor m) => (t -> m t) -> Yaml t -> m (Yaml t)
 mapYamlM f (Yaml v props) = (`Yaml` props) <$> f v
+
+rewriteYaml :: (FromJSON t, ToJSON t) => FilePath -> (t -> IO t) -> IO ()
+rewriteYaml path f =
+  readYaml path
+    >>= mapYamlM f
+    >>= writeYaml path
