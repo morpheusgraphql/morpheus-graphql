@@ -22,8 +22,9 @@ import Config.Version (Version)
 import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import Data.Aeson.KeyMap (KeyMap)
 import Data.Char (isSeparator)
-import Data.Text (intercalate, replicate, split, unpack)
-import Relude hiding (Undefined, intercalate, replicate)
+import Data.List (maximum)
+import Data.Text (intercalate, length, replicate, split, unpack)
+import Relude hiding (Undefined, intercalate, length, replicate)
 
 type Package = Yaml PackageType
 
@@ -92,10 +93,16 @@ updatePackage config (Yaml v props) =
 fill :: Int -> Text
 fill n = replicate n " "
 
--- export const formatTable = (table: Table) => {
---   const sizes = transpose(table).map((colum) =>
+--   const sizes = map((colum) =>
 --     Math.max(...colum.map((item) => item.length))
 --   );
+getSizes :: [[Text]] -> [Int]
+getSizes xs = map size (transpose xs)
+  where
+    size :: [Text] -> Int
+    size = maximum . map length
+
+-- export const formatTable = (table: Table) => {
 
 --   return table.map((row) =>
 --     row
