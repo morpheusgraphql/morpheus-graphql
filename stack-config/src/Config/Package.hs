@@ -93,7 +93,7 @@ formatDependencies :: [[Text]] -> [Text]
 formatDependencies = concat
 
 updateDependencies :: Config -> [Text] -> [Text]
-updateDependencies _ = formatDependencies . map (checkDependency . split isSeparator) . sort
+updateDependencies _ = formatDependencies . map (checkDependency . filter (/= "") . split isSeparator) . sort
 
 checkDependency :: [Text] -> [Text]
 checkDependency = id
