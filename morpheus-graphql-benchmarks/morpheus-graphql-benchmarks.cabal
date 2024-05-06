@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           morpheus-graphql-benchmarks
-version:        0.1.0
+version:        0.27.3
 synopsis:       Morpheus GraphQL Benchmarks
 description:    Build GraphQL APIs with your favorite functional language!
 category:       web, graphql
@@ -40,7 +40,7 @@ benchmark morpheus-graphql-bench
       Paths_morpheus_graphql_benchmarks
   hs-source-dirs:
       src
-  ghc-options: -eventlog -threaded -rtsopts -with-rtsopts=-N6 -O2
+  ghc-options: -O2 -eventlog -rtsopts -threaded -with-rtsopts=-N6
   build-depends:
       base >=4.7 && <5
     , bytestring >=0.10.4 && <0.12

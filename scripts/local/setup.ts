@@ -40,7 +40,7 @@ export const setup = async (version: string) => {
 
   ok(`${defs.STACK} (ghc ${version})`);
 
-  hie([...config.packages(), "morpheus-graphql-benchmarks"]);
+  hie(config.packages());
 
   ok(defs.HIE);
 
