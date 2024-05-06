@@ -62,7 +62,10 @@ formatDependencies :: [[Text]] -> [Text]
 formatDependencies deps = map (printRow (getSizes deps)) deps
 
 updateDependencies :: Config -> [Text] -> [Text]
-updateDependencies config = formatDependencies . map (checkDependency config . filter (/= "") . split isSeparator) . sort
+updateDependencies config =
+  formatDependencies
+    . map (checkDependency config . filter (/= "") . split isSeparator)
+    . sort
 
 withRule :: Text -> VersionBounds -> [Text]
 withRule name NoBounds = [name]
