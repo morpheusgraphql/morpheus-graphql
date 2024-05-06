@@ -8,8 +8,7 @@
 
 -- | GQL Types
 module Config.Package
-  ( PackageType (..),
-    Package,
+  ( Package (..),
     readPackage,
     checkPackages,
   )
@@ -24,13 +23,11 @@ import Data.Aeson.KeyMap (KeyMap)
 import Data.Text (unpack)
 import Relude hiding (Undefined, intercalate, length, replicate)
 
-type Package = Yaml PackageType
-
 type Libs = Maybe (KeyMap Lib)
 
 type Name = Text
 
-data PackageType = PackageType
+data Package = Package
   { name :: Name,
     version :: Version,
     library :: Maybe Lib,
@@ -44,27 +41,27 @@ data PackageType = PackageType
       Generic
     )
 
-instance FromJSON PackageType where
+instance FromJSON Package where
   parseJSON = genericParseJSON aesonYAMLOptions
 
-instance ToJSON PackageType where
+instance ToJSON Package where
   toJSON = genericToJSON aesonYAMLOptions
 
 toPath :: FilePath -> FilePath
 toPath = (<> "/package.yaml")
 
-readPackage :: FilePath -> IO Package
+readPackage :: FilePath -> IO (Yaml Package)
 readPackage = readYaml . toPath
 
-writePackage :: FilePath -> Package -> IO ()
+writePackage :: FilePath -> Yaml Package -> IO ()
 writePackage path = writeYaml (toPath path)
 
 updateDeps :: Config -> Libs -> Libs
 updateDeps config = fmap (fmap (updateLib config))
 
-updatePackage :: Config -> PackageType -> PackageType
-updatePackage config PackageType {..} =
-  PackageType
+updatePackage :: Config -> Package -> Package
+updatePackage config Package {..} =
+  Package
     { version = getVersion config,
       library = fmap (updateLib config) library,
       tests = updateDeps config tests,
