@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Config
+module HConf
   ( Config (..),
     PkgGroup (..),
     updateStack,
@@ -13,8 +13,8 @@ module Config
   )
 where
 
-import Config.File (readYaml, writeYaml)
-import Config.Hie
-import Config.Package (checkPackages)
-import Config.Stack
-import Config.Types
+import HConf.File (readYaml, writeYaml)
+import HConf.Hie (genHie)
+import HConf.Package (checkPackages)
+import HConf.Stack ()
+import HConf.Types

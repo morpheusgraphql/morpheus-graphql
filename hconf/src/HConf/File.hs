@@ -5,7 +5,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module Config.File
+module HConf.File
   ( readYaml,
     writeYaml,
     Yaml (..),

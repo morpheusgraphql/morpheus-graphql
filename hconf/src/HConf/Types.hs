@@ -7,7 +7,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | GQL Types
-module Config.Types
+module HConf.Types
   ( Config (..),
     PkgGroup (..),
     compareFields,

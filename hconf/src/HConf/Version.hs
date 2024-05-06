@@ -6,7 +6,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | GQL Types
-module Config.Version
+module HConf.Version
   ( Version (..),
     parseVersion,
     VersionBounds (..),

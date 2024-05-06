@@ -8,7 +8,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | GQL Types
-module Config.Stack
+module HConf.Stack
   ( Stack,
     updateStack,
   )

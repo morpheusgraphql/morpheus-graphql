@@ -28,13 +28,14 @@ library
   exposed-modules:
       Config
   other-modules:
-      Config.File
-      Config.Hie
-      Config.Lib
-      Config.Package
-      Config.Stack
-      Config.Types
-      Config.Version
+      HConf
+      HConf.File
+      HConf.Hie
+      HConf.Lib
+      HConf.Package
+      HConf.Stack
+      HConf.Types
+      HConf.Version
       Paths_hconf
   hs-source-dirs:
       src

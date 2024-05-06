@@ -9,7 +9,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | GQL Types
-module Config.Hie
+module HConf.Hie
   ( genHie,
   )
 where
