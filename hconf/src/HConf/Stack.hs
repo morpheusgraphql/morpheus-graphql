@@ -17,9 +17,10 @@ where
 import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import Data.List ((\\))
 import qualified Data.Map as M
-import HConf.File
 import HConf.Types (Build (..), Config, getBuild, getBuilds, getPackages)
+import HConf.Utils (maybeList)
 import HConf.Version (Version (..), parseVersion)
+import HConf.Yaml (Yaml (..), aesonYAMLOptions)
 import Relude hiding (Undefined, intercalate)
 
 type Stack = Yaml StackType

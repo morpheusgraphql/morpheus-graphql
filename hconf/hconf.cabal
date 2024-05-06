@@ -28,7 +28,6 @@ library
   exposed-modules:
       HConf
   other-modules:
-      HConf.File
       HConf.Hie
       HConf.Lib
       HConf.Package
@@ -36,6 +35,7 @@ library
       HConf.Types
       HConf.Utils
       HConf.Version
+      HConf.Yaml
       Paths_hconf
   hs-source-dirs:
       src

@@ -17,10 +17,10 @@ where
 import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import Data.Aeson.KeyMap (KeyMap)
 import Data.Text (unpack)
-import HConf.File (Yaml (..), aesonYAMLOptions, mapYaml, readYaml, writeYaml)
 import HConf.Lib (Lib, updateDependencies, updateLib)
 import HConf.Types (Config, getPackages, getVersion)
 import HConf.Version (Version)
+import HConf.Yaml (Yaml (..), aesonYAMLOptions, mapYaml, readYaml, writeYaml)
 import Relude hiding (Undefined, intercalate, length, replicate)
 
 type Libs = Maybe (KeyMap Lib)

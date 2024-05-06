@@ -20,10 +20,10 @@ import Data.Aeson.KeyMap (KeyMap)
 import qualified Data.Aeson.KeyMap as KM
 import Data.Aeson.Types (listValue)
 import Data.Text (unpack)
-import HConf.File
 import HConf.Lib (LibType (..))
 import HConf.Package (Package (..), getPackage)
 import HConf.Types (Config, getPackages)
+import HConf.Yaml (Yaml (..))
 import Relude hiding (Undefined, intercalate)
 
 newtype Hie = Hie (KeyMap Value)

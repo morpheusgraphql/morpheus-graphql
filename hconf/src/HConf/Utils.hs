@@ -9,6 +9,7 @@
 -- | GQL Types
 module HConf.Utils
   ( compareFields,
+    maybeList,
   )
 where
 
@@ -68,3 +69,6 @@ compareFieldNames x y = case (getIndex x, getIndex y) of
 
 compareFields :: Text -> Text -> Ordering
 compareFields x y = compareFieldNames (toLower x) (toLower y)
+
+maybeList :: Maybe [a] -> [a]
+maybeList = fromMaybe []

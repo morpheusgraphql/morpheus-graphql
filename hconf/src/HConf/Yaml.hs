@@ -5,11 +5,10 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HConf.File
+module HConf.Yaml
   ( readYaml,
     writeYaml,
     Yaml (..),
-    maybeList,
     aesonYAMLOptions,
     mapYaml,
   )
@@ -60,9 +59,6 @@ instance (ToJSON t) => ToJSON (Yaml t) where
 toObject :: Value -> Object
 toObject (Object x) = x
 toObject _ = mempty
-
-maybeList :: Maybe [a] -> [a]
-maybeList = fromMaybe []
 
 toKebabCase :: String -> String
 toKebabCase = concatMap toKebab

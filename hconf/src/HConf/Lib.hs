@@ -19,9 +19,9 @@ import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import Data.Char (isSeparator)
 import Data.List (maximum)
 import Data.Text (intercalate, isPrefixOf, length, replicate, split, strip)
-import HConf.File (Yaml (..), aesonYAMLOptions)
 import HConf.Types (Config (..), getBounds, getRule)
 import HConf.Version (VersionBounds (..))
+import HConf.Yaml (Yaml (..), aesonYAMLOptions)
 import Relude hiding (Undefined, intercalate, isPrefixOf, length, replicate)
 
 data LibType = LibType

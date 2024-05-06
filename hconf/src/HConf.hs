@@ -13,8 +13,8 @@ module HConf
   )
 where
 
-import HConf.File (readYaml, writeYaml)
 import HConf.Hie (genHie)
 import HConf.Package (checkPackages)
 import HConf.Stack (Stack, updateStack)
 import HConf.Types
+import HConf.Yaml (readYaml, writeYaml)
