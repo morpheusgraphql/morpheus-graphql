@@ -23,7 +23,7 @@ import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import Data.Aeson.KeyMap (KeyMap)
 import Data.Char (isSeparator)
 import Data.List (maximum)
-import Data.Text (intercalate, length, replicate, split, unpack)
+import Data.Text (intercalate, length, replicate, split, strip, unpack)
 import Relude hiding (Undefined, intercalate, length, replicate)
 
 type Package = Yaml PackageType
@@ -100,7 +100,12 @@ getSizes xs = map size (transpose xs)
     size = maximum . map length
 
 printRow :: [Int] -> [Text] -> Text
-printRow sizes ls = intercalate " " $ map (\(item, s) -> item <> fill (s - length item)) (zip ls sizes)
+printRow sizes ls =
+  strip
+    $ intercalate " "
+    $ map
+      (\(item, s) -> item <> fill (s - length item))
+      (zip ls sizes)
 
 formatDependencies :: [[Text]] -> [Text]
 formatDependencies deps = map (printRow (getSizes deps)) deps
