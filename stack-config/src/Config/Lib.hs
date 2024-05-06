@@ -66,7 +66,7 @@ updateDependencies config = formatDependencies . map (checkDependency config . f
 
 withRule :: Text -> VersionBounds -> [Text]
 withRule name NoBounds = [name]
-withRule name (VersionBounds mi (Just ma)) = [name, ">= ", show mi, "<", show ma]
+withRule name (VersionBounds mi (Just ma)) = [name, ">= ", show mi, "&&", "<", show ma]
 withRule name (VersionBounds mi Nothing) = [name, ">= ", show mi]
 
 checkDependency :: Config -> [Text] -> [Text]
