@@ -18,11 +18,11 @@ where
 import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import Data.Char (isSeparator)
 import Data.List (maximum)
-import Data.Text (intercalate, isPrefixOf, length, replicate, split, strip)
+import Data.Text (intercalate, isPrefixOf, justifyLeft, length, split, strip)
 import HConf.Config (Config (..), getRule)
 import HConf.Version (VersionBounds (..))
 import HConf.Yaml (Yaml (..), aesonYAMLOptions)
-import Relude hiding (Undefined, intercalate, isPrefixOf, length, replicate)
+import Relude hiding (Undefined, intercalate, isPrefixOf, length)
 
 data LibType = LibType
   { sourceDirs :: Text,
@@ -41,9 +41,6 @@ instance FromJSON LibType where
 instance ToJSON LibType where
   toJSON = genericToJSON aesonYAMLOptions
 
-fill :: Int -> Text
-fill n = replicate n " "
-
 getSizes :: [[Text]] -> [Int]
 getSizes xs = map size (transpose xs)
   where
@@ -55,7 +52,7 @@ printRow sizes ls =
   strip
     $ intercalate "  "
     $ map
-      (\(item, s) -> item <> fill (s - length item))
+      (\(item, s) -> justifyLeft s ' ' item)
       (zip ls sizes)
 
 formatDependencies :: [[Text]] -> [Text]

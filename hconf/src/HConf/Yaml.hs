@@ -22,10 +22,9 @@ import qualified Data.ByteString as L
   ( readFile,
     writeFile,
   )
-import Data.Char (isUpper, toLower)
 import Data.Yaml (decodeThrow)
 import Data.Yaml.Pretty (defConfig, encodePretty, setConfCompare, setConfDropNull)
-import HConf.Utils (compareFields)
+import HConf.Utils (compareFields, toKebabCase)
 import Relude hiding (Show, Undefined, intercalate, show)
 import Prelude (Show (..))
 
@@ -61,14 +60,6 @@ instance (ToJSON t) => ToJSON (Yaml t) where
 toObject :: Value -> Object
 toObject (Object x) = x
 toObject _ = mempty
-
-toKebabCase :: String -> String
-toKebabCase = concatMap toKebab
-  where
-    toKebab
-      x
-        | isUpper x = ['-', (toLower x)]
-        | otherwise = [x]
 
 aesonYAMLOptions :: Options
 aesonYAMLOptions = defaultOptions {fieldLabelModifier = toKebabCase}

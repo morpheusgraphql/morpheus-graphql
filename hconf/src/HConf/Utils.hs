@@ -10,50 +10,54 @@
 module HConf.Utils
   ( compareFields,
     maybeList,
+    toKebabCase,
   )
 where
 
+import Data.Char (isUpper, toLower)
 import Data.List (findIndex)
-import Data.Text (toLower)
+import Data.Text (toTitle)
 import HConf.Version (parseVersion)
 import Relude hiding (Undefined, intercalate)
 
 fields :: [Text]
 fields =
-  [ "name",
-    "version",
-    "github",
-    "license",
-    "author",
-    "category",
-    "synopsis",
-    "maintainer",
-    "homepage",
-    "copyright",
-    "license-file",
-    "description",
-    "bounds",
-    "resolver",
-    "packages",
-    "builds",
-    "extra-source-files",
-    "data-files",
-    "main",
-    "source-dirs",
-    "ghc-options",
-    "dependencies",
-    "library",
-    "executables",
-    "include",
-    "exclude",
-    "allow-newer",
-    "save-hackage-creds",
-    "extra-deps",
-    "stackyaml",
-    "components",
-    "path",
-    "component"
-  ]
+  map
+    toTitle
+    [ "name",
+      "version",
+      "github",
+      "license",
+      "author",
+      "category",
+      "synopsis",
+      "maintainer",
+      "homepage",
+      "copyright",
+      "license-file",
+      "description",
+      "bounds",
+      "resolver",
+      "packages",
+      "builds",
+      "extra-source-files",
+      "data-files",
+      "main",
+      "source-dirs",
+      "ghc-options",
+      "dependencies",
+      "library",
+      "executables",
+      "include",
+      "exclude",
+      "allow-newer",
+      "save-hackage-creds",
+      "extra-deps",
+      "stackYaml",
+      "components",
+      "path",
+      "component"
+    ]
 
 getIndex :: Text -> Maybe Int
 getIndex x = findIndex (== x) fields
@@ -68,7 +72,15 @@ compareFieldNames x y = case (getIndex x, getIndex y) of
   (i1, i2) -> compare i1 i2
 
 compareFields :: Text -> Text -> Ordering
-compareFields x y = compareFieldNames (toLower x) (toLower y)
+compareFields x y = compareFieldNames (toTitle x) (toTitle y)
 
 maybeList :: Maybe [a] -> [a]
 maybeList = fromMaybe []
+
+toKebabCase :: String -> String
+toKebabCase = concatMap toKebab
+  where
+    toKebab
+      x
+        | isUpper x = ['-', (toLower x)]
+        | otherwise = [x]
