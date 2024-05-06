@@ -76,23 +76,6 @@ checkDependency config@Config {name} (n : xs)
   | otherwise = getRule n config >>= withRule n
 checkDependency _ [] = []
 
--- checkDependency(name: string, hasNoBounds: boolean): string[] {
---     if (name.startsWith(this.config.name)) {
---       if (hasNoBounds) {
---         return [name];
---       }
---       return withRule(name, this.config.bounds);
---     }
-
---     const rule = this.rule(name);
-
---     if (rule) {
---       return typeof rule === "boolean" ? [name] : withRule(name, rule);
---     }
-
---     throw new Error(`Unknown package: ${name}`);
---   }
-
 updateLib :: Config -> Lib -> Lib
 updateLib config (Yaml LibType {..} x) =
   ( Yaml
