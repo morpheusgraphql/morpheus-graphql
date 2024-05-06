@@ -53,14 +53,10 @@ updateStack version config _ = do
     Stack
       { packages,
         resolver,
-        allowNewer = Just (getAllowNewer version),
+        allowNewer = Just (LatestVersion == version),
         saveHackageCreds = Just False,
         extraDeps
       }
-
-getAllowNewer :: Version -> Bool
-getAllowNewer LatestVersion = True
-getAllowNewer _ = False
 
 getExtraDeps :: Version -> [(Version, Build)] -> [Text]
 getExtraDeps v xs = sort $ map printExtra $ concatMap f $ filter includeVersion xs
