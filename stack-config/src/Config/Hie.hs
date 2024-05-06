@@ -16,7 +16,7 @@ where
 
 import Config.File
 import Config.Lib (LibType (..))
-import Config.Package (Package (..), readPackage)
+import Config.Package (Package (..), getPackage)
 import Config.Types (Config, getPackages)
 import Data.Aeson (FromJSON (..), ToJSON (..), Value (..), object)
 import qualified Data.Aeson.Key as K
@@ -34,7 +34,7 @@ newtype Hie = Hie (KeyMap Value)
 
 genHie :: Text -> Config -> IO Hie
 genHie stack config = do
-  packages <- traverse (\p -> (p,) <$> readPackage (unpack p)) (getPackages config)
+  packages <- traverse (\p -> (p,) <$> getPackage (unpack p)) (getPackages config)
   pure
     $ Hie
     $ fromList

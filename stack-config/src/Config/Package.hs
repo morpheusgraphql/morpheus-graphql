@@ -9,7 +9,7 @@
 -- | GQL Types
 module Config.Package
   ( Package (..),
-    readPackage,
+    getPackage,
     checkPackages,
   )
 where
@@ -50,8 +50,8 @@ instance ToJSON Package where
 toPath :: FilePath -> FilePath
 toPath = (<> "/package.yaml")
 
-readPackage :: FilePath -> IO Package
-readPackage = fmap getData . readYaml . toPath
+getPackage :: FilePath -> IO Package
+getPackage = fmap getData . readYaml . toPath
 
 updateDeps :: Config -> Libs -> Libs
 updateDeps config = fmap (fmap (updateLib config))
