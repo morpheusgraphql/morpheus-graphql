@@ -141,8 +141,11 @@ fields =
     "component"
   ]
 
+getIndex :: Text -> Maybe Int
+getIndex x = findIndex (== x) fields
+
 compareFieldNames :: Text -> Text -> Ordering
-compareFieldNames x y = case (findIndex (== x) fields, findIndex (== y) fields) of
+compareFieldNames x y = case (getIndex x, getIndex y) of
   (Nothing, Nothing) -> case (parseVersion x, parseVersion y) of
     (Just v1, Just v2) -> compare v1 v2
     _ -> compare x y
