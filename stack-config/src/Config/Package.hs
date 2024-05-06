@@ -99,13 +99,11 @@ getSizes xs = map size (transpose xs)
     size :: [Text] -> Int
     size = maximum . map length
 
-printRow :: [Int] -> [Text] -> [Text]
-printRow sizes ls = map (\(item, s) -> item <> fill (s - length item)) (zip ls sizes)
+printRow :: [Int] -> [Text] -> Text
+printRow sizes ls = intercalate " " $ map (\(item, s) -> item <> fill (s - length item)) (zip ls sizes)
 
 formatDependencies :: [[Text]] -> [Text]
-formatDependencies d =
-  let sizes = getSizes d
-   in map (\xs -> intercalate " " $ printRow sizes xs) d
+formatDependencies deps = map (printRow (getSizes deps)) deps
 
 updateDependencies :: Config -> [Text] -> [Text]
 updateDependencies _ = formatDependencies . map (checkDependency . filter (/= "") . split isSeparator) . sort
