@@ -8,28 +8,28 @@ synopsis: examples of external pub-sub
 copyright: 2021 ROPWARE
 description: examples of a GraphQL server using postgresql/rabbitmq as a pusub
 extra-source-files:
-  - ChangeLog.md
-  - README.md
+- ChangeLog.md
+- README.md
 dependencies:
-  - base                            >=  4.7.0     &&  <  5.0.0
-  - blaze-html
-  - bytestring                      >=  0.10.4    &&  <  0.15.0
-  - extra
-  - hashable                        >=  1.0.0     &&  <  2.0.0
-  - morpheus-graphql
-  - morpheus-graphql-core
-  - morpheus-graphql-server
-  - morpheus-graphql-subscriptions
-  - shakespeare
-  - text                            >=  1.2.3     &&  <  3.0.0
-  - unliftio-core                   >=  0.0.1     &&  <  0.4.0
-  - wai                             >=  1.0.0
-  - wai-cors
-  - wai-websockets                  >=  1.0.0
-  - warp                            >=  1.0.0
-  - websockets                      >=  0.12.6.0  &&  <  1.0.0
-  - yesod
-  - yesod-core
+- base                            >=  4.7.0     &&  <  5.0.0
+- blaze-html
+- bytestring                      >=  0.10.4    &&  <  0.15.0
+- extra
+- hashable                        >=  1.0.0     &&  <  2.0.0
+- morpheus-graphql
+- morpheus-graphql-core
+- morpheus-graphql-server
+- morpheus-graphql-subscriptions
+- shakespeare
+- text                            >=  1.2.3     &&  <  3.0.0
+- unliftio-core                   >=  0.0.1     &&  <  0.4.0
+- wai                             >=  1.0.0
+- wai-cors
+- wai-websockets                  >=  1.0.0
+- warp                            >=  1.0.0
+- websockets                      >=  0.12.6.0  &&  <  1.0.0
+- yesod
+- yesod-core
 library:
   source-dirs: src
 executables:
@@ -37,21 +37,21 @@ executables:
     main: Main.hs
     source-dirs: app
     ghc-options:
-      - '-Wdefault'
-      - '-Wmissing-fields'
-      - '-Wwarn'
-      - '-rtsopts'
-      - '-threaded'
-      - '-with-rtsopts=-N'
+    - -Wdefault
+    - -Wmissing-fields
+    - -Wwarn
+    - -rtsopts
+    - -threaded
+    - -with-rtsopts=-N
     dependencies:
-      - morpheus-graphql-examples-yesod-pubsub
+    - morpheus-graphql-examples-yesod-pubsub
 tests:
   yesod-gql-example-test:
     main: Spec.hs
     source-dirs: test
     ghc-options:
-      - '-rtsopts'
-      - '-threaded'
-      - '-with-rtsopts=-N'
+    - -rtsopts
+    - -threaded
+    - -with-rtsopts=-N
     dependencies:
-      - morpheus-graphql-examples-yesod-pubsub
+    - morpheus-graphql-examples-yesod-pubsub

@@ -2,33 +2,33 @@ name: morpheus-graphql
 version: 0.27.3
 bounds: 0.27.0-0.28.0
 packages:
-  - dir: examples
-    names:
-      - client
-      - code-gen
-      - code-gen-docs
-      - scotty
-      - scotty-fraxl
-      - scotty-haxl
-      - scotty-freer-simple
-      - servant
-      - yesod-pubsub
-  - dir: ./
-    names:
-      - tests
-      - core
-      - code-gen-utils
-      - code-gen
-      - app
-      - client
-      - subscriptions
-      - server
-      - benchmarks
-      - .
-    prefix: morpheus-graphql
-  - dir: ./
-    names:
-      - stack-config
+- dir: examples
+  names:
+  - client
+  - code-gen
+  - code-gen-docs
+  - scotty
+  - scotty-fraxl
+  - scotty-haxl
+  - scotty-freer-simple
+  - servant
+  - yesod-pubsub
+- dir: ./
+  names:
+  - tests
+  - core
+  - code-gen-utils
+  - code-gen
+  - app
+  - client
+  - subscriptions
+  - server
+  - benchmarks
+  - .
+  prefix: morpheus-graphql
+- dir: ./
+  names:
+  - stack-config
 builds:
   8.2.2:
     resolver: lts-11.10
@@ -59,25 +59,24 @@ builds:
       graphql: 0.11.1.0
   9.0.2:
     resolver: lts-19.28
+    include:
+    - morpheus-graphql-benchmarks
+    exclude:
+    - examples/scotty-fraxl
     extra:
       attoparsec-aeson: 2.1.0.0
       dependent-map: 0.2.4.0
       dependent-sum: 0.4.0
-    exclude:
-      - examples/scotty-fraxl
-    include:
-      - morpheus-graphql-benchmarks
   latest:
     resolver: nightly-2024-04-20
+    exclude:
+    - examples/scotty-fraxl
+    - examples/scotty-freer-simple
     extra:
       fraxl: 0.3.0.0
       haxl: 2.4.0.0
       type-aligned: 0.9.6
-    exclude:
-      - examples/scotty-fraxl
-      - examples/scotty-freer-simple
 dependencies:
-  extra: true
   aeson: 1.4.4-3.0.0
   attoparsec-aeson: 2.1.0.0-3.0.0
   base: 4.7.0-5.0.0
@@ -86,6 +85,7 @@ dependencies:
   containers: 0.4.2.1-0.7.0
   criterion: true
   directory: 1.0.0-2.0.0
+  extra: true
   file-embed: 0.0.10-1.0.0
   filepath: 1.1.0-1.5.0
   fraxl: true
