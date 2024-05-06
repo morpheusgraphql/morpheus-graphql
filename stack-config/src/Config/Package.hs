@@ -21,7 +21,8 @@ import Config.Types (Config, getPackages, getVersion)
 import Config.Version (Version)
 import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import Data.Aeson.KeyMap (KeyMap)
-import Data.Text (unpack)
+import Data.Char (isSeparator)
+import Data.Text (split, unpack)
 import Relude hiding (Undefined, intercalate)
 
 type Package = Yaml PackageType
@@ -82,14 +83,37 @@ updatePackage config (Yaml v props) =
             tests = updateDeps config (tests v),
             executables = updateDeps config (executables v),
             benchmarks = updateDeps config (benchmarks v),
-            dependencies = updateDep config (dependencies v)
+            dependencies = updateDependencies config (dependencies v)
           }
       )
       props
   )
 
-updateDep :: Config -> [Text] -> [Text]
-updateDep _ l = traceShow l l
+formatDependencies :: [[Text]] -> [Text]
+formatDependencies = concat
+
+updateDependencies :: Config -> [Text] -> [Text]
+updateDependencies _ = formatDependencies . map (checkDependency . split isSeparator) . sort
+
+checkDependency :: [Text] -> [Text]
+checkDependency = id
+
+-- checkDependency(name: string, hasNoBounds: boolean): string[] {
+--     if (name.startsWith(this.config.name)) {
+--       if (hasNoBounds) {
+--         return [name];
+--       }
+--       return withRule(name, this.config.bounds);
+--     }
+
+--     const rule = this.rule(name);
+
+--     if (rule) {
+--       return typeof rule === "boolean" ? [name] : withRule(name, rule);
+--     }
+
+--     throw new Error(`Unknown package: ${name}`);
+--   }
 
 updateLib :: Config -> Lib -> Lib
 updateLib _ l = l
