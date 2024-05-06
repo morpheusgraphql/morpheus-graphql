@@ -46,11 +46,9 @@ runApp App {..}
 hconfPath :: FilePath
 hconfPath = "./hconf.yaml"
 
-stackPath :: FilePath
-stackPath = "./stack.yaml"
-
 setup :: String -> IO ()
 setup version = do
+  let stackPath = "./stack.yaml"
   config :: Config <- readYaml hconfPath
   writeYaml hconfPath config
   setupStack stackPath (pack version) config
