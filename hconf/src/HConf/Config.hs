@@ -14,7 +14,6 @@ module HConf.Config
     getBuild,
     getBuilds,
     getVersion,
-    getBounds,
     getRule,
   )
 where
@@ -23,7 +22,7 @@ import Data.Aeson (FromJSON (..), Options (..), ToJSON (toJSON), genericToJSON)
 import Data.Aeson.Types (defaultOptions)
 import qualified Data.Map as M
 import Data.Text (unpack)
-import HConf.Version (Deps, Version, VersionBounds, parseBounds, parseVersion)
+import HConf.Version (Deps, Version, VersionBounds, parseVersion)
 import Relude hiding (Undefined, intercalate)
 
 data PkgGroup = PkgGroup
@@ -58,7 +57,7 @@ instance ToJSON Build where
 data Config = Config
   { name :: Text,
     version :: Version,
-    bounds :: Text,
+    bounds :: VersionBounds,
     packages :: [PkgGroup],
     builds :: Map Text Build,
     dependencies :: Deps
@@ -71,9 +70,6 @@ data Config = Config
 
 getVersion :: Config -> Version
 getVersion = version
-
-getBounds :: (MonadFail m) => Config -> m VersionBounds
-getBounds = parseBounds . bounds
 
 getRule :: (MonadFail m) => Text -> Config -> m VersionBounds
 getRule name = maybe (fail $ "Unknown package: " <> unpack name) pure . M.lookup name . dependencies

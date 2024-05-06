@@ -19,7 +19,7 @@ import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import Data.Char (isSeparator)
 import Data.List (maximum)
 import Data.Text (intercalate, isPrefixOf, length, replicate, split, strip)
-import HConf.Config (Config (..), getBounds, getRule)
+import HConf.Config (Config (..), getRule)
 import HConf.Version (VersionBounds (..))
 import HConf.Yaml (Yaml (..), aesonYAMLOptions)
 import Relude hiding (Undefined, intercalate, isPrefixOf, length, replicate)
@@ -73,9 +73,9 @@ withRule name (VersionBounds mi (Just ma)) = [name, ">=", show mi, "&&", "<", sh
 withRule name (VersionBounds mi Nothing) = [name, ">=", show mi]
 
 checkDependency :: Config -> [Text] -> [Text]
-checkDependency config@Config {name} (n : xs)
+checkDependency config@Config {name, bounds} (n : xs)
   | isPrefixOf name n && null xs = [n]
-  | isPrefixOf name n = (getBounds config) >>= withRule n
+  | isPrefixOf name n = withRule n bounds
   | otherwise = getRule n config >>= withRule n
 checkDependency _ [] = []
 
