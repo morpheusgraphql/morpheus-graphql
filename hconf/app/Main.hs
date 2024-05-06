@@ -15,7 +15,9 @@ import CLI.Commands
     GlobalOptions (..),
     parseCLI,
   )
-import Config
+import Data.Text (pack)
+import Data.Version (showVersion)
+import HConf
   ( Config,
     checkPackages,
     genHie,
@@ -23,8 +25,6 @@ import Config
     updateStack,
     writeYaml,
   )
-import Data.Text (pack)
-import Data.Version (showVersion)
 import qualified Paths_hconf as CLI
 import Relude hiding (ByteString)
 

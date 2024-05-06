@@ -26,9 +26,8 @@ source-repository head
 
 library
   exposed-modules:
-      Config
-  other-modules:
       HConf
+  other-modules:
       HConf.File
       HConf.Hie
       HConf.Lib
