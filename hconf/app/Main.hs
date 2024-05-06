@@ -17,13 +17,7 @@ import CLI.Commands
   )
 import Data.Text (pack)
 import Data.Version (showVersion)
-import HConf
-  ( checkPackages,
-    genHie,
-    readYaml,
-    setupStack,
-    writeYaml,
-  )
+import HConf (SetupPath (..), setup)
 import qualified Paths_hconf as CLI
 import Relude hiding (ByteString)
 
@@ -39,16 +33,12 @@ runApp App {..}
   | otherwise = runOperation operations
   where
     runOperation About = putStrLn $ "Stack Config CLI, version " <> currentVersion
-    runOperation (Setup []) = setup "latest"
-    runOperation (Setup (version : _)) = setup version
+    runOperation (Setup []) = setup path "latest"
+    runOperation (Setup (version : _)) = setup path version
 
-setup :: String -> IO ()
-setup version = do
-  let hconfPath = "./hconf.yaml"
-  let stackPath = "./stack.yaml"
-  config <- readYaml hconfPath
-  writeYaml hconfPath config
-  setupStack stackPath (pack version) config
-  genHie "./hie.yaml" (pack stackPath) config
-  checkPackages config
-  putStrLn "Ok"
+path =
+  SetupPath
+    { hconf = "./hconf.yaml",
+      hie = "./hie.yaml",
+      stack = "./stack.yaml"
+    }
