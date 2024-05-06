@@ -20,7 +20,7 @@ import Data.Char (isSeparator)
 import Data.List (maximum)
 import Data.Text (intercalate, isPrefixOf, justifyLeft, length, split, strip)
 import HConf.Config (Config (..), getRule)
-import HConf.Version (VersionBounds (..))
+import HConf.Version (Version, VersionBounds (..))
 import HConf.Yaml (Yaml (..), aesonYAMLOptions)
 import Relude hiding (Undefined, intercalate, isPrefixOf, length)
 
@@ -66,10 +66,13 @@ updateDependencies config =
 
 withRule :: Text -> VersionBounds -> [Text]
 withRule name NoBounds = [name]
-withRule name (VersionBounds mi  ma) 
-  = [name, ">=", show mi] 
-  <> maybe [] (\m ->["&&", "<", show m]) ma
+withRule name (VersionBounds mi ma) = printMin name mi <> printMax ma
 
+printMin :: Text -> Version -> [Text]
+printMin name mi = [name, ">=", show mi]
+
+printMax :: Maybe Version -> [Text]
+printMax = maybe [] (\m -> ["&&", "<", show m])
 
 checkDependency :: Config -> [Text] -> [Text]
 checkDependency config@Config {name, bounds} (n : xs)
