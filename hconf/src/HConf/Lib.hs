@@ -66,8 +66,10 @@ updateDependencies config =
 
 withRule :: Text -> VersionBounds -> [Text]
 withRule name NoBounds = [name]
-withRule name (VersionBounds mi (Just ma)) = [name, ">=", show mi, "&&", "<", show ma]
-withRule name (VersionBounds mi Nothing) = [name, ">=", show mi]
+withRule name (VersionBounds mi  ma) 
+  = [name, ">=", show mi] 
+  <> maybe [] (\m ->["&&", "<", show m]) ma
+
 
 checkDependency :: Config -> [Text] -> [Text]
 checkDependency config@Config {name, bounds} (n : xs)
