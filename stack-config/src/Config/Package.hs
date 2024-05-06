@@ -93,27 +93,19 @@ updatePackage config (Yaml v props) =
 fill :: Int -> Text
 fill n = replicate n " "
 
---   const sizes = map((colum) =>
---     Math.max(...colum.map((item) => item.length))
---   );
 getSizes :: [[Text]] -> [Int]
 getSizes xs = map size (transpose xs)
   where
     size :: [Text] -> Int
     size = maximum . map length
 
--- export const formatTable = (table: Table) => {
-
---   return table.map((row) =>
---     row
---       .map((item, i) => item + fill(sizes[i] - item.length))
---       .join("  ")
---       .trim()
---   );
--- };
+printRow :: [Int] -> [Text] -> [Text]
+printRow sizes ls = map (\(item, s) -> item <> fill (s - length item)) (zip ls sizes)
 
 formatDependencies :: [[Text]] -> [Text]
-formatDependencies = map (\xs -> intercalate " " xs)
+formatDependencies d =
+  let sizes = getSizes d
+   in map (\xs -> intercalate " " $ printRow sizes xs) d
 
 updateDependencies :: Config -> [Text] -> [Text]
 updateDependencies _ = formatDependencies . map (checkDependency . filter (/= "") . split isSeparator) . sort
