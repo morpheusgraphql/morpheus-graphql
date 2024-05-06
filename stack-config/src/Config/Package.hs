@@ -72,7 +72,24 @@ readPackage = readYaml . toPath
 
 updatePackage :: Config -> Package -> Package
 updatePackage config (Yaml v props) =
-  (Yaml (v {version = getVersion config}) props)
+  ( Yaml
+      ( v
+          { version = getVersion config,
+            library = fmap (updateLib config) (library v),
+            tests = updateDeps config (tests v),
+            executables = updateDeps config (executables v),
+            benchmarks = updateDeps config (benchmarks v)
+          }
+      )
+      props
+  )
+
+updateLib :: Config -> Lib -> Lib
+updateLib _ = id
+
+updateDeps :: Config -> Deps -> Deps
+updateDeps config (Just x) = Just (fmap (updateLib config) x)
+updateDeps _ Nothing = Nothing
 
 checkPackage :: Config -> Text -> IO ()
 checkPackage config path =
