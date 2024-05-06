@@ -43,8 +43,8 @@ runApp App {..}
     runOperation (Setup []) = setup "latest"
     runOperation (Setup (version : _)) = setup version
 
-configPath :: FilePath
-configPath = "./config/stack.yaml"
+hconfPath :: FilePath
+hconfPath = "./hconf.yaml"
 
 stackPath :: FilePath
 stackPath = "./stack.yaml"
@@ -54,8 +54,8 @@ hiePath = "./hie.yaml"
 
 setup :: String -> IO ()
 setup version = do
-  config :: Config <- readYaml configPath
-  writeYaml configPath config
+  config :: Config <- readYaml hconfPath
+  writeYaml hconfPath config
   readYaml stackPath
     >>= updateStack (pack version) config
     >>= writeYaml stackPath
