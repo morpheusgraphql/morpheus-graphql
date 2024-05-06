@@ -9,8 +9,9 @@
 module Config.Version
   ( Version (..),
     parseVersion,
-    VersionBounds,
+    VersionBounds (..),
     Deps,
+    parseBounds,
   )
 where
 

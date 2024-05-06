@@ -16,15 +16,17 @@ module Config.Types
     Build (..),
     getBuilds,
     getVersion,
+    getBounds,
+    getRule,
   )
 where
 
-import Config.Version (Deps, Version, parseVersion)
+import Config.Version (Deps, Version, VersionBounds, parseBounds, parseVersion)
 import Data.Aeson (FromJSON (..), Options (..), ToJSON (toJSON), genericToJSON)
 import Data.Aeson.Types (defaultOptions)
 import Data.List (findIndex)
 import qualified Data.Map as M
-import Data.Text (toLower)
+import Data.Text (toLower, unpack)
 import Relude hiding (Undefined, intercalate)
 
 data PkgGroup = PkgGroup
@@ -72,6 +74,12 @@ data Config = Config
 
 getVersion :: Config -> Version
 getVersion = version
+
+getBounds :: (MonadFail m) => Config -> m VersionBounds
+getBounds = parseBounds . bounds
+
+getRule :: (MonadFail m) => Text -> Config -> m VersionBounds
+getRule name = maybe (fail $ "Unknown package: " <> unpack name) pure . M.lookup name . dependencies
 
 getPackages :: Config -> [Text]
 getPackages Config {..} = concatMap toPkg packages

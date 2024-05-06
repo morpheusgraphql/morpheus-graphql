@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -15,12 +16,13 @@ module Config.Lib
 where
 
 import Config.File (Yaml (..), aesonYAMLOptions)
-import Config.Types (Config)
+import Config.Types (Config (..), getBounds, getRule)
+import Config.Version (VersionBounds (..))
 import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import Data.Char (isSeparator)
 import Data.List (maximum)
-import Data.Text (intercalate, length, replicate, split, strip)
-import Relude hiding (Undefined, intercalate, length, replicate)
+import Data.Text (intercalate, isPrefixOf, length, replicate, split, strip)
+import Relude hiding (Undefined, intercalate, isPrefixOf, length, replicate)
 
 data LibType = LibType
   { sourceDirs :: Text,
@@ -60,10 +62,19 @@ formatDependencies :: [[Text]] -> [Text]
 formatDependencies deps = map (printRow (getSizes deps)) deps
 
 updateDependencies :: Config -> [Text] -> [Text]
-updateDependencies _ = formatDependencies . map (checkDependency . filter (/= "") . split isSeparator) . sort
+updateDependencies config = formatDependencies . map (checkDependency config . filter (/= "") . split isSeparator) . sort
 
-checkDependency :: [Text] -> [Text]
-checkDependency = id
+withRule :: Text -> VersionBounds -> [Text]
+withRule name NoBounds = [name]
+withRule name (VersionBounds mi (Just ma)) = [name, ">= ", show mi, "<", show ma]
+withRule name (VersionBounds mi Nothing) = [name, ">= ", show mi]
+
+checkDependency :: Config -> [Text] -> [Text]
+checkDependency config@Config {name} (n : xs)
+  | isPrefixOf name n && null xs = [n]
+  | isPrefixOf name n = (getBounds config) >>= withRule n
+  | otherwise = getRule n config >>= withRule n
+checkDependency _ [] = []
 
 -- checkDependency(name: string, hasNoBounds: boolean): string[] {
 --     if (name.startsWith(this.config.name)) {
