@@ -27,8 +27,8 @@ import Relude hiding (Undefined, intercalate)
 type Package = Yaml PackageType
 
 data LibType = LibType
-  { sourceDirs :: Text,
-    dependencies :: Maybe [Text]
+  { sourceDirs :: Text
+  -- dependencies :: Maybe [Text]
   }
   deriving
     ( Show,
@@ -49,6 +49,7 @@ data PackageType = PackageType
   { name :: Text,
     version :: Version,
     library :: Maybe Lib,
+    dependencies :: [Text],
     tests :: Deps,
     executables :: Deps,
     benchmarks :: Deps
@@ -85,7 +86,7 @@ updatePackage config (Yaml v props) =
   )
 
 updateLib :: Config -> Lib -> Lib
-updateLib _ = id
+updateLib _ l = traceShow l l
 
 updateDeps :: Config -> Deps -> Deps
 updateDeps config (Just x) = Just (fmap (updateLib config) x)
