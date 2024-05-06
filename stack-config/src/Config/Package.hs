@@ -22,7 +22,7 @@ import Config.Version (Version)
 import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import Data.Aeson.KeyMap (KeyMap)
 import Data.Char (isSeparator)
-import Data.Text (split, unpack)
+import Data.Text (intercalate, split, unpack)
 import Relude hiding (Undefined, intercalate)
 
 type Package = Yaml PackageType
@@ -90,7 +90,7 @@ updatePackage config (Yaml v props) =
   )
 
 formatDependencies :: [[Text]] -> [Text]
-formatDependencies = concat
+formatDependencies = map (\xs -> intercalate " " xs)
 
 updateDependencies :: Config -> [Text] -> [Text]
 updateDependencies _ = formatDependencies . map (checkDependency . filter (/= "") . split isSeparator) . sort
