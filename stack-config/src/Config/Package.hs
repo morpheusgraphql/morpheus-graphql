@@ -18,6 +18,7 @@ where
 
 import Config.File (Yaml (..), aesonYAMLOptions, readYaml, writeYaml)
 import Config.Types (Config, getPackages)
+import Config.Version (Version)
 import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import Data.Aeson.KeyMap (KeyMap)
 import Data.Text (unpack)
@@ -42,12 +43,15 @@ instance FromJSON LibType where
 instance ToJSON LibType where
   toJSON = genericToJSON aesonYAMLOptions
 
+type Deps = Maybe (KeyMap Lib)
+
 data PackageType = PackageType
   { name :: Text,
+    version :: Version,
     library :: Maybe Lib,
-    tests :: Maybe (KeyMap Lib),
-    executables :: Maybe (KeyMap Lib),
-    benchmarks :: Maybe (KeyMap Lib)
+    tests :: Deps,
+    executables :: Deps,
+    benchmarks :: Deps
   }
   deriving
     ( Show,
