@@ -65,9 +65,6 @@ updateDependencies _ = formatDependencies . map (checkDependency . filter (/= ""
 checkDependency :: [Text] -> [Text]
 checkDependency = id
 
-updateLib :: Config -> Lib -> Lib
-updateLib _ l = l
-
 -- checkDependency(name: string, hasNoBounds: boolean): string[] {
 --     if (name.startsWith(this.config.name)) {
 --       if (hasNoBounds) {
@@ -84,3 +81,14 @@ updateLib _ l = l
 
 --     throw new Error(`Unknown package: ${name}`);
 --   }
+
+updateLib :: Config -> Lib -> Lib
+updateLib config (Yaml LibType {..} x) =
+  ( Yaml
+      LibType
+        { dependencies =
+            fmap (updateDependencies config) dependencies,
+          ..
+        }
+      x
+  )
