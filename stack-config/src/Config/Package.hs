@@ -102,7 +102,7 @@ getSizes xs = map size (transpose xs)
 printRow :: [Int] -> [Text] -> Text
 printRow sizes ls =
   strip
-    $ intercalate " "
+    $ intercalate "  "
     $ map
       (\(item, s) -> item <> fill (s - length item))
       (zip ls sizes)
