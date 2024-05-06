@@ -15,7 +15,6 @@ import CLI.Commands
     GlobalOptions (..),
     parseCLI,
   )
-import Data.Text (pack)
 import Data.Version (showVersion)
 import HConf (SetupPath (..), setup)
 import qualified Paths_hconf as CLI
@@ -27,6 +26,14 @@ currentVersion = showVersion CLI.version
 main :: IO ()
 main = parseCLI >>= runApp
 
+path :: SetupPath
+path =
+  SetupPath
+    { hconf = "./hconf.yaml",
+      hie = "./hie.yaml",
+      stack = "./stack.yaml"
+    }
+
 runApp :: App -> IO ()
 runApp App {..}
   | version options = putStrLn currentVersion
@@ -35,10 +42,3 @@ runApp App {..}
     runOperation About = putStrLn $ "Stack Config CLI, version " <> currentVersion
     runOperation (Setup []) = setup path "latest"
     runOperation (Setup (version : _)) = setup path version
-
-path =
-  SetupPath
-    { hconf = "./hconf.yaml",
-      hie = "./hie.yaml",
-      stack = "./stack.yaml"
-    }
