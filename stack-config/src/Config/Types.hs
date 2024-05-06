@@ -100,6 +100,7 @@ fields =
     "license",
     "author",
     "maintainer",
+    "homepage",
     "category",
     "synopsis",
     "copyright",
