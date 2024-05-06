@@ -22,7 +22,7 @@ import HConf
     checkPackages,
     genHie,
     readYaml,
-    updateStack,
+    setupStack,
     writeYaml,
   )
 import qualified Paths_hconf as CLI
@@ -56,9 +56,7 @@ setup :: String -> IO ()
 setup version = do
   config :: Config <- readYaml hconfPath
   writeYaml hconfPath config
-  readYaml stackPath
-    >>= updateStack (pack version) config
-    >>= writeYaml stackPath
+  setupStack stackPath (pack version) config
   genHie (pack stackPath) config >>= writeYaml hiePath
   checkPackages config
   putStrLn "Ok"
