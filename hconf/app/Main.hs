@@ -49,14 +49,11 @@ hconfPath = "./hconf.yaml"
 stackPath :: FilePath
 stackPath = "./stack.yaml"
 
-hiePath :: FilePath
-hiePath = "./hie.yaml"
-
 setup :: String -> IO ()
 setup version = do
   config :: Config <- readYaml hconfPath
   writeYaml hconfPath config
   setupStack stackPath (pack version) config
-  genHie (pack stackPath) config >>= writeYaml hiePath
+  genHie "./hie.yaml" (pack stackPath) config
   checkPackages config
   putStrLn "Ok"

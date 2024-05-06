@@ -20,10 +20,10 @@ import Data.Aeson.KeyMap (KeyMap)
 import qualified Data.Aeson.KeyMap as KM
 import Data.Aeson.Types (listValue)
 import Data.Text (unpack)
+import HConf.Config (Config, getPackages)
 import HConf.Lib (LibType (..))
 import HConf.Package (Package (..), getPackage)
-import HConf.Config (Config, getPackages)
-import HConf.Yaml (Yaml (..))
+import HConf.Yaml (Yaml (..), writeYaml)
 import Relude hiding (Undefined, intercalate)
 
 newtype Hie = Hie (KeyMap Value)
@@ -33,25 +33,28 @@ newtype Hie = Hie (KeyMap Value)
       Show
     )
 
-genHie :: Text -> Config -> IO Hie
-genHie stack config = do
-  packages <- traverse (\p -> (p,) <$> getPackage (unpack p)) (getPackages config)
-  pure
-    $ Hie
-    $ fromList
-      [ ( "cradle",
-          object
-            [ ( "stack",
-                object
-                  [ ("stackYaml", String stack),
-                    ( "components",
-                      listValue id $ (concatMap toLib packages)
-                    )
-                  ]
-              )
-            ]
-        )
-      ]
+genHie :: FilePath -> Text -> Config -> IO ()
+genHie hiePath stack config =
+  do
+    packages <- traverse (\p -> (p,) <$> getPackage (unpack p)) (getPackages config)
+    let hie =
+          Hie
+            ( fromList
+                [ ( "cradle",
+                    object
+                      [ ( "stack",
+                          object
+                            [ ("stackYaml", String stack),
+                              ( "components",
+                                listValue id $ (concatMap toLib packages)
+                              )
+                            ]
+                        )
+                      ]
+                  )
+                ]
+            )
+    writeYaml hiePath hie
 
 component :: Text -> Text -> Text -> Maybe (Yaml LibType) -> [Value]
 component path name lib (Just (Yaml LibType {..} _)) =
