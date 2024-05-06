@@ -22,8 +22,8 @@ import Config.Version (Version)
 import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import Data.Aeson.KeyMap (KeyMap)
 import Data.Char (isSeparator)
-import Data.Text (intercalate, split, unpack)
-import Relude hiding (Undefined, intercalate)
+import Data.Text (intercalate, replicate, split, unpack)
+import Relude hiding (Undefined, intercalate, replicate)
 
 type Package = Yaml PackageType
 
@@ -88,6 +88,22 @@ updatePackage config (Yaml v props) =
       )
       props
   )
+
+fill :: Int -> Text
+fill n = replicate n " "
+
+-- export const formatTable = (table: Table) => {
+--   const sizes = transpose(table).map((colum) =>
+--     Math.max(...colum.map((item) => item.length))
+--   );
+
+--   return table.map((row) =>
+--     row
+--       .map((item, i) => item + fill(sizes[i] - item.length))
+--       .join("  ")
+--       .trim()
+--   );
+-- };
 
 formatDependencies :: [[Text]] -> [Text]
 formatDependencies = map (\xs -> intercalate " " xs)
