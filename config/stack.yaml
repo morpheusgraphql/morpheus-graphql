@@ -2,33 +2,33 @@ name: morpheus-graphql
 version: 0.27.3
 bounds: 0.27.0-0.28.0
 packages:
-  - dir: examples
-    names:
-      - client
-      - code-gen
-      - code-gen-docs
-      - scotty
-      - scotty-fraxl
-      - scotty-haxl
-      - scotty-freer-simple
-      - servant
-      - yesod-pubsub
-  - dir: ./
-    names:
-      - tests
-      - core
-      - code-gen-utils
-      - code-gen
-      - app
-      - client
-      - subscriptions
-      - server
-      - benchmarks
-      - .
-    prefix: morpheus-graphql
-  - dir: ./
-    names:
-      - hconf
+- dir: examples
+  names:
+  - client
+  - code-gen
+  - code-gen-docs
+  - scotty
+  - scotty-fraxl
+  - scotty-haxl
+  - scotty-freer-simple
+  - servant
+  - yesod-pubsub
+- dir: ./
+  names:
+  - tests
+  - core
+  - code-gen-utils
+  - code-gen
+  - app
+  - client
+  - subscriptions
+  - server
+  - benchmarks
+  - .
+  prefix: morpheus-graphql
+- dir: ./
+  names:
+  - hconf
 builds:
   8.2.2:
     resolver: lts-11.10
@@ -60,9 +60,9 @@ builds:
   9.0.2:
     resolver: lts-19.28
     include:
-      - morpheus-graphql-benchmarks
+    - morpheus-graphql-benchmarks
     exclude:
-      - examples/scotty-fraxl
+    - examples/scotty-fraxl
     extra:
       attoparsec-aeson: 2.1.0.0
       dependent-map: 0.2.4.0
@@ -70,8 +70,8 @@ builds:
   latest:
     resolver: nightly-2024-04-20
     exclude:
-      - examples/scotty-fraxl
-      - examples/scotty-freer-simple
+    - examples/scotty-fraxl
+    - examples/scotty-freer-simple
     extra:
       fraxl: 0.3.0.0
       haxl: 2.4.0.0
@@ -94,6 +94,7 @@ dependencies:
   graphql: true
   hashable: 1.0.0-2.0.0
   haxl: true
+  hconf: true
   http-media: true
   http-types: true
   megaparsec: 7.0.0-10.0.0
@@ -107,7 +108,6 @@ dependencies:
   scotty: 0.6.0
   servant-server: true
   shakespeare: true
-  hconf: true
   stm: true
   tasty: 0.1.0-1.5.0
   tasty-hunit: 0.1.0-1.0.0
