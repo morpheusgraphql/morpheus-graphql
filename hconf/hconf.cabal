@@ -34,6 +34,7 @@ library
       HConf.Package
       HConf.Stack
       HConf.Types
+      HConf.Utils
       HConf.Version
       Paths_hconf
   hs-source-dirs:
