@@ -14,12 +14,12 @@ module HConf.Stack
   )
 where
 
-import Config.File
-import Config.Types (Build (..), Config, getBuild, getBuilds, getPackages)
-import Config.Version (Version (..), parseVersion)
 import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import Data.List ((\\))
 import qualified Data.Map as M
+import HConf.File
+import HConf.Types (Build (..), Config, getBuild, getBuilds, getPackages)
+import HConf.Version (Version (..), parseVersion)
 import Relude hiding (Undefined, intercalate)
 
 type Stack = Yaml StackType

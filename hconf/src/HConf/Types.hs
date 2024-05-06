@@ -21,12 +21,12 @@ module HConf.Types
   )
 where
 
-import Config.Version (Deps, Version, VersionBounds, parseBounds, parseVersion)
 import Data.Aeson (FromJSON (..), Options (..), ToJSON (toJSON), genericToJSON)
 import Data.Aeson.Types (defaultOptions)
 import Data.List (findIndex)
 import qualified Data.Map as M
 import Data.Text (toLower, unpack)
+import HConf.Version (Deps, Version, VersionBounds, parseBounds, parseVersion)
 import Relude hiding (Undefined, intercalate)
 
 data PkgGroup = PkgGroup

@@ -15,7 +15,6 @@ module HConf.File
   )
 where
 
-import Config.Types
 import Data.Aeson (FromJSON (parseJSON), Object, Options (..), ToJSON (toJSON), Value (..), defaultOptions)
 import Data.Aeson.KeyMap
 import qualified Data.ByteString as L
@@ -25,6 +24,7 @@ import qualified Data.ByteString as L
 import Data.Char (isUpper, toLower)
 import Data.Yaml (decodeThrow)
 import Data.Yaml.Pretty (defConfig, encodePretty, setConfCompare, setConfDropNull)
+import HConf.Types
 import Relude hiding (Show, Undefined, intercalate, show)
 import Prelude (Show (..))
 
