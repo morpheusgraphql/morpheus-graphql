@@ -50,11 +50,8 @@ instance ToJSON Package where
 toPath :: FilePath -> FilePath
 toPath = (<> "/package.yaml")
 
-readPackage :: FilePath -> IO (Yaml Package)
-readPackage = readYaml . toPath
-
-writePackage :: FilePath -> Yaml Package -> IO ()
-writePackage path = writeYaml (toPath path)
+readPackage :: FilePath -> IO Package
+readPackage = fmap getData . readYaml . toPath
 
 updateDeps :: Config -> Libs -> Libs
 updateDeps config = fmap (fmap (updateLib config))
@@ -72,7 +69,7 @@ updatePackage config Package {..} =
     }
 
 checkPackage :: Config -> FilePath -> IO ()
-checkPackage config path = readPackage path >>= writePackage path . mapYaml (updatePackage config)
+checkPackage config path = readYaml path >>= writeYaml path . mapYaml (updatePackage config)
 
 checkPackages :: Config -> IO ()
-checkPackages config = traverse_ (checkPackage config . unpack) (getPackages config)
+checkPackages config = traverse_ (checkPackage config . toPath . unpack) (getPackages config)
