@@ -29,7 +29,7 @@ dependencies:
   - websockets             >=  0.12.6.0  &&  <  1.0.0
 library:
   source-dirs: src
+  ghc-options: '-Wall'
   exposed-modules:
     - Data.Morpheus.Subscriptions
     - Data.Morpheus.Subscriptions.Internal
-  ghc-options: '-Wall'

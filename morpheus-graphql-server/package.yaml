@@ -32,12 +32,12 @@ dependencies:
   - vector                 >=  0.12.0.1  &&  <  0.15.0
 library:
   source-dirs: src
+  ghc-options: '-Wall'
   exposed-modules:
     - Data.Morpheus.Server
     - Data.Morpheus.Server.CodeGen.Internal
     - Data.Morpheus.Server.Resolvers
     - Data.Morpheus.Server.Types
-  ghc-options: '-Wall'
 tests:
   morpheus-graphql-server-test:
     main: Spec.hs

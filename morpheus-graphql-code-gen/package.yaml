@@ -27,10 +27,10 @@ dependencies:
   - unordered-containers             >=  0.2.8    &&  <  0.3.0
 library:
   source-dirs: src
+  ghc-options: '-Wall'
   exposed-modules:
     - Data.Morpheus.CodeGen
     - Data.Morpheus.CodeGen.Server
-  ghc-options: '-Wall'
 executables:
   morpheus:
     main: Main.hs

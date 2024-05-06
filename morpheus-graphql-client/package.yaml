@@ -39,11 +39,11 @@ dependencies:
   - wuss                             >=  1.0.0     &&  <  3.0.0
 library:
   source-dirs: src
+  ghc-options: '-Wall'
   exposed-modules:
     - Data.Morpheus.Client
     - Data.Morpheus.Client.CodeGen.AST
     - Data.Morpheus.Client.CodeGen.Internal
-  ghc-options: '-Wall'
 tests:
   morpheus-graphql-client-test:
     main: Spec.hs

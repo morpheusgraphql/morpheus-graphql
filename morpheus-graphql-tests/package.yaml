@@ -20,6 +20,6 @@ dependencies:
   - unordered-containers  >=  0.2.8   &&  <  0.3.0
 library:
   source-dirs: src
+  ghc-options: '-Wall'
   exposed-modules:
     - Test.Morpheus
-  ghc-options: '-Wall'

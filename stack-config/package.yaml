@@ -26,9 +26,9 @@ dependencies:
   - yaml                       >=  0.8.32  &&  <  1.0.0
 library:
   source-dirs: src
+  ghc-options: '-Wall'
   exposed-modules:
     - Config
-  ghc-options: '-Wall'
 executables:
   stack-config:
     main: Main.hs
