@@ -56,6 +56,12 @@ toPath = (<> "/package.yaml")
 readPackage :: FilePath -> IO Package
 readPackage = readYaml . toPath
 
+writePackage :: FilePath -> Package -> IO ()
+writePackage path = writeYaml (toPath path)
+
+updateDeps :: Config -> Libs -> Libs
+updateDeps config = fmap (fmap (updateLib config))
+
 updatePackage :: Config -> PackageType -> PackageType
 updatePackage config PackageType {..} =
   PackageType
@@ -68,11 +74,8 @@ updatePackage config PackageType {..} =
       ..
     }
 
-updateDeps :: Config -> Libs -> Libs
-updateDeps config = fmap (fmap (updateLib config))
-
 checkPackage :: Config -> FilePath -> IO ()
-checkPackage config path = readPackage path >>= writeYaml (toPath path) . mapYaml (updatePackage config)
+checkPackage config path = readPackage path >>= writePackage path . mapYaml (updatePackage config)
 
 checkPackages :: Config -> IO ()
 checkPackages config = traverse_ (checkPackage config . unpack) (getPackages config)
