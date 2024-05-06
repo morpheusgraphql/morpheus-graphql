@@ -52,22 +52,23 @@ genHie stack config = do
         )
       ]
 
-toComp :: Text -> Text -> Maybe (Yaml LibType) -> Text -> [Value]
-toComp path name (Just (Yaml LibType {..} _)) lib =
+component :: Text -> Text -> Text -> Maybe (Yaml LibType) -> [Value]
+component path name lib (Just (Yaml LibType {..} _)) =
   [ object
       [ ("path", String ("./" <> path <> "/" <> sourceDirs)),
         ("component", String (name <> ":" <> lib))
       ]
   ]
-toComp _ _ _ _ = []
-
-groupComp :: Text -> Text -> Text -> Maybe (KeyMap (Yaml LibType)) -> [Value]
-groupComp path name pref (Just libs) = concatMap (\(k, lib) -> toComp path name (Just lib) (pref <> ":" <> K.toText k)) (KM.toList libs)
-groupComp _ _ _ _ = []
+component _ _ _ _ = []
 
 toLib :: (Text, Package) -> [Value]
 toLib (path, Package {..}) =
-  toComp path name library "lib"
-    <> groupComp path name "test" tests
-    <> groupComp path name "exe" executables
-    <> groupComp path name "bench" benchmarks
+  comp "lib" library
+    <> compGroup "test" tests
+    <> compGroup "exe" executables
+    <> compGroup "bench" benchmarks
+  where
+    compGroup :: Text -> Maybe (KeyMap (Yaml LibType)) -> [Value]
+    compGroup pref (Just libs) = concatMap (\(k, lib) -> comp (pref <> ":" <> K.toText k) (Just lib)) (KM.toList libs)
+    compGroup _ _ = []
+    comp = component path name
