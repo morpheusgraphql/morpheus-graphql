@@ -22,7 +22,7 @@ import Data.Aeson.Types (listValue)
 import Data.Text (unpack)
 import HConf.Lib (LibType (..))
 import HConf.Package (Package (..), getPackage)
-import HConf.Types (Config, getPackages)
+import HConf.Config (Config, getPackages)
 import HConf.Yaml (Yaml (..))
 import Relude hiding (Undefined, intercalate)
 

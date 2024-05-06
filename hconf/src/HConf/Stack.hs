@@ -17,7 +17,7 @@ where
 import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import Data.List ((\\))
 import qualified Data.Map as M
-import HConf.Types (Build (..), Config, getBuild, getBuilds, getPackages)
+import HConf.Config (Build (..), Config, getBuild, getBuilds, getPackages)
 import HConf.Utils (maybeList)
 import HConf.Version (Version (..), parseVersion)
 import HConf.Yaml (Yaml (..), aesonYAMLOptions)

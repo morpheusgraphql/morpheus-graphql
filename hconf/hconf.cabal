@@ -28,11 +28,11 @@ library
   exposed-modules:
       HConf
   other-modules:
+      HConf.Config
       HConf.Hie
       HConf.Lib
       HConf.Package
       HConf.Stack
-      HConf.Types
       HConf.Utils
       HConf.Version
       HConf.Yaml

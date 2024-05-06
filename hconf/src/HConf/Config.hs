@@ -7,12 +7,11 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | GQL Types
-module HConf.Types
+module HConf.Config
   ( Config (..),
-    PkgGroup (..),
+    Build (..),
     getPackages,
     getBuild,
-    Build (..),
     getBuilds,
     getVersion,
     getBounds,
