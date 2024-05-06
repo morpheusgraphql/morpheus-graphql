@@ -15,10 +15,22 @@ module HConf.Lib
   )
 where
 
-import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
+import Data.Aeson
+  ( FromJSON (..),
+    ToJSON (..),
+    genericParseJSON,
+    genericToJSON,
+  )
 import Data.Char (isSeparator)
 import Data.List (maximum)
-import Data.Text (intercalate, isPrefixOf, justifyLeft, length, split, strip)
+import Data.Text
+  ( intercalate,
+    isPrefixOf,
+    justifyLeft,
+    length,
+    split,
+    strip,
+  )
 import HConf.Config (Config (..), getRule)
 import HConf.Version (Version, VersionBounds (..))
 import HConf.Yaml (Yaml (..), aesonYAMLOptions)
