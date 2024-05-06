@@ -33,6 +33,7 @@ builds:
   8.2.2:
     resolver: lts-11.10
   8.4.4:
+    resolver: lts-12.26
     extra:
       aeson: 1.4.4.0
       base-orphans: 0.8.1
@@ -43,40 +44,40 @@ builds:
       retry: 0.8.1.0
       time-compat: 1.9.2.2
       websockets: 0.12.6.0
-    resolver: lts-12.26
   8.6.5:
+    resolver: lts-14.14
     extra:
       req: 3.0.0
-    resolver: lts-14.14
   8.8.3:
+    resolver: lts-16.2
     extra:
       prettyprinter: 1.7.0
-    resolver: lts-16.2
   8.10.7:
+    resolver: lts-18.10
     extra:
       fastsum: 0.1.1.1
       graphql: 0.11.1.0
-    resolver: lts-18.10
   9.0.2:
-    exclude:
-      - examples/scotty-fraxl
+    resolver: lts-19.28
     extra:
       attoparsec-aeson: 2.1.0.0
       dependent-map: 0.2.4.0
       dependent-sum: 0.4.0
-    include:
-      - morpheus-graphql-benchmarks
-    resolver: lts-19.28
-  latest:
     exclude:
       - examples/scotty-fraxl
-      - examples/scotty-freer-simple
+    include:
+      - morpheus-graphql-benchmarks
+  latest:
+    resolver: nightly-2024-04-20
     extra:
       fraxl: 0.3.0.0
       haxl: 2.4.0.0
       type-aligned: 0.9.6
-    resolver: nightly-2024-04-20
+    exclude:
+      - examples/scotty-fraxl
+      - examples/scotty-freer-simple
 dependencies:
+  extra: true
   aeson: 1.4.4-3.0.0
   attoparsec-aeson: 2.1.0.0-3.0.0
   base: 4.7.0-5.0.0
@@ -85,7 +86,6 @@ dependencies:
   containers: 0.4.2.1-0.7.0
   criterion: true
   directory: 1.0.0-2.0.0
-  extra: true
   file-embed: 0.0.10-1.0.0
   filepath: 1.1.0-1.5.0
   fraxl: true

@@ -36,7 +36,14 @@ type Configuration<R extends boolean = false> = {
   packages: [Pkg];
 };
 
-const ORDER = ["name", "version", "bounds", "packages"].reverse();
+const ORDER = [
+  "name",
+  "version",
+  "bounds",
+  "packages",
+  "resolver",
+  "extra",
+].reverse();
 
 const sortKeys = (a: string, b: string) => {
   try {
