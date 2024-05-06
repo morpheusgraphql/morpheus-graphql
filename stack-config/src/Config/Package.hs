@@ -21,9 +21,7 @@ import Config.Types (Config, getPackages, getVersion)
 import Config.Version (Version)
 import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import Data.Aeson.KeyMap (KeyMap)
-import Data.Char (isSeparator)
-import Data.List (maximum)
-import Data.Text (intercalate, length, replicate, split, strip, unpack)
+import Data.Text (unpack)
 import Relude hiding (Undefined, intercalate, length, replicate)
 
 type Package = Yaml PackageType
