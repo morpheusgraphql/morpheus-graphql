@@ -11,12 +11,12 @@ module Config.Package
   ( readPackage,
     PackageType (..),
     Package,
-    LibType (..),
     checkPackages,
   )
 where
 
 import Config.File (Yaml (..), aesonYAMLOptions, readYaml, writeYaml)
+import Config.Lib (Lib, updateDependencies, updateLib)
 import Config.Types (Config, getPackages, getVersion)
 import Config.Version (Version)
 import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
@@ -27,25 +27,6 @@ import Data.Text (intercalate, length, replicate, split, strip, unpack)
 import Relude hiding (Undefined, intercalate, length, replicate)
 
 type Package = Yaml PackageType
-
-type Dep = Maybe [Text]
-
-data LibType = LibType
-  { sourceDirs :: Text
-  -- dependencies :: Maybe [Text]
-  }
-  deriving
-    ( Show,
-      Generic
-    )
-
-type Lib = Yaml LibType
-
-instance FromJSON LibType where
-  parseJSON = genericParseJSON aesonYAMLOptions
-
-instance ToJSON LibType where
-  toJSON = genericToJSON aesonYAMLOptions
 
 type Libs = Maybe (KeyMap Lib)
 
@@ -89,52 +70,6 @@ updatePackage config (Yaml v props) =
       )
       props
   )
-
-fill :: Int -> Text
-fill n = replicate n " "
-
-getSizes :: [[Text]] -> [Int]
-getSizes xs = map size (transpose xs)
-  where
-    size :: [Text] -> Int
-    size = maximum . map length
-
-printRow :: [Int] -> [Text] -> Text
-printRow sizes ls =
-  strip
-    $ intercalate "  "
-    $ map
-      (\(item, s) -> item <> fill (s - length item))
-      (zip ls sizes)
-
-formatDependencies :: [[Text]] -> [Text]
-formatDependencies deps = map (printRow (getSizes deps)) deps
-
-updateDependencies :: Config -> [Text] -> [Text]
-updateDependencies _ = formatDependencies . map (checkDependency . filter (/= "") . split isSeparator) . sort
-
-checkDependency :: [Text] -> [Text]
-checkDependency = id
-
--- checkDependency(name: string, hasNoBounds: boolean): string[] {
---     if (name.startsWith(this.config.name)) {
---       if (hasNoBounds) {
---         return [name];
---       }
---       return withRule(name, this.config.bounds);
---     }
-
---     const rule = this.rule(name);
-
---     if (rule) {
---       return typeof rule === "boolean" ? [name] : withRule(name, rule);
---     }
-
---     throw new Error(`Unknown package: ${name}`);
---   }
-
-updateLib :: Config -> Lib -> Lib
-updateLib _ l = l
 
 updateDeps :: Config -> Libs -> Libs
 updateDeps config (Just x) = Just (fmap (updateLib config) x)

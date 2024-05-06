@@ -15,7 +15,8 @@ module Config.Hie
 where
 
 import Config.File
-import Config.Package (LibType (..), PackageType (..), readPackage)
+import Config.Lib (LibType (..))
+import Config.Package (PackageType (..), readPackage)
 import Config.Types (Config, getPackages)
 import Data.Aeson (FromJSON (..), ToJSON (..), Value (..), object)
 import qualified Data.Aeson.Key as K
