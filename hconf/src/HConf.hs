@@ -16,5 +16,5 @@ where
 import HConf.File (readYaml, writeYaml)
 import HConf.Hie (genHie)
 import HConf.Package (checkPackages)
-import HConf.Stack ()
+import HConf.Stack (Stack, updateStack)
 import HConf.Types
