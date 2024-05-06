@@ -28,11 +28,13 @@ type Package = Yaml PackageType
 
 type Libs = Maybe (KeyMap Lib)
 
+type Name = Text
+
 data PackageType = PackageType
-  { name :: Text,
+  { name :: Name,
     version :: Version,
     library :: Maybe Lib,
-    dependencies :: [Text],
+    dependencies :: [Name],
     tests :: Libs,
     executables :: Libs,
     benchmarks :: Libs
