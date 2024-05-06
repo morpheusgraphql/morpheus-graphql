@@ -26,6 +26,8 @@ import Relude hiding (Undefined, intercalate)
 
 type Package = Yaml PackageType
 
+type Dep = Maybe [Text]
+
 data LibType = LibType
   { sourceDirs :: Text
   -- dependencies :: Maybe [Text]
@@ -43,16 +45,16 @@ instance FromJSON LibType where
 instance ToJSON LibType where
   toJSON = genericToJSON aesonYAMLOptions
 
-type Deps = Maybe (KeyMap Lib)
+type Libs = Maybe (KeyMap Lib)
 
 data PackageType = PackageType
   { name :: Text,
     version :: Version,
     library :: Maybe Lib,
     dependencies :: [Text],
-    tests :: Deps,
-    executables :: Deps,
-    benchmarks :: Deps
+    tests :: Libs,
+    executables :: Libs,
+    benchmarks :: Libs
   }
   deriving
     ( Show,
@@ -79,16 +81,20 @@ updatePackage config (Yaml v props) =
             library = fmap (updateLib config) (library v),
             tests = updateDeps config (tests v),
             executables = updateDeps config (executables v),
-            benchmarks = updateDeps config (benchmarks v)
+            benchmarks = updateDeps config (benchmarks v),
+            dependencies = updateDep config (dependencies v)
           }
       )
       props
   )
 
-updateLib :: Config -> Lib -> Lib
-updateLib _ l = traceShow l l
+updateDep :: Config -> [Text] -> [Text]
+updateDep _ l = traceShow l l
 
-updateDeps :: Config -> Deps -> Deps
+updateLib :: Config -> Lib -> Lib
+updateLib _ l = l
+
+updateDeps :: Config -> Libs -> Libs
 updateDeps config (Just x) = Just (fmap (updateLib config) x)
 updateDeps _ Nothing = Nothing
 
