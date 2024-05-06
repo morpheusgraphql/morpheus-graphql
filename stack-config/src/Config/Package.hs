@@ -8,9 +8,9 @@
 
 -- | GQL Types
 module Config.Package
-  ( readPackage,
-    PackageType (..),
+  ( PackageType (..),
     Package,
+    readPackage,
     checkPackages,
   )
 where
