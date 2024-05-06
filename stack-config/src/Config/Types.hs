@@ -99,15 +99,17 @@ fields =
     "github",
     "license",
     "author",
+    "maintainer",
     "category",
     "synopsis",
     "copyright",
     "description",
-    "dependencies",
-    "data-files",
     "bounds",
     "resolver",
     "packages",
+    "builds",
+    "dependencies",
+    "data-files",
     "include",
     "exclude",
     "allow-newer",
@@ -116,7 +118,10 @@ fields =
     "stackyaml",
     "components",
     "path",
-    "component"
+    "component",
+    "main",
+    "source-dirs",
+    "ghc-options"
   ]
 
 compareFieldNames :: Text -> Text -> Ordering
