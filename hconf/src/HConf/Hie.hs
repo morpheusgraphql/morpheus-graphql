@@ -25,7 +25,7 @@ import HConf.Package (Package (..), getPackage)
 import HConf.Yaml (Yaml (..), writeYaml)
 import Relude hiding (Undefined, intercalate)
 
-newtype Hie = Hie (KeyMap Value)
+newtype Hie = Hie Value
   deriving newtype
     ( ToJSON,
       FromJSON,
@@ -37,23 +37,17 @@ genHie hiePath stack config =
   do
     packages <- traverse (\p -> (p,) <$> getPackage (unpack p)) (getPackages config)
     let hie =
-          Hie
-            ( fromList
-                [ ( "cradle",
-                    object
-                      [ ( "stack",
-                          object
-                            [ ("stackYaml", String stack),
-                              ( "components",
-                                toJSON (concatMap toLib packages)
-                              )
-                            ]
-                        )
-                      ]
-                  )
-                ]
-            )
-    writeYaml hiePath hie
+          object
+            [ ("stackYaml", String stack),
+              ( "components",
+                toJSON (concatMap toLib packages)
+              )
+            ]
+
+    writeYaml hiePath (packHie hie)
+
+packHie :: Value -> Value
+packHie value = (object [("cradle", object [("stack", value)])])
 
 data Component = Component
   { path :: Text,
