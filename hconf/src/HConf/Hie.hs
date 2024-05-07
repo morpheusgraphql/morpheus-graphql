@@ -67,10 +67,10 @@ data Component = Component
     )
 
 mkComponent :: Text -> Text -> Text -> Maybe (Yaml LibType) -> [Component]
-mkComponent path name lib (Just (Yaml LibType {..} _)) =
+mkComponent path name libTag (Just (Yaml LibType {..} _)) =
   [ Component
       { path = "./" <> path <> "/" <> sourceDirs,
-        component = name <> ":" <> lib
+        component = name <> ":" <> libTag
       }
   ]
 mkComponent _ _ _ _ = []
@@ -83,8 +83,8 @@ toLib (path, Package {..}) =
     <> compGroup "bench" benchmarks
   where
     compGroup :: Text -> Maybe (KeyMap (Yaml LibType)) -> [Component]
-    compGroup pref (Just libs) = concatMap mkComp (KM.toList libs)
+    compGroup tag (Just libs) = concatMap mkComp (KM.toList libs)
       where
-        mkComp (k, lib) = comp (pref <> ":" <> K.toText k) (Just lib)
+        mkComp (k, lib) = comp (tag <> ":" <> K.toText k) (Just lib)
     compGroup _ _ = []
     comp = mkComponent path name
