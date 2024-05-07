@@ -21,7 +21,7 @@ import qualified Data.Aeson.KeyMap as KM
 import Data.Text (pack)
 import HConf.Config (Config)
 import HConf.Env (SetupEnv (..))
-import HConf.Lib (LibType (..))
+import HConf.Lib (Lib, LibType (..))
 import HConf.Package (Package (..), resolvePackages)
 import HConf.Yaml (Yaml (..), writeYaml)
 import Relude hiding (Undefined, intercalate)
@@ -58,12 +58,12 @@ toLib (path, Package {..}) =
     <> compGroup "exe" executables
     <> compGroup "bench" benchmarks
   where
-    compGroup :: Text -> Maybe (KeyMap (Yaml LibType)) -> [Component]
+    compGroup :: Text -> Maybe (KeyMap Lib) -> [Component]
     compGroup tag (Just libs) = concatMap mkComp (KM.toList libs)
       where
         mkComp (k, lib) = comp (tag <> ":" <> K.toText k) (Just lib)
     compGroup _ _ = []
-    comp :: Text -> Maybe (Yaml LibType) -> [Component]
+    comp :: Text -> Maybe Lib -> [Component]
     comp tag (Just (Yaml LibType {sourceDirs} _)) =
       [ Component
           { path = "./" <> path <> "/" <> sourceDirs,
