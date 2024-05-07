@@ -4,13 +4,14 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | GQL Types
 module HConf.Package
   ( Package (..),
-    getPackage,
     checkPackages,
+    resolvePackages,
   )
 where
 
@@ -49,6 +50,9 @@ instance ToJSON Package where
 
 toPath :: FilePath -> FilePath
 toPath = (<> "/package.yaml")
+
+resolvePackages :: Config -> IO [(Text, Package)]
+resolvePackages config = traverse (\p -> (p,) <$> getPackage (unpack p)) (getPackages config)
 
 getPackage :: FilePath -> IO Package
 getPackage = fmap getData . readYaml . toPath

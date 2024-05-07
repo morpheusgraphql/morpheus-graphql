@@ -21,7 +21,7 @@ import qualified Data.Aeson.KeyMap as KM
 import Data.Text (unpack)
 import HConf.Config (Config, getPackages)
 import HConf.Lib (LibType (..))
-import HConf.Package (Package (..), getPackage)
+import HConf.Package (Package (..), resolvePackages)
 import HConf.Yaml (Yaml (..), writeYaml)
 import Relude hiding (Undefined, intercalate)
 
@@ -76,5 +76,5 @@ toLib (path, Package {..}) =
 genHie :: FilePath -> Text -> Config -> IO ()
 genHie hiePath stackYaml config =
   do
-    packages <- traverse (\p -> (p,) <$> getPackage (unpack p)) (getPackages config)
-    writeYaml hiePath $ packHie $ toJSON $ Components {stackYaml, components = concatMap toLib packages}
+    components <- concatMap toLib <$> resolvePackages config
+    writeYaml hiePath $ packHie $ toJSON Components {stackYaml, components}
