@@ -20,14 +20,12 @@ import Data.Aeson.KeyMap (KeyMap)
 import Data.Text (unpack)
 import HConf.Config (Config, getPackages, getVersion)
 import HConf.Lib (Lib, updateDependencies, updateLib)
-import HConf.Utils (tupled)
+import HConf.Utils (Name, tupled)
 import HConf.Version (Version)
 import HConf.Yaml (Yaml (..), aesonYAMLOptions, mapYaml, readYaml, writeYaml)
 import Relude hiding (Undefined, intercalate, length, replicate)
 
 type Libs = Maybe (KeyMap Lib)
-
-type Name = Text
 
 data Package = Package
   { name :: Name,

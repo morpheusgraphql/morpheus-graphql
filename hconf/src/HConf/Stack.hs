@@ -18,17 +18,17 @@ import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import Data.List ((\\))
 import qualified Data.Map as M
 import HConf.Config (Build (..), Config, getBuild, getBuilds, getPackages)
-import HConf.Utils (maybeList)
+import HConf.Utils (Name, maybeList)
 import HConf.Version (Version (..))
 import HConf.Yaml (aesonYAMLOptions, rewriteYaml)
 import Relude
 
 data Stack = Stack
-  { packages :: [Text],
-    resolver :: Text,
+  { packages :: [Name],
+    resolver :: Name,
     allowNewer :: Maybe Bool,
     saveHackageCreds :: Maybe Bool,
-    extraDeps :: [Text]
+    extraDeps :: [Name]
   }
   deriving
     ( Show,
