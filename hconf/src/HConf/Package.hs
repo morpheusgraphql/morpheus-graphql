@@ -52,10 +52,10 @@ toPath :: FilePath -> FilePath
 toPath = (<> "/package.yaml")
 
 resolvePackages :: Config -> IO [(Text, Package)]
-resolvePackages config = traverse (\p -> (p,) <$> getPackage (unpack p)) (getPackages config)
+resolvePackages config = traverse (\p -> (p,) <$> getPackage p) (getPackages config)
 
-getPackage :: FilePath -> IO Package
-getPackage = fmap getData . readYaml . toPath
+getPackage :: Text -> IO Package
+getPackage = fmap getData . readYaml . toPath . unpack
 
 updateDeps :: Config -> Libs -> Libs
 updateDeps config = fmap (fmap (updateLib config))
