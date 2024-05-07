@@ -79,4 +79,4 @@ genHie :: SetupEnv -> Config -> IO ()
 genHie SetupEnv {..} config =
   do
     components <- concatMap toLib <$> resolvePackages config
-    writeYaml hie $ packHie Components {stackYaml = stack, components}
+    writeYaml hie (packHie Components {stackYaml = stack, components})
