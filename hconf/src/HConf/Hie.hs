@@ -25,30 +25,6 @@ import HConf.Package (Package (..), getPackage)
 import HConf.Yaml (Yaml (..), writeYaml)
 import Relude hiding (Undefined, intercalate)
 
-newtype Hie = Hie Value
-  deriving newtype
-    ( ToJSON,
-      FromJSON,
-      Show
-    )
-
-genHie :: FilePath -> Text -> Config -> IO ()
-genHie hiePath stack config =
-  do
-    packages <- traverse (\p -> (p,) <$> getPackage (unpack p)) (getPackages config)
-    let hie =
-          object
-            [ ("stackYaml", String stack),
-              ( "components",
-                toJSON (concatMap toLib packages)
-              )
-            ]
-
-    writeYaml hiePath (packHie hie)
-
-packHie :: Value -> Value
-packHie value = (object [("cradle", object [("stack", value)])])
-
 data Component = Component
   { path :: Text,
     component :: Text
@@ -59,6 +35,20 @@ data Component = Component
       Generic,
       Show
     )
+
+data Components = Components
+  { stackYaml :: Text,
+    components :: [Component]
+  }
+  deriving
+    ( ToJSON,
+      FromJSON,
+      Generic,
+      Show
+    )
+
+packHie :: Value -> Value
+packHie value = (object [("cradle", object [("stack", value)])])
 
 mkComponent :: Text -> Text -> Text -> Maybe (Yaml LibType) -> [Component]
 mkComponent path name libTag (Just (Yaml LibType {..} _)) =
@@ -82,3 +72,9 @@ toLib (path, Package {..}) =
         mkComp (k, lib) = comp (tag <> ":" <> K.toText k) (Just lib)
     compGroup _ _ = []
     comp = mkComponent path name
+
+genHie :: FilePath -> Text -> Config -> IO ()
+genHie hiePath stackYaml config =
+  do
+    packages <- traverse (\p -> (p,) <$> getPackage (unpack p)) (getPackages config)
+    writeYaml hiePath $ packHie $ toJSON $ Components {stackYaml, components = concatMap toLib packages}
