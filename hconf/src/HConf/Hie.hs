@@ -83,6 +83,8 @@ toLib (path, Package {..}) =
     <> compGroup "bench" benchmarks
   where
     compGroup :: Text -> Maybe (KeyMap (Yaml LibType)) -> [Component]
-    compGroup pref (Just libs) = concatMap (\(k, lib) -> comp (pref <> ":" <> K.toText k) (Just lib)) (KM.toList libs)
+    compGroup pref (Just libs) = concatMap mkComp (KM.toList libs)
+      where
+        mkComp (k, lib) = comp (pref <> ":" <> K.toText k) (Just lib)
     compGroup _ _ = []
     comp = mkComponent path name
