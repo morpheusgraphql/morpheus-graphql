@@ -51,15 +51,6 @@ data Components = Components
 packHie :: Value -> Value
 packHie value = (object [("cradle", object [("stack", value)])])
 
-mkComponent :: Text -> Text -> Text -> Maybe (Yaml LibType) -> [Component]
-mkComponent path name libTag (Just (Yaml LibType {..} _)) =
-  [ Component
-      { path = "./" <> path <> "/" <> sourceDirs,
-        component = name <> ":" <> libTag
-      }
-  ]
-mkComponent _ _ _ _ = []
-
 toLib :: (Text, Package) -> [Component]
 toLib (path, Package {..}) =
   comp "lib" library
@@ -72,7 +63,14 @@ toLib (path, Package {..}) =
       where
         mkComp (k, lib) = comp (tag <> ":" <> K.toText k) (Just lib)
     compGroup _ _ = []
-    comp = mkComponent path name
+    comp :: Text -> Maybe (Yaml LibType) -> [Component]
+    comp tag (Just (Yaml LibType {sourceDirs} _)) =
+      [ Component
+          { path = "./" <> path <> "/" <> sourceDirs,
+            component = name <> ":" <> tag
+          }
+      ]
+    comp _ _ = []
 
 genHie :: SetupEnv -> Config -> IO ()
 genHie SetupEnv {..} config =
