@@ -4,11 +4,12 @@
 
 module HConf
   ( setup,
-    SetupPath (..),
+    SetupEnv (..),
   )
 where
 
 import Data.Text
+import HConf.Env (SetupEnv (..))
 import HConf.Hie (genHie)
 import HConf.Package (checkPackages)
 import HConf.Stack (setupStack)
@@ -16,14 +17,8 @@ import HConf.Version (parseVersion)
 import HConf.Yaml (readYaml, writeYaml)
 import Prelude
 
-data SetupPath = SetupPath
-  { hie :: FilePath,
-    hconf :: FilePath,
-    stack :: FilePath
-  }
-
-setup :: SetupPath -> String -> IO ()
-setup SetupPath {..} ver = do
+setup :: SetupEnv -> String -> IO ()
+setup SetupEnv {..} ver = do
   version <- parseVersion (pack ver)
   config <- readYaml hconf
   writeYaml hconf config
