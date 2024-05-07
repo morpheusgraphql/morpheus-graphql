@@ -38,7 +38,7 @@ data Component = Component
     )
 
 data Components = Components
-  { stackYaml :: Text,
+  { stackYaml :: FilePath,
     components :: [Component]
   }
   deriving
@@ -48,8 +48,8 @@ data Components = Components
       Show
     )
 
-packHie :: Value -> Value
-packHie value = (object [("cradle", object [("stack", value)])])
+packHie :: Components -> Value
+packHie value = (object [("cradle", object [("stack", toJSON value)])])
 
 (<:>) :: (Semigroup a, IsString a) => a -> a -> a
 (<:>) name tag = name <> ":" <> tag
@@ -79,4 +79,4 @@ genHie :: SetupEnv -> Config -> IO ()
 genHie SetupEnv {..} config =
   do
     components <- concatMap toLib <$> resolvePackages config
-    writeYaml hie $ packHie $ toJSON Components {stackYaml = pack stack, components}
+    writeYaml hie $ packHie Components {stackYaml = stack, components}
