@@ -51,6 +51,9 @@ data Components = Components
 packHie :: Value -> Value
 packHie value = (object [("cradle", object [("stack", value)])])
 
+(<:>) :: (Semigroup a, IsString a) => a -> a -> a
+(<:>) name tag = name <> ":" <> tag
+
 toLib :: (Text, Package) -> [Component]
 toLib (path, Package {..}) =
   comp "lib" library
@@ -61,13 +64,13 @@ toLib (path, Package {..}) =
     compGroup :: Text -> Maybe (KeyMap Lib) -> [Component]
     compGroup tag (Just libs) = concatMap mkComp (KM.toList libs)
       where
-        mkComp (k, lib) = comp (tag <> ":" <> K.toText k) (Just lib)
+        mkComp (k, lib) = comp (tag <:> K.toText k) (Just lib)
     compGroup _ _ = []
     comp :: Text -> Maybe Lib -> [Component]
     comp tag (Just (Yaml LibType {sourceDirs} _)) =
       [ Component
           { path = "./" <> path <> "/" <> sourceDirs,
-            component = name <> ":" <> tag
+            component = name <:> tag
           }
       ]
     comp _ _ = []
