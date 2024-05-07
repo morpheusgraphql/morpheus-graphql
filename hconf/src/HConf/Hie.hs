@@ -18,7 +18,6 @@ import Data.Aeson (FromJSON (..), ToJSON (..), Value (..), object)
 import qualified Data.Aeson.Key as K
 import Data.Aeson.KeyMap (KeyMap)
 import qualified Data.Aeson.KeyMap as KM
-import Data.Aeson.Types (listValue)
 import Data.Text (unpack)
 import HConf.Config (Config, getPackages)
 import HConf.Lib (LibType (..))
@@ -46,7 +45,7 @@ genHie hiePath stack config =
                           object
                             [ ("stackYaml", String stack),
                               ( "components",
-                                listValue id $ (concatMap toLib packages)
+                                toJSON (concatMap toLib packages)
                               )
                             ]
                         )
@@ -56,23 +55,34 @@ genHie hiePath stack config =
             )
     writeYaml hiePath hie
 
-component :: Text -> Text -> Text -> Maybe (Yaml LibType) -> [Value]
-component path name lib (Just (Yaml LibType {..} _)) =
-  [ object
-      [ ("path", String ("./" <> path <> "/" <> sourceDirs)),
-        ("component", String (name <> ":" <> lib))
-      ]
-  ]
-component _ _ _ _ = []
+data Component = Component
+  { path :: Text,
+    component :: Text
+  }
+  deriving
+    ( ToJSON,
+      FromJSON,
+      Generic,
+      Show
+    )
 
-toLib :: (Text, Package) -> [Value]
+mkComponent :: Text -> Text -> Text -> Maybe (Yaml LibType) -> [Component]
+mkComponent path name lib (Just (Yaml LibType {..} _)) =
+  [ Component
+      { path = "./" <> path <> "/" <> sourceDirs,
+        component = name <> ":" <> lib
+      }
+  ]
+mkComponent _ _ _ _ = []
+
+toLib :: (Text, Package) -> [Component]
 toLib (path, Package {..}) =
   comp "lib" library
     <> compGroup "test" tests
     <> compGroup "exe" executables
     <> compGroup "bench" benchmarks
   where
-    compGroup :: Text -> Maybe (KeyMap (Yaml LibType)) -> [Value]
+    compGroup :: Text -> Maybe (KeyMap (Yaml LibType)) -> [Component]
     compGroup pref (Just libs) = concatMap (\(k, lib) -> comp (pref <> ":" <> K.toText k) (Just lib)) (KM.toList libs)
     compGroup _ _ = []
-    comp = component path name
+    comp = mkComponent path name
