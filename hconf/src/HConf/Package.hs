@@ -20,6 +20,7 @@ import Data.Aeson.KeyMap (KeyMap)
 import Data.Text (unpack)
 import HConf.Config (Config, getPackages, getVersion)
 import HConf.Lib (Lib, updateDependencies, updateLib)
+import HConf.Utils (tupled)
 import HConf.Version (Version)
 import HConf.Yaml (Yaml (..), aesonYAMLOptions, mapYaml, readYaml, writeYaml)
 import Relude hiding (Undefined, intercalate, length, replicate)
@@ -52,7 +53,7 @@ toPath :: FilePath -> FilePath
 toPath = (<> "/package.yaml")
 
 resolvePackages :: Config -> IO [(Text, Package)]
-resolvePackages config = traverse (\p -> (p,) <$> getPackage p) (getPackages config)
+resolvePackages config = traverse (tupled getPackage) (getPackages config)
 
 getPackage :: Text -> IO Package
 getPackage = fmap getData . readYaml . toPath . unpack

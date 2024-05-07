@@ -12,6 +12,7 @@ module HConf.Utils
     maybeList,
     toKebabCase,
     Name,
+    tupled,
   )
 where
 
@@ -87,3 +88,6 @@ toKebabCase = concatMap toKebab
       x
         | isUpper x = ['-', (toLower x)]
         | otherwise = [x]
+
+tupled :: (Functor f) => (t -> f a) -> t -> f (t, a)
+tupled f p = (p,) <$> f p
