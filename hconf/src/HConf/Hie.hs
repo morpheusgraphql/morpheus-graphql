@@ -64,7 +64,6 @@ toLib (path, Package {..}) =
     compGroup tag = concatMap mkComp . concatMap KM.toList . maybeToList
       where
         mkComp (k, lib) = comp (tag <:> K.toText k) (Just lib)
-
     comp :: Text -> Maybe Lib -> [Component]
     comp tag (Just (Yaml LibType {sourceDirs} _)) =
       [ Component
