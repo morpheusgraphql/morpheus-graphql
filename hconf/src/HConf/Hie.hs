@@ -61,10 +61,10 @@ toLib (path, Package {..}) =
     <> compGroup "bench" benchmarks
   where
     compGroup :: Text -> Maybe (KeyMap Lib) -> [Component]
-    compGroup tag (Just libs) = concatMap mkComp (KM.toList libs)
+    compGroup tag = concatMap mkComp . concatMap KM.toList . maybeToList
       where
         mkComp (k, lib) = comp (tag <:> K.toText k) (Just lib)
-    compGroup _ _ = []
+
     comp :: Text -> Maybe Lib -> [Component]
     comp tag (Just (Yaml LibType {sourceDirs} _)) =
       [ Component
