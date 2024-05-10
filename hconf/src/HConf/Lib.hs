@@ -41,9 +41,13 @@ import Relude hiding
     length,
   )
 
+type Table = [[Text]]
+
+type Dependencies = [Text]
+
 data LibType = LibType
   { sourceDirs :: Text,
-    dependencies :: Maybe [Text]
+    dependencies :: Maybe Dependencies
   }
   deriving
     ( Show,
@@ -58,13 +62,13 @@ instance FromJSON LibType where
 instance ToJSON LibType where
   toJSON = genericToJSON aesonYAMLOptions
 
-getSizes :: [[Text]] -> [Int]
+getSizes :: Table -> [Int]
 getSizes xs = map size (transpose xs)
   where
     size :: [Text] -> Int
     size = maximum . map length
 
-printRow :: [Int] -> [Text] -> Text
+printRow :: [Int] -> Dependencies -> Text
 printRow sizes ls =
   strip
     $ intercalate "  "
@@ -72,26 +76,26 @@ printRow sizes ls =
       (\(item, s) -> justifyLeft s ' ' item)
       (zip ls sizes)
 
-formatDependencies :: [[Text]] -> [Text]
+formatDependencies :: Table -> Dependencies
 formatDependencies deps = map (printRow (getSizes deps)) deps
 
-updateDependencies :: Config -> [Text] -> [Text]
+updateDependencies :: Config -> Dependencies -> Dependencies
 updateDependencies config =
   formatDependencies
     . map (checkDependency config . filter (/= "") . split isSeparator)
     . sort
 
-withRule :: Text -> VersionBounds -> [Text]
+withRule :: Text -> VersionBounds -> Dependencies
 withRule name NoBounds = [name]
 withRule name (VersionBounds mi ma) = printMin name mi <> printMax ma
 
-printMin :: Text -> Version -> [Text]
+printMin :: Text -> Version -> Dependencies
 printMin name mi = [name, ">=", show mi]
 
-printMax :: Maybe Version -> [Text]
+printMax :: Maybe Version -> Dependencies
 printMax = maybe [] (\m -> ["&&", "<", show m])
 
-checkDependency :: Config -> [Text] -> [Text]
+checkDependency :: Config -> Dependencies -> Dependencies
 checkDependency config@Config {name, bounds} (n : xs)
   | isPrefixOf name n && null xs = [n]
   | isPrefixOf name n = withRule n bounds
