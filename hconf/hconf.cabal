@@ -29,6 +29,7 @@ library
       HConf
   other-modules:
       HConf.Config
+      HConf.ConfigT
       HConf.Env
       HConf.Hie
       HConf.Lib
