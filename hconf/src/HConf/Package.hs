@@ -57,13 +57,13 @@ getPackage :: Text -> IO Package
 getPackage = fmap getData . readYaml . toPath . unpack
 
 updateDeps :: Config -> Libs -> Libs
-updateDeps config = fmap (fmap (updateLib config))
+updateDeps config = fmap (fmap (mapYaml (updateLib config)))
 
 updatePackage :: Config -> Package -> Package
 updatePackage config Package {..} =
   Package
     { version = getVersion config,
-      library = fmap (updateLib config) library,
+      library = fmap (mapYaml (updateLib config)) library,
       tests = updateDeps config tests,
       executables = updateDeps config executables,
       benchmarks = updateDeps config benchmarks,

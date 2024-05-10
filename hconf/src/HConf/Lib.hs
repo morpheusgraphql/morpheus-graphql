@@ -34,7 +34,12 @@ import Data.Text
 import HConf.Config (Config (..), getRule)
 import HConf.Version (Version, VersionBounds (..))
 import HConf.Yaml (Yaml (..), aesonYAMLOptions)
-import Relude hiding (Undefined, intercalate, isPrefixOf, length)
+import Relude hiding
+  ( Undefined,
+    intercalate,
+    isPrefixOf,
+    length,
+  )
 
 data LibType = LibType
   { sourceDirs :: Text,
@@ -93,13 +98,13 @@ checkDependency config@Config {name, bounds} (n : xs)
   | otherwise = getRule n config >>= withRule n
 checkDependency _ [] = []
 
-updateLib :: Config -> Lib -> Lib
-updateLib config (Yaml LibType {..} x) =
-  ( Yaml
-      LibType
-        { dependencies =
-            fmap (updateDependencies config) dependencies,
-          ..
-        }
-      x
-  )
+updateLib ::
+  Config ->
+  LibType ->
+  LibType
+updateLib config LibType {..} =
+  LibType
+    { dependencies =
+        fmap (updateDependencies config) dependencies,
+      ..
+    }
