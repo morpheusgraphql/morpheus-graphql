@@ -14,12 +14,12 @@ import HConf.Hie (genHie)
 import HConf.Package (checkPackages)
 import HConf.Stack (setupStack)
 import HConf.Version (parseVersion)
-import HConf.Yaml (saveConfig, withConfig)
+import HConf.Yaml (open, save)
 import Prelude
 
 setup :: String -> SetupEnv -> IO ()
-setup ver = withConfig $ do
+setup ver = open $ do
   parseVersion (pack ver) >>= setupStack
   genHie
   checkPackages
-  saveConfig
+  save

@@ -13,8 +13,8 @@ module HConf.Yaml
     mapYaml,
     mapYamlM,
     rewriteYaml,
-    withConfig,
-    saveConfig,
+    open,
+    save,
   )
 where
 
@@ -39,13 +39,13 @@ parseYaml = decodeThrow
 serializeYaml :: (ToJSON a) => a -> ByteString
 serializeYaml = encodePretty (setConfDropNull True $ setConfCompare compareFields defConfig)
 
-withConfig :: ConfigT () -> SetupEnv -> IO ()
-withConfig t env@SetupEnv {..} = do
+open :: ConfigT () -> SetupEnv -> IO ()
+open t env@SetupEnv {..} = do
   cfg <- L.readFile hconf >>= parseYaml
   runConfigT t env cfg
 
-saveConfig :: ConfigT ()
-saveConfig = do
+save :: ConfigT ()
+save = do
   ctx <- asks id
   writeYaml (hconf $ env ctx) (config ctx)
 
