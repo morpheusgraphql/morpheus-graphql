@@ -40,5 +40,5 @@ runApp App {..}
   | otherwise = runOperation operations
   where
     runOperation About = putStrLn $ "Stack Config CLI, version " <> currentVersion
-    runOperation (Setup []) = setup path "latest"
-    runOperation (Setup (version : _)) = setup path version
+    runOperation (Setup []) = setup "latest" path
+    runOperation (Setup (version : _)) = setup version path
