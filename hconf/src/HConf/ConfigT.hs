@@ -9,7 +9,7 @@ module HConf.ConfigT
   ( ConfigT (..),
     packages,
     version,
-    unpackValue,
+    runConfigT,
   )
 where
 
@@ -23,7 +23,7 @@ import HConf.Utils (Name)
 import HConf.Version (Version)
 
 newtype ConfigT (a :: Type)
-  = ConfigT {runConfigT :: ReaderT Config IO a}
+  = ConfigT {_runConfigT :: ReaderT Config IO a}
   deriving
     ( Functor,
       Applicative,
@@ -34,8 +34,8 @@ newtype ConfigT (a :: Type)
       MonadFail
     )
 
-unpackValue :: Config -> ConfigT a -> IO a
-unpackValue config (ConfigT (ReaderT f)) = f config
+runConfigT :: ConfigT a -> Config -> IO a
+runConfigT (ConfigT (ReaderT f)) config = f config
 
 packages :: ConfigT [Name]
 packages = getPackages <$> asks id
