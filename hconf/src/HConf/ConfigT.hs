@@ -14,6 +14,7 @@ module HConf.ConfigT
 where
 
 import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Control.Monad.Reader.Class (MonadReader (..), asks)
 import Control.Monad.Trans.Reader (ReaderT (..))
 import Data.Kind
@@ -28,7 +29,8 @@ newtype ConfigT (a :: Type)
       Applicative,
       Monad,
       MonadReader Config,
-      MonadIO
+      MonadIO,
+      MonadUnliftIO
     )
 
 unpackValue :: Config -> ConfigT a -> IO a

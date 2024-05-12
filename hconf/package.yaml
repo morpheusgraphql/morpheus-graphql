@@ -21,6 +21,7 @@ dependencies:
 - relude                >=  0.3.0     &&  <  2.0.0
 - text                  >=  1.2.3     &&  <  3.0.0
 - transformers          >=  0.3.0     &&  <  0.7.0
+- unliftio-core         >=  0.0.1     &&  <  0.4.0
 - unordered-containers  >=  0.2.8     &&  <  0.3.0
 - vector                >=  0.12.0.1  &&  <  0.15.0
 - yaml                  >=  0.8.32    &&  <  1.0.0
