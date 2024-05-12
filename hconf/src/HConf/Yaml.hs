@@ -16,6 +16,7 @@ module HConf.Yaml
   )
 where
 
+import Control.Monad.IO.Unlift (MonadUnliftIO (withRunInIO))
 import Data.Aeson (FromJSON (parseJSON), Object, Options (..), ToJSON (toJSON), Value (..), defaultOptions)
 import Data.Aeson.KeyMap
 import qualified Data.ByteString as L
@@ -24,6 +25,7 @@ import qualified Data.ByteString as L
   )
 import Data.Yaml (decodeThrow)
 import Data.Yaml.Pretty (defConfig, encodePretty, setConfCompare, setConfDropNull)
+import HConf.ConfigT (ConfigT)
 import HConf.Utils (compareFields, toKebabCase)
 import Relude hiding (Show, Undefined, intercalate, show)
 import Prelude (Show (..))
@@ -34,11 +36,11 @@ parseYaml = decodeThrow
 serializeYaml :: (ToJSON a) => a -> ByteString
 serializeYaml = encodePretty (setConfDropNull True $ setConfCompare compareFields defConfig)
 
-readYaml :: (FromJSON a) => FilePath -> IO a
-readYaml = L.readFile >=> parseYaml
+readYaml :: (FromJSON a) => FilePath -> ConfigT a
+readYaml = liftIO . (L.readFile >=> parseYaml)
 
-writeYaml :: (ToJSON a) => FilePath -> a -> IO ()
-writeYaml path = L.writeFile path . serializeYaml
+writeYaml :: (ToJSON a) => FilePath -> a -> ConfigT ()
+writeYaml path v = withRunInIO (\_ -> L.writeFile path (serializeYaml v))
 
 data Yaml t = Yaml
   { getData :: t,
@@ -70,7 +72,7 @@ mapYaml f (Yaml v props) = Yaml (f v) props
 mapYamlM :: (Functor m) => (t -> m t) -> Yaml t -> m (Yaml t)
 mapYamlM f (Yaml v props) = (`Yaml` props) <$> f v
 
-rewriteYaml :: (FromJSON t, ToJSON t) => FilePath -> (t -> IO t) -> IO ()
+rewriteYaml :: (FromJSON t, ToJSON t) => FilePath -> (t -> ConfigT t) -> ConfigT ()
 rewriteYaml path f =
   readYaml path
     >>= mapYamlM f

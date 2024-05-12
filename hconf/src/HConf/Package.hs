@@ -19,6 +19,7 @@ import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import Data.Aeson.KeyMap (KeyMap)
 import Data.Text (unpack)
 import HConf.Config (Config, getPackages, getVersion)
+import HConf.ConfigT (ConfigT)
 import HConf.Lib (Lib, updateDependencies, updateLib)
 import HConf.Utils (Name, tupled)
 import HConf.Version (Version)
@@ -50,10 +51,10 @@ instance ToJSON Package where
 toPath :: FilePath -> FilePath
 toPath = (<> "/package.yaml")
 
-resolvePackages :: Config -> IO [(Text, Package)]
-resolvePackages config = traverse (tupled getPackage) (getPackages config)
+resolvePackages :: ConfigT [(Text, Package)]
+resolvePackages = asks id >>= traverse (tupled getPackage) . getPackages
 
-getPackage :: Text -> IO Package
+getPackage :: Text -> ConfigT Package
 getPackage = fmap getData . readYaml . toPath . unpack
 
 updateDeps :: Config -> Libs -> Libs
@@ -71,8 +72,11 @@ updatePackage config Package {..} =
       ..
     }
 
-checkPackage :: Config -> FilePath -> IO ()
-checkPackage config path = readYaml path >>= writeYaml path . mapYaml (updatePackage config)
+checkPackage :: FilePath -> ConfigT ()
+checkPackage path = do
+  pkg <- readYaml path
+  cfg <- asks id
+  writeYaml path (mapYaml (updatePackage cfg) pkg)
 
-checkPackages :: Config -> IO ()
-checkPackages config = traverse_ (checkPackage config . toPath . unpack) (getPackages config)
+checkPackages :: ConfigT ()
+checkPackages = asks id >>= traverse_ (checkPackage . toPath . unpack) . getPackages

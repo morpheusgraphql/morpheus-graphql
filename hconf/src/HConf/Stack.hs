@@ -17,7 +17,8 @@ where
 import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import Data.List ((\\))
 import qualified Data.Map as M
-import HConf.Config (Build (..), Config, getBuild, getBuilds, getPackages)
+import HConf.Config (Build (..), getBuild, getBuilds, getPackages)
+import HConf.ConfigT (ConfigT)
 import HConf.Utils (Name, maybeList)
 import HConf.Version (Version (..))
 import HConf.Yaml (aesonYAMLOptions, rewriteYaml)
@@ -41,11 +42,12 @@ instance FromJSON Stack where
 instance ToJSON Stack where
   toJSON = genericToJSON aesonYAMLOptions
 
-setupStack :: FilePath -> Version -> Config -> IO ()
-setupStack path version config = rewriteYaml path (updateStack version config)
+setupStack :: FilePath -> Version -> ConfigT ()
+setupStack path version = rewriteYaml path (updateStack version)
 
-updateStack :: (MonadFail m) => Version -> Config -> Stack -> m Stack
-updateStack version config _ = do
+updateStack :: Version -> Stack -> ConfigT Stack
+updateStack version _ = do
+  config <- asks id
   Build {..} <- getBuild version config
   extraDeps <- getExtraDeps version <$> getBuilds config
   let packages = (getPackages config <> maybeList include) \\ maybeList exclude

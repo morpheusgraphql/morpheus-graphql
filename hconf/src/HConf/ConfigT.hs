@@ -30,7 +30,8 @@ newtype ConfigT (a :: Type)
       Monad,
       MonadReader Config,
       MonadIO,
-      MonadUnliftIO
+      MonadUnliftIO,
+      MonadFail
     )
 
 unpackValue :: Config -> ConfigT a -> IO a
