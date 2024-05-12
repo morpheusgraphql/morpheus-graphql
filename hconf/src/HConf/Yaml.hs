@@ -39,8 +39,8 @@ parseYaml = decodeThrow
 serializeYaml :: (ToJSON a) => a -> ByteString
 serializeYaml = encodePretty (setConfDropNull True $ setConfCompare compareFields defConfig)
 
-withConfig :: SetupEnv -> ConfigT () -> IO ()
-withConfig env@SetupEnv {..} t = do
+withConfig :: ConfigT () -> SetupEnv -> IO ()
+withConfig t env@SetupEnv {..} = do
   cfg <- L.readFile hconf >>= parseYaml
   runConfigT t env cfg
 

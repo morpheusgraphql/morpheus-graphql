@@ -17,10 +17,9 @@ import HConf.Version (parseVersion)
 import HConf.Yaml (saveConfig, withConfig)
 import Prelude
 
-setup :: SetupEnv -> String -> IO ()
-setup env ver = withConfig env $
-  do
-    parseVersion (pack ver) >>= setupStack
-    genHie
-    checkPackages
-    saveConfig
+setup :: String -> SetupEnv -> IO ()
+setup ver = withConfig $ do
+  parseVersion (pack ver) >>= setupStack
+  genHie
+  checkPackages
+  saveConfig
