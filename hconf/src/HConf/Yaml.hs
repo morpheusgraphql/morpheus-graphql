@@ -14,6 +14,7 @@ module HConf.Yaml
     mapYamlM,
     rewriteYaml,
     withConfig,
+    saveConfig,
   )
 where
 
@@ -26,7 +27,7 @@ import qualified Data.ByteString as L
   )
 import Data.Yaml (decodeThrow)
 import Data.Yaml.Pretty (defConfig, encodePretty, setConfCompare, setConfDropNull)
-import HConf.ConfigT (ConfigT (..), runConfigT)
+import HConf.ConfigT (ConfigT (..), HCEnv (..), runConfigT)
 import HConf.Env (SetupEnv (..))
 import HConf.Utils (compareFields, toKebabCase)
 import Relude hiding (Show, Undefined, intercalate, show)
@@ -39,9 +40,14 @@ serializeYaml :: (ToJSON a) => a -> ByteString
 serializeYaml = encodePretty (setConfDropNull True $ setConfCompare compareFields defConfig)
 
 withConfig :: SetupEnv -> ConfigT () -> IO ()
-withConfig SetupEnv {..} t = do
-  x <- L.readFile hconf >>= parseYaml
-  runConfigT t x
+withConfig env@SetupEnv {..} t = do
+  cfg <- L.readFile hconf >>= parseYaml
+  runConfigT t env cfg
+
+saveConfig :: ConfigT ()
+saveConfig = do
+  ctx <- asks id
+  writeYaml (hconf $ env ctx) (config ctx)
 
 readYaml :: (FromJSON a) => FilePath -> ConfigT a
 readYaml = liftIO . (L.readFile >=> parseYaml)

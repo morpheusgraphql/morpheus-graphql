@@ -10,6 +10,7 @@ module HConf.ConfigT
     packages,
     version,
     runConfigT,
+    HCEnv (..),
   )
 where
 
@@ -19,26 +20,32 @@ import Control.Monad.Reader.Class (MonadReader (..), asks)
 import Control.Monad.Trans.Reader (ReaderT (..))
 import Data.Kind
 import HConf.Config (Config, getPackages, getVersion)
+import HConf.Env (SetupEnv)
 import HConf.Utils (Name)
 import HConf.Version (Version)
 
+data HCEnv = HCEnv
+  { config :: Config,
+    env :: SetupEnv
+  }
+
 newtype ConfigT (a :: Type)
-  = ConfigT {_runConfigT :: ReaderT Config IO a}
+  = ConfigT {_runConfigT :: ReaderT HCEnv IO a}
   deriving
     ( Functor,
       Applicative,
       Monad,
-      MonadReader Config,
+      MonadReader HCEnv,
       MonadIO,
       MonadUnliftIO,
       MonadFail
     )
 
-runConfigT :: ConfigT a -> Config -> IO a
-runConfigT (ConfigT (ReaderT f)) config = f config
+runConfigT :: ConfigT a -> SetupEnv -> Config -> IO a
+runConfigT (ConfigT (ReaderT f)) env config = f HCEnv {..}
 
 packages :: ConfigT [Name]
-packages = getPackages <$> asks id
+packages = getPackages <$> asks config
 
 version :: ConfigT Version
-version = getVersion <$> asks id
+version = getVersion <$> asks config

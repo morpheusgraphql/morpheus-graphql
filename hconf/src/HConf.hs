@@ -8,21 +8,19 @@ module HConf
   )
 where
 
-import Control.Monad.Reader.Class
 import Data.Text
 import HConf.Env (SetupEnv (..))
 import HConf.Hie (genHie)
 import HConf.Package (checkPackages)
 import HConf.Stack (setupStack)
 import HConf.Version (parseVersion)
-import HConf.Yaml (withConfig, writeYaml)
+import HConf.Yaml (saveConfig, withConfig)
 import Prelude
 
 setup :: SetupEnv -> String -> IO ()
-setup env@SetupEnv {..} ver = withConfig env $
+setup env ver = withConfig env $
   do
-    version <- parseVersion (pack ver)
-    asks id >>= writeYaml hconf
-    setupStack stack version
-    genHie env
+    parseVersion (pack ver) >>= setupStack
+    genHie
     checkPackages
+    saveConfig

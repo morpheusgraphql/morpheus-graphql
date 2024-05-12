@@ -18,7 +18,7 @@ import Data.Aeson (FromJSON (..), ToJSON (..), Value (..), object)
 import qualified Data.Aeson.Key as K
 import Data.Aeson.KeyMap (KeyMap)
 import qualified Data.Aeson.KeyMap as KM
-import HConf.ConfigT (ConfigT)
+import HConf.ConfigT (ConfigT, HCEnv (..))
 import HConf.Env (SetupEnv (..))
 import HConf.Lib (Lib, LibType (..))
 import HConf.Package (Package (..), resolvePackages)
@@ -73,8 +73,8 @@ toLib (path, Package {..}) =
       ]
     comp _ _ = []
 
-genHie :: SetupEnv -> ConfigT ()
-genHie SetupEnv {..} =
-  do
-    components <- concatMap toLib <$> resolvePackages
-    writeYaml hie (packHie Components {stackYaml = stack, components})
+genHie :: ConfigT ()
+genHie = do
+  SetupEnv {..} <- asks env
+  components <- concatMap toLib <$> resolvePackages
+  writeYaml hie (packHie Components {stackYaml = stack, components})

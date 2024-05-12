@@ -19,7 +19,7 @@ import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import Data.Aeson.KeyMap (KeyMap)
 import Data.Text (unpack)
 import HConf.Config (Config, getPackages, getVersion)
-import HConf.ConfigT (ConfigT)
+import HConf.ConfigT (ConfigT, HCEnv (config))
 import HConf.Lib (Lib, updateDependencies, updateLib)
 import HConf.Utils (Name, tupled)
 import HConf.Version (Version)
@@ -52,7 +52,7 @@ toPath :: FilePath -> FilePath
 toPath = (<> "/package.yaml")
 
 resolvePackages :: ConfigT [(Text, Package)]
-resolvePackages = asks id >>= traverse (tupled getPackage) . getPackages
+resolvePackages = asks config >>= traverse (tupled getPackage) . getPackages
 
 getPackage :: Text -> ConfigT Package
 getPackage = fmap getData . readYaml . toPath . unpack
@@ -75,8 +75,8 @@ updatePackage config Package {..} =
 checkPackage :: FilePath -> ConfigT ()
 checkPackage path = do
   pkg <- readYaml path
-  cfg <- asks id
+  cfg <- asks config
   writeYaml path (mapYaml (updatePackage cfg) pkg)
 
 checkPackages :: ConfigT ()
-checkPackages = asks id >>= traverse_ (checkPackage . toPath . unpack) . getPackages
+checkPackages = asks config >>= traverse_ (checkPackage . toPath . unpack) . getPackages
