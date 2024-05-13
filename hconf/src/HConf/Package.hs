@@ -19,7 +19,7 @@ import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import Data.Aeson.KeyMap (KeyMap)
 import Data.Text (unpack)
 import HConf.Config (Config, getVersion)
-import HConf.ConfigT (ConfigT, HCEnv (config), packages, withConfig)
+import HConf.ConfigT (ConfigT, packages, withConfig)
 import HConf.Lib (Lib, updateDependencies, updateLib)
 import HConf.Utils (Name, tupled)
 import HConf.Version (Version)
@@ -48,14 +48,14 @@ instance FromJSON Package where
 instance ToJSON Package where
   toJSON = genericToJSON aesonYAMLOptions
 
-toPath :: FilePath -> FilePath
-toPath = (<> "/package.yaml")
+toPath :: Name -> FilePath
+toPath = (<> "/package.yaml") . unpack
 
 resolvePackages :: ConfigT [(Name, Package)]
 resolvePackages = packages >>= traverse (tupled getPackage)
 
 getPackage :: Name -> ConfigT Package
-getPackage = fmap getData . readYaml . toPath . unpack
+getPackage = fmap getData . readYaml . toPath
 
 updateDeps :: Config -> Libs -> Libs
 updateDeps config = fmap (fmap (mapYaml (updateLib config)))
@@ -72,8 +72,8 @@ updatePackage config Package {..} =
       ..
     }
 
-checkPackage :: FilePath -> ConfigT ()
-checkPackage = flip rewriteYaml (mapYamlM (withConfig updatePackage))
+checkPackage :: Name -> ConfigT ()
+checkPackage = flip rewriteYaml (mapYamlM (withConfig updatePackage)) . toPath
 
 checkPackages :: ConfigT ()
-checkPackages = packages >>= traverse_ (checkPackage . toPath . unpack)
+checkPackages = packages >>= traverse_ checkPackage
