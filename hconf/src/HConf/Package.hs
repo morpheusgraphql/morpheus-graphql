@@ -51,7 +51,7 @@ instance ToJSON Package where
 toPath :: FilePath -> FilePath
 toPath = (<> "/package.yaml")
 
-resolvePackages :: ConfigT [(Text, Package)]
+resolvePackages :: ConfigT [(Name, Package)]
 resolvePackages = packages >>= traverse (tupled getPackage)
 
 getPackage :: Text -> ConfigT Package
