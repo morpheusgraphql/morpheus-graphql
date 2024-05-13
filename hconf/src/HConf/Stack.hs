@@ -64,7 +64,7 @@ updateStack version _ = do
       }
 
 getExtraDeps :: Version -> [(Version, Build)] -> [Text]
-getExtraDeps v xs = sort $ concatMap (getExtra . snd) $ filter (isHigher v) xs
+getExtraDeps v = sort . concatMap (getExtra . snd) . filter (isHigher v)
 
 isHigher :: Version -> (Version, b) -> Bool
 isHigher v (k, _) = v <= k
