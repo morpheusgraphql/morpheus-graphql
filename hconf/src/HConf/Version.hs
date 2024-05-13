@@ -63,9 +63,9 @@ instance Ord Version where
         | x == y = compareSeries xs ys
         | otherwise = compare x y
 
-parseMaybeVersion :: (MonadFail m) => Text -> m Version
-parseMaybeVersion "latest" = pure LatestVersion
-parseMaybeVersion s = maybe (fail "invalid version") (pure . Version) ((traverse (readMaybe . unpack) $ (split (== '.') s)))
+parseVersion :: (MonadFail m) => Text -> m Version
+parseVersion "latest" = pure LatestVersion
+parseVersion s = maybe (fail "invalid version") (pure . Version) ((traverse (readMaybe . unpack) $ (split (== '.') s)))
 
 data VersionBounds
   = VersionBounds Version (Maybe Version)
