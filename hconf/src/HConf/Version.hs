@@ -64,10 +64,10 @@ instance Ord Version where
         | otherwise = compare x y
 
 parseMaybeVersion :: Text -> Maybe Version
+parseMaybeVersion "latest" = pure LatestVersion
 parseMaybeVersion s = Version <$> (traverse (readMaybe . unpack) $ (split (== '.') s))
 
 parseVersion :: (MonadFail m) => Text -> m Version
-parseVersion "latest" = pure LatestVersion
 parseVersion s = maybe (fail "invalid version") pure (parseMaybeVersion s)
 
 data VersionBounds
