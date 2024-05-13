@@ -64,10 +64,13 @@ updateStack version _ = do
       }
 
 getExtraDeps :: Version -> [(Version, Build)] -> [Text]
-getExtraDeps v xs = sort $ map printExtra $ concatMap f $ filter includeVersion xs
-  where
-    includeVersion (k, _) = v <= k
-    f (_, b) = maybe [] M.toList (extra b)
+getExtraDeps v xs = sort $ concatMap (getExtra . snd) $ filter (isHigher v) xs
+
+isHigher :: Version -> (Version, b) -> Bool
+isHigher v (k, _) = v <= k
+
+getExtra :: Build -> [Text]
+getExtra b = map printExtra $ maybe [] M.toList (extra b)
 
 printExtra :: (Text, Version) -> Text
 printExtra (k, ver) = k <> "-" <> show ver
