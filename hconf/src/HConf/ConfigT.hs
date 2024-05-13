@@ -11,6 +11,7 @@ module HConf.ConfigT
     version,
     runConfigT,
     HCEnv (..),
+    withConfig,
   )
 where
 
@@ -49,3 +50,6 @@ packages = getPackages <$> asks config
 
 version :: ConfigT Version
 version = getVersion <$> asks config
+
+withConfig :: (Config -> t -> t) -> t -> ConfigT t
+withConfig f t = flip f t <$> asks config

@@ -19,11 +19,11 @@ import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import Data.Aeson.KeyMap (KeyMap)
 import Data.Text (unpack)
 import HConf.Config (Config, getVersion)
-import HConf.ConfigT (ConfigT, HCEnv (config), packages)
+import HConf.ConfigT (ConfigT, HCEnv (config), packages, withConfig)
 import HConf.Lib (Lib, updateDependencies, updateLib)
 import HConf.Utils (Name, tupled)
 import HConf.Version (Version)
-import HConf.Yaml (Yaml (..), aesonYAMLOptions, mapYaml, readYaml, writeYaml)
+import HConf.Yaml (Yaml (..), aesonYAMLOptions, mapYaml, mapYamlM, readYaml, rewriteYaml)
 import Relude hiding (Undefined, intercalate, length, replicate)
 
 type Libs = Maybe (KeyMap Lib)
@@ -73,10 +73,7 @@ updatePackage config Package {..} =
     }
 
 checkPackage :: FilePath -> ConfigT ()
-checkPackage path = do
-  pkg <- readYaml path
-  cfg <- asks config
-  writeYaml path (mapYaml (updatePackage cfg) pkg)
+checkPackage = flip rewriteYaml (mapYamlM (withConfig updatePackage))
 
 checkPackages :: ConfigT ()
 checkPackages = packages >>= traverse_ (checkPackage . toPath . unpack)
