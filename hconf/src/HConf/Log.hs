@@ -26,7 +26,7 @@ logFileChange :: (Log m) => String -> m ()
 logFileChange path = log ("     updated: " <> withColor Gray path)
 
 label :: (Log m) => String -> m ()
-label name = info (" - " <> name <> ":")
+label name = info ("\n - " <> name <> ":")
 
 info :: (Log m) => String -> m ()
 info = log . withColor Green
