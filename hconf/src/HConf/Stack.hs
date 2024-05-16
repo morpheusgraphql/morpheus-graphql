@@ -20,7 +20,7 @@ import qualified Data.Map as M
 import HConf.Config (Build (..), getBuild, getBuilds, getPackages)
 import HConf.ConfigT (ConfigT, HCEnv (..))
 import HConf.Env (Env (..))
-import HConf.Log (info)
+import HConf.Log (info, label)
 import HConf.Utils (Name, maybeList)
 import HConf.Version (Version (..))
 import HConf.Yaml (aesonYAMLOptions, rewriteYaml)
@@ -46,7 +46,7 @@ instance ToJSON Stack where
 
 setupStack :: Version -> ConfigT ()
 setupStack version = do
-  info "stack:"
+  label "stack"
   p <- asks (stack . env)
   rewriteYaml p (updateStack version)
 

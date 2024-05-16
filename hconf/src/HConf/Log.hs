@@ -13,11 +13,14 @@ withColor color x = color <> x <> noneColor
 infoListEntry :: (Log m, ToString a) => a -> m ()
 infoListEntry name = info (" - " <> toString name <> ":")
 
+label :: (Log m) => String -> m ()
+label name = info (name <> ":")
+
 info :: (Log m) => String -> m ()
 info = log . withColor successColor
 
 infoList :: (ToString a, Log m) => String -> [a] -> m ()
-infoList label list = info (intercalate "\n -" (label : map toString list))
+infoList l list = info (intercalate "\n -" (l : map toString list))
 
 warn :: (Log m) => String -> m ()
 warn = log . withColor warningColor
