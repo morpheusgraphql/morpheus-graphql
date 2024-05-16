@@ -79,4 +79,4 @@ checkPackages :: ConfigT ()
 checkPackages = do
   names <- packages
   traverse_ checkPackage names
-  infoList "setup:packages" names
+  infoList "packages" names
