@@ -25,5 +25,6 @@ setup ver = open $ do
   genHie
   checkPackages
   label "hconf"
+  infoListEntry "hconf.yaml"
   save
   info "setup:end"
