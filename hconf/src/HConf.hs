@@ -20,8 +20,9 @@ import Prelude
 
 setup :: String -> Env -> IO ()
 setup ver = open $ do
-  info "setup"
+  info "setup:start"
   parseVersion (pack ver) >>= setupStack
   genHie
   checkPackages
+  info "setup:end"
   save
