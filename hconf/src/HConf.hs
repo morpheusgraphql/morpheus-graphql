@@ -11,7 +11,7 @@ where
 import Data.Text
 import HConf.Env (Env (..))
 import HConf.Hie (genHie)
-import HConf.Log (info)
+import HConf.Log (info, label)
 import HConf.Package (checkPackages)
 import HConf.Stack (setupStack)
 import HConf.Version (parseVersion)
@@ -24,6 +24,6 @@ setup ver = open $ do
   parseVersion (pack ver) >>= setupStack
   genHie
   checkPackages
-  info "hconf:"
+  label "hconf:"
   save
   info "setup:end"

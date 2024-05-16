@@ -29,7 +29,7 @@ import Data.Yaml (decodeThrow)
 import Data.Yaml.Pretty (defConfig, encodePretty, setConfCompare, setConfDropNull)
 import HConf.ConfigT (ConfigT (..), HCEnv (..), runConfigT)
 import HConf.Env (Env (..))
-import HConf.Log
+import HConf.Log (logFileChange)
 import HConf.Utils (compareFields, toKebabCase)
 import Relude hiding (Show, Undefined, intercalate, show)
 import Prelude (Show (..))

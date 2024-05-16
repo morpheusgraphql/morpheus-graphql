@@ -1,6 +1,15 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HConf.Log where
+module HConf.Log
+  ( label,
+    infoListEntry,
+    warn,
+    alert,
+    logFileChange,
+    Log (..),
+    info,
+  )
+where
 
 import Relude
 
@@ -19,8 +28,8 @@ label name = info (name <> ":")
 info :: (Log m) => String -> m ()
 info = log . withColor Green
 
-infoList :: (ToString a, Log m) => String -> [a] -> m ()
-infoList l list = info (intercalate "\n -" (l : map toString list))
+-- infoList :: (ToString a, Log m) => String -> [a] -> m ()
+-- infoList l list = info (intercalate "\n -" (l : map toString list))
 
 warn :: (Log m) => String -> m ()
 warn = log . withColor Yellow
