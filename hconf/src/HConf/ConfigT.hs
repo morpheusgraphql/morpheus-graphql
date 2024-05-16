@@ -13,6 +13,8 @@ module HConf.ConfigT
     HCEnv (..),
     withConfig,
     info,
+    warn,
+    alert,
   )
 where
 
@@ -57,6 +59,12 @@ noneColor = "\x1b[0m"
 
 info :: String -> ConfigT ()
 info = liftIO . putStrLn . withColor successColor
+
+warn :: String -> ConfigT ()
+warn = liftIO . putStrLn . withColor warningColor
+
+alert :: String -> ConfigT ()
+alert = liftIO . putStrLn . withColor errorColor
 
 withColor :: String -> String -> String
 withColor color x = color <> x <> noneColor
