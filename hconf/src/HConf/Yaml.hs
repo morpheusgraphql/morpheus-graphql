@@ -53,7 +53,7 @@ readYaml :: (FromJSON a) => FilePath -> ConfigT a
 readYaml = liftIO . (L.readFile >=> parseYaml)
 
 writeYaml :: (ToJSON a) => FilePath -> a -> ConfigT ()
-writeYaml path v = withRunInIO (\_ -> L.writeFile path (serializeYaml v))
+writeYaml path v = withRunInIO (\_ -> L.writeFile path (serializeYaml v) >> putStrLn ("updating: " <> path))
 
 data Yaml t = Yaml
   { getData :: t,
