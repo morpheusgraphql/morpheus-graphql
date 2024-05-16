@@ -58,8 +58,8 @@ noneColor :: String
 noneColor =
   "\x1b[0m"
 
-infoList :: String -> [String] -> ConfigT ()
-infoList label list = info (intercalate "\n -" (label : list))
+infoList :: (ToString a) => String -> [a] -> ConfigT ()
+infoList label list = info (intercalate "\n -" (label : map toString list))
 
 info :: String -> ConfigT ()
 info = liftIO . putStrLn . withColor successColor
