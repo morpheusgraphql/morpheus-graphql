@@ -17,7 +17,7 @@ class Log m where
   log :: String -> m ()
 
 indent :: Int -> String
-indent i = replicate (i) ' '
+indent i = replicate (i * 2) ' '
 
 colored :: Color -> String -> String
 colored c x = toColor c <> x <> toColor None
@@ -29,10 +29,10 @@ label :: (Log m) => String -> m ()
 label name = info ("\n" <> indent 1 <> li name)
 
 infoListEntry :: (Log m, ToString a) => a -> m ()
-infoListEntry name = log $ colored Magenta (indent 3 <> li name)
+infoListEntry name = log $ colored Magenta (indent 2 <> li name)
 
 logFileChange :: (Log m) => String -> Bool -> m ()
-logFileChange path changed = log (indent 5 <> "updated: " <> colored (if changed then Gray else Yellow) path)
+logFileChange path changed = log (indent 3 <> "updated: " <> colored (if changed then Gray else Yellow) path)
 
 info :: (Log m) => String -> m ()
 info = log . colored Green
