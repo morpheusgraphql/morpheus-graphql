@@ -11,7 +11,7 @@ withColor :: String -> String -> String
 withColor color x = color <> x <> noneColor
 
 infoListEntry :: (Log m, ToString a) => a -> m ()
-infoListEntry name = info (" - " <> toString name <> ":")
+infoListEntry name = log $ withColor magenta (" - " <> toString name <> ":")
 
 label :: (Log m) => String -> m ()
 label name = info (name <> ":")
@@ -45,4 +45,4 @@ darkGray :: String
 darkGray = "\x1b[90m"
 
 magenta :: String
-magenta = "\x1b[35m"
+magenta = "\x1b[95m"
