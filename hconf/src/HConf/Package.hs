@@ -79,5 +79,4 @@ checkPackages :: ConfigT ()
 checkPackages = do
   names <- packages
   traverse_ checkPackage names
-  info "setup packages"
-  info (intercalate "\n -" $ map unpack names)
+  info (intercalate "\n -" $ "setup:packages" : (map unpack names))
