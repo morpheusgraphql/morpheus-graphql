@@ -43,8 +43,19 @@ newtype ConfigT (a :: Type)
       MonadFail
     )
 
+errorColor = "\x1b[31m"
+
+successColor = "\x1b[32m"
+
+warningColor = "\x1b[33m"
+
+noneColor = "\x1b[0m"
+
 info :: String -> ConfigT ()
-info = liftIO . putStrLn
+info = liftIO . putStrLn . withColor successColor
+
+withColor :: String -> String -> String
+withColor color x = color <> x <> noneColor
 
 runConfigT :: ConfigT a -> Env -> Config -> IO a
 runConfigT (ConfigT (ReaderT f)) env config = f HCEnv {..}
