@@ -24,5 +24,6 @@ setup ver = open $ do
   parseVersion (pack ver) >>= setupStack
   genHie
   checkPackages
-  info "setup:end"
+  info "hconf:"
   save
+  info "setup:end"

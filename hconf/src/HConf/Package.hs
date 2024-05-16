@@ -78,6 +78,6 @@ checkPackage name = info (" - " <> unpack name <> ":") >> flip rewriteYaml (mapY
 
 checkPackages :: ConfigT ()
 checkPackages = do
-  info "packages"
+  info "packages:"
   names <- packages
   traverse_ checkPackage names

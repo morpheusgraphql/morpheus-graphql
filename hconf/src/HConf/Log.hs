@@ -34,3 +34,9 @@ warningColor = "\x1b[33m"
 noneColor :: String
 noneColor =
   "\x1b[0m"
+
+darkGray :: String
+darkGray = "\x1b[90m"
+
+magenta :: String
+magenta = "\x1b[35m"
