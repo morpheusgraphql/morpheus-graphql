@@ -8,7 +8,7 @@ class Log m where
   log :: String -> m ()
 
 withColor :: Color -> String -> String
-withColor c x = toColor c <> x <> noneColor
+withColor c x = toColor c <> x <> toColor None
 
 infoListEntry :: (Log m, ToString a) => a -> m ()
 infoListEntry name = log $ withColor Magenta (" - " <> toString name <> ":")
@@ -28,22 +28,13 @@ warn = log . withColor Yellow
 alert :: (Log m) => String -> m ()
 alert = log . withColor Red
 
-successColor :: String
-successColor = "\x1b[32m"
-
-warningColor :: String
-warningColor = "\x1b[33m"
-
-noneColor :: String
-noneColor =
-  "\x1b[0m"
-
 data Color
   = Red
   | Green
   | Yellow
   | Gray
   | Magenta
+  | None
 
 toColor :: Color -> String
 toColor c = "\x1b[" <> show (colorCode c) <> "m"
@@ -54,3 +45,4 @@ colorCode Green = 32
 colorCode Yellow = 33
 colorCode Gray = 90
 colorCode Magenta = 95
+colorCode None = 0
