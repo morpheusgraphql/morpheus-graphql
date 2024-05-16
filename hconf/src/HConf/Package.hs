@@ -21,7 +21,7 @@ import Data.Text (unpack)
 import HConf.Config (Config, getVersion)
 import HConf.ConfigT (ConfigT, packages, withConfig)
 import HConf.Lib (Lib, updateDependencies, updateLib)
-import HConf.Log (info)
+import HConf.Log (info, infoListEntry)
 import HConf.Utils (Name, tupled)
 import HConf.Version (Version)
 import HConf.Yaml (Yaml (..), aesonYAMLOptions, mapYaml, mapYamlM, readYaml, rewriteYaml)
@@ -74,7 +74,7 @@ updatePackage config Package {..} =
     }
 
 checkPackage :: Name -> ConfigT ()
-checkPackage name = info (" - " <> unpack name <> ":") >> flip rewriteYaml (mapYamlM (withConfig updatePackage)) (toPath name)
+checkPackage name = infoListEntry name >> flip rewriteYaml (mapYamlM (withConfig updatePackage)) (toPath name)
 
 checkPackages :: ConfigT ()
 checkPackages = do

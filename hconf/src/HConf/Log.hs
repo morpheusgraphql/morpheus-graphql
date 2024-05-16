@@ -10,6 +10,9 @@ class Log m where
 withColor :: String -> String -> String
 withColor color x = color <> x <> noneColor
 
+infoListEntry :: (Log m, ToString a) => a -> m ()
+infoListEntry name = info (" - " <> toString name <> ":")
+
 info :: (Log m) => String -> m ()
 info = log . withColor successColor
 
