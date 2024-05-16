@@ -23,7 +23,7 @@ infoListEntry :: (Log m, ToString a) => a -> m ()
 infoListEntry name = log $ withColor Magenta ("   - " <> toString name <> ":")
 
 logFileChange :: (Log m) => String -> Bool -> m ()
-logFileChange path changed = log ("     updated: " <> withColor Gray path)
+logFileChange path changed = log ("     updated: " <> withColor (if changed then Gray else Yellow) path)
 
 label :: (Log m) => String -> m ()
 label name = info ("\n - " <> name <> ":")
