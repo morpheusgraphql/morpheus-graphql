@@ -24,7 +24,7 @@ import HConf.Lib (Lib, updateDependencies, updateLib)
 import HConf.Utils (Name, tupled)
 import HConf.Version (Version)
 import HConf.Yaml (Yaml (..), aesonYAMLOptions, mapYaml, mapYamlM, readYaml, rewriteYaml)
-import Relude hiding (Undefined, intercalate, length, replicate)
+import Relude hiding (Undefined, length, replicate)
 
 type Libs = Maybe (KeyMap Lib)
 
@@ -76,4 +76,8 @@ checkPackage :: Name -> ConfigT ()
 checkPackage = flip rewriteYaml (mapYamlM (withConfig updatePackage)) . toPath
 
 checkPackages :: ConfigT ()
-checkPackages = packages >>= traverse_ checkPackage >> info "setup packages"
+checkPackages = do
+  names <- packages
+  traverse_ checkPackage names
+  info "setup packages"
+  info (intercalate "\n -" $ map unpack names)
