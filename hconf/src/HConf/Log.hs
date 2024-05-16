@@ -28,6 +28,9 @@ warn = log . withColor Yellow
 alert :: (Log m) => String -> m ()
 alert = log . withColor Red
 
+logFileChange :: (Log m) => String -> m ()
+logFileChange path = log ("   updated: " <> withColor Gray path)
+
 data Color
   = Red
   | Green

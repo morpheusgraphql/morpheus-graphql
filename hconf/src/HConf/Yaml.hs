@@ -54,7 +54,7 @@ readYaml :: (FromJSON a) => FilePath -> ConfigT a
 readYaml = liftIO . (L.readFile >=> parseYaml)
 
 writeYaml :: (ToJSON a) => FilePath -> a -> ConfigT ()
-writeYaml path v = withRunInIO (const $ L.writeFile path $ serializeYaml v) >> log ("   updated: " <> withColor Gray path)
+writeYaml path v = withRunInIO (const $ L.writeFile path $ serializeYaml v) >> logFileChange path
 
 data Yaml t = Yaml
   { getData :: t,
