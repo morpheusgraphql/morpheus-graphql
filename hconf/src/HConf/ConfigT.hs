@@ -43,12 +43,16 @@ newtype ConfigT (a :: Type)
       MonadFail
     )
 
+errorColor :: String
 errorColor = "\x1b[31m"
 
+successColor :: String
 successColor = "\x1b[32m"
 
+warningColor :: String
 warningColor = "\x1b[33m"
 
+noneColor :: String
 noneColor = "\x1b[0m"
 
 info :: String -> ConfigT ()
