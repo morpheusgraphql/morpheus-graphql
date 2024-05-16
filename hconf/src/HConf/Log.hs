@@ -16,6 +16,9 @@ import Relude
 class Log m where
   log :: String -> m ()
 
+newLine :: String
+newLine = "\n"
+
 indent :: Int -> String
 indent i = replicate (i * 2) ' '
 
@@ -26,7 +29,7 @@ li :: (ToString a) => a -> String
 li e = "- " <> toString e <> ":"
 
 label :: (Log m) => String -> m ()
-label name = info ("\n" <> indent 1 <> li name)
+label name = info (newLine <> indent 1 <> li name)
 
 infoListEntry :: (Log m, ToString a) => a -> m ()
 infoListEntry name = log $ colored Magenta (indent 2 <> li name)
