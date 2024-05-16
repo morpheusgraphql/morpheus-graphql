@@ -16,29 +16,35 @@ import Relude
 class Log m where
   log :: String -> m ()
 
-withColor :: Color -> String -> String
-withColor c x = toColor c <> x <> toColor None
+indent :: Int -> String
+indent i = replicate (i) ' '
 
-infoListEntry :: (Log m, ToString a) => a -> m ()
-infoListEntry name = log $ withColor Magenta ("   - " <> toString name <> ":")
+colored :: Color -> String -> String
+colored c x = toColor c <> x <> toColor None
 
-logFileChange :: (Log m) => String -> Bool -> m ()
-logFileChange path changed = log ("     updated: " <> withColor (if changed then Gray else Yellow) path)
+li :: (ToString a) => a -> String
+li e = "- " <> toString e <> ":"
 
 label :: (Log m) => String -> m ()
-label name = info ("\n - " <> name <> ":")
+label name = info ("\n" <> indent 1 <> li name)
+
+infoListEntry :: (Log m, ToString a) => a -> m ()
+infoListEntry name = log $ colored Magenta (indent 3 <> li name)
+
+logFileChange :: (Log m) => String -> Bool -> m ()
+logFileChange path changed = log (indent 5 <> "updated: " <> colored (if changed then Gray else Yellow) path)
 
 info :: (Log m) => String -> m ()
-info = log . withColor Green
+info = log . colored Green
 
 -- infoList :: (ToString a, Log m) => String -> [a] -> m ()
 -- infoList l list = info (intercalate "\n -" (l : map toString list))
 
 warn :: (Log m) => String -> m ()
-warn = log . withColor Yellow
+warn = log . colored Yellow
 
 alert :: (Log m) => String -> m ()
-alert = log . withColor Red
+alert = log . colored Red
 
 data Color
   = Red
