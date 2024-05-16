@@ -56,6 +56,12 @@ readYaml = liftIO . (L.readFile >=> parseYaml)
 writeYaml :: (ToJSON a) => FilePath -> a -> ConfigT ()
 writeYaml path v = withRunInIO (const $ L.writeFile path $ serializeYaml v) >> logFileChange path
 
+checkAndWrite :: FilePath -> ByteString -> IO ByteString
+checkAndWrite path newFile = do
+  file <- L.readFile path
+  L.writeFile path newFile
+  return file
+
 data Yaml t = Yaml
   { getData :: t,
     rawValue :: (KeyMap Value)
