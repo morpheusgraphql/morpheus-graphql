@@ -1,9 +1,9 @@
 module HConf.Env
-  ( SetupEnv (..),
+  ( Env (..),
   )
 where
 
-data SetupEnv = SetupEnv
+data Env = Env
   { hie :: FilePath,
     hconf :: FilePath,
     stack :: FilePath

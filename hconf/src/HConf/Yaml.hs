@@ -28,7 +28,7 @@ import qualified Data.ByteString as L
 import Data.Yaml (decodeThrow)
 import Data.Yaml.Pretty (defConfig, encodePretty, setConfCompare, setConfDropNull)
 import HConf.ConfigT (ConfigT (..), HCEnv (..), runConfigT)
-import HConf.Env (SetupEnv (..))
+import HConf.Env (Env (..))
 import HConf.Utils (compareFields, toKebabCase)
 import Relude hiding (Show, Undefined, intercalate, show)
 import Prelude (Show (..))
@@ -39,8 +39,8 @@ parseYaml = decodeThrow
 serializeYaml :: (ToJSON a) => a -> ByteString
 serializeYaml = encodePretty (setConfDropNull True $ setConfCompare compareFields defConfig)
 
-open :: ConfigT () -> SetupEnv -> IO ()
-open t env@SetupEnv {..} = do
+open :: ConfigT () -> Env -> IO ()
+open t env@Env {..} = do
   cfg <- L.readFile hconf >>= parseYaml
   runConfigT t env cfg
 

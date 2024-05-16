@@ -19,7 +19,7 @@ import Data.List ((\\))
 import qualified Data.Map as M
 import HConf.Config (Build (..), getBuild, getBuilds, getPackages)
 import HConf.ConfigT (ConfigT, HCEnv (..))
-import HConf.Env (SetupEnv (..))
+import HConf.Env (Env (..))
 import HConf.Utils (Name, maybeList)
 import HConf.Version (Version (..))
 import HConf.Yaml (aesonYAMLOptions, rewriteYaml)

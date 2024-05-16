@@ -21,13 +21,13 @@ import Control.Monad.Reader.Class (MonadReader (..), asks)
 import Control.Monad.Trans.Reader (ReaderT (..))
 import Data.Kind
 import HConf.Config (Config, getPackages, getVersion)
-import HConf.Env (SetupEnv)
+import HConf.Env (Env)
 import HConf.Utils (Name)
 import HConf.Version (Version)
 
 data HCEnv = HCEnv
   { config :: Config,
-    env :: SetupEnv
+    env :: Env
   }
 
 newtype ConfigT (a :: Type)
@@ -42,7 +42,7 @@ newtype ConfigT (a :: Type)
       MonadFail
     )
 
-runConfigT :: ConfigT a -> SetupEnv -> Config -> IO a
+runConfigT :: ConfigT a -> Env -> Config -> IO a
 runConfigT (ConfigT (ReaderT f)) env config = f HCEnv {..}
 
 packages :: ConfigT [Name]

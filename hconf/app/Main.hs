@@ -16,7 +16,7 @@ import CLI.Commands
     parseCLI,
   )
 import Data.Version (showVersion)
-import HConf (SetupEnv (..), setup)
+import HConf (Env (..), setup)
 import qualified Paths_hconf as CLI
 import Relude hiding (ByteString)
 
@@ -26,9 +26,9 @@ currentVersion = showVersion CLI.version
 main :: IO ()
 main = parseCLI >>= runApp
 
-path :: SetupEnv
+path :: Env
 path =
-  SetupEnv
+  Env
     { hconf = "./hconf.yaml",
       hie = "./hie.yaml",
       stack = "./stack.yaml"
