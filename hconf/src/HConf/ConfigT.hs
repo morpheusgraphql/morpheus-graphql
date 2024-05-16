@@ -4,6 +4,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module HConf.ConfigT
   ( ConfigT (..),
@@ -15,18 +16,17 @@ module HConf.ConfigT
     info,
     warn,
     alert,
+    infoList,
   )
 where
 
-import Control.Monad.IO.Class (MonadIO (liftIO))
 import Control.Monad.IO.Unlift (MonadUnliftIO)
-import Control.Monad.Reader.Class (MonadReader (..), asks)
-import Control.Monad.Trans.Reader (ReaderT (..))
 import Data.Kind
 import HConf.Config (Config, getPackages, getVersion)
 import HConf.Env (Env)
 import HConf.Utils (Name)
 import HConf.Version (Version)
+import Relude
 
 data HCEnv = HCEnv
   { config :: Config,
@@ -55,7 +55,11 @@ warningColor :: String
 warningColor = "\x1b[33m"
 
 noneColor :: String
-noneColor = "\x1b[0m"
+noneColor =
+  "\x1b[0m"
+
+infoList :: String -> [String] -> ConfigT ()
+infoList label list = info (intercalate "\n -" (label : list))
 
 info :: String -> ConfigT ()
 info = liftIO . putStrLn . withColor successColor

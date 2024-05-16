@@ -19,7 +19,7 @@ import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import Data.Aeson.KeyMap (KeyMap)
 import Data.Text (unpack)
 import HConf.Config (Config, getVersion)
-import HConf.ConfigT (ConfigT, info, packages, withConfig)
+import HConf.ConfigT (ConfigT, info, infoList, packages, withConfig)
 import HConf.Lib (Lib, updateDependencies, updateLib)
 import HConf.Utils (Name, tupled)
 import HConf.Version (Version)
@@ -79,4 +79,4 @@ checkPackages :: ConfigT ()
 checkPackages = do
   names <- packages
   traverse_ checkPackage names
-  info (intercalate "\n -" $ "setup:packages" : (map unpack names))
+  infoList "setup:packages" (map unpack names)
