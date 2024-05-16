@@ -20,10 +20,13 @@ withColor :: Color -> String -> String
 withColor c x = toColor c <> x <> toColor None
 
 infoListEntry :: (Log m, ToString a) => a -> m ()
-infoListEntry name = log $ withColor Magenta (" - " <> toString name <> ":")
+infoListEntry name = log $ withColor Magenta ("   - " <> toString name <> ":")
+
+logFileChange :: (Log m) => String -> m ()
+logFileChange path = log ("     updated: " <> withColor Gray path)
 
 label :: (Log m) => String -> m ()
-label name = info (name <> ":")
+label name = info (" - " <> name <> ":")
 
 info :: (Log m) => String -> m ()
 info = log . withColor Green
@@ -36,9 +39,6 @@ warn = log . withColor Yellow
 
 alert :: (Log m) => String -> m ()
 alert = log . withColor Red
-
-logFileChange :: (Log m) => String -> m ()
-logFileChange path = log ("   updated: " <> withColor Gray path)
 
 data Color
   = Red
