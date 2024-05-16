@@ -18,6 +18,7 @@ module HConf.Yaml
   )
 where
 
+import Control.Monad.Error.Class (MonadError (catchError))
 import Control.Monad.IO.Unlift (MonadUnliftIO (withRunInIO))
 import Data.Aeson (FromJSON (parseJSON), Object, Options (..), ToJSON (toJSON), Value (..), defaultOptions)
 import Data.Aeson.KeyMap
@@ -54,13 +55,13 @@ readYaml :: (FromJSON a) => FilePath -> ConfigT a
 readYaml = liftIO . (L.readFile >=> parseYaml)
 
 writeYaml :: (ToJSON a) => FilePath -> a -> ConfigT ()
-writeYaml path v = withRunInIO (const $ L.writeFile path $ serializeYaml v) >> logFileChange path
+writeYaml path v = withRunInIO (const $ checkAndWrite path $ serializeYaml v) >>= logFileChange path
 
-checkAndWrite :: FilePath -> ByteString -> IO ByteString
+checkAndWrite :: FilePath -> ByteString -> IO Bool
 checkAndWrite path newFile = do
-  file <- L.readFile path
+  file <- catchError (L.readFile path) (const $ pure "")
   L.writeFile path newFile
-  return file
+  return (file == newFile)
 
 data Yaml t = Yaml
   { getData :: t,
