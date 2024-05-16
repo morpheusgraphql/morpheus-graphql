@@ -9,9 +9,9 @@ module HConf
 where
 
 import Data.Text
-import HConf.ConfigT (info)
 import HConf.Env (Env (..))
 import HConf.Hie (genHie)
+import HConf.Log (info)
 import HConf.Package (checkPackages)
 import HConf.Stack (setupStack)
 import HConf.Version (parseVersion)
