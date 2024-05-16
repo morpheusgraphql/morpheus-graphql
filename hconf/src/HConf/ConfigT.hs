@@ -12,10 +12,11 @@ module HConf.ConfigT
     runConfigT,
     HCEnv (..),
     withConfig,
+    info,
   )
 where
 
-import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.IO.Class (MonadIO (liftIO))
 import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Control.Monad.Reader.Class (MonadReader (..), asks)
 import Control.Monad.Trans.Reader (ReaderT (..))
@@ -41,6 +42,9 @@ newtype ConfigT (a :: Type)
       MonadUnliftIO,
       MonadFail
     )
+
+info :: String -> ConfigT ()
+info = liftIO . putStrLn
 
 runConfigT :: ConfigT a -> Env -> Config -> IO a
 runConfigT (ConfigT (ReaderT f)) env config = f HCEnv {..}

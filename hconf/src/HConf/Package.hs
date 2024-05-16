@@ -19,7 +19,7 @@ import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import Data.Aeson.KeyMap (KeyMap)
 import Data.Text (unpack)
 import HConf.Config (Config, getVersion)
-import HConf.ConfigT (ConfigT, packages, withConfig)
+import HConf.ConfigT (ConfigT, info, packages, withConfig)
 import HConf.Lib (Lib, updateDependencies, updateLib)
 import HConf.Utils (Name, tupled)
 import HConf.Version (Version)
@@ -76,4 +76,4 @@ checkPackage :: Name -> ConfigT ()
 checkPackage = flip rewriteYaml (mapYamlM (withConfig updatePackage)) . toPath
 
 checkPackages :: ConfigT ()
-checkPackages = packages >>= traverse_ checkPackage
+checkPackages = packages >>= traverse_ checkPackage >> info "setup packages"

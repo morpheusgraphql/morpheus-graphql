@@ -9,6 +9,7 @@ module HConf
 where
 
 import Data.Text
+import HConf.ConfigT (info)
 import HConf.Env (Env (..))
 import HConf.Hie (genHie)
 import HConf.Package (checkPackages)
@@ -19,6 +20,7 @@ import Prelude
 
 setup :: String -> Env -> IO ()
 setup ver = open $ do
+  info "setup"
   parseVersion (pack ver) >>= setupStack
   genHie
   checkPackages
