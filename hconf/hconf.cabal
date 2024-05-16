@@ -33,6 +33,7 @@ library
       HConf.Env
       HConf.Hie
       HConf.Lib
+      HConf.Log
       HConf.Package
       HConf.Stack
       HConf.Utils
