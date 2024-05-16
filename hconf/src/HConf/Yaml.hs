@@ -29,6 +29,7 @@ import Data.Yaml (decodeThrow)
 import Data.Yaml.Pretty (defConfig, encodePretty, setConfCompare, setConfDropNull)
 import HConf.ConfigT (ConfigT (..), HCEnv (..), runConfigT)
 import HConf.Env (Env (..))
+import HConf.Log (info)
 import HConf.Utils (compareFields, toKebabCase)
 import Relude hiding (Show, Undefined, intercalate, show)
 import Prelude (Show (..))
@@ -53,7 +54,7 @@ readYaml :: (FromJSON a) => FilePath -> ConfigT a
 readYaml = liftIO . (L.readFile >=> parseYaml)
 
 writeYaml :: (ToJSON a) => FilePath -> a -> ConfigT ()
-writeYaml path v = withRunInIO (\_ -> L.writeFile path (serializeYaml v) >> putStrLn ("updating: " <> path))
+writeYaml path v = withRunInIO (\_ -> L.writeFile path (serializeYaml v)) >> info ("updating: " <> path)
 
 data Yaml t = Yaml
   { getData :: t,
