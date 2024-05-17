@@ -35,6 +35,7 @@ import HConf.Version
     Version,
     VersionBounds,
     parseVersion,
+    unpackDeps,
   )
 import Relude hiding
   ( Undefined,
@@ -88,7 +89,7 @@ getVersion :: Config -> Version
 getVersion = version
 
 getRule :: (MonadFail m) => Text -> Config -> m VersionBounds
-getRule name = maybe (fail $ "Unknown package: " <> unpack name) pure . M.lookup name . dependencies
+getRule name = maybe (fail $ "Unknown package: " <> unpack name) pure . M.lookup name . unpackDeps . dependencies
 
 getPackages :: Config -> [Text]
 getPackages Config {..} = concatMap toPkg packages

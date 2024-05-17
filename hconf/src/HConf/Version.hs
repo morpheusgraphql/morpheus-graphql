@@ -15,6 +15,7 @@ module HConf.Version
     parseDep,
     printBoundParts,
     printBounds,
+    unpackDeps,
   )
 where
 
@@ -24,6 +25,7 @@ import Data.Aeson
     Value (..),
   )
 import Data.Char (isSeparator)
+import Data.Map (fromList, toList)
 import Data.Text
   ( break,
     breakOn,
@@ -39,10 +41,12 @@ import Relude hiding
   ( Undefined,
     break,
     drop,
+    fromList,
     isPrefixOf,
     length,
     null,
     show,
+    toList,
   )
 
 data Version
@@ -159,4 +163,16 @@ instance ToJSON VersionBounds where
     | NoBounds == b = Bool True
     | otherwise = String $ pack $ printBounds b
 
-type Deps = Map Text VersionBounds
+type TextDeps = [Text]
+
+newtype Deps = Deps {unpackDeps :: (Map Text VersionBounds)}
+  deriving (Show)
+
+parseDependencies :: (MonadFail m) => TextDeps -> m [(Text, VersionBounds)]
+parseDependencies = traverse parseDep . sort
+
+instance FromJSON Deps where
+  parseJSON v = Deps . fromList <$> (parseJSON v >>= parseDependencies)
+
+instance ToJSON Deps where
+  toJSON (Deps m) = toJSON $ map (\(name, b) -> strip $ pack (toString name <> " " <> printBounds b)) (toList m)
