@@ -14,6 +14,7 @@ module HConf.Version
     Deps,
     parseBounds,
     parseDep,
+    printBounds,
   )
 where
 
@@ -52,9 +53,15 @@ data Version
       Eq
     )
 
+instance ToString Version where
+  toString (Version ns) = intercalate "." $ map show ns
+  toString LatestVersion = "latest"
+
 instance Show Version where
-  show (Version ns) = intercalate "." $ map show ns
-  show LatestVersion = "latest"
+  show = toString
+
+instance ToText Version where
+  toText = pack . toString
 
 instance FromJSON Version where
   parseJSON (String s) = parseVersion s
@@ -134,6 +141,10 @@ isUpperConstraint = (`elem` ["<", "<="])
 parseBoundsFrom :: (MonadFail m) => Text -> Maybe Text -> m VersionBounds
 parseBoundsFrom minV maxV = VersionBounds <$> (parseVersion minV) <*> (traverse parseVersion maxV)
 
+printBounds :: VersionBounds -> [Text]
+printBounds NoBounds = []
+printBounds (VersionBounds mi ma) = [">=", toText mi] <> maybe [] (\m -> ["&&", "<", toText m]) ma
+
 parseBounds :: (MonadFail m) => Text -> m VersionBounds
 parseBounds s = case (split (== '-') s) of
   [minV, maxV] -> parseBoundsFrom minV (Just maxV)
@@ -142,7 +153,7 @@ parseBounds s = case (split (== '-') s) of
 
 formatBounds :: Version -> Maybe Version -> Text
 formatBounds mi Nothing = pack $ show mi
-formatBounds mi (Just ma) = pack $ show mi <> "-" <> show ma
+formatBounds mi (Just ma) = pack $ show mi <> " && " <> show ma
 
 instance FromJSON VersionBounds where
   parseJSON (Bool True) = pure NoBounds

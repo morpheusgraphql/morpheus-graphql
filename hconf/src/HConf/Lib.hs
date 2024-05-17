@@ -34,7 +34,7 @@ import HConf.Config (Config (..), getRule)
 import HConf.ConfigT
 import HConf.Log
 import HConf.Utils (Name)
-import HConf.Version (VersionBounds (..), parseDep)
+import HConf.Version (VersionBounds (..), parseDep, printBounds)
 import HConf.Yaml (Yaml (..), aesonYAMLOptions)
 import Relude hiding
   ( Undefined,
@@ -87,18 +87,14 @@ formatDependencies deps = map (printRow (getSizes deps)) deps
 updateDependencies :: TextDeps -> ConfigT TextDeps
 updateDependencies = fmap formatDependencies . traverse (parseDep >=> withConfig checkDependency) . sort
 
-printDep :: VersionBounds -> TextDeps
-printDep NoBounds = []
-printDep (VersionBounds mi ma) = [">=", show mi] <> maybe [] (\m -> ["&&", "<", show m]) ma
-
 withRule :: VersionBounds -> Text -> VersionBounds -> ConfigT TextDeps
 withRule old name bounds = do
   let deps = bounds
   if old /= deps then field (toString name) (logDep old <> "  ->  " <> logDep deps) else pure ()
-  pure (name : printDep deps)
+  pure (name : printBounds deps)
 
 logDep :: VersionBounds -> String
-logDep = toString . intercalate "  " . printDep
+logDep = toString . intercalate "  " . printBounds
 
 checkDependency :: Config -> (Name, VersionBounds) -> ConfigT TextDeps
 checkDependency config@Config {name, bounds} (n, dp)
