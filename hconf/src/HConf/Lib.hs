@@ -84,8 +84,6 @@ printRow sizes ls =
 formatDependencies :: Table -> TextDeps
 formatDependencies deps = map (printRow (getSizes deps)) deps
 
-type Dependency = (Name, VersionBounds)
-
 updateDependencies :: TextDeps -> ConfigT TextDeps
 updateDependencies = fmap formatDependencies . traverse (parseDep >=> withConfig checkDependency) . sort
 
@@ -102,7 +100,7 @@ withRule old name bounds = do
 logDep :: VersionBounds -> String
 logDep = toString . intercalate "  " . printDep
 
-checkDependency :: Config -> Dependency -> ConfigT TextDeps
+checkDependency :: Config -> (Name, VersionBounds) -> ConfigT TextDeps
 checkDependency config@Config {name, bounds} (n, dp)
   | isPrefixOf name n && dp == NoBounds = pure [n]
   | isPrefixOf name n = withRule dp n bounds
