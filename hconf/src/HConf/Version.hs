@@ -12,7 +12,6 @@ module HConf.Version
     parseVersion,
     VersionBounds (..),
     Deps,
-    parseBounds,
     parseDep,
     printBoundParts,
     printBounds,
@@ -149,24 +148,15 @@ printBoundParts (VersionBounds mi ma) = [">=", toText mi] <> maybe [] (\m -> ["&
 printBounds :: VersionBounds -> String
 printBounds = intercalate "  " . map toString . printBoundParts
 
-parseBounds :: (MonadFail m) => Text -> m VersionBounds
-parseBounds s = case (split (== '-') s) of
-  [minV, maxV] -> parseBoundsFrom minV (Just maxV)
-  [minV] -> parseBoundsFrom minV Nothing
-  _ -> fail ("invalid version: " <> show s)
-
-formatBounds :: Version -> Maybe Version -> Text
-formatBounds mi Nothing = pack $ show mi
-formatBounds mi (Just ma) = pack $ show mi <> " && " <> show ma
-
 instance FromJSON VersionBounds where
   parseJSON (Bool True) = pure NoBounds
-  parseJSON (String s) = parseBounds s
+  parseJSON (String s) = parseVersionBounds s
   parseJSON (Number n) = flip VersionBounds Nothing <$> (parseVersion $ pack $ show n)
   parseJSON v = fail $ "version should be either true or string" <> (show v)
 
 instance ToJSON VersionBounds where
-  toJSON NoBounds = (Bool True)
-  toJSON (VersionBounds mi ma) = String $ formatBounds mi ma
+  toJSON b
+    | NoBounds == b = Bool True
+    | otherwise = String $ pack $ printBounds b
 
 type Deps = Map Text VersionBounds
