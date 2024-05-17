@@ -108,28 +108,22 @@ parseDep txt =
 updateDependencies :: TextDeps -> ConfigT TextDeps
 updateDependencies = fmap formatDependencies . traverse (withConfig checkDependency . parseDep) . sort
 
-printMin :: Version -> TextDeps
-printMin mi = [">=", show mi]
-
-printMax :: Maybe Version -> TextDeps
-printMax = maybe [] (\m -> ["&&", "<", show m])
-
 printDep :: Maybe Dependency -> TextDeps
 printDep Nothing = []
 printDep (Just (Dependency mi ma)) = [">=", mi] <> maybe [] (\m -> ["&&", "<", m]) ma
 
-genBounds :: VersionBounds -> ConfigT TextDeps
-genBounds NoBounds = pure []
-genBounds (VersionBounds mi ma) = pure $ printMin mi <> printMax ma
+genBounds :: VersionBounds -> (Maybe Dependency)
+genBounds NoBounds = Nothing
+genBounds (VersionBounds mi ma) = Just (Dependency (show mi) (fmap show ma))
 
 withRule :: (Maybe Dependency) -> Text -> VersionBounds -> ConfigT TextDeps
 withRule old name bounds = do
-  deps <- genBounds bounds
-  if printDep old /= deps then field (toString name) (logDep (printDep old) <> "  ->  " <> logDep deps) else pure ()
-  pure (name : deps)
+  let deps = genBounds bounds
+  if old /= deps then field (toString name) (logDep old <> "  ->  " <> logDep deps) else pure ()
+  pure (name : printDep deps)
 
-logDep :: TextDeps -> String
-logDep = toString . intercalate "  "
+logDep :: Maybe Dependency -> String
+logDep = toString . intercalate "  " . printDep
 
 checkDependency :: Config -> DepType -> ConfigT TextDeps
 checkDependency config@Config {name, bounds} (Just (n, dp))
