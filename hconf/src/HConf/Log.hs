@@ -32,8 +32,11 @@ label name m = newLine >> info (li name) >> inside m
 task :: (Log m, ToString a, Monad m) => a -> m () -> m ()
 task name m = log (colored Magenta (li name)) >> inside m
 
+field :: (Log m) => String -> String -> m ()
+field name = log . ((name <> ": ") <>)
+
 logFileChange :: (Log m) => String -> Bool -> m ()
-logFileChange path changed = log ("updated: " <> colored (if changed then Gray else Yellow) path)
+logFileChange path changed = field "updated" $ colored (if changed then Gray else Yellow) path
 
 info :: (Log m) => String -> m ()
 info = log . colored Green
