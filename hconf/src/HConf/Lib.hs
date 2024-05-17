@@ -130,11 +130,10 @@ logDep :: VersionBounds -> String
 logDep = toString . intercalate "  " . printDep
 
 checkDependency :: Config -> DepType -> ConfigT TextDeps
-checkDependency config@Config {name, bounds} (Just (n, dp))
+checkDependency config@Config {name, bounds} (n, dp)
   | isPrefixOf name n && dp == NoBounds = pure [n]
   | isPrefixOf name n = withRule dp n bounds
   | otherwise = getRule n config >>= withRule dp n
-checkDependency _ Nothing = pure []
 
 updateLib :: LibType -> ConfigT LibType
 updateLib LibType {..} = do
