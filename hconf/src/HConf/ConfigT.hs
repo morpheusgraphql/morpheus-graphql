@@ -52,8 +52,8 @@ packages = getPackages <$> asks config
 version :: ConfigT Version
 version = getVersion <$> asks config
 
-withConfig :: (Config -> t -> t) -> t -> ConfigT t
-withConfig f t = flip f t <$> asks config
+withConfig :: (Config -> t -> ConfigT t) -> t -> ConfigT t
+withConfig f t = asks config >>= flip f t
 
 indent :: Int -> String
 indent i = replicate (i * 2) ' '

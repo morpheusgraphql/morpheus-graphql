@@ -86,9 +86,9 @@ updateDependencies =
     . traverse (withConfig checkDependency . filter (/= "") . split isSeparator)
     . sort
 
-withRule :: Text -> VersionBounds -> Dependencies
-withRule name NoBounds = [name]
-withRule name (VersionBounds mi ma) = printMin name mi <> printMax ma
+withRule :: Text -> VersionBounds -> ConfigT Dependencies
+withRule name NoBounds = pure [name]
+withRule name (VersionBounds mi ma) = pure $ printMin name mi <> printMax ma
 
 printMin :: Text -> Version -> Dependencies
 printMin name mi = [name, ">=", show mi]
@@ -96,12 +96,12 @@ printMin name mi = [name, ">=", show mi]
 printMax :: Maybe Version -> Dependencies
 printMax = maybe [] (\m -> ["&&", "<", show m])
 
-checkDependency :: Config -> Dependencies -> Dependencies
+checkDependency :: Config -> Dependencies -> ConfigT Dependencies
 checkDependency config@Config {name, bounds} (n : xs)
-  | isPrefixOf name n && null xs = [n]
+  | isPrefixOf name n && null xs = pure [n]
   | isPrefixOf name n = withRule n bounds
   | otherwise = getRule n config >>= withRule n
-checkDependency _ [] = []
+checkDependency _ [] = pure []
 
 updateLib :: LibType -> ConfigT LibType
 updateLib LibType {..} = do
