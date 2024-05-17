@@ -5,6 +5,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HConf.Lib
@@ -34,7 +35,7 @@ import Data.Text
 import HConf.Config (Config (..), getRule)
 import HConf.ConfigT
 import HConf.Log
-import HConf.Version (VersionBounds (..))
+import HConf.Version (Version, VersionBounds (..), parseVersion)
 import HConf.Yaml (Yaml (..), aesonYAMLOptions)
 import Relude hiding
   ( Undefined,
@@ -81,53 +82,45 @@ printRow sizes ls =
 formatDependencies :: Table -> TextDeps
 formatDependencies deps = map (printRow (getSizes deps)) deps
 
-data Dependency
-  = Dependency {minV :: Text, maxV :: Maybe Text}
-  deriving (Show, Ord, Eq)
+type DepType = Maybe (Text, VersionBounds)
 
-type DepType = Maybe (Text, Maybe Dependency)
-
-parseDep :: Text -> DepType
+parseDep :: Text -> ConfigT DepType
 parseDep txt =
   let xs = filter (/= "") (split isSeparator txt)
    in decode xs
   where
-    decode :: [Text] -> DepType
-    decode [] = Nothing
-    decode (name : bounds) = Just (name, parseBounds bounds)
+    decode :: [Text] -> ConfigT DepType
+    decode [] = pure Nothing
+    decode (name : bounds) = Just . (name,) <$> parseBounds bounds
 
-    parseBounds :: [Text] -> Maybe Dependency
-    parseBounds (">" : mi : ls) = Just (Dependency mi (parseMax ls))
-    parseBounds (">=" : mi : ls) = Just (Dependency mi (parseMax ls))
-    parseBounds _ = Nothing
-    parseMax :: [Text] -> Maybe Text
-    parseMax ("&&" : "<=" : x : _) = Just x
-    parseMax ("&&" : "<" : x : _) = Just x
-    parseMax _ = Nothing
+    parseBounds :: [Text] -> ConfigT VersionBounds
+    parseBounds (">" : mi : ls) = VersionBounds <$> parseVersion mi <*> (parseMax ls)
+    parseBounds (">=" : mi : ls) = VersionBounds <$> parseVersion mi <*> (parseMax ls)
+    parseBounds _ = pure NoBounds
+    parseMax :: [Text] -> ConfigT (Maybe Version)
+    parseMax ("&&" : "<=" : x : _) = Just <$> parseVersion x
+    parseMax ("&&" : "<" : x : _) = Just <$> parseVersion x
+    parseMax _ = pure Nothing
 
 updateDependencies :: TextDeps -> ConfigT TextDeps
-updateDependencies = fmap formatDependencies . traverse (withConfig checkDependency . parseDep) . sort
+updateDependencies = fmap formatDependencies . traverse (parseDep >=> withConfig checkDependency) . sort
 
-printDep :: Maybe Dependency -> TextDeps
-printDep Nothing = []
-printDep (Just (Dependency mi ma)) = [">=", mi] <> maybe [] (\m -> ["&&", "<", m]) ma
+printDep :: VersionBounds -> TextDeps
+printDep NoBounds = []
+printDep (VersionBounds mi ma) = [">=", show mi] <> maybe [] (\m -> ["&&", "<", show m]) ma
 
-genBounds :: VersionBounds -> (Maybe Dependency)
-genBounds NoBounds = Nothing
-genBounds (VersionBounds mi ma) = Just (Dependency (show mi) (fmap show ma))
-
-withRule :: (Maybe Dependency) -> Text -> VersionBounds -> ConfigT TextDeps
+withRule :: VersionBounds -> Text -> VersionBounds -> ConfigT TextDeps
 withRule old name bounds = do
-  let deps = genBounds bounds
+  let deps = bounds
   if old /= deps then field (toString name) (logDep old <> "  ->  " <> logDep deps) else pure ()
   pure (name : printDep deps)
 
-logDep :: Maybe Dependency -> String
+logDep :: VersionBounds -> String
 logDep = toString . intercalate "  " . printDep
 
 checkDependency :: Config -> DepType -> ConfigT TextDeps
 checkDependency config@Config {name, bounds} (Just (n, dp))
-  | isPrefixOf name n && null dp = pure [n]
+  | isPrefixOf name n && dp == NoBounds = pure [n]
   | isPrefixOf name n = withRule dp n bounds
   | otherwise = getRule n config >>= withRule dp n
 checkDependency _ Nothing = pure []
