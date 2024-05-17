@@ -79,5 +79,5 @@ checkPackage name = listItem name >> rewriteYaml (toPath name) (mapYamlM (withCo
 checkPackages :: ConfigT ()
 checkPackages =
   label "packages"
-    >> packages
+    $ packages
     >>= traverse_ checkPackage

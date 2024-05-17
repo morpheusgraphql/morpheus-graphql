@@ -15,12 +15,10 @@ import Relude
 
 class Log m where
   log :: String -> m ()
+  inside :: m a -> m a
 
 newLine :: String
 newLine = "\n"
-
-indent :: Int -> String
-indent i = replicate (i * 2) ' '
 
 colored :: Color -> String -> String
 colored c x = toColor c <> x <> toColor None
@@ -28,14 +26,14 @@ colored c x = toColor c <> x <> toColor None
 li :: (ToString a) => a -> String
 li e = "- " <> toString e <> ":"
 
-label :: (Log m) => String -> m ()
-label name = info (newLine <> indent 1 <> li name)
+label :: (Log m, Monad m) => String -> m () -> m ()
+label name m = info (newLine <> li name) >> inside m
 
 listItem :: (Log m, ToString a) => a -> m ()
-listItem name = log $ colored Magenta (indent 2 <> li name)
+listItem name = log $ colored Magenta (li name)
 
 logFileChange :: (Log m) => String -> Bool -> m ()
-logFileChange path changed = log (indent 3 <> "updated: " <> colored (if changed then Gray else Yellow) path)
+logFileChange path changed = log ("updated: " <> colored (if changed then Gray else Yellow) path)
 
 info :: (Log m) => String -> m ()
 info = log . colored Green

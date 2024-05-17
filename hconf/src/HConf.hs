@@ -24,7 +24,7 @@ setup ver = open $ do
   parseVersion (pack ver) >>= setupStack
   genHie
   checkPackages
-  label "hconf"
-  listItem ("hconf.yaml" :: String)
-  save
+  label "hconf" $ do
+    listItem ("hconf.yaml" :: String)
+    save
   info "\nsetup:end"
