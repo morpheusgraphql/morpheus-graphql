@@ -27,12 +27,12 @@ import Data.List (maximum)
 import Data.Text
   ( break,
     breakOn,
+    drop,
     intercalate,
     isPrefixOf,
     justifyLeft,
     length,
     null,
-    split,
     strip,
   )
 import HConf.Config (Config (..), getRule)
@@ -43,6 +43,7 @@ import HConf.Yaml (Yaml (..), aesonYAMLOptions)
 import Relude hiding
   ( Undefined,
     break,
+    drop,
     intercalate,
     isPrefixOf,
     length,
@@ -92,26 +93,39 @@ type DepType = (Text, VersionBounds)
 trim :: (Text, Text) -> (Text, Text)
 trim = bimap strip strip
 
+breakOnSPace :: Text -> (Text, Text)
+breakOnSPace = trim . break isSeparator
+
+breakAtAnd :: Text -> (Text, Text)
+breakAtAnd = trim . second (drop 2) . (breakOn "&&")
+
 parseDep :: Text -> ConfigT DepType
-parseDep = decode . trim . break isSeparator
+parseDep = decode . breakOnSPace
   where
     decode :: (Text, Text) -> ConfigT DepType
     decode (name, bounds)
       | null bounds = pure (name, NoBounds)
-      | otherwise = (name,) <$> parseBounds (trim (breakOn "&&" bounds))
+      | otherwise = (name,) <$> parseBounds (breakAtAnd bounds)
 
     parseBounds :: (Text, Text) -> ConfigT VersionBounds
-    parseBounds (o, ls) | isOperator o = parseMax ls >>= parseBoundsFrom mi
+    parseBounds (mi, ma) = do
+      mi' <- parseMin (breakOnSPace mi)
+      parseMax (breakOnSPace ma) >>= parseBoundsFrom mi'
 
-    parseMax :: [Text] -> ConfigT (Maybe Text)
-    parseMax (b : o : x : _) | b == "&&" && isUpperO o = pure (Just x)
-    parseMax _ = pure Nothing
+    parseMax :: (Text, Text) -> ConfigT (Maybe Text)
+    parseMax (o, value) | isUpperConstraint o = pure (Just value)
+    -- parseMax _ = pure Nothing
+    parseMax (o, v) = fail ("invalid" <> show (o, v))
 
-isOperator :: Text -> Bool
-isOperator = (`elem` [">", ">="])
+    parseMin :: (Text, Text) -> ConfigT Text
+    parseMin (o, value) | isLowerConstraint o = pure value
+    parseMin (o, v) = fail ("invalid" <> show (o, v))
 
-isUpperO :: Text -> Bool
-isUpperO = (`elem` ["<", "<="])
+isLowerConstraint :: Text -> Bool
+isLowerConstraint = (`elem` [">", ">="])
+
+isUpperConstraint :: Text -> Bool
+isUpperConstraint = (`elem` ["<", "<="])
 
 updateDependencies :: TextDeps -> ConfigT TextDeps
 updateDependencies = fmap formatDependencies . traverse (parseDep >=> withConfig checkDependency) . sort
