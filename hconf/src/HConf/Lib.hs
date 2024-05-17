@@ -34,7 +34,7 @@ import Data.Text
 import HConf.Config (Config (..), getRule)
 import HConf.ConfigT
 import HConf.Log
-import HConf.Version (Version, VersionBounds (..))
+import HConf.Version (VersionBounds (..))
 import HConf.Yaml (Yaml (..), aesonYAMLOptions)
 import Relude hiding
   ( Undefined,
