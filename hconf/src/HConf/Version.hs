@@ -12,7 +12,8 @@ module HConf.Version
     VersionBounds (..),
     Deps,
     parseBounds,
-    parseBoundsFrom,
+    parseVersionBounds,
+    breakOnSPace,
   )
 where
 
@@ -21,14 +22,25 @@ import Data.Aeson
     ToJSON (toJSON),
     Value (..),
   )
+import Data.Char (isSeparator)
 import Data.Text
-  ( pack,
+  ( break,
+    breakOn,
+    drop,
+    null,
+    pack,
     split,
+    strip,
     unpack,
   )
 import GHC.Show (Show (show))
 import Relude hiding
   ( Undefined,
+    break,
+    drop,
+    isPrefixOf,
+    length,
+    null,
     show,
   )
 
@@ -82,6 +94,39 @@ data VersionBounds
       Eq,
       Ord
     )
+
+trim :: (Text, Text) -> (Text, Text)
+trim = bimap strip strip
+
+breakOnSPace :: Text -> (Text, Text)
+breakOnSPace = trim . break isSeparator
+
+parseVersionTuple :: (MonadFail m) => (Text, Text) -> m VersionBounds
+parseVersionTuple (mi, ma) = do
+  ((,) <$> parseMin (breakOnSPace mi) <*> parseMax (breakOnSPace ma))
+    >>= uncurry parseBoundsFrom
+
+breakAtAnd :: Text -> (Text, Text)
+breakAtAnd = trim . second (drop 2) . (breakOn "&&")
+
+parseVersionBounds :: (MonadFail m) => Text -> m VersionBounds
+parseVersionBounds bounds
+  | null bounds = pure NoBounds
+  | otherwise = parseVersionTuple (breakAtAnd bounds)
+
+parseMax :: (MonadFail m) => (Text, Text) -> m (Maybe Text)
+parseMax (o, value) | isUpperConstraint o = pure (Just value)
+parseMax _ = pure Nothing
+
+parseMin :: (MonadFail m) => (Text, Text) -> m Text
+parseMin (o, value) | isLowerConstraint o = pure value
+parseMin (o, v) = fail ("invalid" <> show (o, v))
+
+isLowerConstraint :: Text -> Bool
+isLowerConstraint = (`elem` [">", ">="])
+
+isUpperConstraint :: Text -> Bool
+isUpperConstraint = (`elem` ["<", "<="])
 
 parseBoundsFrom :: (MonadFail m) => Text -> Maybe Text -> m VersionBounds
 parseBoundsFrom minV maxV = VersionBounds <$> (parseVersion minV) <*> (traverse parseVersion maxV)

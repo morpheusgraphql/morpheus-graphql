@@ -22,24 +22,19 @@ import Data.Aeson
     genericParseJSON,
     genericToJSON,
   )
-import Data.Char (isSeparator)
 import Data.List (maximum)
 import Data.Text
-  ( break,
-    breakOn,
-    drop,
-    intercalate,
+  ( intercalate,
     isPrefixOf,
     justifyLeft,
     length,
-    null,
     strip,
   )
 import HConf.Config (Config (..), getRule)
 import HConf.ConfigT
 import HConf.Log
 import HConf.Utils (Name)
-import HConf.Version (VersionBounds (..), parseBoundsFrom)
+import HConf.Version (VersionBounds (..), breakOnSPace, parseVersionBounds)
 import HConf.Yaml (Yaml (..), aesonYAMLOptions)
 import Relude hiding
   ( Undefined,
@@ -91,38 +86,8 @@ formatDependencies deps = map (printRow (getSizes deps)) deps
 
 type Dependency = (Name, VersionBounds)
 
-trim :: (Text, Text) -> (Text, Text)
-trim = bimap strip strip
-
-breakOnSPace :: Text -> (Text, Text)
-breakOnSPace = trim . break isSeparator
-
-breakAtAnd :: Text -> (Text, Text)
-breakAtAnd = trim . second (drop 2) . (breakOn "&&")
-
 parseDep :: (Text, Text) -> ConfigT Dependency
-parseDep (name, bounds)
-  | null bounds = pure (name, NoBounds)
-  | otherwise = (name,) <$> parseBounds (breakAtAnd bounds)
-
-parseBounds :: (Text, Text) -> ConfigT VersionBounds
-parseBounds (mi, ma) = do
-  mi' <- parseMin (breakOnSPace mi)
-  parseMax (breakOnSPace ma) >>= parseBoundsFrom mi'
-
-parseMax :: (Text, Text) -> ConfigT (Maybe Text)
-parseMax (o, value) | isUpperConstraint o = pure (Just value)
-parseMax _ = pure Nothing
-
-parseMin :: (Text, Text) -> ConfigT Text
-parseMin (o, value) | isLowerConstraint o = pure value
-parseMin (o, v) = fail ("invalid" <> show (o, v))
-
-isLowerConstraint :: Text -> Bool
-isLowerConstraint = (`elem` [">", ">="])
-
-isUpperConstraint :: Text -> Bool
-isUpperConstraint = (`elem` ["<", "<="])
+parseDep (name, bounds) = (name,) <$> parseVersionBounds bounds
 
 updateDependencies :: TextDeps -> ConfigT TextDeps
 updateDependencies = fmap formatDependencies . traverse (parseDep . breakOnSPace >=> withConfig checkDependency) . sort
