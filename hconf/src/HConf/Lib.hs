@@ -38,6 +38,7 @@ import Data.Text
 import HConf.Config (Config (..), getRule)
 import HConf.ConfigT
 import HConf.Log
+import HConf.Utils (Name)
 import HConf.Version (VersionBounds (..), parseBoundsFrom)
 import HConf.Yaml (Yaml (..), aesonYAMLOptions)
 import Relude hiding
@@ -88,7 +89,7 @@ printRow sizes ls =
 formatDependencies :: Table -> TextDeps
 formatDependencies deps = map (printRow (getSizes deps)) deps
 
-type DepType = (Text, VersionBounds)
+type DepType = (Name, VersionBounds)
 
 trim :: (Text, Text) -> (Text, Text)
 trim = bimap strip strip
