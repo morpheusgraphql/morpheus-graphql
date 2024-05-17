@@ -83,7 +83,7 @@ formatDependencies deps = map (printRow (getSizes deps)) deps
 
 data Dependency
   = Dependency {minV :: Text, maxV :: Maybe Text}
-  deriving (Show)
+  deriving (Show, Ord, Eq)
 
 type DepType = Maybe (Text, Maybe Dependency)
 
