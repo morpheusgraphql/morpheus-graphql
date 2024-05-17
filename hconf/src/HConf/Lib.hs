@@ -25,10 +25,13 @@ import Data.Aeson
 import Data.Char (isSeparator)
 import Data.List (maximum)
 import Data.Text
-  ( intercalate,
+  ( break,
+    breakOn,
+    intercalate,
     isPrefixOf,
     justifyLeft,
     length,
+    null,
     split,
     strip,
   )
@@ -39,9 +42,11 @@ import HConf.Version (VersionBounds (..), parseBoundsFrom)
 import HConf.Yaml (Yaml (..), aesonYAMLOptions)
 import Relude hiding
   ( Undefined,
+    break,
     intercalate,
     isPrefixOf,
     length,
+    null,
   )
 
 type Table = [[Text]]
@@ -82,18 +87,20 @@ printRow sizes ls =
 formatDependencies :: Table -> TextDeps
 formatDependencies deps = map (printRow (getSizes deps)) deps
 
-type DepType = Maybe (Text, VersionBounds)
+type DepType = (Text, VersionBounds)
+
+trim :: (Text, Text) -> (Text, Text)
+trim = bimap strip strip
 
 parseDep :: Text -> ConfigT DepType
-parseDep txt =
-  let xs = filter (/= "") (split isSeparator txt)
-   in decode xs
+parseDep = decode . trim . break isSeparator
   where
-    decode :: [Text] -> ConfigT DepType
-    decode [] = pure Nothing
-    decode (name : bounds) = Just . (name,) <$> parseBounds bounds
+    decode :: (Text, Text) -> ConfigT DepType
+    decode (name, bounds)
+      | null bounds = pure (name, NoBounds)
+      | otherwise = (name,) <$> parseBounds (trim (breakOn "&&" bounds))
 
-    parseBounds :: [Text] -> ConfigT VersionBounds
+    parseBounds :: (Text, Text) -> ConfigT VersionBounds
     parseBounds (o : mi : ls) | isOperator o = parseMax ls >>= parseBoundsFrom mi
     parseBounds _ = pure NoBounds
 
