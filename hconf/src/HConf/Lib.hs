@@ -89,7 +89,7 @@ printRow sizes ls =
 formatDependencies :: Table -> TextDeps
 formatDependencies deps = map (printRow (getSizes deps)) deps
 
-type DepType = (Name, VersionBounds)
+type Dependency = (Name, VersionBounds)
 
 trim :: (Text, Text) -> (Text, Text)
 trim = bimap strip strip
@@ -100,7 +100,7 @@ breakOnSPace = trim . break isSeparator
 breakAtAnd :: Text -> (Text, Text)
 breakAtAnd = trim . second (drop 2) . (breakOn "&&")
 
-parseDep :: (Text, Text) -> ConfigT DepType
+parseDep :: (Text, Text) -> ConfigT Dependency
 parseDep (name, bounds)
   | null bounds = pure (name, NoBounds)
   | otherwise = (name,) <$> parseBounds (breakAtAnd bounds)
@@ -140,7 +140,7 @@ withRule old name bounds = do
 logDep :: VersionBounds -> String
 logDep = toString . intercalate "  " . printDep
 
-checkDependency :: Config -> DepType -> ConfigT TextDeps
+checkDependency :: Config -> Dependency -> ConfigT TextDeps
 checkDependency config@Config {name, bounds} (n, dp)
   | isPrefixOf name n && dp == NoBounds = pure [n]
   | isPrefixOf name n = withRule dp n bounds
