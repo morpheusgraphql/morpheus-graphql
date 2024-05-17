@@ -94,7 +94,7 @@ genBounds (VersionBounds mi ma) = pure $ printMin mi <> printMax ma
 withRule :: [Text] -> Text -> VersionBounds -> ConfigT Dependencies
 withRule old name bounds = do
   deps <- genBounds bounds
-  if old /= deps then field (toString name) (logDep old <> "->" <> logDep deps) else pure ()
+  if old /= deps then field (toString name) (logDep old <> "  ->  " <> logDep deps) else pure ()
   pure (name : deps)
 
 logDep :: Dependencies -> String
