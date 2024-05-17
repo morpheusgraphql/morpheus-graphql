@@ -14,6 +14,7 @@ module HConf.Version
     Deps,
     parseBounds,
     parseDep,
+    printBoundParts,
     printBounds,
   )
 where
@@ -141,9 +142,12 @@ isUpperConstraint = (`elem` ["<", "<="])
 parseBoundsFrom :: (MonadFail m) => Text -> Maybe Text -> m VersionBounds
 parseBoundsFrom minV maxV = VersionBounds <$> (parseVersion minV) <*> (traverse parseVersion maxV)
 
-printBounds :: VersionBounds -> [Text]
-printBounds NoBounds = []
-printBounds (VersionBounds mi ma) = [">=", toText mi] <> maybe [] (\m -> ["&&", "<", toText m]) ma
+printBoundParts :: VersionBounds -> [Text]
+printBoundParts NoBounds = []
+printBoundParts (VersionBounds mi ma) = [">=", toText mi] <> maybe [] (\m -> ["&&", "<", toText m]) ma
+
+printBounds :: VersionBounds -> String
+printBounds = intercalate "  " . map toString . printBoundParts
 
 parseBounds :: (MonadFail m) => Text -> m VersionBounds
 parseBounds s = case (split (== '-') s) of
