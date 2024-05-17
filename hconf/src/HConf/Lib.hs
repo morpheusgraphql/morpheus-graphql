@@ -35,7 +35,7 @@ import Data.Text
 import HConf.Config (Config (..), getRule)
 import HConf.ConfigT
 import HConf.Log
-import HConf.Version (Version, VersionBounds (..), parseVersion)
+import HConf.Version (Version, VersionBounds (..), parseBoundsFrom, parseVersion)
 import HConf.Yaml (Yaml (..), aesonYAMLOptions)
 import Relude hiding
   ( Undefined,
@@ -94,12 +94,12 @@ parseDep txt =
     decode (name : bounds) = Just . (name,) <$> parseBounds bounds
 
     parseBounds :: [Text] -> ConfigT VersionBounds
-    parseBounds (">" : mi : ls) = VersionBounds <$> parseVersion mi <*> (parseMax ls)
-    parseBounds (">=" : mi : ls) = VersionBounds <$> parseVersion mi <*> (parseMax ls)
+    parseBounds (">" : mi : ls) = parseMax ls >>= parseBoundsFrom mi
+    parseBounds (">=" : mi : ls) = parseMax ls >>= parseBoundsFrom mi
     parseBounds _ = pure NoBounds
-    parseMax :: [Text] -> ConfigT (Maybe Version)
-    parseMax ("&&" : "<=" : x : _) = Just <$> parseVersion x
-    parseMax ("&&" : "<" : x : _) = Just <$> parseVersion x
+    parseMax :: [Text] -> ConfigT (Maybe Text)
+    parseMax ("&&" : "<=" : x : _) = pure (Just x)
+    parseMax ("&&" : "<" : x : _) = pure (Just x)
     parseMax _ = pure Nothing
 
 updateDependencies :: TextDeps -> ConfigT TextDeps

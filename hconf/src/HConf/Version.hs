@@ -12,6 +12,7 @@ module HConf.Version
     VersionBounds (..),
     Deps,
     parseBounds,
+    parseBoundsFrom,
   )
 where
 
