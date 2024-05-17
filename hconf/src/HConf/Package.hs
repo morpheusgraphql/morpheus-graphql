@@ -77,6 +77,7 @@ checkPackage :: Name -> ConfigT ()
 checkPackage name = infoListEntry name >> flip rewriteYaml (mapYamlM (withConfig updatePackage)) (toPath name)
 
 checkPackages :: ConfigT ()
-checkPackages = do
+checkPackages =
   label "packages"
-  packages >>= traverse_ checkPackage
+    >> packages
+    >>= traverse_ checkPackage
