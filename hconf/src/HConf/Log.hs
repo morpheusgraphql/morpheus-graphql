@@ -2,7 +2,7 @@
 
 module HConf.Log
   ( label,
-    infoListEntry,
+    listItem,
     warn,
     alert,
     logFileChange,
@@ -31,8 +31,8 @@ li e = "- " <> toString e <> ":"
 label :: (Log m) => String -> m ()
 label name = info (newLine <> indent 1 <> li name)
 
-infoListEntry :: (Log m, ToString a) => a -> m ()
-infoListEntry name = log $ colored Magenta (indent 2 <> li name)
+listItem :: (Log m, ToString a) => a -> m ()
+listItem name = log $ colored Magenta (indent 2 <> li name)
 
 logFileChange :: (Log m) => String -> Bool -> m ()
 logFileChange path changed = log (indent 3 <> "updated: " <> colored (if changed then Gray else Yellow) path)
