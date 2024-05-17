@@ -96,6 +96,7 @@ parseDep txt =
     parseBounds :: [Text] -> ConfigT VersionBounds
     parseBounds (o : mi : ls) | isOperator o = parseMax ls >>= parseBoundsFrom mi
     parseBounds _ = pure NoBounds
+
     parseMax :: [Text] -> ConfigT (Maybe Text)
     parseMax (b : o : x : _) | b == "&&" && isUpperO o = pure (Just x)
     parseMax _ = pure Nothing
