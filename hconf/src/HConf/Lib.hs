@@ -87,18 +87,18 @@ updateDependencies =
     . traverse (withConfig checkDependency . filter (/= "") . split isSeparator)
     . sort
 
-withRule1 :: Text -> VersionBounds -> ConfigT Dependencies
-withRule1 name NoBounds = pure [name]
-withRule1 name (VersionBounds mi ma) = pure $ printMin name mi <> printMax ma
+genBounds :: VersionBounds -> ConfigT Dependencies
+genBounds NoBounds = pure []
+genBounds (VersionBounds mi ma) = pure $ printMin mi <> printMax ma
 
 withRule :: [Text] -> Text -> VersionBounds -> ConfigT Dependencies
 withRule old name bounds = do
-  deps <- withRule1 name bounds
-  if old /= deps then field (toString name) "changed" else pure ()
-  pure deps
+  deps <- genBounds bounds
+  if old /= deps then field (toString name) (show (old, deps)) else pure ()
+  pure (name : deps)
 
-printMin :: Text -> Version -> Dependencies
-printMin name mi = [name, ">=", show mi]
+printMin :: Version -> Dependencies
+printMin mi = [">=", show mi]
 
 printMax :: Maybe Version -> Dependencies
 printMax = maybe [] (\m -> ["&&", "<", show m])
