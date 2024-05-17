@@ -77,7 +77,9 @@ data VersionBounds
   | NoBounds
   deriving
     ( Generic,
-      Show
+      Show,
+      Eq,
+      Ord
     )
 
 parseBounds :: (MonadFail m) => Text -> m VersionBounds
