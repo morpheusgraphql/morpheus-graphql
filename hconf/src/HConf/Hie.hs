@@ -21,7 +21,7 @@ import qualified Data.Aeson.KeyMap as KM
 import HConf.ConfigT (ConfigT, HCEnv (..))
 import HConf.Env (Env (..))
 import HConf.Lib (Lib, LibType (..))
-import HConf.Log (label, listItem)
+import HConf.Log (label, task)
 import HConf.Package (Package (..), resolvePackages)
 import HConf.Yaml (Yaml (..), writeYaml)
 import Relude hiding (Undefined, intercalate)
@@ -75,7 +75,7 @@ toLib (path, Package {..}) =
     comp _ _ = []
 
 genHie :: ConfigT ()
-genHie = label "hie" $ listItem ("hie.yaml" :: String) $ do
+genHie = label "hie" $ task ("hie.yaml" :: String) $ do
   Env {..} <- asks env
   components <- concatMap toLib <$> resolvePackages
   writeYaml hie (packHie Components {stackYaml = stack, components})
