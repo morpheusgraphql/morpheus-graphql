@@ -75,8 +75,7 @@ toLib (path, Package {..}) =
     comp _ _ = []
 
 genHie :: ConfigT ()
-genHie = label "hie" $ do
-  listItem ("hie.yaml" :: String)
+genHie = label "hie" $ listItem ("hie.yaml" :: String) $ do
   Env {..} <- asks env
   components <- concatMap toLib <$> resolvePackages
   writeYaml hie (packHie Components {stackYaml = stack, components})

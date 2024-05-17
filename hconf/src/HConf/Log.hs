@@ -29,8 +29,8 @@ li e = "- " <> toString e <> ":"
 label :: (Log m, Monad m) => String -> m () -> m ()
 label name m = info (newLine <> li name) >> inside m
 
-listItem :: (Log m, ToString a) => a -> m ()
-listItem name = log $ colored Magenta (li name)
+listItem :: (Log m, ToString a, Monad m) => a -> m () -> m ()
+listItem name m = log (colored Magenta (li name)) >> inside m
 
 logFileChange :: (Log m) => String -> Bool -> m ()
 logFileChange path changed = log ("updated: " <> colored (if changed then Gray else Yellow) path)

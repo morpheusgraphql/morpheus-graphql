@@ -74,7 +74,7 @@ updatePackage config Package {..} =
     }
 
 checkPackage :: Name -> ConfigT ()
-checkPackage name = listItem name >> rewriteYaml (toPath name) (mapYamlM (withConfig updatePackage))
+checkPackage name = listItem name $ rewriteYaml (toPath name) (mapYamlM (withConfig updatePackage))
 
 checkPackages :: ConfigT ()
 checkPackages =
