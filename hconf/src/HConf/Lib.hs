@@ -114,8 +114,7 @@ parseDep = decode . breakOnSPace
 
     parseMax :: (Text, Text) -> ConfigT (Maybe Text)
     parseMax (o, value) | isUpperConstraint o = pure (Just value)
-    -- parseMax _ = pure Nothing
-    parseMax (o, v) = fail ("invalid" <> show (o, v))
+    parseMax _ = pure Nothing
 
     parseMin :: (Text, Text) -> ConfigT Text
     parseMin (o, value) | isLowerConstraint o = pure value
