@@ -82,10 +82,13 @@ data VersionBounds
       Ord
     )
 
+parseBoundsFrom :: (MonadFail m) => Text -> Maybe Text -> m VersionBounds
+parseBoundsFrom minV maxV = VersionBounds <$> (parseVersion minV) <*> (traverse parseVersion maxV)
+
 parseBounds :: (MonadFail m) => Text -> m VersionBounds
 parseBounds s = case (split (== '-') s) of
-  [minV, maxV] -> VersionBounds <$> (parseVersion minV) <*> (fmap Just (parseVersion maxV))
-  [minV] -> flip VersionBounds Nothing <$> (parseVersion minV)
+  [minV, maxV] -> parseBoundsFrom minV (Just maxV)
+  [minV] -> parseBoundsFrom minV Nothing
   _ -> fail ("invalid version: " <> show s)
 
 formatBounds :: Version -> Maybe Version -> Text
