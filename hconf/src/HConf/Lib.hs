@@ -85,14 +85,14 @@ data Dependency
   = Dependency {minV :: Text, maxV :: Maybe Text}
   deriving (Show)
 
-type Dep = Maybe (Text, Maybe Dependency)
+type DepType = Maybe (Text, Maybe Dependency)
 
-parseDep :: Text -> Dep
+parseDep :: Text -> DepType
 parseDep txt =
   let xs = filter (/= "") (split isSeparator txt)
    in decode xs
   where
-    decode :: [Text] -> Dep
+    decode :: [Text] -> DepType
     decode [] = Nothing
     decode (name : bounds) = Just (name, parseBounds bounds)
 
@@ -106,25 +106,7 @@ parseDep txt =
     parseMax _ = Nothing
 
 updateDependencies :: TextDeps -> ConfigT TextDeps
-updateDependencies = fmap formatDependencies . traverse check . sort
-
-check :: Text -> ConfigT TextDeps
-check x = do
-  log (show $ parseDep x)
-  (withConfig checkDependency . filter (/= "") . split isSeparator) x
-
-genBounds :: VersionBounds -> ConfigT TextDeps
-genBounds NoBounds = pure []
-genBounds (VersionBounds mi ma) = pure $ printMin mi <> printMax ma
-
-withRule :: [Text] -> Text -> VersionBounds -> ConfigT TextDeps
-withRule old name bounds = do
-  deps <- genBounds bounds
-  if old /= deps then field (toString name) (logDep old <> "  ->  " <> logDep deps) else pure ()
-  pure (name : deps)
-
-logDep :: TextDeps -> String
-logDep = toString . intercalate "  "
+updateDependencies = fmap formatDependencies . traverse (withConfig checkDependency . parseDep) . sort
 
 printMin :: Version -> TextDeps
 printMin mi = [">=", show mi]
@@ -132,12 +114,29 @@ printMin mi = [">=", show mi]
 printMax :: Maybe Version -> TextDeps
 printMax = maybe [] (\m -> ["&&", "<", show m])
 
-checkDependency :: Config -> TextDeps -> ConfigT TextDeps
-checkDependency config@Config {name, bounds} (n : xs)
-  | isPrefixOf name n && null xs = pure [n]
-  | isPrefixOf name n = withRule xs n bounds
-  | otherwise = getRule n config >>= withRule xs n
-checkDependency _ [] = pure []
+printDep :: Maybe Dependency -> TextDeps
+printDep Nothing = []
+printDep (Just (Dependency mi ma)) = [">=", mi] <> maybe [] (\m -> ["&&", "<", m]) ma
+
+genBounds :: VersionBounds -> ConfigT TextDeps
+genBounds NoBounds = pure []
+genBounds (VersionBounds mi ma) = pure $ printMin mi <> printMax ma
+
+withRule :: (Maybe Dependency) -> Text -> VersionBounds -> ConfigT TextDeps
+withRule old name bounds = do
+  deps <- genBounds bounds
+  if printDep old /= deps then field (toString name) (logDep (printDep old) <> "  ->  " <> logDep deps) else pure ()
+  pure (name : deps)
+
+logDep :: TextDeps -> String
+logDep = toString . intercalate "  "
+
+checkDependency :: Config -> DepType -> ConfigT TextDeps
+checkDependency config@Config {name, bounds} (Just (n, dp))
+  | isPrefixOf name n && null dp = pure [n]
+  | isPrefixOf name n = withRule dp n bounds
+  | otherwise = getRule n config >>= withRule dp n
+checkDependency _ Nothing = pure []
 
 updateLib :: LibType -> ConfigT LibType
 updateLib LibType {..} = do

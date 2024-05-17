@@ -52,7 +52,7 @@ packages = getPackages <$> asks config
 version :: ConfigT Version
 version = getVersion <$> asks config
 
-withConfig :: (Config -> t -> ConfigT t) -> t -> ConfigT t
+withConfig :: (Config -> t -> ConfigT t') -> t -> ConfigT t'
 withConfig f t = asks config >>= flip f t
 
 indent :: Int -> String
