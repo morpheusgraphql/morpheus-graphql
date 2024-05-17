@@ -3,6 +3,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | GQL Types
@@ -12,8 +13,7 @@ module HConf.Version
     VersionBounds (..),
     Deps,
     parseBounds,
-    parseVersionBounds,
-    breakOnSPace,
+    parseDep,
   )
 where
 
@@ -108,6 +108,9 @@ parseVersionTuple (mi, ma) = do
 
 breakAtAnd :: Text -> (Text, Text)
 breakAtAnd = trim . second (drop 2) . (breakOn "&&")
+
+parseDep :: (MonadFail m) => Text -> m (Text, VersionBounds)
+parseDep = (\(name, bounds) -> (name,) <$> parseVersionBounds bounds) . breakOnSPace
 
 parseVersionBounds :: (MonadFail m) => Text -> m VersionBounds
 parseVersionBounds bounds

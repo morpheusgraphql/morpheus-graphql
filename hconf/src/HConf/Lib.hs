@@ -34,7 +34,7 @@ import HConf.Config (Config (..), getRule)
 import HConf.ConfigT
 import HConf.Log
 import HConf.Utils (Name)
-import HConf.Version (VersionBounds (..), breakOnSPace, parseVersionBounds)
+import HConf.Version (VersionBounds (..), parseDep)
 import HConf.Yaml (Yaml (..), aesonYAMLOptions)
 import Relude hiding
   ( Undefined,
@@ -86,11 +86,8 @@ formatDependencies deps = map (printRow (getSizes deps)) deps
 
 type Dependency = (Name, VersionBounds)
 
-parseDep :: (Text, Text) -> ConfigT Dependency
-parseDep (name, bounds) = (name,) <$> parseVersionBounds bounds
-
 updateDependencies :: TextDeps -> ConfigT TextDeps
-updateDependencies = fmap formatDependencies . traverse (parseDep . breakOnSPace >=> withConfig checkDependency) . sort
+updateDependencies = fmap formatDependencies . traverse (parseDep >=> withConfig checkDependency) . sort
 
 printDep :: VersionBounds -> TextDeps
 printDep NoBounds = []
