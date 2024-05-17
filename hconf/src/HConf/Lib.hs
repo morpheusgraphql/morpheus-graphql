@@ -99,26 +99,23 @@ breakOnSPace = trim . break isSeparator
 breakAtAnd :: Text -> (Text, Text)
 breakAtAnd = trim . second (drop 2) . (breakOn "&&")
 
-parseDep :: Text -> ConfigT DepType
-parseDep = decode . breakOnSPace
-  where
-    decode :: (Text, Text) -> ConfigT DepType
-    decode (name, bounds)
-      | null bounds = pure (name, NoBounds)
-      | otherwise = (name,) <$> parseBounds (breakAtAnd bounds)
+parseDep :: (Text, Text) -> ConfigT DepType
+parseDep (name, bounds)
+  | null bounds = pure (name, NoBounds)
+  | otherwise = (name,) <$> parseBounds (breakAtAnd bounds)
 
-    parseBounds :: (Text, Text) -> ConfigT VersionBounds
-    parseBounds (mi, ma) = do
-      mi' <- parseMin (breakOnSPace mi)
-      parseMax (breakOnSPace ma) >>= parseBoundsFrom mi'
+parseBounds :: (Text, Text) -> ConfigT VersionBounds
+parseBounds (mi, ma) = do
+  mi' <- parseMin (breakOnSPace mi)
+  parseMax (breakOnSPace ma) >>= parseBoundsFrom mi'
 
-    parseMax :: (Text, Text) -> ConfigT (Maybe Text)
-    parseMax (o, value) | isUpperConstraint o = pure (Just value)
-    parseMax _ = pure Nothing
+parseMax :: (Text, Text) -> ConfigT (Maybe Text)
+parseMax (o, value) | isUpperConstraint o = pure (Just value)
+parseMax _ = pure Nothing
 
-    parseMin :: (Text, Text) -> ConfigT Text
-    parseMin (o, value) | isLowerConstraint o = pure value
-    parseMin (o, v) = fail ("invalid" <> show (o, v))
+parseMin :: (Text, Text) -> ConfigT Text
+parseMin (o, value) | isLowerConstraint o = pure value
+parseMin (o, v) = fail ("invalid" <> show (o, v))
 
 isLowerConstraint :: Text -> Bool
 isLowerConstraint = (`elem` [">", ">="])
@@ -127,7 +124,7 @@ isUpperConstraint :: Text -> Bool
 isUpperConstraint = (`elem` ["<", "<="])
 
 updateDependencies :: TextDeps -> ConfigT TextDeps
-updateDependencies = fmap formatDependencies . traverse (parseDep >=> withConfig checkDependency) . sort
+updateDependencies = fmap formatDependencies . traverse (parseDep . breakOnSPace >=> withConfig checkDependency) . sort
 
 printDep :: VersionBounds -> TextDeps
 printDep NoBounds = []
