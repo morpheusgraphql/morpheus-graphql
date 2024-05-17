@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections #-}
@@ -18,13 +19,13 @@ where
 import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import Data.Aeson.KeyMap (KeyMap)
 import Data.Text (unpack)
-import HConf.Config (Config, getVersion)
-import HConf.ConfigT (ConfigT, packages, withConfig)
+import HConf.Config (getVersion)
+import HConf.ConfigT (ConfigT, HCEnv (config), packages)
 import HConf.Lib (Lib, updateDependencies, updateLib)
 import HConf.Log (label, task)
 import HConf.Utils (Name, tupled)
 import HConf.Version (Version)
-import HConf.Yaml (Yaml (..), aesonYAMLOptions, mapYaml, mapYamlM, readYaml, rewriteYaml)
+import HConf.Yaml (Yaml (..), aesonYAMLOptions, mapYamlM, readYaml, rewriteYaml)
 import Relude hiding (Undefined, length, replicate)
 
 type Libs = Maybe (KeyMap Lib)
@@ -58,23 +59,30 @@ resolvePackages = packages >>= traverse (tupled getPackage)
 getPackage :: Name -> ConfigT Package
 getPackage = fmap getData . readYaml . toPath
 
-updateDeps :: Config -> Libs -> Libs
-updateDeps config = fmap (fmap (mapYaml (updateLib config)))
+updateDeps :: Libs -> ConfigT Libs
+updateDeps = traverse (traverse (mapYamlM updateLib))
 
-updatePackage :: Config -> Package -> Package
-updatePackage config Package {..} =
-  Package
-    { version = getVersion config,
-      library = fmap (mapYaml (updateLib config)) library,
-      tests = updateDeps config tests,
-      executables = updateDeps config executables,
-      benchmarks = updateDeps config benchmarks,
-      dependencies = updateDependencies config dependencies,
-      ..
-    }
+updatePackage :: Package -> ConfigT Package
+updatePackage Package {..} = do
+  cfg <- asks config
+  newLibrary <- traverse (mapYamlM (updateLib)) library
+  newTests <- updateDeps tests
+  newExecutables <- updateDeps executables
+  newBenchmarks <- updateDeps benchmarks
+  newDependencies <- updateDependencies dependencies
+  pure
+    $ Package
+      { version = getVersion cfg,
+        library = newLibrary,
+        tests = newTests,
+        executables = newExecutables,
+        benchmarks = newBenchmarks,
+        dependencies = newDependencies,
+        ..
+      }
 
 checkPackage :: Name -> ConfigT ()
-checkPackage name = task name $ rewriteYaml (toPath name) (mapYamlM (withConfig updatePackage))
+checkPackage name = task name $ rewriteYaml (toPath name) (mapYamlM updatePackage)
 
 checkPackages :: ConfigT ()
 checkPackages =

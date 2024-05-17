@@ -32,6 +32,7 @@ import Data.Text
     strip,
   )
 import HConf.Config (Config (..), getRule)
+import HConf.ConfigT
 import HConf.Version (Version, VersionBounds (..))
 import HConf.Yaml (Yaml (..), aesonYAMLOptions)
 import Relude hiding
@@ -79,10 +80,10 @@ printRow sizes ls =
 formatDependencies :: Table -> Dependencies
 formatDependencies deps = map (printRow (getSizes deps)) deps
 
-updateDependencies :: Config -> Dependencies -> Dependencies
-updateDependencies config =
-  formatDependencies
-    . map (checkDependency config . filter (/= "") . split isSeparator)
+updateDependencies :: Dependencies -> ConfigT Dependencies
+updateDependencies =
+  fmap formatDependencies
+    . traverse (withConfig checkDependency . filter (/= "") . split isSeparator)
     . sort
 
 withRule :: Text -> VersionBounds -> Dependencies
@@ -102,13 +103,7 @@ checkDependency config@Config {name, bounds} (n : xs)
   | otherwise = getRule n config >>= withRule n
 checkDependency _ [] = []
 
-updateLib ::
-  Config ->
-  LibType ->
-  LibType
-updateLib config LibType {..} =
-  LibType
-    { dependencies =
-        fmap (updateDependencies config) dependencies,
-      ..
-    }
+updateLib :: LibType -> ConfigT LibType
+updateLib LibType {..} = do
+  newDependencies <- traverse updateDependencies dependencies
+  pure $ LibType {dependencies = newDependencies, ..}
