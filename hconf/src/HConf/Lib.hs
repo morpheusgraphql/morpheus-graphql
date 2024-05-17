@@ -101,8 +101,7 @@ parseDep = decode . trim . break isSeparator
       | otherwise = (name,) <$> parseBounds (trim (breakOn "&&" bounds))
 
     parseBounds :: (Text, Text) -> ConfigT VersionBounds
-    parseBounds (o : mi : ls) | isOperator o = parseMax ls >>= parseBoundsFrom mi
-    parseBounds _ = pure NoBounds
+    parseBounds (o, ls) | isOperator o = parseMax ls >>= parseBoundsFrom mi
 
     parseMax :: [Text] -> ConfigT (Maybe Text)
     parseMax (b : o : x : _) | b == "&&" && isUpperO o = pure (Just x)
