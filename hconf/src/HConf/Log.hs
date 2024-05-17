@@ -17,8 +17,8 @@ class Log m where
   log :: String -> m ()
   inside :: m a -> m a
 
-newLine :: String
-newLine = "\n"
+newLine :: (Log m) => m ()
+newLine = log ""
 
 colored :: Color -> String -> String
 colored c x = toColor c <> x <> toColor None
@@ -27,7 +27,7 @@ li :: (ToString a) => a -> String
 li e = "- " <> toString e <> ":"
 
 label :: (Log m, Monad m) => String -> m () -> m ()
-label name m = info (newLine <> li name) >> inside m
+label name m = newLine >> info (li name) >> inside m
 
 task :: (Log m, ToString a, Monad m) => a -> m () -> m ()
 task name m = log (colored Magenta (li name)) >> inside m

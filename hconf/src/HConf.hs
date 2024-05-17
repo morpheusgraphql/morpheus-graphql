@@ -19,10 +19,11 @@ import HConf.Yaml (open, save)
 import Prelude
 
 setup :: String -> Env -> IO ()
-setup ver = open $ do
-  info "setup:start"
-  parseVersion (pack ver) >>= setupStack
-  genHie
-  checkPackages
-  label "hconf" $ task ("hconf.yaml" :: String) save
-  info "\nsetup:end"
+setup ver =
+  open $
+    label "setup" $ do
+      parseVersion (pack ver) >>= setupStack
+      genHie
+      checkPackages
+      label "hconf" $ task ("hconf.yaml" :: String) save
+      info "\nok"
