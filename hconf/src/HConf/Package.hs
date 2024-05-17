@@ -79,5 +79,4 @@ checkPackage name = infoListEntry name >> flip rewriteYaml (mapYamlM (withConfig
 checkPackages :: ConfigT ()
 checkPackages = do
   label "packages"
-  names <- packages
-  traverse_ checkPackage names
+  packages >>= traverse_ checkPackage
