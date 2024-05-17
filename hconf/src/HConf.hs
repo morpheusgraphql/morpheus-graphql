@@ -25,5 +25,5 @@ setup ver =
       parseVersion (pack ver) >>= setupStack
       genHie
       checkPackages
-      label "hconf" $ task ("hconf.yaml" :: String) save
+      label "hconf" $ task "hconf.yaml" save
       info "\nok"

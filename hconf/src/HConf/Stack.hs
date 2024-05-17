@@ -45,7 +45,7 @@ instance ToJSON Stack where
   toJSON = genericToJSON aesonYAMLOptions
 
 setupStack :: Version -> ConfigT ()
-setupStack version = label "stack" $ task ("stack.yaml" :: String) $ do
+setupStack version = label "stack" $ task "stack.yaml" $ do
   p <- asks (stack . env)
   rewriteYaml p (updateStack version)
 

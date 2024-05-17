@@ -12,6 +12,7 @@ module HConf.Log
   )
 where
 
+import HConf.Utils (Name)
 import Relude
 
 class Log m where
@@ -30,7 +31,7 @@ li e = "- " <> toString e <> ":"
 label :: (Log m, Monad m) => String -> m () -> m ()
 label name m = newLine >> info (li name) >> inside m
 
-task :: (Log m, ToString a, Monad m) => a -> m () -> m ()
+task :: (Log m, Monad m) => Name -> m () -> m ()
 task name m = log (colored Magenta (li name)) >> inside m
 
 field :: (Log m) => String -> String -> m ()
