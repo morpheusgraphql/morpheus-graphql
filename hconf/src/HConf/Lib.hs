@@ -94,13 +94,17 @@ parseDep txt =
     decode (name : bounds) = Just . (name,) <$> parseBounds bounds
 
     parseBounds :: [Text] -> ConfigT VersionBounds
-    parseBounds (">" : mi : ls) = parseMax ls >>= parseBoundsFrom mi
-    parseBounds (">=" : mi : ls) = parseMax ls >>= parseBoundsFrom mi
+    parseBounds (o : mi : ls) | isOperator o = parseMax ls >>= parseBoundsFrom mi
     parseBounds _ = pure NoBounds
     parseMax :: [Text] -> ConfigT (Maybe Text)
-    parseMax ("&&" : "<=" : x : _) = pure (Just x)
-    parseMax ("&&" : "<" : x : _) = pure (Just x)
+    parseMax (b : o : x : _) | b == "&&" && isUpperO o = pure (Just x)
     parseMax _ = pure Nothing
+
+isOperator :: Text -> Bool
+isOperator = (`elem` [">", ">="])
+
+isUpperO :: Text -> Bool
+isUpperO = (`elem` ["<", "<="])
 
 updateDependencies :: TextDeps -> ConfigT TextDeps
 updateDependencies = fmap formatDependencies . traverse (parseDep >=> withConfig checkDependency) . sort
