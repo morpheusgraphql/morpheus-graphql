@@ -8,6 +8,7 @@ module HConf.Log
     logFileChange,
     Log (..),
     info,
+    field,
   )
 where
 

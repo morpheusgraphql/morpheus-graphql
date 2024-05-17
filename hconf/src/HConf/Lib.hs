@@ -33,6 +33,7 @@ import Data.Text
   )
 import HConf.Config (Config (..), getRule)
 import HConf.ConfigT
+import HConf.Log
 import HConf.Version (Version, VersionBounds (..))
 import HConf.Yaml (Yaml (..), aesonYAMLOptions)
 import Relude hiding
@@ -86,9 +87,15 @@ updateDependencies =
     . traverse (withConfig checkDependency . filter (/= "") . split isSeparator)
     . sort
 
+withRule1 :: Text -> VersionBounds -> ConfigT Dependencies
+withRule1 name NoBounds = pure [name]
+withRule1 name (VersionBounds mi ma) = pure $ printMin name mi <> printMax ma
+
 withRule :: [Text] -> Text -> VersionBounds -> ConfigT Dependencies
-withRule old name NoBounds = pure [name]
-withRule old name (VersionBounds mi ma) = pure $ printMin name mi <> printMax ma
+withRule old name bounds = do
+  deps <- withRule1 name bounds
+  if old /= deps then field (toString name) "changed" else pure ()
+  pure deps
 
 printMin :: Text -> Version -> Dependencies
 printMin name mi = [name, ">=", show mi]
