@@ -1,11 +1,9 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | GQL Types
@@ -49,7 +47,7 @@ data Components = Components
     )
 
 packHie :: Components -> Value
-packHie value = (object [("cradle", object [("stack", toJSON value)])])
+packHie value = object [("cradle", object [("stack", toJSON value)])]
 
 (<:>) :: (Semigroup a, IsString a) => a -> a -> a
 (<:>) name tag = name <> ":" <> tag

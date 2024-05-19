@@ -1,8 +1,4 @@
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -17,7 +13,7 @@ module HConf.Utils
 where
 
 import Data.Char (isUpper, toLower)
-import Data.List (findIndex)
+import Data.List (elemIndex)
 import Data.Text (toTitle)
 import HConf.Version (parseVersion)
 import Relude hiding (Undefined, intercalate)
@@ -64,7 +60,7 @@ fields =
     ]
 
 getIndex :: Text -> Maybe Int
-getIndex x = findIndex (== x) fields
+getIndex = (`elemIndex` fields)
 
 compareFieldNames :: Text -> Text -> Ordering
 compareFieldNames x y = case (getIndex x, getIndex y) of
@@ -86,7 +82,7 @@ toKebabCase = concatMap toKebab
   where
     toKebab
       x
-        | isUpper x = ['-', (toLower x)]
+        | isUpper x = ['-', toLower x]
         | otherwise = [x]
 
 tupled :: (Functor f) => (t -> f a) -> t -> f (t, a)

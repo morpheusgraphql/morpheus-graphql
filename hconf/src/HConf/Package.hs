@@ -1,11 +1,7 @@
-{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | GQL Types
@@ -65,7 +61,7 @@ updateDeps = traverse (traverse (mapYamlM updateLib))
 updatePackage :: Package -> ConfigT Package
 updatePackage Package {..} = do
   cfg <- asks config
-  newLibrary <- traverse (mapYamlM (updateLib)) library
+  newLibrary <- traverse (mapYamlM updateLib) library
   newTests <- updateDeps tests
   newExecutables <- updateDeps executables
   newBenchmarks <- updateDeps benchmarks
