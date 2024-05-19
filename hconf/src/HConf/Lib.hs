@@ -26,7 +26,7 @@ import HConf.Utils (Name)
 import HConf.Version
   ( Deps,
     VersionBounds (..),
-    printBounds,
+    diff,
     traverseDeps,
   )
 import HConf.Yaml (aesonYAMLOptions)
@@ -73,7 +73,7 @@ updateDependencies :: Deps -> ConfigT Deps
 updateDependencies = traverseDeps (curry (withConfig checkDependency))
 
 checkIfEq :: (Applicative f, Log f, ToString a) => a -> VersionBounds -> VersionBounds -> f ()
-checkIfEq name old deps = when (old /= deps) $ field (toString name) (printBounds old <> "  ->  " <> printBounds deps)
+checkIfEq name old deps = when (old /= deps) $ field (toString name) (diff old deps)
 
 withRule :: Text -> VersionBounds -> VersionBounds -> ConfigT VersionBounds
 withRule name old deps = checkIfEq name old deps $> deps

@@ -9,10 +9,8 @@ module HConf.Version
     parseVersion,
     VersionBounds (..),
     Deps,
-    parseDep,
-    printBoundParts,
-    printBounds,
-    unpackDeps,
+    diff,
+    getDep,
     traverseDeps,
   )
 where
@@ -24,6 +22,7 @@ import Data.Aeson
   )
 import Data.Char (isSeparator)
 import Data.Map (fromList, toList)
+import qualified Data.Map as M
 import Data.Map.Strict (traverseWithKey)
 import Data.Text
   ( break,
@@ -106,6 +105,9 @@ data VersionBounds
       Ord
     )
 
+diff :: VersionBounds -> VersionBounds -> String
+diff old deps = printBounds old <> "  ->  " <> printBounds deps
+
 trim :: (Text, Text) -> (Text, Text)
 trim = bimap strip strip
 
@@ -170,6 +172,9 @@ newtype Deps = Deps {unpackDeps :: Map Text VersionBounds}
 
 traverseDeps :: (Applicative f) => (Text -> VersionBounds -> f VersionBounds) -> Deps -> f Deps
 traverseDeps f (Deps xs) = Deps <$> traverseWithKey f xs
+
+getDep :: (MonadFail m) => Text -> Deps -> m VersionBounds
+getDep name = maybe (fail $ "Unknown package: " <> unpack name) pure . M.lookup name . unpackDeps
 
 parseDependencies :: (MonadFail m) => TextDeps -> m [(Text, VersionBounds)]
 parseDependencies = traverse parseDep . sort

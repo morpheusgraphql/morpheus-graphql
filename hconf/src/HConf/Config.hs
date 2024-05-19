@@ -28,14 +28,13 @@ import Data.Aeson.Types
   ( defaultOptions,
   )
 import qualified Data.Map as M
-import Data.Text (unpack)
 import HConf.Utils
 import HConf.Version
   ( Deps,
     Version,
     VersionBounds,
+    getDep,
     parseVersion,
-    unpackDeps,
   )
 import Relude hiding
   ( Undefined,
@@ -89,7 +88,7 @@ getVersion :: Config -> Version
 getVersion = version
 
 getRule :: (MonadFail m) => Text -> Config -> m VersionBounds
-getRule name = maybe (fail $ "Unknown package: " <> unpack name) pure . M.lookup name . unpackDeps . dependencies
+getRule name = getDep name . dependencies
 
 getPackages :: Config -> [Text]
 getPackages Config {..} = concatMap toPkg packages
