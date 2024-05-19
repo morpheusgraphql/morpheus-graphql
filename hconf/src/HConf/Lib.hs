@@ -88,8 +88,7 @@ updateDependencies :: TextDeps -> ConfigT TextDeps
 updateDependencies = fmap formatDependencies . traverse (parseDep >=> withConfig checkDependency) . sort
 
 withRule :: VersionBounds -> Text -> VersionBounds -> ConfigT TextDeps
-withRule old name bounds = do
-  let deps = bounds
+withRule old name deps = do
   when (old /= deps) $ field (toString name) (printBounds old <> "  ->  " <> printBounds deps)
   pure (name : printBoundParts deps)
 
