@@ -49,6 +49,8 @@ import Relude hiding
     null,
   )
 
+type TextDeps = [Text]
+
 data LibType = LibType
   { sourceDirs :: Text,
     dependencies :: Maybe TextDeps
