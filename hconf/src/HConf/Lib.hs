@@ -98,8 +98,8 @@ withRule old name bounds = do
 
 checkDependency :: Config -> (Name, VersionBounds) -> ConfigT TextDeps
 checkDependency config@Config {name, bounds} (n, dp)
-  | isPrefixOf name n && dp == NoBounds = pure [n]
-  | isPrefixOf name n = withRule dp n bounds
+  | name `isPrefixOf` n && dp == NoBounds = pure [n]
+  | name `isPrefixOf` n = withRule dp n bounds
   | otherwise = getRule n config >>= withRule dp n
 
 updateLib :: LibType -> ConfigT LibType
