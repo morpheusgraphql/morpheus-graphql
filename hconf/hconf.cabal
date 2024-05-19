@@ -31,6 +31,7 @@ library
       HConf.Config
       HConf.ConfigT
       HConf.Env
+      HConf.Format
       HConf.Hie
       HConf.Lib
       HConf.Log

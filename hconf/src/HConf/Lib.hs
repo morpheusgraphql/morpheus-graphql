@@ -29,6 +29,7 @@ import Data.Text
   )
 import HConf.Config (Config (..), getRule)
 import HConf.ConfigT
+import HConf.Format (formatTable)
 import HConf.Log
 import HConf.Utils (Name)
 import HConf.Version
@@ -48,10 +49,6 @@ import Relude hiding
     null,
   )
 
-type Table = [[Text]]
-
-type TextDeps = [Text]
-
 data LibType = LibType
   { sourceDirs :: Text,
     dependencies :: Maybe TextDeps
@@ -69,23 +66,8 @@ instance FromJSON LibType where
 instance ToJSON LibType where
   toJSON = genericToJSON aesonYAMLOptions
 
-getSizes :: Table -> [Int]
-getSizes xs = map size (transpose xs)
-  where
-    size :: [Text] -> Int
-    size = maximum . map length
-
-printRow :: [Int] -> TextDeps -> Text
-printRow sizes ls =
-  strip
-    $ intercalate "  "
-    $ zipWith (\item s -> justifyLeft s ' ' item) ls sizes
-
-formatDependencies :: Table -> TextDeps
-formatDependencies deps = map (printRow (getSizes deps)) deps
-
 updateDependencies :: TextDeps -> ConfigT TextDeps
-updateDependencies = fmap formatDependencies . traverse (parseDep >=> withConfig checkDependency) . sort
+updateDependencies = fmap formatTable . traverse (parseDep >=> withConfig checkDependency) . sort
 
 withRule :: VersionBounds -> Text -> VersionBounds -> ConfigT TextDeps
 withRule old name deps = do
