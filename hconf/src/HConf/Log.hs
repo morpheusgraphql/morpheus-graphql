@@ -43,9 +43,6 @@ logFileChange path changed = field "updated" $ colored (if changed then Gray els
 info :: (Log m) => String -> m ()
 info = log . colored Green
 
--- infoList :: (ToString a, Log m) => String -> [a] -> m ()
--- infoList l list = info (intercalate "\n -" (l : map toString list))
-
 warn :: (Log m) => String -> m ()
 warn = log . colored Yellow
 
