@@ -8,8 +8,6 @@ module HConf.Yaml
   ( readYaml,
     writeYaml,
     aesonYAMLOptions,
-    mapYaml,
-    mapYamlM,
     rewriteYaml,
     open,
     save,
@@ -82,9 +80,6 @@ toObject _ = mempty
 
 aesonYAMLOptions :: Options
 aesonYAMLOptions = defaultOptions {fieldLabelModifier = toKebabCase}
-
-mapYaml :: (t -> t) -> Yaml t -> Yaml t
-mapYaml f (Yaml v props) = Yaml (f v) props
 
 mapYamlM :: (Functor m) => (t -> m t) -> Yaml t -> m (Yaml t)
 mapYamlM f (Yaml v props) = (`Yaml` props) <$> f v

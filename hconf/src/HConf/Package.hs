@@ -21,7 +21,7 @@ import HConf.Lib (Lib, updateDependencies, updateLib)
 import HConf.Log (label, task)
 import HConf.Utils (Name, tupled)
 import HConf.Version (Deps, Version)
-import HConf.Yaml (aesonYAMLOptions, mapYamlM, readYaml, rewriteYaml)
+import HConf.Yaml (aesonYAMLOptions, readYaml, rewriteYaml)
 import Relude hiding (Undefined, length, replicate)
 
 type Libs = Maybe (KeyMap Lib)
@@ -78,7 +78,7 @@ updatePackage Package {..} = do
       }
 
 checkPackage :: Name -> ConfigT ()
-checkPackage name = task name $ rewriteYaml (toPath name) (mapYamlM updatePackage)
+checkPackage name = task name $ rewriteYaml (toPath name) updatePackage
 
 checkPackages :: ConfigT ()
 checkPackages =
