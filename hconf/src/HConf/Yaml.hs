@@ -1,5 +1,4 @@
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -65,7 +64,7 @@ checkAndWrite path newFile = do
 
 data Yaml t = Yaml
   { getData :: t,
-    rawValue :: (KeyMap Value)
+    rawValue :: KeyMap Value
   }
   deriving (Generic)
 
@@ -76,9 +75,7 @@ instance (FromJSON t) => FromJSON (Yaml t) where
   parseJSON v = Yaml <$> parseJSON v <*> parseJSON v
 
 instance (ToJSON t) => ToJSON (Yaml t) where
-  toJSON (Yaml t v) = do
-    let override = toObject (toJSON t)
-    (Object (override <> v))
+  toJSON (Yaml t v) = Object (toObject (toJSON t) <> v)
 
 toObject :: Value -> Object
 toObject (Object x) = x
