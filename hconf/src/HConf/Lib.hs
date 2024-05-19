@@ -15,6 +15,7 @@ where
 
 import Data.Aeson.KeyMap (delete)
 import Data.Aeson.Types
+import qualified Data.Map as M
 import Data.Text
   ( isPrefixOf,
   )
@@ -25,10 +26,12 @@ import HConf.Format (formatTable)
 import HConf.Log
 import HConf.Utils (Name)
 import HConf.Version
-  ( VersionBounds (..),
+  ( Deps,
+    VersionBounds (..),
     parseDep,
     printBoundParts,
     printBounds,
+    traverseDeps,
   )
 import HConf.Yaml (aesonYAMLOptions)
 import Relude hiding
@@ -45,7 +48,7 @@ type TextDeps = [Text]
 
 data Lib = Lib
   { sourceDirs :: Text,
-    dependencies :: Maybe TextDeps,
+    dependencies :: Maybe Deps,
     __unknownFields :: Maybe Object
   }
   deriving
@@ -72,19 +75,20 @@ toObject :: Value -> Object
 toObject (Object x) = delete "__unknown-fields" x
 toObject _ = mempty
 
-updateDependencies :: TextDeps -> ConfigT TextDeps
-updateDependencies = fmap formatTable . traverse (parseDep >=> withConfig checkDependency)
+updateDependencies :: Deps -> ConfigT Deps
+updateDependencies = traverseDeps (curry (withConfig checkDependency))
 
-withRule :: VersionBounds -> Text -> VersionBounds -> ConfigT TextDeps
-withRule old name deps = do
-  when (old /= deps) $ field (toString name) (printBounds old <> "  ->  " <> printBounds deps)
-  pure (name : printBoundParts deps)
+checkIfEq :: (Applicative f, Log f, ToString a) => a -> VersionBounds -> VersionBounds -> f ()
+checkIfEq name old deps = when (old /= deps) $ field (toString name) (printBounds old <> "  ->  " <> printBounds deps)
 
-checkDependency :: Config -> (Name, VersionBounds) -> ConfigT TextDeps
+withRule :: Text -> VersionBounds -> VersionBounds -> ConfigT VersionBounds
+withRule name old deps = checkIfEq name old deps $> deps
+
+checkDependency :: Config -> (Name, VersionBounds) -> ConfigT VersionBounds
 checkDependency config@Config {name, bounds} (n, dp)
-  | name `isPrefixOf` n && dp == NoBounds = pure [n]
-  | name `isPrefixOf` n = withRule dp n bounds
-  | otherwise = getRule n config >>= withRule dp n
+  | name `isPrefixOf` n && dp == NoBounds = pure NoBounds
+  | name `isPrefixOf` n = withRule n dp bounds
+  | otherwise = getRule n config >>= withRule n dp
 
 updateLib :: Lib -> ConfigT Lib
 updateLib Lib {..} = do

@@ -20,7 +20,7 @@ import HConf.ConfigT (ConfigT, HCEnv (config), packages)
 import HConf.Lib (Lib, updateDependencies, updateLib)
 import HConf.Log (label, task)
 import HConf.Utils (Name, tupled)
-import HConf.Version (Version)
+import HConf.Version (Deps, Version)
 import HConf.Yaml (Yaml (..), aesonYAMLOptions, mapYamlM, readYaml, rewriteYaml)
 import Relude hiding (Undefined, length, replicate)
 
@@ -30,7 +30,7 @@ data Package = Package
   { name :: Name,
     version :: Version,
     library :: Maybe Lib,
-    dependencies :: [Name],
+    dependencies :: Deps,
     tests :: Libs,
     executables :: Libs,
     benchmarks :: Libs

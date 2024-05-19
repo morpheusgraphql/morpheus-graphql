@@ -13,6 +13,7 @@ module HConf.Version
     printBoundParts,
     printBounds,
     unpackDeps,
+    traverseDeps,
   )
 where
 
@@ -23,6 +24,7 @@ import Data.Aeson
   )
 import Data.Char (isSeparator)
 import Data.Map (fromList, toList)
+import Data.Map.Strict (traverseWithKey)
 import Data.Text
   ( break,
     breakOn,
@@ -165,6 +167,9 @@ type TextDeps = [Text]
 
 newtype Deps = Deps {unpackDeps :: Map Text VersionBounds}
   deriving (Show)
+
+traverseDeps :: (Applicative f) => (Text -> VersionBounds -> f VersionBounds) -> Deps -> f Deps
+traverseDeps f (Deps xs) = Deps <$> traverseWithKey f xs
 
 parseDependencies :: (MonadFail m) => TextDeps -> m [(Text, VersionBounds)]
 parseDependencies = traverse parseDep . sort
