@@ -1,8 +1,5 @@
-{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -37,6 +34,7 @@ import Data.Text
     unpack,
   )
 import GHC.Show (Show (show))
+import HConf.Format (formatTable)
 import Relude hiding
   ( Undefined,
     break,
@@ -70,7 +68,7 @@ instance ToText Version where
 instance FromJSON Version where
   parseJSON (String s) = parseVersion s
   parseJSON (Number n) = parseVersion $ pack $ show n
-  parseJSON v = fail $ "version should be either true or string" <> (show v)
+  parseJSON v = fail $ "version should be either true or string" <> show v
 
 instance ToJSON Version where
   toJSON = String . pack . show
@@ -94,7 +92,7 @@ parseVersion s =
     (fail "invalid version")
     (pure . Version)
     $ traverse (readMaybe . unpack)
-    $ (split (== '.') s)
+    $ split (== '.') s
 
 data VersionBounds
   = VersionBounds Version (Maybe Version)
@@ -118,7 +116,7 @@ parseVersionTuple (mi, ma) = do
     >>= uncurry parseBoundsFrom
 
 breakAtAnd :: Text -> (Text, Text)
-breakAtAnd = trim . second (drop 2) . (breakOn "&&")
+breakAtAnd = trim . second (drop 2) . breakOn "&&"
 
 parseDep :: (MonadFail m) => Text -> m (Text, VersionBounds)
 parseDep = (\(name, bounds) -> (name,) <$> parseVersionBounds bounds) . breakOnSPace
@@ -143,7 +141,7 @@ isUpperConstraint :: Text -> Bool
 isUpperConstraint = (`elem` ["<", "<="])
 
 parseBoundsFrom :: (MonadFail m) => Text -> Maybe Text -> m VersionBounds
-parseBoundsFrom minV maxV = VersionBounds <$> (parseVersion minV) <*> (traverse parseVersion maxV)
+parseBoundsFrom minV maxV = VersionBounds <$> parseVersion minV <*> traverse parseVersion maxV
 
 printBoundParts :: VersionBounds -> [Text]
 printBoundParts NoBounds = []
@@ -155,8 +153,8 @@ printBounds = intercalate "  " . map toString . printBoundParts
 instance FromJSON VersionBounds where
   parseJSON (Bool True) = pure NoBounds
   parseJSON (String s) = parseVersionBounds s
-  parseJSON (Number n) = flip VersionBounds Nothing <$> (parseVersion $ pack $ show n)
-  parseJSON v = fail $ "version should be either true or string" <> (show v)
+  parseJSON (Number n) = flip VersionBounds Nothing <$> parseVersion (pack $ show n)
+  parseJSON v = fail $ "version should be either true or string" <> show v
 
 instance ToJSON VersionBounds where
   toJSON b
@@ -165,7 +163,7 @@ instance ToJSON VersionBounds where
 
 type TextDeps = [Text]
 
-newtype Deps = Deps {unpackDeps :: (Map Text VersionBounds)}
+newtype Deps = Deps {unpackDeps :: Map Text VersionBounds}
   deriving (Show)
 
 parseDependencies :: (MonadFail m) => TextDeps -> m [(Text, VersionBounds)]
@@ -175,4 +173,4 @@ instance FromJSON Deps where
   parseJSON v = Deps . fromList <$> (parseJSON v >>= parseDependencies)
 
 instance ToJSON Deps where
-  toJSON (Deps m) = toJSON $ map (\(name, b) -> strip $ pack (toString name <> " " <> printBounds b)) (toList m)
+  toJSON (Deps m) = toJSON $ formatTable $ map (\(name, b) -> name : printBoundParts b) (toList m)

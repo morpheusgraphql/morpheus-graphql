@@ -19,13 +19,8 @@ import Data.Aeson
     genericParseJSON,
     genericToJSON,
   )
-import Data.List (maximum)
 import Data.Text
-  ( intercalate,
-    isPrefixOf,
-    justifyLeft,
-    length,
-    strip,
+  ( isPrefixOf,
   )
 import HConf.Config (Config (..), getRule)
 import HConf.ConfigT
