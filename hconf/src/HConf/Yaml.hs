@@ -16,7 +16,14 @@ where
 
 import Control.Monad.Error.Class (MonadError (catchError))
 import Control.Monad.IO.Unlift (MonadUnliftIO (withRunInIO))
-import Data.Aeson (FromJSON (parseJSON), Object, Options (..), ToJSON (toJSON), Value (..), defaultOptions)
+import Data.Aeson
+  ( FromJSON (..),
+    Object,
+    Options (..),
+    ToJSON (..),
+    Value (..),
+    defaultOptions,
+  )
 import Data.Aeson.KeyMap
 import qualified Data.ByteString as L
   ( readFile,
