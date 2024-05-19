@@ -56,12 +56,12 @@ getPackage :: Name -> ConfigT Package
 getPackage = fmap getData . readYaml . toPath
 
 updateDeps :: Libs -> ConfigT Libs
-updateDeps = traverse (traverse (mapYamlM updateLib))
+updateDeps = traverse (traverse updateLib)
 
 updatePackage :: Package -> ConfigT Package
 updatePackage Package {..} = do
   cfg <- asks config
-  newLibrary <- traverse (mapYamlM updateLib) library
+  newLibrary <- traverse updateLib library
   newTests <- updateDeps tests
   newExecutables <- updateDeps executables
   newBenchmarks <- updateDeps benchmarks

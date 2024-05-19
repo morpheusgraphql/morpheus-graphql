@@ -18,10 +18,10 @@ import Data.Aeson.KeyMap (KeyMap)
 import qualified Data.Aeson.KeyMap as KM
 import HConf.ConfigT (ConfigT, HCEnv (..))
 import HConf.Env (Env (..))
-import HConf.Lib (Lib, LibType (..))
+import HConf.Lib (Lib (..))
 import HConf.Log (label, task)
 import HConf.Package (Package (..), resolvePackages)
-import HConf.Yaml (Yaml (..), writeYaml)
+import HConf.Yaml (writeYaml)
 import Relude hiding (Undefined, intercalate)
 
 data Component = Component
@@ -64,7 +64,7 @@ toLib (path, Package {..}) =
       where
         mkComp (k, lib) = comp (tag <:> K.toText k) (Just lib)
     comp :: Text -> Maybe Lib -> [Component]
-    comp tag (Just (Yaml LibType {sourceDirs} _)) =
+    comp tag (Just (Lib {sourceDirs})) =
       [ Component
           { path = "./" <> path <> "/" <> sourceDirs,
             component = name <:> tag
