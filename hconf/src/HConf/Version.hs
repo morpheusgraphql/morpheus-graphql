@@ -6,9 +6,9 @@
 -- | GQL Types
 module HConf.Version
   ( Version (..),
-    parseVersion,
     VersionBounds (..),
     Deps,
+    parseVersion,
     diff,
     getDep,
     traverseDeps,
