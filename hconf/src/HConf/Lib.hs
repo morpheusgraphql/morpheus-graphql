@@ -8,6 +8,7 @@
 
 module HConf.Lib
   ( Lib (..),
+    updateDependencies,
     updateLib,
   )
 where
@@ -68,6 +69,9 @@ toObject :: Value -> Object
 toObject (Object x) = delete "__unknown-fields" x
 toObject _ = mempty
 
+updateDependencies :: Deps -> ConfigT Deps
+updateDependencies = traverseDeps (curry (withConfig checkDependency))
+
 checkIfEq :: (Applicative f, Log f, ToString a) => a -> VersionBounds -> VersionBounds -> f ()
 checkIfEq name old deps = when (old /= deps) $ field (toString name) (diff old deps)
 
@@ -75,12 +79,12 @@ withRule :: Text -> VersionBounds -> VersionBounds -> ConfigT VersionBounds
 withRule name old deps = checkIfEq name old deps $> deps
 
 checkDependency :: Config -> (Name, VersionBounds) -> ConfigT VersionBounds
-checkDependency config@Config {name, bounds} (n, old)
-  | name `isPrefixOf` n && old == NoBounds = pure NoBounds
-  | name `isPrefixOf` n = withRule n old bounds
-  | otherwise = getRule n config >>= withRule n old
+checkDependency config@Config {name, bounds} (n, dp)
+  | name `isPrefixOf` n && dp == NoBounds = pure NoBounds
+  | name `isPrefixOf` n = withRule n dp bounds
+  | otherwise = getRule n config >>= withRule n dp
 
 updateLib :: Lib -> ConfigT Lib
 updateLib Lib {..} = do
-  newDependencies <- traverse (traverseDeps (curry (withConfig checkDependency))) dependencies
+  newDependencies <- traverse updateDependencies dependencies
   pure $ Lib {dependencies = newDependencies, ..}
