@@ -15,21 +15,17 @@ where
 
 import Data.Aeson.KeyMap (delete)
 import Data.Aeson.Types
-import qualified Data.Map as M
 import Data.Text
   ( isPrefixOf,
   )
 import GHC.Generics
 import HConf.Config (Config (..), getRule)
 import HConf.ConfigT
-import HConf.Format (formatTable)
 import HConf.Log
 import HConf.Utils (Name)
 import HConf.Version
   ( Deps,
     VersionBounds (..),
-    parseDep,
-    printBoundParts,
     printBounds,
     traverseDeps,
   )
@@ -43,8 +39,6 @@ import Relude hiding
     length,
     null,
   )
-
-type TextDeps = [Text]
 
 data Lib = Lib
   { sourceDirs :: Text,
