@@ -82,9 +82,7 @@ printRow :: [Int] -> TextDeps -> Text
 printRow sizes ls =
   strip
     $ intercalate "  "
-    $ map
-      (\(item, s) -> justifyLeft s ' ' item)
-      (zip ls sizes)
+    $ zipWith (\item s -> justifyLeft s ' ' item) ls sizes
 
 formatDependencies :: Table -> TextDeps
 formatDependencies deps = map (printRow (getSizes deps)) deps
@@ -95,7 +93,7 @@ updateDependencies = fmap formatDependencies . traverse (parseDep >=> withConfig
 withRule :: VersionBounds -> Text -> VersionBounds -> ConfigT TextDeps
 withRule old name bounds = do
   let deps = bounds
-  if old /= deps then field (toString name) (printBounds old <> "  ->  " <> printBounds deps) else pure ()
+  when (old /= deps) $ field (toString name) (printBounds old <> "  ->  " <> printBounds deps)
   pure (name : printBoundParts deps)
 
 checkDependency :: Config -> (Name, VersionBounds) -> ConfigT TextDeps
