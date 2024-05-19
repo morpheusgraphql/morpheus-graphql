@@ -78,10 +78,10 @@ withRule name old deps =
     $> deps
 
 checkDependency :: Config -> (Name, VersionBounds) -> ConfigT VersionBounds
-checkDependency config@Config {name, bounds} (n, old)
-  | name `isPrefixOf` n && old == NoBounds = pure NoBounds
-  | name `isPrefixOf` n = withRule n old bounds
-  | otherwise = getRule n config >>= withRule n old
+checkDependency config@Config {name, bounds} (depName, old)
+  | name `isPrefixOf` depName && old == NoBounds = pure NoBounds
+  | name `isPrefixOf` depName = withRule depName old bounds
+  | otherwise = getRule depName config >>= withRule depName old
 
 updateLib :: Lib -> ConfigT Lib
 updateLib Lib {..} = do
