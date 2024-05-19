@@ -72,11 +72,10 @@ toObject _ = mempty
 updateDependencies :: Deps -> ConfigT Deps
 updateDependencies = traverseDeps (curry (withConfig checkDependency))
 
-checkIfEq :: (Applicative f, Log f, ToString a) => a -> VersionBounds -> VersionBounds -> f ()
-checkIfEq name old deps = when (old /= deps) $ field (toString name) (diff old deps)
-
 withRule :: Text -> VersionBounds -> VersionBounds -> ConfigT VersionBounds
-withRule name old deps = checkIfEq name old deps $> deps
+withRule name old deps =
+  when (old /= deps) (field (toString name) (diff old deps))
+    $> deps
 
 checkDependency :: Config -> (Name, VersionBounds) -> ConfigT VersionBounds
 checkDependency config@Config {name, bounds} (n, dp)
