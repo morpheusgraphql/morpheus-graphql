@@ -22,4 +22,4 @@ printRow sizes ls =
     $ zipWith (\item s -> T.justifyLeft s ' ' item) ls sizes
 
 formatTable :: Table -> [Text]
-formatTable deps = map (printRow (getSizes deps)) deps
+formatTable deps = sort $ map (printRow (getSizes deps)) deps

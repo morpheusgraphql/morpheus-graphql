@@ -64,7 +64,7 @@ instance ToJSON LibType where
   toJSON = genericToJSON aesonYAMLOptions
 
 updateDependencies :: TextDeps -> ConfigT TextDeps
-updateDependencies = fmap formatTable . traverse (parseDep >=> withConfig checkDependency) . sort
+updateDependencies = fmap formatTable . traverse (parseDep >=> withConfig checkDependency)
 
 withRule :: VersionBounds -> Text -> VersionBounds -> ConfigT TextDeps
 withRule old name deps = do
