@@ -16,7 +16,6 @@ module HConf.ConfigT
 where
 
 import Control.Exception (tryJust)
-import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Data.Kind
 import HConf.Config (Config, getPackages, getVersion)
 import HConf.Env (Env)
@@ -39,7 +38,6 @@ newtype ConfigT (a :: Type)
       Monad,
       MonadReader HCEnv,
       MonadIO,
-      MonadUnliftIO,
       MonadFail
     )
 

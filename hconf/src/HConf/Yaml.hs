@@ -11,11 +11,11 @@ module HConf.Yaml
     rewriteYaml,
     open,
     save,
+    IOAction (..),
   )
 where
 
-import Control.Monad.Error.Class (MonadError (catchError))
-import Control.Monad.IO.Unlift (MonadUnliftIO (withRunInIO))
+import Control.Exception (tryJust)
 import Data.Aeson
   ( FromJSON (..),
     Object,
@@ -61,13 +61,13 @@ readYaml :: (FromJSON a) => FilePath -> ConfigT a
 readYaml = liftIO . (L.readFile >=> parseYaml)
 
 writeYaml :: (ToJSON a) => FilePath -> a -> ConfigT ()
-writeYaml path v = withRunInIO (const $ checkAndWrite path $ serializeYaml v) >>= logFileChange path
+writeYaml path v = checkAndWrite path (serializeYaml v) >>= logFileChange path
 
-checkAndWrite :: FilePath -> ByteString -> IO Bool
+checkAndWrite :: (IOAction m) => FilePath -> ByteString -> m Bool
 checkAndWrite path newFile = do
-  file <- catchError (L.readFile path) (const $ pure "")
-  L.writeFile path newFile
-  return (file == newFile)
+  file <- eitherRead path
+  write path newFile
+  return (fromRight "" file == newFile)
 
 data Yaml t = Yaml
   { getData :: t,
@@ -99,3 +99,21 @@ rewriteYaml path f = do
   readYaml path
     >>= mapYamlM f
     >>= writeYaml path
+
+class (Monad m) => IOAction m where
+  eitherRead :: FilePath -> m (Either String ByteString)
+  read :: FilePath -> m ByteString
+  write :: FilePath -> ByteString -> m ()
+
+printException :: SomeException -> String
+printException = show
+
+instance IOAction IO where
+  eitherRead path = tryJust (Just . printException) (L.readFile path)
+  read = L.readFile
+  write = L.writeFile
+
+instance IOAction ConfigT where
+  eitherRead = liftIO . eitherRead
+  read = liftIO . read
+  write f = liftIO . write f
