@@ -9,8 +9,7 @@ module HConf.Yaml
     writeYaml,
     aesonYAMLOptions,
     rewriteYaml,
-    open,
-    save,
+    run,
     IOAction (..),
   )
 where
@@ -44,10 +43,10 @@ parseYaml = decodeThrow
 serializeYaml :: (ToJSON a) => a -> ByteString
 serializeYaml = encodePretty (setConfDropNull True $ setConfCompare compareFields defConfig)
 
-open :: ConfigT () -> Env -> IO ()
-open t env@Env {..} = do
+run :: String -> ConfigT () -> Env -> IO ()
+run name t env@Env {..} = do
   cfg <- L.readFile hconf >>= parseYaml
-  res <- runConfigT t env cfg
+  res <- runConfigT (label name t >> save) env cfg
   case res of
     Left x -> alert ("ERROR: " <> x)
     Right _ -> info "OK"
