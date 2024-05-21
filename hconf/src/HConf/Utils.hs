@@ -15,7 +15,7 @@ where
 import Data.Char (isUpper, toLower)
 import Data.List (elemIndex)
 import Data.Text (toTitle)
-import HConf.Version (parseVersion)
+import HConf.Version (Version, parse)
 import Relude hiding (Undefined, intercalate)
 
 type Name = Text
@@ -62,17 +62,25 @@ fields =
 getIndex :: Text -> Maybe Int
 getIndex = (`elemIndex` fields)
 
-compareFieldNames :: Text -> Text -> Ordering
-compareFieldNames x y = case (getIndex x, getIndex y) of
-  (Nothing, Nothing) -> case (parseVersion x, parseVersion y) of
+type TupleRes a = (Text, Text) -> (a, a)
+
+mapTuple :: (Text -> a) -> TupleRes a
+mapTuple f = bimap f f
+
+parseVersions :: TupleRes (Maybe Version)
+parseVersions = mapTuple parse
+
+compareFieldNames :: (Text, Text) -> Ordering
+compareFieldNames t = case mapTuple getIndex t of
+  (Nothing, Nothing) -> case parseVersions t of
     (Just v1, Just v2) -> compare v1 v2
-    _ -> compare x y
+    _ -> uncurry compare t
   (Nothing, _) -> GT
   (_, Nothing) -> LT
   (i1, i2) -> compare i1 i2
 
 compareFields :: Text -> Text -> Ordering
-compareFields x y = compareFieldNames (toTitle x) (toTitle y)
+compareFields x y = compareFieldNames $ mapTuple toTitle (x, y)
 
 maybeList :: Maybe [a] -> [a]
 maybeList = fromMaybe []
