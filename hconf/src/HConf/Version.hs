@@ -8,7 +8,6 @@ module HConf.Version
   ( Version (..),
     Bounds (..),
     Deps,
-    parseVersion,
     diff,
     getDep,
     traverseDeps,
@@ -51,7 +50,7 @@ import Relude hiding
   )
 
 class Parse a where
-  parse :: (ToString t, MonadFail m) => t -> m a
+  parse :: (ToString t, IsString t, Eq t, MonadFail m) => t -> m a
 
 data Version
   = Version [Int]
@@ -62,7 +61,15 @@ data Version
     )
 
 instance Parse Version where
-  parse = parseVersion . pack . toString
+  parse "latest" = pure LatestVersion
+  parse s =
+    maybe
+      (fail "invalid version")
+      (pure . Version)
+      $ traverse (readMaybe . unpack)
+      $ split (== '.')
+      $ pack
+      $ toString s
 
 instance ToString Version where
   toString (Version ns) = intercalate "." $ map show ns
@@ -75,8 +82,8 @@ instance ToText Version where
   toText = pack . toString
 
 instance FromJSON Version where
-  parseJSON (String s) = parseVersion s
-  parseJSON (Number n) = parseVersion $ pack $ show n
+  parseJSON (String s) = parse s
+  parseJSON (Number n) = parse (show n)
   parseJSON v = fail $ "version should be either true or string" <> show v
 
 instance ToJSON Version where
@@ -107,15 +114,6 @@ instance Ord Version where
       compareSeries (x : xs) (y : ys)
         | x == y = compareSeries xs ys
         | otherwise = compare x y
-
-parseVersion :: (MonadFail m) => Text -> m Version
-parseVersion "latest" = pure LatestVersion
-parseVersion s =
-  maybe
-    (fail "invalid version")
-    (pure . Version)
-    $ traverse (readMaybe . unpack)
-    $ split (== '.') s
 
 data Bounds
   = Bounds Version (Maybe Version)
@@ -171,7 +169,7 @@ isUpperConstraint :: BoundType -> Bool
 isUpperConstraint = (`elem` [Greater, GreaterOrEq])
 
 parseBoundsFrom :: (MonadFail m) => Text -> Maybe Text -> m Bounds
-parseBoundsFrom minV maxV = Bounds <$> parseVersion minV <*> traverse parseVersion maxV
+parseBoundsFrom minV maxV = Bounds <$> parse minV <*> traverse parse maxV
 
 printBoundParts :: Bounds -> [Text]
 printBoundParts NoBounds = []
@@ -183,7 +181,7 @@ printBounds = intercalate "  " . map toString . printBoundParts
 instance FromJSON Bounds where
   parseJSON (Bool True) = pure NoBounds
   parseJSON (String s) = parseVersionBounds s
-  parseJSON (Number n) = flip Bounds Nothing <$> parseVersion (pack $ show n)
+  parseJSON (Number n) = flip Bounds Nothing <$> parse (pack $ show n)
   parseJSON v = fail $ "version should be either true or string" <> show v
 
 instance ToJSON Bounds where
