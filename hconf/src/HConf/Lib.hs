@@ -57,7 +57,7 @@ instance ToJSON Lib where
   toJSON = extendedToObject __unknownFields
 
 extendedToObject :: (Generic a, GToJSON' Value Zero (Rep a)) => (a -> Maybe Object) -> a -> Value
-extendedToObject f t = Object (fromMaybe mempty (f t) <> toObject (genericToJSON aesonYAMLOptions t))
+extendedToObject f t = Object (toObject (genericToJSON aesonYAMLOptions t) <> fromMaybe mempty (f t))
 
 fromObject :: (Generic a, GFromJSON Zero (Rep a)) => (a -> Maybe Object -> a) -> Value -> Parser a
 fromObject f v = do
