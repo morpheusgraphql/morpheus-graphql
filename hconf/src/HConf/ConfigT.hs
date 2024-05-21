@@ -15,6 +15,7 @@ module HConf.ConfigT
   )
 where
 
+import Control.Exception (tryJust)
 import Control.Monad.IO.Unlift (MonadUnliftIO)
 import Data.Kind
 import HConf.Config (Config, getPackages, getVersion)
@@ -42,8 +43,11 @@ newtype ConfigT (a :: Type)
       MonadFail
     )
 
-runConfigT :: ConfigT a -> Env -> Config -> IO a
-runConfigT (ConfigT (ReaderT f)) env config = f HCEnv {indention = 0, ..}
+printException :: SomeException -> String
+printException = show
+
+runConfigT :: ConfigT a -> Env -> Config -> IO (Either String a)
+runConfigT (ConfigT (ReaderT f)) env config = tryJust (Just . printException) (f HCEnv {indention = 0, ..})
 
 packages :: ConfigT [Name]
 packages = getPackages <$> asks config

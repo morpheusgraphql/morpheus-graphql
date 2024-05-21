@@ -10,7 +10,7 @@ where
 import Data.Text
 import HConf.Env (Env (..))
 import HConf.Hie (genHie)
-import HConf.Log (info, label)
+import HConf.Log (label)
 import HConf.Package (checkPackages)
 import HConf.Stack (setupStack)
 import HConf.Version (parseVersion)
@@ -25,4 +25,3 @@ setup ver =
       genHie
       checkPackages
       save
-    info "ok"

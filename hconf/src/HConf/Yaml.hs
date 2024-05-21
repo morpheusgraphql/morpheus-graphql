@@ -33,7 +33,7 @@ import Data.Yaml (decodeThrow)
 import Data.Yaml.Pretty (defConfig, encodePretty, setConfCompare, setConfDropNull)
 import HConf.ConfigT (ConfigT (..), HCEnv (..), runConfigT)
 import HConf.Env (Env (..))
-import HConf.Log (label, logFileChange, task)
+import HConf.Log (alert, info, label, logFileChange, task)
 import HConf.Utils (compareFields, toKebabCase)
 import Relude hiding (Show, Undefined, intercalate, show)
 import Prelude (Show (..))
@@ -47,7 +47,10 @@ serializeYaml = encodePretty (setConfDropNull True $ setConfCompare compareField
 open :: ConfigT () -> Env -> IO ()
 open t env@Env {..} = do
   cfg <- L.readFile hconf >>= parseYaml
-  runConfigT t env cfg
+  res <- runConfigT t env cfg
+  case res of
+    Left x -> alert x
+    Right _ -> info "OK"
 
 save :: ConfigT ()
 save = label "hconf" $ task "hconf.yaml" $ do

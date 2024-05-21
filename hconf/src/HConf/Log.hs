@@ -19,6 +19,10 @@ class Log m where
   log :: String -> m ()
   inside :: m a -> m a
 
+instance Log IO where
+  log = putStrLn
+  inside = id
+
 newLine :: (Log m) => m ()
 newLine = log ""
 
