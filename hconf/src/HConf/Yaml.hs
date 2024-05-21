@@ -49,7 +49,7 @@ open t env@Env {..} = do
   cfg <- L.readFile hconf >>= parseYaml
   res <- runConfigT t env cfg
   case res of
-    Left x -> alert x
+    Left x -> alert ("ERROR: " <> x)
     Right _ -> info "OK"
 
 save :: ConfigT ()
