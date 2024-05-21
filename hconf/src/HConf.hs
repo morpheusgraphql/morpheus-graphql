@@ -19,10 +19,10 @@ import Prelude
 
 setup :: String -> Env -> IO ()
 setup ver =
-  open $
+  open $ do
     label "setup" $ do
       parseVersion (pack ver) >>= setupStack
       genHie
       checkPackages
       label "hconf" $ task "hconf.yaml" save
-      info "\nok"
+    info "ok"

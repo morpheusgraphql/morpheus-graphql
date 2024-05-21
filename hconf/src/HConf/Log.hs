@@ -29,7 +29,7 @@ li :: (ToString a) => a -> String
 li e = "- " <> toString e <> ":"
 
 label :: (Log m, Monad m) => String -> m () -> m ()
-label name m = newLine >> info (li name) >> inside m
+label name m = info (li name) >> newLine >> inside m >> newLine
 
 task :: (Log m, Monad m) => Name -> m () -> m ()
 task name m = log (colored Magenta (li name)) >> inside m
