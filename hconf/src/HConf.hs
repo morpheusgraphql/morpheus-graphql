@@ -7,18 +7,16 @@ module HConf
   )
 where
 
-import Data.Text
 import HConf.Env (Env (..))
 import HConf.Hie (genHie)
 import HConf.Package (checkPackages)
 import HConf.Stack (setupStack)
-import HConf.Version (parseVersion)
+import HConf.Version (Parse (..))
 import HConf.Yaml (run)
 import Prelude
 
 setup :: String -> Env -> IO ()
-setup ver =
-  run "setup" $ do
-    parseVersion (pack ver) >>= setupStack
-    genHie
-    checkPackages
+setup version = run "setup" $ do
+  parse version >>= setupStack
+  genHie
+  checkPackages

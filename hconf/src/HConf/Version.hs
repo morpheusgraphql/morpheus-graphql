@@ -12,6 +12,7 @@ module HConf.Version
     diff,
     getDep,
     traverseDeps,
+    Parse (..),
   )
 where
 
@@ -48,6 +49,9 @@ import Relude hiding
     toList,
   )
 
+class Parse a where
+  parse :: (ToString t, MonadFail m) => t -> m a
+
 data Version
   = Version [Int]
   | LatestVersion
@@ -55,6 +59,9 @@ data Version
     ( Generic,
       Eq
     )
+
+instance Parse Version where
+  parse = parseVersion . pack . toString
 
 instance ToString Version where
   toString (Version ns) = intercalate "." $ map show ns
