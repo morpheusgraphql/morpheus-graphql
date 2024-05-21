@@ -82,6 +82,20 @@ instance FromJSON Version where
 instance ToJSON Version where
   toJSON = String . pack . show
 
+data BoundType
+  = Greater
+  | Lower
+  | GreaterOrEq
+  | LowerOrEq
+  deriving (Show, Eq, Ord)
+
+parseBound :: (MonadFail f) => Text -> f BoundType
+parseBound "<" = pure Greater
+parseBound "<=" = pure GreaterOrEq
+parseBound ">" = pure Lower
+parseBound ">=" = pure LowerOrEq
+parseBound x = fail ("unsorted bound type" <> toString x)
+
 instance Ord Version where
   compare LatestVersion LatestVersion = EQ
   compare LatestVersion (Version _) = GT
@@ -122,9 +136,12 @@ trim = bimap strip strip
 breakOnSPace :: Text -> (Text, Text)
 breakOnSPace = trim . break isSeparator
 
+parseBoundTuple :: (MonadFail m) => Text -> m (BoundType, Text)
+parseBoundTuple = (\(x, y) -> fmap (,y) (parseBound x)) . breakOnSPace
+
 parseVersionTuple :: (MonadFail m) => (Text, Text) -> m VersionBounds
 parseVersionTuple (mi, ma) = do
-  ((,) <$> parseMin (breakOnSPace mi) <*> parseMax (breakOnSPace ma))
+  ((,) <$> (parseBoundTuple mi >>= parseMin) <*> (parseBoundTuple ma >>= parseMax))
     >>= uncurry parseBoundsFrom
 
 breakAtAnd :: Text -> (Text, Text)
@@ -138,19 +155,19 @@ parseVersionBounds bounds
   | null bounds = pure NoBounds
   | otherwise = parseVersionTuple (breakAtAnd bounds)
 
-parseMax :: (MonadFail m) => (Text, Text) -> m (Maybe Text)
+parseMax :: (MonadFail m) => (BoundType, Text) -> m (Maybe Text)
 parseMax (o, value) | isUpperConstraint o = pure (Just value)
 parseMax _ = pure Nothing
 
-parseMin :: (MonadFail m) => (Text, Text) -> m Text
+parseMin :: (MonadFail m) => (BoundType, Text) -> m Text
 parseMin (o, value) | isLowerConstraint o = pure value
 parseMin (o, v) = fail ("invalid" <> show (o, v))
 
-isLowerConstraint :: Text -> Bool
-isLowerConstraint = (`elem` [">", ">="])
+isLowerConstraint :: BoundType -> Bool
+isLowerConstraint = (`elem` [Greater, GreaterOrEq])
 
-isUpperConstraint :: Text -> Bool
-isUpperConstraint = (`elem` ["<", "<="])
+isUpperConstraint :: BoundType -> Bool
+isUpperConstraint = (`elem` [Lower, LowerOrEq])
 
 parseBoundsFrom :: (MonadFail m) => Text -> Maybe Text -> m VersionBounds
 parseBoundsFrom minV maxV = VersionBounds <$> parseVersion minV <*> traverse parseVersion maxV
