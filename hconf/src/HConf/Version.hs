@@ -164,10 +164,10 @@ parseMin (o, value) | isLowerConstraint o = pure value
 parseMin (o, v) = fail ("invalid" <> show (o, v))
 
 isLowerConstraint :: BoundType -> Bool
-isLowerConstraint = (`elem` [Greater, GreaterOrEq])
+isLowerConstraint = (`elem` [Lower, LowerOrEq])
 
 isUpperConstraint :: BoundType -> Bool
-isUpperConstraint = (`elem` [Lower, LowerOrEq])
+isUpperConstraint = (`elem` [Greater, GreaterOrEq])
 
 parseBoundsFrom :: (MonadFail m) => Text -> Maybe Text -> m VersionBounds
 parseBoundsFrom minV maxV = VersionBounds <$> parseVersion minV <*> traverse parseVersion maxV
