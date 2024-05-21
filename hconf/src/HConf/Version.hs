@@ -136,12 +136,12 @@ trim = bimap strip strip
 breakOnSPace :: Text -> (Text, Text)
 breakOnSPace = trim . break isSeparator
 
-parseBoundTuple :: (MonadFail m) => Text -> m (BoundType, Text)
-parseBoundTuple = (\(x, y) -> fmap (,y) (parseBound x)) . breakOnSPace
+parseBoundTuple :: (MonadFail m) => Text -> (m BoundType, Text)
+parseBoundTuple = first parseBound . breakOnSPace
 
 parseVersionTuple :: (MonadFail m) => (Text, Text) -> m VersionBounds
 parseVersionTuple (mi, ma) = do
-  ((,) <$> (parseBoundTuple mi >>= parseMin) <*> (parseBoundTuple ma >>= parseMax))
+  ((,) <$> parseMin (parseBoundTuple mi) <*> parseMax (parseBoundTuple ma))
     >>= uncurry parseBoundsFrom
 
 breakAtAnd :: Text -> (Text, Text)
@@ -155,12 +155,13 @@ parseVersionBounds bounds
   | null bounds = pure NoBounds
   | otherwise = parseVersionTuple (breakAtAnd bounds)
 
-parseMax :: (MonadFail m) => (BoundType, Text) -> m (Maybe Text)
-parseMax (o, value) | isUpperConstraint o = pure (Just value)
+parseMax :: (MonadFail m) => (Either Text BoundType, Text) -> m (Maybe Text)
+parseMax (Left {}, v) | null v = pure Nothing
+parseMax (Right o, value) | isUpperConstraint o = pure (Just value)
 parseMax _ = pure Nothing
 
-parseMin :: (MonadFail m) => (BoundType, Text) -> m Text
-parseMin (o, value) | isLowerConstraint o = pure value
+parseMin :: (MonadFail m) => (Either Text BoundType, Text) -> m Text
+parseMin (Right o, v) | isLowerConstraint o = pure v
 parseMin (o, v) = fail ("invalid" <> show (o, v))
 
 isLowerConstraint :: BoundType -> Bool
