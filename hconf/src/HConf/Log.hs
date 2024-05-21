@@ -42,8 +42,8 @@ field :: (Log m) => String -> String -> m ()
 field name = log . ((name <> ": ") <>)
 
 logFileChange :: (Log m) => String -> Bool -> m ()
-logFileChange path changed
-  | changed = field "checked" $ colored Gray path
+logFileChange path noChange
+  | noChange = field "checked" $ colored Gray path
   | otherwise = field "updated" $ colored Yellow path
 
 info :: (Log m) => String -> m ()
