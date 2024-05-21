@@ -10,7 +10,7 @@ where
 import Data.Text
 import HConf.Env (Env (..))
 import HConf.Hie (genHie)
-import HConf.Log (info, label, task)
+import HConf.Log (info, label)
 import HConf.Package (checkPackages)
 import HConf.Stack (setupStack)
 import HConf.Version (parseVersion)
@@ -24,5 +24,5 @@ setup ver =
       parseVersion (pack ver) >>= setupStack
       genHie
       checkPackages
-      label "hconf" $ task "hconf.yaml" save
+      save
     info "ok"

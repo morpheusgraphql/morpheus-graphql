@@ -33,7 +33,7 @@ import Data.Yaml (decodeThrow)
 import Data.Yaml.Pretty (defConfig, encodePretty, setConfCompare, setConfDropNull)
 import HConf.ConfigT (ConfigT (..), HCEnv (..), runConfigT)
 import HConf.Env (Env (..))
-import HConf.Log (logFileChange)
+import HConf.Log (label, logFileChange, task)
 import HConf.Utils (compareFields, toKebabCase)
 import Relude hiding (Show, Undefined, intercalate, show)
 import Prelude (Show (..))
@@ -50,7 +50,7 @@ open t env@Env {..} = do
   runConfigT t env cfg
 
 save :: ConfigT ()
-save = do
+save = label "hconf" $ task "hconf.yaml" $ do
   ctx <- asks id
   writeYaml (hconf $ env ctx) (config ctx)
 
