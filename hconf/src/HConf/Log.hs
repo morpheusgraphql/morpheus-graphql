@@ -12,6 +12,7 @@ module HConf.Log
   )
 where
 
+import HConf.Chalk (Color (..), chalk)
 import HConf.Utils (Name)
 import Relude
 
@@ -26,9 +27,6 @@ instance Log IO where
 newLine :: (Log m) => m ()
 newLine = log ""
 
-colored :: Color -> String -> String
-colored c x = toColor c <> x <> toColor None
-
 li :: (ToString a) => a -> String
 li e = "- " <> toString e <> ":"
 
@@ -36,40 +34,21 @@ label :: (Log m, Monad m) => String -> m () -> m ()
 label name m = info (li name) >> newLine >> inside m >> newLine
 
 task :: (Log m, Monad m) => Name -> m () -> m ()
-task name m = log (colored Magenta (li name)) >> inside m
+task name m = log (chalk Magenta (li name)) >> inside m
 
 field :: (Log m) => String -> String -> m ()
 field name = log . ((name <> ": ") <>)
 
 logFileChange :: (Log m) => String -> Bool -> m ()
 logFileChange path noChange
-  | noChange = field "checked" $ colored Gray path
-  | otherwise = field "updated" $ colored Yellow path
+  | noChange = field "checked" $ chalk Gray path
+  | otherwise = field "updated" $ chalk Yellow path
 
 info :: (Log m) => String -> m ()
-info = log . colored Green
+info = log . chalk Green
 
 warn :: (Log m) => String -> m ()
-warn = log . colored Yellow
+warn = log . chalk Yellow
 
 alert :: (Log m) => String -> m ()
-alert = log . colored Red
-
-data Color
-  = Red
-  | Green
-  | Yellow
-  | Gray
-  | Magenta
-  | None
-
-toColor :: Color -> String
-toColor c = "\x1b[" <> show (colorCode c) <> "m"
-
-colorCode :: Color -> Int
-colorCode Red = 31
-colorCode Green = 32
-colorCode Yellow = 33
-colorCode Gray = 90
-colorCode Magenta = 95
-colorCode None = 0
+alert = log . chalk Red

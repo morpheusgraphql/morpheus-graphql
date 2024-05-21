@@ -28,6 +28,7 @@ library
   exposed-modules:
       HConf
   other-modules:
+      HConf.Chalk
       HConf.Config
       HConf.ConfigT
       HConf.Env
