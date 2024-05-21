@@ -36,6 +36,7 @@ import Data.Text
     unpack,
   )
 import GHC.Show (Show (show))
+import HConf.Chalk (Color (Yellow), chalk)
 import HConf.Format (formatTable)
 import Relude hiding
   ( Undefined,
@@ -113,7 +114,7 @@ data VersionBounds
     )
 
 diff :: VersionBounds -> VersionBounds -> String
-diff old deps = printBounds old <> "  ->  " <> printBounds deps
+diff old deps = printBounds old <> chalk Yellow "  ->  " <> printBounds deps
 
 trim :: (Text, Text) -> (Text, Text)
 trim = bimap strip strip
