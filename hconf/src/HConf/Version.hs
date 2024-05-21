@@ -6,7 +6,7 @@
 -- | GQL Types
 module HConf.Version
   ( Version (..),
-    VersionBounds (..),
+    Bounds (..),
     Deps,
     parseVersion,
     diff,
@@ -117,8 +117,8 @@ parseVersion s =
     $ traverse (readMaybe . unpack)
     $ split (== '.') s
 
-data VersionBounds
-  = VersionBounds Version (Maybe Version)
+data Bounds
+  = Bounds Version (Maybe Version)
   | NoBounds
   deriving
     ( Generic,
@@ -127,7 +127,7 @@ data VersionBounds
       Ord
     )
 
-diff :: VersionBounds -> VersionBounds -> String
+diff :: Bounds -> Bounds -> String
 diff old deps = printBounds old <> chalk Yellow "  ->  " <> printBounds deps
 
 trim :: (Text, Text) -> (Text, Text)
@@ -139,7 +139,7 @@ breakOnSPace = trim . break isSeparator
 parseBoundTuple :: (MonadFail m) => Text -> (m BoundType, Text)
 parseBoundTuple = first parseBound . breakOnSPace
 
-parseVersionTuple :: (MonadFail m) => (Text, Text) -> m VersionBounds
+parseVersionTuple :: (MonadFail m) => (Text, Text) -> m Bounds
 parseVersionTuple (mi, ma) = do
   ((,) <$> parseMin (parseBoundTuple mi) <*> parseMax (parseBoundTuple ma))
     >>= uncurry parseBoundsFrom
@@ -147,10 +147,10 @@ parseVersionTuple (mi, ma) = do
 breakAtAnd :: Text -> (Text, Text)
 breakAtAnd = trim . second (drop 2) . breakOn "&&"
 
-parseDep :: (MonadFail m) => Text -> m (Text, VersionBounds)
+parseDep :: (MonadFail m) => Text -> m (Text, Bounds)
 parseDep = (\(name, bounds) -> (name,) <$> parseVersionBounds bounds) . breakOnSPace
 
-parseVersionBounds :: (MonadFail m) => Text -> m VersionBounds
+parseVersionBounds :: (MonadFail m) => Text -> m Bounds
 parseVersionBounds bounds
   | null bounds = pure NoBounds
   | otherwise = parseVersionTuple (breakAtAnd bounds)
@@ -170,39 +170,39 @@ isLowerConstraint = (`elem` [Lower, LowerOrEq])
 isUpperConstraint :: BoundType -> Bool
 isUpperConstraint = (`elem` [Greater, GreaterOrEq])
 
-parseBoundsFrom :: (MonadFail m) => Text -> Maybe Text -> m VersionBounds
-parseBoundsFrom minV maxV = VersionBounds <$> parseVersion minV <*> traverse parseVersion maxV
+parseBoundsFrom :: (MonadFail m) => Text -> Maybe Text -> m Bounds
+parseBoundsFrom minV maxV = Bounds <$> parseVersion minV <*> traverse parseVersion maxV
 
-printBoundParts :: VersionBounds -> [Text]
+printBoundParts :: Bounds -> [Text]
 printBoundParts NoBounds = []
-printBoundParts (VersionBounds mi ma) = [">=", toText mi] <> maybe [] (\m -> ["&&", "<", toText m]) ma
+printBoundParts (Bounds mi ma) = [">=", toText mi] <> maybe [] (\m -> ["&&", "<", toText m]) ma
 
-printBounds :: VersionBounds -> String
+printBounds :: Bounds -> String
 printBounds = intercalate "  " . map toString . printBoundParts
 
-instance FromJSON VersionBounds where
+instance FromJSON Bounds where
   parseJSON (Bool True) = pure NoBounds
   parseJSON (String s) = parseVersionBounds s
-  parseJSON (Number n) = flip VersionBounds Nothing <$> parseVersion (pack $ show n)
+  parseJSON (Number n) = flip Bounds Nothing <$> parseVersion (pack $ show n)
   parseJSON v = fail $ "version should be either true or string" <> show v
 
-instance ToJSON VersionBounds where
+instance ToJSON Bounds where
   toJSON b
     | NoBounds == b = Bool True
     | otherwise = String $ pack $ printBounds b
 
 type TextDeps = [Text]
 
-newtype Deps = Deps {unpackDeps :: Map Text VersionBounds}
+newtype Deps = Deps {unpackDeps :: Map Text Bounds}
   deriving (Show)
 
-traverseDeps :: (Applicative f) => (Text -> VersionBounds -> f VersionBounds) -> Deps -> f Deps
+traverseDeps :: (Applicative f) => (Text -> Bounds -> f Bounds) -> Deps -> f Deps
 traverseDeps f (Deps xs) = Deps <$> traverseWithKey f xs
 
-getDep :: (MonadFail m) => Text -> Deps -> m VersionBounds
+getDep :: (MonadFail m) => Text -> Deps -> m Bounds
 getDep name = maybe (fail $ "Unknown package: " <> unpack name) pure . M.lookup name . unpackDeps
 
-parseDependencies :: (MonadFail m) => TextDeps -> m [(Text, VersionBounds)]
+parseDependencies :: (MonadFail m) => TextDeps -> m [(Text, Bounds)]
 parseDependencies = traverse parseDep . sort
 
 instance FromJSON Deps where

@@ -30,9 +30,9 @@ import Data.Aeson.Types
 import qualified Data.Map as M
 import HConf.Utils
 import HConf.Version
-  ( Deps,
+  ( Bounds,
+    Deps,
     Version,
-    VersionBounds,
     getDep,
     parseVersion,
   )
@@ -73,7 +73,7 @@ instance ToJSON Build where
 data Config = Config
   { name :: Name,
     version :: Version,
-    bounds :: VersionBounds,
+    bounds :: Bounds,
     packages :: [PkgGroup],
     builds :: Map Text Build,
     dependencies :: Deps
@@ -87,7 +87,7 @@ data Config = Config
 getVersion :: Config -> Version
 getVersion = version
 
-getRule :: (MonadFail m) => Text -> Config -> m VersionBounds
+getRule :: (MonadFail m) => Text -> Config -> m Bounds
 getRule name = getDep name . dependencies
 
 getPackages :: Config -> [Text]

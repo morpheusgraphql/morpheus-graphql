@@ -24,8 +24,8 @@ import HConf.ConfigT
 import HConf.Log
 import HConf.Utils (Name)
 import HConf.Version
-  ( Deps,
-    VersionBounds (..),
+  ( Bounds (..),
+    Deps,
     diff,
     traverseDeps,
   )
@@ -72,12 +72,12 @@ toObject _ = mempty
 updateDependencies :: Deps -> ConfigT Deps
 updateDependencies = traverseDeps (curry (withConfig checkDependency))
 
-withRule :: Text -> VersionBounds -> VersionBounds -> ConfigT VersionBounds
+withRule :: Text -> Bounds -> Bounds -> ConfigT Bounds
 withRule name old deps =
   when (old /= deps) (field (toString name) (diff old deps))
     $> deps
 
-checkDependency :: Config -> (Name, VersionBounds) -> ConfigT VersionBounds
+checkDependency :: Config -> (Name, Bounds) -> ConfigT Bounds
 checkDependency config@Config {name, bounds} (depName, oldBounds)
   | name `isPrefixOf` depName && oldBounds == NoBounds = pure NoBounds
   | name `isPrefixOf` depName = withRule depName oldBounds bounds
