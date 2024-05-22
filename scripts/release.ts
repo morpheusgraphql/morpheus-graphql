@@ -1,9 +1,9 @@
 import { push } from "./lib/utils/git";
 import { ghApiREST, GH_ORG, GH_REPO } from "./lib/utils/gq-api";
-import { exit } from "./lib/utils/utils";
+import { exec, exit } from "./lib/utils/utils";
 import * as core from "@actions/core";
 import { getChangelog } from "./lib/changelog";
-import { checkPackages } from "./lib/check-packages";
+
 import { Command } from "commander";
 import { Config } from "./lib/utils/config";
 
@@ -29,7 +29,9 @@ export const openRelease = (version: string, body: string) => {
 const draftRelease = async () => {
   const { body, version } = await getChangelog();
 
-  await checkPackages(version);
+  await Config.load(version);
+  exec("hconf setup");
+
   core.setOutput("body", body);
   core.setOutput("version", version.next);
 };
