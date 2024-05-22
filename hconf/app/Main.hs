@@ -16,7 +16,7 @@ import CLI.Commands
     parseCLI,
   )
 import Data.Version (showVersion)
-import HConf (Env (..), setup)
+import HConf (Env (..), setup, updateVersion)
 import qualified Paths_hconf as CLI
 import Relude hiding (ByteString)
 
@@ -26,8 +26,8 @@ currentVersion = showVersion CLI.version
 main :: IO ()
 main = parseCLI >>= runApp
 
-path :: Env
-path =
+env :: Env
+env =
   Env
     { hconf = "./hconf.yaml",
       hie = "./hie.yaml",
@@ -40,5 +40,6 @@ runApp App {..}
   | otherwise = runOperation operations
   where
     runOperation About = putStrLn $ "Stack Config CLI, version " <> currentVersion
-    runOperation (Setup []) = setup "latest" path
-    runOperation (Setup (version : _)) = setup version path
+    runOperation (Setup []) = setup "latest" env
+    runOperation (Setup (version : _)) = setup version env
+    runOperation (Next version isBreaking) = updateVersion version isBreaking env

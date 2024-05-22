@@ -12,6 +12,7 @@ import Options.Applicative
   ( Parser,
     command,
     customExecParser,
+    flag,
     fullDesc,
     help,
     helper,
@@ -27,10 +28,12 @@ import Options.Applicative
     switch,
   )
 import qualified Options.Applicative as OA
+import Options.Applicative.Builder (strOption)
 import Relude hiding (ByteString)
 
 data Command
   = Setup [FilePath]
+  | Next String Bool
   | About
   deriving (Show)
 
@@ -49,7 +52,8 @@ commandParser :: Parser Command
 commandParser =
   buildOperation
     [ ("setup", "builds Haskell code from GQL source", Setup <$> readFiles),
-      ("about", "api information", pure About)
+      ("about", "api information", pure About),
+      ("next", "next release", readNext)
     ]
 
 buildOperation :: [(String, String, Parser Command)] -> Parser Command
@@ -68,6 +72,12 @@ readFiles =
     [ metavar "dir",
       help "source dirs with code-gen.yaml file for generating APIs"
     ]
+
+readNext :: Parser Command
+readNext =
+  Next
+    <$> (strArgument . mconcat) [metavar "dir", help "source dirs with code-gen.yaml file for generating APIs"]
+    <*> flag False True (long "isBreaking" <> short 'b')
 
 parseCLI :: IO App
 parseCLI =

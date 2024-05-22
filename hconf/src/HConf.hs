@@ -4,6 +4,7 @@
 module HConf
   ( setup,
     Env (..),
+    updateVersion,
   )
 where
 
@@ -20,3 +21,6 @@ setup version = run "setup" $ do
   parse version >>= setupStack
   genHie
   checkPackages
+
+updateVersion :: String -> Bool -> Env -> IO ()
+updateVersion = undefined
