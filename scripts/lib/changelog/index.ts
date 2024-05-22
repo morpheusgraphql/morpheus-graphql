@@ -7,8 +7,7 @@ import { getVersion } from "../utils/config";
 export const getChangelog = async () => {
   const date = getDate();
   const version = lastTag();
-  const commits = commitsAfter(version);
-  const pullRequests = await getPullRequests(commits);
+  const pullRequests = await getPullRequests(commitsAfter(version));
   const isBreaking = Boolean(pullRequests.find(propEq("type", "breaking")));
 
   console.log(exec(`hconf next ${version} ${isBreaking ? "-b" : ""}`));

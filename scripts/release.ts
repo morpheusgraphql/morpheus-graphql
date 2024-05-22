@@ -32,10 +32,7 @@ const draftRelease = async () => {
   core.setOutput("version", next);
 };
 
-const describe = async () => {
-  const version = await getVersion();
-  core.setOutput("version", version);
-};
+const describe = async () => core.setOutput("version", await getVersion());
 
 cli.name("release").description("manage release").version("0.0.0");
 
