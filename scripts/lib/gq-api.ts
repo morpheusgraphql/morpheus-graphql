@@ -16,7 +16,7 @@ const token = () => {
 const authorizedGithubUrl = () =>
   `https://${token()}@github.com/${GH_ORG}/${GH_REPO}.git`;
 
-const ghApiREST = (path: string, body: {}) =>
+const gh = (path: string, body: {}) =>
   axios
     .post(`https://api.github.com/${path}`, JSON.stringify(body), {
       headers: {
@@ -28,6 +28,6 @@ const ghApiREST = (path: string, body: {}) =>
     .then(({ data }) => data.data)
     .catch((err) => Promise.reject(err.message));
 
-const ghApiGQL = (query: string) => ghApiREST("graphql", { query });
+const ghApiGQL = (query: string) => gh("graphql", { query });
 
-export { GH_ORG, GH_REPO, ghApiREST, ghApiGQL, authorizedGithubUrl };
+export { GH_ORG, GH_REPO, gh, ghApiGQL, authorizedGithubUrl };

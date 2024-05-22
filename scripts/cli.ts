@@ -1,5 +1,5 @@
 import { push } from "./lib/git";
-import { ghApiREST, GH_ORG, GH_REPO } from "./lib/gq-api";
+import { gh, GH_ORG, GH_REPO } from "./lib/gq-api";
 import { exec, exit, getVersion, write } from "./lib/utils";
 import * as core from "@actions/core";
 import { getChangelog } from "./lib/changelog";
@@ -15,7 +15,7 @@ export const openRelease = (version: string, body: string) => {
   const branchName = `publish-release/${version}`;
 
   push(branchName);
-  return ghApiREST(`repos/${GH_ORG}/${GH_REPO}/pulls`, {
+  return gh(`repos/${GH_ORG}/${GH_REPO}/pulls`, {
     head: branchName,
     draft: true,
     base: "main",
