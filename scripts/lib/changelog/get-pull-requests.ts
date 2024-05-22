@@ -1,9 +1,9 @@
 import { pluck, propEq, uniq } from "ramda";
-import { ghApiGQL, GH_ORG, GH_REPO } from "../utils/gq-api";
-import { Maybe } from "../utils/types";
-import { batchMap, getPRNumber } from "../utils/utils";
+import { ghApiGQL, GH_ORG, GH_REPO } from "../gq-api";
+import { Maybe } from "../types";
+import { batchMap, getPRNumber } from "../utils";
 import { parseLabel, PR_TYPE, SCOPE } from "./pull-request-types";
-import { commitsAfter } from "../utils/git";
+import { commitsAfter } from "../git";
 
 type AssocRP = {
   number: number;

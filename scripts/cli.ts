@@ -1,6 +1,6 @@
-import { push } from "./lib/utils/git";
-import { ghApiREST, GH_ORG, GH_REPO } from "./lib/utils/gq-api";
-import { exec, exit, getVersion, write } from "./lib/utils/utils";
+import { push } from "./lib/git";
+import { ghApiREST, GH_ORG, GH_REPO } from "./lib/gq-api";
+import { exec, exit, getVersion, write } from "./lib/utils";
 import * as core from "@actions/core";
 import { getChangelog } from "./lib/changelog";
 

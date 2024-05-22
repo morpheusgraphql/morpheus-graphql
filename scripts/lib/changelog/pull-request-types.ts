@@ -1,4 +1,4 @@
-import { Maybe } from "../utils/types";
+import { Maybe } from "../types";
 
 const config = {
   scope: {

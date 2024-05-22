@@ -1,7 +1,7 @@
 import glob from "glob";
 import { exit } from "process";
 import { promisify } from "util";
-import { exec, log } from "../lib/utils/utils";
+import { exec, log } from "./utils";
 
 const config: Record<string, string> = {
   linux: "/ormolu-Linux.zip",

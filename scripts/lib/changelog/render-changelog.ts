@@ -1,8 +1,8 @@
 import { groupBy, range } from "ramda";
-import { isKey } from "../utils/utils";
+import { isKey } from "../utils";
 import { PullRequest } from "./get-pull-requests";
 import { pullRequestTypes, config, SCOPE } from "./pull-request-types";
-import { getDate } from "../utils/git";
+import { getDate } from "../git";
 
 const link = (name: string, url: string) => `[${name}](${url})`;
 
