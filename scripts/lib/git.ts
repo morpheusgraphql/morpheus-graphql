@@ -11,8 +11,8 @@ const commitsAfter = (tag: string) =>
 export const push = (name: string) => {
   git("add", ".");
   git("status");
-  git("commit", ` -m "${name}"`);
-  git(`push ${authorizedGithubUrl()} HEAD:${name}`);
+  git("commit", "-m", `"${name}"`);
+  git("push", authorizedGithubUrl(), `HEAD:${name}`);
 };
 
 export { getDate, lastTag, commitsAfter, exec };
