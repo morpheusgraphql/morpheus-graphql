@@ -1,4 +1,6 @@
 import { execSync, StdioOptions } from "child_process";
+import { writeFile } from "fs/promises";
+import { dirname, join } from "path";
 
 export const getPRNumber = (msg: string) => {
   const num = / \(#(?<prNumber>[0-9]+)\)$/m.exec(msg)?.groups?.prNumber;
@@ -45,3 +47,8 @@ const colors = {
 
 export const log = (t: string, type?: "success" | "warning" | "error") =>
   process.stdout.write(colors[type ?? "none"] + t + colors.none);
+
+export const getVersion = () => exec("hconf version");
+
+export const write = (p: string, f: string) =>
+  writeFile(join(dirname(require.main?.filename ?? ""), "../", p), f, "utf8");

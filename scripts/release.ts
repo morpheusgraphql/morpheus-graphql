@@ -1,11 +1,10 @@
 import { push } from "./lib/utils/git";
 import { ghApiREST, GH_ORG, GH_REPO } from "./lib/utils/gq-api";
-import { exec, exit } from "./lib/utils/utils";
+import { exec, exit, getVersion, write } from "./lib/utils/utils";
 import * as core from "@actions/core";
 import { getChangelog } from "./lib/changelog";
 
 import { Command } from "commander";
-import { getVersion, write } from "./lib/utils/file";
 
 const cli = new Command();
 
