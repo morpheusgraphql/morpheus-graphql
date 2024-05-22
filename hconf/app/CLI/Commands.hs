@@ -73,11 +73,14 @@ readFiles =
       help "source dirs with code-gen.yaml file for generating APIs"
     ]
 
+parseVersion :: Parser String
+parseVersion = (strArgument . mconcat) [metavar "version", help "existing version"]
+
+boolFlag :: String -> Char -> Parser Bool
+boolFlag l s = flag False True (long l <> short s)
+
 readNext :: Parser Command
-readNext =
-  Next
-    <$> (strArgument . mconcat) [metavar "version", help "existing version"]
-    <*> flag False True (long "breaking" <> short 'b')
+readNext = Next <$> parseVersion <*> boolFlag "breaking" 'b'
 
 parseCLI :: IO App
 parseCLI =
