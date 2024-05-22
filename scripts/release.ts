@@ -1,6 +1,6 @@
 import { push } from "./lib/utils/git";
 import { ghApiREST, GH_ORG, GH_REPO } from "./lib/utils/gq-api";
-import { exit } from "./lib/utils/utils";
+import { exec, exit } from "./lib/utils/utils";
 import * as core from "@actions/core";
 import { getChangelog } from "./lib/changelog";
 
@@ -28,6 +28,7 @@ export const openRelease = (version: string, body: string) => {
 
 const draftRelease = async () => {
   const { body, next } = await getChangelog();
+  console.log(exec(`hconf setup`));
   core.setOutput("body", body);
   core.setOutput("version", next);
 };
