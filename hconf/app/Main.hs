@@ -31,7 +31,8 @@ env =
   Env
     { hconf = "./hconf.yaml",
       hie = "./hie.yaml",
-      stack = "./stack.yaml"
+      stack = "./stack.yaml",
+      silence = False
     }
 
 runApp :: App -> IO ()

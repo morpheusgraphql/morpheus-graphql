@@ -8,6 +8,7 @@ module CLI.Commands
   )
 where
 
+import HConf (Env)
 import Options.Applicative
   ( Parser,
     command,
@@ -28,7 +29,6 @@ import Options.Applicative
     switch,
   )
 import qualified Options.Applicative as OA
-import Options.Applicative.Builder (strOption)
 import Relude hiding (ByteString)
 
 data Command
@@ -76,8 +76,8 @@ readFiles =
 readNext :: Parser Command
 readNext =
   Next
-    <$> (strArgument . mconcat) [metavar "dir", help "source dirs with code-gen.yaml file for generating APIs"]
-    <*> flag False True (long "isBreaking" <> short 'b')
+    <$> (strArgument . mconcat) [metavar "version", help "existing version"]
+    <*> flag False True (long "breaking" <> short 'b')
 
 parseCLI :: IO App
 parseCLI =
