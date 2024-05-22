@@ -62,7 +62,7 @@ data Version
     )
 
 nextVersion :: Bool -> Version -> Version
-nextVersion = undefined
+nextVersion _ = id
 
 instance Parse Version where
   parse "latest" = pure LatestVersion

@@ -16,6 +16,7 @@ module HConf.Config
     getVersion,
     getRule,
     VersionUpdate (..),
+    updateConfig,
   )
 where
 
