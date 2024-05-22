@@ -5,6 +5,7 @@ import * as core from "@actions/core";
 import { getChangelog } from "./lib/changelog";
 
 import { Command } from "commander";
+import { format } from "./lib/format";
 
 const cli = new Command();
 
@@ -40,9 +41,11 @@ const changelog = async () => {
   process.stdout.write(body);
 };
 
-cli.name("release").description("manage release").version("0.0.0");
+cli.name("cli").description("cli").version("0.0.0");
 
-cli
+const release = cli.command("release");
+
+release
   .command("open")
   .description("open pull request for draft release")
   .argument("<string>", "version number")
@@ -51,7 +54,7 @@ cli
     openRelease(version, body).catch(exit)
   );
 
-cli
+release
   .command("draft")
   .description(
     `draft new release:
@@ -61,11 +64,18 @@ cli
   )
   .action(() => draftRelease().catch(handleError));
 
-cli
+release
   .command("describe")
   .description(`describe existing release`)
   .action(() => describe().catch(handleError));
 
-cli.command("changelog").action(() => changelog().catch(handleError));
+release.command("changelog").action(() => changelog().catch(handleError));
+
+cli
+  .command("format")
+  .description("format")
+  .option("--fix <boolean>", "fix", false)
+  .option("--path <string>", "path", "./morpheus-graphql*/**/*.hs")
+  .action(format);
 
 cli.parse();
