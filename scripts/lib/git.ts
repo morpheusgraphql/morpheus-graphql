@@ -9,9 +9,9 @@ const commitsAfter = (tag: string) =>
   git("rev-list", `--reverse ${tag}..`).split("\n");
 
 export const push = (name: string) => {
-  git("add .");
+  git("add", ".");
   git("status");
-  git(`commit -m "${name}"`);
+  git("commit", ` -m "${name}"`);
   git(`push ${authorizedGithubUrl()} HEAD:${name}`);
 };
 
