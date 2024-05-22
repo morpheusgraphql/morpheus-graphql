@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { format } from "./local/format";
+import { format } from "./lib/format";
 
 const cli = new Command();
 
