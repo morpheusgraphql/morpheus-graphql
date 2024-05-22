@@ -1,4 +1,4 @@
-import { pluck, uniq } from "ramda";
+import { pluck, propEq, uniq } from "ramda";
 import { ghApiGQL, GH_ORG, GH_REPO } from "../utils/gq-api";
 import { Maybe } from "../utils/types";
 import { batchMap, getPRNumber } from "../utils/utils";
@@ -125,4 +125,7 @@ type PullRequest = Omit<GithubPR, "labels"> & {
   scopes: SCOPE[];
 };
 
-export { getPullRequests, PullRequest };
+const hasBreakingChange = (pullRequests: PullRequest[]) =>
+  Boolean(pullRequests.find(propEq("type", "breaking")));
+
+export { getPullRequests, hasBreakingChange, PullRequest };
