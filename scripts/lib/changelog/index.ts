@@ -1,4 +1,4 @@
-import { getPullRequests, hasBreakingChange } from "./get-pull-requests";
+import { getPullRequests, isBreaking } from "./get-pull-requests";
 import { renderChangelog } from "./render-changelog";
 import { exec, lastTag } from "../git";
 import { getVersion } from "../utils";
@@ -8,9 +8,11 @@ export const getChangelog = async () => {
   const prs = await getPullRequests(version);
   const projectVersion = await getVersion();
 
-  console.log(
-    exec(`hconf next ${version} ${hasBreakingChange(prs) ? "-b" : ""}`)
-  );
+  if (version !== projectVersion) {
+    throw Error(`versions does not match: ${version} ${projectVersion}`);
+  }
+
+  console.log(exec(`hconf next ${isBreaking(prs) ? "-b" : ""}`));
 
   const next = await getVersion();
 

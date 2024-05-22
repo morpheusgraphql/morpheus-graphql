@@ -125,7 +125,7 @@ type PullRequest = Omit<GithubPR, "labels"> & {
   scopes: SCOPE[];
 };
 
-const hasBreakingChange = (pullRequests: PullRequest[]) =>
+const isBreaking = (pullRequests: PullRequest[]) =>
   Boolean(pullRequests.find(propEq("type", "breaking")));
 
-export { getPullRequests, hasBreakingChange, PullRequest };
+export { getPullRequests, isBreaking, PullRequest };
