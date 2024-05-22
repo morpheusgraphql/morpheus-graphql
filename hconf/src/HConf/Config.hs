@@ -15,6 +15,7 @@ module HConf.Config
     getBuilds,
     getVersion,
     getRule,
+    VersionUpdate (..),
   )
 where
 
@@ -112,3 +113,9 @@ withPrefix s _ = s
 
 instance ToJSON Config where
   toJSON = genericToJSON defaultOptions {omitNothingFields = True}
+
+data VersionUpdate = VersionUpdate
+  { prev :: Text,
+    next :: Text,
+    isBreaking :: Bool
+  }
