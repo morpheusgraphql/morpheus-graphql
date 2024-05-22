@@ -12,7 +12,6 @@ import Options.Applicative
   ( Parser,
     command,
     customExecParser,
-    flag,
     fullDesc,
     help,
     helper,
@@ -52,7 +51,7 @@ commandParser =
   buildOperation
     [ ("setup", "builds Haskell code from GQL source", Setup <$> optional parseVersion),
       ("about", "api information", pure About),
-      ("next", "next release", Next <$> parseVersion <*> boolFlag "breaking" 'b')
+      ("next", "next release", Next <$> parseVersion <*> switch (long "breaking" <> short 'b'))
     ]
 
 buildOperation :: [(String, String, Parser Command)] -> Parser Command
@@ -67,9 +66,6 @@ parseOperation (bName, bDesc, bValue) =
 
 parseVersion :: Parser String
 parseVersion = (strArgument . mconcat) [metavar "version", help "existing version"]
-
-boolFlag :: String -> Char -> Parser Bool
-boolFlag l s = flag False True (long l <> short s)
 
 parseCLI :: IO App
 parseCLI =
