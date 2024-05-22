@@ -1,8 +1,8 @@
 import { getPullRequests } from "./get-pull-requests";
 import { renderChangelog } from "./render-changelog";
-import { commitsAfter, getDate, lastTag } from "../utils/git";
-import { Version } from "../utils/version";
+import { commitsAfter, exec, getDate, lastTag } from "../utils/git";
 import { propEq } from "ramda";
+import { getVersion } from "../utils/config";
 
 export const getChangelog = async () => {
   const date = getDate();
@@ -10,14 +10,13 @@ export const getChangelog = async () => {
   const commits = commitsAfter(version);
   const pullRequests = await getPullRequests(commits);
   const isBreaking = Boolean(pullRequests.find(propEq("type", "breaking")));
-  const newTag = new Version(version).next(isBreaking).format();
+
+  console.log(exec(`hconf next-version ${version} ${isBreaking ? "-b" : ""}`));
+
+  const next = await getVersion();
 
   return {
-    body: renderChangelog(newTag, date, pullRequests),
-    version: {
-      next: newTag,
-      prev: version,
-      isBreaking,
-    },
+    body: renderChangelog(next, date, pullRequests),
+    next: next,
   };
 };

@@ -1,11 +1,11 @@
 import { push } from "./lib/utils/git";
 import { ghApiREST, GH_ORG, GH_REPO } from "./lib/utils/gq-api";
-import { exec, exit } from "./lib/utils/utils";
+import { exit } from "./lib/utils/utils";
 import * as core from "@actions/core";
 import { getChangelog } from "./lib/changelog";
 
 import { Command } from "commander";
-import { Config } from "./lib/utils/config";
+import { getVersion } from "./lib/utils/config";
 
 const cli = new Command();
 
@@ -27,22 +27,13 @@ export const openRelease = (version: string, body: string) => {
 };
 
 const draftRelease = async () => {
-  const {
-    body,
-    version: { next, prev, isBreaking },
-  } = await getChangelog();
-
-  const x = exec(`hconf next-version ${prev} ${isBreaking ? "-b" : ""}`);
-
-  console.log(x);
-  Config.load();
-
+  const { body, next } = await getChangelog();
   core.setOutput("body", body);
   core.setOutput("version", next);
 };
 
 const describe = async () => {
-  const { version } = await Config.load();
+  const version = await getVersion();
   core.setOutput("version", version);
 };
 

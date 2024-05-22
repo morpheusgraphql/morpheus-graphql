@@ -1,23 +1,8 @@
 import { Yaml } from "./file";
 import { StrVersion } from "./version";
-import { Bounds, parseBound } from "./rule";
 
-type Configuration<R extends boolean = false> = {
-  version: StrVersion;
-  bounds: Bounds<R>;
-};
+type Configuration = { version: StrVersion };
 
-const file = new Yaml<Configuration<true>, []>(() => "./hconf.yaml");
+const file = new Yaml<Configuration, []>(() => "./hconf.yaml");
 
-export class Config {
-  constructor(private config: Configuration) {}
-
-  static load = async () => {
-    const { bounds, ...rest } = await file.read();
-    return new Config({ ...rest, bounds: parseBound(bounds) });
-  };
-
-  get version() {
-    return this.config.version;
-  }
-}
+export const getVersion = () => file.read().then((x) => x.version);
