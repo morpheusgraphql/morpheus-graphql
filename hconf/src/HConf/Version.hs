@@ -61,8 +61,10 @@ data Version
       Eq
     )
 
-nextVersion :: Bool -> Version -> Version
-nextVersion _ = id
+nextVersion :: (MonadFail m) => Bool -> Version -> m Version
+nextVersion isBreaking (Version [major, minor, revision]) =
+  pure $ Version $ if isBreaking then [major, minor + 1, 0] else [major, minor, revision + 1]
+nextVersion _ v = fail $ "can't update version " <> show v
 
 instance Parse Version where
   parse "latest" = pure LatestVersion

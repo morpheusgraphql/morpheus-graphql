@@ -125,6 +125,10 @@ data VersionUpdate = VersionUpdate
 updateConfig :: (MonadFail m) => VersionUpdate -> Config -> m Config
 updateConfig VersionUpdate {..} Config {..}
   | prev == version = do
-      let newBounds = if isBreaking then Bounds next (Just $ nextVersion isBreaking next) else bounds
+      newBounds <- getBounds
       pure Config {version = next, bounds = newBounds, ..}
   | otherwise = fail "invalid versions ${version} and ${prev}"
+  where
+    getBounds
+      | isBreaking = Bounds next . Just <$> nextVersion isBreaking next
+      | otherwise = pure bounds
