@@ -3,6 +3,7 @@ import { ghApiGQL, GH_ORG, GH_REPO } from "../utils/gq-api";
 import { Maybe } from "../utils/types";
 import { batchMap, getPRNumber } from "../utils/utils";
 import { parseLabel, PR_TYPE, SCOPE } from "./pull-request-types";
+import { commitsAfter } from "../utils/git";
 
 type AssocRP = {
   number: number;
@@ -108,8 +109,8 @@ const getGithubPRs = (commits: string[]): Promise<GithubPR[]> =>
     batchMap(batchPRInfo, uniq(ghCommits.map(getAssociatedPR).filter(Boolean)))
   );
 
-const getPullRequests = (commits: string[]) =>
-  getGithubPRs(commits).then((prs) =>
+const getPullRequests = (version: string) =>
+  getGithubPRs(commitsAfter(version)).then((prs) =>
     prs.map(
       ({ labels, ...pr }): PullRequest => ({
         ...pr,

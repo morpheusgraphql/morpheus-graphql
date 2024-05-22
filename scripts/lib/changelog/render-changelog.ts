@@ -2,6 +2,7 @@ import { groupBy, range } from "ramda";
 import { isKey } from "../utils/utils";
 import { PullRequest } from "./get-pull-requests";
 import { pullRequestTypes, config, SCOPE } from "./pull-request-types";
+import { getDate } from "../utils/git";
 
 const link = (name: string, url: string) => `[${name}](${url})`;
 
@@ -52,7 +53,8 @@ const renderPullRequest = ({
 const renderSection = (label: string, pullRequests: PullRequest[]) =>
   [`#### ${label}`, pullRequests.map(renderPullRequest)].flat().join("\n");
 
-const renderChangelog = (tag: string, date: string, prs: PullRequest[]) => {
+const renderChangelog = (tag: string, prs: PullRequest[]) => {
+  const date = getDate();
   const groups = groupBy((x) => x.type, prs);
   let changelog = `## ${tag || "Unreleased"} (${date})\n`;
 
