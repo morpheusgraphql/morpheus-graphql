@@ -29,10 +29,9 @@ setup v = run "setup" $ do
   checkPackages
   pure Nothing
 
-updateVersion :: String -> Bool -> Env -> IO ()
-updateVersion v isBreaking = run "next" $ do
-  v2 <- parse v
-  newConfig <- asks config >>= updateConfig v2 isBreaking
+updateVersion :: Bool -> Env -> IO ()
+updateVersion isBreaking = run "next" $ do
+  newConfig <- asks config >>= updateConfig isBreaking
   pure (Just newConfig)
 
 getVersion :: Env -> IO ()

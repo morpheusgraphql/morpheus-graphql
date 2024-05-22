@@ -115,15 +115,12 @@ withPrefix s _ = s
 instance ToJSON Config where
   toJSON = genericToJSON defaultOptions {omitNothingFields = True}
 
-updateConfig :: (MonadFail m) => Version -> Bool -> Config -> m Config
-updateConfig prev isBreaking Config {..}
-  | prev == version = do
-      next <- getNext
-      newBounds <- getBounds next
-      pure Config {version = next, bounds = newBounds, ..}
-  | otherwise = fail $ "versions does not match: " <> show version <> " != " <> show prev
+updateConfig :: (MonadFail m) => Bool -> Config -> m Config
+updateConfig isBreaking Config {..} = do
+  next <- nextVersion isBreaking version
+  newBounds <- getBounds next
+  pure Config {version = next, bounds = newBounds, ..}
   where
-    getNext = nextVersion isBreaking prev
     getBounds next
       | isBreaking = Bounds next . Just <$> nextVersion True next
       | otherwise = pure bounds

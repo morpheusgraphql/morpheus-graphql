@@ -41,5 +41,5 @@ runApp App {..}
   where
     runOperation About = putStrLn $ "Stack Config CLI, version " <> currentVersion
     runOperation (Setup version) = setup (fromMaybe "latest" version) env
-    runOperation (Next version isBreaking) = updateVersion version isBreaking env
+    runOperation (Next isBreaking) = updateVersion isBreaking env
     runOperation CurrentVersion = getVersion env

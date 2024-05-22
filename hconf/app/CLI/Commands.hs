@@ -31,7 +31,7 @@ import Relude hiding (ByteString)
 
 data Command
   = Setup (Maybe String)
-  | Next String Bool
+  | Next Bool
   | About
   | CurrentVersion
   deriving (Show)
@@ -53,7 +53,7 @@ commandParser =
   buildOperation
     [ ("setup", "builds Haskell code from GQL source", Setup <$> optional parseVersion),
       ("about", "api information", pure About),
-      ("next", "next release", Next <$> parseVersion <*> switch (long "breaking" <> short 'b')),
+      ("next", "next release", Next <$> switch (long "breaking" <> short 'b')),
       ("version", "get current version", pure CurrentVersion)
     ]
 
