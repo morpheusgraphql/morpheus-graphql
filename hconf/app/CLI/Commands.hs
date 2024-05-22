@@ -8,7 +8,6 @@ module CLI.Commands
   )
 where
 
-import HConf (Env)
 import Options.Applicative
   ( Parser,
     command,
@@ -32,7 +31,7 @@ import qualified Options.Applicative as OA
 import Relude hiding (ByteString)
 
 data Command
-  = Setup [FilePath]
+  = Setup (Maybe String)
   | Next String Bool
   | About
   deriving (Show)
@@ -51,9 +50,9 @@ newtype GlobalOptions = GlobalOptions
 commandParser :: Parser Command
 commandParser =
   buildOperation
-    [ ("setup", "builds Haskell code from GQL source", Setup <$> readFiles),
+    [ ("setup", "builds Haskell code from GQL source", Setup <$> optional parseVersion),
       ("about", "api information", pure About),
-      ("next", "next release", readNext)
+      ("next", "next release", Next <$> parseVersion <*> boolFlag "breaking" 'b')
     ]
 
 buildOperation :: [(String, String, Parser Command)] -> Parser Command
@@ -66,21 +65,11 @@ parseOperation :: (String, String, Parser Command) -> OA.Mod OA.CommandFields Co
 parseOperation (bName, bDesc, bValue) =
   command bName (info (helper <*> bValue) (fullDesc <> progDesc bDesc))
 
-readFiles :: Parser [String]
-readFiles =
-  (many . strArgument . mconcat)
-    [ metavar "dir",
-      help "source dirs with code-gen.yaml file for generating APIs"
-    ]
-
 parseVersion :: Parser String
 parseVersion = (strArgument . mconcat) [metavar "version", help "existing version"]
 
 boolFlag :: String -> Char -> Parser Bool
 boolFlag l s = flag False True (long l <> short s)
-
-readNext :: Parser Command
-readNext = Next <$> parseVersion <*> boolFlag "breaking" 'b'
 
 parseCLI :: IO App
 parseCLI =

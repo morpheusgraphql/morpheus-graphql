@@ -1,4 +1,3 @@
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -41,6 +40,5 @@ runApp App {..}
   | otherwise = runOperation operations
   where
     runOperation About = putStrLn $ "Stack Config CLI, version " <> currentVersion
-    runOperation (Setup []) = setup "latest" env
-    runOperation (Setup (version : _)) = setup version env
+    runOperation (Setup version) = setup (fromMaybe "latest" version) env
     runOperation (Next version isBreaking) = updateVersion version isBreaking env
