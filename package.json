@@ -8,7 +8,7 @@
   "private": true,
   "scripts": {
     "check:spelling": "cspell --cache --no-progress '**/*.hs'",
-    "changelog": "ts-node scripts/changelog.ts",
+    "changelog": "npm run release changelog",
     "release": "ts-node scripts/release.ts",
     "setup": "ts-node scripts/local.ts setup",
     "format": "ts-node scripts/local.ts format",

@@ -5,7 +5,7 @@ import * as core from "@actions/core";
 import { getChangelog } from "./lib/changelog";
 
 import { Command } from "commander";
-import { getVersion } from "./lib/utils/file";
+import { getVersion, write } from "./lib/utils/file";
 
 const cli = new Command();
 
@@ -35,6 +35,12 @@ const draftRelease = async () => {
 
 const describe = async () => core.setOutput("version", await getVersion());
 
+const changelog = async () => {
+  const { body } = await getChangelog();
+  await write("/changelog.md", body);
+  process.stdout.write(body);
+};
+
 cli.name("release").description("manage release").version("0.0.0");
 
 cli
@@ -60,5 +66,7 @@ cli
   .command("describe")
   .description(`describe existing release`)
   .action(() => describe().catch(handleError));
+
+cli.command("changelog").action(() => changelog().catch(handleError));
 
 cli.parse();
