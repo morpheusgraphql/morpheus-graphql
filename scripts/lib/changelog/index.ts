@@ -18,6 +18,6 @@ export const getChangelog = async () => {
 
   return {
     body: renderChangelog(next, prs),
-    next: next,
+    next,
   };
 };
