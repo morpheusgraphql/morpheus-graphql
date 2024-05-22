@@ -30,6 +30,7 @@ import qualified Data.ByteString as L
   )
 import Data.Yaml (decodeThrow)
 import Data.Yaml.Pretty (defConfig, encodePretty, setConfCompare, setConfDropNull)
+import HConf.Config (Config)
 import HConf.ConfigT (ConfigT (..), HCEnv (..), runConfigT)
 import HConf.Env (Env (..))
 import HConf.Log (alert, info, label, logFileChange, task)
@@ -43,18 +44,19 @@ parseYaml = decodeThrow
 serializeYaml :: (ToJSON a) => a -> ByteString
 serializeYaml = encodePretty (setConfDropNull True $ setConfCompare compareFields defConfig)
 
-run :: String -> ConfigT () -> Env -> IO ()
+run :: String -> ConfigT (Maybe Config) -> Env -> IO ()
 run name t env@Env {..} = do
   cfg <- L.readFile hconf >>= parseYaml
-  res <- runConfigT (label name t >> save) env cfg
+  res <- runConfigT (label name (t >>= save)) env cfg
   case res of
     Left x -> alert ("ERROR: " <> x)
     Right _ -> info "OK"
 
-save :: ConfigT ()
-save = label "hconf" $ task "hconf.yaml" $ do
+save :: Maybe Config -> ConfigT ()
+save Nothing = pure ()
+save (Just cfg) = label "hconf" $ task "hconf.yaml" $ do
   ctx <- asks id
-  writeYaml (hconf $ env ctx) (config ctx)
+  writeYaml (hconf $ env ctx) cfg
 
 readYaml :: (FromJSON a) => FilePath -> ConfigT a
 readYaml = liftIO . (L.readFile >=> parseYaml)

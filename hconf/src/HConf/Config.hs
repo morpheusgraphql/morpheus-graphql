@@ -15,7 +15,6 @@ module HConf.Config
     getBuilds,
     getVersion,
     getRule,
-    VersionUpdate (..),
     updateConfig,
   )
 where
@@ -116,19 +115,15 @@ withPrefix s _ = s
 instance ToJSON Config where
   toJSON = genericToJSON defaultOptions {omitNothingFields = True}
 
-data VersionUpdate = VersionUpdate
-  { prev :: Version,
-    next :: Version,
-    isBreaking :: Bool
-  }
-
-updateConfig :: (MonadFail m) => VersionUpdate -> Config -> m Config
-updateConfig VersionUpdate {..} Config {..}
+updateConfig :: (MonadFail m) => Version -> Bool -> Config -> m Config
+updateConfig prev isBreaking Config {..}
   | prev == version = do
-      newBounds <- getBounds
+      next <- getNext
+      newBounds <- getBounds next
       pure Config {version = next, bounds = newBounds, ..}
-  | otherwise = fail "invalid versions ${version} and ${prev}"
+  | otherwise = fail $ "versions does not match: " <> show version <> " != " <> show prev
   where
-    getBounds
-      | isBreaking = Bounds next . Just <$> nextVersion isBreaking next
+    getNext = nextVersion isBreaking prev
+    getBounds next
+      | isBreaking = Bounds next . Just <$> nextVersion True next
       | otherwise = pure bounds
