@@ -27,12 +27,14 @@ export const openRelease = (version: string, body: string) => {
 };
 
 const draftRelease = async () => {
-  const { body, version } = await getChangelog();
+  const { version } = await getChangelog();
 
-  await Config.load(version);
-  exec("hconf setup");
+  await Config.load(version).then((x) => x.write());
+  const x = exec(`hconf next-version ${version.prev} ${version.isBreaking}`);
 
-  core.setOutput("body", body);
+  console.log(x);
+
+  // core.setOutput("body", body);
   core.setOutput("version", version.next);
 };
 

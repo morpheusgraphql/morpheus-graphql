@@ -10,21 +10,6 @@ type Vector = [number, number, number];
 
 const SEPARATOR = ".";
 
-const toVersion = (v: string): Vector =>
-  v === "latest" ? [Infinity, 0, 0] : parse(v);
-
-const compare = ([x, ...xs]: number[], [y, ...ys]: number[]): number => {
-  if (x === undefined && y == undefined) {
-    return 0;
-  }
-
-  if (x === y) {
-    return compare(xs, ys);
-  }
-
-  return x - y;
-};
-
 const parse = (tag: string): Vector => {
   const vs = tag.split(SEPARATOR).map((s) => parseInt(s, 10));
   const [major, minor, revision] = vs;
@@ -52,7 +37,4 @@ export class Version {
   };
 
   public format = () => this.tuple.join(SEPARATOR);
-
-  static compare = (x: string, y: string) =>
-    compare(toVersion(x), toVersion(y));
 }
