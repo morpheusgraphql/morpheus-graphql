@@ -34,7 +34,7 @@ import HConf.Version
     Deps,
     Version,
     getDep,
-    parseVersion,
+    parse,
   )
 import Relude hiding
   ( Undefined,
@@ -103,7 +103,7 @@ getBuild :: (MonadFail m) => Version -> Config -> m Build
 getBuild key Config {builds} = maybe (fail "invalid version") pure (M.lookup (show key) builds)
 
 getBuilds :: (MonadFail m) => Config -> m [(Version, Build)]
-getBuilds Config {builds} = traverse (\(k, v) -> (,v) <$> parseVersion k) (M.toList builds)
+getBuilds Config {builds} = traverse (\(k, v) -> (,v) <$> parse k) (M.toList builds)
 
 withPrefix :: Text -> Maybe Text -> Text
 withPrefix "." (Just prefix) = prefix
