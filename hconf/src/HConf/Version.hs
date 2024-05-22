@@ -64,7 +64,7 @@ instance Parse Version where
   parse "latest" = pure LatestVersion
   parse s =
     maybe
-      (fail "invalid version")
+      (fail $ "invalid version" <> toString s)
       (pure . Version)
       $ traverse (readMaybe . unpack)
       $ split (== '.')
