@@ -23,4 +23,5 @@ setup version = run "setup" $ do
   checkPackages
 
 updateVersion :: String -> Bool -> Env -> IO ()
-updateVersion = undefined
+updateVersion _ _ = run "next" $ do
+  pure ()
