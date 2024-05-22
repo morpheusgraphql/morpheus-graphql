@@ -5,7 +5,7 @@ import * as core from "@actions/core";
 import { getChangelog } from "./lib/changelog";
 
 import { Command } from "commander";
-import { getVersion } from "./lib/utils/config";
+import { getVersion } from "./lib/utils/file";
 
 const cli = new Command();
 

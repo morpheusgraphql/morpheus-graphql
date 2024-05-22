@@ -1,7 +1,7 @@
 import { getPullRequests, hasBreakingChange } from "./get-pull-requests";
 import { renderChangelog } from "./render-changelog";
 import { exec, lastTag } from "../utils/git";
-import { getVersion } from "../utils/config";
+import { getVersion } from "../utils/file";
 
 export const getChangelog = async () => {
   const version = lastTag();

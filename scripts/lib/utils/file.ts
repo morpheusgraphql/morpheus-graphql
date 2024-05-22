@@ -17,3 +17,8 @@ export class Yaml<T, A extends string[] = [string]> {
   write = (o: T, ops?: DumpOptions, ...p: A) =>
     write(this.file(...p), dump(o, ops));
 }
+
+export const getVersion = () =>
+  new Yaml<{ version: string }, []>(() => "./hconf.yaml")
+    .read()
+    .then((x) => x.version);
