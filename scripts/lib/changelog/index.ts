@@ -11,7 +11,7 @@ export const getChangelog = async () => {
   const pullRequests = await getPullRequests(commits);
   const isBreaking = Boolean(pullRequests.find(propEq("type", "breaking")));
 
-  console.log(exec(`hconf next-version ${version} ${isBreaking ? "-b" : ""}`));
+  console.log(exec(`hconf next ${version} ${isBreaking ? "-b" : ""}`));
 
   const next = await getVersion();
 
