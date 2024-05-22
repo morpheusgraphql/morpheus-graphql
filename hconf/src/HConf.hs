@@ -5,6 +5,8 @@ module HConf
   ( setup,
     Env (..),
     updateVersion,
+    Version,
+    Parse (..),
   )
 where
 
@@ -14,7 +16,7 @@ import HConf.Env (Env (..))
 import HConf.Hie (genHie)
 import HConf.Package (checkPackages)
 import HConf.Stack (setupStack)
-import HConf.Version (Parse (..))
+import HConf.Version (Parse (..), Version)
 import HConf.Yaml (run)
 import Relude (asks)
 import Prelude
