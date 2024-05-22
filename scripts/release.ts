@@ -35,6 +35,7 @@ const draftRelease = async () => {
   const x = exec(`hconf next-version ${prev} ${isBreaking ? "-b" : ""}`);
 
   console.log(x);
+  Config.load();
 
   core.setOutput("body", body);
   core.setOutput("version", next);
