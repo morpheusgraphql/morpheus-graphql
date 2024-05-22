@@ -12,6 +12,7 @@ module HConf.Version
     getDep,
     traverseDeps,
     Parse (..),
+    nextVersion,
   )
 where
 
@@ -59,6 +60,9 @@ data Version
     ( Generic,
       Eq
     )
+
+nextVersion :: Bool -> Version -> Version
+nextVersion = undefined
 
 instance Parse Version where
   parse "latest" = pure LatestVersion

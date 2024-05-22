@@ -31,10 +31,11 @@ import Data.Aeson.Types
 import qualified Data.Map as M
 import HConf.Utils
 import HConf.Version
-  ( Bounds,
+  ( Bounds (..),
     Deps,
     Version,
     getDep,
+    nextVersion,
     parse,
   )
 import Relude hiding
@@ -115,7 +116,14 @@ instance ToJSON Config where
   toJSON = genericToJSON defaultOptions {omitNothingFields = True}
 
 data VersionUpdate = VersionUpdate
-  { prev :: Text,
-    next :: Text,
+  { prev :: Version,
+    next :: Version,
     isBreaking :: Bool
   }
+
+updateConfig :: (MonadFail m) => VersionUpdate -> Config -> m Config
+updateConfig VersionUpdate {..} Config {..}
+  | prev == version = do
+      let newBounds = if isBreaking then Bounds next (Just $ nextVersion isBreaking next) else bounds
+      pure Config {version = next, bounds = newBounds, ..}
+  | otherwise = fail "invalid versions ${version} and ${prev}"
