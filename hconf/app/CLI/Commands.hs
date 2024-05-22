@@ -33,6 +33,7 @@ data Command
   = Setup (Maybe String)
   | Next String Bool
   | About
+  | CurrentVersion
   deriving (Show)
 
 data App = App
@@ -52,7 +53,8 @@ commandParser =
   buildOperation
     [ ("setup", "builds Haskell code from GQL source", Setup <$> optional parseVersion),
       ("about", "api information", pure About),
-      ("next", "next release", Next <$> parseVersion <*> switch (long "breaking" <> short 'b'))
+      ("next", "next release", Next <$> parseVersion <*> switch (long "breaking" <> short 'b')),
+      ("version", "get current version", pure CurrentVersion)
     ]
 
 buildOperation :: [(String, String, Parser Command)] -> Parser Command

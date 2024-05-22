@@ -11,6 +11,7 @@ module HConf.Yaml
     rewriteYaml,
     run,
     IOAction (..),
+    runSilent,
   )
 where
 
@@ -43,6 +44,14 @@ parseYaml = decodeThrow
 
 serializeYaml :: (ToJSON a) => a -> ByteString
 serializeYaml = encodePretty (setConfDropNull True $ setConfCompare compareFields defConfig)
+
+runSilent :: ConfigT (Maybe Config) -> Env -> IO ()
+runSilent t env@Env {..} = do
+  cfg <- L.readFile hconf >>= parseYaml
+  res <- runConfigT t env cfg
+  case res of
+    Left x -> alert ("ERROR: " <> x)
+    Right _ -> pure ()
 
 run :: String -> ConfigT (Maybe Config) -> Env -> IO ()
 run name t env@Env {..} = do

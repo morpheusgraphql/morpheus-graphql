@@ -7,29 +7,36 @@ module HConf
     updateVersion,
     Version,
     Parse (..),
+    getVersion,
   )
 where
 
-import HConf.Config (updateConfig)
+import HConf.Config (Config (..), updateConfig)
 import HConf.ConfigT (HCEnv (..))
 import HConf.Env (Env (..))
 import HConf.Hie (genHie)
+import HConf.Log (log)
 import HConf.Package (checkPackages)
 import HConf.Stack (setupStack)
 import HConf.Version (Parse (..), Version)
-import HConf.Yaml (run)
-import Relude (asks)
-import Prelude
+import HConf.Yaml (run, runSilent)
+import Relude
 
 setup :: String -> Env -> IO ()
-setup version = run "setup" $ do
-  parse version >>= setupStack
+setup v = run "setup" $ do
+  parse v >>= setupStack
   genHie
   checkPackages
   pure Nothing
 
 updateVersion :: String -> Bool -> Env -> IO ()
 updateVersion v isBreaking = run "next" $ do
-  version <- parse v
-  newConfig <- asks config >>= updateConfig version isBreaking
+  v2 <- parse v
+  newConfig <- asks config >>= updateConfig v2 isBreaking
   pure (Just newConfig)
+
+getVersion :: Env -> IO ()
+getVersion = runSilent $ do
+  cfg <- asks config
+  log (toString $ version cfg)
+  pure Nothing
