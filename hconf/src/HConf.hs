@@ -12,7 +12,6 @@ import HConf.Config (updateConfig)
 import HConf.ConfigT (HCEnv (..))
 import HConf.Env (Env (..))
 import HConf.Hie (genHie)
-import HConf.Log (info)
 import HConf.Package (checkPackages)
 import HConf.Stack (setupStack)
 import HConf.Version (Parse (..))
@@ -30,6 +29,5 @@ setup version = run "setup" $ do
 updateVersion :: String -> Bool -> Env -> IO ()
 updateVersion v isBreaking = run "next" $ do
   version <- parse v
-  info (show version)
   newConfig <- asks config >>= updateConfig version isBreaking
   pure (Just newConfig)
