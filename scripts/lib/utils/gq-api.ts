@@ -1,8 +1,8 @@
 import axios from "axios";
 
-export const GH_ORG = "morpheusgraphql";
+const GH_ORG = "morpheusgraphql";
 
-export const GH_REPO = "morpheus-graphql";
+const GH_REPO = "morpheus-graphql";
 
 const { GITHUB_TOKEN } = process.env;
 
@@ -10,7 +10,10 @@ if (!GITHUB_TOKEN) {
   throw new Error("missing variable: GITHUB_TOKEN");
 }
 
-export const ghApiREST = (path: string, body: {}) =>
+const authorizedGithubUrl = () =>
+  `https://${GITHUB_TOKEN}@github.com/${GH_ORG}/${GH_REPO}.git`;
+
+const ghApiREST = (path: string, body: {}) =>
   axios
     .post(`https://api.github.com/${path}`, JSON.stringify(body), {
       headers: {
@@ -22,6 +25,6 @@ export const ghApiREST = (path: string, body: {}) =>
     .then(({ data }) => data.data)
     .catch((err) => Promise.reject(err.message));
 
-export const ghApiGQL = (query: string) => ghApiREST("graphql", { query });
+const ghApiGQL = (query: string) => ghApiREST("graphql", { query });
 
-export { GITHUB_TOKEN };
+export { GH_ORG, GH_REPO, ghApiREST, ghApiGQL, authorizedGithubUrl };

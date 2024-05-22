@@ -1,4 +1,4 @@
-import { GH_ORG, GH_REPO, GITHUB_TOKEN } from "./gq-api";
+import { authorizedGithubUrl } from "./gq-api";
 import { exec } from "./utils";
 
 const getDate = () => exec("git log -1 --format=%cd --date=short");
@@ -10,9 +10,7 @@ export const push = (name: string) => {
   exec("git add .");
   exec("git status");
   exec(`git commit -m "${name}"`);
-  exec(
-    `git push https://${GITHUB_TOKEN}@github.com/${GH_ORG}/${GH_REPO}.git HEAD:${name}`
-  );
+  exec(`git push ${authorizedGithubUrl()} HEAD:${name}`);
 };
 
 export { getDate, lastTag, commitsAfter, exec };
