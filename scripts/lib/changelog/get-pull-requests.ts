@@ -74,7 +74,10 @@ const batchPR = (xs: number[]) =>
     })
   );
 
-const getPR = ({ associatedPullRequests, message }: Commit): Maybe<number> => {
+const ToPRNumber = ({
+  associatedPullRequests,
+  message,
+}: Commit): Maybe<number> => {
   const number = associatedPullRequests.nodes.find(
     ({ repository: { nameWithOwner } }) => isOwner(nameWithOwner)
   )?.number;
@@ -84,7 +87,7 @@ const getPR = ({ associatedPullRequests, message }: Commit): Maybe<number> => {
 
 const fetchChanges = (version: string) =>
   batchMap(batchCommit, commitsAfter(version)).then((commit) =>
-    batchMap(batchPR, uniq(reject(isNil, commit.map(getPR))))
+    batchMap(batchPR, uniq(reject(isNil, commit.map(ToPRNumber))))
   );
 
 const isBreaking = (changes: Change[]) =>
