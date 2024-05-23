@@ -99,13 +99,13 @@ const getAssociatedPR = ({
   return number ?? getPRNumber(message);
 };
 
-const getGithubPRs = (commits: string[]): Promise<PR[]> =>
-  batchMap(batchCommitInfo, commits).then((ghCommits) =>
+const getPRs = (version: string): Promise<PR[]> =>
+  batchMap(batchCommitInfo, commitsAfter(version)).then((ghCommits) =>
     batchMap(batchPRInfo, uniq(ghCommits.map(getAssociatedPR).filter(Boolean)))
   );
 
 const fetchChanges = (version: string) =>
-  getGithubPRs(commitsAfter(version)).then((prs) =>
+  getPRs(version).then((prs) =>
     prs.map(
       ({ labels, ...pr }): Change => ({
         ...pr,
