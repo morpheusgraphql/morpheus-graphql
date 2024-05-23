@@ -96,18 +96,19 @@ instance FromJSON Version where
 instance ToJSON Version where
   toJSON = String . pack . show
 
-data BoundType
-  = Greater
-  | Lower
-  | GreaterOrEq
-  | LowerOrEq
+data BoundType = BoundType
+  { restriction :: Restriction,
+    strictness :: Bool
+  }
   deriving (Show, Eq, Ord)
 
+data Restriction = Min | Max deriving (Show, Eq, Ord)
+
 parseBound :: (MonadFail f) => Text -> f BoundType
-parseBound "<" = pure Greater
-parseBound "<=" = pure GreaterOrEq
-parseBound ">" = pure Lower
-parseBound ">=" = pure LowerOrEq
+parseBound "<" = pure $ BoundType Min False
+parseBound "<=" = pure $ BoundType Min True
+parseBound ">" = pure $ BoundType Max False
+parseBound ">=" = pure $ BoundType Max True
 parseBound x = fail ("unsorted bound type" <> toString x)
 
 instance Ord Version where
@@ -162,18 +163,12 @@ parseVersionBounds bounds
 
 parseMax :: (MonadFail m) => (Either Text BoundType, Text) -> m (Maybe Text)
 parseMax (Left {}, v) | null v = pure Nothing
-parseMax (Right o, value) | isUpperConstraint o = pure (Just value)
+parseMax (Right (BoundType Max _), v) = pure (Just v)
 parseMax _ = pure Nothing
 
 parseMin :: (MonadFail m) => (Either Text BoundType, Text) -> m Text
-parseMin (Right o, v) | isLowerConstraint o = pure v
+parseMin (Right (BoundType Min _), v) = pure v
 parseMin (o, v) = fail ("invalid" <> show (o, v))
-
-isLowerConstraint :: BoundType -> Bool
-isLowerConstraint = (`elem` [Lower, LowerOrEq])
-
-isUpperConstraint :: BoundType -> Bool
-isUpperConstraint = (`elem` [Greater, GreaterOrEq])
 
 parseBoundsFrom :: (MonadFail m) => Text -> Maybe Text -> m Bounds
 parseBoundsFrom minV maxV = Bounds <$> parse minV <*> traverse parse maxV
