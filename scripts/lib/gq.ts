@@ -14,8 +14,7 @@ const token = () => {
   return GITHUB_TOKEN;
 };
 
-const authorizedGithubUrl = () =>
-  `https://${token()}@github.com/${GH_ORG}/${GH_REPO}.git`;
+const authUrl = () => `https://${token()}@github.com/${GH_ORG}/${GH_REPO}.git`;
 
 const gh = (path: string, body: {}) =>
   axios
@@ -59,4 +58,4 @@ const gql =
 
 const isOwner = (name: string) => name === `${GH_ORG}/${GH_REPO}`;
 
-export { openPR, isOwner, gql, authorizedGithubUrl };
+export { openPR, isOwner, gql, authUrl };

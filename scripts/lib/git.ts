@@ -1,4 +1,4 @@
-import { authorizedGithubUrl } from "./gq";
+import { authUrl } from "./gq";
 import { exec } from "./utils";
 
 const git = (...cmd: string[]) => exec(["git", ...cmd].join(" "));
@@ -12,7 +12,7 @@ export const push = (name: string) => {
   git("add", ".");
   git("status");
   git("commit", "-m", `"${name}"`);
-  git("push", authorizedGithubUrl(), `HEAD:${name}`);
+  git("push", authUrl(), `HEAD:${name}`);
 };
 
 export { getDate, lastTag, commitsAfter, exec };
