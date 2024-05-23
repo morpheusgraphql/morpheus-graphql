@@ -1,5 +1,5 @@
 import { isNil, pluck, propEq, reject, uniq } from "ramda";
-import { ghApiGQL, GH_ORG, GH_REPO } from "../gq";
+import { gql, isOwner } from "../gq";
 import { Maybe } from "../types";
 import { batchMap, getPRNumber } from "../utils";
 import { parseLabel, PR_TYPE, SCOPE } from "./pull-request-types";
@@ -21,21 +21,7 @@ type PR = {
   body: string;
 };
 
-const gh =
-  <T, O>(f: (_: T) => string) =>
-  async (xs: T[]): Promise<O[]> => {
-    const { repository } = await ghApiGQL(`
-        {
-            repository(owner: "${GH_ORG}", name: "${GH_REPO}") {
-                  ${xs.map(f).join("\n")}
-            }
-        }
-    `);
-
-    return Object.values(repository).filter(Boolean) as any;
-  };
-
-const batchCommit = gh<string, Commit>(
+const batchCommit = gql<string, Commit>(
   (oid) =>
     `commit_${oid}: object(oid: "${oid}") {
         ... on Commit {
@@ -59,7 +45,7 @@ type Change = PR & {
 };
 
 const batchPR = (xs: number[]) =>
-  gh<number, PR>(
+  gql<number, PR>(
     (number) => `
     pr_${number}: pullRequest(number: ${number}) {
         number
@@ -90,8 +76,7 @@ const batchPR = (xs: number[]) =>
 
 const getPR = ({ associatedPullRequests, message }: Commit): Maybe<number> => {
   const number = associatedPullRequests.nodes.find(
-    ({ repository: { nameWithOwner } }) =>
-      nameWithOwner === `${GH_ORG}/${GH_REPO}`
+    ({ repository: { nameWithOwner } }) => isOwner(nameWithOwner)
   )?.number;
 
   return number ?? getPRNumber(message);

@@ -29,7 +29,7 @@ const gh = (path: string, body: {}) =>
     .then(({ data }) => data.data)
     .catch((err) => Promise.reject(err.message));
 
-const ghApiGQL = (query: string) => gh("graphql", { query });
+const gqlAPI = (query: string) => gh("graphql", { query });
 
 const openPR = (branchName: string, title: string, body: string) => {
   push(branchName);
@@ -44,4 +44,19 @@ const openPR = (branchName: string, title: string, body: string) => {
   });
 };
 
-export { openPR, GH_REPO, GH_ORG, gh, ghApiGQL, authorizedGithubUrl };
+const gql =
+  <T, O>(f: (_: T) => string) =>
+  (xs: T[]): Promise<O[]> =>
+    gqlAPI(`
+        {
+            repository(owner: "${GH_ORG}", name: "${GH_REPO}") {
+                  ${xs.map(f).join("\n")}
+            }
+        }
+    `).then(
+      ({ repository }) => Object.values(repository).filter(Boolean) as O[]
+    );
+
+const isOwner = (name: string) => name === `${GH_ORG}/${GH_REPO}`;
+
+export { openPR, isOwner, gql, authorizedGithubUrl };
