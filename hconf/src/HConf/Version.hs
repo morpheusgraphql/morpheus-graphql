@@ -105,10 +105,10 @@ data BoundType = BoundType
 data Restriction = Min | Max deriving (Show, Eq, Ord)
 
 parseBound :: (MonadFail f) => Text -> f BoundType
-parseBound "<" = pure $ BoundType Min False
-parseBound "<=" = pure $ BoundType Min True
-parseBound ">" = pure $ BoundType Max False
-parseBound ">=" = pure $ BoundType Max True
+parseBound "<" = pure $ BoundType Max False
+parseBound "<=" = pure $ BoundType Max True
+parseBound ">" = pure $ BoundType Min False
+parseBound ">=" = pure $ BoundType Min True
 parseBound x = fail ("unsorted bound type" <> toString x)
 
 instance Ord Version where
