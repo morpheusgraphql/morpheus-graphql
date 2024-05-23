@@ -1,4 +1,4 @@
-import { authorizedGithubUrl } from "./gq-api";
+import { authorizedGithubUrl } from "./gq";
 import { exec } from "./utils";
 
 const git = (...cmd: string[]) => exec(["git", ...cmd].join(" "));
