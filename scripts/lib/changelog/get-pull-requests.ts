@@ -56,11 +56,7 @@ const batchCommitInfo = getGithub<Commit>(
 );
 
 const batchPRInfo = (xs: unknown[]) =>
-  getGithub<
-    Omit<PR, "labels"> & {
-      labels: { nodes: { name: string }[] };
-    }
-  >(
+  getGithub<Omit<PR, "labels"> & { labels: { nodes: { name: string }[] } }>(
     (number) => `
     pr_${number}: pullRequest(number: ${number}) {
         number
@@ -87,10 +83,7 @@ const batchPRInfo = (xs: unknown[]) =>
     )
   );
 
-const getAssociatedPR = ({
-  associatedPullRequests,
-  message,
-}: Commit): Maybe<number> => {
+const getPR = ({ associatedPullRequests, message }: Commit): Maybe<number> => {
   const number = associatedPullRequests.nodes.find(
     ({ repository: { nameWithOwner } }) =>
       nameWithOwner === `${GH_ORG}/${GH_REPO}`
@@ -99,21 +92,20 @@ const getAssociatedPR = ({
   return number ?? getPRNumber(message);
 };
 
-const getPRs = (version: string): Promise<PR[]> =>
-  batchMap(batchCommitInfo, commitsAfter(version)).then((ghCommits) =>
-    batchMap(batchPRInfo, uniq(ghCommits.map(getAssociatedPR).filter(Boolean)))
-  );
-
 const fetchChanges = (version: string) =>
-  getPRs(version).then((prs) =>
-    prs.map(
-      ({ labels, ...pr }): Change => ({
-        ...pr,
-        type: labels.map(parseLabel("pr")).find(Boolean) ?? "chore",
-        scopes: labels.map(parseLabel("scope")).filter(Boolean) as SCOPE[],
-      })
+  batchMap(batchCommitInfo, commitsAfter(version))
+    .then((commit) =>
+      batchMap(batchPRInfo, uniq(commit.map(getPR).filter(Boolean)))
     )
-  );
+    .then((prs) =>
+      prs.map(
+        ({ labels, ...pr }): Change => ({
+          ...pr,
+          type: labels.map(parseLabel("pr")).find(Boolean) ?? "chore",
+          scopes: labels.map(parseLabel("scope")).filter(Boolean) as SCOPE[],
+        })
+      )
+    );
 
 type Change = Omit<PR, "labels"> & {
   type: PR_TYPE;
