@@ -1,4 +1,4 @@
-import { pluck, propEq, uniq } from "ramda";
+import { isNil, pluck, propEq, reject, uniq } from "ramda";
 import { ghApiGQL, GH_ORG, GH_REPO } from "../gq";
 import { Maybe } from "../types";
 import { batchMap, getPRNumber } from "../utils";
@@ -17,13 +17,13 @@ type PR = {
   number: number;
   title: string;
   author: { login: string; url: string };
-  labels: string[];
+  labels: { nodes: { name: string }[] };
   body: string;
 };
 
-const getGithub =
-  <O>(f: (_: unknown) => string) =>
-  async (xs: unknown[]): Promise<O[]> => {
+const gh =
+  <T, O>(f: (_: T) => string) =>
+  async (xs: T[]): Promise<O[]> => {
     const { repository } = await ghApiGQL(`
         {
             repository(owner: "${GH_ORG}", name: "${GH_REPO}") {
@@ -35,10 +35,9 @@ const getGithub =
     return Object.values(repository).filter(Boolean) as any;
   };
 
-const batchCommitInfo = getGithub<Commit>(
+const batchCommit = gh<string, Commit>(
   (oid) =>
-    `
-    commit_${oid}: object(oid: "${oid}") {
+    `commit_${oid}: object(oid: "${oid}") {
         ... on Commit {
             oid
             message
@@ -51,12 +50,16 @@ const batchCommitInfo = getGithub<Commit>(
               }
             }
         }
-    }
-    `
+    }`
 );
 
-const batchPRInfo = (xs: unknown[]) =>
-  getGithub<Omit<PR, "labels"> & { labels: { nodes: { name: string }[] } }>(
+type Change = PR & {
+  type: PR_TYPE;
+  scopes: SCOPE[];
+};
+
+const batchPR = (xs: number[]) =>
+  gh<number, PR>(
     (number) => `
     pr_${number}: pullRequest(number: ${number}) {
         number
@@ -72,15 +75,17 @@ const batchPRInfo = (xs: unknown[]) =>
               name
             }
         }
-    }
-    `
+    }`
   )(xs).then((prs) =>
-    prs.map(
-      ({ labels, ...rest }): PR => ({
-        ...rest,
-        labels: pluck("name", labels.nodes),
-      })
-    )
+    prs.map((pr): Change => {
+      const labels = pluck("name", pr.labels.nodes);
+
+      return {
+        ...pr,
+        type: labels.map(parseLabel("pr")).find(Boolean) ?? "chore",
+        scopes: labels.map(parseLabel("scope")).filter(Boolean) as SCOPE[],
+      };
+    })
   );
 
 const getPR = ({ associatedPullRequests, message }: Commit): Maybe<number> => {
@@ -93,24 +98,9 @@ const getPR = ({ associatedPullRequests, message }: Commit): Maybe<number> => {
 };
 
 const fetchChanges = (version: string) =>
-  batchMap(batchCommitInfo, commitsAfter(version))
-    .then((commit) =>
-      batchMap(batchPRInfo, uniq(commit.map(getPR).filter(Boolean)))
-    )
-    .then((prs) =>
-      prs.map(
-        ({ labels, ...pr }): Change => ({
-          ...pr,
-          type: labels.map(parseLabel("pr")).find(Boolean) ?? "chore",
-          scopes: labels.map(parseLabel("scope")).filter(Boolean) as SCOPE[],
-        })
-      )
-    );
-
-type Change = Omit<PR, "labels"> & {
-  type: PR_TYPE;
-  scopes: SCOPE[];
-};
+  batchMap(batchCommit, commitsAfter(version)).then((commit) =>
+    batchMap(batchPR, uniq(reject(isNil, commit.map(getPR))))
+  );
 
 const isBreaking = (changes: Change[]) =>
   Boolean(changes.find(propEq("type", "breaking")));
