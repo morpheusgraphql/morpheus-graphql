@@ -1,5 +1,6 @@
 import axios from "axios";
 import { push } from "./git";
+import { chunks } from "./utils";
 
 const GH_ORG = "morpheusgraphql";
 
@@ -56,6 +57,11 @@ const gql =
       ({ repository }) => Object.values(repository).filter(Boolean) as O[]
     );
 
+const batch = <I, O>(f: (_: I) => string, commits: I[]) =>
+  Promise.all(chunks(commits).map((batch) => gql<I, O>(f)(batch))).then((x) =>
+    x.flat()
+  );
+
 const isOwner = (name: string) => name === `${GH_ORG}/${GH_REPO}`;
 
-export { openPR, isOwner, gql, authUrl };
+export { openPR, isOwner, batch, authUrl };

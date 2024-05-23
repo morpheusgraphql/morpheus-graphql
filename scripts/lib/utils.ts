@@ -7,7 +7,7 @@ export const getPRNumber = (msg: string) => {
   return num ? parseInt(num, 10) : undefined;
 };
 
-const chunks = <T>(commits: T[]): T[][] => {
+export const chunks = <T>(commits: T[]): T[][] => {
   const batches: T[][] = [];
 
   for (let i = 0; i < commits.length; i += 50) {
@@ -17,9 +17,6 @@ const chunks = <T>(commits: T[]): T[][] => {
 
   return batches;
 };
-
-export const batchMap = <I, O>(f: (_: I[]) => Promise<O[]>, commits: I[]) =>
-  Promise.all(chunks(commits).map((batch) => f(batch))).then((x) => x.flat());
 
 export const isKey = <T extends string>(
   obj: Record<T, unknown>,

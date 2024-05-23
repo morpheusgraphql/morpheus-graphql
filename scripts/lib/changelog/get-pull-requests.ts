@@ -1,7 +1,7 @@
 import { isNil, map, pluck, propEq, reject, uniq } from "ramda";
-import { gql, isOwner } from "../gh";
+import { isOwner, batch } from "../gh";
 import { Maybe } from "../types";
-import { batchMap, getPRNumber } from "../utils";
+import { getPRNumber } from "../utils";
 import { parseLabel, PR_TYPE, SCOPE } from "./pull-request-types";
 import { commitsAfter } from "../git";
 
@@ -21,9 +21,8 @@ type PR = {
   body: string;
 };
 
-const batchCommit = gql<string, Commit>(
-  (oid) =>
-    `commit_${oid}: object(oid: "${oid}") {
+const batchCommit = (oid: string) =>
+  `commit_${oid}: object(oid: "${oid}") {
         ... on Commit {
             oid
             message
@@ -36,16 +35,14 @@ const batchCommit = gql<string, Commit>(
               }
             }
         }
-    }`
-);
+    }`;
 
 type Change = PR & {
   type: PR_TYPE;
   scopes: SCOPE[];
 };
 
-const batchPR = gql<number, PR>(
-  (number) => `
+const batchPR = (number: number) => `
     pr_${number}: pullRequest(number: ${number}) {
         number
         title
@@ -60,8 +57,7 @@ const batchPR = gql<number, PR>(
               name
             }
         }
-    }`
-);
+    }`;
 
 const ToPRNumber = ({
   associatedPullRequests,
@@ -75,9 +71,9 @@ const ToPRNumber = ({
 };
 
 const fetchChanges = (version: string) =>
-  batchMap(batchCommit, commitsAfter(version))
+  batch<string, Commit>(batchCommit, commitsAfter(version))
     .then((commit) =>
-      batchMap(batchPR, uniq(reject(isNil, commit.map(ToPRNumber))))
+      batch<number, PR>(batchPR, uniq(reject(isNil, commit.map(ToPRNumber))))
     )
     .then(
       map((pr): Change => {
