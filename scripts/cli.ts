@@ -1,4 +1,4 @@
-import { openPR } from "./lib/gq";
+import { openPR } from "./lib/gh";
 import { exit, hconf, write } from "./lib/utils";
 import * as core from "@actions/core";
 import { getChangelog } from "./lib/changelog";

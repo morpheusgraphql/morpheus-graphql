@@ -1,5 +1,5 @@
 import { isNil, map, pluck, propEq, reject, uniq } from "ramda";
-import { gql, isOwner } from "../gq";
+import { gql, isOwner } from "../gh";
 import { Maybe } from "../types";
 import { batchMap, getPRNumber } from "../utils";
 import { parseLabel, PR_TYPE, SCOPE } from "./pull-request-types";

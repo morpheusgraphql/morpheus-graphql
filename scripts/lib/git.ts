@@ -1,4 +1,4 @@
-import { authUrl } from "./gq";
+import { authUrl } from "./gh";
 import { exec } from "./utils";
 
 const git = (...cmd: string[]) => exec(["git", ...cmd].join(" "));
