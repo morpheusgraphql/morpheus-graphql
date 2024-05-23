@@ -1,4 +1,4 @@
-import { isNil, pluck, propEq, reject, uniq } from "ramda";
+import { isNil, map, pluck, propEq, reject, uniq } from "ramda";
 import { gql, isOwner } from "../gq";
 import { Maybe } from "../types";
 import { batchMap, getPRNumber } from "../utils";
@@ -62,17 +62,7 @@ const batchPR = (xs: number[]) =>
             }
         }
     }`
-  )(xs).then((prs) =>
-    prs.map((pr): Change => {
-      const labels = pluck("name", pr.labels.nodes);
-
-      return {
-        ...pr,
-        type: labels.map(parseLabel("pr")).find(Boolean) ?? "chore",
-        scopes: labels.map(parseLabel("scope")).filter(Boolean) as SCOPE[],
-      };
-    })
-  );
+  )(xs);
 
 const ToPRNumber = ({
   associatedPullRequests,
@@ -86,9 +76,21 @@ const ToPRNumber = ({
 };
 
 const fetchChanges = (version: string) =>
-  batchMap(batchCommit, commitsAfter(version)).then((commit) =>
-    batchMap(batchPR, uniq(reject(isNil, commit.map(ToPRNumber))))
-  );
+  batchMap(batchCommit, commitsAfter(version))
+    .then((commit) =>
+      batchMap(batchPR, uniq(reject(isNil, commit.map(ToPRNumber))))
+    )
+    .then(
+      map((pr): Change => {
+        const labels = pluck("name", pr.labels.nodes);
+
+        return {
+          ...pr,
+          type: labels.map(parseLabel("pr")).find(Boolean) ?? "chore",
+          scopes: labels.map(parseLabel("scope")).filter(Boolean) as SCOPE[],
+        };
+      })
+    );
 
 const isBreaking = (changes: Change[]) =>
   Boolean(changes.find(propEq("type", "breaking")));
