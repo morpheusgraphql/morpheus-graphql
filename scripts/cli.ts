@@ -1,5 +1,4 @@
-import { push } from "./lib/git";
-import { gh, GH_ORG, GH_REPO } from "./lib/gq-api";
+import { openPR } from "./lib/gq-api";
 import { exit, hconf, write } from "./lib/utils";
 import * as core from "@actions/core";
 import { getChangelog } from "./lib/changelog";
@@ -10,21 +9,6 @@ import { format } from "./lib/format";
 const cli = new Command();
 
 const handleError = (e: Error) => core.setFailed(e);
-
-export const openRelease = (version: string, body: string) => {
-  const branchName = `publish-release/${version}`;
-
-  push(branchName);
-  return gh(`repos/${GH_ORG}/${GH_REPO}/pulls`, {
-    head: branchName,
-    draft: true,
-    base: "main",
-    owner: GH_ORG,
-    repo: GH_REPO,
-    title: `Publish Release ${version}`,
-    body,
-  });
-};
 
 const draftRelease = async () => {
   const { body, next } = await getChangelog();
@@ -51,7 +35,11 @@ release
   .argument("<string>", "version number")
   .option("-b, --body <string>", "pull request body", "")
   .action((version: string, { body }: { body: string }) =>
-    openRelease(version, body).catch(exit)
+    openPR(
+      `publish-release/${version}`,
+      `Publish Release ${version}`,
+      body
+    ).catch(exit)
   );
 
 release

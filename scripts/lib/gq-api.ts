@@ -1,4 +1,5 @@
 import axios from "axios";
+import { push } from "./git";
 
 const GH_ORG = "morpheusgraphql";
 
@@ -30,4 +31,17 @@ const gh = (path: string, body: {}) =>
 
 const ghApiGQL = (query: string) => gh("graphql", { query });
 
-export { GH_ORG, GH_REPO, gh, ghApiGQL, authorizedGithubUrl };
+const openPR = (branchName: string, title: string, body: string) => {
+  push(branchName);
+  return gh(`repos/${GH_ORG}/${GH_REPO}/pulls`, {
+    head: branchName,
+    draft: true,
+    base: "main",
+    owner: GH_ORG,
+    repo: GH_REPO,
+    title,
+    body,
+  });
+};
+
+export { openPR, GH_REPO, gh, ghApiGQL, authorizedGithubUrl };
