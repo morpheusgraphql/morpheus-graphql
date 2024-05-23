@@ -1,6 +1,6 @@
 import { groupBy, range } from "ramda";
 import { isKey } from "../utils";
-import { PullRequest } from "./get-pull-requests";
+import { Change } from "./get-pull-requests";
 import { pullRequestTypes, config, SCOPE } from "./pull-request-types";
 import { getDate } from "../git";
 
@@ -31,7 +31,7 @@ const renderPullRequest = ({
   title,
   body,
   scopes,
-}: PullRequest): string => {
+}: Change): string => {
   const details = body
     ? `${indent(1)}- <details>\n${indent(3)}${body.replace(
         /\n/g,
@@ -50,10 +50,10 @@ const renderPullRequest = ({
   return [head, stats, details].filter(Boolean).join("\n");
 };
 
-const renderSection = (label: string, pullRequests: PullRequest[]) =>
+const renderSection = (label: string, pullRequests: Change[]) =>
   [`#### ${label}`, pullRequests.map(renderPullRequest)].flat().join("\n");
 
-const renderChangelog = (tag: string, prs: PullRequest[]) => {
+const renderChangelog = (tag: string, prs: Change[]) => {
   const date = getDate();
   const groups = groupBy((x) => x.type, prs);
   let changelog = `## ${tag || "Unreleased"} (${date})\n`;

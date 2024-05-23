@@ -5,23 +5,18 @@ import { batchMap, getPRNumber } from "../utils";
 import { parseLabel, PR_TYPE, SCOPE } from "./pull-request-types";
 import { commitsAfter } from "../git";
 
-type AssocRP = {
-  number: number;
-  repository: { nameWithOwner: string };
-};
-
 type Commit = {
   oid: string;
   message: string;
-  associatedPullRequests: { nodes: AssocRP[] };
+  associatedPullRequests: {
+    nodes: Array<{ number: number; repository: { nameWithOwner: string } }>;
+  };
 };
 
-type Author = { login: string; url: string };
-
-type GithubPR = {
+type PR = {
   number: number;
   title: string;
-  author: Author;
+  author: { login: string; url: string };
   labels: string[];
   body: string;
 };
@@ -62,7 +57,7 @@ const batchCommitInfo = getGithub<Commit>(
 
 const batchPRInfo = (xs: unknown[]) =>
   getGithub<
-    Omit<GithubPR, "labels"> & {
+    Omit<PR, "labels"> & {
       labels: { nodes: { name: string }[] };
     }
   >(
@@ -85,7 +80,7 @@ const batchPRInfo = (xs: unknown[]) =>
     `
   )(xs).then((prs) =>
     prs.map(
-      ({ labels, ...rest }): GithubPR => ({
+      ({ labels, ...rest }): PR => ({
         ...rest,
         labels: pluck("name", labels.nodes),
       })
@@ -104,15 +99,15 @@ const getAssociatedPR = ({
   return number ?? getPRNumber(message);
 };
 
-const getGithubPRs = (commits: string[]): Promise<GithubPR[]> =>
+const getGithubPRs = (commits: string[]): Promise<PR[]> =>
   batchMap(batchCommitInfo, commits).then((ghCommits) =>
     batchMap(batchPRInfo, uniq(ghCommits.map(getAssociatedPR).filter(Boolean)))
   );
 
-const getPullRequests = (version: string) =>
+const fetchChanges = (version: string) =>
   getGithubPRs(commitsAfter(version)).then((prs) =>
     prs.map(
-      ({ labels, ...pr }): PullRequest => ({
+      ({ labels, ...pr }): Change => ({
         ...pr,
         type: labels.map(parseLabel("pr")).find(Boolean) ?? "chore",
         scopes: labels.map(parseLabel("scope")).filter(Boolean) as SCOPE[],
@@ -120,12 +115,12 @@ const getPullRequests = (version: string) =>
     )
   );
 
-type PullRequest = Omit<GithubPR, "labels"> & {
+type Change = Omit<PR, "labels"> & {
   type: PR_TYPE;
   scopes: SCOPE[];
 };
 
-const isBreaking = (pullRequests: PullRequest[]) =>
-  Boolean(pullRequests.find(propEq("type", "breaking")));
+const isBreaking = (changes: Change[]) =>
+  Boolean(changes.find(propEq("type", "breaking")));
 
-export { getPullRequests, isBreaking, PullRequest };
+export { fetchChanges, isBreaking, Change };
