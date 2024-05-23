@@ -44,4 +44,4 @@ const openPR = (branchName: string, title: string, body: string) => {
   });
 };
 
-export { openPR, GH_REPO, gh, ghApiGQL, authorizedGithubUrl };
+export { openPR, GH_REPO, GH_ORG, gh, ghApiGQL, authorizedGithubUrl };
