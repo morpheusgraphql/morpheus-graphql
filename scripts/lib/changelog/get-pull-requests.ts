@@ -44,9 +44,8 @@ type Change = PR & {
   scopes: SCOPE[];
 };
 
-const batchPR = (xs: number[]) =>
-  gql<number, PR>(
-    (number) => `
+const batchPR = gql<number, PR>(
+  (number) => `
     pr_${number}: pullRequest(number: ${number}) {
         number
         title
@@ -62,7 +61,7 @@ const batchPR = (xs: number[]) =>
             }
         }
     }`
-  )(xs);
+);
 
 const ToPRNumber = ({
   associatedPullRequests,
