@@ -21,29 +21,45 @@ type PR = {
   body: string;
 };
 
-const batchCommit = (oid: string) =>
-  `commit_${oid}: object(oid: "${oid}") {
-        ... on Commit {
-            oid
-            message
-            associatedPullRequests(first: 10) {
-            nodes {
-                number
-                repository {
-                  nameWithOwner
-                }
-              }
-            }
-        }
-    }`;
-
 type Change = PR & {
   type: PR_TYPE;
   scopes: SCOPE[];
 };
 
-const batchPR = (number: number) => `
-    pr_${number}: pullRequest(number: ${number}) {
+const toPRNumber = ({
+  associatedPullRequests,
+  message,
+}: Commit): Maybe<number> => {
+  const number = associatedPullRequests.nodes.find(
+    ({ repository: { nameWithOwner } }) => isOwner(nameWithOwner)
+  )?.number;
+
+  return number ?? getPRNumber(message);
+};
+
+const fetchChanges = (version: string) =>
+  batch<string, Commit>(
+    (oid: string) =>
+      `commit_${oid}: object(oid: "${oid}") {
+          ... on Commit {
+              oid
+              message
+              associatedPullRequests(first: 10) {
+              nodes {
+                  number
+                  repository {
+                    nameWithOwner
+                  }
+                }
+              }
+          }
+      }`,
+    commitsAfter(version)
+  )
+    .then((commit) =>
+      batch<number, PR>(
+        (n) => `
+        pr_${n}: pullRequest(number: ${n}) {
         number
         title
         url
@@ -57,23 +73,9 @@ const batchPR = (number: number) => `
               name
             }
         }
-    }`;
-
-const ToPRNumber = ({
-  associatedPullRequests,
-  message,
-}: Commit): Maybe<number> => {
-  const number = associatedPullRequests.nodes.find(
-    ({ repository: { nameWithOwner } }) => isOwner(nameWithOwner)
-  )?.number;
-
-  return number ?? getPRNumber(message);
-};
-
-const fetchChanges = (version: string) =>
-  batch<string, Commit>(batchCommit, commitsAfter(version))
-    .then((commit) =>
-      batch<number, PR>(batchPR, uniq(reject(isNil, commit.map(ToPRNumber))))
+      }`,
+        uniq(reject(isNil, commit.map(toPRNumber)))
+      )
     )
     .then(
       map((pr): Change => {
