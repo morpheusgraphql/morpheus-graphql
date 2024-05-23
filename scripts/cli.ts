@@ -1,6 +1,6 @@
 import { push } from "./lib/git";
 import { gh, GH_ORG, GH_REPO } from "./lib/gq-api";
-import { exec, exit, getVersion, write } from "./lib/utils";
+import { exec, exit, hconf, write } from "./lib/utils";
 import * as core from "@actions/core";
 import { getChangelog } from "./lib/changelog";
 
@@ -33,7 +33,7 @@ const draftRelease = async () => {
   core.setOutput("version", next);
 };
 
-const describe = async () => core.setOutput("version", await getVersion());
+const describe = async () => core.setOutput("version", await hconf("version"));
 
 const changelog = async () => {
   const { body } = await getChangelog();

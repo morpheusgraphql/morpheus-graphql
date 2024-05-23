@@ -5,8 +5,8 @@ import { hconf } from "../utils";
 
 export const getChangelog = async () => {
   const version = lastTag();
-  const prs = await getPullRequests(version);
   const projectVersion = await hconf("version");
+  const prs = await getPullRequests(version);
 
   if (version !== projectVersion) {
     throw Error(`versions does not match: ${version} ${projectVersion}`);
