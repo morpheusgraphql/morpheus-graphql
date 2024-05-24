@@ -62,6 +62,7 @@ const batch = <I, O>(f: (_: I) => string, commits: I[]) =>
     x.flat()
   );
 
-const isOwner = (name: string) => name === `${GH_ORG}/${GH_REPO}`;
+const isOwner = ({ nameWithOwner }: { nameWithOwner: string }) =>
+  nameWithOwner === `${GH_ORG}/${GH_REPO}`;
 
 export { openPR, isOwner, batch, authUrl };
