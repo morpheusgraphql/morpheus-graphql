@@ -1,6 +1,6 @@
 import { groupBy, range } from "ramda";
 import { isKey } from "../utils";
-import { Change } from "./get-pull-requests";
+import { Change } from "./fetch";
 import { pullRequestTypes, config, SCOPE } from "./pull-request-types";
 import { getDate } from "../git";
 

@@ -1,4 +1,4 @@
-import { fetchChanges, isBreaking } from "./get-pull-requests";
+import { fetchChanges, isBreaking } from "./fetch";
 import { renderChangelog } from "./render-changelog";
 import { lastTag } from "../git";
 import { hconf } from "../utils";
