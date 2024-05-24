@@ -50,7 +50,7 @@ const gql =
     gqlAPI(`
         {
             repository(owner: "${GH_ORG}", name: "${GH_REPO}") {
-                  ${xs.map(f).join("\n")}
+                  ${xs.map((n) => `item_${n}:${f(n)}`).join("\n")}
             }
         }
     `).then(

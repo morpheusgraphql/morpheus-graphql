@@ -31,8 +31,8 @@ const toPRNumber = (c: Commit): Maybe<number> =>
 
 const fetchChanges = (version: string) =>
   batch<string, Commit>(
-    (oid: string) =>
-      `commit_${oid}: object(oid: "${oid}") {
+    (i) =>
+      `object(oid: "${i}") {
           ... on Commit {
               message
               associatedPullRequests(first: 10) {
@@ -47,8 +47,8 @@ const fetchChanges = (version: string) =>
   )
     .then((commit) =>
       batch<number, PR>(
-        (n) => `
-        pr_${n}: pullRequest(number: ${n}) {
+        (i) => `
+        pullRequest(number: ${i}) {
           number
           title
           url
