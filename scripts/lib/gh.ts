@@ -42,18 +42,20 @@ const openPR = (branchName: string, title: string, body: string) => {
   });
 };
 
-const batch = <I, O>(f: (_: I) => string, items: I[]) =>
-  Promise.all(
-    chunks(items).map((batch) =>
-      gh("graphql", {
-        query: `{
+const batch =
+  <I, O>(f: (_: I) => string) =>
+  (items: I[]) =>
+    Promise.all(
+      chunks(items).map((batch) =>
+        gh("graphql", {
+          query: `{
           repository(owner: "${GH_ORG}", name: "${GH_REPO}") {
           ${batch.map((n) => `item_${n}:${f(n)}`).join("\n")}
         }
       }`,
-      }).then(({ repository }) => Object.values(repository))
-    )
-  ).then((x) => x.flat().filter(Boolean) as O[]);
+        }).then(({ repository }) => Object.values(repository))
+      )
+    ).then((x) => x.flat().filter(Boolean) as O[]);
 
 const isOwner = ({ nameWithOwner }: { nameWithOwner: string }) =>
   nameWithOwner === `${GH_ORG}/${GH_REPO}`;

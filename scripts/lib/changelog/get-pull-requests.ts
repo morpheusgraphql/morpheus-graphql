@@ -12,8 +12,9 @@ type Commit = {
   };
 };
 
-const ghCommit = (i: string) =>
-  `object(oid: "${i}") {
+const fetchCommits = batch<string, Commit>(
+  (i: string) =>
+    `object(oid: "${i}") {
     ... on Commit {
       message
       associatedPullRequests(first: 10) { 
@@ -23,7 +24,8 @@ const ghCommit = (i: string) =>
         }
       }
     }
-  }`;
+  }`
+);
 
 const toPRNumber = (c: Commit): Maybe<number> =>
   c.associatedPullRequests.nodes.find(({ repository }) => isOwner(repository))
@@ -37,13 +39,16 @@ type PR = {
   labels: { nodes: { name: string }[] };
 };
 
-const ghPR = (i: number) => `pullRequest(number: ${i}) {
-  number
-  title
-  body
-  author { login url }
-  labels(first: 10) { nodes { name } }
-}`;
+const fetchPPs = batch<number, PR>(
+  (i: number) =>
+    `pullRequest(number: ${i}) {
+      number
+      title
+      body
+      author { login url }
+      labels(first: 10) { nodes { name } }
+    }`
+);
 
 type Change = PR & {
   type: PR_TYPE;
@@ -51,10 +56,8 @@ type Change = PR & {
 };
 
 const fetchChanges = (version: string) =>
-  batch<string, Commit>(ghCommit, commitsAfter(version))
-    .then((commit) =>
-      batch<number, PR>(ghPR, uniq(reject(isNil, commit.map(toPRNumber))))
-    )
+  fetchCommits(commitsAfter(version))
+    .then((commit) => fetchPPs(uniq(reject(isNil, commit.map(toPRNumber)))))
     .then(
       map((pr): Change => {
         const labels = pluck("name", pr.labels.nodes);
