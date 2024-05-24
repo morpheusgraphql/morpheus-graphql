@@ -53,9 +53,9 @@ const renderPullRequest = ({
 const renderSection = (label: string, pullRequests: Change[]) =>
   [`#### ${label}`, pullRequests.map(renderPullRequest)].flat().join("\n");
 
-const renderChangelog = (tag: string, prs: Change[]) => {
+const renderChangelog = (tag: string, changes: Change[]) => {
   const date = getDate();
-  const groups = groupBy(({ type }) => type, prs);
+  const groups = groupBy(({ type }) => type, changes);
   let changelog = `## ${tag || "Unreleased"} (${date})\n`;
 
   return [
