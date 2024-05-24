@@ -6,7 +6,6 @@ import { parseLabel, PR_TYPE, SCOPE } from "./pull-request-types";
 import { commitsAfter } from "../git";
 
 type Commit = {
-  oid: string;
   message: string;
   associatedPullRequests: {
     nodes: Array<{ number: number; repository: { nameWithOwner: string } }>;
@@ -42,14 +41,11 @@ const fetchChanges = (version: string) =>
     (oid: string) =>
       `commit_${oid}: object(oid: "${oid}") {
           ... on Commit {
-              oid
               message
               associatedPullRequests(first: 10) {
               nodes {
                   number
-                  repository {
-                    nameWithOwner
-                  }
+                  repository { nameWithOwner }
                 }
               }
           }
