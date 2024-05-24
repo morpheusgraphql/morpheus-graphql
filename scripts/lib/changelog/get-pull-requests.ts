@@ -56,15 +56,8 @@ const fetchChanges = (version: string) =>
           title
           url
           body
-          author {
-            login
-            url
-          }
-          labels(first: 10) {
-            nodes {
-              name
-            }
-          }
+          author { login url }
+          labels(first: 10) { nodes { name } }
         }`,
         uniq(reject(isNil, commit.map(toPRNumber)))
       )
