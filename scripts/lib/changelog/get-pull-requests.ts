@@ -39,7 +39,7 @@ const fetchChanges = (version: string) =>
           ... on Commit {
               message
               associatedPullRequests(first: 10) {
-              nodes {
+                nodes {
                   number
                   repository { nameWithOwner }
                 }
