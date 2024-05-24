@@ -25,12 +25,9 @@ type Change = PR & {
   scopes: SCOPE[];
 };
 
-const toPRNumber = ({
-  associatedPullRequests,
-  message,
-}: Commit): Maybe<number> =>
-  associatedPullRequests.nodes.find(({ repository }) => isOwner(repository))
-    ?.number ?? getPRNumber(message);
+const toPRNumber = (c: Commit): Maybe<number> =>
+  c.associatedPullRequests.nodes.find(({ repository }) => isOwner(repository))
+    ?.number ?? getPRNumber(c.message);
 
 const fetchChanges = (version: string) =>
   batch<string, Commit>(
