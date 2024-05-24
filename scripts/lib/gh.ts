@@ -2,9 +2,9 @@ import axios from "axios";
 import { push } from "./git";
 import { chunks } from "./utils";
 
-const GH_ORG = "morpheusgraphql";
+const ORG = "morpheusgraphql";
 
-const GH_REPO = "morpheus-graphql";
+const REPO = "morpheus-graphql";
 
 const token = () => {
   const { GITHUB_TOKEN } = process.env;
@@ -15,7 +15,7 @@ const token = () => {
   return GITHUB_TOKEN;
 };
 
-const authUrl = () => `https://${token()}@github.com/${GH_ORG}/${GH_REPO}.git`;
+const authUrl = () => `https://${token()}@github.com/${ORG}/${REPO}.git`;
 
 const gh = (path: string, body: {}) =>
   axios
@@ -31,12 +31,12 @@ const gh = (path: string, body: {}) =>
 
 const openPR = (branchName: string, title: string, body: string) => {
   push(branchName);
-  return gh(`repos/${GH_ORG}/${GH_REPO}/pulls`, {
+  return gh(`repos/${ORG}/${REPO}/pulls`, {
     head: branchName,
     draft: true,
     base: "main",
-    owner: GH_ORG,
-    repo: GH_REPO,
+    owner: ORG,
+    repo: REPO,
     title,
     body,
   });
@@ -49,7 +49,7 @@ const batch =
       chunks(items).map((batch) =>
         gh("graphql", {
           query: `{
-          repository(owner: "${GH_ORG}", name: "${GH_REPO}") {
+          repository(owner: "${ORG}", name: "${REPO}") {
           ${batch.map((n) => `item_${n}:${f(n)}`).join("\n")}
         }
       }`,
@@ -58,6 +58,6 @@ const batch =
     ).then((x) => x.flat().filter(Boolean) as O[]);
 
 const isOwner = ({ nameWithOwner }: { nameWithOwner: string }) =>
-  nameWithOwner === `${GH_ORG}/${GH_REPO}`;
+  nameWithOwner === `${ORG}/${REPO}`;
 
 export { openPR, isOwner, batch, authUrl };
