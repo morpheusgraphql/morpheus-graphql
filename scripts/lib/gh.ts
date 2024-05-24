@@ -29,8 +29,6 @@ const gh = (path: string, body: {}) =>
     .then(({ data }) => data.data)
     .catch((err) => Promise.reject(err.message));
 
-const gqlAPI = (query: string) => gh("graphql", { query });
-
 const openPR = (branchName: string, title: string, body: string) => {
   push(branchName);
   return gh(`repos/${GH_ORG}/${GH_REPO}/pulls`, {
@@ -44,23 +42,18 @@ const openPR = (branchName: string, title: string, body: string) => {
   });
 };
 
-const gql =
-  <T, O>(f: (_: T) => string) =>
-  (xs: T[]): Promise<O[]> =>
-    gqlAPI(`
-        {
-            repository(owner: "${GH_ORG}", name: "${GH_REPO}") {
-                  ${xs.map((n) => `item_${n}:${f(n)}`).join("\n")}
-            }
+const batch = <I, O>(f: (_: I) => string, items: I[]) =>
+  Promise.all(
+    chunks(items).map((batch) =>
+      gh("graphql", {
+        query: `{
+          repository(owner: "${GH_ORG}", name: "${GH_REPO}") {
+          ${batch.map((n) => `item_${n}:${f(n)}`).join("\n")}
         }
-    `).then(
-      ({ repository }) => Object.values(repository).filter(Boolean) as O[]
-    );
-
-const batch = <I, O>(f: (_: I) => string, commits: I[]) =>
-  Promise.all(chunks(commits).map((batch) => gql<I, O>(f)(batch))).then((x) =>
-    x.flat()
-  );
+      }`,
+      }).then(({ repository }) => Object.values(repository))
+    )
+  ).then((x) => x.flat().filter(Boolean) as O[]);
 
 const isOwner = ({ nameWithOwner }: { nameWithOwner: string }) =>
   nameWithOwner === `${GH_ORG}/${GH_REPO}`;
