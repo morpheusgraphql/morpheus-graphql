@@ -15,7 +15,11 @@ const token = () => {
   return GITHUB_TOKEN;
 };
 
-const authUrl = () => `https://${token()}@github.com/${ORG}/${REPO}.git`;
+const GH_PATH = `github.com/${ORG}/${REPO}`;
+
+const authUrl = () => `https://${token()}@${GH_PATH}.git`;
+
+const issueURL = (n: number) => `https://${GH_PATH}/issues/${n}`;
 
 const gh = (path: string, body: {}) =>
   axios
@@ -60,4 +64,4 @@ const batch =
 const isOwner = ({ nameWithOwner }: { nameWithOwner: string }) =>
   nameWithOwner === `${ORG}/${REPO}`;
 
-export { openPR, isOwner, batch, authUrl };
+export { openPR, isOwner, batch, authUrl, issueURL };

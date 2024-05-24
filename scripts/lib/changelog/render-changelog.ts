@@ -3,11 +3,9 @@ import { isKey } from "../utils";
 import { Change } from "./fetch";
 import { pullRequestTypes, config, SCOPE } from "./types";
 import { getDate } from "../git";
+import { issueURL } from "../gh";
 
 const link = (name: string, url: string) => `[${name}](${url})`;
-
-const issueURL = (n: number) =>
-  `https://github.com/morpheusgraphql/morpheus-graphql/issues/${n}`;
 
 const packageURL = (name: SCOPE) =>
   `https://hackage.haskell.org/package/${config.scope[name]}`;
