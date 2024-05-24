@@ -54,12 +54,10 @@ const renderSection = (label: string, pullRequests: Change[]) =>
   [`#### ${label}`, pullRequests.map(renderPullRequest)].flat().join("\n");
 
 const renderChangelog = (tag: string, changes: Change[]) => {
-  const date = getDate();
   const groups = groupBy(({ type }) => type, changes);
-  let changelog = `## ${tag || "Unreleased"} (${date})\n`;
 
   return [
-    changelog,
+    `## ${tag || "Unreleased"} (${getDate()})\n`,
     Object.entries(pullRequestTypes)
       .flatMap(([type, label]) =>
         isKey(groups, type) ? renderSection(label, groups[type]) : ""
