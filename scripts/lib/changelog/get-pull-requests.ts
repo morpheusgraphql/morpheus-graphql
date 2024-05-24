@@ -15,9 +15,9 @@ type Commit = {
 type PR = {
   number: number;
   title: string;
+  body: string;
   author: { login: string; url: string };
   labels: { nodes: { name: string }[] };
-  body: string;
 };
 
 type Change = PR & {
@@ -35,27 +35,23 @@ const fetchChanges = (version: string) =>
       `object(oid: "${i}") {
           ... on Commit {
               message
-              associatedPullRequests(first: 10) {
-                nodes {
-                  number
-                  repository { nameWithOwner }
-                }
-              }
+              associatedPullRequests(first: 10) { nodes {
+                number
+                repository { nameWithOwner }
+              }}
           }
       }`,
     commitsAfter(version)
   )
     .then((commit) =>
       batch<number, PR>(
-        (i) => `
-        pullRequest(number: ${i}) {
-          number
-          title
-          url
-          body
-          author { login url }
-          labels(first: 10) { nodes { name } }
-        }`,
+        (i) => `pullRequest(number: ${i}) {
+                  number
+                  title
+                  body
+                  author { login url }
+                  labels(first: 10) { nodes { name } }
+                }`,
         uniq(reject(isNil, commit.map(toPRNumber)))
       )
     )
