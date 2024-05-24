@@ -2,7 +2,7 @@ import { isNil, map, pluck, propEq, reject, uniq } from "ramda";
 import { isOwner, batch } from "../gh";
 import { Maybe } from "../types";
 import { getPRNumber } from "../utils";
-import { parseLabel, PR_TYPE, SCOPE } from "./pull-request-types";
+import { parseLabel, PR_TYPE, SCOPE } from "./types";
 import { commitsAfter } from "../git";
 
 type Commit = {

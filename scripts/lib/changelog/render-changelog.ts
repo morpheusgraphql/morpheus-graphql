@@ -1,7 +1,7 @@
 import { groupBy, range } from "ramda";
 import { isKey } from "../utils";
 import { Change } from "./fetch";
-import { pullRequestTypes, config, SCOPE } from "./pull-request-types";
+import { pullRequestTypes, config, SCOPE } from "./types";
 import { getDate } from "../git";
 
 const link = (name: string, url: string) => `[${name}](${url})`;
