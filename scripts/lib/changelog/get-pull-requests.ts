@@ -12,6 +12,23 @@ type Commit = {
   };
 };
 
+const ghCommit = (i: string) =>
+  `object(oid: "${i}") {
+    ... on Commit {
+      message
+      associatedPullRequests(first: 10) { 
+        nodes {
+          number
+          repository { nameWithOwner }
+        }
+      }
+    }
+  }`;
+
+const toPRNumber = (c: Commit): Maybe<number> =>
+  c.associatedPullRequests.nodes.find(({ repository }) => isOwner(repository))
+    ?.number ?? getPRNumber(c.message);
+
 type PR = {
   number: number;
   title: string;
@@ -20,40 +37,23 @@ type PR = {
   labels: { nodes: { name: string }[] };
 };
 
+const ghPR = (i: number) => `pullRequest(number: ${i}) {
+  number
+  title
+  body
+  author { login url }
+  labels(first: 10) { nodes { name } }
+}`;
+
 type Change = PR & {
   type: PR_TYPE;
   scopes: SCOPE[];
 };
 
-const toPRNumber = (c: Commit): Maybe<number> =>
-  c.associatedPullRequests.nodes.find(({ repository }) => isOwner(repository))
-    ?.number ?? getPRNumber(c.message);
-
 const fetchChanges = (version: string) =>
-  batch<string, Commit>(
-    (i) =>
-      `object(oid: "${i}") {
-          ... on Commit {
-              message
-              associatedPullRequests(first: 10) { nodes {
-                number
-                repository { nameWithOwner }
-              }}
-          }
-      }`,
-    commitsAfter(version)
-  )
+  batch<string, Commit>(ghCommit, commitsAfter(version))
     .then((commit) =>
-      batch<number, PR>(
-        (i) => `pullRequest(number: ${i}) {
-                  number
-                  title
-                  body
-                  author { login url }
-                  labels(first: 10) { nodes { name } }
-                }`,
-        uniq(reject(isNil, commit.map(toPRNumber)))
-      )
+      batch<number, PR>(ghPR, uniq(reject(isNil, commit.map(toPRNumber))))
     )
     .then(
       map((pr): Change => {
