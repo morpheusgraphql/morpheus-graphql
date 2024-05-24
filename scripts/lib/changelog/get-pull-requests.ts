@@ -52,20 +52,20 @@ const fetchChanges = (version: string) =>
       batch<number, PR>(
         (n) => `
         pr_${n}: pullRequest(number: ${n}) {
-        number
-        title
-        url
-        body
-        author {
-          login
+          number
+          title
           url
-        }
-        labels(first: 10) {
+          body
+          author {
+            login
+            url
+          }
+          labels(first: 10) {
             nodes {
               name
             }
-        }
-      }`,
+          }
+        }`,
         uniq(reject(isNil, commit.map(toPRNumber)))
       )
     )
