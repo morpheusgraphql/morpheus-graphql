@@ -21,8 +21,6 @@ const openRelease = (body: string) => {
   openPR(`publish-release/${v}`, `Publish Release ${v}`, body).catch(exit);
 };
 
-const describe = async () => core.setOutput("version", await hconf("version"));
-
 const changelog = async () => {
   const body = await getChangelog();
   await write("/changelog.md", body);
@@ -52,7 +50,7 @@ release
 release
   .command("describe")
   .description(`describe existing release`)
-  .action(() => describe().catch(handleError));
+  .action(() => core.setOutput("version", hconf("version")));
 
 release.command("changelog").action(() => changelog().catch(handleError));
 
