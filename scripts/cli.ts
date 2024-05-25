@@ -17,13 +17,10 @@ const draftRelease = async () => {
 };
 
 const openRelease = (body: string) => {
-  const version = hconf("version");
-  openPR(
-    `publish-release/${version}`,
-    `Publish Release ${version}`,
-    body
-  ).catch(exit);
+  const v = hconf("version");
+  openPR(`publish-release/${v}`, `Publish Release ${v}`, body).catch(exit);
 };
+
 const describe = async () => core.setOutput("version", await hconf("version"));
 
 const changelog = async () => {
