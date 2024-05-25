@@ -1,4 +1,4 @@
-import { openPR } from "./lib/gh";
+import { github } from "./lib/gh";
 import { exit, hconf, write } from "./lib/utils";
 import * as core from "@actions/core";
 import { getChangelog } from "./lib/changelog";
@@ -15,7 +15,7 @@ const draftRelease = async () =>
 
 const openRelease = async (body: string) => {
   const v = hconf("version");
-  await openPR(`publish-release/${v}`, `Publish Release ${v}`, body);
+  await github.openPR(`publish-release/${v}`, `Publish Release ${v}`, body);
 };
 
 const changelog = async () =>
