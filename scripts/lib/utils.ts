@@ -7,11 +7,11 @@ export const getPRNumber = (msg: string) => {
   return num ? parseInt(num, 10) : undefined;
 };
 
-export const chunks = <T>(commits: T[]): T[][] => {
+export const chunks = <T>(xs: T[]): T[][] => {
   const batches: T[][] = [];
 
-  for (let i = 0; i < commits.length; i += 50) {
-    const batch = commits.slice(i, i + 50);
+  for (let i = 0; i < xs.length; i += 50) {
+    const batch = xs.slice(i, i + 50);
     batches.push(batch);
   }
 

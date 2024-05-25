@@ -50,11 +50,11 @@ const batch =
   <I, O>(f: (_: I) => string) =>
   (items: I[]) =>
     Promise.all(
-      chunks(items).map((batch) =>
+      chunks(items).map((chunk) =>
         gh("graphql", {
           query: `{
           repository(owner: "${ORG}", name: "${REPO}") {
-          ${batch.map((n) => `item_${n}:${f(n)}`).join("\n")}
+          ${chunk.map((n) => `item_${n}:${f(n)}`).join("\n")}
         }
       }`,
         }).then(({ repository }) => Object.values(repository))
