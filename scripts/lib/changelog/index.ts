@@ -1,5 +1,5 @@
 import { fetchChanges, isBreaking } from "./fetch";
-import { renderChangelog } from "./render-changelog";
+import { render } from "./render";
 import { lastTag } from "../git";
 import { hconf } from "../utils";
 
@@ -17,7 +17,7 @@ export const getChangelog = async () => {
   const next = await hconf("version");
 
   return {
-    body: renderChangelog(next, changes),
+    body: render(next, changes),
     next,
   };
 };

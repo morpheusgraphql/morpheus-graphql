@@ -51,7 +51,7 @@ const renderPullRequest = ({
 const renderSection = (label: string, pullRequests: Change[]) =>
   [`#### ${label}`, pullRequests.map(renderPullRequest)].flat().join("\n");
 
-const renderChangelog = (tag: string, changes: Change[]) => {
+const render = (tag: string, changes: Change[]) => {
   const groups = groupBy(({ type }) => type, changes);
 
   return [
@@ -65,4 +65,4 @@ const renderChangelog = (tag: string, changes: Change[]) => {
   ].join("\n");
 };
 
-export { renderChangelog };
+export { render };
