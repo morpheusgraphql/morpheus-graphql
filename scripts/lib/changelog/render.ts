@@ -3,7 +3,7 @@ import { isKey } from "../utils";
 import { Change } from "./fetch";
 import { pullRequestTypes, config, SCOPE } from "./types";
 import { getDate } from "../git";
-import { issueURL } from "../gh";
+import { github } from "../gh";
 
 const link = (name: string, url: string) => `[${name}](${url})`;
 
@@ -37,7 +37,10 @@ const renderPullRequest = ({
       )}\n${indent(1)}  </details>`
     : "";
 
-  const head = `* ${link(`#${number}`, issueURL(number))}: ${title?.trim()}`;
+  const head = `* ${link(
+    `#${number}`,
+    github.issue(number)
+  )}: ${title?.trim()}`;
 
   const stats = renderStats([
     ["📦", scopes.map(renderScope).join(", ")],

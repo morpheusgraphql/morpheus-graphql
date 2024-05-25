@@ -1,5 +1,5 @@
 import { isNil, map, pluck, propEq, reject, uniq } from "ramda";
-import { isOwner, batch } from "../gh";
+import { github } from "../gh";
 import { Maybe } from "../types";
 import { getPRNumber } from "../utils";
 import { parseLabel, PR_TYPE, SCOPE } from "./types";
@@ -12,7 +12,7 @@ type Commit = {
   };
 };
 
-const fetchCommits = batch<string, Commit>(
+const fetchCommits = github.batch<string, Commit>(
   (i: string) =>
     `object(oid: "${i}") {
     ... on Commit {
@@ -28,8 +28,9 @@ const fetchCommits = batch<string, Commit>(
 );
 
 const toPRNumber = (c: Commit): Maybe<number> =>
-  c.associatedPullRequests.nodes.find(({ repository }) => isOwner(repository))
-    ?.number ?? getPRNumber(c.message);
+  c.associatedPullRequests.nodes.find(({ repository }) =>
+    github.isOwner(repository)
+  )?.number ?? getPRNumber(c.message);
 
 type PR = {
   number: number;
@@ -39,7 +40,7 @@ type PR = {
   labels: { nodes: { name: string }[] };
 };
 
-const fetchPPs = batch<number, PR>(
+const fetchPPs = github.batch<number, PR>(
   (i: number) =>
     `pullRequest(number: ${i}) {
       number

@@ -1,10 +1,6 @@
 import axios from "axios";
-import { push } from "./git";
+import { git } from "./git";
 import { chunks } from "./utils";
-
-const ORG = "morpheusgraphql";
-
-const REPO = "morpheus-graphql";
 
 const token = () => {
   const { GITHUB_TOKEN } = process.env;
@@ -14,12 +10,6 @@ const token = () => {
   }
   return GITHUB_TOKEN;
 };
-
-const GH_PATH = `github.com/${ORG}/${REPO}`;
-
-const authUrl = () => `https://${token()}@${GH_PATH}.git`;
-
-const issueURL = (n: number) => `https://${GH_PATH}/issues/${n}`;
 
 const gh = (path: string, body: {}) =>
   axios
@@ -33,35 +23,49 @@ const gh = (path: string, body: {}) =>
     .then(({ data }) => data.data)
     .catch((err) => Promise.reject(err.message));
 
-const openPR = (branchName: string, title: string, body: string) => {
-  push(branchName);
-  return gh(`repos/${ORG}/${REPO}/pulls`, {
-    head: branchName,
-    draft: true,
-    base: "main",
-    owner: ORG,
-    repo: REPO,
-    title,
-    body,
-  });
-};
+class Github {
+  constructor(private org: string, private repo: string) {}
 
-const batch =
-  <I, O>(f: (_: I) => string) =>
-  (items: I[]) =>
-    Promise.all(
-      chunks(items).map((chunk) =>
-        gh("graphql", {
-          query: `{
-          repository(owner: "${ORG}", name: "${REPO}") {
+  private get path() {
+    return `github.com/${this.org}/${this.repo}`;
+  }
+
+  public isOwner = ({ nameWithOwner }: { nameWithOwner: string }) =>
+    nameWithOwner === `${this.org}/${this.repo}`;
+
+  public batch =
+    <I, O>(f: (_: I) => string) =>
+    (items: I[]) =>
+      Promise.all(
+        chunks(items).map((chunk) =>
+          gh("graphql", {
+            query: `{
+          repository(owner: "${this.org}", name: "${this.repo}") {
           ${chunk.map((n) => `item_${n}:${f(n)}`).join("\n")}
         }
       }`,
-        }).then(({ repository }) => Object.values(repository))
-      )
-    ).then((x) => x.flat().filter(Boolean) as O[]);
+          }).then(({ repository }) => Object.values(repository))
+        )
+      ).then((x) => x.flat().filter(Boolean) as O[]);
 
-const isOwner = ({ nameWithOwner }: { nameWithOwner: string }) =>
-  nameWithOwner === `${ORG}/${REPO}`;
+  public issue = (n: number) => `https://${this.path}/issues/${n}`;
 
-export { openPR, isOwner, batch, authUrl, issueURL };
+  public openPR = (name: string, title: string, body: string) => {
+    git("add", ".");
+    git("status");
+    git("commit", "-m", `"${name}"`);
+    git("push", `https://${token()}@${this.path}.git`, `HEAD:${name}`);
+
+    return gh(`repos/${this.org}/${this.repo}/pulls`, {
+      head: name,
+      draft: true,
+      base: "main",
+      owner: this.org,
+      repo: this.repo,
+      title,
+      body,
+    });
+  };
+}
+
+export const github = new Github("morpheusgraphql", "morpheus-graphql");
