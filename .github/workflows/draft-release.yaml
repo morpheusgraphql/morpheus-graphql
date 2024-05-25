@@ -33,6 +33,6 @@ jobs:
         run: |
           git config --global user.name "GitHub"
           git config --global user.email "<noreply@github.com>"
-          npm run release -- open ${{ steps.draft.outputs.version }} -b "${{ steps.draft.outputs.body }}"
+          npm run release -- open -b "${{ steps.draft.outputs.body }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

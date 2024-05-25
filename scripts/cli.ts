@@ -11,16 +11,23 @@ const cli = new Command();
 const handleError = (e: Error) => core.setFailed(e);
 
 const draftRelease = async () => {
-  const { body, next } = await getChangelog();
+  const body = await getChangelog();
   console.log(hconf("setup"));
   core.setOutput("body", body);
-  core.setOutput("version", next);
 };
 
+const openRelease = (body: string) => {
+  const version = hconf("version");
+  openPR(
+    `publish-release/${version}`,
+    `Publish Release ${version}`,
+    body
+  ).catch(exit);
+};
 const describe = async () => core.setOutput("version", await hconf("version"));
 
 const changelog = async () => {
-  const { body } = await getChangelog();
+  const body = await getChangelog();
   await write("/changelog.md", body);
   process.stdout.write(body);
 };
@@ -32,15 +39,8 @@ const release = cli.command("release");
 release
   .command("open")
   .description("open pull request for draft release")
-  .argument("<string>", "version number")
   .option("-b, --body <string>", "pull request body", "")
-  .action((version: string, { body }: { body: string }) =>
-    openPR(
-      `publish-release/${version}`,
-      `Publish Release ${version}`,
-      body
-    ).catch(exit)
-  );
+  .action(({ body }: { body: string }) => openRelease(body));
 
 release
   .command("draft")

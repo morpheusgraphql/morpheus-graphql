@@ -14,10 +14,5 @@ export const getChangelog = async () => {
 
   console.log(hconf("next", ...(isBreaking(changes) ? ["-b"] : [])));
 
-  const next = await hconf("version");
-
-  return {
-    body: render(next, changes),
-    next,
-  };
+  return render(await hconf("version"), changes);
 };
