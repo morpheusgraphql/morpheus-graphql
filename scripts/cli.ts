@@ -13,9 +13,9 @@ const handleError = (e: Error) => core.setFailed(e);
 const draftRelease = async () =>
   core.setOutput("body", await getChangelog(true));
 
-const openRelease = (body: string) => {
+const openRelease = async (body: string) => {
   const v = hconf("version");
-  openPR(`publish-release/${v}`, `Publish Release ${v}`, body).catch(exit);
+  await openPR(`publish-release/${v}`, `Publish Release ${v}`, body);
 };
 
 const changelog = async () =>
@@ -29,7 +29,7 @@ release
   .command("open")
   .description("open pull request for draft release")
   .option("-b, --body <string>", "pull request body", "")
-  .action(({ body }: { body: string }) => openRelease(body));
+  .action(({ body }: { body: string }) => openRelease(body).catch(exit));
 
 release
   .command("draft")
