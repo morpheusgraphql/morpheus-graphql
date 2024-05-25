@@ -10,22 +10,16 @@ const cli = new Command();
 
 const handleError = (e: Error) => core.setFailed(e);
 
-const draftRelease = async () => {
-  const body = await getChangelog();
-  console.log(hconf("setup"));
-  core.setOutput("body", body);
-};
+const draftRelease = async () =>
+  core.setOutput("body", await getChangelog(true));
 
 const openRelease = (body: string) => {
   const v = hconf("version");
   openPR(`publish-release/${v}`, `Publish Release ${v}`, body).catch(exit);
 };
 
-const changelog = async () => {
-  const body = await getChangelog();
-  await write("/changelog.md", body);
-  process.stdout.write(body);
-};
+const changelog = async () =>
+  await write("/changelog.md", await getChangelog());
 
 cli.name("cli").description("cli").version("0.0.0");
 
