@@ -34,8 +34,8 @@ class Github {
     nameWithOwner === `${this.org}/${this.repo}`;
 
   public batch =
-    <I, O>(f: (_: I) => string) =>
-    (items: I[]) =>
+    <O>(f: (_: string | number) => string) =>
+    (items: Array<string | number>) =>
       Promise.all(
         chunks(items).map((chunk) =>
           gh("graphql", {

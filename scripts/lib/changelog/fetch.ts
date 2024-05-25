@@ -12,8 +12,8 @@ type Commit = {
   };
 };
 
-const fetchCommits = github.batch<string, Commit>(
-  (i: string) =>
+const fetchCommits = github.batch<Commit>(
+  (i) =>
     `object(oid: "${i}") {
     ... on Commit {
       message
@@ -40,8 +40,8 @@ type PR = {
   labels: { nodes: { name: string }[] };
 };
 
-const fetchPPs = github.batch<number, PR>(
-  (i: number) =>
+const fetchPPs = github.batch<PR>(
+  (i) =>
     `pullRequest(number: ${i}) {
       number
       title
