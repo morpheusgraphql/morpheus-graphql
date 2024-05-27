@@ -56,9 +56,13 @@ type Change = PR & {
   scopes: SCOPE[];
 };
 
+const toPRNumbers = (commit: Commit[]) =>
+  uniq(reject(isNil, commit.map(toPRNumber)));
+
 const fetchChanges = (version: string) =>
   fetchCommits(commitsAfter(version))
-    .then((commit) => fetchPPs(uniq(reject(isNil, commit.map(toPRNumber)))))
+    .then(toPRNumbers)
+    .then(fetchPPs)
     .then(
       map((pr): Change => {
         const labels = pluck("name", pr.labels.nodes);
