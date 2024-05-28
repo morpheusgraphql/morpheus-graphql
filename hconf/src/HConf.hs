@@ -29,7 +29,8 @@ setup v = run "setup" $ do
   parse v >>= setupStack
   genHie
   checkPackages
-  liftIO (callCommand "cp somefile somedestination")
+  liftIO (callCommand "stack build --test --dry-run")
+  liftIO (callCommand "stack sdist")
   checkCabals
   pure Nothing
 
