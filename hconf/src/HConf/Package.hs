@@ -15,6 +15,7 @@ where
 import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import Data.Aeson.KeyMap (KeyMap)
 import Data.Text (unpack)
+import HConf.Cabal (checkCabal)
 import HConf.Config (getVersion)
 import HConf.ConfigT (ConfigT, HCEnv (config), packages)
 import HConf.Lib (Lib, updateDependencies, updateLib)
@@ -85,3 +86,10 @@ checkPackages =
   label "packages"
     $ packages
     >>= traverse_ checkPackage
+    >> checkCabals
+
+checkCabals :: ConfigT ()
+checkCabals =
+  label "packages"
+    $ resolvePackages
+    >>= traverse_ (\(path, Package {..}) -> checkCabal (unpack path) (name, version))
