@@ -23,7 +23,7 @@ release
   .option("-p, --preview", "preview", false)
   .action(({ preview }: { preview: string }) =>
     changelog(true)
-      .then(preview ? Promise.resolve : github.release)
+      .then(preview ? () => Promise.resolve() : github.release)
       .catch(exit)
   );
 
