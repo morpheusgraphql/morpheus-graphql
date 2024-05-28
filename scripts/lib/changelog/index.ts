@@ -1,7 +1,7 @@
 import { fetchChanges, isBreaking } from "./fetch";
 import { render } from "./render";
 import { lastTag } from "../git";
-import { hconf } from "../utils";
+import { exec, hconf } from "../utils";
 
 export const changelog = async (change: boolean = false) => {
   const version = lastTag();
@@ -16,6 +16,9 @@ export const changelog = async (change: boolean = false) => {
 
   if (change) {
     await hconf("setup");
+
+    console.log(exec("stack build --test --dry-run"));
+    console.log(exec("stack sdist"));
   }
 
   return render(await hconf("version"), changes);

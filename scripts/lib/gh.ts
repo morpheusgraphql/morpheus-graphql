@@ -1,6 +1,6 @@
 import axios from "axios";
 import { git } from "./git";
-import { chunks } from "./utils";
+import { chunks, hconf } from "./utils";
 
 const token = () => {
   const { GITHUB_TOKEN } = process.env;
@@ -50,7 +50,10 @@ class Github {
 
   public issue = (n: number) => `https://${this.path}/issues/${n}`;
 
-  public openPR = (name: string, title: string, body: string) => {
+  public release = (body: string) => {
+    const version = hconf("version");
+    const name = `publish-release/${version}`;
+
     git("add", ".");
     git("status");
     git("commit", "-m", `"${name}"`);
@@ -62,7 +65,7 @@ class Github {
       base: "main",
       owner: this.org,
       repo: this.repo,
-      title,
+      title: `Publish Release ${version}`,
       body,
     });
   };

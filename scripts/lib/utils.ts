@@ -1,6 +1,7 @@
-import { execSync, spawn, StdioOptions } from "child_process";
+import { execSync, StdioOptions } from "child_process";
 import { writeFile } from "fs/promises";
 import { dirname, join } from "path";
+import * as core from "@actions/core";
 
 export const getPRNumber = (msg: string) => {
   const num = / \(#(?<prNumber>[0-9]+)\)$/m.exec(msg)?.groups?.prNumber;
@@ -23,7 +24,8 @@ export const isKey = <T extends string>(
   key?: string | null
 ): key is T => typeof key === "string" && key in obj;
 
-export const exit = (error: unknown) => {
+export const exit = (error: Error) => {
+  core.setFailed(error);
   console.error(error);
   process.exit(1);
 };
@@ -45,25 +47,21 @@ const colors = {
 export const log = (t: string, type?: "success" | "warning" | "error") =>
   process.stdout.write(colors[type ?? "none"] + t + colors.none);
 
-export const hconf = (
+export const hconf = async (
   cmd: "version" | "setup" | "next",
   ...ops: string[]
 ): Promise<string> => {
-  const p = spawn("hconf", [cmd, ops].flat(), {
-    stdio: "pipe",
-  });
+  const result = exec(["hconf", [cmd, ops].flat().join(" ")].join(" "));
 
-  return new Promise((res, rej) => {
-    p.stdout.on("data", (data) => {
-      cmd === "version"
-        ? res(data.toString().trim())
-        : console.log(data.toString());
-    });
-    p.on("exit", (code) =>
-      code === 0 ? undefined : rej(`Child exited with code ${code}`)
-    );
-  });
+  if (cmd !== "version") {
+    console.log(result);
+  }
+
+  return Promise.resolve(result);
 };
 
-export const write = (p: string, f: string) =>
+export const write = (p: string) => (f: string) =>
   writeFile(join(dirname(require.main?.filename ?? ""), "../", p), f, "utf8");
+
+export const setOutput = (name: string) => (value: string) =>
+  core.setOutput(name, value);
