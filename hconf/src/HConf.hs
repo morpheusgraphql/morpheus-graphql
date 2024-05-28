@@ -11,6 +11,7 @@ module HConf
   )
 where
 
+import HConf.Cabal (checkCabals)
 import HConf.Config (Config (..), updateConfig)
 import HConf.ConfigT (HCEnv (..))
 import HConf.Env (Env (..))
@@ -27,6 +28,7 @@ setup v = run "setup" $ do
   parse v >>= setupStack
   genHie
   checkPackages
+  checkCabals
   pure Nothing
 
 updateVersion :: Bool -> Env -> IO ()
