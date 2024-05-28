@@ -49,9 +49,9 @@ checkCabal (path, Package {..}) = task path $ do
   if pkgVersion == version && pkgName == name then pure () else fail (unpack path <> "mismatching version or name")
 
 buildCabal :: ConfigT ()
-buildCabal = do
-  liftIO (callProcess "stack" ["build", "--test", "--dry-run"])
-  liftIO (callCommand "stack sdist")
+buildCabal = liftIO $ do
+  callProcess "stack" ["build", "--test", "--dry-run"]
+  callCommand "stack sdist"
 
 checkCabals :: ConfigT ()
 checkCabals = do
