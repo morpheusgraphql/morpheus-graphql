@@ -20,6 +20,7 @@ import HConf.Utils (Name)
 import HConf.Version (Parse (..), Version)
 import HConf.Yaml (read)
 import Relude hiding (Undefined, break, drop, length, null, replicate)
+import System.Process
 
 parseFields :: ByteString -> Map Text Text
 parseFields =
@@ -47,5 +48,12 @@ checkCabal (path, Package {..}) = task path $ do
   (pkgName, pkgVersion) <- getCabalFields (unpack path) name
   if pkgVersion == version && pkgName == name then pure () else fail (unpack path <> "mismatching version or name")
 
+buildCabal :: ConfigT ()
+buildCabal = do
+  liftIO (callProcess "stack" ["build", "--test", "--dry-run"])
+  liftIO (callCommand "stack sdist")
+
 checkCabals :: ConfigT ()
-checkCabals = label "cabal" $ resolvePackages >>= traverse_ checkCabal
+checkCabals = do
+  buildCabal
+  label "cabal" $ resolvePackages >>= traverse_ checkCabal
