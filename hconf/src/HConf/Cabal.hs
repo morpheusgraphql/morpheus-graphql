@@ -14,7 +14,7 @@ import qualified Data.ByteString.Char8 as BS (unpack)
 import Data.Map (lookup)
 import Data.Text (breakOn, drop, null, pack, split, strip, unpack)
 import HConf.ConfigT (ConfigT)
-import HConf.Log (field, label, log, task)
+import HConf.Log (field, label, task)
 import HConf.Package (Package (..), resolvePackages)
 import HConf.Utils (Name)
 import HConf.Version (Parse (..), Version)
@@ -30,8 +30,8 @@ parseFields =
     . pack
     . BS.unpack
 
-getField :: (MonadFail m, Ord k) => k -> Map k a -> m a
-getField k = maybe (fail "") pure . lookup k
+getField :: (MonadFail m) => Name -> Map Name a -> m a
+getField k = maybe (fail $ "missing field" <> unpack k) pure . lookup k
 
 getCabalFields :: FilePath -> Name -> ConfigT (Name, Version)
 getCabalFields path pkgName = do
