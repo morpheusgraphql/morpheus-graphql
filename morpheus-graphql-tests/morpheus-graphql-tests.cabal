@@ -7,6 +7,7 @@ cabal-version: 1.12
 name:           morpheus-graphql-tests
 version:        0.27.3
 synopsis:       Morpheus GraphQL Test
+description:    test utils for morpheus graphql
 category:       web, graphql, test
 homepage:       https://morpheusgraphql.com
 bug-reports:    https://github.com/nalchevanidze/morpheus-graphql/issues
@@ -14,6 +15,7 @@ author:         Daviti Nalchevanidze
 maintainer:     d.nalchevanidze@gmail.com
 copyright:      (c) 2019 Daviti Nalchevanidze
 license:        MIT
+license-file:   LICENSE
 build-type:     Simple
 
 source-repository head
