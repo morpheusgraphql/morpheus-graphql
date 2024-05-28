@@ -1,4 +1,4 @@
-import { execSync, StdioOptions } from "child_process";
+import { execSync, spawn, StdioOptions } from "child_process";
 import { writeFile } from "fs/promises";
 import { dirname, join } from "path";
 
@@ -45,8 +45,25 @@ const colors = {
 export const log = (t: string, type?: "success" | "warning" | "error") =>
   process.stdout.write(colors[type ?? "none"] + t + colors.none);
 
-export const hconf = (cmd: "version" | "setup" | "next", ...ops: string[]) =>
-  Promise.resolve(exec(["hconf", cmd, ops].flat().join(" ")));
+export const hconf = (
+  cmd: "version" | "setup" | "next",
+  ...ops: string[]
+): Promise<string> => {
+  const p = spawn("hconf", [cmd, ops].flat(), {
+    stdio: "pipe",
+  });
+
+  return new Promise((res, rej) => {
+    p.stdout.on("data", (data) => {
+      cmd === "version"
+        ? res(data.toString().trim())
+        : console.log(data.toString());
+    });
+    p.on("exit", (code) =>
+      code === 0 ? undefined : rej(`Child exited with code ${code}`)
+    );
+  });
+};
 
 export const write = (p: string, f: string) =>
   writeFile(join(dirname(require.main?.filename ?? ""), "../", p), f, "utf8");
