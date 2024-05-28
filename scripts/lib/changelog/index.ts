@@ -3,7 +3,7 @@ import { render } from "./render";
 import { lastTag } from "../git";
 import { hconf } from "../utils";
 
-export const getChangelog = async (change: boolean = false) => {
+export const genChangelog = async (change: boolean = false) => {
   const version = lastTag();
   const projectVersion = await hconf("version");
   const changes = await fetchChanges(version);

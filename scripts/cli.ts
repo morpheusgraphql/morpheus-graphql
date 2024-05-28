@@ -1,7 +1,7 @@
 import { github } from "./lib/gh";
 import { exit, hconf, write } from "./lib/utils";
 import * as core from "@actions/core";
-import { getChangelog } from "./lib/changelog";
+import { genChangelog } from "./lib/changelog";
 
 import { Command } from "commander";
 import { format } from "./lib/format";
@@ -11,7 +11,7 @@ const cli = new Command();
 const handleError = (e: Error) => core.setFailed(e);
 
 const draftRelease = async () =>
-  core.setOutput("body", await getChangelog(true));
+  core.setOutput("body", await genChangelog(true));
 
 const openRelease = async (body: string) => {
   const v = hconf("version");
@@ -19,7 +19,7 @@ const openRelease = async (body: string) => {
 };
 
 const changelog = async () =>
-  await write("/changelog.md", await getChangelog());
+  await write("/changelog.md", await genChangelog());
 
 cli.name("cli").description("cli").version("0.0.0");
 
