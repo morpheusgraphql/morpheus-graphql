@@ -45,7 +45,7 @@ getCabalFields path pkgName = do
 checkCabal :: (Name, Package) -> ConfigT ()
 checkCabal (path, Package {..}) = task path $ do
   (pkgName, pkgVersion) <- getCabalFields (unpack path) name
-  if pkgVersion == version && pkgName == name then pure () else fail "()"
+  if pkgVersion == version && pkgName == name then pure () else fail (unpack path <> "mismatching version or name")
 
 checkCabals :: ConfigT ()
 checkCabals = label "cabal" $ resolvePackages >>= traverse_ checkCabal
