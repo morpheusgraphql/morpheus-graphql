@@ -10,11 +10,6 @@ const cli = new Command();
 
 const handleError = (e: Error) => core.setFailed(e);
 
-const openRelease = async (body: string) => {
-  const v = hconf("version");
-  await github.openPR(`publish-release/${v}`, `Publish Release ${v}`, body);
-};
-
 cli.name("cli").description("cli").version("0.0.0");
 
 const release = cli.command("release");
@@ -23,7 +18,13 @@ release
   .command("open")
   .description("open pull request for draft release")
   .option("-b, --body <string>", "pull request body", "")
-  .action(({ body }: { body: string }) => openRelease(body).catch(exit));
+  .action(({ body }: { body: string }) =>
+    hconf("version")
+      .then((v) =>
+        github.openPR(`publish-release/${v}`, `Publish Release ${v}`, body)
+      )
+      .catch(exit)
+  );
 
 release
   .command("draft")
@@ -42,7 +43,7 @@ release
 release
   .command("describe")
   .description(`describe existing release`)
-  .action(() => core.setOutput("version", hconf("version")));
+  .action(() => hconf("version").then((v) => core.setOutput("version", v)));
 
 release.command("changelog").action(() =>
   changelog()

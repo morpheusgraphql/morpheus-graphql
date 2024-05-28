@@ -12,10 +12,10 @@ export const changelog = async (change: boolean = false) => {
     throw Error(`versions does not match: ${version} ${projectVersion}`);
   }
 
-  console.log(hconf("next", ...(isBreaking(changes) ? ["-b"] : [])));
+  console.log(await hconf("next", ...(isBreaking(changes) ? ["-b"] : [])));
 
   if (change) {
-    console.log(hconf("setup"));
+    console.log(await hconf("setup"));
   }
 
   return render(await hconf("version"), changes);

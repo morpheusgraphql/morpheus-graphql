@@ -46,7 +46,7 @@ export const log = (t: string, type?: "success" | "warning" | "error") =>
   process.stdout.write(colors[type ?? "none"] + t + colors.none);
 
 export const hconf = (cmd: "version" | "setup" | "next", ...ops: string[]) =>
-  exec(["hconf", cmd, ops].flat().join(" "));
+  Promise.resolve(exec(["hconf", cmd, ops].flat().join(" ")));
 
 export const write = (p: string, f: string) =>
   writeFile(join(dirname(require.main?.filename ?? ""), "../", p), f, "utf8");
