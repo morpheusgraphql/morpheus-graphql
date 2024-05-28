@@ -20,7 +20,12 @@ const release = cli.command("release");
 
 release
   .command("open")
-  .action(() => changelog(true).then(github.release).catch(exit));
+  .option("-p, --preview", "preview", false)
+  .action(({ preview }: { preview: string }) =>
+    changelog(true)
+      .then(preview ? Promise.resolve : github.release)
+      .catch(exit)
+  );
 
 release
   .command("describe")
