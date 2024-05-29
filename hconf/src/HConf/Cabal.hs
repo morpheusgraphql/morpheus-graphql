@@ -59,7 +59,7 @@ stack l name options = do
     ExitSuccess {} -> field l ("ok" <> parseWarnings (T.pack out))
 
 parseWarnings :: Text -> String
-parseWarnings = show . filter (not . ignore) . groupTopics . toLines
+parseWarnings = show . filter isWarning . groupTopics . toLines
 
 groupTopics :: [Text] -> [[Text]]
 groupTopics = regroup . break emptyLine
@@ -69,18 +69,9 @@ groupTopics = regroup . break emptyLine
       | null t = [h]
       | otherwise = h : groupTopics (dropWhile emptyLine t)
 
-ignore :: [Text] -> Bool
-ignore [] = True
-ignore (x : _) =
-  T.isPrefixOf "Would build" x
-    || T.isPrefixOf "No packages" x
-    || T.isPrefixOf "No executables to be installed" x
-    || T.isPrefixOf "Would test" x
-    || T.isPrefixOf "Would unregister locally" x
-    || T.isPrefixOf "Getting the file list" x
-
-isWarning :: Text -> Bool
-isWarning x = T.isPrefixOf "Warning" x || T.isPrefixOf "warning" x
+isWarning :: [Text] -> Bool
+isWarning [] = False
+isWarning (x : _) = T.isPrefixOf "warning" (T.toLower x)
 
 buildCabal :: String -> ConfigT ()
 buildCabal name = do
