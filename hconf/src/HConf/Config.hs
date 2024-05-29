@@ -33,6 +33,7 @@ import Data.List (maximum)
 import qualified Data.Map as M
 import Data.Text (unpack)
 import HConf.Http (getLatestVersion)
+import HConf.Log (Log, field)
 import HConf.Utils
 import HConf.Version
   ( Bounds (..),
@@ -130,14 +131,15 @@ updateConfig isBreaking Config {..} = do
       | isBreaking = Bounds next . Just <$> nextVersion True next
       | otherwise = pure bounds
 
-updateConfigUpperBounds :: (MonadFail m, MonadIO m) => Config -> m Config
+updateConfigUpperBounds :: (MonadFail m, MonadIO m, Log m) => Config -> m Config
 updateConfigUpperBounds Config {..} = do
   newDependencies <- traverseDeps upperBound dependencies
   pure Config {dependencies = newDependencies, ..}
 
-upperBound :: (MonadFail m, MonadIO m) => Text -> Bounds -> m Bounds
+upperBound :: (MonadFail m, MonadIO m, Log m) => Text -> Bounds -> m Bounds
 upperBound name (Bounds mi ma) = do
   latest <- getLatestVersion (unpack name)
-  let versions = maximum (latest : maybeToList ma)
-  pure (Bounds mi (Just versions))
+  let newVersion = maximum (latest : maybeToList ma)
+  if ma == Just newVersion then pure () else field (unpack name) (show newVersion)
+  pure (Bounds mi (Just newVersion))
 upperBound _ b = pure b
