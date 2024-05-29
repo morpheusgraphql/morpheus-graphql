@@ -61,8 +61,6 @@ builds:
     resolver: lts-19.28
     include:
       - morpheus-graphql-benchmarks
-    exclude:
-      - examples/scotty-fraxl
     extra:
       attoparsec-aeson: 2.1.0.0
       dependent-map: 0.2.4.0
