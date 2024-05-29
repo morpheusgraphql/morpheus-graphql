@@ -1,7 +1,7 @@
 import { fetchChanges, isBreaking } from "./fetch";
 import { render } from "./render";
 import { lastTag } from "../git";
-import { exec, hconf } from "../utils";
+import { hconf } from "../utils";
 
 export const changelog = async (change: boolean = false) => {
   const version = lastTag();
