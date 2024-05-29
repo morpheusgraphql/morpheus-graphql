@@ -179,7 +179,7 @@ getBound :: Restriction -> Bounds -> Maybe Bound
 getBound v (Bounds xs) = find (\Bound {..} -> restriction == v) xs
 
 printBoundPart :: Bound -> [Text]
-printBoundPart Bound {..} = toText restriction : ([if strictness then "=" else ""] <> [toText version])
+printBoundPart Bound {..} = pack (toString restriction <> if strictness then "=" else "") : [toText version]
 
 printBounds :: Bounds -> String
 printBounds = intercalate "  " . map toString . printBoundParts
