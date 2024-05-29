@@ -103,7 +103,7 @@ data Restriction = Min | Max deriving (Show, Eq, Ord)
 
 data Bound = Bound
   { restriction :: Restriction,
-    strictness :: Bool,
+    orEquals :: Bool,
     version :: Version
   }
   deriving (Show, Eq)
@@ -111,8 +111,8 @@ data Bound = Bound
 instance Ord Bound where
   compare a b =
     compare (version a) (version b)
-      <> compare (strictness a) (strictness b)
       <> compare (restriction a) (restriction b)
+      <> compare (orEquals a) (orEquals b)
 
 instance ToString Restriction where
   toString Min = "<"
@@ -148,7 +148,7 @@ breakOnSPace = trim . break isSeparator
 parseBound :: (MonadFail f) => String -> f Bound
 parseBound (h : t) = do
   res <- parseRestriction h
-  let (isStrict, value) = parseStrictness t
+  let (isStrict, value) = parseOrEquals t
   ver <- parse value
   pure $ Bound res isStrict ver
 parseBound x = fail ("unsorted bound type" <> toString x)
@@ -158,9 +158,9 @@ parseRestriction '>' = pure Max
 parseRestriction '<' = pure Min
 parseRestriction x = fail ("unsorted bound type" <> show x)
 
-parseStrictness :: [Char] -> (Bool, [Char])
-parseStrictness ('=' : ver) = (True, ver)
-parseStrictness ver = (False, ver)
+parseOrEquals :: [Char] -> (Bool, [Char])
+parseOrEquals ('=' : ver) = (True, ver)
+parseOrEquals ver = (False, ver)
 
 parseBounds :: (MonadFail m) => Text -> m Bounds
 parseBounds bounds
@@ -177,7 +177,7 @@ getBound :: Restriction -> Bounds -> Maybe Bound
 getBound v (Bounds xs) = find (\Bound {..} -> restriction == v) xs
 
 printBoundPart :: Bound -> [Text]
-printBoundPart Bound {..} = pack (toString restriction <> if strictness then "=" else "") : [toText version]
+printBoundPart Bound {..} = pack (toString restriction <> if orEquals then "=" else "") : [toText version]
 
 printBounds :: Bounds -> String
 printBounds = intercalate "  " . map toString . printBoundParts
