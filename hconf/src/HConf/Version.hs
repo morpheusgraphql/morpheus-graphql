@@ -109,12 +109,10 @@ data Bound = Bound
   deriving (Show, Eq)
 
 instance Ord Bound where
-  compare b1 b2
-    | restrictions && strictness b1 == strictness b2 = compare (version b1) (version b2)
-    | restrictions = compare (strictness b1) (strictness b2)
-    | otherwise = compare (restriction b1) (restriction b2)
-    where
-      restrictions = restriction b1 == restriction b2
+  compare a b =
+    compare (version a) (version b)
+      <> compare (strictness a) (strictness b)
+      <> compare (restriction a) (restriction b)
 
 instance ToString Restriction where
   toString Min = "<"
@@ -173,7 +171,7 @@ parseDep :: (MonadFail m) => (Text, Text) -> m (Text, Bounds)
 parseDep (name, bounds) = (name,) <$> parseBounds bounds
 
 printBoundParts :: Bounds -> [Text]
-printBoundParts (Bounds xs) = intercalate ["&&"] $ sort $ map printBoundPart xs
+printBoundParts (Bounds xs) = intercalate ["&&"] $ map printBoundPart $ sort xs
 
 getBound :: Restriction -> Bounds -> Maybe Bound
 getBound v (Bounds xs) = find (\Bound {..} -> restriction == v) xs
