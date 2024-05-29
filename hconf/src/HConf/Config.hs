@@ -142,7 +142,6 @@ updateConfigUpperBounds Config {..} = do
   pure Config {dependencies = newDependencies, ..}
 
 upperBound :: (MonadFail m, MonadIO m, Log m) => Text -> Bounds -> m Bounds
-upperBound _ (Bounds []) = pure $ Bounds []
 upperBound name bounds = do
   latest <- getLatestBound name
   let ma = getBound Max bounds

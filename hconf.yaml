@@ -89,7 +89,6 @@ dependencies:
 - graphql               >=  0.5       &&  <   2.0
 - hashable              >=  1.0.0     &&  <   2.0.0
 - haxl                  >=  0.1.0     &&  <   3.0
-- hconf
 - http-media            >=  0.5       &&  <   1.0
 - http-types            >=  0.5       &&  <   1.0
 - megaparsec            >=  7.0.0     &&  <   10.0.0
