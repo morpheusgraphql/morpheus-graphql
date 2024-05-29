@@ -3,15 +3,17 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HConf.Http
-  ( getLatestVersion,
+  ( getLatestBound,
   )
 where
 
 import Data.Aeson (FromJSON)
 import Data.Aeson.Decoding (eitherDecode)
 import Data.Map (lookup)
+import Data.Text (unpack)
 import qualified Data.Text as T
-import HConf.Version (Version)
+import HConf.Utils (Name)
+import HConf.Version (Bound (..), Restriction (..), Version)
 import Network.HTTP.Req
   ( GET (..),
     NoReqBody (..),
@@ -44,5 +46,5 @@ lookupVersions (Left x) = fail x
 fetchVersions :: (MonadFail m, MonadIO m) => String -> m (NonEmpty Version)
 fetchVersions name = fetchVersionResponse name >>= lookupVersions
 
-getLatestVersion :: (MonadFail m, MonadIO m) => String -> m Version
-getLatestVersion name = head <$> fetchVersions name
+getLatestBound :: (MonadFail m, MonadIO m) => Name -> m Bound
+getLatestBound = fmap (Bound Max True . head) . fetchVersions . unpack

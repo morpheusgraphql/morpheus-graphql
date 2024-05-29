@@ -32,7 +32,7 @@ import Data.Aeson.Types
 import Data.List (maximum)
 import qualified Data.Map as M
 import Data.Text (unpack)
-import HConf.Http (getLatestVersion)
+import HConf.Http (getLatestBound)
 import HConf.Log (Log (..), field)
 import HConf.Utils
 import HConf.Version
@@ -144,9 +144,9 @@ updateConfigUpperBounds Config {..} = do
 upperBound :: (MonadFail m, MonadIO m, Log m) => Text -> Bounds -> m Bounds
 upperBound _ (Bounds []) = pure $ Bounds []
 upperBound name bounds = do
-  latest <- Bound Max True <$> getLatestVersion (unpack name)
+  latest <- getLatestBound name
   let ma = getBound Max bounds
   let mi = maybeToList (getBound Min bounds)
   let newVersion = maximum (latest : maybeToList ma)
   if ma == Just newVersion then pure () else field (unpack name) (show newVersion)
-  pure (Bounds $ sort (mi <> [newVersion]))
+  pure (Bounds (mi <> [newVersion]))
