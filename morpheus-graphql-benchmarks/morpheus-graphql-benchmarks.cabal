@@ -44,7 +44,7 @@ benchmark morpheus-graphql-bench
   build-depends:
       base >=4.7.0 && <5.0.0
     , bytestring >=0.10.4 && <0.15.0
-    , criterion >=1.0
+    , criterion >=1.0 && <2.0.0
     , graphql >=0.5 && <2.0
     , megaparsec >=7.0.0 && <10.0.0
     , morpheus-graphql-core >=0.27.0 && <0.28.0
