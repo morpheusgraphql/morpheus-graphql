@@ -49,17 +49,17 @@ noNewLine :: Char -> String
 noNewLine '\n' = "          \n"
 noNewLine x = [x]
 
-stack :: String -> [String] -> ConfigT ()
-stack l args = do
-  (code, _, out) <- liftIO (readProcessWithExitCode "stack" (l : args) "")
+stack :: String -> String -> [String] -> ConfigT ()
+stack l name options = do
+  (code, _, out) <- liftIO (readProcessWithExitCode "stack" (l : (name : map ("--" <>) options)) "")
   case code of
     ExitFailure {} -> alert (l <> ": " <> concatMap noNewLine (unpack $ strip $ pack out))
     ExitSuccess {} -> field l "ok"
 
 buildCabal :: String -> ConfigT ()
 buildCabal name = do
-  stack "build" ["--test", "--dry-run", name]
-  stack "sdist" [name]
+  stack "build" name ["test", "dry-run"]
+  stack "sdist" name []
 
 checkCabal :: (Name, Package) -> ConfigT ()
 checkCabal (path, Package {..}) = task path $ do
