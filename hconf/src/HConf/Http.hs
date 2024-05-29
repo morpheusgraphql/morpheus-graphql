@@ -4,6 +4,7 @@
 
 module HConf.Http
   ( getLatestBound,
+    fetchVersions,
   )
 where
 

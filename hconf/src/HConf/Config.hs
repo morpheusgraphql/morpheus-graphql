@@ -18,6 +18,7 @@ module HConf.Config
     updateConfig,
     updateConfigUpperBounds,
     isLocalPackage,
+    checkConfig,
   )
 where
 
@@ -33,7 +34,7 @@ import Data.Aeson.Types
 import Data.List (maximum)
 import qualified Data.Map as M
 import Data.Text (isPrefixOf, unpack)
-import HConf.Http (getLatestBound)
+import HConf.Http (fetchVersions, getLatestBound)
 import HConf.Log (Log (..), field)
 import HConf.Utils (Name)
 import HConf.Version
@@ -130,7 +131,21 @@ withPrefix s _ _ = s
 instance ToJSON Config where
   toJSON = genericToJSON defaultOptions {omitNothingFields = True}
 
-updateConfig :: (MonadFail m) => Bool -> Config -> m Config
+checkVersion :: (MonadFail m, MonadIO m) => (Text, Version) -> m ()
+checkVersion (name, ver) =
+  fetchVersions (unpack name)
+    >>= \vs ->
+      if ver `elem` vs
+        then pure ()
+        else fail ("no matching version for " <> unpack name)
+
+checkBuild :: (MonadFail f, MonadIO f) => Build -> f [()]
+checkBuild Build {..} = traverse checkVersion $ maybe [] M.toList extra
+
+checkConfig :: (MonadFail f, MonadIO f) => Config -> f ()
+checkConfig Config {..} = traverse_ checkBuild (toList builds)
+
+updateConfig :: (MonadFail m, MonadIO m) => Bool -> Config -> m Config
 updateConfig isBreaking Config {..} = do
   next <- nextVersion isBreaking version
   newBounds <- getBounds next
