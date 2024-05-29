@@ -40,7 +40,7 @@ executable servant-server
     , morpheus-graphql >=0.27.0 && <0.28.0
     , morpheus-graphql-subscriptions >=0.27.0 && <0.28.0
     , mtl >=2.0.0 && <3.0.0
-    , servant-server
+    , servant-server >=0.2 && <1.0
     , text >=1.2.3 && <3.0.0
     , wai-websockets >=1.0.0 && <4.0
     , warp >=1.0.0 && <4.0

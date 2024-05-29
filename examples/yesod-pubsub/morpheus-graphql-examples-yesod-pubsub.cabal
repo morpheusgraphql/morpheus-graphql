@@ -45,7 +45,7 @@ library
     , morpheus-graphql-core >=0.27.0 && <0.28.0
     , morpheus-graphql-server >=0.27.0 && <0.28.0
     , morpheus-graphql-subscriptions >=0.27.0 && <0.28.0
-    , shakespeare
+    , shakespeare >=1.0 && <3.0
     , text >=1.2.3 && <3.0.0
     , unliftio-core >=0.0.1 && <0.4.0
     , wai >=1.0.0 && <4.0
@@ -75,7 +75,7 @@ executable yesod-gql-example
     , morpheus-graphql-examples-yesod-pubsub
     , morpheus-graphql-server >=0.27.0 && <0.28.0
     , morpheus-graphql-subscriptions >=0.27.0 && <0.28.0
-    , shakespeare
+    , shakespeare >=1.0 && <3.0
     , text >=1.2.3 && <3.0.0
     , unliftio-core >=0.0.1 && <0.4.0
     , wai >=1.0.0 && <4.0
@@ -106,7 +106,7 @@ test-suite yesod-gql-example-test
     , morpheus-graphql-examples-yesod-pubsub
     , morpheus-graphql-server >=0.27.0 && <0.28.0
     , morpheus-graphql-subscriptions >=0.27.0 && <0.28.0
-    , shakespeare
+    , shakespeare >=1.0 && <3.0
     , text >=1.2.3 && <3.0.0
     , unliftio-core >=0.0.1 && <0.4.0
     , wai >=1.0.0 && <4.0
