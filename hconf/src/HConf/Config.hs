@@ -36,9 +36,12 @@ import HConf.Http (getLatestVersion)
 import HConf.Log (Log, field)
 import HConf.Utils
 import HConf.Version
-  ( Bounds (..),
+  ( Bound (Bound),
+    Bounds (..),
     Deps,
+    Restriction (..),
     Version,
+    getBound,
     getDep,
     nextVersion,
     parse,
@@ -128,7 +131,9 @@ updateConfig isBreaking Config {..} = do
   pure Config {version = next, bounds = newBounds, ..}
   where
     getBounds next
-      | isBreaking = Bounds next . Just <$> nextVersion True next
+      | isBreaking = do
+          upper <- nextVersion True next
+          pure $ Bounds [Bound Min True next, Bound Max False upper]
       | otherwise = pure bounds
 
 updateConfigUpperBounds :: (MonadFail m, MonadIO m, Log m) => Config -> m Config
@@ -137,9 +142,10 @@ updateConfigUpperBounds Config {..} = do
   pure Config {dependencies = newDependencies, ..}
 
 upperBound :: (MonadFail m, MonadIO m, Log m) => Text -> Bounds -> m Bounds
-upperBound name (Bounds mi ma) = do
-  latest <- getLatestVersion (unpack name)
-  let newVersion = maximum (latest : maybeToList ma)
+upperBound name bounds = do
+  latest <- Bound Max True <$> getLatestVersion (unpack name)
+  let ma = getBound Max bounds
+  let mi = maybeToList (getBound Min bounds)
+  let newVersion = maximum (latest : maybeToList (getBound Max bounds))
   if ma == Just newVersion then pure () else field (unpack name) (show newVersion)
-  pure (Bounds mi (Just newVersion))
-upperBound _ b = pure b
+  pure (Bounds (mi <> [newVersion]))

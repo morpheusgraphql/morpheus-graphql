@@ -14,6 +14,9 @@ module HConf.Version
     traverseDeps,
     Parse (..),
     nextVersion,
+    getBound,
+    Restriction (..),
+    Bound (..),
   )
 where
 
@@ -96,14 +99,27 @@ instance FromJSON Version where
 instance ToJSON Version where
   toJSON = String . pack . show
 
+data Restriction = Min | Max deriving (Show, Eq, Ord)
+
 data Bound = Bound
   { restriction :: Restriction,
     strictness :: Bool,
     version :: Version
   }
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq)
 
-data Restriction = Min | Max deriving (Show, Eq, Ord)
+instance Ord Bound where
+  compare b1 b2
+    | restriction b1 == restriction b2 && strictness b1 == strictness b2 = compare (version b1) (version b2)
+    | restriction b1 == restriction b2 = compare (strictness b1) (strictness b2)
+    | otherwise = compare (restriction b1) (restriction b2)
+
+instance ToString Restriction where
+  toString Min = "<"
+  toString Max = ">"
+
+instance ToText Restriction where
+  toText = pack . toString
 
 instance Ord Version where
   compare LatestVersion LatestVersion = EQ
@@ -117,15 +133,8 @@ instance Ord Version where
         | x == y = compareSeries xs ys
         | otherwise = compare x y
 
-data Bounds
-  = Bounds Version (Maybe Version)
-  | NoBounds
-  deriving
-    ( Generic,
-      Show,
-      Eq,
-      Ord
-    )
+newtype Bounds = Bounds [Bound]
+  deriving (Generic, Show, Eq)
 
 diff :: Bounds -> Bounds -> String
 diff old deps = printBounds old <> chalk Yellow "  ->  " <> printBounds deps
@@ -155,35 +164,30 @@ parseStrictness ver = (False, ver)
 
 parseBounds :: (MonadFail m) => Text -> m Bounds
 parseBounds bounds
-  | null bounds = pure NoBounds
-  | otherwise = do
-      rules <- traverse (parseBound . unpack) $ T.splitOn "&&" $ T.filter (not . isSeparator) bounds
-      mi <- maybe (fail "can't find min bound") pure (find (boundIs Min) rules)
-      pure $ Bounds (version mi) (version <$> find (boundIs Max) rules)
-
-boundIs :: Restriction -> Bound -> Bool
-boundIs r Bound {..} = restriction == r
+  | null bounds = pure $ Bounds []
+  | otherwise = Bounds <$> traverse (parseBound . unpack) (T.splitOn "&&" $ T.filter (not . isSeparator) bounds)
 
 parseDep :: (MonadFail m) => (Text, Text) -> m (Text, Bounds)
 parseDep (name, bounds) = (name,) <$> parseBounds bounds
 
 printBoundParts :: Bounds -> [Text]
-printBoundParts NoBounds = []
-printBoundParts (Bounds mi ma) = [">=", toText mi] <> maybe [] (\m -> ["&&", "<", toText m]) ma
+printBoundParts (Bounds xs) = intercalate ["&&"] $ sort $ map printBoundPart xs
+
+getBound :: Restriction -> Bounds -> Maybe Bound
+getBound v (Bounds xs) = find (\Bound {..} -> restriction == v) xs
+
+printBoundPart :: Bound -> [Text]
+printBoundPart Bound {..} = toText restriction : ([if strictness then "=" else ""] <> [toText version])
 
 printBounds :: Bounds -> String
 printBounds = intercalate "  " . map toString . printBoundParts
 
 instance FromJSON Bounds where
-  parseJSON (Bool True) = pure NoBounds
   parseJSON (String s) = parseBounds s
-  parseJSON (Number n) = flip Bounds Nothing <$> parse (pack $ show n)
   parseJSON v = fail $ "version should be either true or string" <> show v
 
 instance ToJSON Bounds where
-  toJSON b
-    | NoBounds == b = Bool True
-    | otherwise = String $ pack $ printBounds b
+  toJSON = String . pack . printBounds
 
 type TextDeps = [Text]
 
