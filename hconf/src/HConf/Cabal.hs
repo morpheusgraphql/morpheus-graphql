@@ -15,7 +15,7 @@ import Data.Map (lookup)
 import qualified Data.Text as T
 import GHC.IO.Exception (ExitCode (..))
 import HConf.ConfigT (ConfigT)
-import HConf.Log (alert, field, label, task)
+import HConf.Log (alert, field, label, task, warn)
 import HConf.Package (Package (..), resolvePackages)
 import HConf.Utils (Name)
 import HConf.Version (Parse (..), Version)
@@ -56,11 +56,15 @@ stack l name options = do
   (code, _, out) <- liftIO (readProcessWithExitCode "stack" (l : (name : map ("--" <>) options)) "")
   case code of
     ExitFailure {} -> alert (l <> ": " <> concatMap noNewLine (T.unpack $ T.strip $ T.pack out))
-    ExitSuccess {} -> field l (printWarings $ parseWarnings out)
+    ExitSuccess {} -> printWarings l (parseWarnings out)
 
-printWarings :: [(Text, [Text])] -> String
-printWarings [] = "ok"
-printWarings xs = show xs
+printWarings :: String -> [(Text, [Text])] -> ConfigT ()
+printWarings name [] = field name "ok"
+printWarings name xs = task (T.pack name) $ traverse_ subWarn xs
+  where
+    subWarn (x, ls) =
+      warn (T.unpack x)
+        >> traverse_ (warn . T.unpack) ls
 
 parseWarnings :: String -> [(Text, [Text])]
 parseWarnings = concatMap toWarning . groupTopics . toLines . T.pack
@@ -75,7 +79,7 @@ groupTopics = regroup . break emptyLine
 
 toWarning :: [Text] -> [(Text, [Text])]
 toWarning (x : xs)
-  | T.isPrefixOf "warning" (T.toLower x) = [(x, xs)]
+  | T.isPrefixOf "warning" (T.toLower x) = [(x, takeWhile (\p -> T.head p == ' ') xs)]
 toWarning _ = []
 
 buildCabal :: String -> ConfigT ()
