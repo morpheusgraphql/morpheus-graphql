@@ -49,10 +49,10 @@ executable scotty-server
     , containers >=0.4.2.1 && <0.7.0
     , extra
     , http-types
-    , morpheus-graphql
-    , morpheus-graphql-app
-    , morpheus-graphql-core
-    , morpheus-graphql-subscriptions
+    , morpheus-graphql >=0.27.0 && <0.28.0
+    , morpheus-graphql-app >=0.27.0 && <0.28.0
+    , morpheus-graphql-core >=0.27.0 && <0.28.0
+    , morpheus-graphql-subscriptions >=0.27.0 && <0.28.0
     , mtl >=2.0.0 && <3.0.0
     , scotty >=0.6.0
     , stm
