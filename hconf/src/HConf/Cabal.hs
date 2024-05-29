@@ -71,7 +71,11 @@ groupTopics = regroup . break emptyLine
 
 ignore :: [Text] -> Bool
 ignore [] = True
-ignore (x : _) = T.isPrefixOf "Would build" x || T.isPrefixOf "No packages" x
+ignore (x : _) =
+  T.isPrefixOf "Would build" x
+    || T.isPrefixOf "No packages" x
+    || T.isPrefixOf "No executables to be installed" x
+    || T.isPrefixOf "Would test" x
 
 isWarning :: Text -> Bool
 isWarning x = T.isPrefixOf "Warning" x || T.isPrefixOf "warning" x
