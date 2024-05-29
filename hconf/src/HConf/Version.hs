@@ -35,6 +35,7 @@ import Data.Text
     strip,
     unpack,
   )
+import qualified Data.Text as T
 import GHC.Show (Show (show))
 import HConf.Chalk (Color (Yellow), chalk)
 import HConf.Format (formatTable)
@@ -104,13 +105,6 @@ data BoundType = BoundType
 
 data Restriction = Min | Max deriving (Show, Eq, Ord)
 
-parseBound :: (MonadFail f) => Text -> f BoundType
-parseBound "<" = pure $ BoundType Max False
-parseBound "<=" = pure $ BoundType Max True
-parseBound ">" = pure $ BoundType Min False
-parseBound ">=" = pure $ BoundType Min True
-parseBound x = fail ("unsorted bound type" <> toString x)
-
 instance Ord Version where
   compare LatestVersion LatestVersion = EQ
   compare LatestVersion (Version _) = GT
@@ -142,13 +136,41 @@ trim = bimap strip strip
 breakOnSPace :: Text -> (Text, Text)
 breakOnSPace = trim . break isSeparator
 
-parseBoundTuple :: (MonadFail m) => Text -> (m BoundType, Text)
-parseBoundTuple = first parseBound . breakOnSPace
+-- parseBound :: (MonadFail f) => String -> f BoundType
+-- parseBound "<" = pure $ BoundType Max False
+-- parseBound "<=" = pure $ BoundType Max True
+-- parseBound ">" = pure $ BoundType Min False
+-- parseBound ">=" = pure $ BoundType Min True
+-- parseBound x = fail ("unsorted bound type" <> toString x)
+
+parseBound :: (MonadFail f) => String -> f (BoundType, Version)
+parseBound (h : t) = do
+  res <- parseRestriction h
+  let (isStrict, value) = parseStrictness t
+  ver <- parse value
+  pure (BoundType res isStrict, ver)
+parseBound x = fail ("unsorted bound type" <> toString x)
+
+parseRestriction :: (MonadFail f) => Char -> f Restriction
+parseRestriction '<' = pure Max
+parseRestriction '>' = pure Min
+parseRestriction x = fail ("unsorted bound type" <> show x)
+
+parseStrictness :: [Char] -> (Bool, [Char])
+parseStrictness ('=' : ver) = (True, ver)
+parseStrictness ver = (False, ver)
+
+parseBoundTuple :: (MonadFail m) => Text -> m (BoundType, Version)
+parseBoundTuple = parseBound . filter (not . isSeparator) . unpack
 
 parseVersionTuple :: (MonadFail m) => (Text, Text) -> m Bounds
 parseVersionTuple (mi, ma) = do
-  ((,) <$> parseMin (parseBoundTuple mi) <*> parseMax (parseBoundTuple ma))
-    >>= uncurry parseBoundsFrom
+  rules <- traverse parseBoundTuple [mi, ma]
+  (mn, v) <- maybe (fail "can't find min bound") pure (find (boundIs Min) rules)
+  pure $ Bounds v (snd <$> find (boundIs Max) rules)
+
+boundIs :: Restriction -> (BoundType, Version) -> Bool
+boundIs v (BoundType x _, _) = x == v
 
 breakAtAnd :: Text -> (Text, Text)
 breakAtAnd = trim . second (drop 2) . breakOn "&&"
@@ -160,18 +182,6 @@ parseVersionBounds :: (MonadFail m) => Text -> m Bounds
 parseVersionBounds bounds
   | null bounds = pure NoBounds
   | otherwise = parseVersionTuple (breakAtAnd bounds)
-
-parseMax :: (MonadFail m) => (Either Text BoundType, Text) -> m (Maybe Text)
-parseMax (Left {}, v) | null v = pure Nothing
-parseMax (Right (BoundType Max _), v) = pure (Just v)
-parseMax _ = pure Nothing
-
-parseMin :: (MonadFail m) => (Either Text BoundType, Text) -> m Text
-parseMin (Right (BoundType Min _), v) = pure v
-parseMin (o, v) = fail ("invalid" <> show (o, v))
-
-parseBoundsFrom :: (MonadFail m) => Text -> Maybe Text -> m Bounds
-parseBoundsFrom minV maxV = Bounds <$> parse minV <*> traverse parse maxV
 
 printBoundParts :: Bounds -> [Text]
 printBoundParts NoBounds = []
