@@ -15,6 +15,7 @@ author:         Daviti Nalchevanidze
 maintainer:     Daviti Nalchevanidze
 copyright:      (c) 2019 Daviti Nalchevanidze
 license:        MIT
+license-file:   LICENSE
 build-type:     Simple
 
 source-repository head
