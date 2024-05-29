@@ -63,7 +63,7 @@ buildCabal name = do
 
 checkCabal :: (Name, Package) -> ConfigT ()
 checkCabal (path, Package {..}) = task path $ do
-  buildCabal (unpack name)
+  buildCabal (unpack path)
   (pkgName, pkgVersion) <- getCabalFields (unpack path) name
   if pkgVersion == version && pkgName == name then pure () else fail (unpack path <> "mismatching version or name")
 
