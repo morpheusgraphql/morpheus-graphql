@@ -12,7 +12,7 @@ where
 
 import qualified Data.ByteString.Char8 as BS (unpack)
 import Data.Map (lookup)
-import Data.Text (breakOn, drop, null, pack, split, strip, unpack)
+import Data.Text (breakOn, drop, isPrefixOf, null, pack, split, strip, unpack)
 import GHC.IO.Exception (ExitCode (..))
 import GHC.IO.Handle (hGetContents, hGetContents', hGetLine, hShow)
 import HConf.ConfigT (ConfigT)
@@ -21,7 +21,7 @@ import HConf.Package (Package (..), resolvePackages)
 import HConf.Utils (Name)
 import HConf.Version (Parse (..), Version)
 import HConf.Yaml (read)
-import Relude hiding (Undefined, break, drop, length, null, replicate)
+import Relude hiding (Undefined, break, drop, isPrefixOf, length, null, replicate)
 import System.Process
 
 parseFields :: ByteString -> Map Text Text
@@ -54,7 +54,11 @@ stack l name options = do
   (code, _, out) <- liftIO (readProcessWithExitCode "stack" (l : (name : map ("--" <>) options)) "")
   case code of
     ExitFailure {} -> alert (l <> ": " <> concatMap noNewLine (unpack $ strip $ pack out))
-    ExitSuccess {} -> field l "ok"
+    ExitSuccess {} -> field l ("ok" <> show (parseOutput $ pack out))
+
+parseOutput = dropWhile (not . isWarning) . split (== '\n')
+
+isWarning x = isPrefixOf "Warning" x || isPrefixOf "warning" x
 
 buildCabal :: String -> ConfigT ()
 buildCabal name = do
