@@ -56,10 +56,14 @@ stack l name options = do
   (code, _, out) <- liftIO (readProcessWithExitCode "stack" (l : (name : map ("--" <>) options)) "")
   case code of
     ExitFailure {} -> alert (l <> ": " <> concatMap noNewLine (T.unpack $ T.strip $ T.pack out))
-    ExitSuccess {} -> field l ("ok" <> parseWarnings (T.pack out))
+    ExitSuccess {} -> field l (printWarings $ parseWarnings out)
 
-parseWarnings :: Text -> String
-parseWarnings = show . filter isWarning . groupTopics . toLines
+printWarings :: [[Text]] -> String
+printWarings [] = "ok"
+printWarings xs = show xs
+
+parseWarnings :: String -> [[Text]]
+parseWarnings = filter isWarning . groupTopics . toLines . T.pack
 
 groupTopics :: [Text] -> [[Text]]
 groupTopics = regroup . break emptyLine
