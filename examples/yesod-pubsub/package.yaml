@@ -28,8 +28,8 @@ dependencies:
 - wai-websockets                  >=  1.0.0     &&  <  4.0
 - warp                            >=  1.0.0     &&  <  4.0
 - websockets                      >=  0.12.6.0  &&  <  1.0.0
-- yesod
-- yesod-core
+- yesod                           >=  0.5       &&  <  2.0
+- yesod-core                      >=  1.0       &&  <  2.0
 library:
   source-dirs: src
 executables:
