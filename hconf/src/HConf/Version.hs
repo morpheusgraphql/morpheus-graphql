@@ -136,13 +136,6 @@ trim = bimap strip strip
 breakOnSPace :: Text -> (Text, Text)
 breakOnSPace = trim . break isSeparator
 
--- parseBound :: (MonadFail f) => String -> f BoundType
--- parseBound "<" = pure $ BoundType Max False
--- parseBound "<=" = pure $ BoundType Max True
--- parseBound ">" = pure $ BoundType Min False
--- parseBound ">=" = pure $ BoundType Min True
--- parseBound x = fail ("unsorted bound type" <> toString x)
-
 parseBound :: (MonadFail f) => String -> f (BoundType, Version)
 parseBound (h : t) = do
   res <- parseRestriction h
@@ -160,25 +153,19 @@ parseStrictness :: [Char] -> (Bool, [Char])
 parseStrictness ('=' : ver) = (True, ver)
 parseStrictness ver = (False, ver)
 
-parseBoundTuple :: (MonadFail m) => Text -> m (BoundType, Version)
-parseBoundTuple = parseBound . filter (not . isSeparator) . unpack
-
-parseBoundList :: (MonadFail m) => Text -> m Bounds
-parseBoundList bounds = do
-  rules <- traverse parseBoundTuple (T.splitOn "&&" bounds)
-  (mn, v) <- maybe (fail "can't find min bound") pure (find (boundIs Min) rules)
-  pure $ Bounds v (snd <$> find (boundIs Max) rules)
+parseBounds :: (MonadFail m) => Text -> m Bounds
+parseBounds bounds
+  | null bounds = pure NoBounds
+  | otherwise = do
+      rules <- traverse (parseBound . unpack) $ T.splitOn "&&" $ T.filter (not . isSeparator) bounds
+      (mn, v) <- maybe (fail "can't find min bound") pure (find (boundIs Min) rules)
+      pure $ Bounds v (snd <$> find (boundIs Max) rules)
 
 boundIs :: Restriction -> (BoundType, Version) -> Bool
 boundIs v (BoundType x _, _) = x == v
 
-parseVersionBounds :: (MonadFail m) => Text -> m Bounds
-parseVersionBounds bounds
-  | null bounds = pure NoBounds
-  | otherwise = parseBoundList bounds
-
 parseDep :: (MonadFail m) => (Text, Text) -> m (Text, Bounds)
-parseDep (name, bounds) = (name,) <$> parseVersionBounds bounds
+parseDep (name, bounds) = (name,) <$> parseBounds bounds
 
 printBoundParts :: Bounds -> [Text]
 printBoundParts NoBounds = []
@@ -189,7 +176,7 @@ printBounds = intercalate "  " . map toString . printBoundParts
 
 instance FromJSON Bounds where
   parseJSON (Bool True) = pure NoBounds
-  parseJSON (String s) = parseVersionBounds s
+  parseJSON (String s) = parseBounds s
   parseJSON (Number n) = flip Bounds Nothing <$> parse (pack $ show n)
   parseJSON v = fail $ "version should be either true or string" <> show v
 
