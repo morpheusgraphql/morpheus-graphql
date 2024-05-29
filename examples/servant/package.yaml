@@ -17,8 +17,8 @@ dependencies:
 - mtl                             >=  2.0.0     &&  <  3.0.0
 - servant-server
 - text                            >=  1.2.3     &&  <  3.0.0
-- wai-websockets                  >=  1.0.0
-- warp                            >=  1.0.0
+- wai-websockets                  >=  1.0.0     &&  <  4.0
+- warp                            >=  1.0.0     &&  <  4.0
 - websockets                      >=  0.12.6.0  &&  <  1.0.0
 executables:
   servant-server:

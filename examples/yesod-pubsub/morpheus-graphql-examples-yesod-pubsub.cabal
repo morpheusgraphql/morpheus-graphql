@@ -48,10 +48,10 @@ library
     , shakespeare
     , text >=1.2.3 && <3.0.0
     , unliftio-core >=0.0.1 && <0.4.0
-    , wai >=1.0.0
-    , wai-cors
-    , wai-websockets >=1.0.0
-    , warp >=1.0.0
+    , wai >=1.0.0 && <4.0
+    , wai-cors >=0.1.0
+    , wai-websockets >=1.0.0 && <4.0
+    , warp >=1.0.0 && <4.0
     , websockets >=0.12.6.0 && <1.0.0
     , yesod
     , yesod-core
@@ -78,10 +78,10 @@ executable yesod-gql-example
     , shakespeare
     , text >=1.2.3 && <3.0.0
     , unliftio-core >=0.0.1 && <0.4.0
-    , wai >=1.0.0
-    , wai-cors
-    , wai-websockets >=1.0.0
-    , warp >=1.0.0
+    , wai >=1.0.0 && <4.0
+    , wai-cors >=0.1.0
+    , wai-websockets >=1.0.0 && <4.0
+    , warp >=1.0.0 && <4.0
     , websockets >=0.12.6.0 && <1.0.0
     , yesod
     , yesod-core
@@ -109,10 +109,10 @@ test-suite yesod-gql-example-test
     , shakespeare
     , text >=1.2.3 && <3.0.0
     , unliftio-core >=0.0.1 && <0.4.0
-    , wai >=1.0.0
-    , wai-cors
-    , wai-websockets >=1.0.0
-    , warp >=1.0.0
+    , wai >=1.0.0 && <4.0
+    , wai-cors >=0.1.0
+    , wai-websockets >=1.0.0 && <4.0
+    , warp >=1.0.0 && <4.0
     , websockets >=0.12.6.0 && <1.0.0
     , yesod
     , yesod-core
