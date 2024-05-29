@@ -54,7 +54,7 @@ tests:
     dependencies:
     - aeson                   >=  1.4.4   &&  <   3.0.0
     - directory               >=  1.0.0   &&  <   2.0.0
-    - morpheus-graphql-core
+    - morpheus-graphql-core   >=  0.27.0  &&  <   0.28.0
     - morpheus-graphql-tests  >=  0.27.0  &&  <   0.28.0
     - relude                  >=  0.3.0   &&  <   2.0.0
     - tasty                   >=  0.1.0   &&  <=  1.5

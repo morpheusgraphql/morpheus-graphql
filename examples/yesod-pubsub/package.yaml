@@ -44,7 +44,7 @@ executables:
     - -threaded
     - -with-rtsopts=-N
     dependencies:
-    - morpheus-graphql-examples-yesod-pubsub
+    - morpheus-graphql-examples-yesod-pubsub  >=  0.27.0  &&  <  0.28.0
 tests:
   yesod-gql-example-test:
     main: Spec.hs
@@ -54,4 +54,4 @@ tests:
     - -threaded
     - -with-rtsopts=-N
     dependencies:
-    - morpheus-graphql-examples-yesod-pubsub
+    - morpheus-graphql-examples-yesod-pubsub  >=  0.27.0  &&  <  0.28.0

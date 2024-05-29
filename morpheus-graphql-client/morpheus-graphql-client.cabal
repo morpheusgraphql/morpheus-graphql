@@ -135,7 +135,7 @@ test-suite morpheus-graphql-client-test
     , directory >=1.0.0 && <2.0.0
     , file-embed >=0.0.10 && <1.0.0
     , modern-uri >=0.1.0.0 && <1.0.0
-    , morpheus-graphql-client
+    , morpheus-graphql-client >=0.27.0 && <0.28.0
     , morpheus-graphql-code-gen-utils >=0.27.0 && <0.28.0
     , morpheus-graphql-core >=0.27.0 && <0.28.0
     , morpheus-graphql-subscriptions >=0.27.0 && <0.28.0

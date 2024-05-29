@@ -417,7 +417,7 @@ test-suite morpheus-graphql-server-test
     , file-embed >=0.0.10 && <1.0.0
     , morpheus-graphql-app >=0.27.0 && <0.28.0
     , morpheus-graphql-core >=0.27.0 && <0.28.0
-    , morpheus-graphql-server
+    , morpheus-graphql-server >=0.27.0 && <0.28.0
     , morpheus-graphql-subscriptions >=0.27.0 && <0.28.0
     , morpheus-graphql-tests >=0.27.0 && <0.28.0
     , mtl >=2.0.0 && <3.0.0

@@ -49,7 +49,7 @@ tests:
     ghc-options: -Wall
     dependencies:
     - aeson                           >=  1.4.4   &&  <   3.0.0
-    - morpheus-graphql
+    - morpheus-graphql                >=  0.27.0  &&  <   0.28.0
     - morpheus-graphql-server         >=  0.27.0  &&  <   0.28.0
     - morpheus-graphql-subscriptions  >=  0.27.0  &&  <   0.28.0
     - morpheus-graphql-tests          >=  0.27.0  &&  <   0.28.0

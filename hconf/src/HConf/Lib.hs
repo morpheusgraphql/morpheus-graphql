@@ -79,7 +79,6 @@ withRule name old deps =
 
 checkDependency :: Config -> (Name, Bounds) -> ConfigT Bounds
 checkDependency config@Config {name, bounds} (depName, oldBounds)
-  | name `isPrefixOf` depName && oldBounds == Bounds [] = pure $ Bounds []
   | name `isPrefixOf` depName = withRule depName oldBounds bounds
   | otherwise = getRule depName config >>= withRule depName oldBounds
 

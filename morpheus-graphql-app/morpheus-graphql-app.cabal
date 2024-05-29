@@ -201,7 +201,7 @@ test-suite morpheus-graphql-app-test
     , directory >=1.0.0 && <2.0.0
     , hashable >=1.0.0 && <2.0.0
     , megaparsec >=7.0.0 && <10.0.0
-    , morpheus-graphql-app
+    , morpheus-graphql-app >=0.27.0 && <0.28.0
     , morpheus-graphql-core >=0.27.0 && <0.28.0
     , morpheus-graphql-tests >=0.27.0 && <0.28.0
     , mtl >=2.0.0 && <3.0.0

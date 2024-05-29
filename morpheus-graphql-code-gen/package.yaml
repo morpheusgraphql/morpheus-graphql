@@ -40,7 +40,7 @@ executables:
     - Glob                             >=  0.7.0   &&  <   1.0.0
     - filepath                         >=  1.1.0   &&  <=  1.5.2.0
     - morpheus-graphql-client          >=  0.27.0  &&  <   0.28.0
-    - morpheus-graphql-code-gen
-    - morpheus-graphql-code-gen-utils
+    - morpheus-graphql-code-gen        >=  0.27.0  &&  <   0.28.0
+    - morpheus-graphql-code-gen-utils  >=  0.27.0  &&  <   0.28.0
     - optparse-applicative             >=  0.12.0  &&  <   0.20.0
     - yaml                             >=  0.8.32  &&  <   1.0.0

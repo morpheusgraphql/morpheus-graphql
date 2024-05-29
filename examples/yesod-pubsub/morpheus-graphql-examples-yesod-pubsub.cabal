@@ -72,7 +72,7 @@ executable yesod-gql-example
     , hashable >=1.0.0 && <2.0.0
     , morpheus-graphql >=0.27.0 && <0.28.0
     , morpheus-graphql-core >=0.27.0 && <0.28.0
-    , morpheus-graphql-examples-yesod-pubsub
+    , morpheus-graphql-examples-yesod-pubsub >=0.27.0 && <0.28.0
     , morpheus-graphql-server >=0.27.0 && <0.28.0
     , morpheus-graphql-subscriptions >=0.27.0 && <0.28.0
     , shakespeare >=1.0 && <3.0
@@ -103,7 +103,7 @@ test-suite yesod-gql-example-test
     , hashable >=1.0.0 && <2.0.0
     , morpheus-graphql >=0.27.0 && <0.28.0
     , morpheus-graphql-core >=0.27.0 && <0.28.0
-    , morpheus-graphql-examples-yesod-pubsub
+    , morpheus-graphql-examples-yesod-pubsub >=0.27.0 && <0.28.0
     , morpheus-graphql-server >=0.27.0 && <0.28.0
     , morpheus-graphql-subscriptions >=0.27.0 && <0.28.0
     , shakespeare >=1.0 && <3.0
