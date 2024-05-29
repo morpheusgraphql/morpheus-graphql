@@ -59,7 +59,7 @@ stack l name options = do
     ExitSuccess {} -> field l ("ok" <> parseWarnings (T.pack out))
 
 parseWarnings :: Text -> String
-parseWarnings = show . groupTopics . toLines
+parseWarnings = show . filter ignore . groupTopics . toLines
 
 groupTopics :: [Text] -> [[Text]]
 groupTopics = regroup . break emptyLine
@@ -68,6 +68,10 @@ groupTopics = regroup . break emptyLine
     regroup (h, t)
       | null t = [h]
       | otherwise = h : groupTopics (dropWhile emptyLine t)
+
+ignore :: [Text] -> Bool
+ignore [] = True
+ignore (x : _) = T.isPrefixOf "Would build" x || T.isPrefixOf "No packages" x
 
 isWarning :: Text -> Bool
 isWarning x = T.isPrefixOf "Warning" x || T.isPrefixOf "warning" x
