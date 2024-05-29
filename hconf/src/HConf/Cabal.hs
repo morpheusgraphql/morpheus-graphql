@@ -45,21 +45,25 @@ getCabalFields path pkgName = do
   field (unpack name) (show version)
   pure (name, version)
 
-stack :: [String] -> ConfigT ()
-stack args = do
-  (code, _, out) <- liftIO (readProcessWithExitCode "stack" args "")
-  case code of
-    ExitFailure {} -> alert out
-    ExitSuccess {} -> info ("Ok: stack " <> intercalate " " args)
+noNewLine :: Char -> String
+noNewLine '\n' = "    \n"
+noNewLine x = [x]
 
-buildCabal :: [String] -> ConfigT ()
-buildCabal names = do
-  stack (["build", "--test", "--dry-run"] <> names)
-  stack (["sdist"] <> names)
+stack :: String -> [String] -> ConfigT ()
+stack l args = do
+  (code, _, out) <- liftIO (readProcessWithExitCode "stack" (l : args) "")
+  case code of
+    ExitFailure {} -> alert ("    \n" <> concatMap noNewLine out)
+    ExitSuccess {} -> field l "ok"
+
+buildCabal :: String -> ConfigT ()
+buildCabal name = do
+  stack "build" ["--test", "--dry-run", name]
+  stack "sdist" [name]
 
 checkCabal :: (Name, Package) -> ConfigT ()
 checkCabal (path, Package {..}) = task path $ do
-  buildCabal [unpack name]
+  buildCabal (unpack name)
   (pkgName, pkgVersion) <- getCabalFields (unpack path) name
   if pkgVersion == version && pkgName == name then pure () else fail (unpack path <> "mismatching version or name")
 
