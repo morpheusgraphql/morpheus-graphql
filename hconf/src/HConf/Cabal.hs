@@ -52,9 +52,9 @@ checkCabal (path, Package {..}) = task path $ do
 
 stack :: [String] -> ConfigT ()
 stack args = do
-  (code, _, stdErr) <- liftIO (readProcessWithExitCode "stack" args "")
+  (code, _, out) <- liftIO (readProcessWithExitCode "stack" args "")
   case code of
-    ExitFailure {} -> alert stdErr
+    ExitFailure {} -> alert out
     ExitSuccess {} -> info ("Ok: stack " <> intercalate " " args)
 
 buildCabal :: [String] -> ConfigT ()
