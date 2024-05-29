@@ -8,7 +8,7 @@ synopsis: Stack Config
 maintainer: d.nalchevanidze@gmail.com
 copyright: (c) 2019 Daviti Nalchevanidze
 license-file: LICENSE
-description: stack config
+description: cli to manage multiple stack projects
 extra-source-files:
 - README.md
 dependencies:

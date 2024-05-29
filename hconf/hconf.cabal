@@ -7,7 +7,7 @@ cabal-version: 1.12
 name:           hconf
 version:        0.27.3
 synopsis:       Stack Config
-description:    stack config
+description:    cli to manage multiple stack projects
 category:       web, graphql
 homepage:       https://github.com/nalchevanidze/morpheus-graphql#readme
 bug-reports:    https://github.com/nalchevanidze/morpheus-graphql/issues
