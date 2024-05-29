@@ -16,6 +16,7 @@ module HConf.Config
     getVersion,
     getRule,
     updateConfig,
+    updateConfigUpperBounds,
   )
 where
 
@@ -28,7 +29,10 @@ import Data.Aeson
 import Data.Aeson.Types
   ( defaultOptions,
   )
+import Data.List (maximum)
 import qualified Data.Map as M
+import Data.Text (unpack)
+import HConf.Http (getLatestVersion)
 import HConf.Utils
 import HConf.Version
   ( Bounds (..),
@@ -37,6 +41,7 @@ import HConf.Version
     getDep,
     nextVersion,
     parse,
+    traverseDeps,
   )
 import Relude hiding
   ( Undefined,
@@ -124,3 +129,15 @@ updateConfig isBreaking Config {..} = do
     getBounds next
       | isBreaking = Bounds next . Just <$> nextVersion True next
       | otherwise = pure bounds
+
+updateConfigUpperBounds :: (MonadFail m, MonadIO m) => Config -> m Config
+updateConfigUpperBounds Config {..} = do
+  newDependencies <- traverseDeps upperBound dependencies
+  pure Config {dependencies = newDependencies, ..}
+
+upperBound :: (MonadFail m, MonadIO m) => Text -> Bounds -> m Bounds
+upperBound name (Bounds mi ma) = do
+  latest <- getLatestVersion (unpack name)
+  let versions = maximum (latest : maybeToList ma)
+  pure (Bounds mi (Just versions))
+upperBound _ b = pure b
