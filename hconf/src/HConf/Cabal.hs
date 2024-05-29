@@ -50,21 +50,17 @@ checkCabal (path, Package {..}) = task path $ do
   (pkgName, pkgVersion) <- getCabalFields (unpack path) name
   if pkgVersion == version && pkgName == name then pure () else fail (unpack path <> "mismatching version or name")
 
-runStack :: (MonadIO m, Log m) => [String] -> m ()
-runStack args = do
+stack :: [String] -> ConfigT ()
+stack args = do
   (code, _, stdErr) <- liftIO (readProcessWithExitCode "stack" args "")
   case code of
     ExitFailure {} -> alert stdErr
     ExitSuccess {} -> info ("Ok: stack " <> intercalate " " args)
 
 buildCabal :: ConfigT ()
-buildCabal = liftIO $ do
-  -- (_, h2, h3, t) <- createProcess ((shell "stack sdist") {std_out = CreatePipe, std_err = CreatePipe})
-  runStack ["sdist"]
-  pure ()
-
--- callProcess "stack" ["build", "--test", "--dry-run"]
--- callCommand "stack sdist"
+buildCabal = do
+  stack ["build", "--test", "--dry-run"]
+  stack ["sdist"]
 
 checkCabals :: ConfigT ()
 checkCabals = do
