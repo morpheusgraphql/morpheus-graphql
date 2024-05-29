@@ -16,9 +16,6 @@ export const changelog = async (change: boolean = false) => {
 
   if (change) {
     await hconf("setup");
-
-    console.log(exec("stack build --test --dry-run"));
-    console.log(exec("stack sdist"));
   }
 
   return render(await hconf("version"), changes);
