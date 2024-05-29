@@ -71,7 +71,7 @@ executable morpheus
     , bytestring >=0.10.4 && <0.15.0
     , containers >=0.4.2.1 && <0.7.0
     , file-embed >=0.0.10 && <1.0.0
-    , filepath >=1.1.0 && <1.5.0
+    , filepath >=1.1.0 && <1.5.2.0
     , morpheus-graphql-client >=0.27.0 && <0.28.0
     , morpheus-graphql-code-gen
     , morpheus-graphql-code-gen-utils

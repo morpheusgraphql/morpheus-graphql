@@ -38,7 +38,7 @@ executables:
     ghc-options: -Wall
     dependencies:
     - Glob                             >=  0.7.0   &&  <  1.0.0
-    - filepath                         >=  1.1.0   &&  <  1.5.0
+    - filepath                         >=  1.1.0   &&  <  1.5.2.0
     - morpheus-graphql-client          >=  0.27.0  &&  <  0.28.0
     - morpheus-graphql-code-gen
     - morpheus-graphql-code-gen-utils

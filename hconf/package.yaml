@@ -34,6 +34,6 @@ executables:
     ghc-options: -Wall
     dependencies:
     - Glob                  >=  0.7.0   &&  <  1.0.0
-    - filepath              >=  1.1.0   &&  <  1.5.0
+    - filepath              >=  1.1.0   &&  <  1.5.2.0
     - hconf
     - optparse-applicative  >=  0.12.0  &&  <  0.20.0
