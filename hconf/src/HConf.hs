@@ -26,8 +26,6 @@ import Relude
 
 setup :: String -> Env -> IO ()
 setup v = run "setup" $ do
-  x <- getLatestVersion "morpheus-graphql"
-  log (show x)
   parse v >>= setupStack
   genHie
   checkPackages
