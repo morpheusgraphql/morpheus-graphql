@@ -8,6 +8,7 @@ module HConf
     Version,
     Parse (..),
     getVersion,
+    upperBounds,
   )
 where
 
@@ -23,24 +24,18 @@ import HConf.Version (Parse (..), Version)
 import HConf.Yaml (run, runSilent)
 import Relude
 
-increaseUpperBounds :: Env -> IO ()
-increaseUpperBounds = run "increase-upper-bounds" $ do
+upperBounds :: Env -> IO ()
+upperBounds = run "upper-bounds" $ do
   newConfig <- asks config >>= updateConfigUpperBounds
   pure (Just newConfig)
 
 setup :: String -> Env -> IO ()
-setup v e = do
-  increaseUpperBounds e
-  run
-    "setup"
-    ( do
-        parse v >>= setupStack
-        genHie
-        checkPackages
-        checkCabals
-        pure Nothing
-    )
-    e
+setup v = run "setup" $ do
+  parse v >>= setupStack
+  genHie
+  checkPackages
+  checkCabals
+  pure Nothing
 
 updateVersion :: Bool -> Env -> IO ()
 updateVersion isBreaking = run "next" $ do

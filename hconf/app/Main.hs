@@ -15,7 +15,7 @@ import CLI.Commands
     parseCLI,
   )
 import Data.Version (showVersion)
-import HConf (Env (..), getVersion, setup, updateVersion)
+import HConf (Env (..), getVersion, setup, updateVersion, upperBounds)
 import qualified Paths_hconf as CLI
 import Relude hiding (ByteString)
 
@@ -42,4 +42,5 @@ runApp App {..}
     runOperation About = putStrLn $ "Stack Config CLI, version " <> currentVersion
     runOperation (Setup version) = setup (fromMaybe "latest" version) env
     runOperation (Next isBreaking) = updateVersion isBreaking env
+    runOperation UpperBounds = upperBounds env
     runOperation CurrentVersion = getVersion env
