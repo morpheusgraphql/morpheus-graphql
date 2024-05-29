@@ -142,10 +142,11 @@ updateConfigUpperBounds Config {..} = do
   pure Config {dependencies = newDependencies, ..}
 
 upperBound :: (MonadFail m, MonadIO m, Log m) => Text -> Bounds -> m Bounds
+upperBound _ (Bounds []) = pure $ Bounds []
 upperBound name bounds = do
   latest <- Bound Max True <$> getLatestVersion (unpack name)
   let ma = getBound Max bounds
   let mi = maybeToList (getBound Min bounds)
-  let newVersion = maximum (latest : maybeToList (getBound Max bounds))
+  let newVersion = maximum (latest : maybeToList ma)
   if ma == Just newVersion then pure () else field (unpack name) (show newVersion)
   pure (Bounds (mi <> [newVersion]))

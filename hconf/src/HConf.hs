@@ -20,7 +20,7 @@ import HConf.Hie (genHie)
 import HConf.Log (log)
 import HConf.Package (checkPackages)
 import HConf.Stack (setupStack)
-import HConf.Version (Bound (Bound), Parse (..), Restriction (..), Version (Version))
+import HConf.Version (Parse (..), Version)
 import HConf.Yaml (run, runSilent)
 import Relude
 
@@ -31,7 +31,6 @@ upperBounds = run "upper-bounds" $ do
 
 setup :: String -> Env -> IO ()
 setup v = run "setup" $ do
-  log $ show (sort [Bound Max False (Version [1]), Bound Min True (Version [1])])
   parse v >>= setupStack
   genHie
   checkPackages
