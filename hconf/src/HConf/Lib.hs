@@ -15,9 +15,6 @@ where
 
 import Data.Aeson.KeyMap (delete)
 import Data.Aeson.Types
-import Data.Text
-  ( isPrefixOf,
-  )
 import GHC.Generics
 import HConf.Config (Config (..), getRule, isLocalPackage)
 import HConf.ConfigT
