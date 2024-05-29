@@ -110,9 +110,11 @@ data Bound = Bound
 
 instance Ord Bound where
   compare b1 b2
-    | restriction b1 == restriction b2 && strictness b1 == strictness b2 = compare (version b1) (version b2)
-    | restriction b1 == restriction b2 = compare (strictness b1) (strictness b2)
+    | restrictions && strictness b1 == strictness b2 = compare (version b1) (version b2)
+    | restrictions = compare (strictness b1) (strictness b2)
     | otherwise = compare (restriction b1) (restriction b2)
+    where
+      restrictions = restriction b1 == restriction b2
 
 instance ToString Restriction where
   toString Min = ">"
