@@ -3,6 +3,8 @@ version: 0.27.3
 github: githubuser/morpheus-graphql-examples-scotty-freer-simple
 license: BSD3
 author: Author name here
+category: web, graphql
+synopsis: morpheus graphql freer
 maintainer: example@example.com
 copyright: 2021 Author name here
 description: example of graphql apis with scotty and freer-simple

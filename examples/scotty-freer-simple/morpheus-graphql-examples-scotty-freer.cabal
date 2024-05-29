@@ -6,7 +6,9 @@ cabal-version: 1.12
 
 name:           morpheus-graphql-examples-scotty-freer
 version:        0.27.3
+synopsis:       morpheus graphql freer
 description:    example of graphql apis with scotty and freer-simple
+category:       web, graphql
 homepage:       https://github.com/githubuser/morpheus-graphql-examples-scotty-freer-simple#readme
 bug-reports:    https://github.com/githubuser/morpheus-graphql-examples-scotty-freer-simple/issues
 author:         Author name here
