@@ -9,6 +9,7 @@ where
 
 import Data.Aeson (FromJSON)
 import Data.Aeson.Decoding (eitherDecode)
+import Data.Map (lookup)
 import qualified Data.Text as T
 import Network.HTTP.Req
   ( GET (..),
@@ -32,5 +33,12 @@ httpRequest uri = case useURI uri of
 parseURI :: (MonadFail m) => String -> m URI
 parseURI url = maybe (fail ("Invalid Endpoint: " <> show url <> "!")) pure (mkURI (T.pack url))
 
-fetchVersions :: (MonadIO m, MonadFail m) => m (Either String (Map Text [String]))
-fetchVersions = parseURI "https://hackage.haskell.org/package/morpheus-graphql/preferred.json" >>= httpRequest
+fetchVersionResponse :: (MonadIO m, MonadFail m) => m (Either String (Map Text [String]))
+fetchVersionResponse = parseURI "https://hackage.haskell.org/package/morpheus-graphql/preferred.json" >>= httpRequest
+
+lookupVersions :: (MonadFail m) => Either String (Map Text [String]) -> m [String]
+lookupVersions (Right x) = maybe (fail "field normal-version not found") pure (lookup "normal-version" x)
+lookupVersions (Left x) = fail x
+
+fetchVersions :: (MonadFail m, MonadIO m) => m [String]
+fetchVersions = fetchVersionResponse >>= lookupVersions
