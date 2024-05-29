@@ -59,20 +59,7 @@ stack l name options = do
     ExitSuccess {} -> field l ("ok" <> parseWarnings (T.pack out))
 
 parseWarnings :: Text -> String
-parseWarnings _ = show $ groupTopics parceX
-
-parceX :: [Text]
-parceX =
-  [ "No packages would be unregistered.",
-    "",
-    "Would build:",
-    "* Cabal-3.10.3.0: database",
-    "  morpheus-graphql-core-0.27.3.",
-    "",
-    "No executables to be installed.",
-    "",
-    ""
-  ]
+parseWarnings = show . groupTopics . toLines
 
 groupTopics :: [Text] -> [[Text]]
 groupTopics = regroup . break emptyLine
