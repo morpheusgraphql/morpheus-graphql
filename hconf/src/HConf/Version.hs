@@ -163,22 +163,19 @@ parseStrictness ver = (False, ver)
 parseBoundTuple :: (MonadFail m) => Text -> m (BoundType, Version)
 parseBoundTuple = parseBound . filter (not . isSeparator) . unpack
 
-parseVersionTuple :: (MonadFail m) => (Text, Text) -> m Bounds
-parseVersionTuple (mi, ma) = do
-  rules <- traverse parseBoundTuple [mi, ma]
+parseBoundList :: (MonadFail m) => Text -> m Bounds
+parseBoundList bounds = do
+  rules <- traverse parseBoundTuple (T.splitOn "&&" bounds)
   (mn, v) <- maybe (fail "can't find min bound") pure (find (boundIs Min) rules)
   pure $ Bounds v (snd <$> find (boundIs Max) rules)
 
 boundIs :: Restriction -> (BoundType, Version) -> Bool
 boundIs v (BoundType x _, _) = x == v
 
-breakAtAnd :: Text -> (Text, Text)
-breakAtAnd = trim . second (drop 2) . breakOn "&&"
-
 parseVersionBounds :: (MonadFail m) => Text -> m Bounds
 parseVersionBounds bounds
   | null bounds = pure NoBounds
-  | otherwise = parseVersionTuple (breakAtAnd bounds)
+  | otherwise = parseBoundList bounds
 
 parseDep :: (MonadFail m) => (Text, Text) -> m (Text, Bounds)
 parseDep (name, bounds) = (name,) <$> parseVersionBounds bounds
