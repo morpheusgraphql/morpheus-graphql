@@ -58,12 +58,12 @@ stack l name options = do
     ExitFailure {} -> alert (l <> ": " <> concatMap noNewLine (T.unpack $ T.strip $ T.pack out))
     ExitSuccess {} -> field l (printWarings $ parseWarnings out)
 
-printWarings :: [[Text]] -> String
+printWarings :: [(Text, [Text])] -> String
 printWarings [] = "ok"
 printWarings xs = show xs
 
-parseWarnings :: String -> [[Text]]
-parseWarnings = filter isWarning . groupTopics . toLines . T.pack
+parseWarnings :: String -> [(Text, [Text])]
+parseWarnings = concatMap toWarning . groupTopics . toLines . T.pack
 
 groupTopics :: [Text] -> [[Text]]
 groupTopics = regroup . break emptyLine
@@ -73,9 +73,10 @@ groupTopics = regroup . break emptyLine
       | null t = [h]
       | otherwise = h : groupTopics (dropWhile emptyLine t)
 
-isWarning :: [Text] -> Bool
-isWarning [] = False
-isWarning (x : _) = T.isPrefixOf "warning" (T.toLower x)
+toWarning :: [Text] -> [(Text, [Text])]
+toWarning (x : xs)
+  | T.isPrefixOf "warning" (T.toLower x) = [(x, xs)]
+toWarning _ = []
 
 buildCabal :: String -> ConfigT ()
 buildCabal name = do
