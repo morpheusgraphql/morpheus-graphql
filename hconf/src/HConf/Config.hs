@@ -17,6 +17,7 @@ module HConf.Config
     getRule,
     updateConfig,
     updateConfigUpperBounds,
+    isLocalPackage,
   )
 where
 
@@ -31,10 +32,10 @@ import Data.Aeson.Types
   )
 import Data.List (maximum)
 import qualified Data.Map as M
-import Data.Text (unpack)
+import Data.Text (isPrefixOf, unpack)
 import HConf.Http (getLatestBound)
 import HConf.Log (Log (..), field)
-import HConf.Utils
+import HConf.Utils (Name)
 import HConf.Version
   ( Bound (Bound),
     Bounds (..),
@@ -49,13 +50,16 @@ import HConf.Version
   )
 import Relude hiding
   ( Undefined,
+    group,
     intercalate,
+    isPrefixOf,
   )
 
 data PkgGroup = PkgGroup
-  { dir :: Text,
-    names :: [Text],
-    prefix :: Maybe Text
+  { group :: Name,
+    dir :: Text,
+    packages :: [Text],
+    prefix :: Maybe Bool
   }
   deriving
     ( Generic,
@@ -81,11 +85,13 @@ data Build = Build
 instance ToJSON Build where
   toJSON = genericToJSON defaultOptions {omitNothingFields = True}
 
+isLocalPackage :: Name -> Config -> Bool
+isLocalPackage name Config {groups} = any ((`isPrefixOf` name) . group) groups
+
 data Config = Config
-  { name :: Name,
-    version :: Version,
+  { version :: Version,
     bounds :: Bounds,
-    packages :: [PkgGroup],
+    groups :: [PkgGroup],
     builds :: Map Text Build,
     dependencies :: Deps
   }
@@ -102,13 +108,13 @@ getRule :: (MonadFail m) => Text -> Config -> m Bounds
 getRule name = getDep name . dependencies
 
 getPackages :: Config -> [Text]
-getPackages Config {..} = concatMap toPkg packages
+getPackages Config {..} = concatMap toPkg groups
   where
-    toPkg PkgGroup {..} = map fullName names
+    toPkg PkgGroup {..} = map fullName packages
       where
         fullName s
-          | dir /= "./" = dir <> "/" <> withPrefix s prefix
-          | otherwise = withPrefix s prefix
+          | dir /= "./" = dir <> "/" <> withPrefix s (fromMaybe False prefix) group
+          | otherwise = withPrefix s (fromMaybe False prefix) group
 
 getBuild :: (MonadFail m) => Version -> Config -> m Build
 getBuild key Config {builds} = maybe (fail "invalid version") pure (M.lookup (show key) builds)
@@ -116,10 +122,10 @@ getBuild key Config {builds} = maybe (fail "invalid version") pure (M.lookup (sh
 getBuilds :: (MonadFail m) => Config -> m [(Version, Build)]
 getBuilds Config {builds} = traverse (\(k, v) -> (,v) <$> parse k) (M.toList builds)
 
-withPrefix :: Text -> Maybe Text -> Text
-withPrefix "." (Just prefix) = prefix
-withPrefix s (Just prefix) = prefix <> "-" <> s
-withPrefix s _ = s
+withPrefix :: Text -> Bool -> Text -> Text
+withPrefix "." True prefix = prefix
+withPrefix s True prefix = prefix <> "-" <> s
+withPrefix s _ _ = s
 
 instance ToJSON Config where
   toJSON = genericToJSON defaultOptions {omitNothingFields = True}

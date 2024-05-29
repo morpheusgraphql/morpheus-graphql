@@ -19,7 +19,7 @@ import Data.Text
   ( isPrefixOf,
   )
 import GHC.Generics
-import HConf.Config (Config (..), getRule)
+import HConf.Config (Config (..), getRule, isLocalPackage)
 import HConf.ConfigT
 import HConf.Log
 import HConf.Utils (Name)
@@ -78,9 +78,9 @@ withRule name old deps =
     $> deps
 
 checkDependency :: Config -> (Name, Bounds) -> ConfigT Bounds
-checkDependency config@Config {name, bounds} (depName, oldBounds)
-  | name `isPrefixOf` depName = withRule depName oldBounds bounds
-  | otherwise = getRule depName config >>= withRule depName oldBounds
+checkDependency config@Config {bounds} (name, oldBounds)
+  | isLocalPackage name config = withRule name oldBounds bounds
+  | otherwise = getRule name config >>= withRule name oldBounds
 
 updateLib :: Lib -> ConfigT Lib
 updateLib Lib {..} = do
