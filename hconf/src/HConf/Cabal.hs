@@ -12,37 +12,39 @@ where
 
 import qualified Data.ByteString.Char8 as BS (unpack)
 import Data.Map (lookup)
-import Data.Text (breakOn, drop, isPrefixOf, null, pack, split, strip, unpack)
+import qualified Data.Text as T
 import GHC.IO.Exception (ExitCode (..))
-import GHC.IO.Handle (hGetContents, hGetContents', hGetLine, hShow)
 import HConf.ConfigT (ConfigT)
-import HConf.Log (Log (log), alert, field, info, label, task)
+import HConf.Log (alert, field, label, task)
 import HConf.Package (Package (..), resolvePackages)
 import HConf.Utils (Name)
 import HConf.Version (Parse (..), Version)
 import HConf.Yaml (read)
-import Relude hiding (Undefined, break, drop, isPrefixOf, length, null, replicate)
+import Relude
 import System.Process
+
+toLines :: Text -> [Text]
+toLines = T.split (== '\n')
 
 parseFields :: ByteString -> Map Text Text
 parseFields =
   fromList
-    . filter (not . null . fst)
-    . map (bimap strip strip . (second (drop 1) . breakOn ":") . strip)
-    . split (== '\n')
-    . pack
+    . filter (not . T.null . fst)
+    . map (bimap T.strip T.strip . (second (T.drop 1) . T.breakOn ":") . T.strip)
+    . toLines
+    . T.pack
     . BS.unpack
 
 getField :: (MonadFail m) => Name -> Map Name a -> m a
-getField k = maybe (fail $ "missing field" <> unpack k) pure . lookup k
+getField k = maybe (fail $ "missing field" <> T.unpack k) pure . lookup k
 
 getCabalFields :: FilePath -> Name -> ConfigT (Name, Version)
 getCabalFields path pkgName = do
-  bs <- read (path <> "/" <> unpack pkgName <> ".cabal")
+  bs <- read (path <> "/" <> T.unpack pkgName <> ".cabal")
   let fields = parseFields bs
   name <- getField "name" fields
   version <- getField "version" fields >>= parse
-  field (unpack name) (show version)
+  field (T.unpack name) (show version)
   pure (name, version)
 
 noNewLine :: Char -> String
@@ -53,12 +55,35 @@ stack :: String -> String -> [String] -> ConfigT ()
 stack l name options = do
   (code, _, out) <- liftIO (readProcessWithExitCode "stack" (l : (name : map ("--" <>) options)) "")
   case code of
-    ExitFailure {} -> alert (l <> ": " <> concatMap noNewLine (unpack $ strip $ pack out))
-    ExitSuccess {} -> field l ("ok" <> show (parseOutput $ pack out))
+    ExitFailure {} -> alert (l <> ": " <> concatMap noNewLine (T.unpack $ T.strip $ T.pack out))
+    ExitSuccess {} -> field l ("ok" <> parseWarnings (T.pack out))
 
-parseOutput = dropWhile (not . isWarning) . split (== '\n')
+parseWarnings :: Text -> String
+parseWarnings _ = show $ groupTopics parceX
 
-isWarning x = isPrefixOf "Warning" x || isPrefixOf "warning" x
+parceX :: [Text]
+parceX =
+  [ "No packages would be unregistered.",
+    "",
+    "Would build:",
+    "* Cabal-3.10.3.0: database",
+    "  morpheus-graphql-core-0.27.3.",
+    "",
+    "No executables to be installed.",
+    "",
+    ""
+  ]
+
+groupTopics :: [Text] -> [[Text]]
+groupTopics = regroup . break emptyLine
+  where
+    emptyLine = (== "")
+    regroup (h, t)
+      | null t = [h]
+      | otherwise = h : groupTopics (dropWhile emptyLine t)
+
+isWarning :: Text -> Bool
+isWarning x = T.isPrefixOf "Warning" x || T.isPrefixOf "warning" x
 
 buildCabal :: String -> ConfigT ()
 buildCabal name = do
@@ -67,9 +92,9 @@ buildCabal name = do
 
 checkCabal :: (Name, Package) -> ConfigT ()
 checkCabal (path, Package {..}) = task path $ do
-  buildCabal (unpack path)
-  (pkgName, pkgVersion) <- getCabalFields (unpack path) name
-  if pkgVersion == version && pkgName == name then pure () else fail (unpack path <> "mismatching version or name")
+  buildCabal (T.unpack path)
+  (pkgName, pkgVersion) <- getCabalFields (T.unpack path) name
+  if pkgVersion == version && pkgName == name then pure () else fail (T.unpack path <> "mismatching version or name")
 
 checkCabals :: ConfigT ()
 checkCabals = label "cabal" $ resolvePackages >>= traverse_ checkCabal
