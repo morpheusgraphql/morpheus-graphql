@@ -55,7 +55,6 @@ builds:
   8.10.7:
     resolver: lts-18.10
     extra:
-      fastsum: 0.1.1.1
       graphql: 0.11.1.0
   9.0.2:
     resolver: lts-19.28
@@ -68,6 +67,7 @@ builds:
   latest:
     resolver: nightly-2024-05-29
     extra:
+      fastsum: 0.1.1.1
       fraxl: 0.3.0.0
       haxl: 2.4.0.0
       type-aligned: 0.9.6
