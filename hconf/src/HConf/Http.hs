@@ -42,4 +42,4 @@ lookupVersions (Right x) = maybe (fail "field normal-version not found") pure (l
 lookupVersions (Left x) = fail x
 
 fetchVersions :: (MonadFail m, MonadIO m) => m [Version]
-fetchVersions = sort <$> (fetchVersionResponse >>= lookupVersions)
+fetchVersions = fetchVersionResponse >>= lookupVersions
