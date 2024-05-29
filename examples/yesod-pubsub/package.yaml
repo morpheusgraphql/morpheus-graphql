@@ -14,7 +14,7 @@ dependencies:
 - base                            >=  4.7.0     &&  <  5.0.0
 - blaze-html                      >=  0.2       &&  <  1.0
 - bytestring                      >=  0.10.4    &&  <  0.15.0
-- extra
+- extra                           >=  1.0.0     &&  <  2.0.0
 - hashable                        >=  1.0.0     &&  <  2.0.0
 - morpheus-graphql                >=  0.27.0    &&  <  0.28.0
 - morpheus-graphql-core           >=  0.27.0    &&  <  0.28.0
@@ -24,7 +24,7 @@ dependencies:
 - text                            >=  1.2.3     &&  <  3.0.0
 - unliftio-core                   >=  0.0.1     &&  <  0.4.0
 - wai                             >=  1.0.0     &&  <  4.0
-- wai-cors                        >=  0.1.0
+- wai-cors                        >=  0.1.0     &&  <  1.0
 - wai-websockets                  >=  1.0.0     &&  <  4.0
 - warp                            >=  1.0.0     &&  <  4.0
 - websockets                      >=  0.12.6.0  &&  <  1.0.0
