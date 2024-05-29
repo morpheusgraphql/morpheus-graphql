@@ -16,6 +16,7 @@ import HConf.Config (Config (..), updateConfig)
 import HConf.ConfigT (HCEnv (..))
 import HConf.Env (Env (..))
 import HConf.Hie (genHie)
+import HConf.Http (fetchVersions)
 import HConf.Log (log)
 import HConf.Package (checkPackages)
 import HConf.Stack (setupStack)
@@ -25,6 +26,8 @@ import Relude
 
 setup :: String -> Env -> IO ()
 setup v = run "setup" $ do
+  x <- fetchVersions
+  log (show x)
   parse v >>= setupStack
   genHie
   checkPackages

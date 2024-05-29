@@ -1,24 +1,36 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HConf.Http
-  ( httpRequest,
+  ( fetchVersions,
   )
 where
 
 import Data.Aeson (FromJSON)
 import Data.Aeson.Decoding (eitherDecode)
+import qualified Data.Text as T
 import Network.HTTP.Req
   ( GET (..),
     NoReqBody (..),
-    Url,
     defaultHttpConfig,
     lbsResponse,
     req,
     responseBody,
     runReq,
+    useURI,
   )
 import Relude hiding (ByteString)
+import Text.URI (URI, mkURI)
 
-httpRequest :: (FromJSON a) => Url s -> IO (Either String a)
-httpRequest uri = eitherDecode . responseBody <$> runReq defaultHttpConfig (req GET uri NoReqBody lbsResponse mempty)
+httpRequest :: (FromJSON a, MonadIO m, MonadFail m) => URI -> m (Either String a)
+httpRequest uri = case useURI uri of
+  Nothing -> fail ("Invalid Endpoint: " <> show uri <> "!")
+  (Just (Left (u, o))) -> liftIO (eitherDecode . responseBody <$> runReq defaultHttpConfig (req GET u NoReqBody lbsResponse o))
+  (Just (Right (u, o))) -> liftIO (eitherDecode . responseBody <$> runReq defaultHttpConfig (req GET u NoReqBody lbsResponse o))
+
+parseURI :: (MonadFail m) => String -> m URI
+parseURI url = maybe (fail ("Invalid Endpoint: " <> show url <> "!")) pure (mkURI (T.pack url))
+
+fetchVersions :: (MonadIO m, MonadFail m) => m (Either String (Map Text [String]))
+fetchVersions = parseURI "https://hackage.haskell.org/package/morpheus-graphql/preferred.json" >>= httpRequest
