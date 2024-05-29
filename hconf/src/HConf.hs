@@ -16,7 +16,7 @@ import HConf.Config (Config (..), updateConfig)
 import HConf.ConfigT (HCEnv (..))
 import HConf.Env (Env (..))
 import HConf.Hie (genHie)
-import HConf.Http (fetchVersions)
+import HConf.Http (getLatestVersion)
 import HConf.Log (log)
 import HConf.Package (checkPackages)
 import HConf.Stack (setupStack)
@@ -26,7 +26,7 @@ import Relude
 
 setup :: String -> Env -> IO ()
 setup v = run "setup" $ do
-  x <- fetchVersions
+  x <- getLatestVersion "morpheus-graphql"
   log (show x)
   parse v >>= setupStack
   genHie
@@ -34,10 +34,6 @@ setup v = run "setup" $ do
   checkCabals
   newConfig <- asks config
   pure (Just newConfig)
-
--- https://hackage.haskell.org/package/morpheus-graphql.json
--- https://hackage.haskell.org/package/morpheus-graphql/preferred.json
--- https://hackage.haskell.org/package/morpheus-graphql/deprecated.json
 
 updateVersion :: Bool -> Env -> IO ()
 updateVersion isBreaking = run "next" $ do

@@ -3,7 +3,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HConf.Http
-  ( fetchVersions,
+  ( getLatestVersion,
   )
 where
 
@@ -34,12 +34,15 @@ httpRequest uri = case useURI uri of
 parseURI :: (MonadFail m) => String -> m URI
 parseURI url = maybe (fail ("Invalid Endpoint: " <> show url <> "!")) pure (mkURI (T.pack url))
 
-fetchVersionResponse :: (MonadIO m, MonadFail m) => m (Either String (Map Text [Version]))
-fetchVersionResponse = parseURI "https://hackage.haskell.org/package/morpheus-graphql/preferred.json" >>= httpRequest
+fetchVersionResponse :: (MonadIO m, MonadFail m) => String -> m (Either String (Map Text (NonEmpty Version)))
+fetchVersionResponse name = parseURI ("https://hackage.haskell.org/package/" <> name <> "/preferred.json") >>= httpRequest
 
-lookupVersions :: (MonadFail m) => Either String (Map Text [Version]) -> m [Version]
+lookupVersions :: (MonadFail m) => Either String (Map Text (NonEmpty Version)) -> m (NonEmpty Version)
 lookupVersions (Right x) = maybe (fail "field normal-version not found") pure (lookup "normal-version" x)
 lookupVersions (Left x) = fail x
 
-fetchVersions :: (MonadFail m, MonadIO m) => m [Version]
-fetchVersions = fetchVersionResponse >>= lookupVersions
+fetchVersions :: (MonadFail m, MonadIO m) => String -> m (NonEmpty Version)
+fetchVersions name = fetchVersionResponse name >>= lookupVersions
+
+getLatestVersion :: (MonadFail m, MonadIO m) => String -> m Version
+getLatestVersion name = head <$> fetchVersions name
