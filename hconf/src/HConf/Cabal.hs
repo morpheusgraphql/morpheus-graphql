@@ -46,14 +46,14 @@ getCabalFields path pkgName = do
   pure (name, version)
 
 noNewLine :: Char -> String
-noNewLine '\n' = "    \n"
+noNewLine '\n' = "          \n"
 noNewLine x = [x]
 
 stack :: String -> [String] -> ConfigT ()
 stack l args = do
   (code, _, out) <- liftIO (readProcessWithExitCode "stack" (l : args) "")
   case code of
-    ExitFailure {} -> alert ("    \n" <> concatMap noNewLine out)
+    ExitFailure {} -> alert (l <> ": " <> concatMap noNewLine (unpack $ strip $ pack out))
     ExitSuccess {} -> field l "ok"
 
 buildCabal :: String -> ConfigT ()
