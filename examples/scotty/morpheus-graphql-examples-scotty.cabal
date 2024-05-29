@@ -48,7 +48,7 @@ executable scotty-server
     , bytestring >=0.10.4 && <0.15.0
     , containers >=0.4.2.1 && <0.7.0
     , extra
-    , http-types
+    , http-types >=0.5 && <1.0
     , morpheus-graphql >=0.27.0 && <0.28.0
     , morpheus-graphql-app >=0.27.0 && <0.28.0
     , morpheus-graphql-core >=0.27.0 && <0.28.0

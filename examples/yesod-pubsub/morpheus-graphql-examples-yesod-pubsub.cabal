@@ -37,7 +37,7 @@ library
       src
   build-depends:
       base >=4.7.0 && <5.0.0
-    , blaze-html
+    , blaze-html >=0.2 && <1.0
     , bytestring >=0.10.4 && <0.15.0
     , extra
     , hashable >=1.0.0 && <2.0.0
@@ -66,7 +66,7 @@ executable yesod-gql-example
   ghc-options: -Wdefault -Wmissing-fields -Wwarn -rtsopts -threaded -with-rtsopts=-N
   build-depends:
       base >=4.7.0 && <5.0.0
-    , blaze-html
+    , blaze-html >=0.2 && <1.0
     , bytestring >=0.10.4 && <0.15.0
     , extra
     , hashable >=1.0.0 && <2.0.0
@@ -97,7 +97,7 @@ test-suite yesod-gql-example-test
   ghc-options: -rtsopts -threaded -with-rtsopts=-N
   build-depends:
       base >=4.7.0 && <5.0.0
-    , blaze-html
+    , blaze-html >=0.2 && <1.0
     , bytestring >=0.10.4 && <0.15.0
     , extra
     , hashable >=1.0.0 && <2.0.0
