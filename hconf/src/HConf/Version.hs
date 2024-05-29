@@ -175,13 +175,13 @@ boundIs v (BoundType x _, _) = x == v
 breakAtAnd :: Text -> (Text, Text)
 breakAtAnd = trim . second (drop 2) . breakOn "&&"
 
-parseDep :: (MonadFail m) => (Text, Text) -> m (Text, Bounds)
-parseDep (name, bounds) = (name,) <$> parseVersionBounds bounds
-
 parseVersionBounds :: (MonadFail m) => Text -> m Bounds
 parseVersionBounds bounds
   | null bounds = pure NoBounds
   | otherwise = parseVersionTuple (breakAtAnd bounds)
+
+parseDep :: (MonadFail m) => (Text, Text) -> m (Text, Bounds)
+parseDep (name, bounds) = (name,) <$> parseVersionBounds bounds
 
 printBoundParts :: Bounds -> [Text]
 printBoundParts NoBounds = []
