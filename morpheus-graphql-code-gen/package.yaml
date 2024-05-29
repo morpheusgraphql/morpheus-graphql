@@ -39,7 +39,7 @@ executables:
     dependencies:
     - Glob                             >=  0.7.0   &&  <  1.0.0
     - filepath                         >=  1.1.0   &&  <  1.5.0
-    - morpheus-graphql-client
+    - morpheus-graphql-client          >=  0.27.0  &&  <  0.28.0
     - morpheus-graphql-code-gen
     - morpheus-graphql-code-gen-utils
     - optparse-applicative             >=  0.12.0  &&  <  0.20.0

@@ -11,26 +11,26 @@ copyright: (c) 2019 Daviti Nalchevanidze
 license-file: LICENSE
 description: Build GraphQL APIs with your favorite functional language!
 extra-source-files:
-- README.md
+  - README.md
 data-files:
-- samples/**/*.gql
+  - samples/**/*.gql
 dependencies:
-- base                   >=  4.7.0   &&  <  5.0.0
-- bytestring             >=  0.10.4  &&  <  0.15.0
-- criterion
-- graphql
-- megaparsec             >=  7.0.0   &&  <  10.0.0
-- morpheus-graphql-core
-- relude                 >=  0.3.0   &&  <  2.0.0
-- text                   >=  1.2.3   &&  <  3.0.0
-- unordered-containers   >=  0.2.8   &&  <  0.3.0
+  - base                   >=  4.7.0   &&  <  5.0.0
+  - bytestring             >=  0.10.4  &&  <  0.15.0
+  - criterion
+  - graphql
+  - megaparsec             >=  7.0.0   &&  <  10.0.0
+  - morpheus-graphql-core >=  0.27.0    &&  <  0.28.0
+  - relude                 >=  0.3.0   &&  <  2.0.0
+  - text                   >=  1.2.3   &&  <  3.0.0
+  - unordered-containers   >=  0.2.8   &&  <  0.3.0
 benchmarks:
   morpheus-graphql-bench:
     main: Main.hs
     source-dirs: src
     ghc-options:
-    - -O2
-    - -eventlog
-    - -rtsopts
-    - -threaded
-    - -with-rtsopts=-N6
+      - -O2
+      - -eventlog
+      - -rtsopts
+      - -threaded
+      - -with-rtsopts=-N6

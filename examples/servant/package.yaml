@@ -12,8 +12,8 @@ dependencies:
 - bytestring                      >=  0.10.4    &&  <  0.15.0
 - file-embed                      >=  0.0.10    &&  <  1.0.0
 - http-media
-- morpheus-graphql
-- morpheus-graphql-subscriptions
+- morpheus-graphql                >=  0.27.0    &&  <  0.28.0
+- morpheus-graphql-subscriptions  >=  0.27.0    &&  <  0.28.0
 - mtl                             >=  2.0.0     &&  <  3.0.0
 - servant-server
 - text                            >=  1.2.3     &&  <  3.0.0
