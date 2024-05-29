@@ -117,8 +117,8 @@ instance Ord Bound where
       restrictions = restriction b1 == restriction b2
 
 instance ToString Restriction where
-  toString Min = ">"
-  toString Max = "<"
+  toString Min = "<"
+  toString Max = ">"
 
 instance ToText Restriction where
   toText = pack . toString
@@ -156,8 +156,8 @@ parseBound (h : t) = do
 parseBound x = fail ("unsorted bound type" <> toString x)
 
 parseRestriction :: (MonadFail f) => Char -> f Restriction
-parseRestriction '<' = pure Max
-parseRestriction '>' = pure Min
+parseRestriction '>' = pure Max
+parseRestriction '<' = pure Min
 parseRestriction x = fail ("unsorted bound type" <> show x)
 
 parseStrictness :: [Char] -> (Bool, [Char])
