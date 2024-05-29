@@ -175,8 +175,8 @@ boundIs v (BoundType x _, _) = x == v
 breakAtAnd :: Text -> (Text, Text)
 breakAtAnd = trim . second (drop 2) . breakOn "&&"
 
-parseDep :: (MonadFail m) => Text -> m (Text, Bounds)
-parseDep = (\(name, bounds) -> (name,) <$> parseVersionBounds bounds) . breakOnSPace
+parseDep :: (MonadFail m) => (Text, Text) -> m (Text, Bounds)
+parseDep (name, bounds) = (name,) <$> parseVersionBounds bounds
 
 parseVersionBounds :: (MonadFail m) => Text -> m Bounds
 parseVersionBounds bounds
@@ -213,7 +213,7 @@ getDep :: (MonadFail m) => Text -> Deps -> m Bounds
 getDep name = maybe (fail $ "Unknown package: " <> unpack name) pure . M.lookup name . unpackDeps
 
 parseDependencies :: (MonadFail m) => TextDeps -> m [(Text, Bounds)]
-parseDependencies = traverse parseDep . sort
+parseDependencies = traverse (parseDep . breakOnSPace) . sort
 
 instance FromJSON Deps where
   parseJSON v = Deps . fromList <$> (parseJSON v >>= parseDependencies)
