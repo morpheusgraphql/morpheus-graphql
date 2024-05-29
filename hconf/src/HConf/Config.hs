@@ -33,7 +33,7 @@ import Data.List (maximum)
 import qualified Data.Map as M
 import Data.Text (unpack)
 import HConf.Http (getLatestVersion)
-import HConf.Log (Log, field)
+import HConf.Log (Log (..), field)
 import HConf.Utils
 import HConf.Version
   ( Bound (Bound),
@@ -149,4 +149,4 @@ upperBound name bounds = do
   let mi = maybeToList (getBound Min bounds)
   let newVersion = maximum (latest : maybeToList ma)
   if ma == Just newVersion then pure () else field (unpack name) (show newVersion)
-  pure (Bounds (mi <> [newVersion]))
+  pure (Bounds $ sort (mi <> [newVersion]))
