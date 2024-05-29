@@ -1,10 +1,12 @@
-resolver: nightly-2024-04-20
+resolver: nightly-2024-05-29
 packages:
 - examples/client
 - examples/code-gen
 - examples/code-gen-docs
 - examples/scotty
+- examples/scotty-fraxl
 - examples/scotty-haxl
+- examples/scotty-freer-simple
 - examples/servant
 - examples/yesod-pubsub
 - morpheus-graphql-tests

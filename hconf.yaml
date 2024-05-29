@@ -68,10 +68,7 @@ builds:
       dependent-map: 0.2.4.0
       dependent-sum: 0.4.0
   latest:
-    resolver: nightly-2024-04-20
-    exclude:
-      - examples/scotty-fraxl
-      - examples/scotty-freer-simple
+    resolver: nightly-2024-05-29
     extra:
       fraxl: 0.3.0.0
       haxl: 2.4.0.0
