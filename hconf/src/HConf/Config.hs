@@ -31,7 +31,7 @@ import Data.Aeson
 import Data.Aeson.Types
   ( defaultOptions,
   )
-import Data.List (maximum)
+import Data.List (intercalate, maximum)
 import qualified Data.Map as M
 import Data.Text (isPrefixOf, unpack)
 import HConf.Http (fetchVersions, getLatestBound)
@@ -137,7 +137,13 @@ checkVersion (name, ver) =
     >>= \vs ->
       if ver `elem` vs
         then pure ()
-        else fail ("no matching version for " <> unpack name)
+        else
+          fail
+            ( "no matching version for "
+                <> unpack name
+                <> "try one of:"
+                <> intercalate ", " (map toString $ toList vs)
+            )
 
 checkBuild :: (MonadFail f, MonadIO f) => Build -> f [()]
 checkBuild Build {..} = traverse checkVersion $ maybe [] M.toList extra
