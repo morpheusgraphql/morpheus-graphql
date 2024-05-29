@@ -40,7 +40,7 @@ executable scotty-freer-server
     , file-embed >=0.0.10 && <1.0.0
     , freer-simple
     , morpheus-graphql
-    , scotty >=0.6.0
+    , scotty >=0.6.0 && <1.0
     , text >=1.2.3 && <3.0.0
     , transformers >=0.3.0 && <0.7.0
     , wai >=1.0.0
