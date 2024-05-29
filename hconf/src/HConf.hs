@@ -31,6 +31,10 @@ setup v = run "setup" $ do
   checkCabals
   pure Nothing
 
+-- https://hackage.haskell.org/package/morpheus-graphql.json
+-- https://hackage.haskell.org/package/morpheus-graphql/preferred.json
+-- https://hackage.haskell.org/package/morpheus-graphql/deprecated.json
+
 updateVersion :: Bool -> Env -> IO ()
 updateVersion isBreaking = run "next" $ do
   newConfig <- asks config >>= updateConfig isBreaking
