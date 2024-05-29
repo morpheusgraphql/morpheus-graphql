@@ -96,7 +96,7 @@ instance FromJSON Version where
 instance ToJSON Version where
   toJSON = String . pack . show
 
-data BoundType = BoundType
+data Bound = Bound
   { restriction :: Restriction,
     strictness :: Bool,
     version :: Version
@@ -136,12 +136,12 @@ trim = bimap strip strip
 breakOnSPace :: Text -> (Text, Text)
 breakOnSPace = trim . break isSeparator
 
-parseBound :: (MonadFail f) => String -> f BoundType
+parseBound :: (MonadFail f) => String -> f Bound
 parseBound (h : t) = do
   res <- parseRestriction h
   let (isStrict, value) = parseStrictness t
   ver <- parse value
-  pure $ BoundType res isStrict ver
+  pure $ Bound res isStrict ver
 parseBound x = fail ("unsorted bound type" <> toString x)
 
 parseRestriction :: (MonadFail f) => Char -> f Restriction
@@ -161,8 +161,8 @@ parseBounds bounds
       mi <- maybe (fail "can't find min bound") pure (find (boundIs Min) rules)
       pure $ Bounds (version mi) (version <$> find (boundIs Max) rules)
 
-boundIs :: Restriction -> BoundType -> Bool
-boundIs r BoundType {..} = restriction == r
+boundIs :: Restriction -> Bound -> Bool
+boundIs r Bound {..} = restriction == r
 
 parseDep :: (MonadFail m) => (Text, Text) -> m (Text, Bounds)
 parseDep (name, bounds) = (name,) <$> parseBounds bounds
