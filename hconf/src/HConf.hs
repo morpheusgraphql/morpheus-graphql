@@ -29,7 +29,8 @@ setup v = run "setup" $ do
   genHie
   checkPackages
   checkCabals
-  pure Nothing
+  newConfig <- asks config
+  pure (Just newConfig)
 
 -- https://hackage.haskell.org/package/morpheus-graphql.json
 -- https://hackage.haskell.org/package/morpheus-graphql/preferred.json
