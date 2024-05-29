@@ -76,6 +76,8 @@ ignore (x : _) =
     || T.isPrefixOf "No packages" x
     || T.isPrefixOf "No executables to be installed" x
     || T.isPrefixOf "Would test" x
+    || T.isPrefixOf "Would unregister locally" x
+    || T.isPrefixOf "Getting the file list" x
 
 isWarning :: Text -> Bool
 isWarning x = T.isPrefixOf "Warning" x || T.isPrefixOf "warning" x
