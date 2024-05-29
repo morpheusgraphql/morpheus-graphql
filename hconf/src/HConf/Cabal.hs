@@ -13,8 +13,10 @@ where
 import qualified Data.ByteString.Char8 as BS (unpack)
 import Data.Map (lookup)
 import Data.Text (breakOn, drop, null, pack, split, strip, unpack)
+import GHC.IO.Exception (ExitCode (..))
+import GHC.IO.Handle (hGetContents, hGetContents', hGetLine, hShow)
 import HConf.ConfigT (ConfigT)
-import HConf.Log (field, label, task)
+import HConf.Log (Log (log), alert, field, info, label, task)
 import HConf.Package (Package (..), resolvePackages)
 import HConf.Utils (Name)
 import HConf.Version (Parse (..), Version)
@@ -48,10 +50,21 @@ checkCabal (path, Package {..}) = task path $ do
   (pkgName, pkgVersion) <- getCabalFields (unpack path) name
   if pkgVersion == version && pkgName == name then pure () else fail (unpack path <> "mismatching version or name")
 
+runStack :: (MonadIO m, Log m) => [String] -> m ()
+runStack args = do
+  (code, _, stdErr) <- liftIO (readProcessWithExitCode "stack" args "")
+  case code of
+    ExitFailure {} -> alert stdErr
+    ExitSuccess {} -> info ("Ok: stack " <> intercalate " " args)
+
 buildCabal :: ConfigT ()
 buildCabal = liftIO $ do
-  callProcess "stack" ["build", "--test", "--dry-run"]
-  callCommand "stack sdist"
+  -- (_, h2, h3, t) <- createProcess ((shell "stack sdist") {std_out = CreatePipe, std_err = CreatePipe})
+  runStack ["sdist"]
+  pure ()
+
+-- callProcess "stack" ["build", "--test", "--dry-run"]
+-- callCommand "stack sdist"
 
 checkCabals :: ConfigT ()
 checkCabals = do
