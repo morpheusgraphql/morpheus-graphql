@@ -115,8 +115,8 @@ instance Ord Bound where
     | otherwise = compare (restriction b1) (restriction b2)
 
 instance ToString Restriction where
-  toString Min = "<"
-  toString Max = ">"
+  toString Min = ">"
+  toString Max = "<"
 
 instance ToText Restriction where
   toText = pack . toString
