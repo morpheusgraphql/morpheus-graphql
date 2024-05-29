@@ -57,12 +57,12 @@ stack args = do
     ExitFailure {} -> alert stdErr
     ExitSuccess {} -> info ("Ok: stack " <> intercalate " " args)
 
-buildCabal :: ConfigT ()
-buildCabal = do
-  stack ["build", "--test", "--dry-run"]
-  stack ["sdist"]
+buildCabal :: [String] -> ConfigT ()
+buildCabal names = do
+  stack (["build", "--test", "--dry-run"] <> names)
+  stack (["sdist"] <> names)
 
 checkCabals :: ConfigT ()
 checkCabals = do
-  buildCabal
+  buildCabal ["hconf"]
   label "cabal" $ resolvePackages >>= traverse_ checkCabal
