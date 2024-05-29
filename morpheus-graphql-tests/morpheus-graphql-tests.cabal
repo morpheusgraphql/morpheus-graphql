@@ -40,7 +40,7 @@ library
     , bytestring >=0.10.4 && <0.15.0
     , directory >=1.0.0 && <2.0.0
     , relude >=0.3.0 && <2.0.0
-    , tasty >=0.1.0 && <1.5.0
+    , tasty >=0.1.0 && <=1.5
     , tasty-hunit >=0.1.0 && <1.0.0
     , text >=1.2.3 && <3.0.0
     , unordered-containers >=0.2.8 && <0.3.0
