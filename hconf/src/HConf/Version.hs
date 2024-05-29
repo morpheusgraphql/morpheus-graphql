@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -27,8 +28,6 @@ import qualified Data.Map as M
 import Data.Map.Strict (traverseWithKey)
 import Data.Text
   ( break,
-    breakOn,
-    drop,
     null,
     pack,
     split,
@@ -99,7 +98,8 @@ instance ToJSON Version where
 
 data BoundType = BoundType
   { restriction :: Restriction,
-    strictness :: Bool
+    strictness :: Bool,
+    version :: Version
   }
   deriving (Show, Eq, Ord)
 
@@ -136,12 +136,12 @@ trim = bimap strip strip
 breakOnSPace :: Text -> (Text, Text)
 breakOnSPace = trim . break isSeparator
 
-parseBound :: (MonadFail f) => String -> f (BoundType, Version)
+parseBound :: (MonadFail f) => String -> f BoundType
 parseBound (h : t) = do
   res <- parseRestriction h
   let (isStrict, value) = parseStrictness t
   ver <- parse value
-  pure (BoundType res isStrict, ver)
+  pure $ BoundType res isStrict ver
 parseBound x = fail ("unsorted bound type" <> toString x)
 
 parseRestriction :: (MonadFail f) => Char -> f Restriction
@@ -158,11 +158,11 @@ parseBounds bounds
   | null bounds = pure NoBounds
   | otherwise = do
       rules <- traverse (parseBound . unpack) $ T.splitOn "&&" $ T.filter (not . isSeparator) bounds
-      (mn, v) <- maybe (fail "can't find min bound") pure (find (boundIs Min) rules)
-      pure $ Bounds v (snd <$> find (boundIs Max) rules)
+      mi <- maybe (fail "can't find min bound") pure (find (boundIs Min) rules)
+      pure $ Bounds (version mi) (version <$> find (boundIs Max) rules)
 
-boundIs :: Restriction -> (BoundType, Version) -> Bool
-boundIs v (BoundType x _, _) = x == v
+boundIs :: Restriction -> BoundType -> Bool
+boundIs r BoundType {..} = restriction == r
 
 parseDep :: (MonadFail m) => (Text, Text) -> m (Text, Bounds)
 parseDep (name, bounds) = (name,) <$> parseBounds bounds
