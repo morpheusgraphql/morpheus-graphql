@@ -62,15 +62,15 @@ toObject (Object x) = delete "__unknown-fields" x
 toObject _ = mempty
 
 updateDependencies :: Dependencies -> ConfigT Dependencies
-updateDependencies = traverseDeps (curry (withConfig checkDependency))
+updateDependencies = traverseDeps (curry (withConfig updateDependency))
 
 withRule :: Text -> Bounds -> Bounds -> ConfigT Bounds
 withRule name old deps =
   when (old /= deps) (field (toString name) (diff old deps))
     $> deps
 
-checkDependency :: Config -> (Name, Bounds) -> ConfigT Bounds
-checkDependency config@Config {bounds} (name, oldBounds)
+updateDependency :: Config -> (Name, Bounds) -> ConfigT Bounds
+updateDependency config@Config {bounds} (name, oldBounds)
   | isLocalPackage name config = withRule name oldBounds bounds
   | otherwise = getRule name config >>= withRule name oldBounds
 
