@@ -15,13 +15,13 @@ where
 import HConf.Cabal (checkCabals)
 import HConf.Config.Config (Config (..), updateConfig, updateConfigUpperBounds)
 import HConf.ConfigT (HCEnv (..))
+import HConf.Core.Version (Version)
 import HConf.Env (Env (..))
 import HConf.Hie (genHie)
 import HConf.Package (checkPackages)
 import HConf.Stack (setupStack)
 import HConf.Utils.Log (log)
 import HConf.Utils.Parse (Parse (..))
-import HConf.Version (Version)
 import HConf.Yaml (run, runSilent)
 import Relude
 

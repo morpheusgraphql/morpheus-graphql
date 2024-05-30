@@ -22,10 +22,8 @@ import Data.Aeson.Types
 import Data.List (intercalate)
 import qualified Data.Map as M
 import Data.Text (unpack)
+import HConf.Core.Version (Version)
 import HConf.Http (fetchVersions)
-import HConf.Version
-  ( Version,
-  )
 import Relude hiding
   ( Undefined,
     group,

@@ -34,14 +34,11 @@ import qualified Data.Map as M
 import HConf.Bounds (Bounds (..), updateUpperBound, versionBounds)
 import HConf.Config.Build (Build, checkBuild)
 import HConf.Config.PkgGroup (PkgGroup, isMember, toPackageName)
+import HConf.Core.Version (Version, nextVersion)
 import HConf.Deps (Dependencies, getBounds, traverseDeps)
 import HConf.Utils (Name)
 import HConf.Utils.Log (Log (..))
 import HConf.Utils.Parse (Parse (..))
-import HConf.Version
-  ( Version,
-    nextVersion,
-  )
 import Relude hiding
   ( Undefined,
     group,
