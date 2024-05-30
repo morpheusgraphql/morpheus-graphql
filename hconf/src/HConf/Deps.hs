@@ -6,7 +6,6 @@
 module HConf.Deps
   ( Deps,
     getBounds,
-    getBound,
     traverseDeps,
   )
 where
@@ -24,7 +23,7 @@ import Data.Text
     strip,
     unpack,
   )
-import HConf.Bounds (Bound (..), Bounds (Bounds), Restriction, printBoundParts)
+import HConf.Bounds (Bounds, printBoundParts)
 import HConf.Format (formatTable)
 import HConf.Version (Parse (..))
 import Relude hiding
@@ -44,9 +43,6 @@ trim = bimap strip strip
 
 breakOnSPace :: Text -> (Text, Text)
 breakOnSPace = trim . break isSeparator
-
-getBound :: Restriction -> Bounds -> Maybe Bound
-getBound v (Bounds xs) = find (\Bound {..} -> restriction == v) xs
 
 newtype Deps = Deps {unpackDeps :: Map Text Bounds}
   deriving (Show)
