@@ -28,12 +28,12 @@ library
   exposed-modules:
       HConf
   other-modules:
-      HConf.Bounds
       HConf.Cabal
       HConf.Config.Build
       HConf.Config.Config
       HConf.Config.PkgGroup
       HConf.ConfigT
+      HConf.Core.Bounds
       HConf.Core.Version
       HConf.Deps
       HConf.Env

@@ -16,12 +16,9 @@ where
 import Data.Aeson.KeyMap (delete)
 import Data.Aeson.Types
 import GHC.Generics
-import HConf.Bounds
-  ( Bounds (..),
-    diff,
-  )
 import HConf.Config.Config (Config (..), getRule, isLocalPackage)
 import HConf.ConfigT
+import HConf.Core.Bounds (Bounds (..), diff)
 import HConf.Deps
   ( Dependencies,
     traverseDeps,

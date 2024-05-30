@@ -3,7 +3,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HConf.Bounds
+module HConf.Core.Bounds
   ( Bound (..),
     Restriction (..),
     Bounds (..),
