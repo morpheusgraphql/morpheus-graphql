@@ -55,7 +55,7 @@ import Relude hiding
     intercalate,
     isPrefixOf,
   )
-import System.FilePath.Posix
+import System.FilePath.Posix (joinPath)
 
 data PkgGroup = PkgGroup
   { group :: Name,
