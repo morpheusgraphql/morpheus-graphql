@@ -38,11 +38,11 @@ import HConf.Bounds (Bounds (..), Restriction (..), getBound, upperBounds)
 import HConf.Deps (Deps, getBounds, traverseDeps)
 import HConf.Http (fetchVersions, getLatestBound)
 import HConf.Log (Log (..), field)
+import HConf.Parse (parse)
 import HConf.Utils (Name)
 import HConf.Version
   ( Version,
     nextVersion,
-    parse,
   )
 import Relude hiding
   ( Undefined,

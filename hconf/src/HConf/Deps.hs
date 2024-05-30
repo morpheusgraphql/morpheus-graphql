@@ -24,7 +24,7 @@ import Data.Text
   )
 import HConf.Bounds (Bounds, printBoundParts)
 import HConf.Format (formatTable)
-import HConf.Version (Parse (..))
+import HConf.Parse (Parse (..))
 import Relude hiding
   ( Undefined,
     break,

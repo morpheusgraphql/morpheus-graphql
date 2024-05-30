@@ -19,8 +19,9 @@ import HConf.Env (Env (..))
 import HConf.Hie (genHie)
 import HConf.Log (log)
 import HConf.Package (checkPackages)
+import HConf.Parse (Parse (..))
 import HConf.Stack (setupStack)
-import HConf.Version (Parse (..), Version)
+import HConf.Version (Version)
 import HConf.Yaml (run, runSilent)
 import Relude
 

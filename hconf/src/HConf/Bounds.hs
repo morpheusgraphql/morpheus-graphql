@@ -28,7 +28,8 @@ import Data.Text
 import qualified Data.Text as T
 import GHC.Show (Show (show))
 import HConf.Chalk (Color (Yellow), chalk)
-import HConf.Version (Parse (..), Version (..), nextVersion)
+import HConf.Parse (Parse (..))
+import HConf.Version (Version (..), nextVersion)
 import Relude hiding
   ( Undefined,
     break,
