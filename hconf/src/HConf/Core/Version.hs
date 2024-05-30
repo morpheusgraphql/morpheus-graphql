@@ -95,7 +95,7 @@ instance Ord Version where
         | otherwise = compare x y
 
 fetchVersionResponse :: (MonadIO m, MonadFail m) => String -> m (Either String (Map Text (NonEmpty Version)))
-fetchVersionResponse name = hackage ("package/" <> name <> "/preferred.json")
+fetchVersionResponse name = hackage ["package", name, "preferred"]
 
 lookupVersions :: (MonadFail m) => Either String (Map Text (NonEmpty Version)) -> m (NonEmpty Version)
 lookupVersions (Right x) = maybe (fail "field normal-version not found") pure (lookup "normal-version" x)
