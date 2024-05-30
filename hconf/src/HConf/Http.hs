@@ -3,8 +3,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HConf.Http
-  ( getLatestBound,
-    fetchVersions,
+  ( fetchVersions,
   )
 where
 
@@ -13,7 +12,6 @@ import Data.Aeson.Decoding (eitherDecode)
 import Data.Map (lookup)
 import Data.Text (unpack)
 import qualified Data.Text as T
-import HConf.Bounds (Bound (..), Restriction (..))
 import HConf.Utils (Name)
 import HConf.Version (Version)
 import Network.HTTP.Req
@@ -47,6 +45,3 @@ lookupVersions (Left x) = fail x
 
 fetchVersions :: (MonadFail m, MonadIO m) => String -> m (NonEmpty Version)
 fetchVersions name = fetchVersionResponse name >>= lookupVersions
-
-getLatestBound :: (MonadFail m, MonadIO m) => Name -> m Bound
-getLatestBound = fmap (Bound Max True . head) . fetchVersions . unpack

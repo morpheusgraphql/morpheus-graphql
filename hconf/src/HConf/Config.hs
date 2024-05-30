@@ -34,9 +34,9 @@ import Data.Aeson.Types
 import Data.List (intercalate, maximum)
 import qualified Data.Map as M
 import Data.Text (isPrefixOf, pack, unpack)
-import HConf.Bounds (Bounds (..), Restriction (..), getBound, getVersionBounds)
+import HConf.Bounds (Bounds (..), Restriction (..), getVersionBounds, updateUpperBound)
 import HConf.Deps (Dependencies, getBounds, traverseDeps)
-import HConf.Http (fetchVersions, getLatestBound)
+import HConf.Http (fetchVersions)
 import HConf.Log (Log (..), field)
 import HConf.Parse (Parse (..))
 import HConf.Utils (Name)
@@ -151,14 +151,5 @@ updateConfig isBreaking Config {..} = do
 
 updateConfigUpperBounds :: (MonadFail m, MonadIO m, Log m) => Config -> m Config
 updateConfigUpperBounds Config {..} = do
-  dependencies' <- traverseDeps upperBound dependencies
+  dependencies' <- traverseDeps updateUpperBound dependencies
   pure Config {dependencies = dependencies', ..}
-
-upperBound :: (MonadFail m, MonadIO m, Log m) => Text -> Bounds -> m Bounds
-upperBound name bounds = do
-  latest <- getLatestBound name
-  let ma = getBound Max bounds
-  let mi = maybeToList (getBound Min bounds)
-  let newVersion = maximum (latest : maybeToList ma)
-  if ma == Just newVersion then pure () else field (unpack name) (show newVersion)
-  pure (Bounds (mi <> [newVersion]))

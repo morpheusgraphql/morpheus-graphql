@@ -7,10 +7,10 @@ module HConf.Bounds
   ( Bound (..),
     Restriction (..),
     Bounds (..),
-    getBound,
     getVersionBounds,
     diff,
     printBoundParts,
+    updateUpperBound,
   )
 where
 
@@ -20,6 +20,7 @@ import Data.Aeson
     Value (..),
   )
 import Data.Char (isSeparator)
+import Data.List (maximum)
 import Data.Text
   ( null,
     pack,
@@ -27,7 +28,10 @@ import Data.Text
 import qualified Data.Text as T
 import GHC.Show (Show (show))
 import HConf.Chalk (Color (Yellow), chalk)
+import HConf.Http (fetchVersions)
+import HConf.Log (Log, field)
 import HConf.Parse (Parse (..))
+import HConf.Utils (Name)
 import HConf.Version (Version (..), nextVersion)
 import Relude hiding
   ( Undefined,
@@ -120,3 +124,15 @@ getBound v (Bounds xs) = find (\Bound {..} -> restriction == v) xs
 
 printBounds :: Bounds -> String
 printBounds = intercalate "  " . map toString . printBoundParts
+
+getLatestBound :: (MonadFail m, MonadIO m) => Name -> m Bound
+getLatestBound = fmap (Bound Max True . head) . fetchVersions . T.unpack
+
+updateUpperBound :: (MonadFail m, MonadIO m, Log m) => Text -> Bounds -> m Bounds
+updateUpperBound name bounds = do
+  latest <- getLatestBound name
+  let ma = getBound Max bounds
+  let mi = maybeToList (getBound Min bounds)
+  let newVersion = maximum (latest : maybeToList ma)
+  if ma == Just newVersion then pure () else field (T.unpack name) (show newVersion)
+  pure (Bounds (mi <> [newVersion]))
