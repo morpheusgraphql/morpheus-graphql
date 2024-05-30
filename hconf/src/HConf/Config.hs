@@ -124,10 +124,10 @@ instance ToJSON Config where
   toJSON = genericToJSON defaultOptions {omitNothingFields = True}
 
 checkVersion :: (MonadFail m, MonadIO m) => (String, Version) -> m ()
-checkVersion (name, ver) =
+checkVersion (name, version) =
   fetchVersions name
     >>= \vs ->
-      if ver `elem` vs
+      if version `elem` vs
         then pure ()
         else
           fail
