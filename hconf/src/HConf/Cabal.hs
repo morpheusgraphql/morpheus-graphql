@@ -16,7 +16,7 @@ import qualified Data.Text as T
 import GHC.IO.Exception (ExitCode (..))
 import HConf.ConfigT (ConfigT)
 import HConf.Core.Version (Version)
-import HConf.Package (Package (..), resolvePackages)
+import HConf.Stack.Package (Package (..), resolvePackages)
 import HConf.Utils (Name)
 import HConf.Utils.Log (alert, field, label, task, warn)
 import HConf.Utils.Parse (Parse (..))

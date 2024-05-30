@@ -5,7 +5,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | GQL Types
-module HConf.Package
+module HConf.Stack.Package
   ( Package (..),
     checkPackages,
     resolvePackages,
@@ -19,7 +19,7 @@ import HConf.Config.Config (getVersion)
 import HConf.ConfigT (ConfigT, HCEnv (config), packages)
 import HConf.Core.Dependencies (Dependencies)
 import HConf.Core.Version (Version)
-import HConf.Lib (Lib, updateDependencies, updateLib)
+import HConf.Stack.Lib (Lib, updateDependencies, updateLib)
 import HConf.Utils (Name, tupled)
 import HConf.Utils.Log (label, task)
 import HConf.Yaml (aesonYAMLOptions, readYaml, rewriteYaml)

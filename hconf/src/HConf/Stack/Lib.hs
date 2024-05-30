@@ -6,7 +6,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HConf.Lib
+module HConf.Stack.Lib
   ( Lib (..),
     updateDependencies,
     updateLib,

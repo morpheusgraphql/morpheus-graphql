@@ -39,9 +39,9 @@ library
       HConf.Env
       HConf.Hie
       HConf.Http
-      HConf.Lib
-      HConf.Package
-      HConf.Stack
+      HConf.Stack.Config
+      HConf.Stack.Lib
+      HConf.Stack.Package
       HConf.Utils
       HConf.Utils.Chalk
       HConf.Utils.Format
