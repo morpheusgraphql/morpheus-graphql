@@ -17,7 +17,7 @@ import qualified Data.Aeson.Key as K
 import Data.Aeson.KeyMap (KeyMap)
 import qualified Data.Aeson.KeyMap as KM
 import HConf.ConfigT (ConfigT, HCEnv (..))
-import HConf.Env (Env (..))
+import HConf.Core.Env (Env (..))
 import HConf.Stack.Lib (Lib (..))
 import HConf.Stack.Package (Package (..), resolvePackages)
 import HConf.Utils.Log (label, task)

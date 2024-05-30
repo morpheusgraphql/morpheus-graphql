@@ -1,4 +1,4 @@
-module HConf.Env
+module HConf.Core.Env
   ( Env (..),
   )
 where

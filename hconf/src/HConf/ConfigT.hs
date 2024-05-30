@@ -18,8 +18,8 @@ where
 import Control.Exception (tryJust)
 import Data.Kind
 import HConf.Config.Config (Config, getPackages, getVersion)
+import HConf.Core.Env (Env)
 import HConf.Core.Version (Version)
-import HConf.Env (Env)
 import HConf.Utils (Name)
 import HConf.Utils.Log (Log (..))
 import Relude

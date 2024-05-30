@@ -35,8 +35,8 @@ library
       HConf.ConfigT
       HConf.Core.Bounds
       HConf.Core.Dependencies
+      HConf.Core.Env
       HConf.Core.Version
-      HConf.Env
       HConf.Hie
       HConf.Http
       HConf.Stack.Config
