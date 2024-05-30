@@ -11,7 +11,7 @@ import Data.Aeson (FromJSON)
 import Data.Aeson.Decoding (eitherDecode)
 import Data.Map (lookup)
 import qualified Data.Text as T
-import HConf.Version (Version)
+import HConf.Core.Version (Version)
 import Network.HTTP.Req
   ( GET (..),
     NoReqBody (..),

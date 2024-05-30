@@ -18,10 +18,10 @@ import qualified Data.Map as M
 import HConf.Config.Build (Build (..))
 import HConf.Config.Config (getBuild, getBuilds, getPackages)
 import HConf.ConfigT (ConfigT, HCEnv (..))
+import HConf.Core.Version (Version (..))
 import HConf.Env (Env (..))
 import HConf.Utils (Name, maybeList)
 import HConf.Utils.Log (label, task)
-import HConf.Version (Version (..))
 import HConf.Yaml (aesonYAMLOptions, rewriteYaml)
 import Relude
 

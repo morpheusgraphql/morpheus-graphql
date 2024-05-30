@@ -2,8 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
--- | GQL Types
-module HConf.Version
+module HConf.Core.Version
   ( Version (..),
     nextVersion,
     dropPatch,

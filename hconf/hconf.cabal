@@ -34,6 +34,7 @@ library
       HConf.Config.Config
       HConf.Config.PkgGroup
       HConf.ConfigT
+      HConf.Core.Version
       HConf.Deps
       HConf.Env
       HConf.Hie
@@ -46,7 +47,6 @@ library
       HConf.Utils.Format
       HConf.Utils.Log
       HConf.Utils.Parse
-      HConf.Version
       HConf.Yaml
       Paths_hconf
   hs-source-dirs:

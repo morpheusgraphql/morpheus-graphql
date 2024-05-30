@@ -27,12 +27,12 @@ import Data.Text
   )
 import qualified Data.Text as T
 import GHC.Show (Show (show))
+import HConf.Core.Version (Version (..), dropPatch, nextVersion)
 import HConf.Http (fetchVersions)
-import HConf.Utils.Log (Log, field)
-import HConf.Utils.Parse (Parse (..))
 import HConf.Utils (Name)
 import HConf.Utils.Chalk (Color (Yellow), chalk)
-import HConf.Version (Version (..), dropPatch, nextVersion)
+import HConf.Utils.Log (Log, field)
+import HConf.Utils.Parse (Parse (..))
 import Relude hiding
   ( Undefined,
     break,
