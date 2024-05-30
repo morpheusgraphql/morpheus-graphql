@@ -44,6 +44,7 @@ fields =
       "license-file",
       "description",
       "bounds",
+      "ghc",
       "resolver",
       "packages",
       "builds",
