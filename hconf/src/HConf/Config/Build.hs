@@ -4,7 +4,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HConf.Build
+module HConf.Config.Build
   ( Build (..),
     checkBuild,
   )

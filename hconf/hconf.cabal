@@ -29,10 +29,11 @@ library
       HConf
   other-modules:
       HConf.Bounds
-      HConf.Build
       HConf.Cabal
       HConf.Chalk
       HConf.Config
+      HConf.Config.Build
+      HConf.Config.PkgGroup
       HConf.ConfigT
       HConf.Deps
       HConf.Env
@@ -43,7 +44,6 @@ library
       HConf.Log
       HConf.Package
       HConf.Parse
-      HConf.PkgGroup
       HConf.Stack
       HConf.Utils
       HConf.Version

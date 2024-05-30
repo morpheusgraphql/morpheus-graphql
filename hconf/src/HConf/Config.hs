@@ -32,11 +32,11 @@ import Data.Aeson.Types
   )
 import qualified Data.Map as M
 import HConf.Bounds (Bounds (..), updateUpperBound, versionBounds)
-import HConf.Build (Build, checkBuild)
+import HConf.Config.Build (Build, checkBuild)
+import HConf.Config.PkgGroup (PkgGroup, isMember, toPackageName)
 import HConf.Deps (Dependencies, getBounds, traverseDeps)
 import HConf.Log (Log (..))
 import HConf.Parse (Parse (..))
-import HConf.PkgGroup (PkgGroup, isMember, toPackageName)
 import HConf.Utils (Name)
 import HConf.Version
   ( Version,

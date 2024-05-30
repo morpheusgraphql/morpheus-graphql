@@ -4,7 +4,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HConf.PkgGroup
+module HConf.Config.PkgGroup
   ( PkgGroup (..),
     toPackageName,
     isMember,
