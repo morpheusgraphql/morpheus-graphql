@@ -44,7 +44,7 @@ import HConf.Version
     Restriction (..),
     Version,
     getBound,
-    getDep,
+    getBounds,
     nextVersion,
     parse,
     traverseDeps,
@@ -108,7 +108,7 @@ getVersion :: Config -> Version
 getVersion = version
 
 getRule :: (MonadFail m) => Text -> Config -> m Bounds
-getRule name = getDep name . dependencies
+getRule name = getBounds name . dependencies
 
 getPackages :: Config -> [Text]
 getPackages Config {..} = concatMap toPkg groups
@@ -151,10 +151,10 @@ checkConfig Config {..} = traverse_ checkBuild (toList builds)
 updateConfig :: (MonadFail m, MonadIO m) => Bool -> Config -> m Config
 updateConfig isBreaking Config {..} = do
   version' <- nextVersion isBreaking version
-  bounds' <- getBounds version'
+  bounds' <- updateBounds version'
   pure Config {version = version', bounds = bounds', ..}
   where
-    getBounds next
+    updateBounds next
       | isBreaking = do
           upper <- nextVersion True next
           pure $ Bounds [Bound Min True next, Bound Max False upper]

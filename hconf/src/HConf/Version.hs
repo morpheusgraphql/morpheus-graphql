@@ -10,7 +10,7 @@ module HConf.Version
     Bounds (..),
     Deps,
     diff,
-    getDep,
+    getBounds,
     traverseDeps,
     Parse (..),
     nextVersion,
@@ -197,8 +197,8 @@ newtype Deps = Deps {unpackDeps :: Map Text Bounds}
 traverseDeps :: (Applicative f) => (Text -> Bounds -> f Bounds) -> Deps -> f Deps
 traverseDeps f (Deps xs) = Deps <$> traverseWithKey f xs
 
-getDep :: (MonadFail m) => Text -> Deps -> m Bounds
-getDep name = maybe (fail $ "Unknown package: " <> unpack name) pure . M.lookup name . unpackDeps
+getBounds :: (MonadFail m) => Text -> Deps -> m Bounds
+getBounds name = maybe (fail $ "Unknown package: " <> unpack name) pure . M.lookup name . unpackDeps
 
 parseDependencies :: (MonadFail m) => TextDeps -> m [(Text, Bounds)]
 parseDependencies = traverse (parseDep . breakOnSPace) . sort
