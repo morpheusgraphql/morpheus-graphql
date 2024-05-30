@@ -111,9 +111,6 @@ parseBounds bounds
   | null bounds = pure $ Bounds []
   | otherwise = Bounds <$> traverse (parseBound . unpack) (T.splitOn "&&" $ T.filter (not . isSeparator) bounds)
 
-parseDep :: (MonadFail m) => (Text, Text) -> m (Text, Bounds)
-parseDep (name, bounds) = (name,) <$> parseBounds bounds
-
 printBoundParts :: Bounds -> [Text]
 printBoundParts (Bounds xs) = intercalate ["&&"] $ map printBoundPart $ sort xs
 
@@ -133,22 +130,20 @@ instance FromJSON Bounds where
 instance ToJSON Bounds where
   toJSON = String . pack . printBounds
 
-type TextDeps = [Text]
-
 newtype Deps = Deps {unpackDeps :: Map Text Bounds}
   deriving (Show)
-
-traverseDeps :: (Applicative f) => (Text -> Bounds -> f Bounds) -> Deps -> f Deps
-traverseDeps f (Deps xs) = Deps <$> traverseWithKey f xs
 
 getBounds :: (MonadFail m) => Text -> Deps -> m Bounds
 getBounds name = maybe (fail $ "Unknown package: " <> unpack name) pure . M.lookup name . unpackDeps
 
-parseDependencies :: (MonadFail m) => TextDeps -> m [(Text, Bounds)]
-parseDependencies = traverse (parseDep . breakOnSPace) . sort
+traverseDeps :: (Applicative f) => (Text -> Bounds -> f Bounds) -> Deps -> f Deps
+traverseDeps f (Deps xs) = Deps <$> traverseWithKey f xs
+
+parseDep :: (MonadFail m) => (Text, Text) -> m (Text, Bounds)
+parseDep (name, bounds) = (name,) <$> parseBounds bounds
 
 instance FromJSON Deps where
-  parseJSON v = Deps . fromList <$> (parseJSON v >>= parseDependencies)
+  parseJSON v = Deps . fromList <$> (parseJSON v >>= traverse (parseDep . breakOnSPace) . sort)
 
 instance ToJSON Deps where
   toJSON (Deps m) = toJSON $ formatTable $ map (\(name, b) -> name : printBoundParts b) (toList m)
