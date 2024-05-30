@@ -43,7 +43,7 @@ data Version
     )
 
 dropPatch :: Version -> Version
-dropPatch (Version xs) = Version (take 2 xs)
+dropPatch (Version xs) = Version (take 2 xs <> [0])
 dropPatch LatestVersion = LatestVersion
 
 nextVersion :: (MonadFail m) => Bool -> Version -> m Version
