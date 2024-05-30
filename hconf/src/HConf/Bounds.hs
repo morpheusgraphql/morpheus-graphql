@@ -23,7 +23,6 @@ import Data.Char (isSeparator)
 import Data.Text
   ( null,
     pack,
-    unpack,
   )
 import qualified Data.Text as T
 import GHC.Show (Show (show))
