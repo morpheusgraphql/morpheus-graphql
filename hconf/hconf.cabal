@@ -28,6 +28,7 @@ library
   exposed-modules:
       HConf
   other-modules:
+      HConf.Bounds
       HConf.Cabal
       HConf.Chalk
       HConf.Config

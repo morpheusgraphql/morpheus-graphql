@@ -13,8 +13,9 @@ import Data.Aeson.Decoding (eitherDecode)
 import Data.Map (lookup)
 import Data.Text (unpack)
 import qualified Data.Text as T
+import HConf.Bounds (Bound (..), Restriction (..))
 import HConf.Utils (Name)
-import HConf.Version (Bound (..), Restriction (..), Version)
+import HConf.Version (Version)
 import Network.HTTP.Req
   ( GET (..),
     NoReqBody (..),

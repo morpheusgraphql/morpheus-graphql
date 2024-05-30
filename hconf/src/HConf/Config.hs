@@ -34,20 +34,14 @@ import Data.Aeson.Types
 import Data.List (intercalate, maximum)
 import qualified Data.Map as M
 import Data.Text (isPrefixOf, pack, unpack)
+import HConf.Bounds (Bounds (..), Deps, Restriction (..), getBound, getBounds, traverseDeps, upperBounds)
 import HConf.Http (fetchVersions, getLatestBound)
 import HConf.Log (Log (..), field)
 import HConf.Utils (Name)
 import HConf.Version
-  ( Bounds (..),
-    Deps,
-    Restriction (..),
-    Version,
-    getBound,
-    getBounds,
+  ( Version,
     nextVersion,
     parse,
-    traverseDeps,
-    upperBounds,
   )
 import Relude hiding
   ( Undefined,

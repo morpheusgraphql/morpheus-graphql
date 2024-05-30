@@ -16,16 +16,16 @@ where
 import Data.Aeson.KeyMap (delete)
 import Data.Aeson.Types
 import GHC.Generics
-import HConf.Config (Config (..), getRule, isLocalPackage)
-import HConf.ConfigT
-import HConf.Log
-import HConf.Utils (Name)
-import HConf.Version
+import HConf.Bounds
   ( Bounds (..),
     Deps,
     diff,
     traverseDeps,
   )
+import HConf.Config (Config (..), getRule, isLocalPackage)
+import HConf.ConfigT
+import HConf.Log
+import HConf.Utils (Name)
 import HConf.Yaml (aesonYAMLOptions)
 import Relude hiding
   ( Undefined,
