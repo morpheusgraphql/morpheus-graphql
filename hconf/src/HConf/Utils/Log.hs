@@ -1,6 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HConf.Log
+module HConf.Utils.Log
   ( label,
     task,
     warn,
@@ -12,8 +12,8 @@ module HConf.Log
   )
 where
 
-import HConf.Chalk (Color (..), chalk)
 import HConf.Utils (Name)
+import HConf.Utils.Chalk (Color (..), chalk)
 import Relude
 
 class Log m where

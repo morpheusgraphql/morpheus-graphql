@@ -19,7 +19,7 @@ import qualified Data.Aeson.KeyMap as KM
 import HConf.ConfigT (ConfigT, HCEnv (..))
 import HConf.Env (Env (..))
 import HConf.Lib (Lib (..))
-import HConf.Log (label, task)
+import HConf.Utils.Log (label, task)
 import HConf.Package (Package (..), resolvePackages)
 import HConf.Yaml (writeYaml)
 import Relude hiding (Undefined, intercalate)

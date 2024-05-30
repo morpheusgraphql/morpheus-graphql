@@ -21,7 +21,7 @@ import Data.Text
     unpack,
   )
 import GHC.Show (Show (show))
-import HConf.Parse (Parse (..))
+import HConf.Utils.Parse (Parse (..))
 import Relude hiding
   ( Undefined,
     break,

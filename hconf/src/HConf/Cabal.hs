@@ -15,10 +15,10 @@ import Data.Map (lookup)
 import qualified Data.Text as T
 import GHC.IO.Exception (ExitCode (..))
 import HConf.ConfigT (ConfigT)
-import HConf.Log (alert, field, label, task, warn)
+import HConf.Utils.Log (alert, field, label, task, warn)
 import HConf.Package (Package (..), resolvePackages)
-import HConf.Parse (Parse (..))
 import HConf.Utils (Name)
+import HConf.Utils.Parse (Parse (..))
 import HConf.Version (Version)
 import HConf.Yaml (read)
 import Relude

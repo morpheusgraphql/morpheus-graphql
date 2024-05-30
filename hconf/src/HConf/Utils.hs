@@ -15,7 +15,7 @@ where
 import Data.Char (isUpper, toLower)
 import Data.List (elemIndex)
 import Data.Text (toTitle)
-import HConf.Parse (Parse (..))
+import HConf.Utils.Parse (Parse (..))
 import HConf.Version (Version)
 import Relude hiding (Undefined, intercalate)
 

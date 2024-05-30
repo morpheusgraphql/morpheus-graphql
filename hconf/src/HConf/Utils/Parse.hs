@@ -1,6 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HConf.Parse
+module HConf.Utils.Parse
   ( Parse (..),
   )
 where
