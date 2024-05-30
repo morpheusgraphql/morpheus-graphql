@@ -27,7 +27,6 @@ import Data.Aeson
 import Data.Aeson.Types
   ( defaultOptions,
   )
-import qualified Data.Map as M
 import HConf.Config.Build (Build, Builds, checkBuild, findBuild)
 import HConf.Config.PkgGroup (PkgGroup, isMember, toPackageName)
 import HConf.Core.Bounds (Bounds, updateUpperBound, versionBounds)
@@ -35,7 +34,6 @@ import HConf.Core.Dependencies (Dependencies, getBounds, traverseDeps)
 import HConf.Core.Version (Version, nextVersion)
 import HConf.Utils.Core (Name)
 import HConf.Utils.Log (Log (..))
-import HConf.Utils.Parse (Parse (..))
 import Relude hiding
   ( Undefined,
     group,
