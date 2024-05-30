@@ -5,7 +5,6 @@
 -- | GQL Types
 module HConf.Version
   ( Version (..),
-    Parse (..),
     nextVersion,
   )
 where
@@ -21,6 +20,7 @@ import Data.Text
     unpack,
   )
 import GHC.Show (Show (show))
+import HConf.Parse (Parse (..))
 import Relude hiding
   ( Undefined,
     break,
@@ -32,9 +32,6 @@ import Relude hiding
     show,
     toList,
   )
-
-class Parse a where
-  parse :: (ToString t, IsString t, Eq t, MonadFail m) => t -> m a
 
 data Version
   = Version [Int]

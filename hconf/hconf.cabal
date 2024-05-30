@@ -41,6 +41,7 @@ library
       HConf.Lib
       HConf.Log
       HConf.Package
+      HConf.Parse
       HConf.Stack
       HConf.Utils
       HConf.Version
