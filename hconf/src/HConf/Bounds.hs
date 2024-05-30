@@ -43,6 +43,11 @@ import Relude hiding
 
 data Restriction = Min | Max deriving (Show, Eq, Ord)
 
+parseRestriction :: (MonadFail f) => Char -> f Restriction
+parseRestriction '>' = pure Min -- > 0.7.0
+parseRestriction '<' = pure Max -- <  1.0.0
+parseRestriction x = fail ("unsorted bound type" <> show x)
+
 data Bound = Bound
   { restriction :: Restriction,
     orEquals :: Bool,
@@ -93,11 +98,6 @@ instance Parse Bound where
         let (isStrict, value) = parseOrEquals str
         Bound res isStrict <$> parse value
       parseBound x = fail ("unsorted bound type" <> toString x)
-
-parseRestriction :: (MonadFail f) => Char -> f Restriction
-parseRestriction '>' = pure Min -- > 0.7.0
-parseRestriction '<' = pure Max -- <  1.0.0
-parseRestriction x = fail ("unsorted bound type" <> show x)
 
 printBoundParts :: Bounds -> [Text]
 printBoundParts (Bounds xs) = intercalate ["&&"] $ map printBoundPart $ sort xs
