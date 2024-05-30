@@ -34,7 +34,7 @@ import Data.Yaml.Pretty (defConfig, encodePretty, setConfCompare, setConfDropNul
 import HConf.Config.Config (Config, checkConfig)
 import HConf.Config.ConfigT (ConfigT (..), HCEnv (..), runConfigT)
 import HConf.Core.Env (Env (..))
-import HConf.Core.Version
+import HConf.Core.Version (Version)
 import HConf.Utils.Core (compareFields, toKebabCase)
 import HConf.Utils.Log (alert, info, label, logFileChange, task)
 import Relude hiding (Show, Undefined, intercalate, show)
