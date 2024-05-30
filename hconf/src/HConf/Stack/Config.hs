@@ -52,7 +52,6 @@ updateStack :: Version -> Stack -> ConfigT Stack
 updateStack version _ = do
   config <- asks config
   Build {..} <- getBuild version config
-  let extraDeps = sort $ concatMap getExtra $ selectBuilds version (builds config)
   let packages = (getPackages config <> maybeList include) \\ maybeList exclude
   pure
     Stack
@@ -60,7 +59,7 @@ updateStack version _ = do
         resolver,
         allowNewer = Just (LatestVersion == version),
         saveHackageCreds = Just False,
-        extraDeps
+        extraDeps = sort $ concatMap getExtra $ selectBuilds version (builds config)
       }
 
 getExtra :: Build -> [Text]
