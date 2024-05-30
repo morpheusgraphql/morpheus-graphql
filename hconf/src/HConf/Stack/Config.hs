@@ -59,7 +59,7 @@ updateStack version _ = do
         resolver,
         allowNewer = Just (LatestVersion == version),
         saveHackageCreds = Just False,
-        extraDeps = sort $ concatMap getExtra $ selectBuilds version (builds config)
+        extraDeps = sort $ concatMap getExtra $ selectBuilds version $ builds config
       }
 
 getExtra :: Build -> [Text]
