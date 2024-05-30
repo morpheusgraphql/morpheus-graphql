@@ -123,22 +123,23 @@ getBuilds Config {builds} = traverse (\(k, v) -> (,v) <$> parseText k) (M.toList
 instance ToJSON Config where
   toJSON = genericToJSON defaultOptions {omitNothingFields = True}
 
-checkVersion :: (MonadFail m, MonadIO m) => (Text, Version) -> m ()
+checkVersion :: (MonadFail m, MonadIO m) => (String, Version) -> m ()
 checkVersion (name, ver) =
-  fetchVersions (unpack name)
+  fetchVersions name
     >>= \vs ->
       if ver `elem` vs
         then pure ()
         else
           fail
             ( "no matching version for "
-                <> unpack name
+                <> name
                 <> "try one of:"
                 <> intercalate ", " (map toString $ toList vs)
             )
 
 checkBuild :: (MonadFail f, MonadIO f) => Build -> f [()]
-checkBuild Build {..} = traverse checkVersion $ maybe [] M.toList extra
+checkBuild Build {..} =
+  traverse (checkVersion . first unpack) (maybe [] M.toList extra)
 
 checkConfig :: (MonadFail f, MonadIO f) => Config -> f ()
 checkConfig Config {..} = traverse_ checkBuild (toList builds)
