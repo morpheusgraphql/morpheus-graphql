@@ -110,19 +110,14 @@ getVersion = version
 getRule :: (MonadFail m) => Text -> Config -> m Bounds
 getRule name = getDep name . dependencies
 
-nameParts :: Text -> [String]
-nameParts "." = []
-nameParts s = [unpack s]
-
 getPackages :: Config -> [Text]
 getPackages Config {..} = concatMap toPkg groups
   where
-    toPkg PkgGroup {..} = map fullName packages
+    toPkg PkgGroup {..} = map (pack . fullName) packages
       where
-        prefixParts
-          | fromMaybe False prefix = [unpack group]
-          | otherwise = []
-        fullName s = pack $ joinPath $ maybeToList dir <> [intercalate "-" (prefixParts <> nameParts s)]
+        fullName s =
+          let pkgName = intercalate "-" ([unpack group | fromMaybe False prefix] <> [unpack s | s == "."])
+           in joinPath (maybeToList dir <> [pkgName])
 
 getBuild :: (MonadFail m) => Version -> Config -> m Build
 getBuild key Config {builds} = maybe (fail "invalid version") pure (M.lookup (show key) builds)
