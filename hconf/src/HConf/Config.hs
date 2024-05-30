@@ -117,7 +117,11 @@ getPackages Config {..} = concatMap toPkg groups
       where
         fullName s =
           let pkgName = intercalate "-" ([unpack group | fromMaybe False prefix] <> [unpack s | s /= "."])
-           in joinPath (maybeToList dir <> [pkgName])
+           in joinPath (resolveDir dir <> [pkgName])
+
+resolveDir :: (Eq a, IsString a) => Maybe a -> [a]
+resolveDir (Just "./") = []
+resolveDir d = maybeToList d
 
 getBuild :: (MonadFail m) => Version -> Config -> m Build
 getBuild key Config {builds} = maybe (fail "invalid version") pure (M.lookup (show key) builds)
