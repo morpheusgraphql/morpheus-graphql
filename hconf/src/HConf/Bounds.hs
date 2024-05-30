@@ -10,6 +10,7 @@ module HConf.Bounds
     getBound,
     upperBounds,
     diff,
+    printBoundParts,
   )
 where
 
