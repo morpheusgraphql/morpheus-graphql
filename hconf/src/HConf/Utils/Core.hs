@@ -3,7 +3,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | GQL Types
-module HConf.Utils
+module HConf.Utils.Core
   ( compareFields,
     maybeList,
     toKebabCase,
@@ -15,7 +15,6 @@ where
 import Data.Char (isUpper, toLower)
 import Data.List (elemIndex)
 import Data.Text (toTitle)
-import HConf.Core.Version (Version)
 import HConf.Utils.Parse (Parse (..))
 import Relude hiding (Undefined, intercalate)
 
@@ -68,23 +67,23 @@ type TupleRes a = (Text, Text) -> (a, a)
 mapTuple :: (Text -> a) -> TupleRes a
 mapTuple f = bimap f f
 
-parseVersions :: TupleRes (Maybe Version)
-parseVersions = mapTuple parseText
+parseAs :: (Parse a) => Proxy a -> TupleRes (Maybe a)
+parseAs _ = mapTuple parseText
 
-compareFieldNames :: (Text, Text) -> Ordering
-compareFieldNames t = case mapTuple getIndex t of
-  (Nothing, Nothing) -> case parseVersions t of
+compareFieldNames :: (Parse a, Ord a) => Proxy a -> (Text, Text) -> Ordering
+compareFieldNames proxy t = case mapTuple getIndex t of
+  (Nothing, Nothing) -> case parseAs proxy t of
     (Just v1, Just v2) -> compare v1 v2
     _ -> uncurry compare t
   (Nothing, _) -> GT
   (_, Nothing) -> LT
   (i1, i2) -> compare i1 i2
 
-compareFieldsTuple :: (Text, Text) -> Ordering
-compareFieldsTuple = compareFieldNames . mapTuple toTitle
+compareFieldsTuple :: (Parse a, Ord a) => Proxy a -> (Text, Text) -> Ordering
+compareFieldsTuple proxy = compareFieldNames proxy . mapTuple toTitle
 
-compareFields :: Text -> Text -> Ordering
-compareFields = curry compareFieldsTuple
+compareFields :: (Parse a, Ord a) => Proxy a -> Text -> Text -> Ordering
+compareFields proxy = curry (compareFieldsTuple proxy)
 
 maybeList :: Maybe [a] -> [a]
 maybeList = fromMaybe []

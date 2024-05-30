@@ -34,7 +34,8 @@ import Data.Yaml.Pretty (defConfig, encodePretty, setConfCompare, setConfDropNul
 import HConf.Config.Config (Config, checkConfig)
 import HConf.Config.ConfigT (ConfigT (..), HCEnv (..), runConfigT)
 import HConf.Core.Env (Env (..))
-import HConf.Utils (compareFields, toKebabCase)
+import HConf.Core.Version
+import HConf.Utils.Core (compareFields, toKebabCase)
 import HConf.Utils.Log (alert, info, label, logFileChange, task)
 import Relude hiding (Show, Undefined, intercalate, show)
 import Prelude (Show (..))
@@ -43,7 +44,10 @@ parseYaml :: (FromJSON a) => ByteString -> IO a
 parseYaml = decodeThrow
 
 serializeYaml :: (ToJSON a) => a -> ByteString
-serializeYaml = encodePretty (setConfDropNull True $ setConfCompare compareFields defConfig)
+serializeYaml =
+  encodePretty
+    $ setConfDropNull True
+    $ setConfCompare (compareFields (Proxy :: Proxy Version)) defConfig
 
 runSilent :: ConfigT (Maybe Config) -> Env -> IO ()
 runSilent t env@Env {..} = do

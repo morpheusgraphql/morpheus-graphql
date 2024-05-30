@@ -41,8 +41,8 @@ library
       HConf.Stack.Config
       HConf.Stack.Lib
       HConf.Stack.Package
-      HConf.Utils
       HConf.Utils.Chalk
+      HConf.Utils.Core
       HConf.Utils.Format
       HConf.Utils.Http
       HConf.Utils.Log

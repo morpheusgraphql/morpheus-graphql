@@ -12,8 +12,8 @@ module HConf.Utils.Log
   )
 where
 
-import HConf.Utils (Name)
 import HConf.Utils.Chalk (Color (..), chalk)
+import HConf.Utils.Core (Name)
 import Relude
 
 class Log m where

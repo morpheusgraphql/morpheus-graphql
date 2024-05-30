@@ -22,7 +22,7 @@ import Data.Aeson.Types
   )
 import Data.List (intercalate)
 import Data.Text (isPrefixOf, pack, unpack)
-import HConf.Utils (Name)
+import HConf.Utils.Core (Name)
 import Relude hiding
   ( Undefined,
     group,
