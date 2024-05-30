@@ -1,9 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HConf.Deps
-  ( Deps,
+  ( Dependencies,
+    Dependency,
     getBounds,
     traverseDeps,
   )
@@ -17,11 +17,7 @@ import Data.Char (isSeparator)
 import Data.Map (fromList, toList)
 import qualified Data.Map as M
 import Data.Map.Strict (traverseWithKey)
-import Data.Text
-  ( break,
-    strip,
-    unpack,
-  )
+import Data.Text (break, pack, strip, unpack)
 import HConf.Bounds (Bounds, printBoundParts)
 import HConf.Format (formatTable)
 import HConf.Parse (Parse (..))
@@ -37,26 +33,31 @@ import Relude hiding
     toList,
   )
 
-trim :: (Text, Text) -> (Text, Text)
-trim = bimap strip strip
+data Dependency = Dependency Text Bounds
 
-breakOnSPace :: Text -> (Text, Text)
-breakOnSPace = trim . break isSeparator
+instance Parse Dependency where
+  parse = parseText . pack
+  parseText =
+    (\(name, txt) -> Dependency name <$> parseText txt)
+      . bimap strip strip
+      . break isSeparator
 
-newtype Deps = Deps {unpackDeps :: Map Text Bounds}
+newtype Dependencies = Dependencies {unpackDeps :: Map Text Bounds}
   deriving (Show)
 
-getBounds :: (MonadFail m) => Text -> Deps -> m Bounds
+getBounds :: (MonadFail m) => Text -> Dependencies -> m Bounds
 getBounds name = maybe (fail $ "Unknown package: " <> unpack name) pure . M.lookup name . unpackDeps
 
-traverseDeps :: (Applicative f) => (Text -> Bounds -> f Bounds) -> Deps -> f Deps
-traverseDeps f (Deps xs) = Deps <$> traverseWithKey f xs
+traverseDeps :: (Applicative f) => (Text -> Bounds -> f Bounds) -> Dependencies -> f Dependencies
+traverseDeps f (Dependencies xs) = Dependencies <$> traverseWithKey f xs
 
-parseDep :: (MonadFail m) => (Text, Text) -> m (Text, Bounds)
-parseDep (name, bounds) = (name,) <$> parseText bounds
+initDependencies :: [Dependency] -> Dependencies
+initDependencies = Dependencies . fromList . map toDuple
+  where
+    toDuple (Dependency a b) = (a, b)
 
-instance FromJSON Deps where
-  parseJSON v = Deps . fromList <$> (parseJSON v >>= traverse (parseDep . breakOnSPace) . sort)
+instance FromJSON Dependencies where
+  parseJSON v = initDependencies <$> (parseJSON v >>= traverse parseText . sort)
 
-instance ToJSON Deps where
-  toJSON (Deps m) = toJSON $ formatTable $ map (\(name, b) -> name : printBoundParts b) (toList m)
+instance ToJSON Dependencies where
+  toJSON (Dependencies m) = toJSON $ formatTable $ map (\(name, b) -> name : printBoundParts b) (toList m)

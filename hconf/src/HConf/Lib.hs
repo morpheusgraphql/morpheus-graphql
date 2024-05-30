@@ -23,7 +23,7 @@ import HConf.Bounds
 import HConf.Config (Config (..), getRule, isLocalPackage)
 import HConf.ConfigT
 import HConf.Deps
-  ( Deps,
+  ( Dependencies,
     traverseDeps,
   )
 import HConf.Log
@@ -41,7 +41,7 @@ import Relude hiding
 
 data Lib = Lib
   { sourceDirs :: Text,
-    dependencies :: Maybe Deps,
+    dependencies :: Maybe Dependencies,
     __unknownFields :: Maybe Object
   }
   deriving
@@ -68,7 +68,7 @@ toObject :: Value -> Object
 toObject (Object x) = delete "__unknown-fields" x
 toObject _ = mempty
 
-updateDependencies :: Deps -> ConfigT Deps
+updateDependencies :: Dependencies -> ConfigT Dependencies
 updateDependencies = traverseDeps (curry (withConfig checkDependency))
 
 withRule :: Text -> Bounds -> Bounds -> ConfigT Bounds

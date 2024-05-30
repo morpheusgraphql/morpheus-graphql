@@ -35,7 +35,7 @@ import Data.List (intercalate, maximum)
 import qualified Data.Map as M
 import Data.Text (isPrefixOf, pack, unpack)
 import HConf.Bounds (Bounds (..), Restriction (..), getBound, upperBounds)
-import HConf.Deps (Deps, getBounds, traverseDeps)
+import HConf.Deps (Dependencies, getBounds, traverseDeps)
 import HConf.Http (fetchVersions, getLatestBound)
 import HConf.Log (Log (..), field)
 import HConf.Parse (Parse (..))
@@ -91,7 +91,7 @@ data Config = Config
     bounds :: Bounds,
     groups :: [PkgGroup],
     builds :: Map Text Build,
-    dependencies :: Deps
+    dependencies :: Dependencies
   }
   deriving
     ( Generic,
