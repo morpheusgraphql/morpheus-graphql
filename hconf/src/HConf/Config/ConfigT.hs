@@ -76,22 +76,25 @@ instance HConfIO ConfigT where
   read = liftIO . read
   write f = liftIO . write f
 
-runSilent :: ConfigT (Maybe Config) -> Env -> IO ()
-runSilent t env@Env {..} = do
+runWith :: ConfigT (Maybe String) -> Env -> IO ()
+runWith t env@Env {..} = do
   cfg <- readYaml hconf
-  res <- runConfigT t env cfg
-  case res of
-    Left x -> alert ("ERROR: " <> x)
-    Right _ -> pure ()
+  runConfigT t env cfg >>= handle
+
+runSilent :: ConfigT () -> Env -> IO ()
+runSilent t = runWith (t $> Nothing)
 
 run :: String -> ConfigT (Maybe Config) -> Env -> IO ()
-run name t env@Env {..} = do
-  cfg <- readYaml hconf
-  check cfg
-  res <- runConfigT (label name (t >>= save)) env cfg
-  case res of
-    Left x -> alert ("ERROR: " <> x)
-    Right _ -> info "OK"
+run name t = runWith $ do
+  asks config >>= check
+  label name (t >>= save)
+  pure (Just "Ok")
+
+handle :: (Log m, Monad m) => Either String (Maybe String) -> m ()
+handle res = case res of
+  Left x -> alert ("ERROR: " <> x)
+  (Right Nothing) -> pure ()
+  (Right (Just msg)) -> info msg
 
 save :: Maybe Config -> ConfigT ()
 save Nothing = pure ()

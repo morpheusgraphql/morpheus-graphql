@@ -46,4 +46,3 @@ getVersion :: Env -> IO ()
 getVersion = runSilent $ do
   cfg <- asks config
   log (toString $ version cfg)
-  pure Nothing
