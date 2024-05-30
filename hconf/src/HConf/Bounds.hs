@@ -94,6 +94,13 @@ instance Parse Bounds where
     where
       str = pack $ toString input
 
+instance FromJSON Bounds where
+  parseJSON (String s) = parse s
+  parseJSON v = fail $ "version should be either true or string" <> show v
+
+instance ToJSON Bounds where
+  toJSON = String . pack . printBounds
+
 upperBounds :: (MonadFail m) => Version -> m Bounds
 upperBounds version = do
   upper <- nextVersion True version
@@ -110,10 +117,3 @@ getBound v (Bounds xs) = find (\Bound {..} -> restriction == v) xs
 
 printBounds :: Bounds -> String
 printBounds = intercalate "  " . map toString . printBoundParts
-
-instance FromJSON Bounds where
-  parseJSON (String s) = parse s
-  parseJSON v = fail $ "version should be either true or string" <> show v
-
-instance ToJSON Bounds where
-  toJSON = String . pack . printBounds
