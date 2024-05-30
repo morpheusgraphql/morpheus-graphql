@@ -33,7 +33,7 @@ import Data.Aeson.Types
   )
 import Data.List (intercalate, maximum)
 import qualified Data.Map as M
-import Data.Text (isPrefixOf, unpack)
+import Data.Text (isPrefixOf, pack, unpack)
 import HConf.Http (fetchVersions, getLatestBound)
 import HConf.Log (Log (..), field)
 import HConf.Utils (Name)
@@ -55,10 +55,11 @@ import Relude hiding
     intercalate,
     isPrefixOf,
   )
+import System.FilePath.Posix
 
 data PkgGroup = PkgGroup
   { group :: Name,
-    dir :: Text,
+    dir :: Maybe FilePath,
     packages :: [Text],
     prefix :: Maybe Bool
   }
@@ -87,7 +88,8 @@ instance ToJSON Build where
   toJSON = genericToJSON defaultOptions {omitNothingFields = True}
 
 isLocalPackage :: Name -> Config -> Bool
-isLocalPackage name Config {groups} = any ((`isPrefixOf` name) . group) groups
+isLocalPackage name Config {groups} =
+  any ((`isPrefixOf` name) . group) groups
 
 data Config = Config
   { version :: Version,
@@ -108,25 +110,25 @@ getVersion = version
 getRule :: (MonadFail m) => Text -> Config -> m Bounds
 getRule name = getDep name . dependencies
 
+nameParts :: Text -> [String]
+nameParts "." = []
+nameParts s = [unpack s]
+
 getPackages :: Config -> [Text]
 getPackages Config {..} = concatMap toPkg groups
   where
     toPkg PkgGroup {..} = map fullName packages
       where
-        fullName s
-          | dir /= "./" = dir <> "/" <> withPrefix s (fromMaybe False prefix) group
-          | otherwise = withPrefix s (fromMaybe False prefix) group
+        prefixParts
+          | fromMaybe False prefix = [unpack group]
+          | otherwise = []
+        fullName s = pack $ joinPath $ maybeToList dir <> [intercalate "-" (prefixParts <> nameParts s)]
 
 getBuild :: (MonadFail m) => Version -> Config -> m Build
 getBuild key Config {builds} = maybe (fail "invalid version") pure (M.lookup (show key) builds)
 
 getBuilds :: (MonadFail m) => Config -> m [(Version, Build)]
 getBuilds Config {builds} = traverse (\(k, v) -> (,v) <$> parse k) (M.toList builds)
-
-withPrefix :: Text -> Bool -> Text -> Text
-withPrefix "." True prefix = prefix
-withPrefix s True prefix = prefix <> "-" <> s
-withPrefix s _ _ = s
 
 instance ToJSON Config where
   toJSON = genericToJSON defaultOptions {omitNothingFields = True}
