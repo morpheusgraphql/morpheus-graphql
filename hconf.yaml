@@ -33,7 +33,7 @@ groups:
 builds:
   - ghc: 8.2.2
     resolver: lts-11.10
-  - ghc: 8.4.4:
+  - ghc: 8.4.4
     resolver: lts-12.26
     extra:
       aeson: 1.4.4.0
@@ -53,7 +53,7 @@ builds:
     resolver: lts-16.2
     extra:
       prettyprinter: 1.7.0
-  - ghc: 8.10.7:
+  - ghc: 8.10.7
     resolver: lts-18.10
     extra:
       graphql: 0.11.1.0
