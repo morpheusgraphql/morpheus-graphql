@@ -7,7 +7,6 @@
 module HConf.Config.Build
   ( Build (..),
     Builds,
-    checkBuild,
     findBuild,
     selectBuilds,
   )
@@ -26,6 +25,7 @@ import Data.List (intercalate)
 import qualified Data.Map as M
 import Data.Text (unpack)
 import HConf.Core.Version (Version, fetchVersions)
+import HConf.Utils.Class (Check (..))
 import Relude hiding
   ( Undefined,
     group,
@@ -63,8 +63,9 @@ checkVersion (name, version) =
                 <> intercalate ", " (map toString $ toList vs)
             )
 
-checkBuild :: (MonadFail f, MonadIO f) => Build -> f ()
-checkBuild Build {..} = traverse_ (checkVersion . first unpack) (maybe [] M.toList extra)
+instance Check Build where
+  check Build {..} =
+    traverse_ (checkVersion . first unpack) (maybe [] M.toList extra)
 
 type Builds = [Build]
 

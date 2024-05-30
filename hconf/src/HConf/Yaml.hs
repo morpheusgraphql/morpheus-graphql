@@ -28,9 +28,10 @@ import qualified Data.ByteString as L
   )
 import Data.Yaml (decodeThrow)
 import Data.Yaml.Pretty (defConfig, encodePretty, setConfCompare, setConfDropNull)
-import HConf.Config.Config (Config, checkConfig)
+import HConf.Config.Config (Config)
 import HConf.Config.ConfigT (ConfigT (..), HCEnv (..), runConfigT)
 import HConf.Core.Env (Env (..))
+import HConf.Utils.Class (Check (check))
 import HConf.Utils.Core (compareFields)
 import HConf.Utils.Log (alert, info, label, logFileChange, task)
 import Relude hiding (Show, Undefined, intercalate, show)
@@ -56,7 +57,7 @@ runSilent t env@Env {..} = do
 run :: String -> ConfigT (Maybe Config) -> Env -> IO ()
 run name t env@Env {..} = do
   cfg <- L.readFile hconf >>= parseYaml
-  checkConfig cfg
+  check cfg
   res <- runConfigT (label name (t >>= save)) env cfg
   case res of
     Left x -> alert ("ERROR: " <> x)

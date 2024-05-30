@@ -14,7 +14,6 @@ module HConf.Config.Config
     updateConfig,
     updateConfigUpperBounds,
     isLocalPackage,
-    checkConfig,
   )
 where
 
@@ -27,11 +26,12 @@ import Data.Aeson
 import Data.Aeson.Types
   ( defaultOptions,
   )
-import HConf.Config.Build (Build, Builds, checkBuild, findBuild)
+import HConf.Config.Build (Build, Builds, findBuild)
 import HConf.Config.PkgGroup (PkgGroup, isMember, toPackageName)
 import HConf.Core.Bounds (Bounds, updateUpperBound, versionBounds)
 import HConf.Core.Dependencies (Dependencies, getBounds, traverseDeps)
 import HConf.Core.Version (Version, nextVersion)
+import HConf.Utils.Class (Check (check))
 import HConf.Utils.Core (Name)
 import HConf.Utils.Log (Log (..))
 import Relude hiding
@@ -72,8 +72,8 @@ getBuild key = findBuild key . builds
 instance ToJSON Config where
   toJSON = genericToJSON defaultOptions {omitNothingFields = True}
 
-checkConfig :: (MonadFail f, MonadIO f) => Config -> f ()
-checkConfig Config {..} = traverse_ checkBuild (toList builds)
+instance Check Config where
+  check Config {..} = traverse_ check (toList builds)
 
 updateConfig :: (MonadFail m, MonadIO m) => Bool -> Config -> m Config
 updateConfig isBreaking Config {..} = do
