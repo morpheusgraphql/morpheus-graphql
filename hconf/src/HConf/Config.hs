@@ -150,9 +150,9 @@ checkConfig Config {..} = traverse_ checkBuild (toList builds)
 
 updateConfig :: (MonadFail m, MonadIO m) => Bool -> Config -> m Config
 updateConfig isBreaking Config {..} = do
-  next <- nextVersion isBreaking version
-  newBounds <- getBounds next
-  pure Config {version = next, bounds = newBounds, ..}
+  version' <- nextVersion isBreaking version
+  bounds' <- getBounds version'
+  pure Config {version = version', bounds = bounds', ..}
   where
     getBounds next
       | isBreaking = do
@@ -162,8 +162,8 @@ updateConfig isBreaking Config {..} = do
 
 updateConfigUpperBounds :: (MonadFail m, MonadIO m, Log m) => Config -> m Config
 updateConfigUpperBounds Config {..} = do
-  newDependencies <- traverseDeps upperBound dependencies
-  pure Config {dependencies = newDependencies, ..}
+  dependencies' <- traverseDeps upperBound dependencies
+  pure Config {dependencies = dependencies', ..}
 
 upperBound :: (MonadFail m, MonadIO m, Log m) => Text -> Bounds -> m Bounds
 upperBound name bounds = do
