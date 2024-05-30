@@ -29,9 +29,9 @@ import qualified Data.Text as T
 import GHC.Show (Show (show))
 import HConf.Core.Version (Version (..), dropPatch, fetchVersions, nextVersion)
 import HConf.Utils.Chalk (Color (Yellow), chalk)
+import HConf.Utils.Class (Parse (..))
 import HConf.Utils.Core (Name)
 import HConf.Utils.Log (Log, field)
-import HConf.Utils.Parse (Parse (..))
 import Relude hiding
   ( Undefined,
     break,

@@ -17,9 +17,9 @@ import GHC.IO.Exception (ExitCode (..))
 import HConf.Config.ConfigT (ConfigT)
 import HConf.Core.Version (Version)
 import HConf.Stack.Package (Package (..), resolvePackages)
+import HConf.Utils.Class (Parse (..))
 import HConf.Utils.Core (Name)
 import HConf.Utils.Log (alert, field, label, task, warn)
-import HConf.Utils.Parse (Parse (..))
 import HConf.Yaml (read)
 import Relude
 import System.Process

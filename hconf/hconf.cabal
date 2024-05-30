@@ -42,11 +42,11 @@ library
       HConf.Stack.Lib
       HConf.Stack.Package
       HConf.Utils.Chalk
+      HConf.Utils.Class
       HConf.Utils.Core
       HConf.Utils.Format
       HConf.Utils.Http
       HConf.Utils.Log
-      HConf.Utils.Parse
       HConf.Yaml
       Paths_hconf
   hs-source-dirs:

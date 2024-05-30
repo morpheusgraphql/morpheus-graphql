@@ -20,8 +20,8 @@ import HConf.Core.Version (Version)
 import HConf.Hie (genHie)
 import HConf.Stack.Config (setupStack)
 import HConf.Stack.Package (checkPackages)
+import HConf.Utils.Class (Parse (..))
 import HConf.Utils.Log (log)
-import HConf.Utils.Parse (Parse (..))
 import HConf.Yaml (run, runSilent)
 import Relude
 

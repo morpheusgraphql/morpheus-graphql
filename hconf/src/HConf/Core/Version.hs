@@ -22,8 +22,8 @@ import Data.Text
     unpack,
   )
 import GHC.Show (Show (show))
+import HConf.Utils.Class (Parse (..))
 import HConf.Utils.Http (hackage)
-import HConf.Utils.Parse (Parse (..))
 import Relude hiding
   ( Undefined,
     break,
