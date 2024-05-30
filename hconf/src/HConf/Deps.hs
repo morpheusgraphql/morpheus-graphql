@@ -1,13 +1,13 @@
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HConf.Bounds
-  ( Bound (..),
-    Restriction (..),
-    Bounds (..),
+module HConf.Deps
+  ( Deps,
+    getBounds,
     getBound,
+    traverseDeps,
     upperBounds,
     diff,
   )
@@ -19,14 +19,21 @@ import Data.Aeson
     Value (..),
   )
 import Data.Char (isSeparator)
+import Data.Map (fromList, toList)
+import qualified Data.Map as M
+import Data.Map.Strict (traverseWithKey)
 import Data.Text
-  ( null,
+  ( break,
+    null,
     pack,
+    strip,
     unpack,
   )
 import qualified Data.Text as T
 import GHC.Show (Show (show))
+import HConf.Bounds (Bound (..), Bounds (Bounds), Restriction)
 import HConf.Chalk (Color (Yellow), chalk)
+import HConf.Format (formatTable)
 import HConf.Version (Parse (..), Version (..), nextVersion)
 import Relude hiding
   ( Undefined,
@@ -40,31 +47,6 @@ import Relude hiding
     toList,
   )
 
-data Restriction = Min | Max deriving (Show, Eq, Ord)
-
-data Bound = Bound
-  { restriction :: Restriction,
-    orEquals :: Bool,
-    version :: Version
-  }
-  deriving (Show, Eq)
-
-instance Ord Bound where
-  compare a b =
-    compare (version a) (version b)
-      <> compare (restriction a) (restriction b)
-      <> compare (orEquals a) (orEquals b)
-
-instance ToString Restriction where
-  toString Min = ">" -- >  0.7.0
-  toString Max = "<" -- <  1.0.0
-
-instance ToText Restriction where
-  toText = pack . toString
-
-newtype Bounds = Bounds [Bound]
-  deriving (Generic, Show, Eq)
-
 upperBounds :: (MonadFail m) => Version -> m Bounds
 upperBounds version = do
   upper <- nextVersion True version
@@ -72,6 +54,12 @@ upperBounds version = do
 
 diff :: Bounds -> Bounds -> String
 diff old deps = printBounds old <> chalk Yellow "  ->  " <> printBounds deps
+
+trim :: (Text, Text) -> (Text, Text)
+trim = bimap strip strip
+
+breakOnSPace :: Text -> (Text, Text)
+breakOnSPace = trim . break isSeparator
 
 parseBound :: (MonadFail f) => String -> f Bound
 parseBound (h : t) = do
@@ -101,15 +89,27 @@ printBoundParts (Bounds xs) = intercalate ["&&"] $ map printBoundPart $ sort xs
 getBound :: Restriction -> Bounds -> Maybe Bound
 getBound v (Bounds xs) = find (\Bound {..} -> restriction == v) xs
 
-printBoundPart :: Bound -> [Text]
-printBoundPart Bound {..} = pack (toString restriction <> if orEquals then "=" else "") : [toText version]
-
-printBounds :: Bounds -> String
-printBounds = intercalate "  " . map toString . printBoundParts
-
 instance FromJSON Bounds where
   parseJSON (String s) = parseBounds s
   parseJSON v = fail $ "version should be either true or string" <> show v
 
 instance ToJSON Bounds where
   toJSON = String . pack . printBounds
+
+newtype Deps = Deps {unpackDeps :: Map Text Bounds}
+  deriving (Show)
+
+getBounds :: (MonadFail m) => Text -> Deps -> m Bounds
+getBounds name = maybe (fail $ "Unknown package: " <> unpack name) pure . M.lookup name . unpackDeps
+
+traverseDeps :: (Applicative f) => (Text -> Bounds -> f Bounds) -> Deps -> f Deps
+traverseDeps f (Deps xs) = Deps <$> traverseWithKey f xs
+
+parseDep :: (MonadFail m) => (Text, Text) -> m (Text, Bounds)
+parseDep (name, bounds) = (name,) <$> parseBounds bounds
+
+instance FromJSON Deps where
+  parseJSON v = Deps . fromList <$> (parseJSON v >>= traverse (parseDep . breakOnSPace) . sort)
+
+instance ToJSON Deps where
+  toJSON (Deps m) = toJSON $ formatTable $ map (\(name, b) -> name : printBoundParts b) (toList m)

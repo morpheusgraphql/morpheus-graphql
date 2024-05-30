@@ -33,6 +33,7 @@ library
       HConf.Chalk
       HConf.Config
       HConf.ConfigT
+      HConf.Deps
       HConf.Env
       HConf.Format
       HConf.Hie
