@@ -96,12 +96,15 @@ instance Parse Bounds where
     | null str = pure $ Bounds []
     | otherwise = Bounds <$> traverse parseText (T.splitOn "&&" $ T.filter (not . isSeparator) str)
 
+instance ToString Bounds where
+  toString = intercalate "  " . map toString . printBoundParts
+
 instance FromJSON Bounds where
   parseJSON (String s) = parseText s
   parseJSON v = fail $ "version should be either true or string" <> show v
 
 instance ToJSON Bounds where
-  toJSON = String . pack . printBounds
+  toJSON = String . pack . toString
 
 genVersionBounds :: (MonadFail m) => Version -> m Bounds
 genVersionBounds version = do
@@ -109,16 +112,13 @@ genVersionBounds version = do
   pure $ Bounds [Bound Min True (dropPatch version), Bound Max False upper]
 
 diff :: Bounds -> Bounds -> String
-diff old deps = printBounds old <> chalk Yellow "  ->  " <> printBounds deps
+diff old deps = toString old <> chalk Yellow "  ->  " <> toString deps
 
 printBoundParts :: Bounds -> [Text]
 printBoundParts (Bounds xs) = intercalate ["&&"] $ map printBoundPart $ sort xs
 
 getBound :: Restriction -> Bounds -> Maybe Bound
 getBound v (Bounds xs) = find (\Bound {..} -> restriction == v) xs
-
-printBounds :: Bounds -> String
-printBounds = intercalate "  " . map toString . printBoundParts
 
 getLatestBound :: (MonadFail m, MonadIO m) => Name -> m Bound
 getLatestBound = fmap (Bound Max True . head) . fetchVersions . T.unpack
