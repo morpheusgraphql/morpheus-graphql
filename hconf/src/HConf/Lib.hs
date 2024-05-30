@@ -19,10 +19,7 @@ import GHC.Generics
 import HConf.Config.Config (Config (..), getRule, isLocalPackage)
 import HConf.ConfigT
 import HConf.Core.Bounds (Bounds (..), diff)
-import HConf.Deps
-  ( Dependencies,
-    traverseDeps,
-  )
+import HConf.Core.Dependencies (Dependencies, traverseDeps)
 import HConf.Utils (Name)
 import HConf.Utils.Log
 import HConf.Yaml (aesonYAMLOptions)

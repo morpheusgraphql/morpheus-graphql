@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HConf.Deps
+module HConf.Core.Dependencies
   ( Dependencies,
     Dependency,
     getBounds,
