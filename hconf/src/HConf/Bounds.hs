@@ -66,6 +66,13 @@ instance ToText Restriction where
 newtype Bounds = Bounds [Bound]
   deriving (Generic, Show, Eq)
 
+instance Parse Bounds where
+  parse input
+    | null str = pure $ Bounds []
+    | otherwise = Bounds <$> traverse (parseBound . unpack) (T.splitOn "&&" $ T.filter (not . isSeparator) str)
+    where
+      str = pack $ toString input
+
 upperBounds :: (MonadFail m) => Version -> m Bounds
 upperBounds version = do
   upper <- nextVersion True version
@@ -91,11 +98,6 @@ parseOrEquals :: [Char] -> (Bool, [Char])
 parseOrEquals ('=' : ver) = (True, ver)
 parseOrEquals ver = (False, ver)
 
-parseBounds :: (MonadFail m) => Text -> m Bounds
-parseBounds bounds
-  | null bounds = pure $ Bounds []
-  | otherwise = Bounds <$> traverse (parseBound . unpack) (T.splitOn "&&" $ T.filter (not . isSeparator) bounds)
-
 printBoundParts :: Bounds -> [Text]
 printBoundParts (Bounds xs) = intercalate ["&&"] $ map printBoundPart $ sort xs
 
@@ -109,7 +111,7 @@ printBounds :: Bounds -> String
 printBounds = intercalate "  " . map toString . printBoundParts
 
 instance FromJSON Bounds where
-  parseJSON (String s) = parseBounds s
+  parseJSON (String s) = parse s
   parseJSON v = fail $ "version should be either true or string" <> show v
 
 instance ToJSON Bounds where
