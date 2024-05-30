@@ -115,8 +115,8 @@ getPackages Config {..} = concatMap toPkg groups
   where
     toPkg PkgGroup {..} = map (pack . fullName) packages
       where
-        fullName s =
-          let pkgName = intercalate "-" ([unpack group | fromMaybe False prefix] <> [unpack s | s /= "."])
+        fullName name =
+          let pkgName = intercalate "-" ([unpack group | fromMaybe False prefix] <> [unpack name | name /= "."])
            in joinPath (resolveDir dir <> [pkgName])
 
 resolveDir :: (Eq a, IsString a) => Maybe a -> [a]
