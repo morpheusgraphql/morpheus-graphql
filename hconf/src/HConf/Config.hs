@@ -31,13 +31,13 @@ import Data.Aeson
 import Data.Aeson.Types
   ( defaultOptions,
   )
-import Data.List (intercalate, maximum)
+import Data.List (intercalate)
 import qualified Data.Map as M
 import Data.Text (isPrefixOf, pack, unpack)
-import HConf.Bounds (Bounds (..), Restriction (..), getVersionBounds, updateUpperBound)
+import HConf.Bounds (Bounds (..), getVersionBounds, updateUpperBound)
 import HConf.Deps (Dependencies, getBounds, traverseDeps)
 import HConf.Http (fetchVersions)
-import HConf.Log (Log (..), field)
+import HConf.Log (Log (..))
 import HConf.Parse (Parse (..))
 import HConf.Utils (Name)
 import HConf.Version
