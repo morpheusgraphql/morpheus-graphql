@@ -36,7 +36,6 @@ library
       HConf.ConfigT
       HConf.Deps
       HConf.Env
-      HConf.Format
       HConf.Hie
       HConf.Http
       HConf.Lib
@@ -44,6 +43,7 @@ library
       HConf.Stack
       HConf.Utils
       HConf.Utils.Chalk
+      HConf.Utils.Format
       HConf.Utils.Log
       HConf.Utils.Parse
       HConf.Version

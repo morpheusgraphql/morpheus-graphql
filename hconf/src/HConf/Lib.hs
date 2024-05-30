@@ -26,8 +26,8 @@ import HConf.Deps
   ( Dependencies,
     traverseDeps,
   )
-import HConf.Log
 import HConf.Utils (Name)
+import HConf.Utils.Log
 import HConf.Yaml (aesonYAMLOptions)
 import Relude hiding
   ( Undefined,

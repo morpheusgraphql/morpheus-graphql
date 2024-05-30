@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HConf.Format (formatTable) where
+module HConf.Utils.Format (formatTable) where
 
 import Data.List (maximum)
 import qualified Data.Text as T

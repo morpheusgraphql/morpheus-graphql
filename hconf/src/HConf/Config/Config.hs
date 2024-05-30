@@ -35,8 +35,8 @@ import HConf.Bounds (Bounds (..), updateUpperBound, versionBounds)
 import HConf.Config.Build (Build, checkBuild)
 import HConf.Config.PkgGroup (PkgGroup, isMember, toPackageName)
 import HConf.Deps (Dependencies, getBounds, traverseDeps)
-import HConf.Log (Log (..))
 import HConf.Utils (Name)
+import HConf.Utils.Log (Log (..))
 import HConf.Utils.Parse (Parse (..))
 import HConf.Version
   ( Version,
