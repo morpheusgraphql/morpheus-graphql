@@ -55,7 +55,7 @@ import Relude hiding
     intercalate,
     isPrefixOf,
   )
-import System.FilePath.Posix (joinPath)
+import System.FilePath.Posix (joinPath, normalise)
 
 data PkgGroup = PkgGroup
   { group :: Name,
@@ -117,11 +117,7 @@ getPackages Config {..} = concatMap toPkg groups
       where
         pkgPath name =
           let pkgName = intercalate "-" ([unpack group | fromMaybe False prefix] <> [unpack name | name /= "."])
-           in joinPath (resolveDir dir <> [pkgName])
-
-resolveDir :: (Eq a, IsString a) => Maybe a -> [a]
-resolveDir (Just "./") = []
-resolveDir d = maybeToList d
+           in normalise (joinPath (maybeToList dir <> [pkgName]))
 
 getBuild :: (MonadFail m) => Version -> Config -> m Build
 getBuild key Config {builds} = maybe (fail "invalid version") pure (M.lookup (show key) builds)
