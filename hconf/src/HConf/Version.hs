@@ -6,6 +6,7 @@
 module HConf.Version
   ( Version (..),
     nextVersion,
+    dropPatch,
   )
 where
 
@@ -40,6 +41,10 @@ data Version
     ( Generic,
       Eq
     )
+
+dropPatch :: Version -> Version
+dropPatch (Version xs) = Version (take 2 xs)
+dropPatch LatestVersion = LatestVersion
 
 nextVersion :: (MonadFail m) => Bool -> Version -> m Version
 nextVersion isBreaking (Version [major, minor, revision])

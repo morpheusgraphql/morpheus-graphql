@@ -32,7 +32,7 @@ import HConf.Http (fetchVersions)
 import HConf.Log (Log, field)
 import HConf.Parse (Parse (..))
 import HConf.Utils (Name)
-import HConf.Version (Version (..), nextVersion)
+import HConf.Version (Version (..), dropPatch, nextVersion)
 import Relude hiding
   ( Undefined,
     break,
@@ -103,15 +103,10 @@ instance FromJSON Bounds where
 instance ToJSON Bounds where
   toJSON = String . pack . printBounds
 
-upperBounds :: (MonadFail m) => Version -> m Bounds
-upperBounds version = do
+genVersionBounds :: (MonadFail m) => Version -> m Bounds
+genVersionBounds version = do
   upper <- nextVersion True version
-  pure $ Bounds [Bound Min True version, Bound Max False upper]
-
-genVersionBounds :: (MonadFail m) => Version -> Bool -> Bounds -> m Bounds
-genVersionBounds v isBreaking bounds
-  | isBreaking = upperBounds v
-  | otherwise = pure bounds
+  pure $ Bounds [Bound Min True (dropPatch version), Bound Max False upper]
 
 diff :: Bounds -> Bounds -> String
 diff old deps = printBounds old <> chalk Yellow "  ->  " <> printBounds deps

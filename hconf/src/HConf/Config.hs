@@ -146,7 +146,7 @@ checkConfig Config {..} = traverse_ checkBuild (toList builds)
 updateConfig :: (MonadFail m, MonadIO m) => Bool -> Config -> m Config
 updateConfig isBreaking Config {..} = do
   version' <- nextVersion isBreaking version
-  bounds' <- genVersionBounds version' isBreaking bounds
+  bounds' <- genVersionBounds version'
   pure Config {version = version', bounds = bounds', ..}
 
 updateConfigUpperBounds :: (MonadFail m, MonadIO m, Log m) => Config -> m Config
