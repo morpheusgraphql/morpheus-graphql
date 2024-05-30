@@ -6,6 +6,7 @@ module HConf.Core.Version
   ( Version (..),
     nextVersion,
     dropPatch,
+    fetchVersions,
   )
 where
 
@@ -14,12 +15,14 @@ import Data.Aeson
     ToJSON (toJSON),
     Value (..),
   )
+import Data.Map (lookup)
 import Data.Text
   ( pack,
     split,
     unpack,
   )
 import GHC.Show (Show (show))
+import HConf.Http (hackage)
 import HConf.Utils.Parse (Parse (..))
 import Relude hiding
   ( Undefined,
@@ -90,3 +93,13 @@ instance Ord Version where
       compareSeries (x : xs) (y : ys)
         | x == y = compareSeries xs ys
         | otherwise = compare x y
+
+fetchVersionResponse :: (MonadIO m, MonadFail m) => String -> m (Either String (Map Text (NonEmpty Version)))
+fetchVersionResponse name = hackage ("package/" <> name <> "/preferred.json")
+
+lookupVersions :: (MonadFail m) => Either String (Map Text (NonEmpty Version)) -> m (NonEmpty Version)
+lookupVersions (Right x) = maybe (fail "field normal-version not found") pure (lookup "normal-version" x)
+lookupVersions (Left x) = fail x
+
+fetchVersions :: (MonadFail m, MonadIO m) => String -> m (NonEmpty Version)
+fetchVersions name = fetchVersionResponse name >>= lookupVersions
