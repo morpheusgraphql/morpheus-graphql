@@ -24,6 +24,7 @@ import Data.Kind
 import HConf.Config.Config (Config, getPackages, getVersion)
 import HConf.Core.Env (Env (..))
 import HConf.Core.Version (Version)
+import HConf.Utils.Chalk (Color (Green), chalk)
 import HConf.Utils.Class (Check (..), HConfIO (..))
 import HConf.Utils.Core (Name)
 import HConf.Utils.Log (Log (..), alert, info, label, task)
@@ -85,13 +86,13 @@ runGroup :: String -> ConfigT (Maybe Config) -> Env -> IO ()
 runGroup name action =
   run
     $ label name (asks config >>= check >> action >>= save)
-    $> Just "Ok"
+    $> Just (chalk Green "Ok")
 
 handle :: (Log m, Monad m) => Either String (Maybe String) -> m ()
 handle res = case res of
   Left x -> alert ("ERROR: " <> x)
   (Right Nothing) -> pure ()
-  (Right (Just msg)) -> info msg
+  (Right (Just msg)) -> log msg
 
 save :: Maybe Config -> ConfigT ()
 save Nothing = pure ()

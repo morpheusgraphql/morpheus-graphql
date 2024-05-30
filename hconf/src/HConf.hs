@@ -43,4 +43,4 @@ updateVersion isBreaking = runGroup "next" $ do
   pure (Just newConfig)
 
 getVersion :: Env -> IO ()
-getVersion = run $ (asks config >>= log . toString . version) $> Nothing
+getVersion = run (Just . toString . version <$> asks config)
