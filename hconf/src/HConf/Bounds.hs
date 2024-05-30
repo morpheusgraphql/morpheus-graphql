@@ -87,7 +87,7 @@ parseOrEquals ('=' : ver) = (True, ver)
 parseOrEquals ver = (False, ver)
 
 instance Parse Bound where
-  parse x = parseBound (toString x)
+  parse = parseBound . toString
     where
       parseBound (char : str) = do
         res <- parseRestriction char
