@@ -18,10 +18,8 @@ import Control.Exception (tryJust)
 import Data.Aeson
   ( FromJSON (..),
     Object,
-    Options (..),
     ToJSON (..),
     Value (..),
-    defaultOptions,
   )
 import Data.Aeson.KeyMap
 import qualified Data.ByteString as L
@@ -34,7 +32,7 @@ import HConf.Config.Config (Config, checkConfig)
 import HConf.Config.ConfigT (ConfigT (..), HCEnv (..), runConfigT)
 import HConf.Core.Env (Env (..))
 import HConf.Core.Version (Version)
-import HConf.Utils.Core (compareFields, toKebabCase)
+import HConf.Utils.Core (compareFields)
 import HConf.Utils.Log (alert, info, label, logFileChange, task)
 import Relude hiding (Show, Undefined, intercalate, show)
 import Prelude (Show (..))
