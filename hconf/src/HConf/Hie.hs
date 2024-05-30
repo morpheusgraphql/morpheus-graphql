@@ -21,7 +21,7 @@ import HConf.Core.Env (Env (..))
 import HConf.Stack.Lib (Library (..))
 import HConf.Stack.Package (Package (..), resolvePackages)
 import HConf.Utils.Log (label, task)
-import HConf.Yaml (writeYaml)
+import HConf.Utils.Yaml (writeYaml)
 import Relude hiding (Undefined, intercalate)
 
 data Component = Component

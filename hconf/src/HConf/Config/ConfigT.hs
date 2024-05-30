@@ -20,6 +20,7 @@ import Data.Kind
 import HConf.Config.Config (Config, getPackages, getVersion)
 import HConf.Core.Env (Env)
 import HConf.Core.Version (Version)
+import HConf.Utils.Class (HConfIO (..))
 import HConf.Utils.Core (Name)
 import HConf.Utils.Log (Log (..))
 import Relude
@@ -64,3 +65,8 @@ instance Log ConfigT where
     i <- asks indention
     liftIO $ putStrLn $ indent i <> txt
   inside = local (\c -> c {indention = indention c + 1})
+
+instance HConfIO ConfigT where
+  eitherRead = liftIO . eitherRead
+  read = liftIO . read
+  write f = liftIO . write f

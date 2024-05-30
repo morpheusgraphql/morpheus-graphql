@@ -22,7 +22,7 @@ import HConf.Core.Version (Version)
 import HConf.Stack.Lib (Library, updateDependencies, updateLib)
 import HConf.Utils.Core (Name, aesonYAMLOptions, tupled)
 import HConf.Utils.Log (label, task)
-import HConf.Yaml (readYaml, rewriteYaml)
+import HConf.Utils.Yaml (readYaml, rewriteYaml)
 import Relude hiding (Undefined, length, replicate)
 
 type Libs = Maybe (KeyMap Library)
