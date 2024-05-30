@@ -1,8 +1,7 @@
 version: 0.27.3
 bounds: ">=  0.27.0  &&  <  0.28.0"
 groups:
-  - group: morpheus-graphql-examples
-    dir: examples
+  - name: morpheus-graphql-examples
     packages:
       - client
       - code-gen
@@ -13,8 +12,8 @@ groups:
       - scotty-freer-simple
       - servant
       - yesod-pubsub
-  - group: morpheus-graphql
-    prefix: true
+    dir: examples
+  - name: morpheus-graphql
     packages:
       - tests
       - core
@@ -26,10 +25,11 @@ groups:
       - server
       - benchmarks
       - .
-  - group: hconf
-    dir: ./
+    prefix: true
+  - name: hconf
     packages:
       - hconf
+    dir: ./
 builds:
   - ghc: 8.2.2
     resolver: lts-11.10
@@ -64,7 +64,7 @@ builds:
     extra:
       attoparsec-aeson: 2.1.0.0
       dependent-map: 0.2.4.0
-      dependent-sum: 0.4
+      dependent-sum: "0.4"
   - ghc: latest
     resolver: nightly-2024-05-29
     extra:

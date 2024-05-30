@@ -47,6 +47,7 @@ fields =
       "ghc",
       "resolver",
       "packages",
+      "groups",
       "builds",
       "extra-source-files",
       "data-files",

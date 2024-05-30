@@ -32,7 +32,7 @@ import Relude hiding
 import System.FilePath.Posix (joinPath, normalise)
 
 data PkgGroup = PkgGroup
-  { group :: Name,
+  { name :: Name,
     dir :: Maybe FilePath,
     packages :: [Text],
     prefix :: Maybe Bool
@@ -49,9 +49,9 @@ instance ToJSON PkgGroup where
 toPackageName :: PkgGroup -> [Text]
 toPackageName PkgGroup {..} = map (pack . pkgPath) packages
   where
-    pkgPath name =
-      let pkgName = intercalate "-" ([unpack group | fromMaybe False prefix] <> [unpack name | name /= "."])
+    pkgPath pkg =
+      let pkgName = intercalate "-" ([unpack name | fromMaybe False prefix] <> [unpack pkg | pkg /= "."])
        in normalise (joinPath (maybeToList dir <> [pkgName]))
 
 isMember :: Name -> PkgGroup -> Bool
-isMember name = (`isPrefixOf` name) . group
+isMember pkgName = (`isPrefixOf` pkgName) . name
