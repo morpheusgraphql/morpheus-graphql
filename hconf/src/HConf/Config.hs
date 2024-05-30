@@ -9,7 +9,6 @@
 -- | GQL Types
 module HConf.Config
   ( Config (..),
-    Build (..),
     getPackages,
     getBuild,
     getBuilds,
@@ -31,14 +30,13 @@ import Data.Aeson
 import Data.Aeson.Types
   ( defaultOptions,
   )
-import Data.List (intercalate)
 import qualified Data.Map as M
-import Data.Text (isPrefixOf, pack, unpack)
 import HConf.Bounds (Bounds (..), updateUpperBound, versionBounds)
+import HConf.Build (Build, checkBuild)
 import HConf.Deps (Dependencies, getBounds, traverseDeps)
-import HConf.Http (fetchVersions)
 import HConf.Log (Log (..))
 import HConf.Parse (Parse (..))
+import HConf.PkgGroup (PkgGroup, isMember, toPackageName)
 import HConf.Utils (Name)
 import HConf.Version
   ( Version,
@@ -50,41 +48,9 @@ import Relude hiding
     intercalate,
     isPrefixOf,
   )
-import System.FilePath.Posix (joinPath, normalise)
-
-data PkgGroup = PkgGroup
-  { group :: Name,
-    dir :: Maybe FilePath,
-    packages :: [Text],
-    prefix :: Maybe Bool
-  }
-  deriving
-    ( Generic,
-      FromJSON,
-      Show
-    )
-
-instance ToJSON PkgGroup where
-  toJSON = genericToJSON defaultOptions {omitNothingFields = True}
-
-data Build = Build
-  { resolver :: Text,
-    extra :: Maybe (Map Text Version),
-    include :: Maybe [Text],
-    exclude :: Maybe [Text]
-  }
-  deriving
-    ( Generic,
-      FromJSON,
-      Show
-    )
-
-instance ToJSON Build where
-  toJSON = genericToJSON defaultOptions {omitNothingFields = True}
 
 isLocalPackage :: Name -> Config -> Bool
-isLocalPackage name Config {groups} =
-  any ((`isPrefixOf` name) . group) groups
+isLocalPackage name Config {groups} = any (isMember name) groups
 
 data Config = Config
   { version :: Version,
@@ -106,13 +72,7 @@ getRule :: (MonadFail m) => Text -> Config -> m Bounds
 getRule name = getBounds name . dependencies
 
 getPackages :: Config -> [Text]
-getPackages Config {..} = concatMap toPkg groups
-  where
-    toPkg PkgGroup {..} = map (pack . pkgPath) packages
-      where
-        pkgPath name =
-          let pkgName = intercalate "-" ([unpack group | fromMaybe False prefix] <> [unpack name | name /= "."])
-           in normalise (joinPath (maybeToList dir <> [pkgName]))
+getPackages Config {..} = concatMap toPackageName groups
 
 getBuild :: (MonadFail m) => Version -> Config -> m Build
 getBuild key Config {builds} = maybe (fail "invalid version") pure (M.lookup (show key) builds)
@@ -122,24 +82,6 @@ getBuilds Config {builds} = traverse (\(k, v) -> (,v) <$> parseText k) (M.toList
 
 instance ToJSON Config where
   toJSON = genericToJSON defaultOptions {omitNothingFields = True}
-
-checkVersion :: (MonadFail m, MonadIO m) => (String, Version) -> m ()
-checkVersion (name, version) =
-  fetchVersions name
-    >>= \vs ->
-      if version `elem` vs
-        then pure ()
-        else
-          fail
-            ( "no matching version for "
-                <> name
-                <> "try one of:"
-                <> intercalate ", " (map toString $ toList vs)
-            )
-
-checkBuild :: (MonadFail f, MonadIO f) => Build -> f [()]
-checkBuild Build {..} =
-  traverse (checkVersion . first unpack) (maybe [] M.toList extra)
 
 checkConfig :: (MonadFail f, MonadIO f) => Config -> f ()
 checkConfig Config {..} = traverse_ checkBuild (toList builds)
