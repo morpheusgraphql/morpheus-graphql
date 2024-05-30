@@ -7,7 +7,7 @@ module HConf.Bounds
   ( Bound (..),
     Restriction (..),
     Bounds (..),
-    getVersionBounds,
+    genVersionBounds,
     diff,
     printBoundParts,
     updateUpperBound,
@@ -108,8 +108,8 @@ upperBounds version = do
   upper <- nextVersion True version
   pure $ Bounds [Bound Min True version, Bound Max False upper]
 
-getVersionBounds :: (MonadFail m) => Version -> Bool -> Bounds -> m Bounds
-getVersionBounds v isBreaking bounds
+genVersionBounds :: (MonadFail m) => Version -> Bool -> Bounds -> m Bounds
+genVersionBounds v isBreaking bounds
   | isBreaking = upperBounds v
   | otherwise = pure bounds
 

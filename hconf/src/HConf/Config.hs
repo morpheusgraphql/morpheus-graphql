@@ -34,7 +34,7 @@ import Data.Aeson.Types
 import Data.List (intercalate)
 import qualified Data.Map as M
 import Data.Text (isPrefixOf, pack, unpack)
-import HConf.Bounds (Bounds (..), getVersionBounds, updateUpperBound)
+import HConf.Bounds (Bounds (..), genVersionBounds, updateUpperBound)
 import HConf.Deps (Dependencies, getBounds, traverseDeps)
 import HConf.Http (fetchVersions)
 import HConf.Log (Log (..))
@@ -146,7 +146,7 @@ checkConfig Config {..} = traverse_ checkBuild (toList builds)
 updateConfig :: (MonadFail m, MonadIO m) => Bool -> Config -> m Config
 updateConfig isBreaking Config {..} = do
   version' <- nextVersion isBreaking version
-  bounds' <- getVersionBounds version' isBreaking bounds
+  bounds' <- genVersionBounds version' isBreaking bounds
   pure Config {version = version', bounds = bounds', ..}
 
 updateConfigUpperBounds :: (MonadFail m, MonadIO m, Log m) => Config -> m Config

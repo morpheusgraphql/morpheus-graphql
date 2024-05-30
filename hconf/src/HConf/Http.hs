@@ -10,9 +10,7 @@ where
 import Data.Aeson (FromJSON)
 import Data.Aeson.Decoding (eitherDecode)
 import Data.Map (lookup)
-import Data.Text (unpack)
 import qualified Data.Text as T
-import HConf.Utils (Name)
 import HConf.Version (Version)
 import Network.HTTP.Req
   ( GET (..),
