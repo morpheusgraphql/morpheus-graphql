@@ -70,7 +70,7 @@ newtype Bounds = Bounds [Bound]
 instance Parse Bounds where
   parse input
     | null str = pure $ Bounds []
-    | otherwise = Bounds <$> traverse (parseBound . unpack) (T.splitOn "&&" $ T.filter (not . isSeparator) str)
+    | otherwise = Bounds <$> traverse parse (T.splitOn "&&" $ T.filter (not . isSeparator) str)
     where
       str = pack $ toString input
 
