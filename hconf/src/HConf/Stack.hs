@@ -15,8 +15,8 @@ where
 import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import Data.List ((\\))
 import qualified Data.Map as M
-import HConf.Config (getBuild, getBuilds, getPackages)
 import HConf.Config.Build (Build (..))
+import HConf.Config.Config (getBuild, getBuilds, getPackages)
 import HConf.ConfigT (ConfigT, HCEnv (..))
 import HConf.Env (Env (..))
 import HConf.Log (label, task)

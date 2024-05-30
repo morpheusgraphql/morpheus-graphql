@@ -13,7 +13,7 @@ module HConf
 where
 
 import HConf.Cabal (checkCabals)
-import HConf.Config (Config (..), updateConfig, updateConfigUpperBounds)
+import HConf.Config.Config (Config (..), updateConfig, updateConfigUpperBounds)
 import HConf.ConfigT (HCEnv (..))
 import HConf.Env (Env (..))
 import HConf.Hie (genHie)

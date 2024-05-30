@@ -15,7 +15,7 @@ where
 import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import Data.Aeson.KeyMap (KeyMap)
 import Data.Text (unpack)
-import HConf.Config (getVersion)
+import HConf.Config.Config (getVersion)
 import HConf.ConfigT (ConfigT, HCEnv (config), packages)
 import HConf.Deps (Dependencies)
 import HConf.Lib (Lib, updateDependencies, updateLib)

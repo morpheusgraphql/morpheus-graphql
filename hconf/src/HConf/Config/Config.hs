@@ -7,7 +7,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | GQL Types
-module HConf.Config
+module HConf.Config.Config
   ( Config (..),
     getPackages,
     getBuild,

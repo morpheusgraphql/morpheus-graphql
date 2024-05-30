@@ -31,8 +31,8 @@ library
       HConf.Bounds
       HConf.Cabal
       HConf.Chalk
-      HConf.Config
       HConf.Config.Build
+      HConf.Config.Config
       HConf.Config.PkgGroup
       HConf.ConfigT
       HConf.Deps

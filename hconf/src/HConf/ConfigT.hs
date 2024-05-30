@@ -17,7 +17,7 @@ where
 
 import Control.Exception (tryJust)
 import Data.Kind
-import HConf.Config (Config, getPackages, getVersion)
+import HConf.Config.Config (Config, getPackages, getVersion)
 import HConf.Env (Env)
 import HConf.Log (Log (..))
 import HConf.Utils (Name)

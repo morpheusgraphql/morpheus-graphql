@@ -20,7 +20,7 @@ import HConf.Bounds
   ( Bounds (..),
     diff,
   )
-import HConf.Config (Config (..), getRule, isLocalPackage)
+import HConf.Config.Config (Config (..), getRule, isLocalPackage)
 import HConf.ConfigT
 import HConf.Deps
   ( Dependencies,
