@@ -19,18 +19,18 @@ import HConf.Config.Config (getVersion)
 import HConf.Config.ConfigT (ConfigT, HCEnv (config), packages)
 import HConf.Core.Dependencies (Dependencies)
 import HConf.Core.Version (Version)
-import HConf.Stack.Lib (Lib, updateDependencies, updateLib)
+import HConf.Stack.Lib (Library, updateDependencies, updateLib)
 import HConf.Utils.Core (Name, aesonYAMLOptions, tupled)
 import HConf.Utils.Log (label, task)
 import HConf.Yaml (readYaml, rewriteYaml)
 import Relude hiding (Undefined, length, replicate)
 
-type Libs = Maybe (KeyMap Lib)
+type Libs = Maybe (KeyMap Library)
 
 data Package = Package
   { name :: Name,
     version :: Version,
-    library :: Maybe Lib,
+    library :: Maybe Library,
     dependencies :: Dependencies,
     tests :: Libs,
     executables :: Libs,

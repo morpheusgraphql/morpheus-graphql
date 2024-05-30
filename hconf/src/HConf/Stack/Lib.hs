@@ -7,7 +7,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HConf.Stack.Lib
-  ( Lib (..),
+  ( Library (..),
     updateDependencies,
     updateLib,
   )
@@ -32,7 +32,7 @@ import Relude hiding
     null,
   )
 
-data Lib = Lib
+data Library = Library
   { sourceDirs :: Text,
     dependencies :: Maybe Dependencies,
     __unknownFields :: Maybe Object
@@ -42,10 +42,10 @@ data Lib = Lib
       Generic
     )
 
-instance FromJSON Lib where
+instance FromJSON Library where
   parseJSON = fromObject (\t o -> t {__unknownFields = o})
 
-instance ToJSON Lib where
+instance ToJSON Library where
   toJSON = extendedToObject __unknownFields
 
 extendedToObject :: (Generic a, GToJSON' Value Zero (Rep a)) => (a -> Maybe Object) -> a -> Value
@@ -74,7 +74,7 @@ updateDependency config@Config {bounds} (name, oldBounds)
 updateDependencies :: Dependencies -> ConfigT Dependencies
 updateDependencies = traverseDeps (curry (withConfig updateDependency))
 
-updateLib :: Lib -> ConfigT Lib
-updateLib Lib {..} = do
+updateLib :: Library -> ConfigT Library
+updateLib Library {..} = do
   newDependencies <- traverse updateDependencies dependencies
-  pure $ Lib {dependencies = newDependencies, ..}
+  pure $ Library {dependencies = newDependencies, ..}
