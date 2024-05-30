@@ -51,10 +51,7 @@ toPath :: Name -> FilePath
 toPath = (<> "/package.yaml") . unpack
 
 resolvePackages :: ConfigT [(Name, Package)]
-resolvePackages = packages >>= traverse (tupled getPackage)
-
-getPackage :: Name -> ConfigT Package
-getPackage = readYaml . toPath
+resolvePackages = packages >>= traverse (tupled (readYaml . toPath))
 
 updateDeps :: Libs -> ConfigT Libs
 updateDeps = traverse (traverse updateLib)
