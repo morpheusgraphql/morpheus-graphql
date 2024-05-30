@@ -54,7 +54,7 @@ commandParser =
   buildOperation
     [ ("setup", "builds Haskell code from GQL source", Setup <$> optional parseVersion),
       ("about", "api information", pure About),
-      ("upper-bounds", "check/fix upper bounds for dependencies", pure UpperBounds),
+      ("update", "check/fix upper bounds for dependencies", pure UpperBounds),
       ("next", "next release", Next <$> switch (long "breaking" <> short 'b')),
       ("version", "get current version", pure CurrentVersion)
     ]
