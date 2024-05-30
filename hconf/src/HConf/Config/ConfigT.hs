@@ -15,7 +15,7 @@ module HConf.Config.ConfigT
     withConfig,
     save,
     run,
-    runSilent,
+    runGroup,
   )
 where
 
@@ -76,19 +76,16 @@ instance HConfIO ConfigT where
   read = liftIO . read
   write f = liftIO . write f
 
-runWith :: ConfigT (Maybe String) -> Env -> IO ()
-runWith t env@Env {..} = do
+run :: ConfigT (Maybe String) -> Env -> IO ()
+run action env@Env {..} = do
   cfg <- readYaml hconf
-  runConfigT t env cfg >>= handle
+  runConfigT action env cfg >>= handle
 
-runSilent :: ConfigT () -> Env -> IO ()
-runSilent t = runWith (t $> Nothing)
-
-run :: String -> ConfigT (Maybe Config) -> Env -> IO ()
-run name t = runWith $ do
-  asks config >>= check
-  label name (t >>= save)
-  pure (Just "Ok")
+runGroup :: String -> ConfigT (Maybe Config) -> Env -> IO ()
+runGroup name action =
+  run
+    $ label name (asks config >>= check >> action >>= save)
+    $> Just "Ok"
 
 handle :: (Log m, Monad m) => Either String (Maybe String) -> m ()
 handle res = case res of
