@@ -1,9 +1,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | GQL Types
@@ -11,7 +9,6 @@ module HConf.Config.Config
   ( Config (..),
     getPackages,
     getBuild,
-    getBuilds,
     getVersion,
     getRule,
     updateConfig,
@@ -31,7 +28,7 @@ import Data.Aeson.Types
   ( defaultOptions,
   )
 import qualified Data.Map as M
-import HConf.Config.Build (Build, checkBuild)
+import HConf.Config.Build (Build, Builds, checkBuild, findBuild)
 import HConf.Config.PkgGroup (PkgGroup, isMember, toPackageName)
 import HConf.Core.Bounds (Bounds, updateUpperBound, versionBounds)
 import HConf.Core.Dependencies (Dependencies, getBounds, traverseDeps)
@@ -53,7 +50,7 @@ data Config = Config
   { version :: Version,
     bounds :: Bounds,
     groups :: [PkgGroup],
-    builds :: Map Text Build,
+    builds :: Builds,
     dependencies :: Dependencies
   }
   deriving
@@ -72,10 +69,7 @@ getPackages :: Config -> [Text]
 getPackages Config {..} = concatMap toPackageName groups
 
 getBuild :: (MonadFail m) => Version -> Config -> m Build
-getBuild key Config {builds} = maybe (fail "invalid version") pure (M.lookup (show key) builds)
-
-getBuilds :: (MonadFail m) => Config -> m [(Version, Build)]
-getBuilds Config {builds} = traverse (\(k, v) -> (,v) <$> parseText k) (M.toList builds)
+getBuild key = findBuild key . builds
 
 instance ToJSON Config where
   toJSON = genericToJSON defaultOptions {omitNothingFields = True}

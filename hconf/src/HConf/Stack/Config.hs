@@ -15,8 +15,8 @@ where
 import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import Data.List ((\\))
 import qualified Data.Map as M
-import HConf.Config.Build (Build (..))
-import HConf.Config.Config (getBuild, getBuilds, getPackages)
+import HConf.Config.Build (Build (..), selectBuilds)
+import HConf.Config.Config (Config (builds), getBuild, getPackages)
 import HConf.Config.ConfigT (ConfigT, HCEnv (..))
 import HConf.Core.Env (Env (..))
 import HConf.Core.Version (Version (..))
@@ -52,7 +52,7 @@ updateStack :: Version -> Stack -> ConfigT Stack
 updateStack version _ = do
   config <- asks config
   Build {..} <- getBuild version config
-  extraDeps <- getExtraDeps version <$> getBuilds config
+  let extraDeps = sort $ concatMap getExtra $ selectBuilds version (builds config)
   let packages = (getPackages config <> maybeList include) \\ maybeList exclude
   pure
     Stack
@@ -62,12 +62,6 @@ updateStack version _ = do
         saveHackageCreds = Just False,
         extraDeps
       }
-
-getExtraDeps :: Version -> [(Version, Build)] -> [Text]
-getExtraDeps v = sort . concatMap (getExtra . snd) . filter (isHigher v)
-
-isHigher :: Version -> (Version, b) -> Bool
-isHigher v (k, _) = v <= k
 
 getExtra :: Build -> [Text]
 getExtra b = map printExtra $ maybe [] M.toList (extra b)

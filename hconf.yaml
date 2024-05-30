@@ -31,9 +31,9 @@ groups:
     packages:
       - hconf
 builds:
-  8.2.2:
+  - ghc: 8.2.2
     resolver: lts-11.10
-  8.4.4:
+  - ghc: 8.4.4:
     resolver: lts-12.26
     extra:
       aeson: 1.4.4.0
@@ -45,19 +45,19 @@ builds:
       retry: 0.8.1.0
       time-compat: 1.9.2.2
       websockets: 0.12.6.0
-  8.6.5:
+  - ghc: 8.6.5
     resolver: lts-14.14
     extra:
       req: 3.0.0
-  8.8.3:
+  - ghc: 8.8.3
     resolver: lts-16.2
     extra:
       prettyprinter: 1.7.0
-  8.10.7:
+  - ghc: 8.10.7:
     resolver: lts-18.10
     extra:
       graphql: 0.11.1.0
-  9.0.2:
+  - ghc: 9.0.2
     resolver: lts-19.28
     include:
       - morpheus-graphql-benchmarks
@@ -65,7 +65,7 @@ builds:
       attoparsec-aeson: 2.1.0.0
       dependent-map: 0.2.4.0
       dependent-sum: 0.4
-  latest:
+  - ghc: latest
     resolver: nightly-2024-05-29
     extra:
       fastsum: 0.1.1.1

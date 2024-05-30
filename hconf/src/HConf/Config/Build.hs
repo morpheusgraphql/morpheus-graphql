@@ -6,7 +6,10 @@
 
 module HConf.Config.Build
   ( Build (..),
+    Builds,
     checkBuild,
+    findBuild,
+    selectBuilds,
   )
 where
 
@@ -31,7 +34,8 @@ import Relude hiding
   )
 
 data Build = Build
-  { resolver :: Text,
+  { ghc :: Version,
+    resolver :: Text,
     extra :: Maybe (Map Text Version),
     include :: Maybe [Text],
     exclude :: Maybe [Text]
@@ -61,3 +65,11 @@ checkVersion (name, version) =
 
 checkBuild :: (MonadFail f, MonadIO f) => Build -> f ()
 checkBuild Build {..} = traverse_ (checkVersion . first unpack) (maybe [] M.toList extra)
+
+type Builds = [Build]
+
+findBuild :: (MonadFail m) => Version -> Builds -> m Build
+findBuild v builds = maybe (fail $ "no build found with version: " <> show v <> "!") pure (find ((== v) . ghc) builds)
+
+selectBuilds :: Version -> [Build] -> [Build]
+selectBuilds v = filter ((v <=) . ghc)

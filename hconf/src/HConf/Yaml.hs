@@ -31,7 +31,6 @@ import Data.Yaml.Pretty (defConfig, encodePretty, setConfCompare, setConfDropNul
 import HConf.Config.Config (Config, checkConfig)
 import HConf.Config.ConfigT (ConfigT (..), HCEnv (..), runConfigT)
 import HConf.Core.Env (Env (..))
-import HConf.Core.Version (Version)
 import HConf.Utils.Core (compareFields)
 import HConf.Utils.Log (alert, info, label, logFileChange, task)
 import Relude hiding (Show, Undefined, intercalate, show)
@@ -44,7 +43,7 @@ serializeYaml :: (ToJSON a) => a -> ByteString
 serializeYaml =
   encodePretty
     $ setConfDropNull True
-    $ setConfCompare (compareFields (Proxy :: Proxy Version)) defConfig
+    $ setConfCompare compareFields defConfig
 
 runSilent :: ConfigT (Maybe Config) -> Env -> IO ()
 runSilent t env@Env {..} = do
