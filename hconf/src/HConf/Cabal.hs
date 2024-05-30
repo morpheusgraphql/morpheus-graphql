@@ -57,11 +57,11 @@ stack l name options = do
   (code, _, out) <- liftIO (readProcessWithExitCode "stack" (l : (name : map ("--" <>) options)) "")
   case code of
     ExitFailure {} -> alert (l <> ": " <> concatMap noNewLine (T.unpack $ T.strip $ T.pack out))
-    ExitSuccess {} -> printWarings l (parseWarnings out)
+    ExitSuccess {} -> printWarnings l (parseWarnings out)
 
-printWarings :: String -> [(Text, [Text])] -> ConfigT ()
-printWarings name [] = field name "ok"
-printWarings name xs = task (T.pack name) $ traverse_ subWarn xs
+printWarnings :: String -> [(Text, [Text])] -> ConfigT ()
+printWarnings name [] = field name "ok"
+printWarnings name xs = task (T.pack name) $ traverse_ subWarn xs
   where
     subWarn (x, ls) =
       warn (T.unpack x)
