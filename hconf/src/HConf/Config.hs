@@ -113,9 +113,9 @@ getRule name = getDep name . dependencies
 getPackages :: Config -> [Text]
 getPackages Config {..} = concatMap toPkg groups
   where
-    toPkg PkgGroup {..} = map (pack . fullName) packages
+    toPkg PkgGroup {..} = map (pack . pkgPath) packages
       where
-        fullName name =
+        pkgPath name =
           let pkgName = intercalate "-" ([unpack group | fromMaybe False prefix] <> [unpack name | name /= "."])
            in joinPath (resolveDir dir <> [pkgName])
 
