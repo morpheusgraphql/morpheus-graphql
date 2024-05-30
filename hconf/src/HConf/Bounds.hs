@@ -7,7 +7,7 @@ module HConf.Bounds
   ( Bound (..),
     Restriction (..),
     Bounds (..),
-    genVersionBounds,
+    versionBounds,
     diff,
     printBoundParts,
     updateUpperBound,
@@ -106,8 +106,8 @@ instance FromJSON Bounds where
 instance ToJSON Bounds where
   toJSON = String . pack . toString
 
-genVersionBounds :: (MonadFail m) => Version -> m Bounds
-genVersionBounds version = do
+versionBounds :: (MonadFail m) => Version -> m Bounds
+versionBounds version = do
   upper <- nextVersion True version
   pure $ Bounds [Bound Min True (dropPatch version), Bound Max False upper]
 
