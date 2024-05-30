@@ -116,7 +116,7 @@ getPackages Config {..} = concatMap toPkg groups
     toPkg PkgGroup {..} = map (pack . fullName) packages
       where
         fullName s =
-          let pkgName = intercalate "-" ([unpack group | fromMaybe False prefix] <> [unpack s | s == "."])
+          let pkgName = intercalate "-" ([unpack group | fromMaybe False prefix] <> [unpack s | s /= "."])
            in joinPath (maybeToList dir <> [pkgName])
 
 getBuild :: (MonadFail m) => Version -> Config -> m Build
