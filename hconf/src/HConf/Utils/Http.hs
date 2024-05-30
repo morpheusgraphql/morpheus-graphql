@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HConf.Http
+module HConf.Utils.Http
   ( hackage,
   )
 where

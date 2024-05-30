@@ -17,7 +17,7 @@ import Data.Aeson.KeyMap (delete)
 import Data.Aeson.Types
 import GHC.Generics
 import HConf.Config.Config (Config (..), getRule, isLocalPackage)
-import HConf.ConfigT
+import HConf.Config.ConfigT
 import HConf.Core.Bounds (Bounds (..), diff)
 import HConf.Core.Dependencies (Dependencies, traverseDeps)
 import HConf.Utils (Name)

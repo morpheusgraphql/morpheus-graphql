@@ -5,7 +5,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HConf.ConfigT
+module HConf.Config.ConfigT
   ( ConfigT (..),
     packages,
     version,

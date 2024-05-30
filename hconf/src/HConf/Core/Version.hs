@@ -22,7 +22,7 @@ import Data.Text
     unpack,
   )
 import GHC.Show (Show (show))
-import HConf.Http (hackage)
+import HConf.Utils.Http (hackage)
 import HConf.Utils.Parse (Parse (..))
 import Relude hiding
   ( Undefined,

@@ -32,7 +32,7 @@ import qualified Data.ByteString as L
 import Data.Yaml (decodeThrow)
 import Data.Yaml.Pretty (defConfig, encodePretty, setConfCompare, setConfDropNull)
 import HConf.Config.Config (Config, checkConfig)
-import HConf.ConfigT (ConfigT (..), HCEnv (..), runConfigT)
+import HConf.Config.ConfigT (ConfigT (..), HCEnv (..), runConfigT)
 import HConf.Core.Env (Env (..))
 import HConf.Utils (compareFields, toKebabCase)
 import HConf.Utils.Log (alert, info, label, logFileChange, task)

@@ -14,9 +14,9 @@ where
 
 import HConf.Cabal (checkCabals)
 import HConf.Config.Config (Config (..), updateConfig, updateConfigUpperBounds)
-import HConf.ConfigT (HCEnv (..))
-import HConf.Core.Version (Version)
+import HConf.Config.ConfigT (HCEnv (..))
 import HConf.Core.Env (Env (..))
+import HConf.Core.Version (Version)
 import HConf.Hie (genHie)
 import HConf.Stack.Config (setupStack)
 import HConf.Stack.Package (checkPackages)

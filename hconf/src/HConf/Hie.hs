@@ -16,7 +16,7 @@ import Data.Aeson (FromJSON (..), ToJSON (..), Value (..), object)
 import qualified Data.Aeson.Key as K
 import Data.Aeson.KeyMap (KeyMap)
 import qualified Data.Aeson.KeyMap as KM
-import HConf.ConfigT (ConfigT, HCEnv (..))
+import HConf.Config.ConfigT (ConfigT, HCEnv (..))
 import HConf.Core.Env (Env (..))
 import HConf.Stack.Lib (Lib (..))
 import HConf.Stack.Package (Package (..), resolvePackages)

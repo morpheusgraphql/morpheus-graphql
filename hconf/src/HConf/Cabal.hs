@@ -14,7 +14,7 @@ import qualified Data.ByteString.Char8 as BS (unpack)
 import Data.Map (lookup)
 import qualified Data.Text as T
 import GHC.IO.Exception (ExitCode (..))
-import HConf.ConfigT (ConfigT)
+import HConf.Config.ConfigT (ConfigT)
 import HConf.Core.Version (Version)
 import HConf.Stack.Package (Package (..), resolvePackages)
 import HConf.Utils (Name)
