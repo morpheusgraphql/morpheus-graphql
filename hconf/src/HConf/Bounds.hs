@@ -82,22 +82,23 @@ upperBounds version = do
 diff :: Bounds -> Bounds -> String
 diff old deps = printBounds old <> chalk Yellow "  ->  " <> printBounds deps
 
-parseBound :: (MonadFail f) => String -> f Bound
-parseBound (h : t) = do
-  res <- parseRestriction h
-  let (isStrict, value) = parseOrEquals t
-  ver <- parse value
-  pure $ Bound res isStrict ver
-parseBound x = fail ("unsorted bound type" <> toString x)
+parseOrEquals :: [Char] -> (Bool, [Char])
+parseOrEquals ('=' : ver) = (True, ver)
+parseOrEquals ver = (False, ver)
+
+instance Parse Bound where
+  parse x = parseBound (toString x)
+    where
+      parseBound (char : str) = do
+        res <- parseRestriction char
+        let (isStrict, value) = parseOrEquals str
+        Bound res isStrict <$> parse value
+      parseBound x = fail ("unsorted bound type" <> toString x)
 
 parseRestriction :: (MonadFail f) => Char -> f Restriction
 parseRestriction '>' = pure Min -- > 0.7.0
 parseRestriction '<' = pure Max -- <  1.0.0
 parseRestriction x = fail ("unsorted bound type" <> show x)
-
-parseOrEquals :: [Char] -> (Bool, [Char])
-parseOrEquals ('=' : ver) = (True, ver)
-parseOrEquals ver = (False, ver)
 
 printBoundParts :: Bounds -> [Text]
 printBoundParts (Bounds xs) = intercalate ["&&"] $ map printBoundPart $ sort xs
