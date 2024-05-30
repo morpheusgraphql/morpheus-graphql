@@ -14,7 +14,7 @@ where
 
 import HConf.Cabal (checkCabals)
 import HConf.Config.Config (Config (..), updateConfig, updateConfigUpperBounds)
-import HConf.Config.ConfigT (HCEnv (..))
+import HConf.Config.ConfigT (HCEnv (..), run, runSilent)
 import HConf.Core.Env (Env (..))
 import HConf.Core.Version (Version)
 import HConf.Hie (genHie)
@@ -22,7 +22,6 @@ import HConf.Stack.Config (setupStack)
 import HConf.Stack.Package (checkPackages)
 import HConf.Utils.Class (Parse (..))
 import HConf.Utils.Log (log)
-import HConf.Yaml (run, runSilent)
 import Relude
 
 upperBounds :: Env -> IO ()

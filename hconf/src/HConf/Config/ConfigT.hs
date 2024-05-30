@@ -2,6 +2,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -12,17 +13,21 @@ module HConf.Config.ConfigT
     runConfigT,
     HCEnv (..),
     withConfig,
+    save,
+    run,
+    runSilent,
   )
 where
 
 import Control.Exception (tryJust)
 import Data.Kind
 import HConf.Config.Config (Config, getPackages, getVersion)
-import HConf.Core.Env (Env)
+import HConf.Core.Env (Env (..))
 import HConf.Core.Version (Version)
-import HConf.Utils.Class (HConfIO (..))
+import HConf.Utils.Class (Check (..), HConfIO (..))
 import HConf.Utils.Core (Name)
-import HConf.Utils.Log (Log (..))
+import HConf.Utils.Log (Log (..), alert, info, label, task)
+import HConf.Utils.Yaml (readYaml, writeYaml)
 import Relude
 
 data HCEnv = HCEnv
@@ -70,3 +75,26 @@ instance HConfIO ConfigT where
   eitherRead = liftIO . eitherRead
   read = liftIO . read
   write f = liftIO . write f
+
+runSilent :: ConfigT (Maybe Config) -> Env -> IO ()
+runSilent t env@Env {..} = do
+  cfg <- readYaml hconf
+  res <- runConfigT t env cfg
+  case res of
+    Left x -> alert ("ERROR: " <> x)
+    Right _ -> pure ()
+
+run :: String -> ConfigT (Maybe Config) -> Env -> IO ()
+run name t env@Env {..} = do
+  cfg <- readYaml hconf
+  check cfg
+  res <- runConfigT (label name (t >>= save)) env cfg
+  case res of
+    Left x -> alert ("ERROR: " <> x)
+    Right _ -> info "OK"
+
+save :: Maybe Config -> ConfigT ()
+save Nothing = pure ()
+save (Just cfg) = label "hconf" $ task "hconf.yaml" $ do
+  ctx <- asks id
+  writeYaml (hconf $ env ctx) cfg
