@@ -48,15 +48,14 @@ nextVersion isBreaking (Version [major, minor, revision])
 nextVersion _ v = fail $ "can't update version " <> show v
 
 instance Parse Version where
-  parse "latest" = pure LatestVersion
-  parse s =
+  parse = parseText . pack
+  parseText "latest" = pure LatestVersion
+  parseText s =
     maybe
       (fail $ "invalid version: '" <> toString s <> "'!")
       (pure . Version)
       $ traverse (readMaybe . unpack)
-      $ split (== '.')
-      $ pack
-      $ toString s
+      $ split (== '.') s
 
 instance ToString Version where
   toString (Version ns) = intercalate "." $ map show ns
@@ -69,7 +68,7 @@ instance ToText Version where
   toText = pack . toString
 
 instance FromJSON Version where
-  parseJSON (String s) = parse s
+  parseJSON (String s) = parseText s
   parseJSON (Number n) = parse (show n)
   parseJSON v = fail $ "version should be either true or string" <> show v
 

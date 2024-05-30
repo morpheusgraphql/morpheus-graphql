@@ -53,7 +53,7 @@ traverseDeps :: (Applicative f) => (Text -> Bounds -> f Bounds) -> Deps -> f Dep
 traverseDeps f (Deps xs) = Deps <$> traverseWithKey f xs
 
 parseDep :: (MonadFail m) => (Text, Text) -> m (Text, Bounds)
-parseDep (name, bounds) = (name,) <$> parse bounds
+parseDep (name, bounds) = (name,) <$> parseText bounds
 
 instance FromJSON Deps where
   parseJSON v = Deps . fromList <$> (parseJSON v >>= traverse (parseDep . breakOnSPace) . sort)

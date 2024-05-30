@@ -8,4 +8,5 @@ where
 import Relude
 
 class Parse a where
-  parse :: (ToString t, IsString t, Eq t, MonadFail m) => t -> m a
+  parse :: (MonadFail m) => String -> m a
+  parseText :: (MonadFail m) => Text -> m a

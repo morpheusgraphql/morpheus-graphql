@@ -38,7 +38,7 @@ import HConf.Bounds (Bounds (..), Restriction (..), getBound, upperBounds)
 import HConf.Deps (Deps, getBounds, traverseDeps)
 import HConf.Http (fetchVersions, getLatestBound)
 import HConf.Log (Log (..), field)
-import HConf.Parse (parse)
+import HConf.Parse (Parse (..))
 import HConf.Utils (Name)
 import HConf.Version
   ( Version,
@@ -118,7 +118,7 @@ getBuild :: (MonadFail m) => Version -> Config -> m Build
 getBuild key Config {builds} = maybe (fail "invalid version") pure (M.lookup (show key) builds)
 
 getBuilds :: (MonadFail m) => Config -> m [(Version, Build)]
-getBuilds Config {builds} = traverse (\(k, v) -> (,v) <$> parse k) (M.toList builds)
+getBuilds Config {builds} = traverse (\(k, v) -> (,v) <$> parseText k) (M.toList builds)
 
 instance ToJSON Config where
   toJSON = genericToJSON defaultOptions {omitNothingFields = True}

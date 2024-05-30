@@ -76,26 +76,24 @@ printBoundPart :: Bound -> [Text]
 printBoundPart Bound {..} = pack (toString restriction <> if orEquals then "=" else "") : [toText version]
 
 instance Parse Bound where
-  parse = parseBound . toString
-    where
-      parseBound (char : str) = do
-        res <- parseRestriction char
-        let (isStrict, value) = parseOrEquals str
-        Bound res isStrict <$> parse value
-      parseBound x = fail ("unsorted bound type" <> toString x)
+  parseText = parse . T.unpack
+  parse (char : str) = do
+    res <- parseRestriction char
+    let (isStrict, value) = parseOrEquals str
+    Bound res isStrict <$> parse value
+  parse x = fail ("unsorted bound type" <> toString x)
 
 newtype Bounds = Bounds [Bound]
   deriving (Generic, Show, Eq)
 
 instance Parse Bounds where
-  parse input
+  parse = parseText . pack
+  parseText str
     | null str = pure $ Bounds []
-    | otherwise = Bounds <$> traverse parse (T.splitOn "&&" $ T.filter (not . isSeparator) str)
-    where
-      str = pack $ toString input
+    | otherwise = Bounds <$> traverse parseText (T.splitOn "&&" $ T.filter (not . isSeparator) str)
 
 instance FromJSON Bounds where
-  parseJSON (String s) = parse s
+  parseJSON (String s) = parseText s
   parseJSON v = fail $ "version should be either true or string" <> show v
 
 instance ToJSON Bounds where

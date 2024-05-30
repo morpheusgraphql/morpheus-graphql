@@ -17,7 +17,7 @@ import GHC.IO.Exception (ExitCode (..))
 import HConf.ConfigT (ConfigT)
 import HConf.Log (alert, field, label, task, warn)
 import HConf.Package (Package (..), resolvePackages)
-import HConf.Parse (parse)
+import HConf.Parse (Parse (..))
 import HConf.Utils (Name)
 import HConf.Version (Version)
 import HConf.Yaml (read)
@@ -44,7 +44,7 @@ getCabalFields path pkgName = do
   bs <- read (path <> "/" <> T.unpack pkgName <> ".cabal")
   let fields = parseFields bs
   name <- getField "name" fields
-  version <- getField "version" fields >>= parse
+  version <- getField "version" fields >>= parseText
   field (T.unpack name) (show version)
   pure (name, version)
 

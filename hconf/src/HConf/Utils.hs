@@ -69,7 +69,7 @@ mapTuple :: (Text -> a) -> TupleRes a
 mapTuple f = bimap f f
 
 parseVersions :: TupleRes (Maybe Version)
-parseVersions = mapTuple parse
+parseVersions = mapTuple parseText
 
 compareFieldNames :: (Text, Text) -> Ordering
 compareFieldNames t = case mapTuple getIndex t of
