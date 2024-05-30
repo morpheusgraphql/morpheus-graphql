@@ -82,7 +82,4 @@ checkPackage :: Name -> ConfigT ()
 checkPackage name = task name $ rewriteYaml (toPath name) updatePackage
 
 checkPackages :: ConfigT ()
-checkPackages =
-  label "packages"
-    $ packages
-    >>= traverse_ checkPackage
+checkPackages = label "packages" $ packages >>= traverse_ checkPackage
