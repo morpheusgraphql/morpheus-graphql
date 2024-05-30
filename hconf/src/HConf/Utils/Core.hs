@@ -9,14 +9,22 @@ module HConf.Utils.Core
     toKebabCase,
     Name,
     tupled,
+    aesonYAMLOptions,
   )
 where
 
+import Data.Aeson
+  ( Options (..),
+    defaultOptions,
+  )
 import Data.Char (isUpper, toLower)
 import Data.List (elemIndex)
 import Data.Text (toTitle)
 import HConf.Utils.Parse (Parse (..))
 import Relude hiding (Undefined, intercalate)
+
+aesonYAMLOptions :: Options
+aesonYAMLOptions = defaultOptions {fieldLabelModifier = toKebabCase}
 
 type Name = Text
 

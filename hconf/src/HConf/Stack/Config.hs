@@ -20,9 +20,9 @@ import HConf.Config.Config (getBuild, getBuilds, getPackages)
 import HConf.Config.ConfigT (ConfigT, HCEnv (..))
 import HConf.Core.Env (Env (..))
 import HConf.Core.Version (Version (..))
-import HConf.Utils.Core (Name, maybeList)
+import HConf.Utils.Core (Name, aesonYAMLOptions, maybeList)
 import HConf.Utils.Log (label, task)
-import HConf.Yaml (aesonYAMLOptions, rewriteYaml)
+import HConf.Yaml (rewriteYaml)
 import Relude
 
 data Stack = Stack

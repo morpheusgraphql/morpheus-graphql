@@ -20,9 +20,8 @@ import HConf.Config.Config (Config (..), getRule, isLocalPackage)
 import HConf.Config.ConfigT
 import HConf.Core.Bounds (Bounds (..), diff)
 import HConf.Core.Dependencies (Dependencies, traverseDeps)
-import HConf.Utils.Core (Name)
+import HConf.Utils.Core (Name, aesonYAMLOptions)
 import HConf.Utils.Log
-import HConf.Yaml (aesonYAMLOptions)
 import Relude hiding
   ( Undefined,
     break,

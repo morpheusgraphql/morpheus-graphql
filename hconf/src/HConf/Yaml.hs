@@ -7,7 +7,6 @@
 module HConf.Yaml
   ( readYaml,
     writeYaml,
-    aesonYAMLOptions,
     rewriteYaml,
     run,
     IOAction (..),
@@ -102,9 +101,6 @@ instance (ToJSON t) => ToJSON (Yaml t) where
 toObject :: Value -> Object
 toObject (Object x) = x
 toObject _ = mempty
-
-aesonYAMLOptions :: Options
-aesonYAMLOptions = defaultOptions {fieldLabelModifier = toKebabCase}
 
 mapYamlM :: (Functor m) => (t -> m t) -> Yaml t -> m (Yaml t)
 mapYamlM f (Yaml v props) = (`Yaml` props) <$> f v
