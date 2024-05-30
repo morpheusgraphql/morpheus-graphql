@@ -17,6 +17,7 @@ module HConf.Version
     getBound,
     Restriction (..),
     Bound (..),
+    upperBounds,
   )
 where
 
@@ -135,6 +136,11 @@ instance Ord Version where
 
 newtype Bounds = Bounds [Bound]
   deriving (Generic, Show, Eq)
+
+upperBounds :: (MonadFail m) => Version -> m Bounds
+upperBounds version = do
+  upper <- nextVersion True version
+  pure $ Bounds [Bound Min True version, Bound Max False upper]
 
 diff :: Bounds -> Bounds -> String
 diff old deps = printBounds old <> chalk Yellow "  ->  " <> printBounds deps

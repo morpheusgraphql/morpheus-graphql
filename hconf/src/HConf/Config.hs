@@ -38,8 +38,7 @@ import HConf.Http (fetchVersions, getLatestBound)
 import HConf.Log (Log (..), field)
 import HConf.Utils (Name)
 import HConf.Version
-  ( Bound (Bound),
-    Bounds (..),
+  ( Bounds (..),
     Deps,
     Restriction (..),
     Version,
@@ -48,6 +47,7 @@ import HConf.Version
     nextVersion,
     parse,
     traverseDeps,
+    upperBounds,
   )
 import Relude hiding
   ( Undefined,
@@ -151,14 +151,13 @@ checkConfig Config {..} = traverse_ checkBuild (toList builds)
 updateConfig :: (MonadFail m, MonadIO m) => Bool -> Config -> m Config
 updateConfig isBreaking Config {..} = do
   version' <- nextVersion isBreaking version
-  bounds' <- updateBounds version'
+  bounds' <- updateBounds version' isBreaking bounds
   pure Config {version = version', bounds = bounds', ..}
-  where
-    updateBounds next
-      | isBreaking = do
-          upper <- nextVersion True next
-          pure $ Bounds [Bound Min True next, Bound Max False upper]
-      | otherwise = pure bounds
+
+updateBounds :: (MonadFail m) => Version -> Bool -> Bounds -> m Bounds
+updateBounds v isBreaking bounds
+  | isBreaking = upperBounds v
+  | otherwise = pure bounds
 
 updateConfigUpperBounds :: (MonadFail m, MonadIO m, Log m) => Config -> m Config
 updateConfigUpperBounds Config {..} = do
