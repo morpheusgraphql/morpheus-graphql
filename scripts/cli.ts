@@ -1,5 +1,5 @@
 import { github } from "./lib/gh";
-import { exit, hconf, setOutput, write } from "./lib/utils";
+import { exit, write } from "./lib/utils";
 import { changelog } from "./lib/changelog";
 
 import { Command } from "commander";
@@ -26,10 +26,6 @@ release
       .then(preview ? () => Promise.resolve() : github.release)
       .catch(exit)
   );
-
-release
-  .command("describe")
-  .action(() => hconf("version").then(setOutput("version")).catch(exit));
 
 release
   .command("changelog")
