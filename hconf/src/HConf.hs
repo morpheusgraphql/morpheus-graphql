@@ -21,7 +21,6 @@ import HConf.Hie (genHie)
 import HConf.Stack.Config (setupStack)
 import HConf.Stack.Package (checkPackages)
 import HConf.Utils.Class (Parse (..))
-import HConf.Utils.Log (log)
 import Relude
 
 upperBounds :: Env -> IO ()
@@ -43,4 +42,4 @@ updateVersion isBreaking = runGroup "next" $ do
   pure (Just newConfig)
 
 getVersion :: Env -> IO ()
-getVersion = run (Just . toString . version <$> asks config)
+getVersion = run (Just . version <$> asks config)
