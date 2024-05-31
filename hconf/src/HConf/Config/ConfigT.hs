@@ -17,7 +17,6 @@ module HConf.Config.ConfigT
 where
 
 import Control.Exception (tryJust)
-import Data.Kind
 import HConf.Config.Config (Config, getPackages)
 import HConf.Core.Env (Env (..))
 import HConf.Utils.Chalk (Color (Green), chalk)
