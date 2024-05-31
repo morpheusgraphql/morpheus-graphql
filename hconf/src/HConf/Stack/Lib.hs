@@ -32,7 +32,7 @@ import HConf.Config.ConfigT (ConfigT, HCEnv (config))
 import HConf.Core.Bounds (Bounds (..), diff)
 import HConf.Core.Dependencies (Dependencies, traverseDeps)
 import HConf.Utils.Core (Name, aesonYAMLOptions)
-import HConf.Utils.Log
+import HConf.Utils.Log (field)
 import Relude hiding
   ( Undefined,
     break,
