@@ -78,16 +78,12 @@ instance HConfIO ConfigT where
   write f = liftIO . write f
 
 run :: (ToString a) => ConfigT (Maybe a) -> Env -> IO ()
-run action env@Env {..} = do
+run m env@Env {..} = do
   cfg <- readYaml hconf
-  runConfigT action env cfg >>= handle
+  runConfigT (asks config >>= check >> m) env cfg >>= handle
 
-runGroup :: String -> ConfigT (Maybe Config) -> Env -> IO ()
-runGroup name action =
-  run
-    ( label name (asks config >>= check >> action >>= save)
-        $> Just (chalk Green "Ok")
-    )
+runGroup :: String -> ConfigT () -> Env -> IO ()
+runGroup name m = run (label name m $> Just (chalk Green "Ok"))
 
 handle :: (ToString a) => (Log m, Monad m) => Either String (Maybe a) -> m ()
 handle res = case res of
@@ -95,8 +91,7 @@ handle res = case res of
   (Right Nothing) -> pure ()
   (Right (Just msg)) -> log (toString msg)
 
-save :: Maybe Config -> ConfigT ()
-save Nothing = pure ()
-save (Just cfg) = label "hconf" $ task "hconf.yaml" $ do
+save :: Config -> ConfigT ()
+save cfg = label "save" $ task "hconf.yaml" $ do
   ctx <- asks id
   writeYaml (hconf $ env ctx) cfg
