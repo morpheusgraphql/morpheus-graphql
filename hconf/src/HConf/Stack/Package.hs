@@ -22,7 +22,7 @@ import HConf.Core.Version (Version)
 import HConf.Stack.Cabal (checkCabal)
 import HConf.Stack.Lib (Library, updateDependencies, updateLib)
 import HConf.Utils.Core (Name, aesonYAMLOptions, tupled)
-import HConf.Utils.Log (label, task)
+import HConf.Utils.Log (label, subTask, task)
 import HConf.Utils.Yaml (readYaml, rewriteYaml)
 import Relude hiding (Undefined, length, replicate)
 
@@ -79,7 +79,7 @@ updatePackage Package {..} = do
 checkPackage :: Name -> ConfigT ()
 checkPackage path =
   task path $ do
-    Package {..} <- task "package" $ rewriteYaml (toPath path) updatePackage
+    Package {..} <- subTask "package" $ rewriteYaml (toPath path) updatePackage
     checkCabal path name version
 
 checkPackages :: ConfigT ()

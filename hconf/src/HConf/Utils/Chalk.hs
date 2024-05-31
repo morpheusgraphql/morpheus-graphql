@@ -10,6 +10,7 @@ data Color
   | Yellow
   | Gray
   | Magenta
+  | Cyan
   | None
 
 toColor :: Color -> String
@@ -22,6 +23,7 @@ colorCode Yellow = 33
 colorCode Gray = 90
 colorCode Magenta = 95
 colorCode None = 0
+colorCode Cyan = 36
 
 chalk :: Color -> String -> String
 chalk c x = toColor c <> x <> toColor None

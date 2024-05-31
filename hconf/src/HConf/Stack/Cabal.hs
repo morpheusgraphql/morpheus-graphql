@@ -17,7 +17,7 @@ import HConf.Config.ConfigT (ConfigT)
 import HConf.Core.Version (Version)
 import HConf.Utils.Class (HConfIO (..), Parse (..))
 import HConf.Utils.Core (Name)
-import HConf.Utils.Log (alert, field, task, warn)
+import HConf.Utils.Log (alert, field, subTask, task, warn)
 import Relude
 import System.Process
 
@@ -86,7 +86,7 @@ buildCabal name = do
   stack "sdist" name []
 
 checkCabal :: Name -> Name -> Version -> ConfigT ()
-checkCabal path name version = task "cabal" $ do
+checkCabal path name version = subTask "cabal" $ do
   buildCabal (T.unpack path)
   (pkgName, pkgVersion) <- getCabalFields (T.unpack path) name
   if pkgVersion == version && pkgName == name then pure () else fail (T.unpack path <> "mismatching version or name")
