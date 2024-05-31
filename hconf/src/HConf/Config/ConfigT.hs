@@ -53,9 +53,6 @@ runConfigT (ConfigT (ReaderT f)) env config = tryJust (Just . printException) (f
 packages :: ConfigT [Name]
 packages = getPackages <$> asks config
 
-withConfig :: (Config -> t -> ConfigT t') -> t -> ConfigT t'
-withConfig f t = asks config >>= flip f t
-
 indent :: Int -> String
 indent i = replicate (i * 2) ' '
 
