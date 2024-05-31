@@ -25,7 +25,7 @@ import HConf.Config.Build (Build, Builds, findBuild)
 import HConf.Config.PkgGroup (PkgGroup, isMember, toPackageName)
 import HConf.Core.Bounds (Bounds, updateUpperBound, versionBounds)
 import HConf.Core.Dependencies (Dependencies, getBounds, traverseDeps)
-import HConf.Core.Version (Version, nextVersion)
+import HConf.Core.Version (Version, VersionNumber, nextVersion)
 import HConf.Utils.Class (Check (check))
 import HConf.Utils.Log (Log (..))
 import Relude hiding
@@ -36,7 +36,7 @@ import Relude hiding
   )
 
 data Config = Config
-  { version :: Version,
+  { version :: VersionNumber,
     bounds :: Bounds,
     groups :: [PkgGroup],
     builds :: Builds,

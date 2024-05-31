@@ -7,6 +7,7 @@ module HConf.Core.Version
     nextVersion,
     dropPatch,
     fetchVersions,
+    VersionNumber,
   )
 where
 
@@ -79,6 +80,14 @@ instance Show VersionNumber where
 instance ToText VersionNumber where
   toText = pack . toString
 
+instance FromJSON VersionNumber where
+  parseJSON (String s) = parseText s
+  parseJSON (Number n) = parse (show n)
+  parseJSON v = fail $ "version should be either true or string" <> show v
+
+instance ToJSON VersionNumber where
+  toJSON = String . toText
+
 data Version
   = Version VersionNumber
   | LatestVersion
@@ -108,7 +117,7 @@ instance FromJSON Version where
   parseJSON v = fail $ "version should be either true or string" <> show v
 
 instance ToJSON Version where
-  toJSON = String . pack . show
+  toJSON = String . toText
 
 instance Ord Version where
   compare LatestVersion LatestVersion = EQ
@@ -116,12 +125,12 @@ instance Ord Version where
   compare (Version _) LatestVersion = LT
   compare (Version v1) (Version v2) = compare v1 v2
 
-fetchVersionResponse :: (MonadIO m, MonadFail m) => String -> m (Either String (Map Text (NonEmpty Version)))
+fetchVersionResponse :: (MonadIO m, MonadFail m) => String -> m (Either String (Map Text (NonEmpty VersionNumber)))
 fetchVersionResponse name = hackage ["package", name, "preferred"]
 
-lookupVersions :: (MonadFail m) => Either String (Map Text (NonEmpty Version)) -> m (NonEmpty Version)
+lookupVersions :: (MonadFail m) => Either String (Map Text (NonEmpty VersionNumber)) -> m (NonEmpty VersionNumber)
 lookupVersions (Right x) = maybe (fail "field normal-version not found") pure (lookup "normal-version" x)
 lookupVersions (Left x) = fail x
 
-fetchVersions :: (MonadFail m, MonadIO m) => String -> m (NonEmpty Version)
+fetchVersions :: (MonadFail m, MonadIO m) => String -> m (NonEmpty VersionNumber)
 fetchVersions name = fetchVersionResponse name >>= lookupVersions

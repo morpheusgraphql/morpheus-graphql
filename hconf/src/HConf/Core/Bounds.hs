@@ -27,7 +27,7 @@ import Data.Text
   )
 import qualified Data.Text as T
 import GHC.Show (Show (show))
-import HConf.Core.Version (Version (..), dropPatch, fetchVersions, nextVersion)
+import HConf.Core.Version (VersionNumber, dropPatch, fetchVersions, nextVersion)
 import HConf.Utils.Chalk (Color (Yellow), chalk)
 import HConf.Utils.Class (Parse (..))
 import HConf.Utils.Core (Name)
@@ -61,7 +61,7 @@ instance ToText Restriction where
 data Bound = Bound
   { restriction :: Restriction,
     orEquals :: Bool,
-    version :: Version
+    version :: VersionNumber
   }
   deriving (Show, Eq)
 
@@ -105,7 +105,7 @@ instance FromJSON Bounds where
 instance ToJSON Bounds where
   toJSON = String . pack . toString
 
-versionBounds :: (MonadFail m) => Version -> m Bounds
+versionBounds :: (MonadFail m) => VersionNumber -> m Bounds
 versionBounds version = do
   upper <- nextVersion True version
   pure $ Bounds [Bound Min True (dropPatch version), Bound Max False upper]
