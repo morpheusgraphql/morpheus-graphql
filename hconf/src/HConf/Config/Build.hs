@@ -62,7 +62,6 @@ type Builds = [Build]
 findBuild :: (MonadFail m) => VersionTag -> Builds -> m Build
 findBuild v builds = maybe (fail $ "no build found with version: " <> show v <> "!") pure (find ((== v) . ghc) builds)
 
-
 selectBuilds :: VersionTag -> [Build] -> [Build]
 selectBuilds v = sortBy (\a b -> compare (ghc b) (ghc a)) . filter ((v <=) . ghc)
 

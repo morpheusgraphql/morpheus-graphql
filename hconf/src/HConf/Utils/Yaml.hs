@@ -27,9 +27,9 @@ import Prelude (Show (..))
 
 serializeYaml :: (ToJSON a) => a -> ByteString
 serializeYaml =
-  encodePretty
-    $ setConfDropNull True
-    $ setConfCompare compareFields defConfig
+  encodePretty $
+    setConfDropNull True $
+      setConfCompare compareFields defConfig
 
 readYaml :: (FromJSON a, HConfIO m) => FilePath -> m a
 readYaml = read >=> (liftIO . decodeThrow)

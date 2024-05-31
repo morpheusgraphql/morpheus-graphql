@@ -17,9 +17,9 @@ getSizes xs = map size (transpose xs)
 
 printRow :: [Int] -> [Text] -> Text
 printRow sizes ls =
-  T.strip
-    $ T.intercalate "  "
-    $ zipWith (\item s -> T.justifyLeft s ' ' item) ls sizes
+  T.strip $
+    T.intercalate "  " $
+      zipWith (\item s -> T.justifyLeft s ' ' item) ls sizes
 
 formatTable :: Table -> [Text]
 formatTable deps = sort $ map (printRow (getSizes deps)) deps

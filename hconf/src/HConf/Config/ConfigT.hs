@@ -32,8 +32,7 @@ data HCEnv = HCEnv
     indention :: Int
   }
 
-newtype ConfigT (a :: Type)
-  = ConfigT {_runConfigT :: ReaderT HCEnv IO a}
+newtype ConfigT (a :: Type) = ConfigT {_runConfigT :: ReaderT HCEnv IO a}
   deriving
     ( Functor,
       Applicative,

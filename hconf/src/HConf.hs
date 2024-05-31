@@ -24,10 +24,10 @@ import Relude
 
 upperBounds :: Env -> IO ()
 upperBounds =
-  runTask "upper-bounds"
-    $ asks config
-    >>= updateConfigUpperBounds
-    >>= save
+  runTask "upper-bounds" $
+    asks config
+      >>= updateConfigUpperBounds
+      >>= save
 
 setup :: String -> Env -> IO ()
 setup v = runTask "setup" $ do
@@ -37,10 +37,10 @@ setup v = runTask "setup" $ do
 
 updateVersion :: Bool -> Env -> IO ()
 updateVersion isBreaking =
-  runTask "next"
-    $ asks config
-    >>= updateConfig isBreaking
-    >>= save
+  runTask "next" $
+    asks config
+      >>= updateConfig isBreaking
+      >>= save
 
 getVersion :: Env -> IO ()
 getVersion = run (Just . version <$> asks config)
