@@ -14,7 +14,7 @@ where
 
 import HConf.Cabal (checkCabals)
 import HConf.Config.Config (Config (..), updateConfig, updateConfigUpperBounds)
-import HConf.Config.ConfigT (HCEnv (..), run, runGroup, save)
+import HConf.Config.ConfigT (HCEnv (..), run, runTask, save)
 import HConf.Core.Env (Env (..))
 import HConf.Core.Version (Version)
 import HConf.Hie (genHie)
@@ -25,13 +25,13 @@ import Relude
 
 upperBounds :: Env -> IO ()
 upperBounds =
-  runGroup "upper-bounds"
+  runTask "upper-bounds"
     $ asks config
     >>= updateConfigUpperBounds
     >>= save
 
 setup :: String -> Env -> IO ()
-setup v = runGroup "setup" $ do
+setup v = runTask "setup" $ do
   parse v >>= setupStack
   genHie
   checkPackages
@@ -39,7 +39,7 @@ setup v = runGroup "setup" $ do
 
 updateVersion :: Bool -> Env -> IO ()
 updateVersion isBreaking =
-  runGroup "next"
+  runTask "next"
     $ asks config
     >>= updateConfig isBreaking
     >>= save

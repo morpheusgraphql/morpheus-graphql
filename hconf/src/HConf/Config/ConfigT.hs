@@ -15,7 +15,7 @@ module HConf.Config.ConfigT
     withConfig,
     save,
     run,
-    runGroup,
+    runTask,
   )
 where
 
@@ -82,8 +82,8 @@ run m env@Env {..} = do
   cfg <- readYaml hconf
   runConfigT (asks config >>= check >> m) env cfg >>= handle
 
-runGroup :: String -> ConfigT () -> Env -> IO ()
-runGroup name m = run (label name m $> Just (chalk Green "Ok"))
+runTask :: String -> ConfigT () -> Env -> IO ()
+runTask name m = run (label name m $> Just (chalk Green "Ok"))
 
 handle :: (ToString a) => (Log m, Monad m) => Either String (Maybe a) -> m ()
 handle res = case res of
