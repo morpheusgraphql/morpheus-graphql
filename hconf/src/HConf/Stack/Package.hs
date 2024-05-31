@@ -76,11 +76,19 @@ updatePackage Package {..} = do
         ..
       }
 
+rewritePackage :: Name -> ConfigT Package
+rewritePackage path =
+  subTask "package"
+    $ rewriteYaml (toPath path) updatePackage
+
 checkPackage :: Name -> ConfigT ()
 checkPackage path =
   task path $ do
-    Package {..} <- subTask "package" $ rewriteYaml (toPath path) updatePackage
+    Package {..} <- rewritePackage path
     checkCabal path name version
 
 checkPackages :: ConfigT ()
-checkPackages = label "packages" $ packages >>= traverse_ checkPackage
+checkPackages =
+  label "packages"
+    $ packages
+    >>= traverse_ checkPackage
