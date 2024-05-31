@@ -1,6 +1,5 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
@@ -12,7 +11,7 @@ module HConf.Config.Config
     getRule,
     updateConfig,
     updateConfigUpperBounds,
-    isLocalPackage,
+    localPkgBounds,
   )
 where
 
@@ -40,8 +39,10 @@ import Relude hiding
     isPrefixOf,
   )
 
-isLocalPackage :: Name -> Config -> Bool
-isLocalPackage name Config {groups} = any (isMember name) groups
+localPkgBounds :: Name -> Config -> Maybe Bounds
+localPkgBounds name Config {..}
+  | any (isMember name) groups = Just bounds
+  | otherwise = Nothing
 
 data Config = Config
   { version :: Version,

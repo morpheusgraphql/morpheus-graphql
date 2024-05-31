@@ -16,7 +16,7 @@ where
 import Data.Aeson.KeyMap (delete)
 import Data.Aeson.Types
 import GHC.Generics
-import HConf.Config.Config (Config (..), getRule, isLocalPackage)
+import HConf.Config.Config (getRule, localPkgBounds)
 import HConf.Config.ConfigT
 import HConf.Core.Bounds (Bounds (..), diff)
 import HConf.Core.Dependencies (Dependencies, traverseDeps)
@@ -66,13 +66,14 @@ withRule name old deps =
   when (old /= deps) (field (toString name) (diff old deps))
     $> deps
 
-updateDependency :: Config -> (Name, Bounds) -> ConfigT Bounds
-updateDependency config@Config {bounds} (name, oldBounds)
-  | isLocalPackage name config = withRule name oldBounds bounds
-  | otherwise = getRule name config >>= withRule name oldBounds
+updateDependency :: Name -> Bounds -> ConfigT Bounds
+updateDependency name oldBounds = do
+  cgf <- asks config
+  bounds <- maybe (getRule name cgf) pure (localPkgBounds name cgf)
+  withRule name oldBounds bounds
 
 updateDependencies :: Dependencies -> ConfigT Dependencies
-updateDependencies = traverseDeps (curry (withConfig updateDependency))
+updateDependencies = traverseDeps updateDependency
 
 updateLib :: Library -> ConfigT Library
 updateLib Library {..} = do

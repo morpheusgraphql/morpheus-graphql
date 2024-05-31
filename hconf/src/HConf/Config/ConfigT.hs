@@ -10,7 +10,6 @@ module HConf.Config.ConfigT
   ( ConfigT (..),
     packages,
     HCEnv (..),
-    withConfig,
     save,
     run,
     runTask,
