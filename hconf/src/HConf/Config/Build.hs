@@ -60,11 +60,12 @@ type Builds = [Build]
 findBuild :: (MonadFail m) => VersionTag -> Builds -> m Build
 findBuild v builds = maybe (fail $ "no build found with version: " <> show v <> "!") pure (find ((== v) . ghc) builds)
 
-selectBuilds :: VersionTag -> [Build] -> [Build]
-selectBuilds v = sortBy (\a b -> compare (ghc a) (ghc b)) . filter ((v <=) . ghc)
 
-getExtras :: VersionTag -> [Build] -> [(Text, Version)]
-getExtras version = concatMap getExtra . selectBuilds version . traceShowId
+selectBuilds :: VersionTag -> [Build] -> [Build]
+selectBuilds v = sortBy (\a b -> compare (ghc b) (ghc a)) . filter ((v <=) . ghc)
+
+getExtras :: VersionTag -> [Build] -> Map Text Version
+getExtras version = M.fromList . concatMap getExtra . selectBuilds version
 
 getExtra :: Build -> [(Text, Version)]
 getExtra b = maybe [] M.toList (extra b)

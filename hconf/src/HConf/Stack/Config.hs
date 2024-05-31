@@ -14,6 +14,7 @@ where
 
 import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import Data.List ((\\))
+import qualified Data.Map as M
 import HConf.Config.Build (Build (..), getExtras)
 import HConf.Config.Config (Config (builds), getBuild, getPackages)
 import HConf.Config.ConfigT (ConfigT, HCEnv (..))
@@ -59,7 +60,7 @@ updateStack version _ = do
         resolver,
         allowNewer = Just (Latest == version),
         saveHackageCreds = Just False,
-        extraDeps = sort $ map printExtra $ getExtras version $ builds config
+        extraDeps = sort $ map printExtra $ M.toList $ getExtras version $ builds config
       }
 
 printExtra :: (Text, Version) -> Text
