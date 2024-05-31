@@ -20,7 +20,7 @@ import HConf.Config.Config (Config (builds), getBuild, getPackages)
 import HConf.Config.ConfigT (ConfigT, HCEnv (..))
 import HConf.Config.VersionTag (VersionTag (..))
 import HConf.Core.Env (Env (..))
-import HConf.Core.Version (VersionNumber)
+import HConf.Core.Version (Version)
 import HConf.Utils.Core (Name, aesonYAMLOptions, maybeList)
 import HConf.Utils.Log (label, task)
 import HConf.Utils.Yaml (rewriteYaml)
@@ -66,5 +66,5 @@ updateStack version _ = do
 getExtra :: Build -> [Text]
 getExtra b = map printExtra $ maybe [] M.toList (extra b)
 
-printExtra :: (Text, VersionNumber) -> Text
+printExtra :: (Text, Version) -> Text
 printExtra (k, ver) = k <> "-" <> show ver

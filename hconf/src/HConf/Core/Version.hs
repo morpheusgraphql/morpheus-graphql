@@ -6,7 +6,7 @@ module HConf.Core.Version
   ( nextVersion,
     dropPatch,
     fetchVersions,
-    VersionNumber,
+    Version,
   )
 where
 
@@ -36,20 +36,20 @@ import Relude hiding
     toList,
   )
 
-newtype VersionNumber = VersionNumber [Int]
+newtype Version = Version [Int]
   deriving
     ( Generic,
       Eq
     )
 
-nextVersion :: (MonadFail m) => Bool -> VersionNumber -> m VersionNumber
-nextVersion isBreaking (VersionNumber [major, minor, revision])
-  | isBreaking = pure $ VersionNumber [major, minor + 1, 0]
-  | otherwise = pure $ VersionNumber [major, minor, revision + 1]
+nextVersion :: (MonadFail m) => Bool -> Version -> m Version
+nextVersion isBreaking (Version [major, minor, revision])
+  | isBreaking = pure $ Version [major, minor + 1, 0]
+  | otherwise = pure $ Version [major, minor, revision + 1]
 nextVersion _ v = fail $ "can't update version " <> show v
 
-dropPatch :: VersionNumber -> VersionNumber
-dropPatch (VersionNumber xs) = VersionNumber (take 2 xs <> [0])
+dropPatch :: Version -> Version
+dropPatch (Version xs) = Version (take 2 xs <> [0])
 
 compareSeries :: (Ord a) => [a] -> [a] -> Ordering
 compareSeries [] _ = EQ
@@ -58,41 +58,41 @@ compareSeries (x : xs) (y : ys)
   | x == y = compareSeries xs ys
   | otherwise = compare x y
 
-instance Parse VersionNumber where
+instance Parse Version where
   parse = parseText . pack
   parseText s =
     maybe
       (fail $ "invalid version: '" <> toString s <> "'!")
-      (pure . VersionNumber)
+      (pure . Version)
       $ traverse (readMaybe . unpack)
       $ split (== '.') s
 
-instance ToString VersionNumber where
-  toString (VersionNumber ns) = intercalate "." $ map show ns
+instance ToString Version where
+  toString (Version ns) = intercalate "." $ map show ns
 
-instance Ord VersionNumber where
-  compare (VersionNumber v1) (VersionNumber v2) = compareSeries v1 v2
+instance Ord Version where
+  compare (Version v1) (Version v2) = compareSeries v1 v2
 
-instance Show VersionNumber where
+instance Show Version where
   show = toString
 
-instance ToText VersionNumber where
+instance ToText Version where
   toText = pack . toString
 
-instance FromJSON VersionNumber where
+instance FromJSON Version where
   parseJSON (String s) = parseText s
   parseJSON (Number n) = parse (show n)
   parseJSON v = fail $ "version should be either true or string" <> show v
 
-instance ToJSON VersionNumber where
+instance ToJSON Version where
   toJSON = String . toText
 
-fetchVersionResponse :: (MonadIO m, MonadFail m) => String -> m (Either String (Map Text (NonEmpty VersionNumber)))
+fetchVersionResponse :: (MonadIO m, MonadFail m) => String -> m (Either String (Map Text (NonEmpty Version)))
 fetchVersionResponse name = hackage ["package", name, "preferred"]
 
-lookupVersions :: (MonadFail m) => Either String (Map Text (NonEmpty VersionNumber)) -> m (NonEmpty VersionNumber)
+lookupVersions :: (MonadFail m) => Either String (Map Text (NonEmpty Version)) -> m (NonEmpty Version)
 lookupVersions (Right x) = maybe (fail "field normal-version not found") pure (lookup "normal-version" x)
 lookupVersions (Left x) = fail x
 
-fetchVersions :: (MonadFail m, MonadIO m) => String -> m (NonEmpty VersionNumber)
+fetchVersions :: (MonadFail m, MonadIO m) => String -> m (NonEmpty Version)
 fetchVersions name = fetchVersionResponse name >>= lookupVersions

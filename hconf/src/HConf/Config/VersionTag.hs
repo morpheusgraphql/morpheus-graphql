@@ -14,12 +14,12 @@ import Data.Aeson
   )
 import Data.Text (pack)
 import GHC.Show (Show (show))
-import HConf.Core.Version (VersionNumber)
+import HConf.Core.Version (Version)
 import HConf.Utils.Class (Parse (..))
 import Relude hiding (show)
 
 data VersionTag
-  = Version VersionNumber
+  = Version Version
   | LatestVersion
   deriving
     ( Generic,

@@ -25,7 +25,7 @@ import Data.List (intercalate)
 import qualified Data.Map as M
 import Data.Text (unpack)
 import HConf.Config.VersionTag (VersionTag)
-import HConf.Core.Version (VersionNumber, fetchVersions)
+import HConf.Core.Version (Version, fetchVersions)
 import HConf.Utils.Class (Check (..))
 import Relude hiding
   ( Undefined,
@@ -37,7 +37,7 @@ import Relude hiding
 data Build = Build
   { ghc :: VersionTag,
     resolver :: Text,
-    extra :: Maybe (Map Text VersionNumber),
+    extra :: Maybe (Map Text Version),
     include :: Maybe [Text],
     exclude :: Maybe [Text]
   }
@@ -50,7 +50,7 @@ data Build = Build
 instance ToJSON Build where
   toJSON = genericToJSON defaultOptions {omitNothingFields = True}
 
-checkVersion :: (MonadFail m, MonadIO m) => (String, VersionNumber) -> m ()
+checkVersion :: (MonadFail m, MonadIO m) => (String, Version) -> m ()
 checkVersion (name, version) =
   fetchVersions name
     >>= \vs ->

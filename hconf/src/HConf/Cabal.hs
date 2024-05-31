@@ -15,7 +15,7 @@ import Data.Map (lookup)
 import qualified Data.Text as T
 import GHC.IO.Exception (ExitCode (..))
 import HConf.Config.ConfigT (ConfigT)
-import HConf.Core.Version (VersionNumber)
+import HConf.Core.Version (Version)
 import HConf.Stack.Package (Package (..), resolvePackages)
 import HConf.Utils.Class (HConfIO (..), Parse (..))
 import HConf.Utils.Core (Name)
@@ -38,7 +38,7 @@ parseFields =
 getField :: (MonadFail m) => Name -> Map Name a -> m a
 getField k = maybe (fail $ "missing field" <> T.unpack k) pure . lookup k
 
-getCabalFields :: FilePath -> Name -> ConfigT (Name, VersionNumber)
+getCabalFields :: FilePath -> Name -> ConfigT (Name, Version)
 getCabalFields path pkgName = do
   bs <- read (path <> "/" <> T.unpack pkgName <> ".cabal")
   let fields = parseFields bs

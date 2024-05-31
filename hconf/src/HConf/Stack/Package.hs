@@ -18,7 +18,7 @@ import Data.Text (unpack)
 import qualified HConf.Config.Config as C
 import HConf.Config.ConfigT (ConfigT, HCEnv (config), packages)
 import HConf.Core.Dependencies (Dependencies)
-import HConf.Core.Version (VersionNumber)
+import HConf.Core.Version (Version)
 import HConf.Stack.Lib (Library, updateDependencies, updateLib)
 import HConf.Utils.Core (Name, aesonYAMLOptions, tupled)
 import HConf.Utils.Log (label, task)
@@ -29,7 +29,7 @@ type Libs = Maybe (KeyMap Library)
 
 data Package = Package
   { name :: Name,
-    version :: VersionNumber,
+    version :: Version,
     library :: Maybe Library,
     dependencies :: Dependencies,
     tests :: Libs,
