@@ -67,6 +67,7 @@ builds:
     resolver: nightly-2024-05-29
     exclude:
       - examples/scotty-fraxl
+      - examples/scotty-freer-simple
     extra:
       fastsum: 0.1.1.1
       fraxl: 0.3.0.0
