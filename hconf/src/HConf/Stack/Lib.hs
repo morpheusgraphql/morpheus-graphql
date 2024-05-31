@@ -14,9 +14,21 @@ where
 
 import Data.Aeson.KeyMap (delete)
 import Data.Aeson.Types
-import GHC.Generics
+  ( FromJSON (..),
+    GFromJSON,
+    GToJSON',
+    Object,
+    Parser,
+    ToJSON (..),
+    Value (..),
+    Zero,
+    genericParseJSON,
+    genericToJSON,
+    withObject,
+  )
+import GHC.Generics (Generic (..))
 import HConf.Config.Config (getRule)
-import HConf.Config.ConfigT
+import HConf.Config.ConfigT (ConfigT, HCEnv (config))
 import HConf.Core.Bounds (Bounds (..), diff)
 import HConf.Core.Dependencies (Dependencies, traverseDeps)
 import HConf.Utils.Core (Name, aesonYAMLOptions)
