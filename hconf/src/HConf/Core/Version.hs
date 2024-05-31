@@ -36,37 +36,65 @@ import Relude hiding
     toList,
   )
 
+newtype VersionNumber = VersionNumber [Int]
+  deriving
+    ( Generic,
+      Eq
+    )
+
+nextVersion :: (MonadFail m) => Bool -> VersionNumber -> m VersionNumber
+nextVersion isBreaking (VersionNumber [major, minor, revision])
+  | isBreaking = pure $ VersionNumber [major, minor + 1, 0]
+  | otherwise = pure $ VersionNumber [major, minor, revision + 1]
+nextVersion _ v = fail $ "can't update version " <> show v
+
+dropPatch :: VersionNumber -> VersionNumber
+dropPatch (VersionNumber xs) = VersionNumber (take 2 xs <> [0])
+
+compareSeries :: (Ord a) => [a] -> [a] -> Ordering
+compareSeries [] _ = EQ
+compareSeries _ [] = EQ
+compareSeries (x : xs) (y : ys)
+  | x == y = compareSeries xs ys
+  | otherwise = compare x y
+
+instance Parse VersionNumber where
+  parse = parseText . pack
+  parseText s =
+    maybe
+      (fail $ "invalid version: '" <> toString s <> "'!")
+      (pure . VersionNumber)
+      $ traverse (readMaybe . unpack)
+      $ split (== '.') s
+
+instance ToString VersionNumber where
+  toString (VersionNumber ns) = intercalate "." $ map show ns
+
+instance Ord VersionNumber where
+  compare (VersionNumber v1) (VersionNumber v2) = compareSeries v1 v2
+
+instance Show VersionNumber where
+  show = toString
+
+instance ToText VersionNumber where
+  toText = pack . toString
+
 data Version
-  = Version [Int]
+  = Version VersionNumber
   | LatestVersion
   deriving
     ( Generic,
       Eq
     )
 
-dropPatch :: Version -> Version
-dropPatch (Version xs) = Version (take 2 xs <> [0])
-dropPatch LatestVersion = LatestVersion
-
-nextVersion :: (MonadFail m) => Bool -> Version -> m Version
-nextVersion isBreaking (Version [major, minor, revision])
-  | isBreaking = pure $ Version [major, minor + 1, 0]
-  | otherwise = pure $ Version [major, minor, revision + 1]
-nextVersion _ v = fail $ "can't update version " <> show v
-
 instance Parse Version where
   parse = parseText . pack
   parseText "latest" = pure LatestVersion
-  parseText s =
-    maybe
-      (fail $ "invalid version: '" <> toString s <> "'!")
-      (pure . Version)
-      $ traverse (readMaybe . unpack)
-      $ split (== '.') s
+  parseText s = Version <$> parseText s
 
 instance ToString Version where
-  toString (Version ns) = intercalate "." $ map show ns
   toString LatestVersion = "latest"
+  toString (Version v) = toString v
 
 instance Show Version where
   show = toString
@@ -86,13 +114,7 @@ instance Ord Version where
   compare LatestVersion LatestVersion = EQ
   compare LatestVersion (Version _) = GT
   compare (Version _) LatestVersion = LT
-  compare (Version v1) (Version v2) = compareSeries v1 v2
-    where
-      compareSeries [] _ = EQ
-      compareSeries _ [] = EQ
-      compareSeries (x : xs) (y : ys)
-        | x == y = compareSeries xs ys
-        | otherwise = compare x y
+  compare (Version v1) (Version v2) = compare v1 v2
 
 fetchVersionResponse :: (MonadIO m, MonadFail m) => String -> m (Either String (Map Text (NonEmpty Version)))
 fetchVersionResponse name = hackage ["package", name, "preferred"]
