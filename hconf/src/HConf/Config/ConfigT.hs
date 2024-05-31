@@ -27,7 +27,7 @@ import HConf.Core.Version (Version)
 import HConf.Utils.Chalk (Color (Green), chalk)
 import HConf.Utils.Class (Check (..), HConfIO (..))
 import HConf.Utils.Core (Name)
-import HConf.Utils.Log (Log (..), alert, info, label, task)
+import HConf.Utils.Log (Log (..), alert, label, task)
 import HConf.Utils.Yaml (readYaml, writeYaml)
 import Relude
 
