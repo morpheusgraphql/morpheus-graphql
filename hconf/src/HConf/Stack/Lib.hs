@@ -1,7 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NoImplicitPrelude #-}
@@ -16,7 +15,7 @@ where
 import Data.Aeson.KeyMap (delete)
 import Data.Aeson.Types
 import GHC.Generics
-import HConf.Config.Config (getRule, localPkgBounds)
+import HConf.Config.Config (getRule)
 import HConf.Config.ConfigT
 import HConf.Core.Bounds (Bounds (..), diff)
 import HConf.Core.Dependencies (Dependencies, traverseDeps)
@@ -62,15 +61,15 @@ toObject (Object x) = delete "__unknown-fields" x
 toObject _ = mempty
 
 withRule :: Text -> Bounds -> Bounds -> ConfigT Bounds
-withRule name old deps =
-  when (old /= deps) (field (toString name) (diff old deps))
-    $> deps
+withRule name oldBounds bounds =
+  when (oldBounds /= bounds) (field (toString name) (diff oldBounds bounds))
+    $> bounds
 
 updateDependency :: Name -> Bounds -> ConfigT Bounds
-updateDependency name oldBounds = do
-  cgf <- asks config
-  bounds <- maybe (getRule name cgf) pure (localPkgBounds name cgf)
-  withRule name oldBounds bounds
+updateDependency name oldBounds =
+  asks config
+    >>= getRule name
+    >>= withRule name oldBounds
 
 updateDependencies :: Dependencies -> ConfigT Dependencies
 updateDependencies = traverseDeps updateDependency

@@ -11,7 +11,6 @@ module HConf.Config.Config
     getRule,
     updateConfig,
     updateConfigUpperBounds,
-    localPkgBounds,
   )
 where
 
@@ -30,7 +29,6 @@ import HConf.Core.Bounds (Bounds, updateUpperBound, versionBounds)
 import HConf.Core.Dependencies (Dependencies, getBounds, traverseDeps)
 import HConf.Core.Version (Version, nextVersion)
 import HConf.Utils.Class (Check (check))
-import HConf.Utils.Core (Name)
 import HConf.Utils.Log (Log (..))
 import Relude hiding
   ( Undefined,
@@ -38,11 +36,6 @@ import Relude hiding
     intercalate,
     isPrefixOf,
   )
-
-localPkgBounds :: Name -> Config -> Maybe Bounds
-localPkgBounds name Config {..}
-  | any (isMember name) groups = Just bounds
-  | otherwise = Nothing
 
 data Config = Config
   { version :: Version,
@@ -58,7 +51,9 @@ data Config = Config
     )
 
 getRule :: (MonadFail m) => Text -> Config -> m Bounds
-getRule name = getBounds name . dependencies
+getRule name Config {..}
+  | any (isMember name) groups = pure bounds
+  | otherwise = getBounds name dependencies
 
 getPackages :: Config -> [Text]
 getPackages Config {..} = concatMap toPackageName groups
