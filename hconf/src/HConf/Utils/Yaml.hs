@@ -16,7 +16,7 @@ import Data.Aeson
     ToJSON (..),
     Value (..),
   )
-import Data.Aeson.KeyMap
+import Data.Aeson.KeyMap (KeyMap)
 import Data.Yaml (decodeThrow)
 import Data.Yaml.Pretty (defConfig, encodePretty, setConfCompare, setConfDropNull)
 import HConf.Utils.Class (HConfIO (..))
