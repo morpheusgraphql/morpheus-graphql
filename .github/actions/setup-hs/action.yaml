@@ -20,7 +20,7 @@ runs:
     - name: generate stack config
       run: |
         stack install hconf
-        hconf setup
+        hconf setup ${{ inputs.ghc }}
       shell: bash
 
     - name: Setup Haskell
