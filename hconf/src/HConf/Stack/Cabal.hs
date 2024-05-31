@@ -1,12 +1,11 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | GQL Types
 module HConf.Stack.Cabal
-  ( checkCabals,
+  ( checkCabal,
   )
 where
 
@@ -16,10 +15,9 @@ import qualified Data.Text as T
 import GHC.IO.Exception (ExitCode (..))
 import HConf.Config.ConfigT (ConfigT)
 import HConf.Core.Version (Version)
-import HConf.Stack.Package (Package (..), resolvePackages)
 import HConf.Utils.Class (HConfIO (..), Parse (..))
 import HConf.Utils.Core (Name)
-import HConf.Utils.Log (alert, field, label, task, warn)
+import HConf.Utils.Log (alert, field, task, warn)
 import Relude
 import System.Process
 
@@ -87,11 +85,8 @@ buildCabal name = do
   stack "build" name ["test", "dry-run"]
   stack "sdist" name []
 
-checkCabal :: (Name, Package) -> ConfigT ()
-checkCabal (path, Package {..}) = task path $ do
+checkCabal :: Name -> Name -> Version -> ConfigT ()
+checkCabal path name version = task "cabal" $ do
   buildCabal (T.unpack path)
   (pkgName, pkgVersion) <- getCabalFields (T.unpack path) name
   if pkgVersion == version && pkgName == name then pure () else fail (T.unpack path <> "mismatching version or name")
-
-checkCabals :: ConfigT ()
-checkCabals = label "cabal" $ resolvePackages >>= traverse_ checkCabal

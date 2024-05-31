@@ -33,7 +33,7 @@ li e = "- " <> toString e <> ":"
 label :: (Log m, Monad m) => String -> m () -> m ()
 label name m = info (li name) >> newLine >> inside m >> newLine
 
-task :: (Log m, Monad m) => Name -> m () -> m ()
+task :: (Log m, Monad m) => Name -> m a -> m a
 task name m = log (chalk Magenta (li name)) >> inside m
 
 field :: (Log m) => String -> String -> m ()

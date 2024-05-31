@@ -47,7 +47,7 @@ instance ToJSON Stack where
 setupStack :: VersionTag -> ConfigT ()
 setupStack version = label ("stack(" <> show version <> ")") $ task "stack.yaml" $ do
   p <- asks (stack . env)
-  rewriteYaml p (updateStack version)
+  rewriteYaml p (updateStack version) $> ()
 
 updateStack :: VersionTag -> Stack -> ConfigT Stack
 updateStack version _ = do

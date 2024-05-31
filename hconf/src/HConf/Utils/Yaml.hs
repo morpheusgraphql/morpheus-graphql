@@ -65,8 +65,8 @@ toObject _ = mempty
 mapYaml :: (Functor m) => (t -> m t) -> Yaml t -> m (Yaml t)
 mapYaml f (Yaml v props) = (`Yaml` props) <$> f v
 
-rewriteYaml :: (HConfIO m, Log m, FromJSON t, ToJSON t) => FilePath -> (t -> m t) -> m ()
+rewriteYaml :: (HConfIO m, Log m, FromJSON t, ToJSON t) => FilePath -> (t -> m t) -> m t
 rewriteYaml path f = do
   readYaml path
     >>= mapYaml f
-    >>= writeYaml path
+    >>= \x -> writeYaml path x >> pure (getData x)

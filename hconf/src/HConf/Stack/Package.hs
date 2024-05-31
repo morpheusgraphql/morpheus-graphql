@@ -19,6 +19,7 @@ import qualified HConf.Config.Config as C
 import HConf.Config.ConfigT (ConfigT, HCEnv (config), packages)
 import HConf.Core.Dependencies (Dependencies)
 import HConf.Core.Version (Version)
+import HConf.Stack.Cabal (checkCabal)
 import HConf.Stack.Lib (Library, updateDependencies, updateLib)
 import HConf.Utils.Core (Name, aesonYAMLOptions, tupled)
 import HConf.Utils.Log (label, task)
@@ -76,7 +77,10 @@ updatePackage Package {..} = do
       }
 
 checkPackage :: Name -> ConfigT ()
-checkPackage name = task name $ rewriteYaml (toPath name) updatePackage
+checkPackage path =
+  task path $ do
+    Package {..} <- task "package" $ rewriteYaml (toPath path) updatePackage
+    checkCabal path name version
 
 checkPackages :: ConfigT ()
 checkPackages = label "packages" $ packages >>= traverse_ checkPackage
