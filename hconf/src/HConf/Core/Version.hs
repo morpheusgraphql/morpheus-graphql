@@ -3,8 +3,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 module HConf.Core.Version
-  ( Version (..),
-    nextVersion,
+  ( nextVersion,
     dropPatch,
     fetchVersions,
     VersionNumber,
@@ -87,43 +86,6 @@ instance FromJSON VersionNumber where
 
 instance ToJSON VersionNumber where
   toJSON = String . toText
-
-data Version
-  = Version VersionNumber
-  | LatestVersion
-  deriving
-    ( Generic,
-      Eq
-    )
-
-instance Parse Version where
-  parse = parseText . pack
-  parseText "latest" = pure LatestVersion
-  parseText s = Version <$> parseText s
-
-instance ToString Version where
-  toString LatestVersion = "latest"
-  toString (Version v) = toString v
-
-instance Show Version where
-  show = toString
-
-instance ToText Version where
-  toText = pack . toString
-
-instance FromJSON Version where
-  parseJSON (String s) = parseText s
-  parseJSON (Number n) = parse (show n)
-  parseJSON v = fail $ "version should be either true or string" <> show v
-
-instance ToJSON Version where
-  toJSON = String . toText
-
-instance Ord Version where
-  compare LatestVersion LatestVersion = EQ
-  compare LatestVersion (Version _) = GT
-  compare (Version _) LatestVersion = LT
-  compare (Version v1) (Version v2) = compare v1 v2
 
 fetchVersionResponse :: (MonadIO m, MonadFail m) => String -> m (Either String (Map Text (NonEmpty VersionNumber)))
 fetchVersionResponse name = hackage ["package", name, "preferred"]

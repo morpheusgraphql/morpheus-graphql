@@ -5,7 +5,7 @@ module HConf
   ( setup,
     Env (..),
     updateVersion,
-    Version,
+    VersionTag,
     Parse (..),
     getVersion,
     upperBounds,
@@ -15,8 +15,8 @@ where
 import HConf.Cabal (checkCabals)
 import HConf.Config.Config (Config (..), updateConfig, updateConfigUpperBounds)
 import HConf.Config.ConfigT (HCEnv (..), run, runTask, save)
+import HConf.Config.VersionTag (VersionTag)
 import HConf.Core.Env (Env (..))
-import HConf.Core.Version (Version)
 import HConf.Hie (genHie)
 import HConf.Stack.Config (setupStack)
 import HConf.Stack.Package (checkPackages)

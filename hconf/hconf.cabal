@@ -33,6 +33,7 @@ library
       HConf.Config.Config
       HConf.Config.ConfigT
       HConf.Config.PkgGroup
+      HConf.Config.VersionTag
       HConf.Core.Bounds
       HConf.Core.Dependencies
       HConf.Core.Env

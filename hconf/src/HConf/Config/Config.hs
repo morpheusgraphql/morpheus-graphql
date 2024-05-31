@@ -23,9 +23,10 @@ import Data.Aeson
 import Data.Aeson.Types (defaultOptions)
 import HConf.Config.Build (Build, Builds, findBuild)
 import HConf.Config.PkgGroup (PkgGroup, isMember, toPackageName)
+import HConf.Config.VersionTag (VersionTag)
 import HConf.Core.Bounds (Bounds, updateUpperBound, versionBounds)
 import HConf.Core.Dependencies (Dependencies, getBounds, traverseDeps)
-import HConf.Core.Version (Version, VersionNumber, nextVersion)
+import HConf.Core.Version (VersionNumber, nextVersion)
 import HConf.Utils.Class (Check (check))
 import HConf.Utils.Log (Log (..))
 import Relude hiding
@@ -56,7 +57,7 @@ getRule name Config {..}
 getPackages :: Config -> [Text]
 getPackages Config {..} = concatMap toPackageName groups
 
-getBuild :: (MonadFail m) => Version -> Config -> m Build
+getBuild :: (MonadFail m) => VersionTag -> Config -> m Build
 getBuild key = findBuild key . builds
 
 instance ToJSON Config where

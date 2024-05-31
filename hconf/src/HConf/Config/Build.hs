@@ -24,7 +24,8 @@ import Data.Aeson.Types
 import Data.List (intercalate)
 import qualified Data.Map as M
 import Data.Text (unpack)
-import HConf.Core.Version (Version, VersionNumber, fetchVersions)
+import HConf.Config.VersionTag (VersionTag)
+import HConf.Core.Version (VersionNumber, fetchVersions)
 import HConf.Utils.Class (Check (..))
 import Relude hiding
   ( Undefined,
@@ -34,7 +35,7 @@ import Relude hiding
   )
 
 data Build = Build
-  { ghc :: Version,
+  { ghc :: VersionTag,
     resolver :: Text,
     extra :: Maybe (Map Text VersionNumber),
     include :: Maybe [Text],
@@ -69,8 +70,8 @@ instance Check Build where
 
 type Builds = [Build]
 
-findBuild :: (MonadFail m) => Version -> Builds -> m Build
+findBuild :: (MonadFail m) => VersionTag -> Builds -> m Build
 findBuild v builds = maybe (fail $ "no build found with version: " <> show v <> "!") pure (find ((== v) . ghc) builds)
 
-selectBuilds :: Version -> [Build] -> [Build]
+selectBuilds :: VersionTag -> [Build] -> [Build]
 selectBuilds v = filter ((v <=) . ghc)
