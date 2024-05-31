@@ -33,10 +33,12 @@ import Relude hiding
     isPrefixOf,
   )
 
+type Extras = Map Text Version
+
 data Build = Build
   { ghc :: VersionTag,
     resolver :: Text,
-    extra :: Maybe (Map Text Version),
+    extra :: Maybe Extras,
     include :: Maybe [Text],
     exclude :: Maybe [Text]
   }
@@ -64,7 +66,7 @@ findBuild v builds = maybe (fail $ "no build found with version: " <> show v <> 
 selectBuilds :: VersionTag -> [Build] -> [Build]
 selectBuilds v = sortBy (\a b -> compare (ghc b) (ghc a)) . filter ((v <=) . ghc)
 
-getExtras :: VersionTag -> [Build] -> Map Text Version
+getExtras :: VersionTag -> [Build] -> Extras
 getExtras version = M.fromList . concatMap getExtra . selectBuilds version
 
 getExtra :: Build -> [(Text, Version)]
