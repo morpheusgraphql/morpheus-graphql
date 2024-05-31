@@ -5,8 +5,9 @@
 module HConf.Core.Version
   ( nextVersion,
     dropPatch,
-    fetchVersions,
+    checkVersion,
     Version,
+    fetchVersions,
   )
 where
 
@@ -15,6 +16,7 @@ import Data.Aeson
     ToJSON (toJSON),
     Value (..),
   )
+import Data.List.NonEmpty (toList)
 import Data.Map (lookup)
 import Data.Text
   ( pack,
@@ -96,3 +98,17 @@ lookupVersions (Left x) = fail x
 
 fetchVersions :: (MonadFail m, MonadIO m) => String -> m (NonEmpty Version)
 fetchVersions name = fetchVersionResponse name >>= lookupVersions
+
+checkVersion :: (MonadFail m, MonadIO m) => (String, Version) -> m ()
+checkVersion (name, version) =
+  fetchVersions name
+    >>= \vs ->
+      if version `elem` vs
+        then pure ()
+        else
+          fail
+            ( "no matching version for "
+                <> name
+                <> "try one of:"
+                <> intercalate ", " (map toString $ toList vs)
+            )

@@ -21,11 +21,10 @@ import Data.Aeson
 import Data.Aeson.Types
   ( defaultOptions,
   )
-import Data.List (intercalate)
 import qualified Data.Map as M
 import Data.Text (unpack)
 import HConf.Config.VersionTag (VersionTag)
-import HConf.Core.Version (Version, fetchVersions)
+import HConf.Core.Version (Version, checkVersion)
 import HConf.Utils.Class (Check (..))
 import Relude hiding
   ( Undefined,
@@ -50,23 +49,11 @@ data Build = Build
 instance ToJSON Build where
   toJSON = genericToJSON defaultOptions {omitNothingFields = True}
 
-checkVersion :: (MonadFail m, MonadIO m) => (String, Version) -> m ()
-checkVersion (name, version) =
-  fetchVersions name
-    >>= \vs ->
-      if version `elem` vs
-        then pure ()
-        else
-          fail
-            ( "no matching version for "
-                <> name
-                <> "try one of:"
-                <> intercalate ", " (map toString $ toList vs)
-            )
-
 instance Check Build where
   check Build {..} =
-    traverse_ (checkVersion . first unpack) (maybe [] M.toList extra)
+    traverse_
+      (checkVersion . first unpack)
+      (maybe [] M.toList extra)
 
 type Builds = [Build]
 
