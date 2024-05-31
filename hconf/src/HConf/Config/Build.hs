@@ -8,7 +8,7 @@ module HConf.Config.Build
   ( Build (..),
     Builds,
     findBuild,
-    selectBuilds,
+    getExtras,
   )
 where
 
@@ -62,3 +62,9 @@ findBuild v builds = maybe (fail $ "no build found with version: " <> show v <> 
 
 selectBuilds :: VersionTag -> [Build] -> [Build]
 selectBuilds v = filter ((v <=) . ghc)
+
+getExtras :: VersionTag -> [Build] -> [(Text, Version)]
+getExtras version = concatMap getExtra . selectBuilds version . sortBy (\a b -> compare (ghc a) (ghc b))
+
+getExtra :: Build -> [(Text, Version)]
+getExtra b = maybe [] M.toList (extra b)
