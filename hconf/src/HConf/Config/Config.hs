@@ -20,9 +20,7 @@ import Data.Aeson
     ToJSON (toJSON),
     genericToJSON,
   )
-import Data.Aeson.Types
-  ( defaultOptions,
-  )
+import Data.Aeson.Types (defaultOptions)
 import HConf.Config.Build (Build, Builds, findBuild)
 import HConf.Config.PkgGroup (PkgGroup, isMember, toPackageName)
 import HConf.Core.Bounds (Bounds, updateUpperBound, versionBounds)
