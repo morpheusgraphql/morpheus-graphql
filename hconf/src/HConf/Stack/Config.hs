@@ -53,6 +53,7 @@ updateStack :: VersionTag -> Stack -> ConfigT Stack
 updateStack version _ = do
   config <- asks config
   Build {..} <- getBuild version config
+  -- TODO: check if exclude /include packages exist
   let packages = (getPackages config <> maybeList include) \\ maybeList exclude
   pure
     Stack

@@ -4,7 +4,6 @@ packages:
 - examples/code-gen
 - examples/code-gen-docs
 - examples/scotty
-- examples/scotty-fraxl
 - examples/scotty-haxl
 - examples/scotty-freer-simple
 - examples/servant
