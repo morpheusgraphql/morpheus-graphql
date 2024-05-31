@@ -9,7 +9,6 @@ module HConf.Config.Config
   ( Config (..),
     getPackages,
     getBuild,
-    getVersion,
     getRule,
     updateConfig,
     updateConfigUpperBounds,
@@ -56,9 +55,6 @@ data Config = Config
       FromJSON,
       Show
     )
-
-getVersion :: Config -> Version
-getVersion = version
 
 getRule :: (MonadFail m) => Text -> Config -> m Bounds
 getRule name = getBounds name . dependencies

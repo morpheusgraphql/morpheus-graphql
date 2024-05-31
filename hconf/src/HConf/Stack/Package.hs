@@ -15,7 +15,7 @@ where
 import Data.Aeson (FromJSON (..), ToJSON (..), genericParseJSON, genericToJSON)
 import Data.Aeson.KeyMap (KeyMap)
 import Data.Text (unpack)
-import HConf.Config.Config (getVersion)
+import qualified HConf.Config.Config as C
 import HConf.Config.ConfigT (ConfigT, HCEnv (config), packages)
 import HConf.Core.Dependencies (Dependencies)
 import HConf.Core.Version (Version)
@@ -66,7 +66,7 @@ updatePackage Package {..} = do
   newDependencies <- updateDependencies dependencies
   pure
     $ Package
-      { version = getVersion cfg,
+      { version = C.version cfg,
         library = newLibrary,
         tests = newTests,
         executables = newExecutables,

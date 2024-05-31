@@ -9,8 +9,6 @@
 module HConf.Config.ConfigT
   ( ConfigT (..),
     packages,
-    version,
-    runConfigT,
     HCEnv (..),
     withConfig,
     save,
@@ -21,9 +19,8 @@ where
 
 import Control.Exception (tryJust)
 import Data.Kind
-import HConf.Config.Config (Config, getPackages, getVersion)
+import HConf.Config.Config (Config, getPackages)
 import HConf.Core.Env (Env (..))
-import HConf.Core.Version (Version)
 import HConf.Utils.Chalk (Color (Green), chalk)
 import HConf.Utils.Class (Check (..), HConfIO (..))
 import HConf.Utils.Core (Name)
@@ -56,9 +53,6 @@ runConfigT (ConfigT (ReaderT f)) env config = tryJust (Just . printException) (f
 
 packages :: ConfigT [Name]
 packages = getPackages <$> asks config
-
-version :: ConfigT Version
-version = getVersion <$> asks config
 
 withConfig :: (Config -> t -> ConfigT t') -> t -> ConfigT t'
 withConfig f t = asks config >>= flip f t
