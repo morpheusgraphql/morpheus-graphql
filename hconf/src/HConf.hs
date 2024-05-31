@@ -14,7 +14,7 @@ where
 
 import HConf.Config.Config (Config (..), updateConfig, updateConfigUpperBounds)
 import HConf.Config.ConfigT (HCEnv (..), run, runTask, save)
-import HConf.Config.VersionTag (VersionTag)
+import HConf.Config.Tag (VersionTag)
 import HConf.Core.Env (Env (..))
 import HConf.Hie (genHie)
 import HConf.Stack.Config (setupStack)

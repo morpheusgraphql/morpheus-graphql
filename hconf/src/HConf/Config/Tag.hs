@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
 
-module HConf.Config.VersionTag
+module HConf.Config.Tag
   ( VersionTag (..),
   )
 where

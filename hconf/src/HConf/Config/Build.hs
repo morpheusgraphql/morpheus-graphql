@@ -23,7 +23,7 @@ import Data.Aeson.Types
   )
 import qualified Data.Map as M
 import Data.Text (unpack)
-import HConf.Config.VersionTag (VersionTag)
+import HConf.Config.Tag (VersionTag)
 import HConf.Core.Version (Version, checkVersion)
 import HConf.Utils.Class (Check (..))
 import Relude hiding

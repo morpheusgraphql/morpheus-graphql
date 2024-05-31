@@ -18,7 +18,7 @@ import qualified Data.Map as M
 import HConf.Config.Build (Build (..), selectBuilds)
 import HConf.Config.Config (Config (builds), getBuild, getPackages)
 import HConf.Config.ConfigT (ConfigT, HCEnv (..))
-import HConf.Config.VersionTag (VersionTag (..))
+import HConf.Config.Tag (VersionTag (..))
 import HConf.Core.Env (Env (..))
 import HConf.Core.Version (Version)
 import HConf.Utils.Core (Name, aesonYAMLOptions, maybeList)

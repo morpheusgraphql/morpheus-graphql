@@ -23,7 +23,7 @@ import Data.Aeson
 import Data.Aeson.Types (defaultOptions)
 import HConf.Config.Build (Build, Builds, findBuild)
 import HConf.Config.PkgGroup (PkgGroup, isMember, toPackageName)
-import HConf.Config.VersionTag (VersionTag)
+import HConf.Config.Tag (VersionTag)
 import HConf.Core.Bounds (Bounds, updateUpperBound, versionBounds)
 import HConf.Core.Dependencies (Dependencies, getBounds, traverseDeps)
 import HConf.Core.Version (Version, nextVersion)
