@@ -20,7 +20,7 @@ import Relude hiding (show)
 
 data VersionTag
   = Version Version
-  | LatestVersion
+  | Latest
   deriving
     ( Generic,
       Eq
@@ -28,11 +28,11 @@ data VersionTag
 
 instance Parse VersionTag where
   parse = parseText . pack
-  parseText "latest" = pure LatestVersion
+  parseText "latest" = pure Latest
   parseText s = Version <$> parseText s
 
 instance ToString VersionTag where
-  toString LatestVersion = "latest"
+  toString Latest = "latest"
   toString (Version v) = toString v
 
 instance Show VersionTag where
@@ -50,7 +50,7 @@ instance ToJSON VersionTag where
   toJSON = String . toText
 
 instance Ord VersionTag where
-  compare LatestVersion LatestVersion = EQ
-  compare LatestVersion (Version _) = GT
-  compare (Version _) LatestVersion = LT
+  compare Latest Latest = EQ
+  compare Latest (Version _) = GT
+  compare (Version _) Latest = LT
   compare (Version v1) (Version v2) = compare v1 v2

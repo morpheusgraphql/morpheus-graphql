@@ -58,7 +58,7 @@ updateStack version _ = do
     Stack
       { packages,
         resolver,
-        allowNewer = Just (LatestVersion == version),
+        allowNewer = Just (Latest == version),
         saveHackageCreds = Just False,
         extraDeps = sort $ concatMap getExtra $ selectBuilds version $ builds config
       }
