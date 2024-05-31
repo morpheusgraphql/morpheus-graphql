@@ -28,7 +28,6 @@ library
   exposed-modules:
       HConf
   other-modules:
-      HConf.Cabal
       HConf.Config.Build
       HConf.Config.Config
       HConf.Config.ConfigT
@@ -39,6 +38,7 @@ library
       HConf.Core.Env
       HConf.Core.Version
       HConf.Hie
+      HConf.Stack.Cabal
       HConf.Stack.Config
       HConf.Stack.Lib
       HConf.Stack.Package

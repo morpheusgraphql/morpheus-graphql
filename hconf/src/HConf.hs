@@ -12,12 +12,12 @@ module HConf
   )
 where
 
-import HConf.Cabal (checkCabals)
 import HConf.Config.Config (Config (..), updateConfig, updateConfigUpperBounds)
 import HConf.Config.ConfigT (HCEnv (..), run, runTask, save)
 import HConf.Config.VersionTag (VersionTag)
 import HConf.Core.Env (Env (..))
 import HConf.Hie (genHie)
+import HConf.Stack.Cabal (checkCabals)
 import HConf.Stack.Config (setupStack)
 import HConf.Stack.Package (checkPackages)
 import HConf.Utils.Class (Parse (..))

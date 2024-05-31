@@ -5,7 +5,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 -- | GQL Types
-module HConf.Cabal
+module HConf.Stack.Cabal
   ( checkCabals,
   )
 where
