@@ -19,7 +19,7 @@ import HConf.Config.ConfigT (ConfigT, HCEnv (config), packages)
 import HConf.Core.Dependencies (Dependencies)
 import HConf.Core.Version (Version)
 import HConf.Stack.Cabal (checkCabal)
-import HConf.Stack.Lib (Libraries, Library, updateDependencies, updateLib)
+import HConf.Stack.Lib (Libraries, Library, updateDependencies, updateLibrary)
 import HConf.Utils.Core (Name, aesonYAMLOptions, tupled)
 import HConf.Utils.Log (label, subTask, task)
 import HConf.Utils.Yaml (readYaml, rewriteYaml)
@@ -52,12 +52,12 @@ resolvePackages :: ConfigT [(Name, Package)]
 resolvePackages = packages >>= traverse (tupled (readYaml . toPath))
 
 updateLibraries :: Maybe Libraries -> ConfigT (Maybe Libraries)
-updateLibraries = traverse (traverse updateLib)
+updateLibraries = traverse (traverse updateLibrary)
 
 updatePackage :: Package -> ConfigT Package
 updatePackage Package {..} = do
   cfg <- asks config
-  newLibrary <- traverse updateLib library
+  newLibrary <- traverse updateLibrary library
   newTests <- updateLibraries tests
   newExecutables <- updateLibraries executables
   newBenchmarks <- updateLibraries benchmarks
