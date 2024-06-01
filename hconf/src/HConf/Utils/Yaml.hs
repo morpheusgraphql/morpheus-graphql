@@ -44,7 +44,7 @@ checkAndWrite path newFile = do
 
 data Yaml t = Yaml
   { getData :: t,
-    rawValue :: Object Value
+    rawValue :: Object
   }
   deriving (Generic)
 

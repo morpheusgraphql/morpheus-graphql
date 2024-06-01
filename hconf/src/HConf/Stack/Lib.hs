@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -12,7 +13,11 @@ module HConf.Stack.Lib
   )
 where
 
+#if MIN_VERSION_aeson(2,0,0)
 import Data.Aeson.KeyMap (delete)
+# else
+import Data.HashMap.Lazy (delete)
+#endif
 import Data.Aeson.Types
   ( FromJSON (..),
     GFromJSON,

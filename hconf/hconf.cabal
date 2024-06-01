@@ -64,6 +64,7 @@ library
     , relude >=0.3.0 && <2.0.0
     , req >=3.0.0 && <4.0.0
     , text >=1.2.3 && <3.0.0
+    , unordered-containers
     , yaml >=0.8.32 && <1.0.0
   default-language: Haskell2010
 
@@ -89,5 +90,6 @@ executable hconf
     , relude >=0.3.0 && <2.0.0
     , req >=3.0.0 && <4.0.0
     , text >=1.2.3 && <3.0.0
+    , unordered-containers
     , yaml >=0.8.32 && <1.0.0
   default-language: Haskell2010
