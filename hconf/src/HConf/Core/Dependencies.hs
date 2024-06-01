@@ -33,7 +33,7 @@ import Relude hiding
     toList,
   )
 
-data Dependency = Dependency Text Bounds
+data Dependency = Dependency Name Bounds
 
 instance Parse Dependency where
   parse = parseText . pack
@@ -42,7 +42,7 @@ instance Parse Dependency where
       . bimap strip strip
       . break isSeparator
 
-newtype Dependencies = Dependencies {unpackDeps :: Map Text Bounds}
+newtype Dependencies = Dependencies {unpackDeps :: Map Name Bounds}
   deriving (Show)
 
 getBounds :: (MonadFail m) => Text -> Dependencies -> m Bounds
