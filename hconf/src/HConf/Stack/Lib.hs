@@ -22,7 +22,6 @@ import Data.HashMap.Lazy (delete)
 import Data.Aeson.Types
   ( FromJSON (..),
     GFromJSON,
-    GToJSON',
     Object,
     Parser,
     ToJSON (..),
@@ -65,10 +64,7 @@ instance FromJSON Library where
   parseJSON = fromObject (\t o -> t {__unknownFields = o})
 
 instance ToJSON Library where
-  toJSON = extendedToObject __unknownFields
-
-extendedToObject :: (Generic a, GToJSON' Value Zero (Rep a)) => (a -> Maybe Object) -> a -> Value
-extendedToObject f t = Object (toObject (genericToJSON aesonYAMLOptions t) <> fromMaybe mempty (f t))
+  toJSON t = Object (toObject (genericToJSON aesonYAMLOptions t) <> fromMaybe mempty (__unknownFields t))
 
 fromObject :: (Generic a, GFromJSON Zero (Rep a)) => (a -> Maybe Object -> a) -> Value -> Parser a
 fromObject f v = do

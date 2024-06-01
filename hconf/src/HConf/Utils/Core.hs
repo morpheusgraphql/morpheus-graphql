@@ -10,6 +10,8 @@ module HConf.Utils.Core
     Name,
     tupled,
     aesonYAMLOptions,
+    checkElem,
+    notElemError,
   )
 where
 
@@ -18,7 +20,7 @@ import Data.Aeson
     defaultOptions,
   )
 import Data.Char (isUpper, toLower)
-import Data.List (elemIndex)
+import Data.List (elemIndex, intercalate)
 import Data.Text (toTitle)
 import Relude hiding (Undefined, intercalate)
 
@@ -102,3 +104,18 @@ toKebabCase = concatMap toKebab
 
 tupled :: (Functor f) => (t -> f a) -> t -> f (t, a)
 tupled f p = (p,) <$> f p
+
+notElemError :: (MonadFail m, Eq t, ToString t) => String -> String -> [t] -> m a
+notElemError name listName xs =
+  fail
+    ( "no matching " <> name <> " for "
+        <> listName
+        <> "try one of:"
+        <> intercalate ", " (map toString xs)
+    )
+
+checkElem :: (MonadFail m, Eq t, ToString t) => String -> String -> t -> [t] -> m ()
+checkElem name listName x xs =
+  if x `elem` xs
+    then pure ()
+    else notElemError name listName xs

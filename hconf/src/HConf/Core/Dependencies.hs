@@ -20,6 +20,7 @@ import Data.Map.Strict (traverseWithKey)
 import Data.Text (break, pack, strip, unpack)
 import HConf.Core.Bounds (Bounds, printBoundParts)
 import HConf.Utils.Class (Parse (..))
+import HConf.Utils.Core (Name)
 import HConf.Utils.Format (formatTable)
 import Relude hiding
   ( Undefined,
