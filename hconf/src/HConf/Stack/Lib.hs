@@ -9,7 +9,7 @@
 module HConf.Stack.Lib
   ( Library (..),
     updateDependencies,
-    updateLib,
+    updateLibrary,
     Libraries,
   )
 where
@@ -94,7 +94,7 @@ updateDependency name oldBounds =
 updateDependencies :: Dependencies -> ConfigT Dependencies
 updateDependencies = traverseDeps updateDependency
 
-updateLib :: Library -> ConfigT Library
-updateLib Library {..} = do
+updateLibrary :: Library -> ConfigT Library
+updateLibrary Library {..} = do
   newDependencies <- traverse updateDependencies dependencies
   pure $ Library {dependencies = newDependencies, ..}
