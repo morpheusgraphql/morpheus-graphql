@@ -108,9 +108,9 @@ tupled f p = (p,) <$> f p
 notElemError :: (MonadFail m, Eq t, ToString t) => String -> String -> [t] -> m a
 notElemError name listName xs =
   fail
-    ( "no matching " <> name <> " for "
+    ( "no matching " <> name <> " for '"
         <> listName
-        <> "try one of:"
+        <> "'! try one of: "
         <> intercalate ", " (map toString xs)
     )
 
