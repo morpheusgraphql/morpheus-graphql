@@ -31,8 +31,6 @@ groups:
       - hconf
     dir: ./
 builds:
-  - ghc: 8.2.2
-    resolver: lts-11.10
   - ghc: 8.4.4
     resolver: lts-12.26
     extra:
