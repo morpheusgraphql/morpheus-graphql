@@ -98,6 +98,3 @@ updateLibrary :: Library -> ConfigT Library
 updateLibrary Library {..} = do
   newDependencies <- traverse updateDependencies dependencies
   pure $ Library {dependencies = newDependencies, ..}
-
-class Update a where
-  update :: a -> ConfigT a
