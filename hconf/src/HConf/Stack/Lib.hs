@@ -10,6 +10,7 @@ module HConf.Stack.Lib
   ( Library (..),
     updateDependencies,
     updateLib,
+    Libraries,
   )
 where
 
@@ -47,6 +48,8 @@ import Relude hiding
     length,
     null,
   )
+
+type Libraries = Map Name Library
 
 data Library = Library
   { sourceDirs :: Text,

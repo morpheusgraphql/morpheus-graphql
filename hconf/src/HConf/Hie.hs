@@ -13,12 +13,10 @@ module HConf.Hie
 where
 
 import Data.Aeson (FromJSON (..), ToJSON (..), Value (..), object)
-import qualified Data.Aeson.Key as K
-import Data.Aeson.KeyMap (KeyMap)
-import qualified Data.Aeson.KeyMap as KM
+import qualified Data.Map as M
 import HConf.Config.ConfigT (ConfigT, HCEnv (..))
 import HConf.Core.Env (Env (..))
-import HConf.Stack.Lib (Library (..))
+import HConf.Stack.Lib (Libraries, Library (..))
 import HConf.Stack.Package (Package (..), resolvePackages)
 import HConf.Utils.Log (label, task)
 import HConf.Utils.Yaml (writeYaml)
@@ -59,12 +57,12 @@ toLib (path, Package {..}) =
     <> compGroup "exe" executables
     <> compGroup "bench" benchmarks
   where
-    compGroup :: Text -> Maybe (KeyMap Library) -> [Component]
-    compGroup tag = concatMap mkComp . concatMap KM.toList . maybeToList
+    compGroup :: Text -> Maybe Libraries -> [Component]
+    compGroup tag = concatMap mkComp . concatMap M.toList . maybeToList
       where
-        mkComp (k, lib) = comp (tag <:> K.toText k) (Just lib)
+        mkComp (k, lib) = comp (tag <:> k) (Just lib)
     comp :: Text -> Maybe Library -> [Component]
-    comp tag (Just (Library {sourceDirs})) =
+    comp tag (Just Library {sourceDirs}) =
       [ Component
           { path = "./" <> path <> "/" <> sourceDirs,
             component = name <:> tag
@@ -73,7 +71,8 @@ toLib (path, Package {..}) =
     comp _ _ = []
 
 genHie :: ConfigT ()
-genHie = label "hie" $ task "hie.yaml" $ do
-  Env {..} <- asks env
-  components <- concatMap toLib <$> resolvePackages
-  writeYaml hie (packHie Components {stackYaml = stack, components})
+genHie = label "hie" $
+  task "hie.yaml" $ do
+    Env {..} <- asks env
+    components <- concatMap toLib <$> resolvePackages
+    writeYaml hie (packHie Components {stackYaml = stack, components})
