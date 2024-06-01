@@ -7,8 +7,7 @@ module HConf.Utils.Http
   )
 where
 
-import Data.Aeson (FromJSON)
-import Data.Aeson.Decoding (eitherDecode)
+import Data.Aeson (FromJSON,eitherDecode)
 import qualified Data.Text as T
 import Network.HTTP.Req
   ( GET (..),
