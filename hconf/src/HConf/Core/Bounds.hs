@@ -105,10 +105,12 @@ instance FromJSON Bounds where
 instance ToJSON Bounds where
   toJSON = String . pack . toString
 
-versionBounds :: (MonadFail m) => Version -> m Bounds
-versionBounds version = do
-  upper <- nextVersion True version
-  pure $ Bounds [Bound Min True (dropPatch version), Bound Max False upper]
+versionBounds :: Version -> Bounds
+versionBounds version =
+  Bounds
+    [ Bound Min True (dropPatch version),
+      Bound Max False (nextVersion True version)
+    ]
 
 diff :: Bounds -> Bounds -> String
 diff old deps = toString old <> chalk Yellow "  ->  " <> toString deps

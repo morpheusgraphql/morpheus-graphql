@@ -36,11 +36,7 @@ setup v = runTask "setup" $ do
   checkPackages
 
 updateVersion :: Bool -> Env -> IO ()
-updateVersion isBreaking =
-  runTask "next" $
-    asks config
-      >>= updateConfig isBreaking
-      >>= save
+updateVersion isBreaking = runTask "next" $ (asks config <&> updateConfig isBreaking) >>= save
 
 getVersion :: Env -> IO ()
 getVersion = run (Just . version <$> asks config)

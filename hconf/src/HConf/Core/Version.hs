@@ -38,20 +38,27 @@ import Relude hiding
     toList,
   )
 
-newtype Version = Version [Int]
+data Version = Version Int [Int]
   deriving
     ( Generic,
       Eq
     )
 
-nextVersion :: (MonadFail m) => Bool -> Version -> m Version
-nextVersion isBreaking (Version [major, minor, revision])
-  | isBreaking = pure $ Version [major, minor + 1, 0]
-  | otherwise = pure $ Version [major, minor, revision + 1]
-nextVersion _ v = fail $ "can't update version " <> show v
+toTriple :: Version -> (Int, Int, Int)
+toTriple (Version major (minor : revision : _)) = (major, minor, revision)
+toTriple (Version major [minor]) = (major, minor, 0)
+toTriple (Version major []) = (major, 0, 0)
+
+nextVersion' :: Bool -> (Int, Int, Int) -> Version
+nextVersion' isBreaking (major, minor, revision)
+  | isBreaking = Version major [minor + 1, 0]
+  | otherwise = Version major [minor, revision + 1]
+
+nextVersion :: Bool -> Version -> Version
+nextVersion isBreaking = nextVersion' isBreaking . toTriple
 
 dropPatch :: Version -> Version
-dropPatch (Version xs) = Version (take 2 xs <> [0])
+dropPatch (Version maj xs) = Version maj (take 1 xs <> [0])
 
 compareSeries :: (Ord a) => [a] -> [a] -> Ordering
 compareSeries [] _ = EQ
@@ -62,18 +69,22 @@ compareSeries (x : xs) (y : ys)
 
 instance Parse Version where
   parse = parseText . pack
-  parseText s =
-    maybe
-      (fail $ "invalid version: '" <> toString s <> "'!")
-      (pure . Version)
-      $ traverse (readMaybe . unpack)
-      $ split (== '.') s
+  parseText s = toMonad fromSeries (parseSeries s)
+    where
+      toMonad = maybe (fail $ "invalid version: '" <> toString s <> "'!")
+
+parseSeries :: Text -> Maybe [Int]
+parseSeries = traverse (readMaybe . unpack) . split (== '.')
+
+fromSeries :: (MonadFail m) => [Int] -> m Version
+fromSeries (x : xs) = pure $ Version x xs
+fromSeries [] = fail "invalid version: version should have at least one number !"
 
 instance ToString Version where
-  toString (Version ns) = intercalate "." $ map show ns
+  toString (Version n ns) = intercalate "." $ map show (n : ns)
 
 instance Ord Version where
-  compare (Version v1) (Version v2) = compareSeries v1 v2
+  compare (Version n1 v1) (Version n2 v2) = compareSeries (n1 : v1) (n2 : v2)
 
 instance Show Version where
   show = toString

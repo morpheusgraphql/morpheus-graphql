@@ -66,11 +66,11 @@ instance ToJSON Config where
 instance Check Config where
   check Config {..} = traverse_ check (toList builds)
 
-updateConfig :: (MonadFail m, MonadIO m) => Bool -> Config -> m Config
-updateConfig isBreaking Config {..} = do
-  version' <- nextVersion isBreaking version
-  bounds' <- versionBounds version'
-  pure Config {version = version', bounds = bounds', ..}
+updateConfig :: Bool -> Config -> Config
+updateConfig isBreaking Config {..} =
+  let version' = nextVersion isBreaking version
+      bounds' = versionBounds version'
+   in Config {version = version', bounds = bounds', ..}
 
 updateConfigUpperBounds :: (MonadFail m, MonadIO m, Log m) => Config -> m Config
 updateConfigUpperBounds Config {..} = do
