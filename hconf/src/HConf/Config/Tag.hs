@@ -43,14 +43,13 @@ instance ToText VersionTag where
 
 instance FromJSON VersionTag where
   parseJSON (String s) = parseText s
-  parseJSON (Number n) = parse (show n)
-  parseJSON v = fail $ "version should be either true or string" <> show v
+  parseJSON v = Version <$> parseJSON v
 
 instance ToJSON VersionTag where
   toJSON = String . toText
 
 instance Ord VersionTag where
   compare Latest Latest = EQ
-  compare Latest (Version _) = GT
-  compare (Version _) Latest = LT
+  compare Latest Version {} = GT
+  compare Version {} Latest = LT
   compare (Version v1) (Version v2) = compare v1 v2
