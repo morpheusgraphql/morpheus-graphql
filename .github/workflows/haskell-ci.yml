@@ -41,6 +41,7 @@ jobs:
 
       - name: Setup file
         run: |
+          chmod +x ./cli/hconf
           ./cli/hconf setup ${{ matrix.ghc }}
 
       - name: Setup
