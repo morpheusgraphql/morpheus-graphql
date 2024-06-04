@@ -8,16 +8,40 @@ on:
       - main
 
 jobs:
+  hconf:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-hs
+      - name: Build
+        run: |
+          stack build hconf
+          mkdir cli
+          cp $(stack exec which morpheus) ./cli/hconf
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hconf-cli
+          path: ./cli
+
   build:
+    needs: hconf
     strategy:
       matrix:
         ghc: ["8.4.4", "8.6.5", "8.8.3", "8.10.7", "9.0.2", "latest"]
-        os: [ubuntu-latest]
       fail-fast: false
-    runs-on: ${{ matrix.os }}
-    name: GHC ${{ matrix.ghc}} (${{ matrix.os }})
+    runs-on: ubuntu-latest
+    name: GHC ${{ matrix.ghc}}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: hconf-cli
+          path: ./cli
+
+      - name: Setup files
+        run: |
+          ./cli/hconf setup ${{ matrix.ghc }}
 
       - name: Setup
         uses: ./.github/actions/setup-hs
