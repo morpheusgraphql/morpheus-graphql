@@ -17,12 +17,6 @@ runs:
         ghc-version: ${{ inputs.ghc }}
         enable-stack: true
 
-    - name: Setup Haskell
-      uses: haskell/actions/setup@v1.2
-      with:
-        ghc-version: ${{ inputs.ghc }}
-        enable-stack: true
-
     - name: Cache Stack
       uses: actions/cache@v2
       with:
