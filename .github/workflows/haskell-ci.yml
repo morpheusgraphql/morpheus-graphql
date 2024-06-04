@@ -17,7 +17,7 @@ jobs:
         run: |
           stack build hconf
           mkdir cli
-          cp $(stack exec which morpheus) ./cli/hconf
+          cp $(stack exec which hconf) ./cli/hconf
 
       - uses: actions/upload-artifact@v4
         with:
@@ -39,7 +39,7 @@ jobs:
           name: hconf-cli
           path: ./cli
 
-      - name: Setup files
+      - name: Setup file
         run: |
           ./cli/hconf setup ${{ matrix.ghc }}
 
