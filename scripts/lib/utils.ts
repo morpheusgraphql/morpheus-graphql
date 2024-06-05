@@ -51,7 +51,7 @@ export const hconf = async (
   cmd: "version" | "setup" | "next",
   ...ops: string[]
 ): Promise<string> => {
-  const result = exec(["hconf", [cmd, ops].flat().join(" ")].join(" "));
+  const result = exec(["./cli/hconf", [cmd, ops].flat().join(" ")].join(" "));
 
   if (cmd !== "version") {
     console.log(result);
