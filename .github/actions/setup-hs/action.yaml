@@ -20,6 +20,8 @@ runs:
    - name: Download HConf
       run: |
         npm run hconf
+        ./cli/hconf setup ${{ inputs.ghc }}
+
 
     - name: Cache Stack
       uses: actions/cache@v2

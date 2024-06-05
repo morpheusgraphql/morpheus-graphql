@@ -16,9 +16,6 @@ jobs:
     runs-on: ubuntu-latest
     name: GHC ${{ matrix.ghc}}
     steps:
-      - name: Setup file
-        run: ./cli/hconf setup ${{ matrix.ghc }}
-
       - name: Setup
         uses: ./.github/actions/setup-hs
         with:
