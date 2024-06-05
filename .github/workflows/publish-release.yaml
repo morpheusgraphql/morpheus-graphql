@@ -37,7 +37,7 @@ jobs:
 
       - name: Describe
         id: describe
-        run: echo "VERSION=$(.cli/hconf version)" >> $GITHUB_OUTPUT
+        run: echo "VERSION=$(hconf version)" >> $GITHUB_OUTPUT
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
