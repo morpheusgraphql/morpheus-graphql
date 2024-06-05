@@ -20,6 +20,7 @@ runs:
     - name: Download HConf
       shell: bash
       run: |
+        npm i
         npm run hconf
         hconf setup ${{ inputs.ghc }}
 
