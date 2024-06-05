@@ -39,27 +39,23 @@ import Relude hiding
     toList,
   )
 
-data Version = Version Int [Int]
+data Version = Version Int Int [Int]
   deriving
     ( Generic,
       Eq
     )
 
-toTriple :: Version -> (Int, Int, Int)
-toTriple (Version major (minor : revision : _)) = (major, minor, revision)
-toTriple (Version major [minor]) = (major, minor, 0)
-toTriple (Version major []) = (major, 0, 0)
-
-nextVersion' :: Bool -> (Int, Int, Int) -> Version
-nextVersion' isBreaking (major, minor, revision)
-  | isBreaking = Version major [minor + 1, 0]
-  | otherwise = Version major [minor, revision + 1]
+getNumber :: [Int] -> Int
+getNumber (n : _) = n
+getNumber [] = 0
 
 nextVersion :: Bool -> Version -> Version
-nextVersion isBreaking = nextVersion' isBreaking . toTriple
+nextVersion isBreaking (Version major minor revision)
+  | isBreaking = Version major (minor + 1) [0]
+  | otherwise = Version major minor [getNumber revision + 1]
 
 dropPatch :: Version -> Version
-dropPatch (Version maj xs) = Version maj (take 1 xs <> [0])
+dropPatch (Version ma mi _) = Version ma mi [0]
 
 compareSeries :: (Ord a) => [a] -> [a] -> Ordering
 compareSeries [] _ = EQ
@@ -78,14 +74,15 @@ parseSeries :: Text -> Maybe [Int]
 parseSeries = traverse (readMaybe . unpack) . split (== '.')
 
 fromSeries :: (MonadFail m) => [Int] -> m Version
-fromSeries (x : xs) = pure $ Version x xs
+fromSeries [ma] = pure $ Version ma 0 []
+fromSeries (ma : (mi : xs)) = pure $ Version ma mi xs
 fromSeries [] = fail "invalid version: version should have at least one number !"
 
 instance ToString Version where
-  toString (Version n ns) = intercalate "." $ map show (n : ns)
+  toString (Version maj mi ns) = intercalate "." $ map show ([maj, mi] <> ns)
 
 instance Ord Version where
-  compare (Version n1 v1) (Version n2 v2) = compareSeries (n1 : v1) (n2 : v2)
+  compare (Version maj1 min1 v1) (Version maj2 min2 v2) = compareSeries ([maj1, min1] <> v1) ([maj2, min2] <> v2)
 
 instance Show Version where
   show = toString
