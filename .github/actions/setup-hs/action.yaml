@@ -17,7 +17,7 @@ runs:
         ghc-version: ${{ inputs.ghc }}
         enable-stack: true
 
-   -  name: Download HConf
+    - name: Download HConf
       run: |
         npm run hconf
         hconf setup ${{ inputs.ghc }}
