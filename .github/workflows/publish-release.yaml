@@ -13,7 +13,7 @@ jobs:
       tag_name: ${{ steps.describe.outputs.version }}
     steps:
       - uses: actions/checkout@v2
-      - uses: haskell/actions/setup@v1.2
+      - uses: ./.github/actions/setup-hs
       - name: Upload Packages
         run: |
           stack sdist
@@ -29,11 +29,6 @@ jobs:
         env:
           HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
           HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
-
-      - name: Node
-        uses: actions/setup-node@v1
-        with:
-          node-version: 14.x
 
       - name: Describe
         id: describe
