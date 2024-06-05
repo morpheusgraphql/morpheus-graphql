@@ -9,7 +9,7 @@ const config: Record<string, string> = {
   darwin: "/ormolu-macOS.zip",
 };
 
-const name = config[process.platform] ?? config.linux;
+export const platform = process.platform ?? config.linux;
 
 type Ops = { fileName: string; url: string };
 
@@ -57,6 +57,6 @@ export const format = async ({ fix, path }: { fix: boolean; path: string }) =>
     },
     {
       fileName: "ormolu",
-      url: `https://github.com/tweag/ormolu/releases/download/0.5.0.1/${name}`,
+      url: `https://github.com/tweag/ormolu/releases/download/0.5.0.1/${config[platform]}`,
     }
   );

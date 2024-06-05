@@ -10,7 +10,7 @@
     "check:spelling": "cspell --cache --no-progress '**/*.hs'",
     "changelog": "npm run release changelog",
     "release": "ts-node scripts/cli.ts release",
-    "setup": "hconf setup",
+    "hconf": "ts-node scripts/cli.ts hconf",
     "format": "ts-node scripts/cli.ts format",
     "format:fix": "ts-node scripts/cli.ts  format --fix=true",
     "code-gen": "morpheus build morpheus-graphql-server/test examples/code-gen examples/code-gen-docs",
