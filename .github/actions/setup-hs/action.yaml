@@ -23,7 +23,7 @@ runs:
         npm i
         npm run hconf
         echo "$PWD/cli" >> $GITHUB_PATH
-        hconf setup ${{ inputs.ghc }}
+        ./cli/hconf setup ${{ inputs.ghc }}
 
     - name: Cache Stack
       uses: actions/cache@v2
