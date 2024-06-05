@@ -14,6 +14,7 @@ export const setupHconf = async () =>
     async (bin) => {
       exec(`mkdir cli`);
       exec(`cp ${bin} ./cli/hconf`);
+      exec(`echo "$PWD/cli/hconf" >> $GITHUB_PATH`);
     },
     { fileName: "hconf", url }
   );
