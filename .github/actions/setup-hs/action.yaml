@@ -11,11 +11,15 @@ runs:
     - name: Setup Node
       uses: actions/setup-node@v3
 
-    - name: Setup Haskell
+    - name: HConf Haskell
       uses: haskell/actions/setup@v1.2
       with:
         ghc-version: ${{ inputs.ghc }}
         enable-stack: true
+
+   - name: Download HConf
+      run: |
+        npm run hconf
 
     - name: Cache Stack
       uses: actions/cache@v2
