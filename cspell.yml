@@ -49,6 +49,7 @@ words:
   - hlint
   - hpack
   - hsep
+  - hconf
   - hunit
   - ifromJSON
   - inlineable
@@ -88,3 +89,4 @@ words:
   - vsep
   - websockets
   - whnf
+  - yesod

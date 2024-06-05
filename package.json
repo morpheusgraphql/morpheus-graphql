@@ -8,11 +8,11 @@
   "private": true,
   "scripts": {
     "check:spelling": "cspell --cache --no-progress '**/*.hs'",
-    "changelog": "ts-node scripts/changelog.ts",
-    "release": "ts-node scripts/release.ts",
-    "setup": "ts-node scripts/local.ts setup",
-    "format": "ts-node scripts/local.ts format",
-    "format:fix": "ts-node scripts/local.ts  format --fix=true",
+    "changelog": "npm run release changelog",
+    "release": "ts-node scripts/cli.ts release",
+    "setup": "hconf setup",
+    "format": "ts-node scripts/cli.ts format",
+    "format:fix": "ts-node scripts/cli.ts  format --fix=true",
     "code-gen": "morpheus build morpheus-graphql-server/test examples/code-gen examples/code-gen-docs",
     "code-gen:check": "morpheus check morpheus-graphql-server/test examples/code-gen examples/code-gen-docs",
     "lint": "curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s .",
@@ -20,7 +20,6 @@
   },
   "devDependencies": {
     "@types/glob": "^8.0.0",
-    "@types/js-yaml": "^4.0.5",
     "@types/node": "^17.0.23",
     "@types/ramda": "^0.28.4",
     "cspell": "^6.31.1"

@@ -8,20 +8,20 @@ synopsis: examples
 copyright: (c) 2019 Daviti Nalchevanidze
 description: examples of GraphQL APIs
 dependencies:
-  - base                            >=  4.7.0     &&  <  5.0.0
-  - bytestring                      >=  0.10.4    &&  <  0.15.0
-  - file-embed                      >=  0.0.10    &&  <  1.0.0
-  - http-media
-  - mtl                             >=  2.0.0     &&  <  3.0.0
-  - morpheus-graphql
-  - morpheus-graphql-subscriptions
-  - servant-server
-  - text                            >=  1.2.3     &&  <  3.0.0
-  - wai-websockets
-  - websockets                      >=  0.12.6.0  &&  <  1.0.0
-  - warp
+- base                            >=  4.7.0     &&  <  5.0.0
+- bytestring                      >=  0.10.4    &&  <  0.15.0
+- file-embed                      >=  0.0.10    &&  <  1.0.0
+- http-media                      >=  0.5       &&  <  1.0
+- morpheus-graphql                >=  0.27.0    &&  <  0.28.0
+- morpheus-graphql-subscriptions  >=  0.27.0    &&  <  0.28.0
+- mtl                             >=  2.0.0     &&  <  3.0.0
+- servant-server                  >=  0.2       &&  <  1.0
+- text                            >=  1.2.3     &&  <  3.0.0
+- wai-websockets                  >=  1.0.0     &&  <  4.0
+- warp                            >=  1.0.0     &&  <  4.0
+- websockets                      >=  0.12.6.0  &&  <  1.0.0
 executables:
   servant-server:
     main: Main.hs
     source-dirs: src
-    ghc-options: '-Wall'
+    ghc-options: -Wall

@@ -37,9 +37,7 @@ jobs:
 
       - name: Describe
         id: describe
-        run: |
-          npm i
-          npm run release -- describe
+        run: echo "VERSION=$(hconf version)" >> $GITHUB_OUTPUT
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -49,8 +47,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ steps.describe.outputs.version }}
-          release_name: ${{ steps.describe.outputs.version }}
+          tag_name: ${{ steps.describe.outputs.VERSION }}
+          release_name: ${{ steps.describe.outputs.VERSION }}
           body: ${{ github.event.pull_request.body }}
 
   upload_artifact:

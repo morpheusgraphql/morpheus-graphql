@@ -1,24 +1,22 @@
-import { getPullRequests } from "./get-pull-requests";
-import { renderChangelog } from "./render-changelog";
-import { commitsAfter, getDate, lastTag } from "../utils/git";
-import { genVersion, parseVersion } from "../utils/version";
-import { propEq } from "ramda";
+import { fetchChanges, isBreaking } from "./fetch";
+import { render } from "./render";
+import { lastTag } from "../git";
+import { hconf } from "../utils";
 
-export const getChangelog = async () => {
-  const date = getDate();
+export const changelog = async (change: boolean = false) => {
   const version = lastTag();
-  const commits = commitsAfter(version);
-  const pullRequests = await getPullRequests(commits);
-  const isBreaking = Boolean(pullRequests.find(propEq("type", "breaking")));
-  const nextVersion = genVersion(parseVersion(version), isBreaking);
-  const newTag = nextVersion.join(".");
+  const projectVersion = await hconf("version");
+  const changes = await fetchChanges(version);
 
-  return {
-    body: renderChangelog(newTag, date, pullRequests),
-    version: {
-      next: newTag,
-      prev: version,
-      isBreaking,
-    },
-  };
+  if (version !== projectVersion) {
+    throw Error(`versions does not match: ${version} ${projectVersion}`);
+  }
+
+  await hconf("next", ...(isBreaking(changes) ? ["-b"] : []));
+
+  if (change) {
+    await hconf("setup");
+  }
+
+  return render(await hconf("version"), changes);
 };

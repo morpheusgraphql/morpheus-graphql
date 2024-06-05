@@ -1,0 +1,95 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.36.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           hconf
+version:        0.27.3
+synopsis:       Stack Config
+description:    cli to manage multiple stack projects
+category:       web, graphql
+homepage:       https://github.com/nalchevanidze/morpheus-graphql#readme
+bug-reports:    https://github.com/nalchevanidze/morpheus-graphql/issues
+author:         Daviti Nalchevanidze
+maintainer:     d.nalchevanidze@gmail.com
+copyright:      (c) 2019 Daviti Nalchevanidze
+license:        MIT
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+
+source-repository head
+  type: git
+  location: https://github.com/nalchevanidze/morpheus-graphql
+
+library
+  exposed-modules:
+      HConf
+  other-modules:
+      HConf.Config.Build
+      HConf.Config.Config
+      HConf.Config.ConfigT
+      HConf.Config.PkgGroup
+      HConf.Config.Tag
+      HConf.Core.Bounds
+      HConf.Core.Dependencies
+      HConf.Core.Env
+      HConf.Core.Version
+      HConf.Hie
+      HConf.Stack.Cabal
+      HConf.Stack.Config
+      HConf.Stack.Lib
+      HConf.Stack.Package
+      HConf.Utils.Chalk
+      HConf.Utils.Class
+      HConf.Utils.Core
+      HConf.Utils.Format
+      HConf.Utils.Http
+      HConf.Utils.Log
+      HConf.Utils.Yaml
+      Paths_hconf
+  hs-source-dirs:
+      src
+  ghc-options: -Wall
+  build-depends:
+      aeson >=1.4.4 && <3.0.0
+    , base >=4.7.0 && <5.0.0
+    , bytestring >=0.10.4 && <0.15.0
+    , containers >=0.4.2.1 && <=0.7
+    , filepath >=1.1.0 && <=1.5.2.0
+    , modern-uri >=0.1.0.0 && <1.0.0
+    , process >=1.0 && <2.0
+    , relude >=0.3.0 && <2.0.0
+    , req >=3.0.0 && <4.0.0
+    , text >=1.2.3 && <3.0.0
+    , unordered-containers >=0.2.8 && <0.3.0
+    , yaml >=0.8.32 && <1.0.0
+  default-language: Haskell2010
+
+executable hconf
+  main-is: Main.hs
+  other-modules:
+      CLI.Commands
+      Paths_hconf
+  hs-source-dirs:
+      app
+  ghc-options: -Wall
+  build-depends:
+      Glob >=0.7.0 && <1.0.0
+    , aeson >=1.4.4 && <3.0.0
+    , base >=4.7.0 && <5.0.0
+    , bytestring >=0.10.4 && <0.15.0
+    , containers >=0.4.2.1 && <=0.7
+    , filepath >=1.1.0 && <=1.5.2.0
+    , hconf >=0.27.0 && <0.28.0
+    , modern-uri >=0.1.0.0 && <1.0.0
+    , optparse-applicative >=0.12.0 && <0.20.0
+    , process >=1.0 && <2.0
+    , relude >=0.3.0 && <2.0.0
+    , req >=3.0.0 && <4.0.0
+    , text >=1.2.3 && <3.0.0
+    , unordered-containers >=0.2.8 && <0.3.0
+    , yaml >=0.8.32 && <1.0.0
+  default-language: Haskell2010

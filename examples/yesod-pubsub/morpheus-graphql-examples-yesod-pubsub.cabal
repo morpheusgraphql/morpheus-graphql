@@ -1,11 +1,11 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.0.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
 name:           morpheus-graphql-examples-yesod-pubsub
-version:        0.1.0.0
+version:        0.27.3
 synopsis:       examples of external pub-sub
 description:    examples of a GraphQL server using postgresql/rabbitmq as a pusub
 category:       web, graphql
@@ -18,8 +18,8 @@ license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
-    README.md
     ChangeLog.md
+    README.md
 
 source-repository head
   type: git
@@ -36,25 +36,25 @@ library
   hs-source-dirs:
       src
   build-depends:
-      base >=4.7 && <5
-    , blaze-html
-    , bytestring
-    , extra
-    , hashable
-    , morpheus-graphql
-    , morpheus-graphql-core
-    , morpheus-graphql-server
-    , morpheus-graphql-subscriptions
-    , shakespeare
-    , text
-    , unliftio-core
-    , wai
-    , wai-cors
-    , wai-websockets
-    , warp
-    , websockets
-    , yesod
-    , yesod-core
+      base >=4.7.0 && <5.0.0
+    , blaze-html >=0.2 && <1.0
+    , bytestring >=0.10.4 && <0.15.0
+    , extra >=1.0.0 && <2.0.0
+    , hashable >=1.0.0 && <2.0.0
+    , morpheus-graphql >=0.27.0 && <0.28.0
+    , morpheus-graphql-core >=0.27.0 && <0.28.0
+    , morpheus-graphql-server >=0.27.0 && <0.28.0
+    , morpheus-graphql-subscriptions >=0.27.0 && <0.28.0
+    , shakespeare >=1.0 && <3.0
+    , text >=1.2.3 && <3.0.0
+    , unliftio-core >=0.0.1 && <0.4.0
+    , wai >=1.0.0 && <4.0
+    , wai-cors >=0.1.0 && <1.0
+    , wai-websockets >=1.0.0 && <4.0
+    , warp >=1.0.0 && <4.0
+    , websockets >=0.12.6.0 && <1.0.0
+    , yesod >=0.5 && <2.0
+    , yesod-core >=1.0 && <2.0
   default-language: Haskell2010
 
 executable yesod-gql-example
@@ -63,28 +63,28 @@ executable yesod-gql-example
       Paths_morpheus_graphql_examples_yesod_pubsub
   hs-source-dirs:
       app
-  ghc-options: -threaded -rtsopts -Wdefault -Wwarn -Wmissing-fields -with-rtsopts=-N
+  ghc-options: -Wdefault -Wmissing-fields -Wwarn -rtsopts -threaded -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
-    , blaze-html
-    , bytestring
-    , extra
-    , hashable
-    , morpheus-graphql
-    , morpheus-graphql-core
-    , morpheus-graphql-examples-yesod-pubsub
-    , morpheus-graphql-server
-    , morpheus-graphql-subscriptions
-    , shakespeare
-    , text
-    , unliftio-core
-    , wai
-    , wai-cors
-    , wai-websockets
-    , warp
-    , websockets
-    , yesod
-    , yesod-core
+      base >=4.7.0 && <5.0.0
+    , blaze-html >=0.2 && <1.0
+    , bytestring >=0.10.4 && <0.15.0
+    , extra >=1.0.0 && <2.0.0
+    , hashable >=1.0.0 && <2.0.0
+    , morpheus-graphql >=0.27.0 && <0.28.0
+    , morpheus-graphql-core >=0.27.0 && <0.28.0
+    , morpheus-graphql-examples-yesod-pubsub >=0.27.0 && <0.28.0
+    , morpheus-graphql-server >=0.27.0 && <0.28.0
+    , morpheus-graphql-subscriptions >=0.27.0 && <0.28.0
+    , shakespeare >=1.0 && <3.0
+    , text >=1.2.3 && <3.0.0
+    , unliftio-core >=0.0.1 && <0.4.0
+    , wai >=1.0.0 && <4.0
+    , wai-cors >=0.1.0 && <1.0
+    , wai-websockets >=1.0.0 && <4.0
+    , warp >=1.0.0 && <4.0
+    , websockets >=0.12.6.0 && <1.0.0
+    , yesod >=0.5 && <2.0
+    , yesod-core >=1.0 && <2.0
   default-language: Haskell2010
 
 test-suite yesod-gql-example-test
@@ -94,26 +94,26 @@ test-suite yesod-gql-example-test
       Paths_morpheus_graphql_examples_yesod_pubsub
   hs-source-dirs:
       test
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -rtsopts -threaded -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
-    , blaze-html
-    , bytestring
-    , extra
-    , hashable
-    , morpheus-graphql
-    , morpheus-graphql-core
-    , morpheus-graphql-examples-yesod-pubsub
-    , morpheus-graphql-server
-    , morpheus-graphql-subscriptions
-    , shakespeare
-    , text
-    , unliftio-core
-    , wai
-    , wai-cors
-    , wai-websockets
-    , warp
-    , websockets
-    , yesod
-    , yesod-core
+      base >=4.7.0 && <5.0.0
+    , blaze-html >=0.2 && <1.0
+    , bytestring >=0.10.4 && <0.15.0
+    , extra >=1.0.0 && <2.0.0
+    , hashable >=1.0.0 && <2.0.0
+    , morpheus-graphql >=0.27.0 && <0.28.0
+    , morpheus-graphql-core >=0.27.0 && <0.28.0
+    , morpheus-graphql-examples-yesod-pubsub >=0.27.0 && <0.28.0
+    , morpheus-graphql-server >=0.27.0 && <0.28.0
+    , morpheus-graphql-subscriptions >=0.27.0 && <0.28.0
+    , shakespeare >=1.0 && <3.0
+    , text >=1.2.3 && <3.0.0
+    , unliftio-core >=0.0.1 && <0.4.0
+    , wai >=1.0.0 && <4.0
+    , wai-cors >=0.1.0 && <1.0
+    , wai-websockets >=1.0.0 && <4.0
+    , warp >=1.0.0 && <4.0
+    , websockets >=0.12.6.0 && <1.0.0
+    , yesod >=0.5 && <2.0
+    , yesod-core >=1.0 && <2.0
   default-language: Haskell2010

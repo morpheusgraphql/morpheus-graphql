@@ -1,12 +1,14 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.0.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
 name:           morpheus-graphql-examples-scotty-freer
-version:        0.1.0.0
+version:        0.27.3
+synopsis:       morpheus graphql freer
 description:    example of graphql apis with scotty and freer-simple
+category:       web, graphql
 homepage:       https://github.com/githubuser/morpheus-graphql-examples-scotty-freer-simple#readme
 bug-reports:    https://github.com/githubuser/morpheus-graphql-examples-scotty-freer-simple/issues
 author:         Author name here
@@ -33,14 +35,14 @@ executable scotty-freer-server
       src
   ghc-options: -Wall
   build-depends:
-      base >=4.7 && <5
-    , bytestring
-    , file-embed
-    , freer-simple
-    , morpheus-graphql
-    , scotty
-    , text
-    , transformers
-    , wai
-    , warp
+      base >=4.7.0 && <5.0.0
+    , bytestring >=0.10.4 && <0.15.0
+    , file-embed >=0.0.10 && <1.0.0
+    , freer-simple >=1.0 && <3.0
+    , morpheus-graphql >=0.27.0 && <0.28.0
+    , scotty >=0.6.0 && <1.0
+    , text >=1.2.3 && <3.0.0
+    , transformers >=0.3.0 && <0.7.0
+    , wai >=1.0.0 && <4.0
+    , warp >=1.0.0 && <4.0
   default-language: Haskell2010

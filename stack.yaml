@@ -1,24 +1,27 @@
-allow-newer: true
-resolver: nightly-2024-04-20
-save-hackage-creds: false
+resolver: nightly-2024-05-29
 packages:
-  - examples/client
-  - examples/code-gen
-  - examples/code-gen-docs
-  - examples/scotty
-  - examples/scotty-haxl
-  - examples/servant
-  - examples/yesod-pubsub
-  - morpheus-graphql-tests
-  - morpheus-graphql-core
-  - morpheus-graphql-code-gen-utils
-  - morpheus-graphql-code-gen
-  - morpheus-graphql-app
-  - morpheus-graphql-client
-  - morpheus-graphql-subscriptions
-  - morpheus-graphql-server
-  - morpheus-graphql
+- examples/client
+- examples/code-gen
+- examples/code-gen-docs
+- examples/scotty
+- examples/scotty-haxl
+- examples/servant
+- examples/yesod-pubsub
+- morpheus-graphql-tests
+- morpheus-graphql-core
+- morpheus-graphql-code-gen-utils
+- morpheus-graphql-code-gen
+- morpheus-graphql-app
+- morpheus-graphql-client
+- morpheus-graphql-subscriptions
+- morpheus-graphql-server
+- morpheus-graphql-benchmarks
+- morpheus-graphql
+- hconf
+allow-newer: true
+save-hackage-creds: false
 extra-deps:
-  - fraxl-0.3.0.0
-  - haxl-2.4.0.0
-  - type-aligned-0.9.6
+- fastsum-0.1.1.1
+- fraxl-0.3.0.0
+- haxl-2.4.0.0
+- type-aligned-0.9.6

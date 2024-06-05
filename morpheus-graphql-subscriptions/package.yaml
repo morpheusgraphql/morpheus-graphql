@@ -11,25 +11,25 @@ copyright: (c) 2019 Daviti Nalchevanidze
 license-file: LICENSE
 description: Build GraphQL APIs with your favourite functional language!
 extra-source-files:
-  - README.md
-  - changelog.md
+- README.md
+- changelog.md
 dependencies:
-  - aeson                  >=  1.4.4     &&  <  3.0.0
-  - base                   >=  4.7.0     &&  <  5.0.0
-  - bytestring             >=  0.10.4    &&  <  0.15.0
-  - morpheus-graphql-core  >=  0.27.0    &&  <  0.28.0
-  - morpheus-graphql-app   >=  0.27.0    &&  <  0.28.0
-  - mtl                    >=  2.0.0     &&  <  3.0.0
-  - relude                 >=  0.3.0     &&  <  2.0.0
-  - text                   >=  1.2.3     &&  <  3.0.0
-  - transformers           >=  0.3.0     &&  <  0.7.0
-  - unordered-containers   >=  0.2.8     &&  <  0.3.0
-  - uuid                   >=  1.0.0     &&  <  1.4.0
-  - unliftio-core          >=  0.0.1     &&  <  0.4.0
-  - websockets             >=  0.12.6.0  &&  <  1.0.0
+- aeson                  >=  1.4.4     &&  <  3.0.0
+- base                   >=  4.7.0     &&  <  5.0.0
+- bytestring             >=  0.10.4    &&  <  0.15.0
+- morpheus-graphql-app   >=  0.27.0    &&  <  0.28.0
+- morpheus-graphql-core  >=  0.27.0    &&  <  0.28.0
+- mtl                    >=  2.0.0     &&  <  3.0.0
+- relude                 >=  0.3.0     &&  <  2.0.0
+- text                   >=  1.2.3     &&  <  3.0.0
+- transformers           >=  0.3.0     &&  <  0.7.0
+- unliftio-core          >=  0.0.1     &&  <  0.4.0
+- unordered-containers   >=  0.2.8     &&  <  0.3.0
+- uuid                   >=  1.0.0     &&  <  1.4.0
+- websockets             >=  0.12.6.0  &&  <  1.0.0
 library:
   source-dirs: src
+  ghc-options: -Wall
   exposed-modules:
-    - Data.Morpheus.Subscriptions
-    - Data.Morpheus.Subscriptions.Internal
-  ghc-options: '-Wall'
+  - Data.Morpheus.Subscriptions
+  - Data.Morpheus.Subscriptions.Internal

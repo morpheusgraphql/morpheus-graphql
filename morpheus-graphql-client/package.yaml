@@ -11,48 +11,48 @@ copyright: (c) 2019 Daviti Nalchevanidze
 license-file: LICENSE
 description: Build GraphQL APIs with your favorite functional language!
 extra-source-files:
-  - README.md
-  - changelog.md
+- README.md
+- changelog.md
 data-files:
-  - test/**/*.gql
-  - test/**/*.json
+- test/**/*.gql
+- test/**/*.json
 dependencies:
-  - aeson                            >=  1.4.4     &&  <  3.0.0
-  - base                             >=  4.7.0     &&  <  5.0.0
-  - bytestring                       >=  0.10.4    &&  <  0.15.0
-  - containers                       >=  0.4.2.1   &&  <  0.7.0
-  - file-embed                       >=  0.0.10    &&  <  1.0.0
-  - morpheus-graphql-code-gen-utils
-  - morpheus-graphql-core            >=  0.27.0    &&  <  0.28.0
-  - mtl                              >=  2.0.0     &&  <  3.0.0
-  - modern-uri                       >=  0.1.0.0   &&  <  1.0.0
-  - morpheus-graphql-subscriptions
-  - prettyprinter                    >=  1.7.0     &&  <  2.0.0
-  - relude                           >=  0.3.0     &&  <  2.0.0
-  - req                              >=  3.0.0     &&  <  4.0.0
-  - text                             >=  1.2.3     &&  <  3.0.0
-  - template-haskell                 >=  2.0.0     &&  <  3.0.0
-  - transformers                     >=  0.3.0     &&  <  0.7.0
-  - unordered-containers             >=  0.2.8     &&  <  0.3.0
-  - unliftio-core                    >=  0.0.1     &&  <  0.4.0
-  - wuss                             >=  1.0.0     &&  <  3.0.0
-  - websockets                       >=  0.12.6.0  &&  <  1.0.0
+- aeson                            >=  1.4.4     &&  <   3.0.0
+- base                             >=  4.7.0     &&  <   5.0.0
+- bytestring                       >=  0.10.4    &&  <   0.15.0
+- containers                       >=  0.4.2.1   &&  <=  0.7
+- file-embed                       >=  0.0.10    &&  <   1.0.0
+- modern-uri                       >=  0.1.0.0   &&  <   1.0.0
+- morpheus-graphql-code-gen-utils  >=  0.27.0    &&  <   0.28.0
+- morpheus-graphql-core            >=  0.27.0    &&  <   0.28.0
+- morpheus-graphql-subscriptions   >=  0.27.0    &&  <   0.28.0
+- mtl                              >=  2.0.0     &&  <   3.0.0
+- prettyprinter                    >=  1.7.0     &&  <   2.0.0
+- relude                           >=  0.3.0     &&  <   2.0.0
+- req                              >=  3.0.0     &&  <   4.0.0
+- template-haskell                 >=  2.0.0     &&  <   3.0.0
+- text                             >=  1.2.3     &&  <   3.0.0
+- transformers                     >=  0.3.0     &&  <   0.7.0
+- unliftio-core                    >=  0.0.1     &&  <   0.4.0
+- unordered-containers             >=  0.2.8     &&  <   0.3.0
+- websockets                       >=  0.12.6.0  &&  <   1.0.0
+- wuss                             >=  1.0.0     &&  <   3.0.0
 library:
   source-dirs: src
+  ghc-options: -Wall
   exposed-modules:
-    - Data.Morpheus.Client
-    - Data.Morpheus.Client.CodeGen.AST
-    - Data.Morpheus.Client.CodeGen.Internal
-  ghc-options: '-Wall'
+  - Data.Morpheus.Client
+  - Data.Morpheus.Client.CodeGen.AST
+  - Data.Morpheus.Client.CodeGen.Internal
 tests:
   morpheus-graphql-client-test:
     main: Spec.hs
     source-dirs: test
-    ghc-options: '-Wall'
+    ghc-options: -Wall
     dependencies:
-      - aeson                    >=  1.4.4  &&  <  3.0.0
-      - directory                >=  1.0.0  &&  <  2.0.0
-      - morpheus-graphql-client
-      - relude                   >=  0.3.0  &&  <  2.0.0
-      - tasty                    >=  0.1.0  &&  <  1.5.0
-      - tasty-hunit              >=  0.1.0  &&  <  1.0.0
+    - aeson                    >=  1.4.4   &&  <   3.0.0
+    - directory                >=  1.0.0   &&  <   2.0.0
+    - morpheus-graphql-client  >=  0.27.0  &&  <   0.28.0
+    - relude                   >=  0.3.0   &&  <   2.0.0
+    - tasty                    >=  0.1.0   &&  <=  1.5
+    - tasty-hunit              >=  0.1.0   &&  <   1.0.0

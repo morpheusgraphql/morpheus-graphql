@@ -1,0 +1,41 @@
+name: hconf
+version: 0.27.3
+github: nalchevanidze/morpheus-graphql
+license: MIT
+author: Daviti Nalchevanidze
+category: web, graphql
+synopsis: Stack Config
+maintainer: d.nalchevanidze@gmail.com
+copyright: (c) 2019 Daviti Nalchevanidze
+license-file: LICENSE
+description: cli to manage multiple stack projects
+extra-source-files:
+- README.md
+dependencies:
+- aeson                 >=  1.4.4    &&  <   3.0.0
+- base                  >=  4.7.0    &&  <   5.0.0
+- bytestring            >=  0.10.4   &&  <   0.15.0
+- containers            >=  0.4.2.1  &&  <=  0.7
+- filepath              >=  1.1.0    &&  <=  1.5.2.0
+- modern-uri            >=  0.1.0.0  &&  <   1.0.0
+- process               >=  1.0      &&  <   2.0
+- relude                >=  0.3.0    &&  <   2.0.0
+- req                   >=  3.0.0    &&  <   4.0.0
+- text                  >=  1.2.3    &&  <   3.0.0
+- unordered-containers  >=  0.2.8    &&  <   0.3.0
+- yaml                  >=  0.8.32   &&  <   1.0.0
+library:
+  source-dirs: src
+  ghc-options: -Wall
+  exposed-modules:
+  - HConf
+executables:
+  hconf:
+    main: Main.hs
+    source-dirs: app
+    ghc-options: -Wall
+    dependencies:
+    - Glob                  >=  0.7.0   &&  <   1.0.0
+    - filepath              >=  1.1.0   &&  <=  1.5.2.0
+    - hconf                 >=  0.27.0  &&  <   0.28.0
+    - optparse-applicative  >=  0.12.0  &&  <   0.20.0

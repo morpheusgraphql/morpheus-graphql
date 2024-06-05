@@ -11,12 +11,6 @@ runs:
     - name: Setup Node
       uses: actions/setup-node@v3
 
-    - name: generate stack config
-      run: |
-        npm i
-        npm run setup ${{ inputs.ghc }}
-      shell: bash
-
     - name: Setup Haskell
       uses: haskell/actions/setup@v1.2
       with:

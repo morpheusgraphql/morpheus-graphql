@@ -19,20 +19,9 @@ jobs:
         uses: ./.github/actions/setup-hs
 
       - name: Draft Release
-        id: draft
-        run: npm run release -- draft
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Generate Cabal Files
-        run: |
-          stack build --test --dry-run
-          stack sdist
-
-      - name: Open Release Pull Request
         run: |
           git config --global user.name "GitHub"
           git config --global user.email "<noreply@github.com>"
-          npm run release -- open ${{ steps.draft.outputs.version }} -b "${{ steps.draft.outputs.body }}"
+          npm run release -- open
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

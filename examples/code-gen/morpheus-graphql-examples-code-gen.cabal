@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           morpheus-graphql-examples-code-gen
-version:        0.1.0
+version:        0.27.3
 synopsis:       examples
 description:    examples of GraphQL APIs
 category:       web, graphql , code-gen
@@ -15,6 +15,7 @@ author:         Daviti Nalchevanidze
 maintainer:     Daviti Nalchevanidze
 copyright:      (c) 2019 Daviti Nalchevanidze
 license:        MIT
+license-file:   LICENSE
 build-type:     Simple
 
 source-repository head
@@ -50,12 +51,12 @@ executable generated-server
       src
   ghc-options: -Wall
   build-depends:
-      base >=4.7 && <5
-    , bytestring >=0.10.4
-    , containers >=0.4.2.1
-    , morpheus-graphql
-    , morpheus-graphql-client
-    , morpheus-graphql-server
-    , scotty
-    , text >=1.2.3.0
+      base >=4.7.0 && <5.0.0
+    , bytestring >=0.10.4 && <0.15.0
+    , containers >=0.4.2.1 && <=0.7
+    , morpheus-graphql >=0.27.0 && <0.28.0
+    , morpheus-graphql-client >=0.27.0 && <0.28.0
+    , morpheus-graphql-server >=0.27.0 && <0.28.0
+    , scotty >=0.6.0 && <1.0
+    , text >=1.2.3 && <3.0.0
   default-language: Haskell2010

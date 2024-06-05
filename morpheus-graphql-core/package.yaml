@@ -11,51 +11,51 @@ copyright: (c) 2019 Daviti Nalchevanidze
 license-file: LICENSE
 description: Build GraphQL APIs with your favorite functional language!
 extra-source-files:
-  - README.md
-  - changelog.md
+- README.md
+- changelog.md
 data-files:
-  - test/**/*.gql
-  - test/**/*.json
+- test/**/*.gql
+- test/**/*.json
 dependencies:
-  - aeson                 >=  1.4.4     &&  <  3.0.0
-  - base                  >=  4.7.0     &&  <  5.0.0
-  - bytestring            >=  0.10.4    &&  <  0.15.0
-  - containers            >=  0.4.2.1   &&  <  0.7.0
-  - hashable              >=  1.0.0     &&  <  2.0.0
-  - megaparsec            >=  7.0.0     &&  <  10.0.0
-  - mtl                   >=  2.0.0     &&  <  3.0.0
-  - relude                >=  0.3.0     &&  <  2.0.0
-  - scientific            >=  0.3.6.2   &&  <  0.4.0
-  - text                  >=  1.2.3     &&  <  3.0.0
-  - transformers          >=  0.3.0     &&  <  0.7.0
-  - template-haskell      >=  2.0.0     &&  <  3.0.0
-  - th-lift-instances     >=  0.1.1     &&  <  0.3.0
-  - unordered-containers  >=  0.2.8     &&  <  0.3.0
-  - vector                >=  0.12.0.1  &&  <  0.15.0
+- aeson                 >=  1.4.4     &&  <   3.0.0
+- base                  >=  4.7.0     &&  <   5.0.0
+- bytestring            >=  0.10.4    &&  <   0.15.0
+- containers            >=  0.4.2.1   &&  <=  0.7
+- hashable              >=  1.0.0     &&  <   2.0.0
+- megaparsec            >=  7.0.0     &&  <   10.0.0
+- mtl                   >=  2.0.0     &&  <   3.0.0
+- relude                >=  0.3.0     &&  <   2.0.0
+- scientific            >=  0.3.6.2   &&  <   0.4.0
+- template-haskell      >=  2.0.0     &&  <   3.0.0
+- text                  >=  1.2.3     &&  <   3.0.0
+- th-lift-instances     >=  0.1.1     &&  <   0.3.0
+- transformers          >=  0.3.0     &&  <   0.7.0
+- unordered-containers  >=  0.2.8     &&  <   0.3.0
+- vector                >=  0.12.0.1  &&  <   0.15.0
 library:
   source-dirs: src
+  ghc-options: -Wall
   exposed-modules:
-    - Data.Morpheus.Core
-    - Data.Morpheus.Error
-    - Data.Morpheus.Internal.Ext
-    - Data.Morpheus.Internal.Utils
-    - Data.Morpheus.QuasiQuoter
-    - Data.Morpheus.Types.GQLScalar
-    - Data.Morpheus.Types.ID
-    - Data.Morpheus.Types.IO
-    - Data.Morpheus.Types.Internal.AST
-    - Data.Morpheus.Types.SelectionTree
-  ghc-options: '-Wall'
+  - Data.Morpheus.Core
+  - Data.Morpheus.Error
+  - Data.Morpheus.Internal.Ext
+  - Data.Morpheus.Internal.Utils
+  - Data.Morpheus.QuasiQuoter
+  - Data.Morpheus.Types.GQLScalar
+  - Data.Morpheus.Types.ID
+  - Data.Morpheus.Types.IO
+  - Data.Morpheus.Types.Internal.AST
+  - Data.Morpheus.Types.SelectionTree
 tests:
   morpheus-graphql-core-test:
     main: Spec.hs
     source-dirs: test
-    ghc-options: '-Wall'
+    ghc-options: -Wall
     dependencies:
-      - aeson                   >=  1.4.4   &&  <  3.0.0
-      - directory               >=  1.0.0   &&  <  2.0.0
-      - morpheus-graphql-core
-      - morpheus-graphql-tests  >=  0.27.0  &&  <  0.28.0
-      - relude                  >=  0.3.0   &&  <  2.0.0
-      - tasty                   >=  0.1.0   &&  <  1.5.0
-      - tasty-hunit             >=  0.1.0   &&  <  1.0.0
+    - aeson                   >=  1.4.4   &&  <   3.0.0
+    - directory               >=  1.0.0   &&  <   2.0.0
+    - morpheus-graphql-core   >=  0.27.0  &&  <   0.28.0
+    - morpheus-graphql-tests  >=  0.27.0  &&  <   0.28.0
+    - relude                  >=  0.3.0   &&  <   2.0.0
+    - tasty                   >=  0.1.0   &&  <=  1.5
+    - tasty-hunit             >=  0.1.0   &&  <   1.0.0

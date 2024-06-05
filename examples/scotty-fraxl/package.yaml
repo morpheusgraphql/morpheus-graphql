@@ -8,15 +8,15 @@ synopsis: examples
 copyright: (c) 2019 Daviti Nalchevanidze
 description: Fraxl example of GraphQL APIs
 dependencies:
-  - base              >=  4.7.0    &&  <  5.0.0
-  - containers        >=  0.4.2.1  &&  <  0.7.0
-  - fraxl
-  - mtl               >=  2.0.0    &&  <  3.0.0
-  - morpheus-graphql
-  - scotty
-  - text              >=  1.2.3    &&  <  3.0.0
+- base              >=  4.7.0    &&  <   5.0.0
+- containers        >=  0.4.2.1  &&  <=  0.7
+- fraxl             >=  0.1      &&  <   1.0
+- morpheus-graphql  >=  0.27.0   &&  <   0.28.0
+- mtl               >=  2.0.0    &&  <   3.0.0
+- scotty            >=  0.6.0    &&  <   1.0
+- text              >=  1.2.3    &&  <   3.0.0
 executables:
   scotty-server-fraxl:
     main: Main.hs
     source-dirs: src
-    ghc-options: '-Wall'
+    ghc-options: -Wall
