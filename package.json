@@ -26,7 +26,7 @@
   },
   "dependencies": {
     "@actions/core": "^1.9.1",
-    "axios": "^0.26.1",
+    "axios": "^0.28.0",
     "commander": "^9.1.0",
     "glob": "^8.0.3",
     "js-yaml": "^4.1.0",
