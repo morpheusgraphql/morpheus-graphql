@@ -11,12 +11,6 @@ runs:
     - name: Setup Node
       uses: actions/setup-node@v3
 
-    - name: HConf Haskell
-      uses: haskell/actions/setup@v1.2
-      with:
-        ghc-version: ${{ inputs.ghc }}
-        enable-stack: true
-
     - name: Download HConf
       shell: bash
       run: |
@@ -28,6 +22,12 @@ runs:
         echo "$PWD/cli"
         echo "$PATH"
         ./hconf setup ${{ inputs.ghc }}
+
+    - name: HConf Haskell
+      uses: haskell/actions/setup@v1.2
+      with:
+        ghc-version: ${{ inputs.ghc }}
+        enable-stack: true
 
     - name: Cache Stack
       uses: actions/cache@v2
