@@ -9,19 +9,18 @@ runs:
   using: "composite"
   steps:
     - name: Setup Node
-      uses: actions/setup-node@v3
-
+      uses:
+        actions/setup-node@v3
+        # echo "$PWD/cli" >> $GITHUB_PATH
+        # echo "export PATH=\$PATH:$PWD/cli" >> $GITHUB_ENV
     - name: Download HConf
       shell: bash
       run: |
         npm i
         npm run hconf
-
-        echo "$PWD/cli" >> $GITHUB_PATH
-        echo "export PATH=\$PATH:$PWD/cli" >> $GITHUB_ENV
-        echo "$PWD/cli"
-        echo "$PATH"
-        ./hconf setup ${{ inputs.ghc }}
+        mv ./cli/hconf /home/runner/.local/bin
+        ls /home/runner/.local/bin
+        hconf setup ${{ inputs.ghc }}
 
     - name: HConf Haskell
       uses: haskell/actions/setup@v1.2
