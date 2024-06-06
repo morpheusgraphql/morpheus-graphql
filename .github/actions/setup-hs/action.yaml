@@ -18,10 +18,7 @@ runs:
       run: |
         npm i
         npm run hconf
-        echo "$PWD"
-        echo "$HOME"
-        cd /home/runner/.local
-        ls 
+        mkdir /home/runner/.local/bin
         mv ./cli/hconf /home/runner/.local/bin/hconf
         hconf setup ${{ inputs.ghc }}
 
