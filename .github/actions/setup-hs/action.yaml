@@ -8,13 +8,18 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Download HConf
+    - name: Install/Setup HConf
       shell: bash
       run: |
         curl -sSL https://raw.githubusercontent.com/nalchevanidze/hconf/main/scripts/install.sh | sh -s .
         hconf setup ${{ inputs.ghc }}
 
     - uses: actions/setup-node@v3
+
+    - name: Install NPM
+      shell: bash
+      run: npm i
+
     - name: HConf Haskell
       uses: haskell/actions/setup@v1.2
       with:
