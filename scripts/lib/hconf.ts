@@ -17,7 +17,7 @@ export const setupHconf = async () =>
       } catch {}
 
       exec(`cp ${bin} $HOME/.local/bin/hconf`);
-      exec("hconf version");
+      console.log(`installed hconf: ${exec("hconf version")}`);
     },
     { fileName: "hconf", url }
   );
