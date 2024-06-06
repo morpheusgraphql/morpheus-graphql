@@ -18,7 +18,7 @@ runs:
       run: |
         npm i
         npm run hconf
-        mv ./cli/hconf /home/runner/.local/bin
+        mv ./cli/hconf /home/runner/.local/bin/hconf
         ls /home/runner/.local/bin
         hconf setup ${{ inputs.ghc }}
 
