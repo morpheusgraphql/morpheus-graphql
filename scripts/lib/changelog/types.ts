@@ -1,6 +1,13 @@
 import { Maybe } from "../types";
 
-const config = {
+type PrType = "breaking" | "feature" | "fix" | "chore";
+
+type Config = {
+  scope: Record<string, string>;
+  pr: Record<PrType, string>;
+};
+
+const config: Config = {
   scope: {
     server: "morpheus-graphql",
     client: "morpheus-graphql-client",
