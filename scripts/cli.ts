@@ -4,6 +4,7 @@ import { changelog } from "./lib/changelog";
 
 import { Command } from "commander";
 import { format } from "./lib/format";
+import { setupHconf } from "./lib/hconf";
 
 const cli = new Command();
 
@@ -15,6 +16,8 @@ cli
   .option("--fix <boolean>", "fix", false)
   .option("--path <string>", "path", "./morpheus-graphql*/**/*.hs")
   .action(format);
+
+cli.command("hconf").action(setupHconf);
 
 const release = cli.command("release");
 

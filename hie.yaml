@@ -56,7 +56,3 @@ cradle:
       component: morpheus-graphql:lib
     - path: ./morpheus-graphql/test
       component: morpheus-graphql:test:morpheus-graphql-test
-    - path: ./hconf/src
-      component: hconf:lib
-    - path: ./hconf/app
-      component: hconf:exe:hconf

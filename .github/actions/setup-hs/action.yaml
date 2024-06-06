@@ -8,10 +8,15 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Setup Node
-      uses: actions/setup-node@v3
+    - uses: actions/setup-node@v3
+    - name: Download HConf
+      shell: bash
+      run: |
+        npm i
+        npm run hconf
+        hconf setup ${{ inputs.ghc }}
 
-    - name: Setup Haskell
+    - name: HConf Haskell
       uses: haskell/actions/setup@v1.2
       with:
         ghc-version: ${{ inputs.ghc }}
