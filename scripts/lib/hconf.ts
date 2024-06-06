@@ -12,8 +12,12 @@ const url = `https://github.com/nalchevanidze/hconf/releases/download/0.1.2/${co
 export const setupHconf = async () =>
   run(
     async (bin) => {
-      exec(`mkdir cli`);
-      exec(`cp ${bin} ./cli/hconf`);
+      try {
+        exec(`mkdir $HOME/.local/bin`);
+      } catch {}
+
+      exec(`cp ${bin} $HOME/.local/bin/hconf`);
+      exec("hconf version");
     },
     { fileName: "hconf", url }
   );

@@ -18,9 +18,6 @@ runs:
       run: |
         npm i
         npm run hconf
-        mkdir $HOME/.local/bin
-        mv ./cli/hconf $HOME/.local/bin/hconf
-        hconf version
         hconf setup ${{ inputs.ghc }}
 
     - name: HConf Haskell
