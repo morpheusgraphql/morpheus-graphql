@@ -26,10 +26,6 @@ groups:
       - benchmarks
       - .
     prefix: true
-  - name: hconf
-    packages:
-      - hconf
-    dir: ./
 builds:
   - ghc: 8.4.4
     resolver: lts-12.26
