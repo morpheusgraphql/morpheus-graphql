@@ -20,8 +20,9 @@ runs:
         npm run hconf
         echo "$PWD"
         echo "$HOME"
+        cd /home/runner/.local/bin
+        ls 
         mv ./cli/hconf /home/runner/.local/bin/hconf
-        ls /home/runner/.local/bin
         hconf setup ${{ inputs.ghc }}
 
     - name: HConf Haskell
