@@ -1,5 +1,5 @@
 name: morpheus-graphql-examples-scotty-freer
-version: 0.27.3
+version: 0.28.0
 github: githubuser/morpheus-graphql-examples-scotty-freer-simple
 license: BSD3
 author: Author name here
@@ -13,7 +13,7 @@ dependencies:
 - bytestring        >=  0.10.4  &&  <  0.15.0
 - file-embed        >=  0.0.10  &&  <  1.0.0
 - freer-simple      >=  1.0     &&  <  3.0
-- morpheus-graphql  >=  0.27.0  &&  <  0.28.0
+- morpheus-graphql  >=  0.28.0  &&  <  0.29.0
 - scotty            >=  0.6.0   &&  <  1.0
 - text              >=  1.2.3   &&  <  3.0.0
 - transformers      >=  0.3.0   &&  <  0.7.0

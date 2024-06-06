@@ -1,11 +1,11 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.36.0.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 
 name:           morpheus-graphql-subscriptions
-version:        0.27.3
+version:        0.28.0
 synopsis:       Morpheus GraphQL Subscriptions
 description:    Build GraphQL APIs with your favourite functional language!
 category:       web, graphql, subscriptions
@@ -43,8 +43,8 @@ library
       aeson >=1.4.4 && <3.0.0
     , base >=4.7.0 && <5.0.0
     , bytestring >=0.10.4 && <0.15.0
-    , morpheus-graphql-app >=0.27.0 && <0.28.0
-    , morpheus-graphql-core >=0.27.0 && <0.28.0
+    , morpheus-graphql-app >=0.28.0 && <0.29.0
+    , morpheus-graphql-core >=0.28.0 && <0.29.0
     , mtl >=2.0.0 && <3.0.0
     , relude >=0.3.0 && <2.0.0
     , text >=1.2.3 && <3.0.0
