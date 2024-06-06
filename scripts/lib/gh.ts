@@ -50,8 +50,8 @@ class Github {
 
   public issue = (n: number) => `https://${this.path}/issues/${n}`;
 
-  public release = (body: string) => {
-    const version = hconf("version");
+  public release = async (body: string) => {
+    const version = await hconf("version");
     const name = `publish-release/${version}`;
 
     git("add", ".");
