@@ -4,24 +4,7 @@ import { lastTag } from "../git";
 import { hconf } from "../utils";
 import { Config } from "./types";
 
-const config: Config = {
-  scope: {
-    server: "morpheus-graphql",
-    client: "morpheus-graphql-client",
-    core: "morpheus-graphql-core",
-    subscriptions: "morpheus-graphql-subscriptions",
-    tests: "morpheus-graphql-tests",
-    app: "morpheus-graphql-app",
-  },
-  pr: {
-    breaking: "Breaking Change",
-    feature: "New features",
-    fix: "Bug Fixes",
-    chore: "Minor Changes",
-  },
-};
-
-export const changelog = async (change: boolean = false) => {
+export const changelog = async (config: Config, change: boolean = false) => {
   const version = lastTag();
   const projectVersion = await hconf("version");
   const changes = await fetchChanges(config, version);

@@ -7,10 +7,11 @@ import { github } from "../gh";
 
 const link = (name: string, url: string) => `[${name}](${url})`;
 
-const packageURL = (name: string) =>
+const packageURL = (config: Config, name: string) =>
   `https://hackage.haskell.org/package/${config.scope[name]}`;
 
-const renderScope = (scope: string) => link(scope, packageURL(scope));
+const renderScope = (config: Config) => (scope: string) =>
+  link(scope, packageURL(config, scope));
 
 const indent = (x: number) =>
   range(0, x * 2)
@@ -23,36 +24,34 @@ const renderStats = (topics: [string, string][]) =>
     .map(([topic, value]) => `${indent(1)}- ${topic} ${value}`)
     .join("\n");
 
-const renderPullRequest = ({
-  number,
-  author,
-  title,
-  body,
-  scopes,
-}: Change): string => {
-  const details = body
-    ? `${indent(1)}- <details>\n${indent(3)}${body.replace(
-        /\n/g,
-        `\n${indent(3)}`
-      )}\n${indent(1)}  </details>`
-    : "";
+const renderPullRequest =
+  (config: Config) =>
+  ({ number, author, title, body, scopes }: Change): string => {
+    const details = body
+      ? `${indent(1)}- <details>\n${indent(3)}${body.replace(
+          /\n/g,
+          `\n${indent(3)}`
+        )}\n${indent(1)}  </details>`
+      : "";
 
-  const head = `* ${link(
-    `#${number}`,
-    github.issue(number)
-  )}: ${title?.trim()}`;
+    const head = `* ${link(
+      `#${number}`,
+      github.issue(number)
+    )}: ${title?.trim()}`;
 
-  const stats = renderStats([
-    ["📦", scopes.map(renderScope).join(", ")],
-    ["👤", link(`@${author.login}`, author.url)],
-    ["📎", ""],
-  ]);
+    const stats = renderStats([
+      ["📦", scopes.map(renderScope(config)).join(", ")],
+      ["👤", link(`@${author.login}`, author.url)],
+      ["📎", ""],
+    ]);
 
-  return [head, stats, details].filter(Boolean).join("\n");
-};
+    return [head, stats, details].filter(Boolean).join("\n");
+  };
 
-const renderSection = (label: string, pullRequests: Change[]) =>
-  [`#### ${label}`, pullRequests.map(renderPullRequest)].flat().join("\n");
+const renderSection = (config: Config, label: string, pullRequests: Change[]) =>
+  [`#### ${label}`, pullRequests.map(renderPullRequest(config))]
+    .flat()
+    .join("\n");
 
 const render = (config: Config, tag: string, changes: Change[]) => {
   const groups = groupBy(({ type }) => type, changes);
@@ -61,7 +60,7 @@ const render = (config: Config, tag: string, changes: Change[]) => {
     `## ${tag || "Unreleased"} (${getDate()})\n`,
     Object.entries(config.pr)
       .flatMap(([type, label]) =>
-        isKey(groups, type) ? renderSection(label, groups[type]) : ""
+        isKey(groups, type) ? renderSection(config, label, groups[type]) : ""
       )
       .filter(Boolean)
       .join("\n\n"),

@@ -4,10 +4,28 @@ import { changelog } from "./lib/changelog";
 
 import { Command } from "commander";
 import { format } from "./lib/format";
+import { Config } from "./lib/changelog/types";
 
 const cli = new Command();
 
 cli.name("cli").description("cli").version("0.0.0");
+
+const config: Config = {
+  scope: {
+    server: "morpheus-graphql",
+    client: "morpheus-graphql-client",
+    core: "morpheus-graphql-core",
+    subscriptions: "morpheus-graphql-subscriptions",
+    tests: "morpheus-graphql-tests",
+    app: "morpheus-graphql-app",
+  },
+  pr: {
+    breaking: "Breaking Change",
+    feature: "New features",
+    fix: "Bug Fixes",
+    chore: "Minor Changes",
+  },
+};
 
 cli
   .command("format")
@@ -22,13 +40,13 @@ release
   .command("open")
   .option("-p, --preview", "preview", false)
   .action(({ preview }: { preview: string }) =>
-    changelog(true)
+    changelog(config, true)
       .then(preview ? () => Promise.resolve() : github.release)
       .catch(exit)
   );
 
 release
   .command("changelog")
-  .action(() => changelog().then(write("changelog.md")).catch(exit));
+  .action(() => changelog(config).then(write("changelog.md")).catch(exit));
 
 cli.parse();
