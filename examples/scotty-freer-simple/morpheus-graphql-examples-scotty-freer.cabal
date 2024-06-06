@@ -1,11 +1,11 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.36.0.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 
 name:           morpheus-graphql-examples-scotty-freer
-version:        0.27.3
+version:        0.28.0
 synopsis:       morpheus graphql freer
 description:    example of graphql apis with scotty and freer-simple
 category:       web, graphql
@@ -39,7 +39,7 @@ executable scotty-freer-server
     , bytestring >=0.10.4 && <0.15.0
     , file-embed >=0.0.10 && <1.0.0
     , freer-simple >=1.0 && <3.0
-    , morpheus-graphql >=0.27.0 && <0.28.0
+    , morpheus-graphql >=0.28.0 && <0.29.0
     , scotty >=0.6.0 && <1.0
     , text >=1.2.3 && <3.0.0
     , transformers >=0.3.0 && <0.7.0

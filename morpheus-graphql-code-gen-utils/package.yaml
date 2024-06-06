@@ -1,5 +1,5 @@
 name: morpheus-graphql-code-gen-utils
-version: 0.27.3
+version: 0.28.0
 github: morpheusgraphql/morpheus-graphql
 license: BSD3
 author: Daviti Nalchevanidze
@@ -16,7 +16,7 @@ dependencies:
 - base                   >=  4.7.0    &&  <   5.0.0
 - bytestring             >=  0.10.4   &&  <   0.15.0
 - containers             >=  0.4.2.1  &&  <=  0.7
-- morpheus-graphql-core  >=  0.27.0   &&  <   0.28.0
+- morpheus-graphql-core  >=  0.28.0   &&  <   0.29.0
 - mtl                    >=  2.0.0    &&  <   3.0.0
 - prettyprinter          >=  1.7.0    &&  <   2.0.0
 - relude                 >=  0.3.0    &&  <   2.0.0
