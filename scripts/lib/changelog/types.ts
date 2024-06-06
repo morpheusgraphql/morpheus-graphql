@@ -1,38 +1,19 @@
 import { Maybe } from "../types";
 
-type PrType = "breaking" | "feature" | "fix" | "chore";
+type PRType = "breaking" | "feature" | "fix" | "chore";
 
 type Config = {
   scope: Record<string, string>;
-  pr: Record<PrType, string>;
+  pr: Record<PRType, string>;
 };
 
-const config: Config = {
-  scope: {
-    server: "morpheus-graphql",
-    client: "morpheus-graphql-client",
-    core: "morpheus-graphql-core",
-    subscriptions: "morpheus-graphql-subscriptions",
-    tests: "morpheus-graphql-tests",
-    app: "morpheus-graphql-app",
-  },
-  pr: {
-    breaking: "Breaking Change",
-    feature: "New features",
-    fix: "Bug Fixes",
-    chore: "Minor Changes",
-  },
-};
+type LabelKind = keyof Config;
 
-export const pullRequestTypes = config.pr;
+type Value<T extends LabelKind> = keyof Config[T];
 
-type CONFIG = typeof config;
-type LabelKind = keyof CONFIG;
-type VALUES<T extends LabelKind> = keyof CONFIG[T];
-
-export const parseLabel =
-  <T extends LabelKind>(kind: T) =>
-  (label: string): Maybe<VALUES<T>> => {
+const parseLabel =
+  <T extends LabelKind>(config: Config, kind: T) =>
+  (label: string): Maybe<Value<T>> => {
     const [prefix, name, ...rest] = label.split("/");
 
     if (prefix !== kind) return;
@@ -41,11 +22,16 @@ export const parseLabel =
       throw new Error(`invalid label ${label}`);
     }
 
-    return name as VALUES<T>;
+    return name as Value<T>;
   };
 
-type SCOPE = keyof typeof config.scope;
+const parseLabels = <T extends LabelKind>(
+  config: Config,
+  kind: T,
+  labels: string[]
+) =>
+  labels
+    .map(parseLabel(config, kind))
+    .filter((x: Value<T> | undefined): x is Value<T> => Boolean(x));
 
-type PR_TYPE = keyof typeof pullRequestTypes;
-
-export { SCOPE, PR_TYPE, config };
+export { PRType, Config, parseLabels };

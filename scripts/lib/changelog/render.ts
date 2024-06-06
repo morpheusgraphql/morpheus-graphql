@@ -1,16 +1,16 @@
 import { groupBy, range } from "ramda";
 import { isKey } from "../utils";
 import { Change } from "./fetch";
-import { pullRequestTypes, config, SCOPE } from "./types";
+import { Config } from "./types";
 import { getDate } from "../git";
 import { github } from "../gh";
 
 const link = (name: string, url: string) => `[${name}](${url})`;
 
-const packageURL = (name: SCOPE) =>
+const packageURL = (name: string) =>
   `https://hackage.haskell.org/package/${config.scope[name]}`;
 
-const renderScope = (scope: SCOPE) => link(scope, packageURL(scope));
+const renderScope = (scope: string) => link(scope, packageURL(scope));
 
 const indent = (x: number) =>
   range(0, x * 2)
@@ -54,12 +54,12 @@ const renderPullRequest = ({
 const renderSection = (label: string, pullRequests: Change[]) =>
   [`#### ${label}`, pullRequests.map(renderPullRequest)].flat().join("\n");
 
-const render = (tag: string, changes: Change[]) => {
+const render = (config: Config, tag: string, changes: Change[]) => {
   const groups = groupBy(({ type }) => type, changes);
 
   return [
     `## ${tag || "Unreleased"} (${getDate()})\n`,
-    Object.entries(pullRequestTypes)
+    Object.entries(config.pr)
       .flatMap(([type, label]) =>
         isKey(groups, type) ? renderSection(label, groups[type]) : ""
       )

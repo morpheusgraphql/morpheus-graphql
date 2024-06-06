@@ -2,7 +2,7 @@ import { isNil, map, pluck, propEq, reject, uniq } from "ramda";
 import { github } from "../gh";
 import { Maybe } from "../types";
 import { getPRNumber } from "../utils";
-import { parseLabel, PR_TYPE, SCOPE } from "./types";
+import { Config, parseLabels, PRType } from "./types";
 import { commitsAfter } from "../git";
 
 type Commit = {
@@ -52,14 +52,14 @@ const fetchPPs = github.batch<PR>(
 );
 
 type Change = PR & {
-  type: PR_TYPE;
-  scopes: SCOPE[];
+  type: PRType;
+  scopes: string[];
 };
 
 const toPRNumbers = (commit: Commit[]) =>
   uniq(reject(isNil, commit.map(toPRNumber)));
 
-const fetchChanges = (version: string) =>
+const fetchChanges = (config: Config, version: string) =>
   fetchCommits(commitsAfter(version))
     .then(toPRNumbers)
     .then(fetchPPs)
@@ -69,8 +69,8 @@ const fetchChanges = (version: string) =>
 
         return {
           ...pr,
-          type: labels.map(parseLabel("pr")).find(Boolean) ?? "chore",
-          scopes: labels.map(parseLabel("scope")).filter(Boolean) as SCOPE[],
+          type: parseLabels(config, "pr", labels).find(Boolean) ?? "chore",
+          scopes: parseLabels(config, "scope", labels),
         };
       })
     );
