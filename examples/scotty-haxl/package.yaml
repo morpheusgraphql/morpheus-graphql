@@ -1,5 +1,5 @@
 name: morpheus-graphql-examples-scotty-haxl
-version: 0.27.3
+version: 0.28.0
 github: nalchevanidze/morpheus-graphql
 license: MIT
 author: Daviti Nalchevanidze
@@ -12,8 +12,8 @@ dependencies:
 - containers            >=  0.4.2.1  &&  <=  0.7
 - hashable              >=  1.0.0    &&  <   2.0.0
 - haxl                  >=  0.1.0    &&  <   3.0
-- morpheus-graphql      >=  0.27.0   &&  <   0.28.0
-- morpheus-graphql-app  >=  0.27.0   &&  <   0.28.0
+- morpheus-graphql      >=  0.28.0   &&  <   0.29.0
+- morpheus-graphql-app  >=  0.28.0   &&  <   0.29.0
 - mtl                   >=  2.0.0    &&  <   3.0.0
 - scotty                >=  0.6.0    &&  <   1.0
 - text                  >=  1.2.3    &&  <   3.0.0

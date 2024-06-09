@@ -1,11 +1,11 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.36.0.
+-- This file has been generated from package.yaml by hpack version 0.34.4.
 --
 -- see: https://github.com/sol/hpack
 
 name:           morpheus-graphql-client
-version:        0.27.3
+version:        0.28.0
 synopsis:       Morpheus GraphQL Client
 description:    Build GraphQL APIs with your favorite functional language!
 category:       web, graphql, client
@@ -93,9 +93,9 @@ library
     , containers >=0.4.2.1 && <=0.7
     , file-embed >=0.0.10 && <1.0.0
     , modern-uri >=0.1.0.0 && <1.0.0
-    , morpheus-graphql-code-gen-utils >=0.27.0 && <0.28.0
-    , morpheus-graphql-core >=0.27.0 && <0.28.0
-    , morpheus-graphql-subscriptions >=0.27.0 && <0.28.0
+    , morpheus-graphql-code-gen-utils >=0.28.0 && <0.29.0
+    , morpheus-graphql-core >=0.28.0 && <0.29.0
+    , morpheus-graphql-subscriptions >=0.28.0 && <0.29.0
     , mtl >=2.0.0 && <3.0.0
     , prettyprinter >=1.7.0 && <2.0.0
     , relude >=0.3.0 && <2.0.0
@@ -135,10 +135,10 @@ test-suite morpheus-graphql-client-test
     , directory >=1.0.0 && <2.0.0
     , file-embed >=0.0.10 && <1.0.0
     , modern-uri >=0.1.0.0 && <1.0.0
-    , morpheus-graphql-client >=0.27.0 && <0.28.0
-    , morpheus-graphql-code-gen-utils >=0.27.0 && <0.28.0
-    , morpheus-graphql-core >=0.27.0 && <0.28.0
-    , morpheus-graphql-subscriptions >=0.27.0 && <0.28.0
+    , morpheus-graphql-client >=0.28.0 && <0.29.0
+    , morpheus-graphql-code-gen-utils >=0.28.0 && <0.29.0
+    , morpheus-graphql-core >=0.28.0 && <0.29.0
+    , morpheus-graphql-subscriptions >=0.28.0 && <0.29.0
     , mtl >=2.0.0 && <3.0.0
     , prettyprinter >=1.7.0 && <2.0.0
     , relude >=0.3.0 && <2.0.0

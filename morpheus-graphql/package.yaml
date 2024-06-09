@@ -1,5 +1,5 @@
 name: morpheus-graphql
-version: 0.27.3
+version: 0.28.0
 github: nalchevanidze/morpheus-graphql
 license: MIT
 author: Daviti Nalchevanidze
@@ -22,10 +22,10 @@ dependencies:
 - base                       >=  4.7.0     &&  <   5.0.0
 - bytestring                 >=  0.10.4    &&  <   0.15.0
 - containers                 >=  0.4.2.1   &&  <=  0.7
-- morpheus-graphql-app       >=  0.27.0    &&  <   0.28.0
-- morpheus-graphql-code-gen  >=  0.27.0    &&  <   0.28.0
-- morpheus-graphql-core      >=  0.27.0    &&  <   0.28.0
-- morpheus-graphql-server    >=  0.27.0    &&  <   0.28.0
+- morpheus-graphql-app       >=  0.28.0    &&  <   0.29.0
+- morpheus-graphql-code-gen  >=  0.28.0    &&  <   0.29.0
+- morpheus-graphql-core      >=  0.28.0    &&  <   0.29.0
+- morpheus-graphql-server    >=  0.28.0    &&  <   0.29.0
 - mtl                        >=  2.0.0     &&  <   3.0.0
 - relude                     >=  0.3.0     &&  <   2.0.0
 - template-haskell           >=  2.0.0     &&  <   3.0.0
@@ -49,9 +49,9 @@ tests:
     ghc-options: -Wall
     dependencies:
     - aeson                           >=  1.4.4   &&  <   3.0.0
-    - morpheus-graphql                >=  0.27.0  &&  <   0.28.0
-    - morpheus-graphql-server         >=  0.27.0  &&  <   0.28.0
-    - morpheus-graphql-subscriptions  >=  0.27.0  &&  <   0.28.0
-    - morpheus-graphql-tests          >=  0.27.0  &&  <   0.28.0
+    - morpheus-graphql                >=  0.28.0  &&  <   0.29.0
+    - morpheus-graphql-server         >=  0.28.0  &&  <   0.29.0
+    - morpheus-graphql-subscriptions  >=  0.28.0  &&  <   0.29.0
+    - morpheus-graphql-tests          >=  0.28.0  &&  <   0.29.0
     - tasty                           >=  0.1.0   &&  <=  1.5
     - tasty-hunit                     >=  0.1.0   &&  <   1.0.0
