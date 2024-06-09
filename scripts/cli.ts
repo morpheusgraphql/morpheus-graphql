@@ -1,14 +1,14 @@
-import { exit, hconf, write } from "./lib/utils";
+import { exit, hconf, write } from "./utils";
 
 import { Command } from "commander";
-import { format } from "./lib/format";
-import {  GHRelEasy } from "gh-rel-easy";
+import { format } from "./format";
+import { GHRelEasy } from "gh-rel-easy";
 
 const cli = new Command();
 
 cli.name("cli").description("cli").version("0.0.0");
 
-const scope = {
+const scope: Record<string, string> = {
   server: "morpheus-graphql",
   client: "morpheus-graphql-client",
   core: "morpheus-graphql-core",
