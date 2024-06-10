@@ -23,7 +23,6 @@
     "cspell": "^6.31.1"
   },
   "dependencies": {
-    "@actions/core": "^1.9.1",
     "commander": "^9.1.0",
     "gh-rel-easy": "^0.3.0",
     "glob": "^8.0.3",

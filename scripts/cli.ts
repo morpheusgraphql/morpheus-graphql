@@ -1,5 +1,5 @@
-import { exit } from "./utils";
 import { Command } from "commander";
+import { exit } from "./utils";
 import { format } from "./format";
 import { open, changelog } from "./release";
 

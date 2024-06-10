@@ -1,8 +1,6 @@
 import { execSync, StdioOptions } from "child_process";
-import * as core from "@actions/core";
 
 export const exit = (error: Error) => {
-  core.setFailed(error);
   console.error(error);
   process.exit(1);
 };
