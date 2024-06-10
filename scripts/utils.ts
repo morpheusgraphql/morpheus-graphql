@@ -1,7 +1,7 @@
 import { execSync, StdioOptions } from "child_process";
 
 export const exit = (error: Error) => {
-  console.error(error);
+  log(error.message, "error");
   process.exit(1);
 };
 

@@ -1,4 +1,4 @@
-import { exec } from "./utils";
+import { exec, exit } from "./utils";
 import { dirname, join } from "path";
 import { writeFile } from "fs/promises";
 import { GHRelEasy } from "gh-rel-easy";
@@ -47,13 +47,17 @@ const release = new GHRelEasy({
   },
 });
 
-export const open = (preview: boolean) =>
-  release.changelog().then(async (body) => {
-    await hconf("setup");
+export const open = ({ preview }: { preview: boolean }) =>
+  release
+    .changelog()
+    .then(async (body) => {
+      await hconf("setup");
 
-    if (preview) return;
+      if (preview) return;
 
-    await release.open(body);
-  });
+      await release.open(body);
+    })
+    .catch(exit);
 
-export const changelog = () => release.changelog().then(write("changelog.md"));
+export const changelog = () =>
+  release.changelog().then(write("changelog.md")).catch(exit);

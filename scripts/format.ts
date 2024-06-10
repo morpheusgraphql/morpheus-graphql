@@ -1,7 +1,6 @@
 import glob from "glob";
-import { exit } from "process";
 import { promisify } from "util";
-import { exec, log } from "./utils";
+import { exec, log, exit } from "./utils";
 
 const config: Record<string, string> = {
   linux: "/ormolu-Linux.zip",
@@ -32,9 +31,8 @@ export const run = async (
     await f(bin);
     log("OK\n", "success");
   } catch (e) {
-    log(e.message + "\n", "error");
     exec(`rm -rf ${dir}`);
-    exit(1);
+    exit(e);
   }
   exec(`rm -rf ${dir}`);
 };
@@ -59,4 +57,4 @@ export const format = async ({ fix, path }: { fix: boolean; path: string }) =>
       fileName: "ormolu",
       url: `https://github.com/tweag/ormolu/releases/download/0.5.0.1/${config[platform]}`,
     }
-  );
+  ).catch(exit);

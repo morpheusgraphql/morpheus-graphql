@@ -1,5 +1,4 @@
 import { Command } from "commander";
-import { exit } from "./utils";
 import { format } from "./format";
 import { open, changelog } from "./release";
 
@@ -14,11 +13,8 @@ cli
   .option("--path <string>", "path", "./morpheus-graphql*/**/*.hs")
   .action(format);
 
-cli
-  .command("open")
-  .option("-p, --preview", "preview", false)
-  .action(({ preview }: { preview: boolean }) => open(preview).catch(exit));
+cli.command("open").option("-p, --preview", "preview", false).action(open);
 
-cli.command("changelog").action(() => changelog().catch(exit));
+cli.command("changelog").action(changelog);
 
 cli.parse();
