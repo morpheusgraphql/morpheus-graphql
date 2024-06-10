@@ -30,10 +30,7 @@ const scope: Record<string, string> = {
 
 const release = new GHRelEasy({
   pkg: (name) => `https://hackage.haskell.org/package/${scope[name]}`,
-  gh: {
-    org: "morpheusgraphql",
-    repo: "morpheus-graphql",
-  },
+  gh: { org: "morpheusgraphql", repo: "morpheus-graphql" },
   scope,
   pr: {
     major: "Major Change",
