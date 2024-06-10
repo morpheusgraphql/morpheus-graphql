@@ -1,7 +1,7 @@
-import { exit, write } from "./utils";
+import { exit } from "./utils";
 import { Command } from "commander";
 import { format } from "./format";
-import { open, relEasy } from "./rel-easy";
+import { open, changelog } from "./rel-easy";
 
 const cli = new Command();
 
@@ -19,8 +19,6 @@ cli
   .option("-p, --preview", "preview", false)
   .action(({ preview }: { preview: boolean }) => open(preview).catch(exit));
 
-cli
-  .command("changelog")
-  .action(() => relEasy.changelog().then(write("changelog.md")).catch(exit));
+cli.command("changelog").action(() => changelog().catch(exit));
 
 cli.parse();

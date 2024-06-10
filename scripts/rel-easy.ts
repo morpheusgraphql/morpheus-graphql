@@ -1,5 +1,7 @@
 import { GHRelEasy } from "gh-rel-easy";
 import { exec } from "./utils";
+import { writeFile } from "fs/promises";
+import { dirname, join } from "path";
 
 export const hconf = async (
   cmd: "version" | "setup" | "next",
@@ -14,6 +16,9 @@ export const hconf = async (
   return Promise.resolve(result);
 };
 
+const write = (p: string) => (f: string) =>
+  writeFile(join(dirname(require.main?.filename ?? ""), "../", p), f, "utf8");
+
 const scope: Record<string, string> = {
   server: "morpheus-graphql",
   client: "morpheus-graphql-client",
@@ -23,7 +28,7 @@ const scope: Record<string, string> = {
   app: "morpheus-graphql-app",
 };
 
-export const relEasy = new GHRelEasy({
+const release = new GHRelEasy({
   pkg: (name) => `https://hackage.haskell.org/package/${scope[name]}`,
   gh: {
     org: "morpheusgraphql",
@@ -46,10 +51,12 @@ export const relEasy = new GHRelEasy({
 });
 
 export const open = (preview: boolean) =>
-  relEasy.changelog().then(async (body) => {
+  release.changelog().then(async (body) => {
     await hconf("setup");
 
     if (preview) return;
 
-    await relEasy.open(body);
+    await release.open(body);
   });
+
+export const changelog = () => release.changelog().then(write("changelog.md"));
