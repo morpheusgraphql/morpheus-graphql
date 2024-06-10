@@ -1,7 +1,7 @@
 import { exit } from "./utils";
 import { Command } from "commander";
 import { format } from "./format";
-import { open, changelog } from "./rel-easy";
+import { open, changelog } from "./release";
 
 const cli = new Command();
 
