@@ -16,6 +16,11 @@ const hconf = async (
   return Promise.resolve(result);
 };
 
+const version = () => hconf("version");
+
+const next = (isBreaking: boolean) =>
+  hconf("next", ...(isBreaking ? ["-b"] : [])).then(version);
+
 const write = (p: string) => (f: string) =>
   writeFile(join(dirname(require.main?.filename ?? ""), "../", p), f, "utf8");
 
@@ -39,24 +44,16 @@ const release = new GHRelEasy({
     fix: "Bug Fixes",
     chore: "Minor Changes",
   },
-  version: () => hconf("version"),
-  next: async (isBreaking) => {
-    await hconf("next", ...(isBreaking ? ["-b"] : []));
-
-    return hconf("version");
-  },
+  version,
+  next,
 });
 
 export const open = ({ preview }: { preview: boolean }) =>
   release
     .changelog()
-    .then(async (body) => {
-      await hconf("setup");
-
-      if (preview) return;
-
-      await release.open(body);
-    })
+    .then((body) =>
+      hconf("setup").then(() => (preview ? undefined : release.open(body)))
+    )
     .catch(exit);
 
 export const changelog = () =>
