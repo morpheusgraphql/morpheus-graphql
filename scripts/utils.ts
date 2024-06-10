@@ -26,18 +26,5 @@ const colors = {
 export const log = (t: string, type?: "success" | "warning" | "error") =>
   process.stdout.write(colors[type ?? "none"] + t + colors.none);
 
-export const hconf = async (
-  cmd: "version" | "setup" | "next",
-  ...ops: string[]
-): Promise<string> => {
-  const result = exec(["hconf", [cmd, ops].flat().join(" ")].join(" "));
-
-  if (cmd !== "version") {
-    console.log(result);
-  }
-
-  return Promise.resolve(result);
-};
-
 export const write = (p: string) => (f: string) =>
   writeFile(join(dirname(require.main?.filename ?? ""), "../", p), f, "utf8");
