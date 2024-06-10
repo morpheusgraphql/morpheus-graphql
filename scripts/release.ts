@@ -3,7 +3,7 @@ import { dirname, join } from "path";
 import { writeFile } from "fs/promises";
 import { GHRelEasy } from "gh-rel-easy";
 
-export const hconf = async (
+const hconf = async (
   cmd: "version" | "setup" | "next",
   ...ops: string[]
 ): Promise<string> => {
