@@ -40,17 +40,14 @@ export const run = async (
 export const format = async ({ fix, path }: { fix: boolean; path: string }) =>
   run(
     async (bin) => {
-      const files = await promisify(glob)(path);
-      log(`formatting(${files.length} files): ${path} \n\n`);
+      const fs = await promisify(glob)(path);
+      log(`formatting(${fs.length} files): ${path} \n\n`);
+      const files = fs.join(" ");
 
       if (fix) {
-        exec(`${bin} --color=always --mode=inplace ${files.join(" ")}`);
+        exec(`${bin} --color=always --mode=inplace ${files}`);
       } else {
-        exec(
-          `${bin} --color=always --check-idempotence --mode=check ${files.join(
-            " "
-          )}`
-        );
+        exec(`${bin} --color=always --check-idempotence --mode=check ${files}`);
       }
     },
     {
