@@ -49,10 +49,11 @@ jobs:
   format:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: mrkkrp/ormolu-action@v7
-        with:
-          pattern: morpheus-graphql*/**/*.hs
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-hs
+      - name: check
+        shell: bash
+        run: hconf format --check
 
 concurrency:
   group: ${{ github.ref }}
