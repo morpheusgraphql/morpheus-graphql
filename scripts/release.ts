@@ -33,10 +33,14 @@ const scope: Record<string, string> = {
   app: "morpheus-graphql-app",
 };
 
+const pkg = (name: string) =>
+  `https://hackage.haskell.org/package/${scope[name]}`;
+
 const release = new GHRelEasy({
-  pkg: (name) => `https://hackage.haskell.org/package/${scope[name]}`,
-  gh: { org: "morpheusgraphql", repo: "morpheus-graphql" },
-  scope,
+  gh: {
+    org: "morpheusgraphql",
+    repo: "morpheus-graphql",
+  },
   pr: {
     major: "Major Change",
     breaking: "Breaking Change",
@@ -44,8 +48,10 @@ const release = new GHRelEasy({
     fix: "Bug Fixes",
     chore: "Minor Changes",
   },
+  scope,
   version,
   next,
+  pkg,
 });
 
 export const open = ({ preview }: { preview: boolean }) =>
