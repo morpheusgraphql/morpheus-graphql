@@ -47,7 +47,7 @@ importGQLDocument "test/Subscription/schema.gql"
 
 type EVENT = Event Channel Info
 
-character :: Applicative m => m (Character m)
+character :: (Applicative m) => m (Character m)
 character =
   pure
     Character
@@ -55,7 +55,7 @@ character =
         age = pure 1
       }
 
-characterSub :: Applicative m => EVENT -> m (Character m)
+characterSub :: (Applicative m) => EVENT -> m (Character m)
 characterSub (Event _ Info {name, age}) =
   pure
     Character

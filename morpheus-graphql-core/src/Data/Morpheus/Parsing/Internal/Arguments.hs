@@ -31,17 +31,17 @@ import Text.Megaparsec (label)
 --
 -- Argument[Const]
 --  Name : Value[Const]
-valueArgument :: Parse (Value s) => Parser (Argument s)
+valueArgument :: (Parse (Value s)) => Parser (Argument s)
 valueArgument =
-  label "Argument" $
-    Argument
-      <$> getLocation
-      <*> (parseName <* colon)
-      <*> parse
+  label "Argument"
+    $ Argument
+    <$> getLocation
+    <*> (parseName <* colon)
+    <*> parse
 {-# INLINEABLE valueArgument #-}
 
-maybeArguments :: Parse (Value s) => Parser (Arguments s)
+maybeArguments :: (Parse (Value s)) => Parser (Arguments s)
 maybeArguments =
-  label "Arguments" $
-    uniqTupleOpt valueArgument
+  label "Arguments"
+    $ uniqTupleOpt valueArgument
 {-# INLINEABLE maybeArguments #-}

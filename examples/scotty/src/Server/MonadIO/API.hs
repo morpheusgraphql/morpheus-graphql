@@ -186,9 +186,9 @@ loginResolver LoginArgs {username, password} = do
             | userId userRow == 1 = tokenUser1
             | userId userRow == 2 = tokenUser2
             | otherwise = tokenUser3
-      pure $
-        Just $
-          Session {token = pure tokenUser, user = userResolver userRow}
+      pure
+        $ Just
+        $ Session {token = pure tokenUser, user = userResolver userRow}
     Nothing -> fail "Invalid user or password"
 
 getUserResolver :: (RESOLVER t) => Arg "id" Int -> Wrapped t Maybe User
@@ -224,8 +224,8 @@ addDogResolver (Arg name) = do
 -------------------------------------------------------------------------------
 userResolver :: (RESOLVER t) => UserRow -> Value t User
 userResolver UserRow {userId = thisUserId, userFullName} =
-  pure $
-    User
+  pure
+    $ User
       { id = idResolver,
         name = nameResolver,
         favoriteDog = favoriteDogResolver,
@@ -271,14 +271,14 @@ api = interpreter rootResolver
 app :: IO ()
 app = do
   db <- newTVarIO dbInit
-  scotty 8080 $
-    post "/api" $
-      do
-        reqBody <- body
-        reqHeaders <- headers
-        let env = Env db $ map (both $ T.pack . LT.unpack) reqHeaders
-        res <-
-          liftIO . runExceptT . flip runReaderT env . runWeb $ api reqBody
-        case res of
-          Left code -> status $ Status code "Error"
-          Right rawResponse -> raw rawResponse
+  scotty 8080
+    $ post "/api"
+    $ do
+      reqBody <- body
+      reqHeaders <- headers
+      let env = Env db $ map (both $ T.pack . LT.unpack) reqHeaders
+      res <-
+        liftIO . runExceptT . flip runReaderT env . runWeb $ api reqBody
+      case res of
+        Left code -> status $ Status code "Error"
+        Right rawResponse -> raw rawResponse

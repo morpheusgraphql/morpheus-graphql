@@ -77,7 +77,8 @@ splitFragment f types (Spread dirs ref) = do
   Left <$> validateSpread f (typeName <$> types) ref
 splitFragment f types (InlineFragment fragment@Fragment {..}) = do
   _ <- validateDirectives LOCATION_INLINE_FRAGMENT fragmentDirectives
-  Left . UnionTag fragmentType
+  Left
+    . UnionTag fragmentType
     <$> (castFragmentType Nothing fragmentPosition (typeName <$> types) fragment >>= f)
 
 exploreFragments ::
@@ -142,7 +143,9 @@ joinClusters maybeSelSet typedSelections
   | null typedSelections = maybe noEmptySelection (pure . SelectionSet) maybeSelSet
   | otherwise =
       traverse mkUnionTag (toAssoc typedSelections)
-        >>= fmap (UnionSelection maybeSelSet) . startHistory . fromElems
+        >>= fmap (UnionSelection maybeSelSet)
+        . startHistory
+        . fromElems
   where
     mkUnionTag :: (TypeName, [SelectionSet VALID]) -> FragmentValidator s UnionTag
     mkUnionTag (typeName, fragments) = UnionTag typeName <$> (maybeMerge (toList maybeSelSet <> fragments) >>= maybe noEmptySelection pure)

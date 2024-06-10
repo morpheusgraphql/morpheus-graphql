@@ -115,10 +115,10 @@ instance Pretty ClientMethod where
       mapP (UString v) = prettyLit v
       mapP (UVar v) = pretty v
 
-list :: Foldable t => t (Doc ann) -> Doc ann
+list :: (Foldable t) => t (Doc ann) -> Doc ann
 list xs = "[" <> indent 1 (foldr1 (\a b -> a <> "," <> line <> b) xs) <> line <> "]"
 
-tuple :: Foldable t => t (Doc ann) -> Doc ann
+tuple :: (Foldable t) => t (Doc ann) -> Doc ann
 tuple ls = "(" <> foldr1 (\a b -> a <> "," <+> b) ls <> ")"
 
 instance PrintExp ClientMethod where
@@ -162,7 +162,7 @@ printFieldExp (v, o, str) = uInfixE (toVar v) (toVar o) (toString str)
 printFieldDoc :: AesonField -> Doc n
 printFieldDoc (v, o, l) = printTHName v <+> printTHName o <+> prettyLit l
 
-prettyLit :: Show a => a -> Doc ann
+prettyLit :: (Show a) => a -> Doc ann
 prettyLit a = pretty (show a)
 
 prettyName :: TypeName -> Doc ann

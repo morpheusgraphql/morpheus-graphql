@@ -31,7 +31,7 @@ toScalar :: ValidValue -> Either Text ScalarValue
 toScalar (Scalar x) = pure x
 toScalar _ = Left ""
 
-scalarValidator :: forall f a. DecodeScalar a => f a -> ScalarDefinition
+scalarValidator :: forall f a. (DecodeScalar a) => f a -> ScalarDefinition
 scalarValidator _ = ScalarDefinition {validateValue = validator}
   where
     validator value = do
@@ -95,10 +95,10 @@ instance DecodeScalar Double where
 instance EncodeScalar Double where
   encodeScalar = Float
 
-scalarToJSON :: EncodeScalar a => a -> A.Value
+scalarToJSON :: (EncodeScalar a) => a -> A.Value
 scalarToJSON = A.toJSON . encodeScalar
 
-scalarFromJSON :: (Monad m, MonadFail m) => DecodeScalar a => A.Value -> m a
+scalarFromJSON :: (Monad m, MonadFail m) => (DecodeScalar a) => A.Value -> m a
 scalarFromJSON x = case replaceValue x of
   Scalar value -> either (fail . unpack) pure (decodeScalar value)
   _ -> fail "input must be scalar value"

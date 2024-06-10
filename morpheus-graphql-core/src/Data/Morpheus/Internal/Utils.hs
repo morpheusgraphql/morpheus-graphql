@@ -64,7 +64,7 @@ import Relude hiding
 (<:>) :: (Merge (HistoryT m) a, Monad m) => a -> a -> m a
 x <:> y = startHistory (merge x y)
 
-addPath :: MonadReader [a1] m => a1 -> m a2 -> m a2
+addPath :: (MonadReader [a1] m) => a1 -> m a2 -> m a2
 addPath p = local (\xs -> xs <> [p])
 
 type HistoryT = ReaderT [Ref FieldName]

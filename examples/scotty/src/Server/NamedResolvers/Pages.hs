@@ -59,7 +59,7 @@ data Query m = Query
       GQLType
     )
 
-instance MonadError GQLError m => ResolveNamed m (Query (NamedResolverT m)) where
+instance (MonadError GQLError m) => ResolveNamed m (Query (NamedResolverT m)) where
   type Dep (Query (NamedResolverT m)) = ()
   resolveBatched _ =
     pure

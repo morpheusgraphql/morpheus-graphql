@@ -100,7 +100,7 @@ httpEndpoint route = do
   get route $ (isSchema *> raw (render app)) <|> raw httpPlayground
   post route $ raw =<< (liftIO . runHaxlApp (deriveApp rootResolver) =<< body)
 
-runHaxlApp :: MapAPI a b => App e Haxl -> a -> IO b
+runHaxlApp :: (MapAPI a b) => App e Haxl -> a -> IO b
 runHaxlApp haxlApp input = do
   let stateStore = stateSet DeityState stateEmpty
   environment <- initEnv stateStore ()

@@ -101,7 +101,7 @@ renderScope
           <> render fieldName
       )
 
-renderSection :: RenderGQL a => GQLError -> a -> GQLError
+renderSection :: (RenderGQL a) => GQLError -> a -> GQLError
 renderSection label content =
   "\n\n"
     <> label

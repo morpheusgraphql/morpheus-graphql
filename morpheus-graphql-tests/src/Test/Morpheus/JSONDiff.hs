@@ -36,7 +36,7 @@ instance Show Diff where
       <> "but it is:"
       <> showLeaf y
 
-showLeaf :: ToJSON a => a -> [Char]
+showLeaf :: (ToJSON a) => a -> [Char]
 showLeaf x = " " <> unpack (encode x) <> "\n"
 
 unescape :: String -> String
@@ -79,7 +79,7 @@ uniq (x : xs)
   | isJust (find (== x) xs) = uniq xs
   | otherwise = x : uniq xs
 
-jsonEQ :: ToJSON a => a -> a -> IO ()
+jsonEQ :: (ToJSON a) => a -> a -> IO ()
 jsonEQ expected actual = case diff (toJSON expected, toJSON actual) of
   Just x -> assertFailure $ indent $ "\n" <> show x <> "\n"
   Nothing -> pure ()

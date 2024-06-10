@@ -75,5 +75,5 @@ data Ref name = Ref
   }
   deriving (Show, Lift, Eq)
 
-instance Ord name => Ord (Ref name) where
+instance (Ord name) => Ord (Ref name) where
   compare (Ref x _) (Ref y _) = compare x y

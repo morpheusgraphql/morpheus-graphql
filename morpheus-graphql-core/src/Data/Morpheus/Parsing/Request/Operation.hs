@@ -51,12 +51,12 @@ import Text.Megaparsec
 --
 variableDefinition :: Parser (Variable RAW)
 variableDefinition =
-  label "VariableDefinition" $
-    Variable
-      <$> getLocation
-      <*> (varName <* colon)
-      <*> parseType
-      <*> (DefaultValue <$> optional parseDefaultValue)
+  label "VariableDefinition"
+    $ Variable
+    <$> getLocation
+    <*> (varName <* colon)
+    <*> parseType
+    <*> (DefaultValue <$> optional parseDefaultValue)
 
 -- Operations : https://graphql.github.io/graphql-spec/June2018/#sec-Language.Operations
 --
@@ -67,14 +67,14 @@ variableDefinition =
 --     query, mutation,    subscription
 parseOperationDefinition :: Parser (Operation RAW)
 parseOperationDefinition =
-  label "OperationDefinition" $
-    Operation
-      <$> getLocation
-      <*> parseOperationType
-      <*> optional parseName
-      <*> uniqTupleOpt variableDefinition
-      <*> optionalDirectives
-      <*> parseSelectionSet
+  label "OperationDefinition"
+    $ Operation
+    <$> getLocation
+    <*> parseOperationType
+    <*> optional parseName
+    <*> uniqTupleOpt variableDefinition
+    <*> optionalDirectives
+    <*> parseSelectionSet
 
 parseAnonymousQuery :: Parser (Operation RAW)
 parseAnonymousQuery = label "AnonymousQuery" $ do

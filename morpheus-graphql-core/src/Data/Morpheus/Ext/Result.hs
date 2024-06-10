@@ -67,7 +67,7 @@ instance MonadError er (Result er) where
   catchError (Failure (x :| _)) f = f x
   catchError x _ = x
 
-instance IsString err => MonadFail (Result err) where
+instance (IsString err) => MonadFail (Result err) where
   fail = Failure . pure . fromString
 
 resultOr :: (NonEmpty err -> a') -> (a -> a') -> Result err a -> a'
@@ -84,16 +84,16 @@ newtype ResultT event (m :: Type -> Type) a = ResultT
   }
   deriving (Functor)
 
-instance Applicative m => Applicative (ResultT event m) where
+instance (Applicative m) => Applicative (ResultT event m) where
   pure = ResultT . pure . pure . ([],)
   ResultT app1 <*> ResultT app2 = ResultT $ liftA2 (<*>) (fx <$> app1) app2
     where
-      fx :: Monad f => f ([event], a -> b) -> f (([event], a) -> ([event], b))
+      fx :: (Monad f) => f ([event], a -> b) -> f (([event], a) -> ([event], b))
       fx x = do
         (e', f) <- x
         pure $ \(e, a) -> (e <> e', f a)
 
-instance Monad m => Monad (ResultT event m) where
+instance (Monad m) => Monad (ResultT event m) where
   return = pure
   (ResultT m1) >>= mFunc = ResultT $ do
     result <- m1
@@ -108,24 +108,24 @@ instance Monad m => Monad (ResultT event m) where
 instance MonadTrans (ResultT event) where
   lift = ResultT . fmap (pure . ([],))
 
-instance Monad m => MonadError GQLError (ResultT event m) where
+instance (Monad m) => MonadError GQLError (ResultT event m) where
   throwError = ResultT . pure . throwError
   catchError (ResultT mx) f = ResultT (mx >>= catchResultError)
     where
       catchResultError (Failure (x :| _)) = runResultT (f x)
       catchResultError x = pure x
 
-instance Applicative m => PushEvents event (ResultT event m) where
+instance (Applicative m) => PushEvents event (ResultT event m) where
   pushEvents x = ResultT $ pure $ pure (x, ())
 
 cleanEvents ::
-  Functor m =>
+  (Functor m) =>
   ResultT e m a ->
   ResultT e' m a
 cleanEvents resT = ResultT $ fmap (first (const [])) <$> runResultT resT
 
 mapEvent ::
-  Monad m =>
+  (Monad m) =>
   (e -> e') ->
   ResultT e m value ->
   ResultT e' m value

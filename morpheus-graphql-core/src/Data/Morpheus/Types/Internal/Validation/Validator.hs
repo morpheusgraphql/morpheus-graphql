@@ -173,21 +173,21 @@ inField
               ..
             }
 
-inputValueSource :: MonadReader (ValidatorContext s (InputContext c)) m => m InputSource
+inputValueSource :: (MonadReader (ValidatorContext s (InputContext c)) m) => m InputSource
 inputValueSource = asksLocal inputSource
 
-asksScope :: MonadReader (ValidatorContext s ctx) m => (Scope -> a) -> m a
+asksScope :: (MonadReader (ValidatorContext s ctx) m) => (Scope -> a) -> m a
 asksScope f = asks (f . scope)
 
 askTypeDefinitions ::
-  MonadReader (ValidatorContext s ctx) m =>
+  (MonadReader (ValidatorContext s ctx) m) =>
   m (HashMap TypeName (TypeDefinition ANY s))
 askTypeDefinitions = asks (typeDefinitions . schema)
 
-askVariables :: MonadReader (ValidatorContext s1 (OperationContext s2 s3)) m => m (VariableDefinitions s2)
+askVariables :: (MonadReader (ValidatorContext s1 (OperationContext s2 s3)) m) => m (VariableDefinitions s2)
 askVariables = asksLocal variables
 
-askFragments :: MonadReader (ValidatorContext s1 (OperationContext s2 s3)) m => m (Fragments s3)
+askFragments :: (MonadReader (ValidatorContext s1 (OperationContext s2 s3)) m) => m (Fragments s3)
 askFragments = asksLocal fragments
 
 runValidator :: Validator s ctx a -> Config -> Schema s -> Scope -> ctx -> GQLResult a
@@ -265,7 +265,7 @@ withScope ::
   m b
 withScope f = local (\ValidatorContext {..} -> ValidatorContext {scope = f scope, ..})
 
-asksLocal :: MonadReader (ValidatorContext s c) m => (c -> a) -> m a
+asksLocal :: (MonadReader (ValidatorContext s c) m) => (c -> a) -> m a
 asksLocal f = asks (f . localContext)
 
 instance MonadError GQLError (Validator s ctx) where

@@ -52,7 +52,7 @@ import Relude hiding (empty)
 
 class ValidateFragmentSelection (s :: Stage) where
   validateFragmentSelection ::
-    Applicative m =>
+    (Applicative m) =>
     (Fragment RAW -> m (SelectionSet VALID)) ->
     Fragment s ->
     m (SelectionSet VALID)
@@ -64,7 +64,7 @@ instance ValidateFragmentSelection RAW where
   validateFragmentSelection f = f
 
 validateSpread ::
-  ValidateFragmentSelection s =>
+  (ValidateFragmentSelection s) =>
   (Fragment RAW -> FragmentValidator s (SelectionSet VALID)) ->
   [TypeName] ->
   Ref FragmentName ->

@@ -28,5 +28,5 @@ instance (Eq name, Hashable name) => KeyOf name (Ref name) where
 instance (Eq k, Hashable k) => KeyOf k (Indexed k a) where
   keyOf = indexedKey
 
-toPair :: KeyOf k a => a -> (k, a)
+toPair :: (KeyOf k a) => a -> (k, a)
 toPair x = (keyOf x, x)

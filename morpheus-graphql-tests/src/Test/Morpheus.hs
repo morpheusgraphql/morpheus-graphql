@@ -46,8 +46,8 @@ import Test.Tasty.HUnit
 mainTest :: String -> [IO TestTree] -> IO ()
 mainTest name xs = do
   tests <- sequence xs
-  defaultMain $
-    testGroup
+  defaultMain
+    $ testGroup
       name
       tests
 

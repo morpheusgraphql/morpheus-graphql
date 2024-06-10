@@ -113,5 +113,5 @@ import Data.Morpheus.Server.Types
 import Data.Morpheus.Types.Internal.AST (GQLError)
 import Relude hiding (Undefined)
 
-liftEither :: (MonadTrans t, Monad (t m), MonadError GQLError (t m)) => Monad m => m (Either String a) -> t m a
+liftEither :: (MonadTrans t, Monad (t m), MonadError GQLError (t m)) => (Monad m) => m (Either String a) -> t m a
 liftEither x = lift x >>= either (throwError . fromString) pure

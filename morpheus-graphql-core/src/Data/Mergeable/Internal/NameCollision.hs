@@ -14,5 +14,5 @@ import Relude
 class NameCollision e a where
   nameCollision :: a -> e
 
-instance NameCollision e a => NameCollision e (Indexed k a) where
+instance (NameCollision e a) => NameCollision e (Indexed k a) where
   nameCollision = nameCollision . indexedValue

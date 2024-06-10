@@ -99,7 +99,7 @@ import Relude hiding (Constraint)
 getUnused :: (KeyOf k b, IsMap k c, Foldable t) => c a -> t b -> [b]
 getUnused uses = filter (not . (`member` uses) . keyOf) . toList
 
-failOnUnused :: Unused a => [a] -> Validator s (OperationContext s1 s2) ()
+failOnUnused :: (Unused a) => [a] -> Validator s (OperationContext s1 s2) ()
 failOnUnused [] = pure ()
 failOnUnused (x : xs) = do
   ctx <- Validator ask
@@ -117,7 +117,7 @@ checkUnused ::
 checkUnused uses = failOnUnused . getUnused uses
 
 constraint ::
-  KindViolation k inp =>
+  (KindViolation k inp) =>
   Constraint (k :: TypeCategory) ->
   inp ->
   TypeDefinition ANY s ->

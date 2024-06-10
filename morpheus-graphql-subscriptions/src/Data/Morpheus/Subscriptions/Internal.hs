@@ -85,7 +85,7 @@ import Data.Morpheus.Subscriptions.Stream
 import Data.UUID.V4 (nextRandom)
 import Relude hiding (empty, toList)
 
-connect :: MonadIO m => m (Input SUB)
+connect :: (MonadIO m) => m (Input SUB)
 connect = InitConnection <$> liftIO nextRandom
 
 disconnect :: ApiContext SUB e m -> Input SUB -> m ()
@@ -128,7 +128,7 @@ initDefaultStore = do
         writeStore = \changes -> liftIO $ modifyMVar_ store (return . changes)
       }
 
-finallyM :: MonadUnliftIO m => m () -> m () -> m ()
+finallyM :: (MonadUnliftIO m) => m () -> m () -> m ()
 finallyM loop end = withRunInIO $ \runIO -> finally (runIO loop) (runIO end)
 
 connectionThread ::

@@ -71,14 +71,14 @@ import Servant
 import Prelude
 
 startServer ::
-  HasServer api '[] =>
+  (HasServer api '[]) =>
   ServerApp ->
   Proxy api ->
   Server api ->
   IO ()
 startServer wsApp proxy api =
-  runSettings settings $
-    websocketsOr
+  runSettings settings
+    $ websocketsOr
       defaultConnectionOptions
       wsApp
       (serve proxy api)

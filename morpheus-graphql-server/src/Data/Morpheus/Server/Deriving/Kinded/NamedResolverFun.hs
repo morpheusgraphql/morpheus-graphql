@@ -128,8 +128,10 @@ packRef name v = ResRef $ pure $ NamedResolverRef name [v]
 instance (UseNamedResolver namedRes res gql val ~ ctx, Monad m, val a, MonadResolver m, res m b) => KindedNamedFunValue ctx CUSTOM m (a -> b) where
   kindedNamedFunValue ctx (Kinded f) =
     getArguments
-      >>= liftState . useDecodeArguments (namedDrv ctx)
-      >>= useNamedFieldResolver ctx . f
+      >>= liftState
+      . useDecodeArguments (namedDrv ctx)
+      >>= useNamedFieldResolver ctx
+      . f
 
 getOptions :: UseNamedResolver namedRes res gql val -> GRepFun gql (res m) Identity (m (ResolverValue m))
 getOptions ctx =

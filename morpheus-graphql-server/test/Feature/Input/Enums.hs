@@ -47,7 +47,7 @@ newtype TestArgs a = TestArgs
   deriving (Generic, Show, GQLType)
 
 -- query
-testRes :: Applicative m => TestArgs a -> m a
+testRes :: (Applicative m) => TestArgs a -> m a
 testRes TestArgs {level} = pure level
 
 -- resolver

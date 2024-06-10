@@ -123,14 +123,14 @@ instance TypeCheck (TypeDefinition cat) where
         typeDirectives,
         typeContent
       } =
-      inType typeName $
-        TypeDefinition
+      inType typeName
+        $ TypeDefinition
           typeDescription
-          <$> checkName typeName
-          <*> validateDirectives (typeDirectiveLocation typeContent) typeDirectives
-          <*> typeCheck typeContent
+        <$> checkName typeName
+        <*> validateDirectives (typeDirectiveLocation typeContent) typeDirectives
+        <*> typeCheck typeContent
 
-checkName :: MonadError GQLError f => Name t -> f (Name t)
+checkName :: (MonadError GQLError f) => Name t -> f (Name t)
 checkName name
   | isValidName name = pure name
   | otherwise = throwError ("Invalid Name:" <> msg name)
@@ -159,7 +159,7 @@ instance TypeCheck (TypeContent TRUE cat) where
   typeCheck DataUnion {unionMembers} = DataUnion <$> traverse typeCheck unionMembers
   typeCheck (DataInterface fields) = DataInterface <$> traverse typeCheck fields
 
-instance FieldDirectiveLocation cat => TypeCheck (FieldDefinition cat) where
+instance (FieldDirectiveLocation cat) => TypeCheck (FieldDefinition cat) where
   type TypeContext (FieldDefinition cat) = TypeEntity ON_TYPE
   typeCheck FieldDefinition {..} =
     inField
@@ -187,8 +187,9 @@ instance FieldDirectiveLocation IN where
 
 instance TypeCheck DirectiveDefinition where
   typeCheck DirectiveDefinition {directiveDefinitionArgs = arguments, ..} =
-    inType "Directive" $
-      inField directiveDefinitionName $ do
+    inType "Directive"
+      $ inField directiveDefinitionName
+      $ do
         directiveDefinitionArgs <- traverse typeCheck arguments
         pure DirectiveDefinition {..}
 

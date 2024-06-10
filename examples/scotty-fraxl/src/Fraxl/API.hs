@@ -235,7 +235,7 @@ isSchema = param "schema"
 
 httpEndpoint :: RoutePattern -> ScottyM ()
 httpEndpoint route = do
-  get route $
-    (isSchema *> raw (render app))
-      <|> raw httpPlayground
+  get route
+    $ (isSchema *> raw (render app))
+    <|> raw httpPlayground
   post route (raw . DB.runQuery . runFraxl fetchSource . runApp app =<< body)

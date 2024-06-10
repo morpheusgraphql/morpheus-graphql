@@ -48,7 +48,7 @@ renderMaybe False = (.<>) "Maybe"
 renderList :: HSDoc n -> HSDoc n
 renderList = pack . list . pure . rawDocument
 
-print' :: Printer a => a -> Doc n
+print' :: (Printer a) => a -> Doc n
 print' = unpack . print
 
 pack :: Doc n -> HSDoc n

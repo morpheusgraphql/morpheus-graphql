@@ -75,8 +75,11 @@ instance (UseResolver res gql val ~ ctx, EXPLORE gql res m guard, EXPLORE gql re
 instance (UseResolver res gql val ~ ctx, Generic a, res m b, val a) => KindedResolver ctx CUSTOM m (a -> b) where
   kindedResolver res (Kinded f) =
     getArguments
-      >>= liftState . useDecodeValue res . argumentsToObject
-      >>= useEncodeResolver res . f
+      >>= liftState
+      . useDecodeValue res
+      . argumentsToObject
+      >>= useEncodeResolver res
+      . f
 
 instance (UseResolver res gql val ~ ctx, res m a) => KindedResolver ctx CUSTOM m (m a) where
   kindedResolver res (Kinded value) = value >>= useEncodeResolver res

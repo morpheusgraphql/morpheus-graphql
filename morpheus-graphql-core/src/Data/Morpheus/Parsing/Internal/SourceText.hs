@@ -68,10 +68,10 @@ isSourceCharacter x = SPACE <= x && x <= NON_CHARACTER
 
 inlineString :: Parser ByteString
 inlineString =
-  label "String" $
-    char DOUBLE_QUOTE
-      *> parseContent
-      <* ignoredTokens
+  label "String"
+    $ char DOUBLE_QUOTE
+    *> parseContent
+    <* ignoredTokens
 {-# INLINE inlineString #-}
 
 parseContent :: Parser ByteString
@@ -126,9 +126,12 @@ ignored = (takeWhile1P Nothing isIgnored <|> comment) $> ()
   where
     isIgnored x =
       (x >= TABULATION && x <= CARRIAGE_RETURN)
-        || x == SPACE
-        || x == COMMA
-        || x == UNICODE_BOM
+        || x
+        == SPACE
+        || x
+        == COMMA
+        || x
+        == UNICODE_BOM
     {-# INLINE isIgnored #-}
     comment = char HASH_TAG *> takeWhileP Nothing (\x -> isSourceCharacter x && x /= NEW_LINE)
     {-# INLINE comment #-}

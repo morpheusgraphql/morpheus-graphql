@@ -34,10 +34,10 @@ import Relude hiding (empty)
 __lookup :: (IsMap (Name t) m, ToString n) => n -> m a -> Maybe a
 __lookup name = lookup (fromString $ toString name)
 
-__argument :: IsString name => Argument VALID -> (name, Value)
+__argument :: (IsString name) => Argument VALID -> (name, Value)
 __argument Argument {..} = (fromString $ toString argumentName, toJSON argumentValue)
 
-__variable :: IsString name => Variable VALID -> (name, Value)
+__variable :: (IsString name) => Variable VALID -> (name, Value)
 __variable Variable {..} = (fromString $ toString variableName, __variableContent variableValue)
 
 __variableContent :: VariableContent VALID -> Value
@@ -53,7 +53,7 @@ class SelectionTree node where
   isLeaf :: node -> Bool
 
   -- | get a node's name (real name. not alias)
-  getName :: IsString name => node -> name
+  getName :: (IsString name) => node -> name
 
   -- | Get the children
   getChildrenList :: node -> [ChildNode node]
@@ -63,17 +63,17 @@ class SelectionTree node where
   getChildren :: node -> [ChildNode node]
 
   -- | lookup child node by name (does not use aliases)
-  getChild :: ToString name => name -> node -> Maybe (ChildNode node)
+  getChild :: (ToString name) => name -> node -> Maybe (ChildNode node)
 
   -- | checks if the node has a child with the specified name (does not use aliases)
-  hasChild :: ToString name => name -> node -> Bool
+  hasChild :: (ToString name) => name -> node -> Bool
   hasChild name = isJust . getChild name
 
   -- | get node arguments (as aeson values)
-  getArguments :: IsString name => node -> [(name, Value)]
+  getArguments :: (IsString name) => node -> [(name, Value)]
 
   -- | get node argument by name (as aeson values)
-  getArgument :: ToString name => name -> node -> Maybe Value
+  getArgument :: (ToString name) => name -> node -> Maybe Value
 
 instance SelectionTree (Selection VALID) where
   type ChildNode (Selection VALID) = Selection VALID
@@ -99,7 +99,7 @@ instance SelectionTree (Selection VALID) where
         select (x : xs) = __lookup name x <|> select xs
         select [] = Nothing
 
-  getName :: IsString name => Selection VALID -> name
+  getName :: (IsString name) => Selection VALID -> name
   getName = toName . selectionName
 
   getArguments = map __argument . toList . selectionArguments
@@ -121,5 +121,5 @@ instance SelectionTree (Operation VALID) where
 
   getArgument name = fmap (__variableContent . variableValue) . __lookup name . operationArguments
 
-toName :: IsString name => Name t -> name
+toName :: (IsString name) => Name t -> name
 toName = fromString . unpack . unpackName

@@ -15,8 +15,8 @@ data DeityRepo r where
   CreateDeity :: Deity -> DeityRepo (Either Error Deity)
 
 -- Interface for use
-getDeityByName :: Member DeityRepo effs => Name -> Eff effs (Either Error Deity)
+getDeityByName :: (Member DeityRepo effs) => Name -> Eff effs (Either Error Deity)
 getDeityByName name = send $ GetDeityByName name
 
-createDeity :: Member DeityRepo effs => Deity -> Eff effs (Either Error Deity)
+createDeity :: (Member DeityRepo effs) => Deity -> Eff effs (Either Error Deity)
 createDeity deity = send $ CreateDeity deity

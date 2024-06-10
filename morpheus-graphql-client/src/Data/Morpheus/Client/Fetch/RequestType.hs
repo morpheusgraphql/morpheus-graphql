@@ -61,7 +61,7 @@ toRequest r@Request {requestArgs} =
       }
   )
 
-decodeResponse :: FromJSON a => ByteString -> Either (FetchError a) a
+decodeResponse :: (FromJSON a) => ByteString -> Either (FetchError a) a
 decodeResponse = (first FetchErrorParseFailure . eitherDecode) >=> processResponse
 
 processResponse :: JSONResponse a -> Either (FetchError a) a
@@ -79,5 +79,5 @@ class RequestType a where
 
 newtype Request (a :: Type) = Request {requestArgs :: RequestArgs a}
 
-isSubscription :: RequestType a => Request a -> Bool
+isSubscription :: (RequestType a) => Request a -> Bool
 isSubscription x = __type x == OPERATION_SUBSCRIPTION

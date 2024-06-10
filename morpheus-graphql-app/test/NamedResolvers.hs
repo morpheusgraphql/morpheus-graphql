@@ -47,13 +47,13 @@ import Test.Tasty
   )
 
 -- DEITIES
-resolverDeities :: Monad m => RootResolverValue e m
+resolverDeities :: (Monad m) => RootResolverValue e m
 resolverDeities =
   queryResolvers
     [ ( "Query",
         traverse
-          ( const $
-              object
+          ( const
+              $ object
                 [ ("deity", ref "Deity" <$> getArgument "id"),
                   ("deities", pure $ refs "Deity" ["zeus", "morpheus"])
                 ]
@@ -62,7 +62,7 @@ resolverDeities =
       ("Deity", deityResolver)
     ]
 
-deityResolver :: Monad m => NamedResolverFunction QUERY e m
+deityResolver :: (Monad m) => NamedResolverFunction QUERY e m
 deityResolver = traverse deityRes
   where
     deityRes "zeus" =
@@ -77,13 +77,13 @@ deityResolver = traverse deityRes
         ]
 
 -- REALMS
-resolverRealms :: Monad m => RootResolverValue e m
+resolverRealms :: (Monad m) => RootResolverValue e m
 resolverRealms =
   queryResolvers
     [ ( "Query",
         traverse
-          ( const $
-              object
+          ( const
+              $ object
                 [ ("realm", ref "Realm" <$> getArgument "id"),
                   ("realms", pure $ refs "Realm" ["olympus", "dreams"])
                 ]
@@ -93,14 +93,14 @@ resolverRealms =
       ("Realm", realmResolver)
     ]
 
-deityResolverExt :: Monad m => NamedResolverFunction QUERY e m
+deityResolverExt :: (Monad m) => NamedResolverFunction QUERY e m
 deityResolverExt = traverse deityExt
   where
     deityExt "zeus" = object [("realm", pure $ ref "Realm" "olympus")]
     deityExt "morpheus" = object [("realm", pure $ ref "Realm" "dreams")]
     deityExt _ = object []
 
-realmResolver :: Monad m => NamedResolverFunction QUERY e m
+realmResolver :: (Monad m) => NamedResolverFunction QUERY e m
 realmResolver = traverse realmResolver'
   where
     realmResolver' "olympus" =
@@ -119,17 +119,17 @@ realmResolver = traverse realmResolver'
         ]
 
 -- ENTITIES
-resolverEntities :: Monad m => RootResolverValue e m
+resolverEntities :: (Monad m) => RootResolverValue e m
 resolverEntities =
   queryResolvers
     [ ( "Query",
         traverse
-          ( const $
-              object
+          ( const
+              $ object
                 [ ("entity", ref "Entity" <$> getArgument "id"),
                   ( "entities",
-                    pure $
-                      refs
+                    pure
+                      $ refs
                         "Entity"
                         ["zeus", "morpheus", "olympus", "dreams"]
                   )
@@ -139,7 +139,7 @@ resolverEntities =
       ("Entity", resolveEntity)
     ]
 
-resolveEntity :: Monad m => NamedResolverFunction QUERY e m
+resolveEntity :: (Monad m) => NamedResolverFunction QUERY e m
 resolveEntity = traverse resEntity
   where
     resEntity "zeus" = variant "Deity" "zeus"
@@ -156,10 +156,10 @@ getApps _ = do
   schemaDeities <- getSchema "test/named-resolvers/deities.gql"
   schemaRealms <- getSchema "test/named-resolvers/realms.gql"
   schemaEntities <- getSchema "test/named-resolvers/entities.gql"
-  pure $
-    mkApp schemaDeities resolverDeities
-      <> mkApp schemaRealms resolverRealms
-      <> mkApp schemaEntities resolverEntities
+  pure
+    $ mkApp schemaDeities resolverDeities
+    <> mkApp schemaRealms resolverRealms
+    <> mkApp schemaEntities resolverEntities
 
 runNamedResolversTest :: FileUrl -> FileUrl -> TestTree
 runNamedResolversTest url = testApi api

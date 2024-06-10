@@ -50,7 +50,7 @@ equal err p1 p2
   | p1 == p2 = pure p2
   | otherwise = throwError err
 
-fstM :: Applicative m => a -> a -> m a
+fstM :: (Applicative m) => a -> a -> m a
 fstM x _ = pure x
 
 concatM :: (Applicative m, Semigroup a) => a -> a -> m a
@@ -59,7 +59,7 @@ concatM x = pure . (x <>)
 class Stitching a where
   stitch :: (Monad m, MonadError GQLError m) => a -> a -> m a
 
-instance Stitching a => Stitching (Maybe a) where
+instance (Stitching a) => Stitching (Maybe a) where
   stitch = optional stitch
 
 instance Stitching (Schema s) where
@@ -80,7 +80,7 @@ instance Stitching (DirectivesDefinition s) where
 instance Stitching (Directives s) where
   stitch = merge
 
-optional :: Applicative f => (t -> t -> f t) -> Maybe t -> Maybe t -> f (Maybe t)
+optional :: (Applicative f) => (t -> t -> f t) -> Maybe t -> Maybe t -> f (Maybe t)
 optional _ Nothing y = pure y
 optional _ (Just x) Nothing = pure (Just x)
 optional f (Just x) (Just y) = Just <$> f x y
@@ -132,7 +132,7 @@ rootProp f x y = do
   y' <- f y
   merge x' y'
 
-stitchSubscriptions :: MonadError GQLError m => Maybe a -> Maybe a -> m (Maybe a)
+stitchSubscriptions :: (MonadError GQLError m) => Maybe a -> Maybe a -> m (Maybe a)
 stitchSubscriptions Just {} Just {} = throwError ("can't merge  subscription applications" :: GQLError)
 stitchSubscriptions x Nothing = pure x
 stitchSubscriptions Nothing x = pure x
@@ -165,11 +165,11 @@ instance (MonadError GQLError m) => Stitching (NamedResolver m) where
             }
     | otherwise = throwError "ResolverMap must have same resolverName"
 
-instance Monad m => Stitching (RootResolverValue e m) where
+instance (Monad m) => Stitching (RootResolverValue e m) where
   stitch x@RootResolverValue {} y@RootResolverValue {} = do
     channelMap <- stitchSubscriptions (channelMap x) (channelMap y)
-    pure $
-      RootResolverValue
+    pure
+      $ RootResolverValue
         { queryResolver = rootProp queryResolver x y,
           mutationResolver = rootProp mutationResolver x y,
           subscriptionResolver = rootProp subscriptionResolver x y,

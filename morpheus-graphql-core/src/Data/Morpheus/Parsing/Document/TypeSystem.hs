@@ -110,11 +110,11 @@ scalarTypeDefinition ::
   Maybe Description ->
   Parser (TypeDefinition ANY s)
 scalarTypeDefinition typeDescription =
-  label "ScalarTypeDefinition" $
-    TypeDefinition typeDescription
-      <$> typeDeclaration "scalar"
-      <*> optionalDirectives
-      <*> pure (DataScalar (ScalarDefinition pure))
+  label "ScalarTypeDefinition"
+    $ TypeDefinition typeDescription
+    <$> typeDeclaration "scalar"
+    <*> optionalDirectives
+    <*> pure (DataScalar (ScalarDefinition pure))
 {-# INLINEABLE scalarTypeDefinition #-}
 
 -- Objects : https://graphql.github.io/graphql-spec/June2018/#sec-Objects
@@ -137,12 +137,12 @@ objectTypeDefinition ::
   Maybe Description ->
   Parser (TypeDefinition ANY s)
 objectTypeDefinition typeDescription =
-  label "ObjectTypeDefinition" $
-    mkObject typeDescription
-      <$> typeDeclaration "type"
-      <*> optionalImplementsInterfaces
-      <*> optionalDirectives
-      <*> fieldsDefinition
+  label "ObjectTypeDefinition"
+    $ mkObject typeDescription
+    <$> typeDeclaration "type"
+    <*> optionalImplementsInterfaces
+    <*> optionalDirectives
+    <*> fieldsDefinition
 {-# INLINEABLE objectTypeDefinition #-}
 
 optionalImplementsInterfaces :: Parser [TypeName]
@@ -162,11 +162,11 @@ interfaceTypeDefinition ::
   Maybe Description ->
   Parser (TypeDefinition ANY s)
 interfaceTypeDefinition typeDescription =
-  label "InterfaceTypeDefinition" $
-    TypeDefinition typeDescription
-      <$> typeDeclaration "interface"
-      <*> optionalDirectives
-      <*> (DataInterface <$> fieldsDefinition)
+  label "InterfaceTypeDefinition"
+    $ TypeDefinition typeDescription
+    <$> typeDeclaration "interface"
+    <*> optionalDirectives
+    <*> (DataInterface <$> fieldsDefinition)
 {-# INLINEABLE interfaceTypeDefinition #-}
 
 -- Unions : https://graphql.github.io/graphql-spec/June2018/#sec-Unions
@@ -183,16 +183,17 @@ unionTypeDefinition ::
   Maybe Description ->
   Parser (TypeDefinition ANY s)
 unionTypeDefinition typeDescription =
-  label "UnionTypeDefinition" $
-    TypeDefinition typeDescription
-      <$> typeDeclaration "union"
-      <*> optionalDirectives
-      <*> (DataUnion <$> unionMemberTypes)
+  label "UnionTypeDefinition"
+    $ TypeDefinition typeDescription
+    <$> typeDeclaration "union"
+    <*> optionalDirectives
+    <*> (DataUnion <$> unionMemberTypes)
   where
     unionMemberTypes =
-      lift . fromElems
+      lift
+        . fromElems
         =<< equal
-          *> pipe (mkUnionMember <$> parseTypeName)
+        *> pipe (mkUnionMember <$> parseTypeName)
 {-# INLINEABLE unionTypeDefinition #-}
 
 -- Enums : https://graphql.github.io/graphql-spec/June2018/#sec-Enums
@@ -211,11 +212,11 @@ enumTypeDefinition ::
   Maybe Description ->
   Parser (TypeDefinition ANY s)
 enumTypeDefinition typeDescription =
-  label "EnumTypeDefinition" $
-    TypeDefinition typeDescription
-      <$> typeDeclaration "enum"
-      <*> optionalDirectives
-      <*> (DataEnum <$> collection enumValueDefinition)
+  label "EnumTypeDefinition"
+    $ TypeDefinition typeDescription
+    <$> typeDeclaration "enum"
+    <*> optionalDirectives
+    <*> (DataEnum <$> collection enumValueDefinition)
 {-# INLINEABLE enumTypeDefinition #-}
 
 -- Input Objects : https://graphql.github.io/graphql-spec/June2018/#sec-Input-Objects
@@ -231,12 +232,12 @@ inputObjectTypeDefinition ::
   Maybe Description ->
   Parser (TypeDefinition ANY s)
 inputObjectTypeDefinition typeDescription =
-  label "InputObjectTypeDefinition" $
-    TypeDefinition
+  label "InputObjectTypeDefinition"
+    $ TypeDefinition
       typeDescription
-      <$> typeDeclaration "input"
-      <*> optionalDirectives
-      <*> (DataInputObject <$> inputFieldsDefinition)
+    <$> typeDeclaration "input"
+    <*> optionalDirectives
+    <*> (DataInputObject <$> inputFieldsDefinition)
 {-# INLINEABLE inputObjectTypeDefinition #-}
 
 -- 3.13 DirectiveDefinition
@@ -252,15 +253,15 @@ parseDirectiveDefinition ::
   Maybe Description ->
   Parser (DirectiveDefinition s)
 parseDirectiveDefinition directiveDefinitionDescription =
-  label "DirectiveDefinition" $
-    DirectiveDefinition
-      <$> ( keyword "directive"
-              *> at
-              *> parseName
-          )
-      <*> pure directiveDefinitionDescription
-      <*> optionalCollection argumentsDefinition
-      <*> (optional (keyword "repeatable") *> keyword "on" *> pipe parseDirectiveLocation)
+  label "DirectiveDefinition"
+    $ DirectiveDefinition
+    <$> ( keyword "directive"
+            *> at
+            *> parseName
+        )
+    <*> pure directiveDefinitionDescription
+    <*> optionalCollection argumentsDefinition
+    <*> (optional (keyword "repeatable") *> keyword "on" *> pipe parseDirectiveLocation)
 {-# INLINEABLE parseDirectiveDefinition #-}
 
 -- 3.2 Schema
@@ -278,12 +279,12 @@ parseDirectiveDefinition directiveDefinitionDescription =
 --   }
 parseSchemaDefinition :: Maybe Description -> Parser SchemaDefinition
 parseSchemaDefinition _schemaDescription =
-  label "SchemaDefinition" $
-    keyword "schema"
-      *> ( SchemaDefinition
-             <$> optionalDirectives
-             <*> setOf parseRootOperationTypeDefinition
-         )
+  label "SchemaDefinition"
+    $ keyword "schema"
+    *> ( SchemaDefinition
+           <$> optionalDirectives
+           <*> setOf parseRootOperationTypeDefinition
+       )
 {-# INLINEABLE parseSchemaDefinition #-}
 
 parseRootOperationTypeDefinition :: Parser RootOperationTypeDefinition
@@ -296,13 +297,15 @@ parseRootOperationTypeDefinition =
 parseTypeSystemUnit ::
   Parser RawTypeDefinition
 parseTypeSystemUnit =
-  label "TypeDefinition" $
-    do
+  label "TypeDefinition"
+    $ do
       description <- optDescription
       -- scalar | enum |  input | object | union | interface
       parseTypeDef description
-        <|> RawSchemaDefinition <$> parseSchemaDefinition description
-        <|> RawDirectiveDefinition <$> parseDirectiveDefinition description
+        <|> RawSchemaDefinition
+        <$> parseSchemaDefinition description
+        <|> RawDirectiveDefinition
+        <$> parseDirectiveDefinition description
   where
     parseTypeDef description =
       RawTypeDefinition
@@ -351,9 +354,9 @@ withSchemaDefinition (x : xs, _, _) = throwErrors (nameCollision <$> (x :| xs))
 
 parseRawTypeDefinitions :: Parser [RawTypeDefinition]
 parseRawTypeDefinitions =
-  label "TypeSystemDefinitions" $
-    ignoredTokens
-      *> manyTill parseTypeSystemUnit eof
+  label "TypeSystemDefinitions"
+    $ ignoredTokens
+    *> manyTill parseTypeSystemUnit eof
 
 typeSystemDefinition ::
   ByteString ->
@@ -364,7 +367,8 @@ typeSystemDefinition ::
     )
 typeSystemDefinition =
   processParser parseRawTypeDefinitions
-    >=> withSchemaDefinition . typePartition
+    >=> withSchemaDefinition
+    . typePartition
 
 parseDefinitions :: ByteString -> GQLResult [RawTypeDefinition]
 parseDefinitions = processParser parseRawTypeDefinitions

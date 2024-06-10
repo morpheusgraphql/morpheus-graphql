@@ -80,7 +80,7 @@ instance
   where
   merge (MergeMap x) (MergeMap y) = resolveMergeable (x <> y)
 
-instance Monad m => Merge m (MergeMap 'True k a) where
+instance (Monad m) => Merge m (MergeMap 'True k a) where
   merge (MergeMap x) (MergeMap y) = pure $ MergeMap $ x <> y
 
 resolveMergeable ::

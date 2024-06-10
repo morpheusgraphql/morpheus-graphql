@@ -66,7 +66,7 @@ import Relude hiding
 _' :: PatQ
 _' = toVar (mkName "_")
 
-v' :: ToVar Name a => a
+v' :: (ToVar Name a) => a
 v' = toVar (mkName "v")
 
 wrappedType :: TypeWrapper -> Type -> Type
@@ -108,7 +108,7 @@ instance ToName FieldName where
 class ToString a b where
   toString :: a -> b
 
-instance ToString a b => ToString a (Q b) where
+instance (ToString a b) => ToString a (Q b) where
   toString = pure . toString
 
 instance ToString TypeName Lit where
@@ -129,7 +129,7 @@ instance ToString FieldName Exp where
 class ToCon a b where
   toCon :: a -> b
 
-instance ToCon a b => ToCon a (Q b) where
+instance (ToCon a b) => ToCon a (Q b) where
   toCon = pure . toCon
 
 instance (ToName a) => ToCon a Type where
@@ -150,7 +150,7 @@ instance (ToName a) => ToCon a Pat where
 class ToVar a b where
   toVar :: a -> b
 
-instance ToVar a b => ToVar a (Q b) where
+instance (ToVar a b) => ToVar a (Q b) where
   toVar = pure . toVar
 
 instance (ToName a) => ToVar a Type where
@@ -163,7 +163,7 @@ instance (ToName a) => ToVar a Pat where
   toVar = VarP . toName
 
 class Apply a where
-  apply :: ToCon i a => i -> [a] -> a
+  apply :: (ToCon i a) => i -> [a] -> a
 
 instance Apply TypeQ where
   apply = foldl' appT . toCon
@@ -289,7 +289,7 @@ printField CodeGenField {..} =
     foldr applyWrapper (toCon fieldType) wrappers
   )
 
-printTypeSynonym :: ToName a => a -> [Name] -> Type -> Dec
+printTypeSynonym :: (ToName a) => a -> [Name] -> Type -> Dec
 printTypeSynonym name params = TySynD (toName name) (toTypeVars params)
 
 instance ToName CodeGenTypeName where
@@ -322,7 +322,7 @@ instance PrintType AssociatedType where
   printType (AssociatedLocations xs) = pure $ foldr (AppT . AppT PromotedConsT . PromotedT . toName) PromotedNilT xs
   printType (AssociatedTypeName name) = toCon name
 
-instance PrintExp body => PrintDec (TypeClassInstance body) where
+instance (PrintExp body) => PrintDec (TypeClassInstance body) where
   printDec TypeClassInstance {..} =
     instanceD
       (printConstraints typeClassContext)
@@ -345,8 +345,8 @@ printArg ProxyArgument = [_']
 
 instance PrintDec CodeGenType where
   printDec CodeGenType {..} =
-    pure $
-      DataD
+    pure
+      $ DataD
         []
         (toName cgTypeName)
         (toTypeVars $ map toName $ typeParameters cgTypeName)

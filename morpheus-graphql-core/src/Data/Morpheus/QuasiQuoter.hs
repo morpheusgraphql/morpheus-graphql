@@ -40,9 +40,9 @@ import Relude hiding (ByteString)
 
 notSupported :: Text -> a
 notSupported things =
-  error $
-    things
-      <> " are not supported by the GraphQL QuasiQuoter"
+  error
+    $ things
+    <> " are not supported by the GraphQL QuasiQuoter"
 
 gql :: QuasiQuoter
 gql =

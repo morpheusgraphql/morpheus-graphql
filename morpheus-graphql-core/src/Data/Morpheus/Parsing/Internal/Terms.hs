@@ -148,16 +148,17 @@ brackets = between (symbol 91) (symbol 93)
 -- Name
 name :: Parser AST.Token
 name =
-  label "Name" $
-    fromLBS
-      <$> do
-        (<>) <$> takeWhile1P Nothing isStartChar <*> takeWhileP Nothing isContinueChar
-      <* ignoredTokens
+  label "Name"
+    $ fromLBS
+    <$> do
+      (<>) <$> takeWhile1P Nothing isStartChar <*> takeWhileP Nothing isContinueChar
+    <* ignoredTokens
   where
     isStartChar x =
       (x >= CHAR_a && x <= CHAR_z)
         || (x >= CHAR_A && x <= CHAR_Z)
-        || x == UNDERSCORE
+        || x
+        == UNDERSCORE
     {-# INLINE isStartChar #-}
     isContinueChar x =
       isStartChar x
@@ -187,10 +188,10 @@ varName = symbol DOLLAR *> parseName <* ignoredTokens
 --
 variable :: Parser (Ref FieldName)
 variable =
-  label "variable" $
-    flip Ref
-      <$> getLocation
-      <*> varName
+  label "variable"
+    $ flip Ref
+    <$> getLocation
+    <*> varName
 {-# INLINE variable #-}
 
 -- Descriptions: https://graphql.github.io/graphql-spec/June2018/#Description
@@ -229,10 +230,11 @@ parseNonNull = (symbol BANG $> True) <|> pure False
 
 uniqTuple :: (FromList GQLResult map k a, KeyOf k a) => Parser a -> Parser (map k a)
 uniqTuple parser =
-  label "Tuple" $
-    parens
+  label "Tuple"
+    $ parens
       (parser `sepBy` ignoredTokens <?> "empty Tuple value!")
-      >>= lift . fromElems
+    >>= lift
+    . fromElems
 {-# INLINE uniqTuple #-}
 
 uniqTupleOpt ::

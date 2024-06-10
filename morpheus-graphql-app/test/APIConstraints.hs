@@ -44,13 +44,13 @@ import Test.Tasty
   ( TestTree,
   )
 
-resolvers :: Monad m => RootResolverValue e m
+resolvers :: (Monad m) => RootResolverValue e m
 resolvers =
   queryResolvers
     [ ( "Query",
         traverse
-          ( const $
-              object
+          ( const
+              $ object
                 [ ("success", pure "success"),
                   ("forbidden", pure "forbidden!"),
                   ("limited", pure "num <= 5")

@@ -91,7 +91,7 @@ instance FromJSON EnumValue where
     where
       objectParser o = EnumValue <$> o .: "name"
 
-instance FromJSON a => FromJSON (JSONResponse a) where
+instance (FromJSON a) => FromJSON (JSONResponse a) where
   parseJSON = withObject "JSONResponse" objectParser
     where
       objectParser o =

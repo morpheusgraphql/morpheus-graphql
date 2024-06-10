@@ -70,8 +70,8 @@ rootResolver =
         subResolver (Event [ChannelA] (ContentB _value)) = fetchDeity -- resolve New State
         subResolver _ = fetchDeity -- Resolve Old State
         ---------------------------------------------------------
-    fetchDeity :: Applicative m => m Deity
+    fetchDeity :: (Applicative m) => m Deity
     fetchDeity = pure someDeity
 
-requireAuthorized :: WithOperation o => Resolver o e IO ()
+requireAuthorized :: (WithOperation o) => Resolver o e IO ()
 requireAuthorized = pure ()

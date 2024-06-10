@@ -51,7 +51,7 @@ mergeConcat (value :| (x : xs)) = do
   a <- merge value x
   mergeConcat (a :| xs)
 
-throwErrors :: MonadError e m => NonEmpty e -> m b
+throwErrors :: (MonadError e m) => NonEmpty e -> m b
 throwErrors (e :| es) = throwError e <* traverse throwError es
 
 -- Merge Object with of Failure as an Option

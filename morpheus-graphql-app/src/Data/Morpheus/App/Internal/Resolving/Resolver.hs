@@ -178,7 +178,7 @@ instance (LiftOperation o, Monad m) => MonadReader ResolverContext (Resolver o e
   local f (ResolverS resM) = ResolverS $ mapReaderT (local f) <$> resM
 
 class LiftOperation (o :: OperationType) where
-  packResolver :: Monad m => ResolverStateT e m a -> Resolver o e m a
+  packResolver :: (Monad m) => ResolverStateT e m a -> Resolver o e m a
 
 instance LiftOperation QUERY where
   packResolver = ResolverQ . clearStateResolverEvents
@@ -189,7 +189,7 @@ instance LiftOperation MUTATION where
 instance LiftOperation SUBSCRIPTION where
   packResolver = ResolverS . pure . lift . clearStateResolverEvents
 
-toEventResolver :: Monad m => ResolverContext -> SubEventRes event m ValidValue -> (event -> m GQLResponse)
+toEventResolver :: (Monad m) => ResolverContext -> SubEventRes event m ValidValue -> (event -> m GQLResponse)
 toEventResolver sel (ReaderT subRes) event = renderResponse <$> runResolverStateValueM (subRes event) sel
 
 subscriptionEvents ::

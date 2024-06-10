@@ -248,7 +248,7 @@ userUpdate :: EVENT
 userUpdate = Event [USER] (Content {contentID = 12})
 
 -- DB::Getter --------------------------------------------------------------------
-getDBAddress :: WithOperation o => Content -> IO (Address (Resolver o EVENT IO))
+getDBAddress :: (WithOperation o) => Content -> IO (Address (Resolver o EVENT IO))
 getDBAddress _id = do
   city <- dbText
   street <- dbText
@@ -260,11 +260,11 @@ getDBAddress _id = do
         addressHouseNumber = pure number
       }
 
-getDBUser :: WithOperation o => Content -> IO (Either String (User (Resolver o EVENT IO)))
+getDBUser :: (WithOperation o) => Content -> IO (Either String (User (Resolver o EVENT IO)))
 getDBUser _ = do
   Person {name, email} <- dbPerson
-  pure $
-    Right
+  pure
+    $ Right
       User
         { userName = pure name,
           userEmail = pure email,
@@ -311,16 +311,16 @@ setDBAddress = do
 setDBUser :: IO (Either String (User (Resolver MUTATION EVENT IO)))
 setDBUser = do
   Person {name, email} <- dbPerson
-  pure $
-    Right $
-      User
-        { userName = pure name,
-          userEmail = pure email,
-          userAddress = const $ lift setDBAddress,
-          userOffice = constRes Nothing,
-          userHome = pure CityIDHH,
-          userEntity = pure []
-        }
+  pure
+    $ Right
+    $ User
+      { userName = pure name,
+        userEmail = pure email,
+        userAddress = const $ lift setDBAddress,
+        userOffice = constRes Nothing,
+        userHome = pure CityIDHH,
+        userEntity = pure []
+      }
 
 -- DB ----------------------
 data Person = Person
@@ -337,5 +337,5 @@ dbInt = pure 11
 dbPerson :: IO Person
 dbPerson = pure Person {name = "George", email = "George@email.com"}
 
-requireAuthorized :: WithOperation o => Resolver o e IO ()
+requireAuthorized :: (WithOperation o) => Resolver o e IO ()
 requireAuthorized = pure ()

@@ -105,7 +105,7 @@ allVariableRefs = collect <=< fmap (map toEntry . concat) . traverse (mapSelecti
         <$> ( askFragments
                 >>= selectKnown reference
                 >>= mapSelection searchRefs
-                  . fragmentSelection
+                . fragmentSelection
             )
 
 resolveOperationVariables ::
@@ -142,13 +142,13 @@ lookupAndValidateValueOnBody
       variablePosition,
       variableValue = DefaultValue defaultValue
     } =
-    withScope (setPosition variablePosition) $
-      toVariable
-        <$> ( askTypeDefinitions
-                >>= selectKnown (Ref typeConName variablePosition)
-                >>= constraint INPUT var
-                >>= checkType getVariable defaultValue
-            )
+    withScope (setPosition variablePosition)
+      $ toVariable
+      <$> ( askTypeDefinitions
+              >>= selectKnown (Ref typeConName variablePosition)
+              >>= constraint INPUT var
+              >>= checkType getVariable defaultValue
+          )
     where
       toVariable x = var {variableValue = ValidVariableValue x}
       getVariable :: Maybe ResolvedValue

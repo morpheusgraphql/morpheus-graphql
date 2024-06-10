@@ -51,14 +51,14 @@ import Data.Morpheus.Validation.Internal.Arguments
 import Relude
 
 validateDirectives ::
-  ArgumentsConstraints ctx schemaS s =>
+  (ArgumentsConstraints ctx schemaS s) =>
   DirectiveLocation ->
   Directives s ->
   Validator schemaS ctx (Directives VALID)
 validateDirectives location = traverse (validate location)
 
 validate ::
-  ArgumentsConstraints c schemaS s =>
+  (ArgumentsConstraints c schemaS s) =>
   DirectiveLocation ->
   Directive s ->
   Validator schemaS c (Directive VALID)
@@ -82,9 +82,9 @@ validateDirectiveLocation
   DirectiveDefinition {directiveDefinitionLocations}
     | loc `elem` directiveDefinitionLocations = pure ()
     | otherwise =
-        throwError $
-          ("Directive " <> msg directiveName <> " may not to be used on " <> msg loc)
-            `at` directivePosition
+        throwError
+          $ ("Directive " <> msg directiveName <> " may not to be used on " <> msg loc)
+          `at` directivePosition
 
 directiveFulfilled ::
   Bool ->
@@ -115,9 +115,9 @@ assertArgument ::
   Validator schemaS ctx Bool
 assertArgument asserted Argument {argumentValue = Scalar (Boolean actual)} = pure (asserted == actual)
 assertArgument _ Argument {argumentValue, argumentPosition} =
-  throwError $
-    ( "Expected type Boolean!, found "
-        <> msg argumentValue
-        <> "."
-    )
-      `at` argumentPosition
+  throwError
+    $ ( "Expected type Boolean!, found "
+          <> msg argumentValue
+          <> "."
+      )
+    `at` argumentPosition

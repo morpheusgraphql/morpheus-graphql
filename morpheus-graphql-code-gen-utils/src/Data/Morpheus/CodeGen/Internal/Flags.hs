@@ -40,16 +40,16 @@ newtype CodeGenT ctx (m :: Type -> Type) a = CodeGenT
         Flags
     )
 
-deriving instance MonadError GQLError m => MonadError GQLError (CodeGenT ctx m)
+deriving instance (MonadError GQLError m) => MonadError GQLError (CodeGenT ctx m)
 
 instance MonadTrans (CodeGenT ctx) where
   lift = CodeGenT . lift . lift
 
-runCodeGenT :: Monad m => CodeGenT ctx m a -> ctx -> m (a, Flags)
+runCodeGenT :: (Monad m) => CodeGenT ctx m a -> ctx -> m (a, Flags)
 runCodeGenT (CodeGenT m) ctx = runStateT (runReaderT m ctx) mempty
 
-langExtension :: MonadState Flags m => Text -> m ()
+langExtension :: (MonadState Flags m) => Text -> m ()
 langExtension ext = modify (FlagLanguageExtension ext :)
 
-requireExternal :: MonadState Flags m => Text -> m ()
+requireExternal :: (MonadState Flags m) => Text -> m ()
 requireExternal ext = modify (FlagExternal ext :)

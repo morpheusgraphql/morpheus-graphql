@@ -266,8 +266,8 @@ replaceValue (A.Bool v) = mkBoolean v
 replaceValue (A.Number v) = Scalar $ decodeScientific v
 replaceValue (A.String v) = mkString v
 replaceValue (A.Object v) =
-  mkObject $
-    fmap
+  mkObject
+    $ fmap
       (bimap packName replaceValue)
       (toAssoc v)
 replaceValue (A.Array li) = List (fmap replaceValue (V.toList li))

@@ -50,10 +50,10 @@ enum = mkEnum
 list :: [ResolverValue m] -> ResolverValue m
 list = mkList
 
-ref :: Applicative m => TypeName -> ValidValue -> ResolverValue m
+ref :: (Applicative m) => TypeName -> ValidValue -> ResolverValue m
 ref typeName = ResRef . pure . NamedResolverRef typeName . pure
 
-refs :: Applicative m => TypeName -> [ValidValue] -> ResolverValue m
+refs :: (Applicative m) => TypeName -> [ValidValue] -> ResolverValue m
 refs typeName = mkList . map (ref typeName)
 
 type NamedResolverFunction o e m = NamedFunction (Resolver o e m)
@@ -70,7 +70,7 @@ variant tName = pure . Union tName
 nullRes :: (MonadResolver m) => m (ResultBuilder m)
 nullRes = pure Null
 
-queryResolvers :: Monad m => [(TypeName, NamedFunction (Resolver QUERY e m))] -> RootResolverValue e m
+queryResolvers :: (Monad m) => [(TypeName, NamedFunction (Resolver QUERY e m))] -> RootResolverValue e m
 queryResolvers = NamedResolversValue . mkResolverMap
 
 -- INTERNAL
@@ -79,10 +79,10 @@ data ResultBuilder m
   | Union TypeName ValidValue
   | Null
 
-mkResolverMap :: MonadResolver m => [(TypeName, NamedFunction m)] -> ResolverMap m
+mkResolverMap :: (MonadResolver m) => [(TypeName, NamedFunction m)] -> ResolverMap m
 mkResolverMap = HM.fromList . map packRes
   where
-    packRes :: MonadResolver m => (TypeName, NamedFunction m) -> (TypeName, NamedResolver m)
+    packRes :: (MonadResolver m) => (TypeName, NamedFunction m) -> (TypeName, NamedResolver m)
     packRes (typeName, f) = (typeName, NamedResolver typeName (fmap (map mapValue) . f))
       where
         mapValue (Object x) = NamedObjectResolver (ObjectTypeResolver $ HM.fromList x)

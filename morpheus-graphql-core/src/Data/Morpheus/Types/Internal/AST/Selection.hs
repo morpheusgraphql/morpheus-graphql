@@ -310,8 +310,8 @@ mergeSelection
         selectionArguments <- mergeArguments
         selectionContent <- merge (selectionContent old) (selectionContent current)
         dirs <- selectionDirectives old <:> selectionDirectives current
-        pure $
-          Selection
+        pure
+          $ Selection
             { selectionAlias = mergeAlias,
               selectionPosition = pos1,
               selectionDirectives = dirs,
@@ -326,12 +326,12 @@ mergeSelection
       mergeArguments
         | selectionArguments old == selectionArguments current = pure $ selectionArguments current
         | otherwise =
-            mergeConflict $
-              ("they have differing arguments. " <> useDifferentAliases)
-                `atPositions` [pos1, pos2]
+            mergeConflict
+              $ ("they have differing arguments. " <> useDifferentAliases)
+              `atPositions` [pos1, pos2]
 mergeSelection x y = mergeConflict ("INTERNAL: can't merge. " <> msgValue x <> msgValue y <> useDifferentAliases)
 
-msgValue :: Show a => a -> GQLError
+msgValue :: (Show a) => a -> GQLError
 msgValue = msg . show
 
 -- fails if alias matches but name not:
@@ -347,14 +347,14 @@ mergeName ::
 mergeName pos old current
   | selectionName old == selectionName current = pure $ selectionName current
   | otherwise =
-      mergeConflict $
-        ( msg (selectionName old)
-            <> " and "
-            <> msg (selectionName current)
-            <> " are different fields. "
-            <> useDifferentAliases
-        )
-          `atPositions` pos
+      mergeConflict
+        $ ( msg (selectionName old)
+              <> " and "
+              <> msg (selectionName current)
+              <> " are different fields. "
+              <> useDifferentAliases
+          )
+        `atPositions` pos
 
 deriving instance Show (Selection a)
 
@@ -391,7 +391,7 @@ instance RenderGQL (Operation VALID) where
 getOperationName :: Maybe FieldName -> TypeName
 getOperationName = maybe "AnonymousOperation" coerce
 
-getOperationDataType :: MonadError GQLError m => Operation s -> Schema VALID -> m (TypeDefinition OBJECT VALID)
+getOperationDataType :: (MonadError GQLError m) => Operation s -> Schema VALID -> m (TypeDefinition OBJECT VALID)
 getOperationDataType Operation {operationType = OPERATION_QUERY} lib = pure (query lib)
 getOperationDataType Operation {operationType = OPERATION_MUTATION, operationPosition} lib =
   maybe (throwError $ mutationIsNotDefined operationPosition) pure (mutation lib)

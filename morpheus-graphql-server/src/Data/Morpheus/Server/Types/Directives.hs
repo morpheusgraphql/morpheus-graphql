@@ -110,7 +110,7 @@ instance (ToLocation l, ToLocations ls) => ToLocations (l : ls) where
 instance ToLocations '[] where
   toLocations _ = []
 
-getLocations :: forall f a. ToLocations (DIRECTIVE_LOCATIONS a) => f a -> [DirectiveLocation]
+getLocations :: forall f a. (ToLocations (DIRECTIVE_LOCATIONS a)) => f a -> [DirectiveLocation]
 getLocations _ = toLocations (Proxy :: Proxy (DIRECTIVE_LOCATIONS a))
 
 type ALLOWED (a :: Type) (l :: [DirectiveLocation]) = OVERLAPS l (DIRECTIVE_LOCATIONS a)
@@ -140,16 +140,16 @@ class
 
 -- TYPE VISITORS
 
-visitTypeName' :: forall a. GQLDirective a => a -> Bool -> TypeName -> TypeName
+visitTypeName' :: forall a. (GQLDirective a) => a -> Bool -> TypeName -> TypeName
 visitTypeName' = __visitTypeName (Proxy :: Proxy (ALLOWED a TYPE_VISITOR_KIND))
 
-visitTypeDescription' :: forall a. GQLDirective a => a -> Maybe Description -> Maybe Description
+visitTypeDescription' :: forall a. (GQLDirective a) => a -> Maybe Description -> Maybe Description
 visitTypeDescription' = __visitTypeDescription (Proxy :: Proxy (ALLOWED a TYPE_VISITOR_KIND))
 
-visitFieldNames' :: forall a. GQLDirective a => a -> FieldName -> FieldName
+visitFieldNames' :: forall a. (GQLDirective a) => a -> FieldName -> FieldName
 visitFieldNames' = __visitFieldNames (Proxy :: Proxy (ALLOWED a TYPE_VISITOR_KIND))
 
-visitEnumNames' :: forall a. GQLDirective a => a -> TypeName -> TypeName
+visitEnumNames' :: forall a. (GQLDirective a) => a -> TypeName -> TypeName
 visitEnumNames' = __visitEnumNames (Proxy :: Proxy (ALLOWED a TYPE_VISITOR_KIND))
 
 class VISIT_TYPE a (t :: Bool) where
@@ -164,7 +164,7 @@ instance VISIT_TYPE a 'False where
   __visitFieldNames _ _ = id
   __visitEnumNames _ _ = id
 
-instance Visitors.VisitType a => VISIT_TYPE a TRUE where
+instance (Visitors.VisitType a) => VISIT_TYPE a TRUE where
   __visitTypeName _ x isInput name = packName $ Visitors.visitTypeName x isInput (unpackName name)
   __visitTypeDescription _ = Visitors.visitTypeDescription
   __visitFieldNames _ x = packName . Visitors.visitFieldNames x . unpackName
@@ -172,13 +172,13 @@ instance Visitors.VisitType a => VISIT_TYPE a TRUE where
 
 -- FIELD VISITORS
 
-visitFieldName' :: forall a. GQLDirective a => a -> FieldName -> FieldName
+visitFieldName' :: forall a. (GQLDirective a) => a -> FieldName -> FieldName
 visitFieldName' = __visitFieldName (Proxy :: Proxy (ALLOWED a FIELD_VISITOR_KIND))
 
-visitFieldDescription' :: forall a. GQLDirective a => a -> Maybe Description -> Maybe Description
+visitFieldDescription' :: forall a. (GQLDirective a) => a -> Maybe Description -> Maybe Description
 visitFieldDescription' = __visitFieldDescription (Proxy :: Proxy (ALLOWED a FIELD_VISITOR_KIND))
 
-visitFieldDefaultValue' :: forall a. GQLDirective a => a -> Maybe (Value CONST) -> Maybe (Value CONST)
+visitFieldDefaultValue' :: forall a. (GQLDirective a) => a -> Maybe (Value CONST) -> Maybe (Value CONST)
 visitFieldDefaultValue' = __visitFieldDefaultValue (Proxy :: Proxy (ALLOWED a FIELD_VISITOR_KIND))
 
 class VISIT_FIELD a (t :: Bool) where
@@ -191,17 +191,17 @@ instance VISIT_FIELD a FALSE where
   __visitFieldDescription _ _ = id
   __visitFieldDefaultValue _ _ = id
 
-instance Visitors.VisitField a => VISIT_FIELD a TRUE where
+instance (Visitors.VisitField a) => VISIT_FIELD a TRUE where
   __visitFieldName _ x name = packName $ Visitors.visitFieldName x (unpackName name)
   __visitFieldDescription _ = Visitors.visitFieldDescription
   __visitFieldDefaultValue _ = Visitors.visitFieldDefaultValue
 
 -- VISIT_ENUM
 
-visitEnumName' :: forall a. GQLDirective a => a -> TypeName -> TypeName
+visitEnumName' :: forall a. (GQLDirective a) => a -> TypeName -> TypeName
 visitEnumName' = __visitEnumName (Proxy :: Proxy (ALLOWED a ENUM_VISITOR_KIND))
 
-visitEnumDescription' :: forall a. GQLDirective a => a -> Maybe Description -> Maybe Description
+visitEnumDescription' :: forall a. (GQLDirective a) => a -> Maybe Description -> Maybe Description
 visitEnumDescription' = __visitEnumDescription (Proxy :: Proxy (ALLOWED a ENUM_VISITOR_KIND))
 
 class VISIT_ENUM a (t :: Bool) where
@@ -212,7 +212,7 @@ instance VISIT_ENUM a FALSE where
   __visitEnumName _ _ = id
   __visitEnumDescription _ _ = id
 
-instance Visitors.VisitEnum a => VISIT_ENUM a TRUE where
+instance (Visitors.VisitEnum a) => VISIT_ENUM a TRUE where
   __visitEnumName _ x name = packName $ Visitors.visitEnumName x (unpackName name)
   __visitEnumDescription _ = Visitors.visitEnumDescription
 

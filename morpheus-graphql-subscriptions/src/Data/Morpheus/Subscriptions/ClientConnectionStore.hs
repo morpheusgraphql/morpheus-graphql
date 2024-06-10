@@ -202,7 +202,7 @@ data ClientConnectionStore e (m :: Type -> Type) where
     ClientConnectionStore (Event channel content) m
 
 deriving instance
-  Show e =>
+  (Show e) =>
   Show (ClientConnectionStore (Event e c) m)
 
 type StoreMap e m =

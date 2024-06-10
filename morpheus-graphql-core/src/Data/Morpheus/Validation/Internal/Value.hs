@@ -84,14 +84,14 @@ violation message value = do
     } <-
     asksScope id
   prefix <- inputMessagePrefix
-  throwError $
-    ( prefix
-        <> typeViolation
-          (TypeRef currentTypeName currentTypeWrappers)
-          value
-        <> maybe "" (" " <>) message
-    )
-      `atPositions` position
+  throwError
+    $ ( prefix
+          <> typeViolation
+            (TypeRef currentTypeName currentTypeWrappers)
+            value
+          <> maybe "" (" " <>) message
+      )
+    `atPositions` position
 
 checkTypeCompatibility ::
   TypeRef ->
@@ -103,7 +103,7 @@ checkTypeCompatibility valueType ref var@Variable {variableValue = ValidVariable
   | otherwise = throwError $ incompatibleVariableType ref var valueType
 
 validateInputByTypeRef ::
-  ValidateWithDefault c schemaS s =>
+  (ValidateWithDefault c schemaS s) =>
   Typed IN schemaS TypeRef ->
   Value s ->
   Validator schemaS (InputContext c) (Value VALID)
@@ -117,7 +117,7 @@ validateInputByTypeRef
       value
 
 validateValueByField ::
-  ValidateWithDefault c schemaS s =>
+  (ValidateWithDefault c schemaS s) =>
   FieldDefinition IN schemaS ->
   Value s ->
   Validator schemaS (InputContext c) (Value VALID)
@@ -128,7 +128,7 @@ validateValueByField field =
 
 -- Validate input Values
 validateInputByType ::
-  ValidateWithDefault ctx schemaS valueS =>
+  (ValidateWithDefault ctx schemaS valueS) =>
   TypeWrapper ->
   TypeDefinition IN schemaS ->
   Value valueS ->
@@ -138,7 +138,7 @@ validateInputByType tyWrappers typeDef =
 
 -- VALIDATION
 validateWrapped ::
-  ValidateWithDefault ctx schemaS valueS =>
+  (ValidateWithDefault ctx schemaS valueS) =>
   TypeWrapper ->
   TypeDefinition IN schemaS ->
   Value valueS ->
@@ -162,7 +162,7 @@ validateWrapped BaseType {} TypeDefinition {typeContent} entryValue =
   validateUnwrapped typeContent entryValue
 
 validateUnwrapped ::
-  ValidateWithDefault ctx schemaS valueS =>
+  (ValidateWithDefault ctx schemaS valueS) =>
   TypeContent TRUE IN schemaS ->
   Value valueS ->
   InputValidator schemaS ctx ValidValue
@@ -178,7 +178,7 @@ validateUnwrapped _ value = violation Nothing value
 
 -- INPUT UNION
 validateInputUnion ::
-  ValidateWithDefault ctx schemaS s =>
+  (ValidateWithDefault ctx schemaS s) =>
   UnionTypeDefinition IN schemaS ->
   Object s ->
   InputValidator schemaS ctx (Value VALID)
@@ -188,7 +188,7 @@ validateInputUnion inputUnion rawFields =
     Right (name, value) -> validateInputUnionMember name value
 
 validateInputUnionMember ::
-  ValidateWithDefault ctx schemaS valueS =>
+  (ValidateWithDefault ctx schemaS valueS) =>
   UnionMember IN schemaS ->
   Value valueS ->
   InputValidator schemaS ctx (Value VALID)
@@ -214,7 +214,7 @@ mkInputUnionValue
 
 -- INPUT Object
 validateInputObject ::
-  ValidateWithDefault ctx schemaS valueS =>
+  (ValidateWithDefault ctx schemaS valueS) =>
   FieldsDefinition IN schemaS ->
   Object valueS ->
   InputValidator schemaS ctx (Object VALID)

@@ -45,11 +45,11 @@ import Server.ServerState (Channel (..), Content (..), MEvent, ServerState)
 import qualified Server.ServerState as ServerState
 
 newtype Query m
-  = Query { queryCounter :: m Int }
+  = Query {queryCounter :: m Int}
   deriving (Generic, GQLType)
 
 newtype FunctionSearchArgs
-  = FunctionSearchArgs { fn :: Text }
+  = FunctionSearchArgs {fn :: Text}
   deriving (Generic, GQLType)
 
 data QueryCounterArgs
@@ -72,7 +72,7 @@ resolveQuCounter serverState = do
   liftEither . return $ Right results
 
 newtype Mutation m
-  = Mutation { updateCounter :: UpdateCounter -> m Int }
+  = Mutation {updateCounter :: UpdateCounter -> m Int}
   deriving (Generic, GQLType)
 
 newtype UpdateCounter

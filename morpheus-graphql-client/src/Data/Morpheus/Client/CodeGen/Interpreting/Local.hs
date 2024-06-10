@@ -166,11 +166,11 @@ checkTypename :: Position -> [FieldName] -> Maybe (SelectionSet VALID) -> UnionT
 checkTypename pos path iFace UnionTag {..}
   | any (member "__typename") (unionTagSelection : toList iFace) = pure ()
   | otherwise =
-      warning $
-        withPath
+      warning
+        $ withPath
           ("missing \"__typename\" for selection " <> msg unionTagName <> ". this can lead to undesired behavior at runtime!")
           (map (PropName . unpackName) path)
-          `at` pos
+        `at` pos
 
 type Variant = (CodeGenTypeName, Maybe TypeName)
 

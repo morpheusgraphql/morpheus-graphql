@@ -76,7 +76,7 @@ lookupResJSON name (Object fields) =
     fields
 lookupResJSON _ _ = mkEmptyObject
 
-mkEmptyObject :: Monad m => m (ObjectTypeResolver a)
+mkEmptyObject :: (Monad m) => m (ObjectTypeResolver a)
 mkEmptyObject = pure $ ObjectTypeResolver mempty
 
 mkValue ::
@@ -110,7 +110,7 @@ withSelf txt = case breakOnEnd "::" txt of
     _ -> NoAPI txt
   _ -> NoAPI txt
 
-requireObject :: MonadError GQLError f => ResolverValue m -> f (ObjectTypeResolver m)
+requireObject :: (MonadError GQLError f) => ResolverValue m -> f (ObjectTypeResolver m)
 requireObject (ResObject _ x) = pure x
 requireObject _ = throwError (internal "resolver must be an object")
 
@@ -118,7 +118,7 @@ unpackJSONName :: Value -> Maybe TypeName
 unpackJSONName (String x) = Just (packName x)
 unpackJSONName _ = Nothing
 
-withField :: Monad m' => a -> (m (ResolverValue m) -> m' a) -> FieldName -> ObjectTypeResolver m -> m' a
+withField :: (Monad m') => a -> (m (ResolverValue m) -> m' a) -> FieldName -> ObjectTypeResolver m -> m' a
 withField fb suc selectionName ObjectTypeResolver {..} = maybe (pure fb) suc (lookup selectionName objectFields)
 
 withObject ::

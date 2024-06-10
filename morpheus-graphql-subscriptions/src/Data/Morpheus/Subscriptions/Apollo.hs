@@ -91,9 +91,12 @@ instance (FromJSON a) => FromJSON (ApolloSubscription a) where
     where
       objectParser o =
         ApolloSubscription
-          <$> o .:? "id"
-          <*> o .: "type"
-          <*> o .:? "payload"
+          <$> o
+          .:? "id"
+          <*> o
+          .: "type"
+          <*> o
+          .:? "payload"
 
 data RequestPayload = RequestPayload
   { payloadOperationName :: Maybe FieldName,
@@ -107,16 +110,20 @@ instance FromJSON RequestPayload where
     where
       objectParser o =
         RequestPayload
-          <$> o .:? "operationName"
-          <*> o .:? "query"
-          <*> o .:? "variables"
+          <$> o
+          .:? "operationName"
+          <*> o
+          .:? "query"
+          <*> o
+          .:? "variables"
 
 instance (ToJSON a) => ToJSON (ApolloSubscription a) where
   toEncoding (ApolloSubscription id' type' payload') =
-    pairs $
-      encodeMaybe "id" id'
-        <> "type" .= type'
-        <> encodeMaybe "payload" payload'
+    pairs
+      $ encodeMaybe "id" id'
+      <> "type"
+      .= type'
+      <> encodeMaybe "payload" payload'
     where
       -- Messages should only include these fields when they have real values,
       -- for example the MessageAck response should only include the type and optionally
@@ -131,8 +138,8 @@ acceptApolloRequest ::
   PendingConnection ->
   m Connection
 acceptApolloRequest pending =
-  liftIO $
-    acceptRequestWith
+  liftIO
+    $ acceptRequestWith
       pending
       (acceptApolloSubProtocol (pendingRequest pending))
 
@@ -219,10 +226,10 @@ apolloFormat = validateReq . eitherDecode
     validateSub ApolloSubscription {apolloType = GqlComplete, apolloId} =
       SessionStop <$> validateSession apolloId
     validateSub ApolloSubscription {apolloType} =
-      Left $
-        "Unknown Request type \""
-          <> pack (unpack $ apolloResponseToProtocolMsgType apolloType)
-          <> "\"."
+      Left
+        $ "Unknown Request type \""
+        <> pack (unpack $ apolloResponseToProtocolMsgType apolloType)
+        <> "\"."
 
     validateSession :: Maybe ID -> Validation ID
     validateSession = maybe (Left "\"id\" was not provided") Right

@@ -86,8 +86,8 @@ instance Pretty TypeValue where
   pretty (TypeValueObject name xs) =
     pretty (unpackName name :: Text)
       <+> "{"
-        <> vsep (punctuate "," (map renderField xs))
-        <> "}"
+      <> vsep (punctuate "," (map renderField xs))
+      <> "}"
   pretty (TypeValueNumber x) = pretty x
   pretty (TypeValueString x) = pretty (show x :: String)
   pretty (TypeValueBool x) = pretty x
@@ -111,10 +111,10 @@ instance Pretty CodeGenType where
   pretty t@CodeGenType {..} =
     (if isNewType t then "newtype" else "data")
       <+> ignore (print cgTypeName)
-        <> renderConstructors cgConstructors
-        <> line
-        <> indent 2 (renderDeriving cgDerivations)
-        <> line
+      <> renderConstructors cgConstructors
+      <> line
+      <> indent 2 (renderDeriving cgDerivations)
+      <> line
     where
       renderConstructors [cons] = (" =" <+>) $ print' cons
       renderConstructors conses = nest 2 . (line <>) . vsep . prefixVariants $ map print' conses
@@ -184,8 +184,8 @@ fromTypeName = CodeGenTypeName [] []
 
 instance Printer CodeGenTypeName where
   print cgName =
-    HSDoc (not $ null (typeParameters cgName)) $
-      parametrizedType
+    HSDoc (not $ null (typeParameters cgName))
+      $ parametrizedType
         (unpackName (getFullName cgName))
         (typeParameters cgName)
 
@@ -199,7 +199,7 @@ data ModuleDefinition dec = ModuleDefinition
     types :: [dec]
   }
 
-instance Pretty dec => Pretty (ModuleDefinition dec) where
+instance (Pretty dec) => Pretty (ModuleDefinition dec) where
   pretty ModuleDefinition {..} =
     vsep
       (map renderExtension (sort extensions))
@@ -208,12 +208,12 @@ instance Pretty dec => Pretty (ModuleDefinition dec) where
       <> "module"
       <+> pretty moduleName
       <+> "where"
-        <> line
-        <> line
-        <> vsep (map renderImport $ organizeImports imports)
-        <> line
-        <> line
-        <> vsep (filter notEmpty $ map pretty types)
+      <> line
+      <> line
+      <> vsep (map renderImport $ organizeImports imports)
+      <> line
+      <> line
+      <> vsep (filter notEmpty $ map pretty types)
 
 notEmpty :: Doc a -> Bool
 notEmpty x = not $ null (show x :: String)
@@ -250,16 +250,16 @@ data TypeClassInstance body = TypeClassInstance
   }
   deriving (Show)
 
-instance Pretty a => Pretty (TypeClassInstance a) where
+instance (Pretty a) => Pretty (TypeClassInstance a) where
   pretty TypeClassInstance {..} =
     "instance"
       <> optional renderTypeableConstraints (typeParameters typeClassTarget)
       <+> printTHName typeClassName
       <+> typeHead
       <+> "where"
-        <> line
-        <> indent 2 (vsep (map renderAssoc assoc <> map renderMethodD typeClassMethods))
-        <> line
+      <> line
+      <> indent 2 (vsep (map renderAssoc assoc <> map renderMethodD typeClassMethods))
+      <> line
     where
       typeHead = unpack (print typeClassTarget)
       renderAssoc (name, a) = "type" <+> printTHName name <+> typeHead <+> "=" <+> pretty a

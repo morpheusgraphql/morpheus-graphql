@@ -56,23 +56,23 @@ getName "poseidon" = "Zeus"
 getName "cronos" = "Cronos"
 getName _ = ""
 
-restrictExecutions :: Monad m => Int -> ResQ m ()
+restrictExecutions :: (Monad m) => Int -> ResQ m ()
 restrictExecutions expected = do
   count <- lift get
   if expected == count then pure () else throwError ("unexpected execution count. expected " <> msg expected <> " but got " <> msg count <> ".")
 
-deityResolver :: Monad m => ValidValue -> ResQ m (ResolverValue (ResQ m))
+deityResolver :: (Monad m) => ValidValue -> ResQ m (ResolverValue (ResQ m))
 deityResolver name = do
   lift (modify (+ 1))
   pure $ mkObject "Deity" [("name", pure $ getName name)]
 
-resolvers :: Monad m => RootResolverValue () (ExecState m)
+resolvers :: (Monad m) => RootResolverValue () (ExecState m)
 resolvers =
   RootResolverValue
     { queryResolver =
         pure
-          ( ObjectTypeResolver $
-              fromList
+          ( ObjectTypeResolver
+              $ fromList
                 [ ("deity", (getArgument "id" >>= deityResolver) <* restrictExecutions 1),
                   ("deities", (list <$> traverse deityResolver ["zeus", "morpheus"]) <* restrictExecutions 2)
                 ]

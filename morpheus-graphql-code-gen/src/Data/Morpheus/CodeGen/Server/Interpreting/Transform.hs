@@ -201,8 +201,8 @@ genTypeDefinition
         namespaceDirs <- getNamespaceDirs (unpackName hsTypeName)
         dirs <- getDirectives typeDef
         renameDir <- getRenameDir originalTypeName hsTypeName
-        pure $
-          gqlTypeToInstance
+        pure
+          $ gqlTypeToInstance
             GQLTypeDefinition
               { gqlTarget = cgTypeName,
                 gqlTypeDirectiveUses = renameDir <> namespaceDirs <> dirs <> defaultValueDirs,
@@ -271,7 +271,8 @@ mkFieldArguments
   [ ArgumentDefinition FieldDefinition {fieldName, fieldType}
     ] =
     checkTypeExistence (typeConName fieldType)
-      >> langExtension "DataKinds" $> [TAGGED_ARG ''Arg fieldName fieldType]
+      >> langExtension "DataKinds"
+      $> [TAGGED_ARG ''Arg fieldName fieldType]
 mkFieldArguments fName genName _ = pure [ARG (genName fName)]
 
 toArgList :: Maybe (FieldContent bool cat s) -> [ArgumentDefinition s]
@@ -369,8 +370,8 @@ genTypeContent typeName (DataUnion members) = do
 mkUnionFieldDefinition :: (CodeGenM m) => TypeName -> TypeName -> m CodeGenConstructor
 mkUnionFieldDefinition typeName memberName = do
   fieldType <- getFieldTypeName memberName
-  pure $
-    CodeGenConstructor
+  pure
+    $ CodeGenConstructor
       { constructorName,
         constructorFields =
           [ CodeGenField

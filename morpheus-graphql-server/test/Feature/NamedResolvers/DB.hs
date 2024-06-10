@@ -40,7 +40,7 @@ getPlace "zeus" = pure "olympus"
 getPlace "morpheus" = pure "dreams"
 getPlace x = pure x
 
-getDocsById :: Monad m => ID -> m (Maybe Text)
+getDocsById :: (Monad m) => ID -> m (Maybe Text)
 getDocsById "morpheus" = pure $ Just "the god of dreams"
 getDocsById "zeus" = pure $ Just "the king of the gods"
 getDocsById "olympus" = pure $ Just "Mountain"

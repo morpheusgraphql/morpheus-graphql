@@ -55,13 +55,13 @@ import Text.Megaparsec
 
 parseExecutableDocument :: Variables -> Parser ExecutableDocument
 parseExecutableDocument variables =
-  label "ExecutableDocument" $
-    ( ExecutableDocument variables
-        <$> (ignoredTokens *> parseOperation)
-        <*> (many parseFragmentDefinition >>= lift . fromElems)
-    )
-      <* ignoredTokens
-      <* eof
+  label "ExecutableDocument"
+    $ ( ExecutableDocument variables
+          <$> (ignoredTokens *> parseOperation)
+          <*> (many parseFragmentDefinition >>= lift . fromElems)
+      )
+    <* ignoredTokens
+    <* eof
 
 parseRequest :: GQLRequest -> GQLResult ExecutableDocument
 parseRequest GQLRequest {query, variables} =

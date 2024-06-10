@@ -141,36 +141,36 @@ validateReq ::
   Config ->
   GQLRequest ->
   ResponseStream event m ResolverContext
-validateReq constraints inputSchema config request = ResultT $
-  pure $
-    do
-      validSchema <- validateSchema True config inputSchema
-      schema <- internalSchema <:> validSchema
-      operation <- parseRequestWith config validSchema request
-      checkConstraints schema operation constraints
-      pure
-        ( [],
-          ResolverContext
-            { schema,
-              config,
-              operation,
-              currentType =
-                toAny $
-                  fromMaybe
-                    (AST.query schema)
-                    (rootType (operationType operation) schema),
-              currentSelection =
-                Selection
-                  { selectionName = "Root",
-                    selectionArguments = empty,
-                    selectionPosition = operationPosition operation,
-                    selectionAlias = Nothing,
-                    selectionContent = SelectionSet (operationSelection operation),
-                    selectionDirectives = empty,
-                    selectionOrigin = Nothing
-                  }
-            }
-        )
+validateReq constraints inputSchema config request = ResultT
+  $ pure
+  $ do
+    validSchema <- validateSchema True config inputSchema
+    schema <- internalSchema <:> validSchema
+    operation <- parseRequestWith config validSchema request
+    checkConstraints schema operation constraints
+    pure
+      ( [],
+        ResolverContext
+          { schema,
+            config,
+            operation,
+            currentType =
+              toAny
+                $ fromMaybe
+                  (AST.query schema)
+                  (rootType (operationType operation) schema),
+            currentSelection =
+              Selection
+                { selectionName = "Root",
+                  selectionArguments = empty,
+                  selectionPosition = operationPosition operation,
+                  selectionAlias = Nothing,
+                  selectionContent = SelectionSet (operationSelection operation),
+                  selectionDirectives = empty,
+                  selectionOrigin = Nothing
+                }
+          }
+      )
 
 rootType :: OperationType -> Schema s -> Maybe (AST.TypeDefinition AST.OBJECT s)
 rootType OPERATION_QUERY = Just . AST.query

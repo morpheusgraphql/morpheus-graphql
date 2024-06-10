@@ -34,7 +34,7 @@ import Relude hiding
     unwords,
   )
 
-render :: RenderGQL a => a -> ByteString
+render :: (RenderGQL a) => a -> ByteString
 render x = runRendering (renderGQL x) 0
 
 newtype Rendering = Rendering
@@ -47,13 +47,13 @@ instance Semigroup Rendering where
 instance IsString Rendering where
   fromString = Rendering . const . LB.pack
 
-fromShow :: Show a => a -> Rendering
+fromShow :: (Show a) => a -> Rendering
 fromShow = fromString . show
 
 fromText :: Text -> Rendering
 fromText = fromString . T.unpack
 
-nonNillSpace :: Foldable t => t a -> Rendering
+nonNillSpace :: (Foldable t) => t a -> Rendering
 nonNillSpace t
   | null t = ""
   | otherwise = space
@@ -62,7 +62,7 @@ class RenderGQL a where
   renderGQL :: a -> Rendering
 
 instance
-  RenderGQL a =>
+  (RenderGQL a) =>
   RenderGQL (Maybe a)
   where
   renderGQL = maybe "" renderGQL
@@ -142,6 +142,6 @@ renderInputSeq ::
   Rendering
 renderInputSeq = fromMaybe "" . foldr' renderValue Nothing
   where
-    renderValue :: RenderGQL a => a -> Maybe Rendering -> Maybe Rendering
+    renderValue :: (RenderGQL a) => a -> Maybe Rendering -> Maybe Rendering
     renderValue value Nothing = Just (renderGQL value)
     renderValue value (Just txt) = Just (renderGQL value <> ", " <> txt)

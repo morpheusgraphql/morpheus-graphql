@@ -127,7 +127,7 @@ root =
           }
     }
   where
-    queryUser :: Applicative m => m (User m)
+    queryUser :: (Applicative m) => m (User m)
     queryUser =
       pure
         User
@@ -138,7 +138,7 @@ root =
             userFriend = pure Nothing
           }
     -----------------------------------------------------
-    resolveAddress :: Applicative m => a -> m (Address m)
+    resolveAddress :: (Applicative m) => a -> m (Address m)
     resolveAddress _ =
       pure
         Address

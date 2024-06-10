@@ -30,7 +30,7 @@ exampleDeityRepoHandler dbRef =
       writeIORef dbRef $ addOrReplace diety deities
       pure (Right diety)
 
-addOrReplace :: Eq a => a -> [a] -> [a]
+addOrReplace :: (Eq a) => a -> [a] -> [a]
 addOrReplace a as = a : filter (/= a) as
 
 toEither :: b -> Maybe a -> Either b a
