@@ -5,8 +5,8 @@ export const exit = (error: Error) => {
   process.exit(1);
 };
 
-export const exec = (command: string, stdio?: StdioOptions) =>
-  execSync(command, {
+export const exec = (cmd: string, stdio?: StdioOptions) =>
+  execSync(cmd, {
     maxBuffer: 10 * 1024 * 1024, // 10MB
     encoding: "utf-8",
     stdio,
