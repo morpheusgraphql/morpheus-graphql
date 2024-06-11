@@ -55,9 +55,12 @@ valueNull = string "null" $> Null
 
 booleanValue :: Parser (Value a)
 booleanValue =
-  Scalar . Boolean
-    <$> ( string "true" $> True
-            <|> string "false" $> False
+  Scalar
+    . Boolean
+    <$> ( string "true"
+            $> True
+            <|> string "false"
+            $> False
         )
 {-# INLINE booleanValue #-}
 
@@ -114,9 +117,9 @@ instance Parse (Value CONST) where
 
 compoundValue :: Parser (Value a) -> Parser (Value a)
 compoundValue parser =
-  label "Value" $
-    ( parsePrimitives
-        <|> (Object <$> objectValue parser)
-        <|> (List <$> listValue parser)
-    )
-      <* ignoredTokens
+  label "Value"
+    $ ( parsePrimitives
+          <|> (Object <$> objectValue parser)
+          <|> (List <$> listValue parser)
+      )
+    <* ignoredTokens

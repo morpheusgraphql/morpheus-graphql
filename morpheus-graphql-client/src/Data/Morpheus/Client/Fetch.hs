@@ -28,12 +28,12 @@ import Data.Morpheus.Client.Fetch.Types
   )
 import Relude hiding (ByteString)
 
-decodeResponse :: FromJSON a => ByteString -> Either (FetchError a) a
+decodeResponse :: (FromJSON a) => ByteString -> Either (FetchError a) a
 decodeResponse = (first FetchErrorParseFailure . eitherDecode) >=> processResponse
 
 class (RequestType a, ToJSON (Args a), FromJSON a) => Fetch a where
   type Args a :: Type
-  fetch :: Monad m => (ByteString -> m ByteString) -> Args a -> m (Either (FetchError a) a)
+  fetch :: (Monad m) => (ByteString -> m ByteString) -> Args a -> m (Either (FetchError a) a)
 
 instance (RequestType a, ToJSON (Args a), FromJSON a) => Fetch a where
   type Args a = RequestArgs a

@@ -31,7 +31,7 @@ import Data.Vector (Vector)
 import GHC.Generics (Generic)
 
 -- query
-testRes :: Applicative m => Arg "value" a -> m a
+testRes :: (Applicative m) => Arg "value" a -> m a
 testRes = pure . argValue
 
 type Coll m a = Arg "value" a -> m a

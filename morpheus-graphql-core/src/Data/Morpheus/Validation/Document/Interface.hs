@@ -95,8 +95,8 @@ instance StructuralCompatibility (ArgumentsDefinition s) where
   subArguments `isCompatibleTo` arguments = traverse_ hasCompatibleSubArgument arguments
     where
       hasCompatibleSubArgument argument =
-        inArgument (keyOf argument) $
-          selectOr (failImplements Missing) (`isCompatibleTo` argument) (keyOf argument) subArguments
+        inArgument (keyOf argument)
+          $ selectOr (failImplements Missing) (`isCompatibleTo` argument) (keyOf argument) subArguments
 
 instance StructuralCompatibility (ArgumentDefinition s) where
   isCompatibleTo = isCompatibleBy (fieldType . argument)

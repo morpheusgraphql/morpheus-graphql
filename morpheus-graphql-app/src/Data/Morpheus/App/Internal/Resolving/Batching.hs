@@ -116,20 +116,20 @@ instance (MonadReader ResolverContext m) => MonadReader ResolverContext (Resolve
 instance MonadTrans ResolverMapT where
   lift = ResolverMapT . lift . lift
 
-deriving instance MonadError GQLError m => MonadError GQLError (ResolverMapT m)
+deriving instance (MonadError GQLError m) => MonadError GQLError (ResolverMapT m)
 
-runBatchedT :: Monad m => ResolverMapT m a -> ResolverMap m -> m a
+runBatchedT :: (Monad m) => ResolverMapT m a -> ResolverMap m -> m a
 runBatchedT (ResolverMapT m) rmap = fst <$> runStateT (runReaderT m rmap) empty
 
 toKeys :: BatchEntry -> [CacheKey]
 toKeys (BatchEntry sel name deps) = map (CacheKey sel name) deps
 
-inCache :: Monad m => CacheT m a -> ResolverMapT m a
+inCache :: (Monad m) => CacheT m a -> ResolverMapT m a
 inCache = ResolverMapT . lift
 
-class MonadTrans t => MonadBatching t where
-  resolveRef :: ResolverMonad m => SelectionContent VALID -> NamedResolverRef -> t m (CacheKey, CacheValue m)
-  storeValue :: ResolverMonad m => CacheKey -> ValidValue -> t m ValidValue
+class (MonadTrans t) => MonadBatching t where
+  resolveRef :: (ResolverMonad m) => SelectionContent VALID -> NamedResolverRef -> t m (CacheKey, CacheValue m)
+  storeValue :: (ResolverMonad m) => CacheKey -> ValidValue -> t m ValidValue
 
 instance MonadBatching IdentityT where
   resolveRef _ _ = throwError $ internal "batching is only allowed with named resolvers"
@@ -148,7 +148,7 @@ instance MonadBatching ResolverMapT where
   resolveRef _ ref = throwError (internal ("expected only one resolved value for " <> msg (show ref :: String)))
   storeValue key = inCache . cacheValue key
 
-prefetch :: ResolverMonad m => BatchEntry -> ResolverMapT m ()
+prefetch :: (ResolverMonad m) => BatchEntry -> ResolverMapT m ()
 prefetch batch = do
   value <- run batch
   batches <- buildBatches . concat <$> traverse (lift . scanRefs (batchedSelection batch)) value

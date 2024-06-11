@@ -101,11 +101,11 @@ toFieldContent _ _ = Nothing
 -- if value is already validated but value has different type
 typeMismatch :: GQLError -> Value s -> GQLError
 typeMismatch text jsType =
-  internal $
-    "Type mismatch! expected:"
-      <> text
-      <> ", got: "
-      <> msg jsType
+  internal
+    $ "Type mismatch! expected:"
+    <> text
+    <> ", got: "
+    <> msg jsType
 
 coerceInputObject :: (MonadError GQLError m) => ValidValue -> m ValidObject
 coerceInputObject (Object object) = pure object

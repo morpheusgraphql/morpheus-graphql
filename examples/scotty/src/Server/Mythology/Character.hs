@@ -45,7 +45,7 @@ data Human m = Human
 
 type PersonGuard m = TypeGuard Person (UnionPerson m)
 
-resolvePersons :: Applicative m => [PersonGuard m]
+resolvePersons :: (Applicative m) => [PersonGuard m]
 resolvePersons = ResolveType <$> [UnionPersonDeity someDeity, UnionPersonHuman someHuman]
 
 data UnionPerson m
@@ -53,7 +53,7 @@ data UnionPerson m
   | UnionPersonHuman (Human m)
   deriving (Generic, GQLType)
 
-someHuman :: Applicative m => Human m
+someHuman :: (Applicative m) => Human m
 someHuman = Human {name = pure "Odysseus", bornAt = pure Ithaca}
 
 someDeity :: Deity
@@ -67,11 +67,11 @@ someDeity =
 
 dbDeity :: Text -> Maybe City -> IO (Either String Deity)
 dbDeity _ bornAt =
-  return $
-    Right $
-      Deity
-        { name = "Morpheus",
-          power = Just "Shapeshifting",
-          realm = Dream,
-          bornAt
-        }
+  return
+    $ Right
+    $ Deity
+      { name = "Morpheus",
+        power = Just "Shapeshifting",
+        realm = Dream,
+        bornAt
+      }

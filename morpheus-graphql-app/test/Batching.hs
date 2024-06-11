@@ -61,10 +61,10 @@ type BatchedValues = (HashSet ValidValue)
 
 type BatchingConstraints = Map Text BatchedValues
 
-typeConstraint :: Monad m => BatchingConstraints -> (TypeName, NamedResolverFunction QUERY e m) -> (TypeName, NamedResolverFunction QUERY e m)
+typeConstraint :: (Monad m) => BatchingConstraints -> (TypeName, NamedResolverFunction QUERY e m) -> (TypeName, NamedResolverFunction QUERY e m)
 typeConstraint cons (name, f) = (name,) $ maybe f (require f) (lookup (unpackName name) cons)
 
-require :: Monad m => NamedResolverFunction QUERY e m -> BatchedValues -> NamedResolverFunction QUERY e m
+require :: (Monad m) => NamedResolverFunction QUERY e m -> BatchedValues -> NamedResolverFunction QUERY e m
 require f req args
   | fromList args == req = f args
   | otherwise = throwError ("was not batched! expected: " <> msg (List $ toList req) <> "got: " <> msg (List args))
@@ -84,7 +84,7 @@ getPowers "zeus" = [enum "Thunderbolt"]
 getPowers "morpheus" = [enum "Shapeshifting"]
 getPowers _ = []
 
-deityResolver :: Monad m => NamedResolverFunction QUERY e m
+deityResolver :: (Monad m) => NamedResolverFunction QUERY e m
 deityResolver = traverse getDeity
   where
     getDeity name
@@ -95,7 +95,7 @@ deityResolver = traverse getDeity
             ]
       | otherwise = nullRes
 
-resolveQuery :: Monad m => NamedResolverFunction QUERY e m
+resolveQuery :: (Monad m) => NamedResolverFunction QUERY e m
 resolveQuery = traverse getQuery
   where
     getQuery _ =
@@ -104,13 +104,13 @@ resolveQuery = traverse getQuery
           ("deities", pure $ refs "Deity" ["zeus", "morpheus"])
         ]
 
-resolvers :: Monad m => BatchingConstraints -> RootResolverValue e m
+resolvers :: (Monad m) => BatchingConstraints -> RootResolverValue e m
 resolvers cons =
-  queryResolvers $
-    typeConstraint cons
-      <$> [ ("Query", resolveQuery),
-            ("Deity", deityResolver)
-          ]
+  queryResolvers
+    $ typeConstraint cons
+    <$> [ ("Query", resolveQuery),
+          ("Deity", deityResolver)
+        ]
 
 getSchema :: FileUrl -> IO (Schema VALID)
 getSchema url = LBS.readFile (toString url) >>= resultOr (fail . show) pure . parseSchema

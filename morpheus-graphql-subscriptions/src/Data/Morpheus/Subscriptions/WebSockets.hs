@@ -43,7 +43,7 @@ pingThread connection = WS.withPingThread connection 30 (return ())
 pingThread connection = (WS.forkPingThread connection 30 >>)
 #endif
 
-defaultWSScope :: MonadIO m => Store e m -> Connection -> ApiContext SUB e m
+defaultWSScope :: (MonadIO m) => Store e m -> Connection -> ApiContext SUB e m
 defaultWSScope Store {writeStore} connection =
   SubContext
     { listener = liftIO (receiveData connection),
@@ -57,10 +57,10 @@ webSocketsWrapper ::
   (ApiContext SUB e m -> m ()) ->
   m ServerApp
 webSocketsWrapper store handler =
-  withRunInIO $
-    \runIO ->
-      pure $
-        \pending -> do
+  withRunInIO
+    $ \runIO ->
+      pure
+        $ \pending -> do
           conn <- acceptApolloRequest pending
           pingThread
             conn

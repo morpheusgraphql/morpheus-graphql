@@ -10,18 +10,18 @@ import Data.Morpheus.Types
 import Domains.Users.Users
 
 resolveUser ::
-  Monad m =>
+  (Monad m) =>
   ID ->
   m (Maybe (User m))
 resolveUser postId =
-  pure $
-    Just $
-      User
-        { Domains.Users.Users.id = pure postId,
-          name = pure "User Tittle"
-        }
+  pure
+    $ Just
+    $ User
+      { Domains.Users.Users.id = pure postId,
+        name = pure "User Tittle"
+      }
 
-resolveQuery :: Monad m => Query m
+resolveQuery :: (Monad m) => Query m
 resolveQuery =
   Query
     { users =
@@ -35,7 +35,7 @@ resolveQuery =
     }
 
 rootResolver ::
-  Monad m =>
+  (Monad m) =>
   RootResolver m () Query Undefined Undefined
 rootResolver = defaultRootResolver {queryResolver = resolveQuery}
 

@@ -37,15 +37,15 @@ data CaseAssertion a
   | Expected a
   deriving (Generic, Eq)
 
-instance FromJSON a => FromJSON (CaseAssertion a) where
+instance (FromJSON a) => FromJSON (CaseAssertion a) where
   parseJSON (String "OK") = pure OK
   parseJSON v = Expected <$> parseJSON v
 
-instance ToJSON a => ToJSON (CaseAssertion a) where
+instance (ToJSON a) => ToJSON (CaseAssertion a) where
   toJSON OK = String "OK"
   toJSON (Expected v) = toJSON v
 
-getResponse :: FromJSON a => FileUrl -> IO (CaseAssertion a)
+getResponse :: (FromJSON a) => FileUrl -> IO (CaseAssertion a)
 getResponse = readJSON "response" >=> either fail pure . eitherDecode
 
 assertResponse ::
@@ -70,16 +70,16 @@ getQuery url = do
 
 mkQuery :: (FromJSON a) => Value -> Maybe Value -> IO a
 mkQuery query variables =
-  runResult $
-    fromJSON $
-      object
-        [ "query" .= query,
-          "variables" .= variables
-        ]
+  runResult
+    $ fromJSON
+    $ object
+      [ "query" .= query,
+        "variables" .= variables
+      ]
 
-fromEither :: ToJSON err => Either err a -> CaseAssertion err
+fromEither :: (ToJSON err) => Either err a -> CaseAssertion err
 fromEither (Left err) = Expected err
 fromEither Right {} = OK
 
-expects :: ToJSON a => a -> CaseAssertion Value
+expects :: (ToJSON a) => a -> CaseAssertion Value
 expects = Expected . toJSON

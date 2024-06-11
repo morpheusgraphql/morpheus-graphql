@@ -39,7 +39,7 @@ import qualified Data.Text as T
 import Relude hiding (ByteString)
 import Text.URI (URI, mkURI)
 
-parseURI :: MonadFail m => String -> m URI
+parseURI :: (MonadFail m) => String -> m URI
 parseURI url = maybe (fail ("Invalid Endpoint: " <> show url <> "!")) pure (mkURI (T.pack url))
 
 requestSingle :: ResponseStream a -> IO (Either (FetchError a) a)
@@ -68,7 +68,8 @@ requestMany f ResponseStream {..}
       endSession conn sid
 
 -- PUBLIC API
-data ResponseStream a = ClientTypeConstraint a =>
+data ResponseStream a
+  = (ClientTypeConstraint a) =>
   ResponseStream
   { _req :: Request a,
     _uri :: URI,
@@ -83,7 +84,7 @@ request GQLClient {clientURI, clientHeaders} requestArgs = do
   pure ResponseStream {_req, _uri, _headers = clientHeaders}
 
 -- | returns first response from the server
-single :: MonadIO m => ResponseStream a -> m (GQLClientResult a)
+single :: (MonadIO m) => ResponseStream a -> m (GQLClientResult a)
 single = liftIO . requestSingle
 
 -- | returns loop listening subscription events forever. if you want to run it in background use `forkIO`

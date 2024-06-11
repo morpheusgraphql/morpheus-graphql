@@ -32,8 +32,8 @@ server' showStart readyAction = do
     routes
   where
     settings =
-      setBeforeMainLoop readyAction $
-        setPort
+      setBeforeMainLoop readyAction
+        $ setPort
           8080
           defaultSettings
     showStartMessage = if showStart then 1 else 0

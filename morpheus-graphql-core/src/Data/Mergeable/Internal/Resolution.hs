@@ -28,7 +28,7 @@ fromListT :: (Monad m, Eq k, Hashable k) => [(k, a)] -> ResolutionT k a coll m c
 fromListT = traverse resolveDuplicatesM . fromListDuplicates >=> fromNoDuplicatesM
 
 resolveWith ::
-  Monad m =>
+  (Monad m) =>
   (a -> a -> m a) ->
   NonEmpty a ->
   m a
@@ -50,9 +50,9 @@ data Indexed k a = Indexed
 
 fromListDuplicates :: (Eq k, Hashable k) => [(k, a)] -> [(k, NonEmpty a)]
 fromListDuplicates xs =
-  sortedEntries $
-    HM.elems $
-      clusterDuplicates (indexed xs) HM.empty
+  sortedEntries
+    $ HM.elems
+    $ clusterDuplicates (indexed xs) HM.empty
 
 indexed :: [(k, a)] -> [Indexed k a]
 indexed = __indexed 0
@@ -61,10 +61,10 @@ indexed = __indexed 0
     __indexed _ [] = []
     __indexed i ((k, x) : xs) = Indexed i k x : __indexed (i + 1) xs
 
-resolveDuplicatesM :: Monad m => (k, NonEmpty a) -> ResolutionT k a coll m (k, a)
+resolveDuplicatesM :: (Monad m) => (k, NonEmpty a) -> ResolutionT k a coll m (k, a)
 resolveDuplicatesM (k, xs) = asks resolveDuplicates >>= lift . fmap (k,) . (xs &)
 
-fromNoDuplicatesM :: Monad m => [(k, a)] -> ResolutionT k a coll m coll
+fromNoDuplicatesM :: (Monad m) => [(k, a)] -> ResolutionT k a coll m coll
 fromNoDuplicatesM xs = asks ((xs &) . fromNoDuplicates)
 
 insertWithList :: (Eq k, Hashable k) => Indexed k (NonEmpty a) -> HashMap k (Indexed k (NonEmpty a)) -> HashMap k (Indexed k (NonEmpty a))

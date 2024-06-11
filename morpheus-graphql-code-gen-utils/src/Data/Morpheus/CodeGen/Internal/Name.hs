@@ -35,9 +35,9 @@ capitalize = mapFstChar toUpper
 
 camelCaseTypeName :: [N.Name t] -> TypeName -> TypeName
 camelCaseTypeName list name =
-  packName $
-    T.concat $
-      map (capitalize . unpackName) (list <> [coerce name])
+  packName
+    $ T.concat
+    $ map (capitalize . unpackName) (list <> [coerce name])
 
 toHaskellTypeName :: TypeName -> Text
 toHaskellTypeName "String" = "Text"
@@ -53,9 +53,9 @@ uncapitalize = mapFstChar toLower
 
 camelCaseFieldName :: TypeName -> FieldName -> FieldName
 camelCaseFieldName nSpace name =
-  packName $
-    uncapitalize (unpackName nSpace)
-      <> capitalize (unpackName name)
+  packName
+    $ uncapitalize (unpackName nSpace)
+    <> capitalize (unpackName name)
 
 toHaskellName :: FieldName -> String
 toHaskellName name

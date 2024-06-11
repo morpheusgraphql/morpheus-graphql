@@ -74,7 +74,7 @@ at :: GQLError -> Position -> GQLError
 at err pos = atPositions err [pos]
 {-# INLINE at #-}
 
-atPositions :: Foldable t => GQLError -> t Position -> GQLError
+atPositions :: (Foldable t) => GQLError -> t Position -> GQLError
 atPositions GQLError {..} pos = case toList pos of
   [] -> GQLError {..}
   posList -> GQLError {locations = locations <> Just posList, ..}
@@ -144,7 +144,7 @@ instance FromJSON PropName where
     Right index -> pure (PropIndex index)
   parseJSON _ = fail "Property Name must be a either Name or Index"
 
-invalidIndex :: MonadFail m => Double -> m a
+invalidIndex :: (MonadFail m) => Double -> m a
 invalidIndex i = fail $ "Property Name must be a either Name or Index. it can't be " <> show i <> "."
 
 instance ToJSON PropName where

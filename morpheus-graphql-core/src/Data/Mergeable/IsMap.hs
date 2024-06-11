@@ -64,7 +64,7 @@ instance IsMap Key A.KeyMap where
 selectBy :: (MonadError e m, IsMap k c, Monad m) => e -> k -> c a -> m a
 selectBy err = selectOr (throwError err) pure
 
-selectOr :: IsMap k c => d -> (a -> d) -> k -> c a -> d
+selectOr :: (IsMap k c) => d -> (a -> d) -> k -> c a -> d
 selectOr fb f key lib = maybe fb f (lookup key lib)
 
 class FromList m map k a where

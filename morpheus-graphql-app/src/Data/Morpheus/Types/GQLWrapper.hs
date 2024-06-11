@@ -108,7 +108,7 @@ haveSameSize setVal listVal
   | otherwise = ExceptT $ pure $ Left (fromString ("Expected a List without duplicates, found " <> show (length listVal - length setVal) <> " duplicates"))
 
 withRefinedList ::
-  Monad m =>
+  (Monad m) =>
   ([a] -> Either GQLError (rList a)) ->
   (ValidValue -> m a) ->
   ValidValue ->

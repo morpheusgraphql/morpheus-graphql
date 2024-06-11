@@ -60,12 +60,12 @@ data WebSocketSettings = WebSocketSettings
   }
   deriving (Show)
 
-parseProtocol :: MonadFail m => Text -> m Bool
+parseProtocol :: (MonadFail m) => Text -> m Bool
 parseProtocol "ws" = pure False
 parseProtocol "wss" = pure True
 parseProtocol p = fail $ "unsupported protocol" <> show p
 
-getWebsocketURI :: MonadFail m => URI -> Headers -> m WebSocketSettings
+getWebsocketURI :: (MonadFail m) => URI -> Headers -> m WebSocketSettings
 getWebsocketURI URI {uriScheme = Just scheme, uriAuthority = Right Authority {authHost, authPort}, uriPath} headers = do
   isSecure <- parseProtocol $ unRText scheme
   pure
@@ -78,7 +78,7 @@ getWebsocketURI URI {uriScheme = Just scheme, uriAuthority = Right Authority {au
       }
 getWebsocketURI uri _ = fail ("Invalid Endpoint: " <> show uri <> "!")
 
-toHeader :: IsString a => (Text, Text) -> (a, BS.ByteString)
+toHeader :: (IsString a) => (Text, Text) -> (a, BS.ByteString)
 toHeader (x, y) = (fromString $ T.unpack x, BS.pack $ T.unpack y)
 
 _useWS :: WebSocketSettings -> (Connection -> IO a) -> IO a
@@ -98,7 +98,7 @@ processMessage :: ApolloSubscription (JSONResponse a) -> GQLClientResult a
 processMessage ApolloSubscription {apolloPayload = Just payload} = processResponse payload
 processMessage ApolloSubscription {} = Left (FetchErrorParseFailure "empty message")
 
-decodeMessage :: A.FromJSON a => ByteString -> GQLClientResult a
+decodeMessage :: (A.FromJSON a) => ByteString -> GQLClientResult a
 decodeMessage = (first FetchErrorParseFailure . A.eitherDecode) >=> processMessage
 
 initialMessage :: ApolloSubscription ()
@@ -116,10 +116,10 @@ encodeRequestMessage uid r =
 endMessage :: Text -> ApolloSubscription ()
 endMessage uid = ApolloSubscription {apolloType = GqlComplete, apolloPayload = Nothing, apolloId = Just uid}
 
-endSession :: MonadIO m => Connection -> Text -> m ()
+endSession :: (MonadIO m) => Connection -> Text -> m ()
 endSession conn uid = liftIO $ sendTextData conn $ A.encode $ endMessage uid
 
-receiveResponse :: MonadIO m => A.FromJSON a => Connection -> m (GQLClientResult a)
+receiveResponse :: (MonadIO m) => (A.FromJSON a) => Connection -> m (GQLClientResult a)
 receiveResponse conn = liftIO $ do
   message <- receiveData conn
   pure $ decodeMessage message
@@ -133,5 +133,5 @@ responseStream conn = getResponse : responseStream conn
 sendRequest :: (RequestType a, A.ToJSON (RequestArgs a), MonadIO m) => Connection -> Text -> Request a -> m ()
 sendRequest conn uid r = liftIO $ sendTextData conn (encodeRequestMessage uid r)
 
-sendInitialRequest :: MonadIO m => Connection -> m ()
+sendInitialRequest :: (MonadIO m) => Connection -> m ()
 sendInitialRequest conn = liftIO $ sendTextData conn (A.encode initialMessage)

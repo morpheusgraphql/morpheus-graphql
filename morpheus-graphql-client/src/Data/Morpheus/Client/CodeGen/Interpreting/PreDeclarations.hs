@@ -56,7 +56,7 @@ import Data.Morpheus.Types.Internal.AST (Msg (..), internal)
 import Language.Haskell.TH.Syntax (Name)
 import Relude hiding (ToString, Type, toString)
 
-mapPreDeclarations :: MonadFail m => ClientPreDeclaration -> m ClientDeclaration
+mapPreDeclarations :: (MonadFail m) => ClientPreDeclaration -> m ClientDeclaration
 mapPreDeclarations (FromJSONClass mode dec) = InstanceDeclaration mode <$> deriveFromJSON mode dec
 mapPreDeclarations (FromJSONObjectClass cType CodeGenConstructor {..}) =
   pure $ InstanceDeclaration TYPE_MODE $ mkFromJSON cType $ FromJSONObjectMethod (getFullName constructorName) (map defField constructorFields)
@@ -84,13 +84,13 @@ getRequestInstance RequestTypeDefinition {..} =
       ]
 
 -- FromJSON
-deriveFromJSONMethod :: MonadFail m => DERIVING_MODE -> CodeGenType -> m ClientMethod
+deriveFromJSONMethod :: (MonadFail m) => DERIVING_MODE -> CodeGenType -> m ClientMethod
 deriveFromJSONMethod SCALAR_MODE _ = pure $ FunctionNameMethod 'scalarFromJSON
 deriveFromJSONMethod ENUM_MODE CodeGenType {..} =
-  pure $
-    MatchMethod $
-      map (fromJSONEnum . constructorName) cgConstructors
-        <> [MFunction "v" 'invalidConstructorError]
+  pure
+    $ MatchMethod
+    $ map (fromJSONEnum . constructorName) cgConstructors
+    <> [MFunction "v" 'invalidConstructorError]
 deriveFromJSONMethod _ CodeGenType {..} = emptyTypeError cgTypeName
 
 defField :: CodeGenField -> AesonField
@@ -101,7 +101,7 @@ bindField nullable
   | nullable = '(.:?)
   | otherwise = '(.:)
 
-deriveToJSONMethod :: MonadFail m => DERIVING_MODE -> CodeGenType -> m (MethodArgument, ClientMethod)
+deriveToJSONMethod :: (MonadFail m) => DERIVING_MODE -> CodeGenType -> m (MethodArgument, ClientMethod)
 deriveToJSONMethod SCALAR_MODE _ = pure (NoArgument, FunctionNameMethod 'scalarToJSON)
 deriveToJSONMethod _ CodeGenType {cgConstructors = [], ..} = emptyTypeError cgTypeName
 deriveToJSONMethod ENUM_MODE CodeGenType {cgConstructors} =
@@ -129,7 +129,7 @@ toJSONEnum name = MTo (getFullName name) (typename name)
 fromJSONEnum :: CodeGenTypeName -> MValue
 fromJSONEnum name = MFrom (typename name) (getFullName name)
 
-deriveToJSON :: MonadFail m => DERIVING_MODE -> CodeGenType -> m (TypeClassInstance ClientMethod)
+deriveToJSON :: (MonadFail m) => DERIVING_MODE -> CodeGenType -> m (TypeClassInstance ClientMethod)
 deriveToJSON mode cType = do
   (args, expr) <- deriveToJSONMethod mode cType
   pure
@@ -151,8 +151,8 @@ mkFromJSON typeClassTarget expr =
       typeClassMethods = [('parseJSON, NoArgument, expr)]
     }
 
-deriveFromJSON :: MonadFail m => DERIVING_MODE -> CodeGenType -> m (TypeClassInstance ClientMethod)
+deriveFromJSON :: (MonadFail m) => DERIVING_MODE -> CodeGenType -> m (TypeClassInstance ClientMethod)
 deriveFromJSON mode cType = mkFromJSON (cgTypeName cType) <$> deriveFromJSONMethod mode cType
 
-emptyTypeError :: MonadFail m => CodeGenTypeName -> m a
+emptyTypeError :: (MonadFail m) => CodeGenTypeName -> m a
 emptyTypeError name = fail $ show $ internal ("Type " <> msg (getFullName name) <> " Should Have at least one Constructor")

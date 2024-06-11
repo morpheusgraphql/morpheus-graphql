@@ -69,11 +69,11 @@ decideUnion drv (left, right) name value
   | name `elem` left = L1 <$> decodeRep drv value
   | name `elem` right = R1 <$> decodeRep drv value
   | otherwise =
-      throwError $
-        internal $
-          "Constructor \""
-            <> msg name
-            <> "\" could not find in Union"
+      throwError
+        $ internal
+        $ "Constructor \""
+        <> msg name
+        <> "\" could not find in Union"
 
 class DecodeRep ctx (f :: Type -> Type) where
   decodeRep :: ctx -> ValidValue -> DecoderT (f a)

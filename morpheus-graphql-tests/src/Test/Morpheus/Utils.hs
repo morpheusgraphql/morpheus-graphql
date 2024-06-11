@@ -88,17 +88,18 @@ requireEq f expected actual
 
 eqFailureMessage :: ByteString -> ByteString -> IO a3
 eqFailureMessage expected actual =
-  assertFailure $
-    L.unpack $
-      "expected: \n\n "
-        <> expected
-        <> " \n\n but got: \n\n "
-        <> actual
+  assertFailure
+    $ L.unpack
+    $ "expected: \n\n "
+    <> expected
+    <> " \n\n but got: \n\n "
+    <> actual
 
 getSchema :: (ReadSource a, Show err) => (a -> Either err b) -> FileUrl -> IO b
 getSchema f url =
   readSchemaFile url
-    >>= assertValidSchema . f
+    >>= assertValidSchema
+    . f
 
 assertValidSchema :: (Show err) => Either err a -> IO a
 assertValidSchema =

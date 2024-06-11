@@ -62,10 +62,10 @@ class
   where
   deriveApp :: f m event qu mu su -> App event m
 
-instance RootResolverConstraint m e query mut sub => DeriveApp RootResolver m e query mut sub where
+instance (RootResolverConstraint m e query mut sub) => DeriveApp RootResolver m e query mut sub where
   deriveApp root =
     resultOr FailApp (uncurry mkApp) $ (,) <$> deriveSchema (Identity root) <*> deriveResolvers root
 
-instance NamedResolversConstraint m e query mut sub => DeriveApp NamedResolvers m e query mut sub where
+instance (NamedResolversConstraint m e query mut sub) => DeriveApp NamedResolvers m e query mut sub where
   deriveApp root =
     resultOr FailApp (uncurry mkApp) $ (,deriveNamedResolvers root) <$> deriveSchema (Identity root)

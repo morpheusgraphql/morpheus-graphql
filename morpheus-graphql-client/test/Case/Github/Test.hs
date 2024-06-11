@@ -73,16 +73,16 @@ test =
                                 },
                             edges =
                               Just
-                                [ Just $
-                                    GetTagsRepositoryRefsEdges
+                                [ Just
+                                    $ GetTagsRepositoryRefsEdges
                                       { cursor = "test cursor",
                                         node =
                                           Just
                                             GetTagsRepositoryRefsEdgesNode
                                               { name = "test name",
                                                 target =
-                                                  Just $
-                                                    GetTagsRepositoryRefsEdgesNodeTargetVariantGitObject
+                                                  Just
+                                                    $ GetTagsRepositoryRefsEdgesNodeTargetVariantGitObject
                                                       GetTagsRepositoryRefsEdgesNodeTargetGitObject
                                                         { __typename = "GitObject"
                                                         }

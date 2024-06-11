@@ -37,7 +37,7 @@ newtype Arg a = Arg
   deriving (Generic, Show, GQLType)
 
 -- query
-testRes :: Show a => Applicative m => Arg a -> m Text
+testRes :: (Show a) => (Applicative m) => Arg a -> m Text
 testRes Arg {value} = pure $ pack $ show value
 
 -- resolver

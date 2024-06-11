@@ -128,8 +128,8 @@ validateOperation
         validateDirectives
           (toDirectiveLocation operationType)
           operationDirectives
-      pure $
-        Operation
+      pure
+        $ Operation
           { operationName,
             operationType,
             operationArguments = empty,
@@ -152,8 +152,8 @@ processSelectionDirectives location rawDirectives sel = do
   directives <- validateDirectives location rawDirectives
   include <- shouldIncludeSelection directives
   selection <- sel directives
-  pure $
-    if include
+  pure
+    $ if include
       then Just selection
       else Nothing
 
@@ -172,15 +172,18 @@ validateSelectionSet ::
   SelectionSet RAW ->
   FragmentValidator s (SelectionSet VALID)
 validateSelectionSet typeDef =
-  traverse (validateSelection typeDef) . toList
-    >=> toNonEmpty . catMaybes
-    >=> startHistory . mergeConcat
+  traverse (validateSelection typeDef)
+    . toList
+    >=> toNonEmpty
+    . catMaybes
+    >=> startHistory
+    . mergeConcat
 
 -- validate single selection: InlineFragments and Spreads will Be resolved and included in SelectionSet
-validateSelection :: ValidateFragmentSelection s => TypeDefinition IMPLEMENTABLE VALID -> Selection RAW -> FragmentValidator s (Maybe (SelectionSet VALID))
+validateSelection :: (ValidateFragmentSelection s) => TypeDefinition IMPLEMENTABLE VALID -> Selection RAW -> FragmentValidator s (Maybe (SelectionSet VALID))
 validateSelection typeDef Selection {..} =
-  withScope (setSelection typeDef selectionRef) $
-    processSelectionDirectives LOCATION_FIELD selectionDirectives validateContent
+  withScope (setSelection typeDef selectionRef)
+    $ processSelectionDirectives LOCATION_FIELD selectionDirectives validateContent
   where
     selectionRef = Ref selectionName selectionPosition
     validateContent directives = do
@@ -194,16 +197,16 @@ validateSelection typeDef Selection {..} =
               }
       pure $ singleton (keyOf selection) selection
 validateSelection typeDef (Spread dirs ref) =
-  processSelectionDirectives LOCATION_FRAGMENT_SPREAD dirs $
-    const $
-      validateSpreadSelection typeDef ref
+  processSelectionDirectives LOCATION_FRAGMENT_SPREAD dirs
+    $ const
+    $ validateSpreadSelection typeDef ref
 validateSelection typeDef (InlineFragment fragment@Fragment {fragmentDirectives}) =
-  processSelectionDirectives LOCATION_INLINE_FRAGMENT fragmentDirectives $
-    const $
-      validateInlineFragmentSelection typeDef fragment
+  processSelectionDirectives LOCATION_INLINE_FRAGMENT fragmentDirectives
+    $ const
+    $ validateInlineFragmentSelection typeDef fragment
 
 validateSpreadSelection ::
-  ValidateFragmentSelection s =>
+  (ValidateFragmentSelection s) =>
   TypeDefinition a VALID ->
   Ref FragmentName ->
   FragmentValidator s (SelectionSet VALID)
@@ -212,7 +215,7 @@ validateSpreadSelection typeDef ref = do
   unionTagSelection <$> validateSpread validateFragmentSelection types ref
 
 validateInlineFragmentSelection ::
-  ValidateFragmentSelection s =>
+  (ValidateFragmentSelection s) =>
   TypeDefinition IMPLEMENTABLE VALID ->
   Fragment RAW ->
   FragmentValidator s (SelectionSet VALID)
@@ -238,7 +241,7 @@ selectSelectionField ref typeDef
 
 validateSelectionContent ::
   forall s.
-  ValidateFragmentSelection s =>
+  (ValidateFragmentSelection s) =>
   TypeDefinition IMPLEMENTABLE VALID ->
   Ref FieldName ->
   Arguments RAW ->
@@ -297,8 +300,8 @@ validateByTypeContent
           validateSelectionSet
           (TypeDefinition {typeContent = DataInterface {..}, ..})
       __validate _ =
-        const $
-          throwError $
-            hasNoSubfields
-              currentSelectionRef
-              typeDef
+        const
+          $ throwError
+          $ hasNoSubfields
+            currentSelectionRef
+            typeDef

@@ -67,7 +67,7 @@ resolveDeity :: DeityArgs -> ResolverQ e IO Deity
 resolveDeity DeityArgs {name, bornPlace} =
   liftEither $ dbDeity name bornPlace
 
-resolveCharacter :: Applicative m => [Character m]
+resolveCharacter :: (Applicative m) => [Character m]
 resolveCharacter =
   [ CharacterHuman someHuman,
     CharacterDeity someDeity,

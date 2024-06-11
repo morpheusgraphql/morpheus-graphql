@@ -110,7 +110,8 @@ instance (MonadResolver m, MonadOperation m ~ SUBSCRIPTION, MonadEvent m ~ e) =>
 instance (MonadResolver m, MonadOperation m ~ SUBSCRIPTION, MonadEvent m ~ e, val arg) => GetChannel val e (arg -> SubscriptionField (m a)) where
   getChannel drv f sel@Selection {selectionArguments} =
     useDecodeArguments drv selectionArguments
-      >>= flip (getChannel drv) sel . f
+      >>= flip (getChannel drv) sel
+      . f
 
 ------------------------------------------------------
 

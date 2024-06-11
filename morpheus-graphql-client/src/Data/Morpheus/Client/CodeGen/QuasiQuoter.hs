@@ -17,9 +17,9 @@ import Relude hiding (ByteString)
 
 notSupported :: Text -> a
 notSupported things =
-  error $
-    things
-      <> " are not supported by the GraphQL QuasiQuoter"
+  error
+    $ things
+    <> " are not supported by the GraphQL QuasiQuoter"
 
 -- | QuasiQuoter to insert multiple lines of text in Haskell
 raw :: QuasiQuoter

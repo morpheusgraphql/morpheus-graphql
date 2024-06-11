@@ -83,7 +83,7 @@ instance DataSourceName DeityReq where
 instance DataSource u DeityReq where
   fetch _ _ _ = BackgroundFetch myfetch
 
-fetchAll :: Foldable t => t (ResultVar [ID]) -> IO ()
+fetchAll :: (Foldable t) => t (ResultVar [ID]) -> IO ()
 fetchAll allIdVars = do
   allIds <- fetchDeityIds
   mapM_ (`putSuccess` allIds) allIdVars

@@ -42,8 +42,8 @@ import Relude hiding (empty)
 
 resolveSchema :: (MonadResolver m) => Schema VALID -> m (ResolverValue m)
 resolveSchema schema@Schema {..} =
-  pure $
-    mkObject
+  pure
+    $ mkObject
       "__Schema"
       [ ("types", renderI $ toList $ typeDefinitions schema),
         ("queryType", renderI (Just query)),

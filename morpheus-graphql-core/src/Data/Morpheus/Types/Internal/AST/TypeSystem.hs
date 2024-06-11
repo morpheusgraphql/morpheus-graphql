@@ -231,7 +231,7 @@ instance
       <*> mergeOptional (mutation s1) (mutation s2)
       <*> mergeOptional (subscription s1) (subscription s2)
       <*> directiveDefinitions s1
-        <:> directiveDefinitions s2
+      <:> directiveDefinitions s2
 
 mergeOptional ::
   (Monad m, MonadError GQLError m) =>
@@ -347,8 +347,8 @@ withDirectives ::
   m (Schema s)
 withDirectives dirs Schema {..} = do
   dirs' <- directiveDefinitions <:> dirs
-  pure $
-    Schema
+  pure
+    $ Schema
       { directiveDefinitions = dirs',
         ..
       }
@@ -368,7 +368,7 @@ buildSchema (Just schemaDef, types, dirs) =
   where
     selectOp op = selectOperation schemaDef op types
 
-traverse3 :: Applicative t => (a -> t b) -> (a, a, a) -> t (b, b, b)
+traverse3 :: (Applicative t) => (a -> t b) -> (a, a, a) -> t (b, b, b)
 traverse3 f (a1, a2, a3) = (,,) <$> f a1 <*> f a2 <*> f a3
 
 typeReference ::
@@ -449,7 +449,7 @@ instance NameCollision GQLError (TypeDefinition cat s) where
     "There can Be only One TypeDefinition Named " <> msg (typeName x) <> "."
 
 instance
-  ToCategory (TypeContent TRUE) cat cat' =>
+  (ToCategory (TypeContent TRUE) cat cat') =>
   ToCategory TypeDefinition cat cat'
   where
   toCategory TypeDefinition {typeContent, ..} =
@@ -474,8 +474,8 @@ possibleInterfaceTypes ::
   Schema s ->
   [TypeDefinition ANY s]
 possibleInterfaceTypes name schema =
-  sortWith typeName $
-    mapMaybe
+  sortWith typeName
+    $ mapMaybe
       (isPossibleInterfaceType name)
       (toList $ typeDefinitions schema)
 
@@ -657,7 +657,7 @@ defineDirective schema directive = updateTypes <$> insert directive (directiveDe
   where
     updateTypes directiveDefinitions = schema {directiveDefinitions}
 
-lookupWith :: Eq k => (a -> k) -> k -> [a] -> Maybe a
+lookupWith :: (Eq k) => (a -> k) -> k -> [a] -> Maybe a
 lookupWith f key = find ((== key) . f)
 
 popByKey ::
@@ -669,10 +669,10 @@ popByKey types (RootOperationTypeDefinition opType name) = case lookupWith typeN
   Just dt@TypeDefinition {typeContent = DataObject {}} ->
     pure (fromAny dt)
   Just {} ->
-    throwError $
-      msg (render opType)
-        <> " root type must be Object type if provided, it cannot be "
-        <> msg name
+    throwError
+      $ msg (render opType)
+      <> " root type must be Object type if provided, it cannot be "
+      <> msg name
   _ -> pure Nothing
 
 --

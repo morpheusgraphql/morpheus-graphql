@@ -49,30 +49,30 @@ collectExternals buildOptions exts = mapMaybe (resolveExternal buildOptions) (S.
 getImports :: ServiceOptions -> [Flag] -> [(Text, [Text])]
 getImports buildOptions flags = collectExternals buildOptions [x | FlagExternal x <- flags]
 
-uniq :: Ord a => [a] -> [a]
+uniq :: (Ord a) => [a] -> [a]
 uniq = S.toList . S.fromList
 
 processServerDocument :: BuildConfig -> Text -> ByteString -> GQLResult ByteString
 processServerDocument BuildConfig {..} moduleName schema = do
   (types, flags) <- second uniq <$> parseServerTypeDefinitions CodeGenConfig {namespace = optionNamespace buildOptions} schema
-  pure $
-    print $
-      ModuleDefinition
-        { moduleName,
-          imports =
-            [ ("Data.Morpheus.Server.CodeGen.Internal", ["*"]),
-              ("Data.Morpheus.Server.Types", ["*"])
-            ]
-              <> map (,["*"]) (optionImports buildOptions)
-              <> getImports buildOptions flags,
-          extensions =
-            [ "DeriveGeneric",
-              "DuplicateRecordFields",
-              "TypeFamilies"
-            ]
-              <> getExtensions flags,
-          types
-        }
+  pure
+    $ print
+    $ ModuleDefinition
+      { moduleName,
+        imports =
+          [ ("Data.Morpheus.Server.CodeGen.Internal", ["*"]),
+            ("Data.Morpheus.Server.Types", ["*"])
+          ]
+            <> map (,["*"]) (optionImports buildOptions)
+            <> getImports buildOptions flags,
+        extensions =
+          [ "DeriveGeneric",
+            "DuplicateRecordFields",
+            "TypeFamilies"
+          ]
+            <> getExtensions flags,
+        types
+      }
 
 isScalars :: ClientDeclaration -> Bool
 isScalars (InstanceDeclaration SCALAR_MODE _) = True
@@ -91,25 +91,25 @@ processClientDocument BuildConfig {..} schema query moduleName = do
   if null types
     then pure Nothing
     else
-      pure $
-        Just $
-          print
-            ModuleDefinition
-              { moduleName,
-                imports =
-                  [("Data.Morpheus.Client.CodeGen.Internal", ["*"])]
-                    <> map (,["*"]) (optionImports buildOptions)
-                    <> externalImports
-                    <> getImports buildOptions flags,
-                extensions =
-                  [ "DeriveGeneric",
-                    "DuplicateRecordFields",
-                    "OverloadedStrings",
-                    "TypeFamilies"
-                  ]
-                    <> getExtensions flags,
-                types
-              }
+      pure
+        $ Just
+        $ print
+          ModuleDefinition
+            { moduleName,
+              imports =
+                [("Data.Morpheus.Client.CodeGen.Internal", ["*"])]
+                  <> map (,["*"]) (optionImports buildOptions)
+                  <> externalImports
+                  <> getImports buildOptions flags,
+              extensions =
+                [ "DeriveGeneric",
+                  "DuplicateRecordFields",
+                  "OverloadedStrings",
+                  "TypeFamilies"
+                ]
+                  <> getExtensions flags,
+              types
+            }
 
-print :: Pretty a => a -> ByteString
+print :: (Pretty a) => a -> ByteString
 print = pack . show . pretty

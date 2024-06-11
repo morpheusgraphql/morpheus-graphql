@@ -55,13 +55,13 @@ import Data.Morpheus.Types.Internal.AST
 import Relude hiding (empty)
 
 -- UNCACHED
-resolvePlainRoot :: MonadResolver m => ObjectTypeResolver m -> SelectionSet VALID -> m ValidValue
+resolvePlainRoot :: (MonadResolver m) => ObjectTypeResolver m -> SelectionSet VALID -> m ValidValue
 resolvePlainRoot resolver selection = do
   name <- asks (typeName . currentType)
   runIdentityT (resolveSelection (SelectionSet selection) (ResObject (Just name) resolver))
 
 -- CACHED
-resolveNamedRoot :: MonadResolver m => TypeName -> ResolverMap m -> SelectionSet VALID -> m ValidValue
+resolveNamedRoot :: (MonadResolver m) => TypeName -> ResolverMap m -> SelectionSet VALID -> m ValidValue
 resolveNamedRoot typeName resolvers selection =
   runBatchedT
     (resolveSelection (SelectionSet selection) (ResRef $ pure (NamedResolverRef typeName ["ROOT"])))

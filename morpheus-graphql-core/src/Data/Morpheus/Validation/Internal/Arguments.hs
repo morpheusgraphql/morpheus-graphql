@@ -100,12 +100,12 @@ validateArgumentValue ::
 validateArgumentValue
   field
   Argument {argumentValue, ..} =
-    withScope (setPosition argumentPosition) $
-      startInput (SourceArgument argumentName) $
-        Argument
-          argumentPosition
-          argumentName
-          <$> validateInputByTypeRef (typed fieldType field) argumentValue
+    withScope (setPosition argumentPosition)
+      $ startInput (SourceArgument argumentName)
+      $ Argument
+        argumentPosition
+        argumentName
+      <$> validateInputByTypeRef (typed fieldType field) argumentValue
 
 validateFieldArguments ::
   FieldDefinition OUT VALID ->
@@ -119,7 +119,7 @@ validateFieldArguments field =
     arguments = fieldArguments field
 
 validateDirectiveArguments ::
-  ArgumentsConstraints ctx schemaStage valueStage =>
+  (ArgumentsConstraints ctx schemaStage valueStage) =>
   DirectiveDefinition schemaStage ->
   Arguments valueStage ->
   Validator schemaStage ctx (Arguments VALID)
@@ -132,7 +132,7 @@ validateDirectiveArguments
       directiveDefinitionArgs
 
 validateArguments ::
-  ArgumentsConstraints ctx schemaStage s =>
+  (ArgumentsConstraints ctx schemaStage s) =>
   (Argument CONST -> Validator schemaStage ctx (ArgumentDefinition schemaStage)) ->
   ArgumentsDefinition schemaStage ->
   Arguments s ->
@@ -145,13 +145,13 @@ validateArguments checkUnknown argsDef rawArgs = do
 class Resolve f s ctx where
   resolve :: f s -> Validator schemaS ctx (f CONST)
 
-instance VariableConstraints (OperationContext VALID s) => Resolve Argument RAW (OperationContext VALID s) where
+instance (VariableConstraints (OperationContext VALID s)) => Resolve Argument RAW (OperationContext VALID s) where
   resolve (Argument key position val) = Argument key position <$> resolve val
 
 instance Resolve f CONST ctx where
   resolve = pure
 
-instance VariableConstraints (OperationContext VALID s) => Resolve Value RAW (OperationContext VALID s) where
+instance (VariableConstraints (OperationContext VALID s)) => Resolve Value RAW (OperationContext VALID s) where
   resolve Null = pure Null
   resolve (Scalar x) = pure $ Scalar x
   resolve (Enum x) = pure $ Enum x
@@ -160,7 +160,7 @@ instance VariableConstraints (OperationContext VALID s) => Resolve Value RAW (Op
   resolve (VariableValue ref) =
     askVariables
       >>= fmap (ResolvedVariable ref)
-        . selectRequired ref
+      . selectRequired ref
 
-instance VariableConstraints (OperationContext VALID s) => Resolve ObjectEntry RAW (OperationContext VALID s) where
+instance (VariableConstraints (OperationContext VALID s)) => Resolve ObjectEntry RAW (OperationContext VALID s) where
   resolve (ObjectEntry name value) = ObjectEntry name <$> resolve value

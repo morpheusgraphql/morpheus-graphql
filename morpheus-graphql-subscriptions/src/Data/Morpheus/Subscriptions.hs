@@ -93,10 +93,10 @@ instance (Show ch, Eq ch, Hashable ch) => SubApp ServerApp (Event ch con) where
 instance (Show ch, Eq ch, Hashable ch) => PubApp (Event ch con) where
   runPubApp [] app = runApp app
   runPubApp callbacks app =
-    mapAPI $
-      runStreamHTTP PubContext {eventPublisher = runEvents callbacks}
-        . streamApp app
-        . Request
+    mapAPI
+      $ runStreamHTTP PubContext {eventPublisher = runEvents callbacks}
+      . streamApp app
+      . Request
 
 instance SubApp ServerApp () where
   runSubApp _ =

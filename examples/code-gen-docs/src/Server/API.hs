@@ -10,7 +10,7 @@ import Scalars (Markdown (..))
 import Server.Blog
 
 resolvePost ::
-  Monad m =>
+  (Monad m) =>
   ID ->
   m (Post m)
 resolvePost (ID x) =
@@ -21,7 +21,7 @@ resolvePost (ID x) =
       }
 
 resolveUser ::
-  Monad m =>
+  (Monad m) =>
   ID ->
   m (User m)
 resolveUser (ID x) =
@@ -31,7 +31,7 @@ resolveUser (ID x) =
         posts = traverse resolvePost ["id1", "id2"]
       }
 
-resolveQuery :: Monad m => Query m
+resolveQuery :: (Monad m) => Query m
 resolveQuery =
   Query
     { getPosts = traverse resolvePost ["id1", "id2"],
@@ -39,7 +39,7 @@ resolveQuery =
     }
 
 rootResolver ::
-  Monad m =>
+  (Monad m) =>
   RootResolver m () Query Undefined Undefined
 rootResolver = defaultRootResolver {queryResolver = resolveQuery}
 

@@ -76,14 +76,14 @@ import Text.Megaparsec.Byte (string)
 --    Description(opt) EnumValue Directives(Const)(opt)
 --
 enumValueDefinition ::
-  Parse (Value s) =>
+  (Parse (Value s)) =>
   Parser (DataEnumValue s)
 enumValueDefinition =
-  label "EnumValueDefinition" $
-    DataEnumValue
-      <$> optDescription
-      <*> parseTypeName
-      <*> optionalDirectives
+  label "EnumValueDefinition"
+    $ DataEnumValue
+    <$> optDescription
+    <*> parseTypeName
+    <*> optionalDirectives
 {-# INLINEABLE enumValueDefinition #-}
 
 -- InputValue : https://graphql.github.io/graphql-spec/June2018/#InputValueDefinition
@@ -92,16 +92,16 @@ enumValueDefinition =
 --   Description(opt) Name : Type DefaultValue(opt) Directives (Const)(opt)
 --
 inputValueDefinition ::
-  Parse (Value s) =>
+  (Parse (Value s)) =>
   Parser (FieldDefinition IN s)
 inputValueDefinition =
-  label "InputValueDefinition" $
-    FieldDefinition
-      <$> optDescription
-      <*> parseName
-      <*> (colon *> parseType)
-      <*> optional (DefaultInputValue <$> parseDefaultValue)
-      <*> optionalDirectives
+  label "InputValueDefinition"
+    $ FieldDefinition
+    <$> optDescription
+    <*> parseName
+    <*> (colon *> parseType)
+    <*> optional (DefaultInputValue <$> parseDefaultValue)
+    <*> optionalDirectives
 {-# INLINEABLE inputValueDefinition #-}
 
 -- Field Arguments: https://graphql.github.io/graphql-spec/June2018/#sec-Field-Arguments
@@ -110,11 +110,11 @@ inputValueDefinition =
 --   ( InputValueDefinition(list) )
 --
 argumentsDefinition ::
-  Parse (Value s) =>
+  (Parse (Value s)) =>
   Parser (ArgumentsDefinition s)
 argumentsDefinition =
-  label "ArgumentsDefinition" $
-    uniqTuple (fmap ArgumentDefinition inputValueDefinition)
+  label "ArgumentsDefinition"
+    $ uniqTuple (fmap ArgumentDefinition inputValueDefinition)
 {-# INLINEABLE argumentsDefinition #-}
 
 --  FieldsDefinition : https://graphql.github.io/graphql-spec/June2018/#FieldsDefinition
@@ -123,7 +123,7 @@ argumentsDefinition =
 --    { FieldDefinition(list) }
 --
 fieldsDefinition ::
-  Parse (Value s) =>
+  (Parse (Value s)) =>
   Parser (FieldsDefinition OUT s)
 fieldsDefinition = label "FieldsDefinition" $ setOf fieldDefinition
 {-# INLINEABLE fieldsDefinition #-}
@@ -131,15 +131,15 @@ fieldsDefinition = label "FieldsDefinition" $ setOf fieldDefinition
 --  FieldDefinition
 --    Description(opt) Name ArgumentsDefinition(opt) : Type Directives(Const)(opt)
 --
-fieldDefinition :: Parse (Value s) => Parser (FieldDefinition OUT s)
+fieldDefinition :: (Parse (Value s)) => Parser (FieldDefinition OUT s)
 fieldDefinition =
-  label "FieldDefinition" $
-    mkField
-      <$> optDescription
-      <*> parseName
-      <*> optional (FieldArgs <$> argumentsDefinition)
-      <*> (colon *> parseType)
-      <*> optionalDirectives
+  label "FieldDefinition"
+    $ mkField
+    <$> optDescription
+    <*> parseName
+    <*> optional (FieldArgs <$> argumentsDefinition)
+    <*> (colon *> parseType)
+    <*> optionalDirectives
 {-# INLINEABLE fieldDefinition #-}
 
 mkField ::
@@ -158,7 +158,7 @@ mkField fieldDescription fieldName fieldContent fieldType fieldDirectives =
 --     { InputValueDefinition(list) }
 --
 inputFieldsDefinition ::
-  Parse (Value s) =>
+  (Parse (Value s)) =>
   Parser (InputFieldsDefinition s)
 inputFieldsDefinition = label "InputFieldsDefinition" $ setOf inputValueDefinition
 {-# INLINEABLE inputFieldsDefinition #-}
@@ -170,20 +170,20 @@ inputFieldsDefinition = label "InputFieldsDefinition" $ setOf inputValueDefiniti
 -- Directives[Const]
 -- Directive[Const](list)
 --
-optionalDirectives :: Parse (Value s) => Parser (Directives s)
+optionalDirectives :: (Parse (Value s)) => Parser (Directives s)
 optionalDirectives = label "Directives" $ many directive >>= lift . fromElems
 {-# INLINEABLE optionalDirectives #-}
 
 -- Directive[Const]
 --
 -- @ Name Arguments[Const](opt)
-directive :: Parse (Value s) => Parser (Directive s)
+directive :: (Parse (Value s)) => Parser (Directive s)
 directive =
-  label "Directive" $
-    Directive
-      <$> getLocation
-      <*> (at *> parseName)
-      <*> maybeArguments
+  label "Directive"
+    $ Directive
+    <$> getLocation
+    <*> (at *> parseName)
+    <*> maybeArguments
 {-# INLINEABLE directive #-}
 
 -- typDeclaration : Not in spec ,start part of type definitions
@@ -197,43 +197,43 @@ typeDeclaration kind = keyword kind *> parseTypeName
 
 parseOperationType :: Parser OperationType
 parseOperationType =
-  label "OperationType" $
-    ( (string "query" $> OPERATION_QUERY)
-        <|> (string "mutation" $> OPERATION_MUTATION)
-        <|> (string "subscription" $> OPERATION_SUBSCRIPTION)
-    )
-      <* ignoredTokens
+  label "OperationType"
+    $ ( (string "query" $> OPERATION_QUERY)
+          <|> (string "mutation" $> OPERATION_MUTATION)
+          <|> (string "subscription" $> OPERATION_SUBSCRIPTION)
+      )
+    <* ignoredTokens
 {-# INLINEABLE parseOperationType #-}
 
 parseDirectiveLocation :: Parser DirectiveLocation
 parseDirectiveLocation =
   label
     "DirectiveLocation"
-    ( choice $
-        toKeyword
-          <$> [ LOCATION_FIELD_DEFINITION,
-                LOCATION_FRAGMENT_DEFINITION,
-                LOCATION_FRAGMENT_SPREAD,
-                LOCATION_INLINE_FRAGMENT,
-                LOCATION_ARGUMENT_DEFINITION,
-                LOCATION_INTERFACE,
-                LOCATION_ENUM_VALUE,
-                LOCATION_INPUT_OBJECT,
-                LOCATION_INPUT_FIELD_DEFINITION,
-                LOCATION_SCHEMA,
-                LOCATION_SCALAR,
-                LOCATION_OBJECT,
-                LOCATION_QUERY,
-                LOCATION_MUTATION,
-                LOCATION_SUBSCRIPTION,
-                LOCATION_UNION,
-                LOCATION_ENUM,
-                LOCATION_FIELD
-              ]
+    ( choice
+        $ toKeyword
+        <$> [ LOCATION_FIELD_DEFINITION,
+              LOCATION_FRAGMENT_DEFINITION,
+              LOCATION_FRAGMENT_SPREAD,
+              LOCATION_INLINE_FRAGMENT,
+              LOCATION_ARGUMENT_DEFINITION,
+              LOCATION_INTERFACE,
+              LOCATION_ENUM_VALUE,
+              LOCATION_INPUT_OBJECT,
+              LOCATION_INPUT_FIELD_DEFINITION,
+              LOCATION_SCHEMA,
+              LOCATION_SCALAR,
+              LOCATION_OBJECT,
+              LOCATION_QUERY,
+              LOCATION_MUTATION,
+              LOCATION_SUBSCRIPTION,
+              LOCATION_UNION,
+              LOCATION_ENUM,
+              LOCATION_FIELD
+            ]
     )
     <* ignoredTokens
 {-# INLINEABLE parseDirectiveLocation #-}
 
-toKeyword :: Show a => a -> Parser a
+toKeyword :: (Show a) => a -> Parser a
 toKeyword x = string (fromString $ show x) $> x
 {-# INLINEABLE toKeyword #-}

@@ -158,11 +158,11 @@ handleWSRequest gqlApp clientId = handle . apolloFormat
     handleAction (SessionStart sessionId request) =
       handleResponseStream (SessionID clientId sessionId) (gqlApp request)
     handleAction (SessionStop sessionId) =
-      liftWS $
-        Right [WSUpdate $ endSession (SessionID clientId sessionId)]
+      liftWS
+        $ Right [WSUpdate $ endSession (SessionID clientId sessionId)]
 
 liftWS ::
-  Applicative m =>
+  (Applicative m) =>
   Either ByteString [WSOutputEvent e m] ->
   Output SUB e m
 liftWS = SubOutput . const . pure

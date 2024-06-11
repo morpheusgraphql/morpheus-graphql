@@ -42,7 +42,7 @@ import Prelude (Show (show))
 
 type CacheT m = (StateT (CacheStore m) m)
 
-printSelectionKey :: RenderGQL a => a -> String
+printSelectionKey :: (RenderGQL a) => a -> String
 printSelectionKey sel = map replace $ filter ignoreSpaces $ unpack (render sel)
   where
     ignoreSpaces x = x /= ' '
@@ -80,21 +80,21 @@ instance Show (CacheStore m) where
 instance Empty (CacheStore m) where
   empty = CacheStore empty
 
-cacheResolverValues :: ResolverMonad m => [(CacheKey, ResolverValue m)] -> CacheT m ()
+cacheResolverValues :: (ResolverMonad m) => [(CacheKey, ResolverValue m)] -> CacheT m ()
 cacheResolverValues pres = do
   CacheStore oldCache <- get
   let updates = unsafeFromList (map (second CachedResolver) pres)
   cache <- labeledDebug "\nUPDATE|>" $ CacheStore $ updates <> oldCache
   modify (const cache)
 
-useCached :: ResolverMonad m => CacheKey -> CacheT m (CacheValue m)
+useCached :: (ResolverMonad m) => CacheKey -> CacheT m (CacheValue m)
 useCached v = do
   cache <- get >>= labeledDebug "\nUSE|>"
   case lookup v (_unpackStore cache) of
     Just x -> pure x
     Nothing -> throwError (internal $ "cache value could not found for key" <> msg (show v :: String))
 
-isCached :: Monad m => CacheKey -> CacheT m Bool
+isCached :: (Monad m) => CacheKey -> CacheT m Bool
 isCached key = isJust . lookup key . _unpackStore <$> get
 
 setValue :: (CacheKey, ValidValue) -> CacheStore m -> CacheStore m
@@ -110,5 +110,5 @@ labeledDebug label v = showValue <$> asks (debug . config)
 withDebug :: (Show a, MonadReader ResolverContext m) => a -> m a
 withDebug = labeledDebug ""
 
-cacheValue :: Monad m => CacheKey -> ValidValue -> CacheT m ValidValue
+cacheValue :: (Monad m) => CacheKey -> ValidValue -> CacheT m ValidValue
 cacheValue key value = modify (setValue (key, value)) $> value

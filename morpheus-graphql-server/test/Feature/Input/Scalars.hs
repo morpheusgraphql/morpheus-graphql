@@ -27,7 +27,7 @@ newtype Arg a = Arg
   deriving (Generic, Show, GQLType)
 
 -- query
-testRes :: Applicative m => Arg a -> m a
+testRes :: (Applicative m) => Arg a -> m a
 testRes Arg {value} = pure value
 
 -- resolver

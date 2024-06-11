@@ -42,7 +42,7 @@ importGQLDocument =<< makeRelativeToProject "src/api.gql"
 api :: (Member DR.DeityRepo effs, Typeable effs) => ByteString -> Eff effs ByteString
 api = interpreter rootResolver
 
-rootResolver :: Member DR.DeityRepo effs => RootResolver (Eff effs) () Query Mutation Undefined
+rootResolver :: (Member DR.DeityRepo effs) => RootResolver (Eff effs) () Query Mutation Undefined
 rootResolver =
   defaultRootResolver
     { queryResolver = Query {deity = deityResolver},
@@ -62,5 +62,5 @@ toResponse ::
 toResponse (Right deity) = Right $ toResponse' deity
 toResponse (Left error) = Left $ show error
 
-toResponse' :: Applicative m => T.Deity -> Deity m
+toResponse' :: (Applicative m) => T.Deity -> Deity m
 toResponse' (T.Deity name power) = Deity {name = pure name, power = pure power}

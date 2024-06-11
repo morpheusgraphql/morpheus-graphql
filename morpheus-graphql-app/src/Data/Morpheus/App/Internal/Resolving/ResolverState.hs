@@ -110,15 +110,15 @@ fieldTypeName name t = case typeContent t of
 
 inSelectionField :: (MonadReader ResolverContext m, MonadError GQLError m) => Selection VALID -> m b -> m b
 inSelectionField selection m = do
-  inField (selectionName selection) $
-    local (\ctx -> ctx {currentSelection = selection}) m
+  inField (selectionName selection)
+    $ local (\ctx -> ctx {currentSelection = selection}) m
 
 inField :: (MonadReader ResolverContext m, MonadError GQLError m) => FieldName -> m b -> m b
 inField fieldName m = do
   fieldType <- askFieldTypeName fieldName
   updateCurrentType fieldType m
 
-askFieldTypeName :: MonadReader ResolverContext m => FieldName -> m (Maybe TypeName)
+askFieldTypeName :: (MonadReader ResolverContext m) => FieldName -> m (Maybe TypeName)
 askFieldTypeName name = asks (fieldTypeName name . currentType)
 
 type ResolverState = ResolverStateT () Identity
@@ -129,7 +129,7 @@ runResolverStateT = runReaderT . _runResolverStateT
 runResolverStateM :: ResolverStateT e m a -> ResolverContext -> m (Result GQLError ([e], a))
 runResolverStateM res = runResultT . runResolverStateT res
 
-runResolverStateValueM :: Functor m => ResolverStateT e m a -> ResolverContext -> m (Result GQLError a)
+runResolverStateValueM :: (Functor m) => ResolverStateT e m a -> ResolverContext -> m (Result GQLError a)
 runResolverStateValueM res = fmap (fmap snd) . runResolverStateM res
 
 runResolverState :: ResolverState a -> ResolverContext -> GQLResult a
@@ -153,10 +153,10 @@ instance (Monad m) => MonadError GQLError (ResolverStateT e m) where
   throwError err = do
     ctx <- asks id
     let f = if isInternal err then renderInternalResolverError ctx else resolverFailureMessage ctx
-    ResolverStateT $
-      lift $
-        throwError $
-          f err
+    ResolverStateT
+      $ lift
+      $ throwError
+      $ f err
   catchError (ResolverStateT mx) f = ResolverStateT $ catchError mx (_runResolverStateT . f)
 
 instance (Monad m) => PushEvents e (ResolverStateT e m) where
@@ -171,7 +171,7 @@ mapResolverState ::
 mapResolverState f (ResolverStateT x) = ResolverStateT (mapReaderT f x)
 
 toResolverStateT ::
-  Applicative m =>
+  (Applicative m) =>
   ResolverState a ->
   ResolverStateT e m a
 toResolverStateT = mapResolverState injectResult
@@ -204,9 +204,9 @@ resolverFailureMessage
 
 renderInternalResolverError :: ResolverContext -> GQLError -> GQLError
 renderInternalResolverError ctx@ResolverContext {currentSelection} err =
-  internal $
-    (err <> ". " <> msg (renderContext ctx))
-      `at` selectionPosition currentSelection
+  internal
+    $ (err <> ". " <> msg (renderContext ctx))
+    `at` selectionPosition currentSelection
 
 withInternalContext :: ResolverContext -> GQLError
 withInternalContext ResolverContext {config = Config {debug = False}} = ""
@@ -225,7 +225,7 @@ renderContext
       <> renderSection "OperationDefinition" operation
       <> renderSection "SchemaDefinition" schema
 
-renderSection :: RenderGQL a => GQLError -> a -> GQLError
+renderSection :: (RenderGQL a) => GQLError -> a -> GQLError
 renderSection label content =
   "\n\n"
     <> label

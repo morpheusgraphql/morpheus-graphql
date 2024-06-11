@@ -26,7 +26,7 @@ import Relude hiding (ByteString)
 import System.Directory (doesDirectoryExist, listDirectory)
 
 class ReadSource t where
-  readSource :: ToString name => name -> IO t
+  readSource :: (ToString name) => name -> IO t
 
 instance ReadSource Text where
   readSource = T.readFile . toString
@@ -34,15 +34,15 @@ instance ReadSource Text where
 instance ReadSource ByteString where
   readSource = L.readFile . toString
 
-withSource :: ReadSource t => (String, String) -> FileUrl -> IO t
+withSource :: (ReadSource t) => (String, String) -> FileUrl -> IO t
 withSource (name, format) url
   | isDir url = readSource $ toString url <> "/" <> name <> "." <> format
   | otherwise = readSource $ toString url <> "." <> format
 
-readGQL :: ReadSource t => String -> FileUrl -> IO t
+readGQL :: (ReadSource t) => String -> FileUrl -> IO t
 readGQL x = withSource (x, "gql")
 
-readJSON :: ReadSource t => String -> FileUrl -> IO t
+readJSON :: (ReadSource t) => String -> FileUrl -> IO t
 readJSON x = withSource (x, "json")
 
 data FileUrl = FileUrl
