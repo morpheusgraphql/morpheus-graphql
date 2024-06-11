@@ -5,7 +5,7 @@ import { promisify } from "node:util";
 import { Command } from "commander";
 
 export const exit = (error: Error) => {
-  console.log(error.message, "error");
+  console.error(error.message);
   process.exit(1);
 };
 
