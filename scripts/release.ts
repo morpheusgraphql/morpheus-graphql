@@ -26,39 +26,20 @@ const hconf = async (cmd: "version" | "next" | "setup", ...ops: string[]) => {
 };
 
 // GHRelEasy
-const version = () => hconf("version");
-
-const next = (isBreaking: boolean) =>
-  hconf("next", ...(isBreaking ? ["-b"] : [])).then(version);
-
-const pkg = (name: string) =>
-  `https://hackage.haskell.org/package/${scope[name]}`;
-
-const scope: Record<string, string> = {
-  server: "morpheus-graphql",
-  client: "morpheus-graphql-client",
-  core: "morpheus-graphql-core",
-  subscriptions: "morpheus-graphql-subscriptions",
-  tests: "morpheus-graphql-tests",
-  app: "morpheus-graphql-app",
-};
-
 const release = new GHRelEasy({
-  gh: {
-    org: "morpheusgraphql",
-    repo: "morpheus-graphql",
+  gh: "morpheusgraphql/morpheus-graphql",
+  scope: {
+    server: "morpheus-graphql",
+    client: "morpheus-graphql-client",
+    core: "morpheus-graphql-core",
+    subscriptions: "morpheus-graphql-subscriptions",
+    tests: "morpheus-graphql-tests",
+    app: "morpheus-graphql-app",
   },
-  pr: {
-    major: "Major Change",
-    breaking: "Breaking Change",
-    feature: "New features",
-    fix: "Bug Fixes",
-    chore: "Minor Changes",
-  },
-  scope,
-  version,
-  next,
-  pkg,
+  version: () => hconf("version"),
+  pkg: (name) => `https://hackage.haskell.org/package/${name}`,
+  next: (breaking) =>
+    hconf("next", ...(breaking ? ["-b"] : [])).then(() => hconf("version")),
 });
 
 // CLI
