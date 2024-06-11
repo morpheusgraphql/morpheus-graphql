@@ -9,6 +9,8 @@ export const exit = (error: Error) => {
   process.exit(1);
 };
 
+// HCONF
+
 const hconf = async (cmd: string, ...ops: string[]): Promise<string> => {
   const { stdout } = await promisify(exec)(
     ["hconf", cmd, ops].flat().join(" "),
@@ -22,13 +24,15 @@ const hconf = async (cmd: string, ...ops: string[]): Promise<string> => {
     console.log(stdout);
   }
 
-  return stdout;
+  return stdout.trim();
 };
 
 const version = () => hconf("version");
 
 const next = (isBreaking: boolean) =>
   hconf("next", ...(isBreaking ? ["-b"] : [])).then(version);
+
+// GHRelEasy
 
 const scope: Record<string, string> = {
   server: "morpheus-graphql",
@@ -60,26 +64,29 @@ const release = new GHRelEasy({
   pkg,
 });
 
-export const open = ({ preview }: { preview: boolean }) =>
-  release
-    .changelog()
-    .then((body) =>
-      hconf("setup").then(() => (preview ? undefined : release.open(body)))
-    )
-    .catch(exit);
-
-export const changelog = () =>
-  release
-    .changelog()
-    .then((body: string) => writeFile("../changelog.md", body, "utf8"))
-    .catch(exit);
+// CLI
 
 const cli = new Command();
 
-cli.name("cli").description("cli").version("0.0.0");
+cli.name("release-cli").description("Automated Releases").version("1.0");
 
-cli.command("open").option("-p, --preview", "preview", false).action(open);
+cli
+  .command("open")
+  .option("-p, --preview", "preview", false)
+  .action(({ preview }: { preview: boolean }) =>
+    release
+      .changelog()
+      .then((body) =>
+        hconf("setup").then(() => (preview ? undefined : release.open(body)))
+      )
+      .catch(exit)
+  );
 
-cli.command("changelog").action(changelog);
+cli.command("changelog").action(() =>
+  release
+    .changelog()
+    .then((body: string) => writeFile("./changelog.md", body, "utf8"))
+    .catch(exit)
+);
 
 cli.parse();
