@@ -38,8 +38,7 @@ const release = new GHRelEasy({
   },
   version: () => hconf("version"),
   pkg: (name) => `https://hackage.haskell.org/package/${name}`,
-  next: (breaking) =>
-    hconf("next", ...(breaking ? ["-b"] : [])).then(() => hconf("version")),
+  next: (b) => hconf("next", ...(b ? ["-b"] : [])).then(() => hconf("version")),
 });
 
 // CLI
