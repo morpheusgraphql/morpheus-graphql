@@ -12,10 +12,7 @@ export const exit = (error: Error) => {
 const BUFFER = 10 * 1024 * 1024;
 
 // HCONF
-const hconf = async (
-  cmd: "version" | "next" | "setup",
-  ...ops: string[]
-): Promise<string> => {
+const hconf = async (cmd: "version" | "next" | "setup", ...ops: string[]) => {
   const { stdout } = await promisify(exec)(
     ["hconf", cmd, ops].flat().join(" "),
     { maxBuffer: BUFFER, encoding: "utf-8" }
