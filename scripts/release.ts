@@ -1,29 +1,14 @@
 import { writeFile } from "fs/promises";
-import { GHRelEasy } from "gh-rel-easy";
-import { exec } from "child_process";
-import { promisify } from "node:util";
+import { GHRelEasy, runCli } from "gh-rel-easy";
 import { Command } from "commander";
 
 export const exit = (error: Error) => {
-  console.error(error.message);
+  console.log(error.message);
   process.exit(1);
 };
 
-const BUFFER = 10 * 1024 * 1024;
-
-// HCONF
-const hconf = async (cmd: "version" | "next" | "setup", ...ops: string[]) => {
-  const { stdout } = await promisify(exec)(
-    ["hconf", cmd, ops].flat().join(" "),
-    { maxBuffer: BUFFER, encoding: "utf-8" }
-  );
-
-  if (cmd !== "version") {
-    console.log(stdout);
-  }
-
-  return stdout.trim();
-};
+// HConf
+const hconf = runCli("hconf");
 
 // GHRelEasy
 const release = new GHRelEasy({
@@ -38,7 +23,7 @@ const release = new GHRelEasy({
   },
   version: () => hconf("version"),
   pkg: (p) => `https://hackage.haskell.org/package/${p}`,
-  next: (b) => hconf("next", ...(b ? ["-b"] : [])).then(() => hconf("version")),
+  next: (b) => hconf("next", ...(b ? ["-b"] : [])).then(console.log),
 });
 
 // CLI
@@ -53,7 +38,9 @@ cli
     release
       .changelog()
       .then((body) =>
-        hconf("setup").then(() => (preview ? undefined : release.open(body)))
+        hconf("setup")
+          .then(console.log)
+          .then(() => (preview ? undefined : release.open(body)))
       )
       .catch(exit)
   );
