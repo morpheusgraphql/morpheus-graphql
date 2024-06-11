@@ -1,25 +1,21 @@
 import { dirname, join } from "path";
 import { writeFile } from "fs/promises";
 import { GHRelEasy } from "gh-rel-easy";
-import { execSync, StdioOptions } from "child_process";
+import { execSync } from "child_process";
 
 export const exit = (error: Error) => {
   console.log(error.message, "error");
   process.exit(1);
 };
 
-export const exec = (cmd: string, stdio?: StdioOptions) =>
-  execSync(cmd, {
-    maxBuffer: 10 * 1024 * 1024, // 10MB
-    encoding: "utf-8",
-    stdio,
-  })?.trimEnd();
-
 const hconf = async (
   cmd: "version" | "setup" | "next",
   ...ops: string[]
 ): Promise<string> => {
-  const result = exec(["hconf", [cmd, ops].flat().join(" ")].join(" "));
+  const result = execSync(["hconf", [cmd, ops].flat().join(" ")].join(" "), {
+    maxBuffer: 10 * 1024 * 1024,
+    encoding: "utf-8",
+  })?.trimEnd();
 
   if (cmd !== "version") {
     console.log(result);
