@@ -1,4 +1,3 @@
-import { dirname, join } from "path";
 import { writeFile } from "fs/promises";
 import { GHRelEasy } from "gh-rel-easy";
 import { execSync } from "child_process";
@@ -28,9 +27,6 @@ const version = () => hconf("version");
 
 const next = (isBreaking: boolean) =>
   hconf("next", ...(isBreaking ? ["-b"] : [])).then(version);
-
-const write = (p: string) => (f: string) =>
-  writeFile(join(dirname(require.main?.filename ?? ""), "../", p), f, "utf8");
 
 const scope: Record<string, string> = {
   server: "morpheus-graphql",
@@ -71,4 +67,7 @@ export const open = ({ preview }: { preview: boolean }) =>
     .catch(exit);
 
 export const changelog = () =>
-  release.changelog().then(write("changelog.md")).catch(exit);
+  release
+    .changelog()
+    .then((body: string) => writeFile("../changelog.md", body, "utf8"))
+    .catch(exit);
