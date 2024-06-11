@@ -1,6 +1,7 @@
 import { writeFile } from "fs/promises";
 import { GHRelEasy } from "gh-rel-easy";
-import { execSync } from "child_process";
+import { exec } from "child_process";
+import { promisify } from "node:util";
 
 export const exit = (error: Error) => {
   console.log(error.message, "error");
@@ -8,16 +9,19 @@ export const exit = (error: Error) => {
 };
 
 const hconf = async (cmd: string, ...ops: string[]): Promise<string> => {
-  const result = execSync(["hconf", cmd, ops].flat().join(" "), {
-    maxBuffer: 10 * 1024 * 1024,
-    encoding: "utf-8",
-  })?.trimEnd();
+  const { stdout } = await promisify(exec)(
+    ["hconf", cmd, ops].flat().join(" "),
+    {
+      maxBuffer: 10 * 1024 * 1024,
+      encoding: "utf-8",
+    }
+  );
 
   if (cmd !== "version") {
-    console.log(result);
+    console.log(stdout);
   }
 
-  return Promise.resolve(result);
+  return stdout;
 };
 
 const version = () => hconf("version");
