@@ -11,7 +11,10 @@ export const exit = (error: Error) => {
 
 // HCONF
 
-const hconf = async (cmd: string, ...ops: string[]): Promise<string> => {
+const hconf = async (
+  cmd: "version" | "next" | "setup",
+  ...ops: string[]
+): Promise<string> => {
   const { stdout } = await promisify(exec)(
     ["hconf", cmd, ops].flat().join(" "),
     {
