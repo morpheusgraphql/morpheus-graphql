@@ -2,6 +2,7 @@ import { writeFile } from "fs/promises";
 import { GHRelEasy } from "gh-rel-easy";
 import { exec } from "child_process";
 import { promisify } from "node:util";
+import { Command } from "commander";
 
 export const exit = (error: Error) => {
   console.log(error.message, "error");
@@ -72,3 +73,13 @@ export const changelog = () =>
     .changelog()
     .then((body: string) => writeFile("../changelog.md", body, "utf8"))
     .catch(exit);
+
+const cli = new Command();
+
+cli.name("cli").description("cli").version("0.0.0");
+
+cli.command("open").option("-p, --preview", "preview", false).action(open);
+
+cli.command("changelog").action(changelog);
+
+cli.parse();
