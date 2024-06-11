@@ -10,7 +10,6 @@ export const exit = (error: Error) => {
 };
 
 // HCONF
-
 const hconf = async (
   cmd: "version" | "next" | "setup",
   ...ops: string[]
@@ -30,12 +29,14 @@ const hconf = async (
   return stdout.trim();
 };
 
+// GHRelEasy
 const version = () => hconf("version");
 
 const next = (isBreaking: boolean) =>
   hconf("next", ...(isBreaking ? ["-b"] : [])).then(version);
 
-// GHRelEasy
+const pkg = (name: string) =>
+  `https://hackage.haskell.org/package/${scope[name]}`;
 
 const scope: Record<string, string> = {
   server: "morpheus-graphql",
@@ -45,9 +46,6 @@ const scope: Record<string, string> = {
   tests: "morpheus-graphql-tests",
   app: "morpheus-graphql-app",
 };
-
-const pkg = (name: string) =>
-  `https://hackage.haskell.org/package/${scope[name]}`;
 
 const release = new GHRelEasy({
   gh: {
@@ -68,7 +66,6 @@ const release = new GHRelEasy({
 });
 
 // CLI
-
 const cli = new Command();
 
 cli.name("release-cli").description("Automated Releases").version("1.0");
