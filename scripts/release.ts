@@ -37,7 +37,7 @@ const release = new GHRelEasy({
     app: "morpheus-graphql-app",
   },
   version: () => hconf("version"),
-  pkg: (name) => `https://hackage.haskell.org/package/${name}`,
+  pkg: (p) => `https://hackage.haskell.org/package/${p}`,
   next: (b) => hconf("next", ...(b ? ["-b"] : [])).then(() => hconf("version")),
 });
 
