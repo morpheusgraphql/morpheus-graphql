@@ -7,11 +7,8 @@ export const exit = (error: Error) => {
   process.exit(1);
 };
 
-const hconf = async (
-  cmd: "version" | "setup" | "next",
-  ...ops: string[]
-): Promise<string> => {
-  const result = execSync(["hconf", [cmd, ops].flat().join(" ")].join(" "), {
+const hconf = async (cmd: string, ...ops: string[]): Promise<string> => {
+  const result = execSync(["hconf", cmd, ops].flat().join(" "), {
     maxBuffer: 10 * 1024 * 1024,
     encoding: "utf-8",
   })?.trimEnd();
