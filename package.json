@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "commander": "^9.1.0",
-    "gh-rel-easy": "^0.12.0",
+    "gh-rel-easy": "^0.15.0",
     "ts-node": "^10.7.0",
     "typescript": "^4.6.2"
   }
