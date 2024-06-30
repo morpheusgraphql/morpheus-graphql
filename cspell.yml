@@ -46,10 +46,10 @@ words:
   - Hackage
   - Hashable
   - haxl
+  - hconf
   - hlint
   - hpack
   - hsep
-  - hconf
   - hunit
   - ifromJSON
   - inlineable
@@ -86,6 +86,7 @@ words:
   - unlift
   - unliftio
   - Unpackedness
+  - unwords
   - vsep
   - websockets
   - whnf
