@@ -3,5 +3,25 @@
   "[graphql]": {
     "editor.formatOnSave": false
   },
-  "editor.renderWhitespace": "all"
+  "editor.renderWhitespace": "all",
+  "workbench.colorCustomizations": {
+    "activityBar.activeBackground": "#3f75e8",
+    "activityBar.background": "#3f75e8",
+    "activityBar.foreground": "#e7e7e7",
+    "activityBar.inactiveForeground": "#e7e7e799",
+    "activityBarBadge.background": "#8e1139",
+    "activityBarBadge.foreground": "#e7e7e7",
+    "commandCenter.border": "#e7e7e799",
+    "sash.hoverBorder": "#3f75e8",
+    "statusBar.background": "#1a57da",
+    "statusBar.foreground": "#e7e7e7",
+    "statusBarItem.hoverBackground": "#3f75e8",
+    "statusBarItem.remoteBackground": "#1a57da",
+    "statusBarItem.remoteForeground": "#e7e7e7",
+    "titleBar.activeBackground": "#1a57da",
+    "titleBar.activeForeground": "#e7e7e7",
+    "titleBar.inactiveBackground": "#1a57da99",
+    "titleBar.inactiveForeground": "#e7e7e799"
+  },
+  "peacock.remoteColor": "#1a57da"
 }
