@@ -21,7 +21,7 @@ runs:
       run: npm i
 
     - name: HConf Haskell
-      uses: haskell/actions/setup@v2.9.0
+      uses: haskell/actions/setup@v2.4.7
       with:
         ghc-version: ${{ inputs.ghc }}
         enable-stack: true
