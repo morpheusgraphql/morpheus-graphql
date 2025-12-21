@@ -19,8 +19,8 @@ data-files:
 dependencies:
 - aeson                            >=  1.4.4     &&  <   3.0.0
 - base                             >=  4.7.0     &&  <   5.0.0
-- bytestring                       >=  0.10.4    &&  <   0.15.0
-- containers                       >=  0.4.2.1   &&  <=  0.7
+- bytestring                       >=  0.10.4    &&  <   1.0.0
+- containers                       >=  0.4.2.1   &&  <=  1.0.0
 - file-embed                       >=  0.0.10    &&  <   1.0.0
 - modern-uri                       >=  0.1.0.0   &&  <   1.0.0
 - morpheus-graphql-code-gen-utils  >=  0.28.0    &&  <   0.29.0
@@ -32,9 +32,9 @@ dependencies:
 - req                              >=  3.0.0     &&  <   4.0.0
 - template-haskell                 >=  2.0.0     &&  <   3.0.0
 - text                             >=  1.2.3     &&  <   3.0.0
-- transformers                     >=  0.3.0     &&  <   0.7.0
-- unliftio-core                    >=  0.0.1     &&  <   0.4.0
-- unordered-containers             >=  0.2.8     &&  <   0.3.0
+- transformers                     >=  0.3.0     &&  <   1.0.0
+- unliftio-core                    >=  0.0.1     &&  <   1.0.0
+- unordered-containers             >=  0.2.8     &&  <   1.0.0
 - websockets                       >=  0.12.6.0  &&  <   1.0.0
 - wuss                             >=  1.0.0     &&  <   3.0.0
 library:
