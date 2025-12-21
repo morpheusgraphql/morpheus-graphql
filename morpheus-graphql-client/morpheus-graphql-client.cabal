@@ -143,7 +143,7 @@ test-suite morpheus-graphql-client-test
     , prettyprinter >=1.7.0 && <2.0.0
     , relude >=0.3.0 && <2.0.0
     , req >=3.0.0 && <4.0.0
-    , tasty >=0.1.0 && <=1.5
+    , tasty >=0.1.0 && <=2.0.0
     , tasty-hunit >=0.1.0 && <1.0.0
     , template-haskell >=2.0.0 && <3.0.0
     , text >=1.2.3 && <3.0.0
