@@ -10,37 +10,37 @@ homepage: https://morpheusgraphql.com
 copyright: (c) 2019 Daviti Nalchevanidze
 description: code generator for Morpheus GraphQL
 extra-source-files:
-  - README.md
-  - changelog.md
+- README.md
+- changelog.md
 dependencies:
-  - base                             >=  4.7.0    &&  <   5.0.0
-  - bytestring                       >=  0.10.4   &&  <   0.15.0
-  - containers                       >=  0.4.2.1  &&  <=  0.7
-  - file-embed                       >=  0.0.10   &&  <   1.0.0
-  - morpheus-graphql-code-gen-utils  >=  0.28.0   &&  <   0.29.0
-  - morpheus-graphql-core            >=  0.28.0   &&  <   0.29.0
-  - morpheus-graphql-server          >=  0.28.0   &&  <   0.29.0
-  - prettyprinter                    >=  1.7.0    &&  <   2.0.0
-  - relude                           >=  0.3.0    &&  <   2.0.0
-  - template-haskell                 >=  2.0.0    &&  <   3.0.0
-  - text                             >=  1.2.3    &&  <   3.0.0
-  - unordered-containers             >=  0.2.8    &&  <   0.3.0
+- base                             >=  4.7.0    &&  <   5.0.0
+- bytestring                       >=  0.10.4   &&  <   0.15.0
+- containers                       >=  0.4.2.1  &&  <=  0.7
+- file-embed                       >=  0.0.10   &&  <   1.0.0
+- morpheus-graphql-code-gen-utils  >=  0.28.0   &&  <   0.29.0
+- morpheus-graphql-core            >=  0.28.0   &&  <   0.29.0
+- morpheus-graphql-server          >=  0.28.0   &&  <   0.29.0
+- prettyprinter                    >=  1.7.0    &&  <   2.0.0
+- relude                           >=  0.3.0    &&  <   2.0.0
+- template-haskell                 >=  2.0.0    &&  <   3.0.0
+- text                             >=  1.2.3    &&  <   3.0.0
+- unordered-containers             >=  0.2.8    &&  <   0.3.0
 library:
   source-dirs: src
   ghc-options: -Wall
   exposed-modules:
-    - Data.Morpheus.CodeGen
-    - Data.Morpheus.CodeGen.Server
+  - Data.Morpheus.CodeGen
+  - Data.Morpheus.CodeGen.Server
 executables:
   morpheus:
     main: Main.hs
     source-dirs: app
     ghc-options: -Wall
     dependencies:
-      - Glob                             >=  0.7.0   &&  <   1.0.0
-      - filepath                         >=  1.1.0   &&  <=  1.5.4.0
-      - morpheus-graphql-client          >=  0.28.0  &&  <   0.29.0
-      - morpheus-graphql-code-gen        >=  0.28.0  &&  <   0.29.0
-      - morpheus-graphql-code-gen-utils  >=  0.28.0  &&  <   0.29.0
-      - optparse-applicative             >=  0.12.0  &&  <   0.20.0
-      - yaml                             >=  0.8.32  &&  <   1.0.0
+    - Glob                             >=  0.7.0   &&  <   1.0.0
+    - filepath                         >=  1.1.0   &&  <=  2.0.0
+    - morpheus-graphql-client          >=  0.28.0  &&  <   0.29.0
+    - morpheus-graphql-code-gen        >=  0.28.0  &&  <   0.29.0
+    - morpheus-graphql-code-gen-utils  >=  0.28.0  &&  <   0.29.0
+    - optparse-applicative             >=  0.12.0  &&  <   0.20.0
+    - yaml                             >=  0.8.32  &&  <   1.0.0

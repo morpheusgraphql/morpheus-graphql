@@ -86,7 +86,7 @@ dependencies:
   - directory             >=  1.0.0     &&  <   2.0.0
   - extra                 >=  1.0.0     &&  <   2.0.0
   - file-embed            >=  0.0.10    &&  <   1.0.0
-  - filepath              >=  1.1.0     &&  <=  1.5.3.0
+  - filepath              >=  1.1.0     &&  <=  2.0.0
   - fraxl                 >=  0.1       &&  <   1.0
   - freer-simple          >=  1.0       &&  <   3.0
   - graphql               >=  0.5       &&  <   2.0
