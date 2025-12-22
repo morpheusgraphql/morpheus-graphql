@@ -64,6 +64,7 @@ builds:
     resolver: lts-24.25
     exclude:
       - examples/scotty-fraxl
+      - examples/scotty-freer-simple
     extra:
       freer-simple: 1.2.1.2
   - ghc: latest
@@ -74,7 +75,7 @@ builds:
     extra:
       fastsum: 0.1.1.1
       fraxl: 0.3.0.0
-      haxl: 2.4.0.0
+      haxl: 2.5.1.1
       type-aligned: 0.9.6
 dependencies:
   - Glob                  >=  0.7.0     &&  <   1.0.0

@@ -22,5 +22,5 @@ save-hackage-creds: false
 extra-deps:
 - fastsum-0.1.1.1
 - fraxl-0.3.0.0
-- haxl-2.4.0.0
+- haxl-2.5.1.1
 - type-aligned-0.9.6
