@@ -52,8 +52,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-hs
-      - name: check
-        shell: bash
+      - name: Format
         run: hconf format --check
 
 concurrency:
