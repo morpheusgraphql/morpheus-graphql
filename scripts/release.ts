@@ -1,6 +1,4 @@
-import { GHRelEasy, CLI } from "gh-rel-easy";
-
-const hconf = new CLI("hconf");
+import { GHRelEasy } from "gh-rel-easy";
 
 const gh = new GHRelEasy({
   gh: "morpheusgraphql/morpheus-graphql",
@@ -13,9 +11,9 @@ const gh = new GHRelEasy({
     app: "morpheus-graphql-app",
   },
   pkg: "https://hackage.haskell.org/package/{{SCOPE}}",
-  version: () => hconf.exec("version"),
-  next: (b) => hconf.void("next", b && "-b"),
-  setup: () => hconf.void("setup"),
+  version: "hconf version",
+  next: "hconf next",
+  setup: "hconf setup",
 });
 
 gh.cli();
