@@ -64,6 +64,8 @@ builds:
     resolver: lts-24.25
     exclude:
       - examples/scotty-fraxl
+    extra:
+      freer-simple: 1.2.1.2
   - ghc: latest
     resolver: nightly-2025-12-21
     exclude:
