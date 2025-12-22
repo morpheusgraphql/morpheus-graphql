@@ -22,6 +22,6 @@ jobs:
         run: |
           git config --global user.name "GitHub"
           git config --global user.email "<noreply@github.com>"
-          npm run release -- open
+          npx releasy open
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
