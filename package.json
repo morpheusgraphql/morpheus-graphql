@@ -14,12 +14,7 @@
     "test:server": "stack test --fast  morpheus-graphql-server  --ta"
   },
   "devDependencies": {
-    "@types/node": "^17.0.23",
-    "cspell": "^6.31.1"
-  },
-  "dependencies": {
-    "gh-rel-easy": "^0.24.0",
-    "ts-node": "^10.7.0",
-    "typescript": "^4.6.2"
+    "cspell": "^6.31.1",
+    "gh-rel-easy": "^0.24.0"
   }
 }
