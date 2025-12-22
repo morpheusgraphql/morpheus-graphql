@@ -12,7 +12,7 @@ const gh = new GHRelEasy({
     tests: "morpheus-graphql-tests",
     app: "morpheus-graphql-app",
   },
-  pkg: (p) => `https://hackage.haskell.org/package/${p}`,
+  pkg: "https://hackage.haskell.org/package/{{SCOPE}}",
   version: () => hconf.exec("version"),
   next: (b) => hconf.void("next", b && "-b"),
   setup: () => hconf.void("setup"),
