@@ -8,20 +8,13 @@
   "private": true,
   "scripts": {
     "check:spelling": "cspell --cache --no-progress '**/*.hs'",
-    "release": "ts-node scripts/release.ts",
     "code-gen": "morpheus build morpheus-graphql-server/test examples/code-gen examples/code-gen-docs",
     "code-gen:check": "morpheus check morpheus-graphql-server/test examples/code-gen examples/code-gen-docs",
     "lint": "curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s .",
     "test:server": "stack test --fast  morpheus-graphql-server  --ta"
   },
   "devDependencies": {
-    "@types/node": "^17.0.23",
-    "cspell": "^6.31.1"
-  },
-  "dependencies": {
-    "commander": "^9.1.0",
-    "gh-rel-easy": "^0.15.0",
-    "ts-node": "^10.7.0",
-    "typescript": "^4.6.2"
+    "cspell": "^6.31.1",
+    "gh-rel-easy": "^0.24.0"
   }
 }
