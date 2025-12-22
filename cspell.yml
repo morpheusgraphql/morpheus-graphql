@@ -91,3 +91,5 @@ words:
   - websockets
   - whnf
   - yesod
+  - Bndr
+  - upsert
