@@ -11,8 +11,7 @@ jobs:
   build:
     strategy:
       matrix:
-        # temporarly disable latest ghc until its fixed
-        ghc: ["8.4.4", "8.6.5", "8.8.3", "8.10.7", "9.0.2", "9.10.3"]
+        ghc: ["8.4.4", "8.6.5", "8.8.3", "8.10.7", "9.0.2", "9.10.3", "latest"]
       fail-fast: false
     runs-on: ubuntu-latest
     name: GHC ${{ matrix.ghc}}
