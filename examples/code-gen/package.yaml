@@ -8,14 +8,14 @@ synopsis: examples
 copyright: (c) 2019 Daviti Nalchevanidze
 description: examples of GraphQL APIs
 dependencies:
-- base                     >=  4.7.0    &&  <   5.0.0
-- bytestring               >=  0.10.4   &&  <   1.0.0
-- containers               >=  0.4.2.1  &&  <=  1.0.0
-- morpheus-graphql         >=  0.28.0   &&  <   0.29.0
-- morpheus-graphql-client  >=  0.28.0   &&  <   0.29.0
-- morpheus-graphql-server  >=  0.28.0   &&  <   0.29.0
-- scotty                   >=  0.6.0    &&  <   1.0.0
-- text                     >=  1.2.3    &&  <   3.0.0
+- base                     >=  4.7.0    &&  <  5.0.0
+- bytestring               >=  0.10.4   &&  <  1.0.0
+- containers               >=  0.4.2.1  &&  <  1.0.0
+- morpheus-graphql         >=  0.28.0   &&  <  0.29.0
+- morpheus-graphql-client  >=  0.28.0   &&  <  0.29.0
+- morpheus-graphql-server  >=  0.28.0   &&  <  0.29.0
+- scotty                   >=  0.6.0    &&  <  1.0.0
+- text                     >=  1.2.3    &&  <  3.0.0
 executables:
   generated-server:
     main: Main.hs
