@@ -1,11 +1,11 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.38.1.
+-- This file has been generated from package.yaml by hpack version 0.35.2.
 --
 -- see: https://github.com/sol/hpack
 
 name:           morpheus-graphql-code-gen
-version:        0.28.1
+version:        0.28.2
 synopsis:       Morpheus GraphQL CLI
 description:    code generator for Morpheus GraphQL
 category:       web, graphql, cli
