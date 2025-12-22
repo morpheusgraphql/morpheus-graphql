@@ -56,8 +56,8 @@ runApp App {..}
   | otherwise = runOperation operations
   where
     runOperation About = putStrLn $ "Morpheus GraphQL CLI, version " <> currentVersion
-    runOperation (Build source) = (sourcesWithFallback source) >>= processAll False
-    runOperation (Check source) = (sourcesWithFallback source) >>= processAll True
+    runOperation (Build source) = sourcesWithFallback source >>= processAll False
+    runOperation (Check source) = sourcesWithFallback source >>= processAll True
 
 data Context = Context
   { isCheck :: Bool,
