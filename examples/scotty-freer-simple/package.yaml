@@ -10,15 +10,15 @@ copyright: 2021 Author name here
 description: example of graphql apis with scotty and freer-simple
 dependencies:
 - base              >=  4.7.0   &&  <  5.0.0
-- bytestring        >=  0.10.4  &&  <  0.15.0
+- bytestring        >=  0.10.4  &&  <  1.0.0
 - file-embed        >=  0.0.10  &&  <  1.0.0
-- freer-simple      >=  1.0     &&  <  3.0
+- freer-simple      >=  1.0     &&  <  3.0.0
 - morpheus-graphql  >=  0.28.0  &&  <  0.29.0
-- scotty            >=  0.6.0   &&  <  1.0
+- scotty            >=  0.6.0   &&  <  1.0.0
 - text              >=  1.2.3   &&  <  3.0.0
-- transformers      >=  0.3.0   &&  <  0.7.0
-- wai               >=  1.0.0   &&  <  4.0
-- warp              >=  1.0.0   &&  <  4.0
+- transformers      >=  0.3.0   &&  <  1.0.0
+- wai               >=  1.0.0   &&  <  4.0.0
+- warp              >=  1.0.0   &&  <  4.0.0
 executables:
   scotty-freer-server:
     main: Main.hs

@@ -14,20 +14,20 @@ runs:
         curl -sSL https://raw.githubusercontent.com/nalchevanidze/hconf/main/scripts/install.sh | sh -s .
         hconf setup ${{ inputs.ghc }}
 
-    - uses: actions/setup-node@v3
+    - uses: actions/setup-node@v6
 
     - name: Install NPM
       shell: bash
       run: npm i
 
     - name: HConf Haskell
-      uses: haskell/actions/setup@v1.2
+      uses: haskell/actions/setup@v2.4.7
       with:
         ghc-version: ${{ inputs.ghc }}
         enable-stack: true
 
     - name: Cache Stack
-      uses: actions/cache@v2
+      uses: actions/cache@v5
       with:
         path: ~/.stack
         key: ${{ runner.os  }}-${{ inputs.ghc }}-stack-${{ hashFiles('stack.yaml') }}

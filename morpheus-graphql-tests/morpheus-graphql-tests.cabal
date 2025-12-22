@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.36.0.
+-- This file has been generated from package.yaml by hpack version 0.38.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -37,11 +37,11 @@ library
   build-depends:
       aeson >=1.4.4 && <3.0.0
     , base >=4.7.0 && <5.0.0
-    , bytestring >=0.10.4 && <0.15.0
+    , bytestring >=0.10.4 && <1.0.0
     , directory >=1.0.0 && <2.0.0
     , relude >=0.3.0 && <2.0.0
-    , tasty >=0.1.0 && <=1.5
+    , tasty >=0.1.0 && <2.0.0
     , tasty-hunit >=0.1.0 && <1.0.0
     , text >=1.2.3 && <3.0.0
-    , unordered-containers >=0.2.8 && <0.3.0
+    , unordered-containers >=0.2.8 && <1.0.0
   default-language: Haskell2010

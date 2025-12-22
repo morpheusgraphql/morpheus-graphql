@@ -16,16 +16,16 @@ extra-source-files:
 dependencies:
 - aeson                  >=  1.4.4     &&  <  3.0.0
 - base                   >=  4.7.0     &&  <  5.0.0
-- bytestring             >=  0.10.4    &&  <  0.15.0
+- bytestring             >=  0.10.4    &&  <  1.0.0
 - morpheus-graphql-app   >=  0.28.0    &&  <  0.29.0
 - morpheus-graphql-core  >=  0.28.0    &&  <  0.29.0
 - mtl                    >=  2.0.0     &&  <  3.0.0
 - relude                 >=  0.3.0     &&  <  2.0.0
 - text                   >=  1.2.3     &&  <  3.0.0
-- transformers           >=  0.3.0     &&  <  0.7.0
-- unliftio-core          >=  0.0.1     &&  <  0.4.0
-- unordered-containers   >=  0.2.8     &&  <  0.3.0
-- uuid                   >=  1.0.0     &&  <  1.4.0
+- transformers           >=  0.3.0     &&  <  1.0.0
+- unliftio-core          >=  0.0.1     &&  <  1.0.0
+- unordered-containers   >=  0.2.8     &&  <  1.0.0
+- uuid                   >=  1.0.0     &&  <  2.0.0
 - websockets             >=  0.12.6.0  &&  <  1.0.0
 library:
   source-dirs: src
