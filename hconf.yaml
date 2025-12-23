@@ -66,7 +66,7 @@ builds:
       - examples/scotty-fraxl
       - examples/scotty-freer-simple
   - ghc: 9.12.2
-    resolver: lts-24.25
+    resolver: 2025-12-23
     exclude:
       - examples/scotty-fraxl
       - examples/scotty-freer-simple
