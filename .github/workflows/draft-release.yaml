@@ -19,8 +19,6 @@ jobs:
         uses: ./.github/actions/setup-hs
 
       - name: Draft Release
-        run: |
-          npx releasy gh-setup
-          npx releasy open
+        run: npx releasy open
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
