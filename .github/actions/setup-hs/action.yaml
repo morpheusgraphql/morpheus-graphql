@@ -21,7 +21,7 @@ runs:
       run: npm i
 
     - name: Install GHC and Stack
-      uses: haskell/actions/setup@v2.4.7
+      uses: haskell-actions/setup@v2.9.0
       with:
         ghc-version: ${{ inputs.ghc }}
         enable-stack: true
