@@ -37,7 +37,7 @@ jobs:
       - name: Test Code Gen
         run: |
           stack install --fast morpheus-graphql-code-gen
-          npm run code-gen:check
+          morpheus check
 
   hlint:
     runs-on: ubuntu-latest
