@@ -12,7 +12,7 @@ jobs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       tag_name: ${{ steps.describe.outputs.version }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-hs
       - name: Upload Packages
         run: |
@@ -64,7 +64,7 @@ jobs:
     name: Upload Artifacts for ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - name: setup
         uses: ./.github/actions/setup-hs
@@ -106,7 +106,7 @@ jobs:
     name: Test Binaries
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Download and extract Artifact
         run: |
           curl -o morpheus.zip -LO https://github.com/${{ github.repository }}/releases/download/${{ needs.publish_release.outputs.tag_name }}/morpheus-${{ matrix.target }}.zip

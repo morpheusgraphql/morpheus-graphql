@@ -42,7 +42,7 @@ jobs:
   hlint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
       - name: lint
         run: curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s .
 
