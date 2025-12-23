@@ -12,5 +12,5 @@
   "pkg": "https://hackage.haskell.org/package/{{SCOPE}}",
   "version": "hconf version",
   "next": "hconf next",
-  "setup": "hconf setup"
+  "setup": "hconf setup 9.10.3"
 }
