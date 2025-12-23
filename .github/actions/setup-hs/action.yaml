@@ -20,7 +20,7 @@ runs:
       shell: bash
       run: npm i
 
-    - name: HConf Haskell
+    - name: Install GHC and Stack
       uses: haskell/actions/setup@v2.4.7
       with:
         ghc-version: ${{ inputs.ghc }}

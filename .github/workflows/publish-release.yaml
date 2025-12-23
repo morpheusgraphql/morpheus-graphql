@@ -33,8 +33,6 @@ jobs:
       - name: Describe
         id: describe
         run: echo "VERSION=$(hconf version)" >> $GITHUB_OUTPUT
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Release
         id: create_release

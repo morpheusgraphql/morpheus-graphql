@@ -11,12 +11,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           ref: main
           fetch-depth: 0
-
-      - name: Setup
-        uses: ./.github/actions/setup-hs
+      - uses: ./.github/actions/setup-hs
 
       - name: Draft Release
         run: npx releasy open

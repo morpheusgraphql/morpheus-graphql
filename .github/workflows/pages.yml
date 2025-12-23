@@ -23,8 +23,8 @@ jobs:
       - name: Git Config
         run: |
           cd docs/
-          git config --global user.name "${{ secrets.USER_NAME }}"
-          git config --global user.email "${{ secrets.USER_EMAIL }}"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
