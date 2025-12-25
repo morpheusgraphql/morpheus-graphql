@@ -62,11 +62,6 @@ builds:
       dependent-sum: "0.4"
   - ghc: 9.10.3
     resolver: lts-24.25
-    exclude:
-      - examples/scotty-fraxl
-      - examples/scotty-freer-simple
-  - ghc: 9.12.2
-    resolver: 2025-12-23
     allow-newer: true
     exclude:
       - examples/scotty-fraxl

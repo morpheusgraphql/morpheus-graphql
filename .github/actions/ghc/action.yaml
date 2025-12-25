@@ -3,7 +3,7 @@ inputs:
   ghc:
     description: GHC Version
     required: false
-    default: 9.12.2
+    default: 9.10.3
 
 runs:
   using: "composite"
