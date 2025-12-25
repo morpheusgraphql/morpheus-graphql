@@ -13,7 +13,8 @@ jobs:
       tag_name: ${{ steps.describe.outputs.version }}
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-hs
+      - uses: ./.github/actions/ghc
+      - uses: ./.github/actions/hconf
       - name: Upload Packages
         run: |
           stack sdist
@@ -63,9 +64,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-
-      - name: setup
-        uses: ./.github/actions/setup-hs
+      - uses: ./.github/actions/ghc
 
       - name: Build Artifacts
         run: stack build morpheus-graphql-code-gen

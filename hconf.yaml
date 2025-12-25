@@ -67,6 +67,7 @@ builds:
       - examples/scotty-freer-simple
   - ghc: 9.12.2
     resolver: 2025-12-23
+    allow-newer: true
     exclude:
       - examples/scotty-fraxl
       - examples/scotty-freer-simple
