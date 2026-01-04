@@ -37,7 +37,7 @@ import Data.Version (showVersion)
 import qualified Paths_morpheus_graphql_code_gen as CLI
 import Relude hiding (ByteString)
 import System.Exit (ExitCode (..))
-import System.FilePath (normalise, (</>))
+import System.FilePath (dropFileName, normalise, (</>))
 import System.FilePath.Glob (glob)
 
 currentVersion :: String
@@ -46,14 +46,18 @@ currentVersion = showVersion CLI.version
 main :: IO ()
 main = parseCLI >>= runApp
 
+sourcesWithFallback :: [FilePath] -> IO [FilePath]
+sourcesWithFallback [] = fmap (map dropFileName) (glob "**/code-gen.yaml")
+sourcesWithFallback xs = pure xs
+
 runApp :: App -> IO ()
 runApp App {..}
   | version options = putStrLn currentVersion
   | otherwise = runOperation operations
   where
     runOperation About = putStrLn $ "Morpheus GraphQL CLI, version " <> currentVersion
-    runOperation (Build source) = processAll (scan . Context False) source
-    runOperation (Check source) = processAll (scan . Context True) source
+    runOperation (Build source) = sourcesWithFallback source >>= processAll False
+    runOperation (Check source) = sourcesWithFallback source >>= processAll True
 
 data Context = Context
   { isCheck :: Bool,
@@ -62,9 +66,9 @@ data Context = Context
 
 type CommandResult = Bool
 
-processAll :: (Traversable t, MonadIO m) => (a1 -> m Bool) -> t a1 -> m b
-processAll f xs = do
-  res <- traverse f xs
+processAll :: Bool -> [FilePath] -> IO b
+processAll check xs = do
+  res <- traverse (scan . Context check) xs
   if and res
     then putStr "\x1b[32mOK\x1b[0m\n" >> exitSuccess
     else exitWith (ExitFailure 1)

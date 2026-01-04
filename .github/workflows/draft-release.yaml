@@ -9,19 +9,18 @@ jobs:
   draft-release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          ref: "main"
-      - run: git fetch --prune --unshallow
-
-      - name: Setup
-        uses: ./.github/actions/setup-hs
+          ref: main
+          fetch-depth: 0
+      - uses: ./.github/actions/ghc
+      - uses: ./.github/actions/hconf
+      - uses: actions/setup-node@v6
+      - name: Install NPM
+        shell: bash
+        run: npm i
 
       - name: Draft Release
-        run: |
-          git config --global user.name "GitHub"
-          git config --global user.email "<noreply@github.com>"
-          npx releasy open
+        run: npx releasy open
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

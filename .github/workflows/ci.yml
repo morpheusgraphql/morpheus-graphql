@@ -11,17 +11,17 @@ jobs:
   build:
     strategy:
       matrix:
-        # temporarly disable latest ghc until its fixed
         ghc: ["8.4.4", "8.6.5", "8.8.3", "8.10.7", "9.0.2", "9.10.3"]
       fail-fast: false
     runs-on: ubuntu-latest
     name: GHC ${{ matrix.ghc}}
     steps:
       - uses: actions/checkout@v4
-      - name: Setup
-        uses: ./.github/actions/setup-hs
+      - uses: ./.github/actions/ghc
         with:
           ghc: ${{ matrix.ghc }}
+      - uses: ./.github/actions/hconf
+      - run: hconf setup ${{ matrix.ghc }}
 
       - name: Install dependencies
         run: stack build --fast --skip-ghc-check --no-terminal --test --only-dependencies
@@ -38,22 +38,21 @@ jobs:
       - name: Test Code Gen
         run: |
           stack install --fast morpheus-graphql-code-gen
-          npm run code-gen:check
+          morpheus check
 
   hlint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
-      - name: lint
+      - uses: actions/checkout@v4
+      - name: Lint
         run: curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s .
 
   format:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-hs
-      - name: check
-        shell: bash
+      - uses: ./.github/actions/hconf
+      - name: Format
         run: hconf format --check
 
 concurrency:

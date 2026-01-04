@@ -1,10 +1,9 @@
-resolver: nightly-2025-12-21
+resolver: lts-24.25
 packages:
 - examples/client
 - examples/code-gen
 - examples/code-gen-docs
 - examples/scotty
-- examples/scotty-haxl
 - examples/servant
 - examples/yesod-pubsub
 - morpheus-graphql-tests

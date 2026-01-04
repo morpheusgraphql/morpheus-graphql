@@ -6,7 +6,8 @@
     "core": "morpheus-graphql-core",
     "subscriptions": "morpheus-graphql-subscriptions",
     "tests": "morpheus-graphql-tests",
-    "app": "morpheus-graphql-app"
+    "app": "morpheus-graphql-app",
+    "codegen": "morpheus-graphql-code-gen"
   },
   "pkg": "https://hackage.haskell.org/package/{{SCOPE}}",
   "version": "hconf version",
