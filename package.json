@@ -11,7 +11,6 @@
     "lint": "curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s ."
   },
   "devDependencies": {
-    "cspell": "^6.31.1",
-    "gh-rel-easy": "^0.31.0"
+    "cspell": "^6.31.1"
   }
 }

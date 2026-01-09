@@ -1,9 +1,9 @@
 name: Draft Release
 on: workflow_dispatch
 
-concurrency:
-  group: ${{ github.ref }}
-  cancel-in-progress: true
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
   draft-release:
@@ -13,14 +13,11 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
+
       - uses: ./.github/actions/ghc
       - uses: ./.github/actions/hconf
-      - uses: actions/setup-node@v6
-      - name: Install NPM
-        shell: bash
-        run: npm i
 
       - name: Draft Release
-        run: npx releasy open
+        uses: nalchevanidze/draft-release-action@v1.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
