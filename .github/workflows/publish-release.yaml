@@ -51,30 +51,23 @@ jobs:
         include:
           - os: ubuntu-latest
             target: linux
-            executable: morpheus
           - os: macOS-latest
             target: mac-os
-            executable: morpheus
           - os: windows-latest
             target: windows
-            executable: morpheus.exe
-    name: Upload Artifacts for ${{ matrix.target }}
+    name: Upload Artifact ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/ghc
 
-      - name: Build Artifacts
-        run: stack build morpheus-graphql-code-gen
+      - name: Pack
         shell: bash
+        run: curl -sSL https://raw.githubusercontent.com/morpheusgraphql/morpheus-graphql/main/scripts/pack.sh | sh -s .
 
-      - name: Prepare Artifacts
-        run: |
-          mkdir out
-          cd ./out
-          cp $(stack exec which morpheus) ./${{ matrix.executable }}
-          7z a ../morpheus.zip .
+      - name: Test Binary
         shell: bash
+        run: curl -sSL https://raw.githubusercontent.com/morpheusgraphql/morpheus-graphql/main/scripts/test.sh | sh -s .
 
       - name: Upload Artifact
         uses: actions/upload-release-asset@v1
@@ -85,31 +78,3 @@ jobs:
           asset_path: morpheus.zip
           asset_name: morpheus-${{ matrix.target }}.zip
           asset_content_type: application/zip
-
-  test_artifact:
-    needs: [publish_release, upload_artifact]
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            target: linux
-          - os: macOS-latest
-            target: mac-os
-          - os: windows-latest
-            target: windows
-    name: Test Binaries
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Download and extract Artifact
-        run: |
-          curl -o morpheus.zip -LO https://github.com/${{ github.repository }}/releases/download/${{ needs.publish_release.outputs.version }}/morpheus-${{ matrix.target }}.zip
-          7z e morpheus.zip
-      - name: Test CLI Commands
-        run: |
-          ./morpheus about
-          ./morpheus build examples/code-gen
-          ./morpheus build examples/code-gen-docs
-          ./morpheus check examples/code-gen
-          ./morpheus check examples/code-gen-docs
