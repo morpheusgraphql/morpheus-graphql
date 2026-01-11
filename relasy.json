@@ -1,5 +1,4 @@
 {
-  "gh": "morpheusgraphql/morpheus-graphql",
   "scope": {
     "server": "morpheus-graphql",
     "client": "morpheus-graphql-client",
@@ -9,8 +8,11 @@
     "app": "morpheus-graphql-app",
     "codegen": "morpheus-graphql-code-gen"
   },
-  "pkg": "https://hackage.haskell.org/package/{{SCOPE}}",
-  "version": "hconf version",
-  "next": "hconf next",
-  "setup": "hconf setup"
+  "project": {
+    "type": "custom",
+    "pkg": "https://hackage.haskell.org/package/{{SCOPE}}",
+    "version": "hconf version",
+    "next": "hconf next",
+    "setup": "hconf setup 9.6.3"
+  }
 }
