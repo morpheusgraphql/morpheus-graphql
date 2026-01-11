@@ -15,7 +15,7 @@ jobs:
           fetch-depth: 0
 
       - uses: ./.github/actions/ghc
-      - uses: ./.github/actions/hconf
+      - uses: nalchevanidze/hconf/actions/install@main
 
       - name: Draft Release
         uses: nalchevanidze/relasy/actions/draft-release@0.1.10

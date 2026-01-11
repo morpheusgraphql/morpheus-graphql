@@ -20,7 +20,7 @@ jobs:
       - uses: ./.github/actions/ghc
         with:
           ghc: ${{ matrix.ghc }}
-      - uses: ./.github/actions/hconf
+      - uses: nalchevanidze/hconf/actions/install@main
       - run: hconf setup ${{ matrix.ghc }}
 
       - name: Install dependencies
@@ -51,7 +51,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/hconf
+      - uses: nalchevanidze/hconf/actions/install@main
       - name: Format
         run: hconf format --check
 
