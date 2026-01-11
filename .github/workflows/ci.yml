@@ -55,6 +55,25 @@ jobs:
       - name: Format
         run: hconf format --check
 
+  artifacts:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macOS-latest, windows-latest]
+    name: Artifact ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/ghc
+
+      - name: Pack
+        shell: bash
+        run: curl -sSL https://raw.githubusercontent.com/nalchevanidze/hconf/main/scripts/pack.sh | sh -s .
+
+      - name: Test Binary
+        shell: bash
+        run: curl -sSL https://raw.githubusercontent.com/nalchevanidze/hconf/main/scripts/test.sh | sh -s .
+
 concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: true
