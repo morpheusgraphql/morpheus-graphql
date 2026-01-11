@@ -12,9 +12,7 @@ jobs:
       upload_url: ${{ steps.publish.outputs.upload_url }}
     steps:
       - uses: actions/checkout@v4
-
-      - uses: ./.github/actions/ghc
-      - uses: nalchevanidze/hconf/actions/install@main
+      - uses: nalchevanidze/hconf/actions/ghc@main
 
       - name: Upload Packages
         run: |
@@ -54,7 +52,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/ghc
+      - uses: nalchevanidze/hconf/actions/ghc@main
 
       - name: Pack
         shell: bash

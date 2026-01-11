@@ -17,10 +17,9 @@ jobs:
     name: GHC ${{ matrix.ghc}}
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/ghc
+      - uses: nalchevanidze/hconf/actions/ghc@main
         with:
           ghc: ${{ matrix.ghc }}
-      - uses: nalchevanidze/hconf/actions/install@main
       - run: hconf setup ${{ matrix.ghc }}
 
       - name: Install dependencies
@@ -64,7 +63,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/ghc
+      - uses: nalchevanidze/hconf/actions/ghc@main
 
       - name: Pack
         shell: bash
