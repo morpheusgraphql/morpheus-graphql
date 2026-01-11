@@ -68,11 +68,11 @@ jobs:
 
       - name: Pack
         shell: bash
-        run: curl -sSL https://raw.githubusercontent.com/morpheusgraphql/morpheus-graphql/main/scripts/pack.sh | sh -s .
+        run: sh ./scripts/pack.sh
 
       - name: Test Binary
         shell: bash
-        run: curl -sSL https://raw.githubusercontent.com/morpheusgraphql/morpheus-graphql/main/scripts/test.sh | sh -s .
+        run: sh ./scripts/test.sh
 
 concurrency:
   group: ${{ github.ref }}

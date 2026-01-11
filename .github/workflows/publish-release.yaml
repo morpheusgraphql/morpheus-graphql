@@ -10,7 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       upload_url: ${{ steps.publish.outputs.upload_url }}
-      version: ${{ steps.describe.outputs.VERSION }}
     steps:
       - uses: actions/checkout@v4
 
@@ -32,10 +31,6 @@ jobs:
         env:
           HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
           HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
-
-      - name: Describe
-        id: describe
-        run: echo "VERSION=$(hconf version)" >> $GITHUB_OUTPUT
 
       - name: Publish Release
         uses: nalchevanidze/relasy/actions/publish-release@0.1.10
@@ -63,11 +58,11 @@ jobs:
 
       - name: Pack
         shell: bash
-        run: curl -sSL https://raw.githubusercontent.com/morpheusgraphql/morpheus-graphql/main/scripts/pack.sh | sh -s .
+        run: sh ./scripts/pack.sh
 
       - name: Test Binary
         shell: bash
-        run: curl -sSL https://raw.githubusercontent.com/morpheusgraphql/morpheus-graphql/main/scripts/test.sh | sh -s .
+        run: sh ./scripts/test.sh
 
       - name: Upload Artifact
         uses: actions/upload-release-asset@v1
