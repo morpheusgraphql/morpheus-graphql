@@ -1,4 +1,4 @@
-name: Upload Release Assets
+name: Upload Artifacts
 
 on:
   release:
@@ -33,13 +33,5 @@ jobs:
           package: morpheus-graphql-code-gen
           executable: morpheus
           smoke_test: about
-
-      - name: Upload Asset
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: morpheus.zip
-          asset_name: morpheus-${{ matrix.target }}.zip
-          asset_content_type: application/zip
+          github_token: ${{ secrets.GITHUB_TOKEN }}
