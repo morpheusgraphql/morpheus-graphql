@@ -7,8 +7,7 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "check:spelling": "cspell --cache --no-progress '**/*.hs'",
-    "lint": "curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s ."
+    "check:spelling": "cspell --cache --no-progress '**/*.hs'"
   },
   "devDependencies": {
     "cspell": "^6.31.1"
