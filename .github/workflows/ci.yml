@@ -65,13 +65,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: nalchevanidze/hconf/actions/ghc@main
 
-      - name: Pack
-        shell: bash
-        run: sh ./scripts/pack.sh
-
-      - name: Test Binary
-        shell: bash
-        run: sh ./scripts/test.sh
+      - name: Binary
+        uses: nalchevanidze/hconf/actions/pkg@main
+        with:
+          package: morpheus-graphql-code-gen
+          executable: morpheus
+          smoke_test: about
 
 concurrency:
   group: ${{ github.ref }}
