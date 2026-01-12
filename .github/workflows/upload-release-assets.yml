@@ -1,0 +1,45 @@
+name: Upload Release Assets
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  upload_artifact:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux
+          - os: macos-latest
+            target: mac-os
+          - os: windows-latest
+            target: windows
+
+    name: Upload Artifact ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: nalchevanidze/hconf/actions/ghc@main
+
+      - name: Package
+        uses: nalchevanidze/hconf/actions/pkg@main
+        with:
+          package: morpheus-graphql-code-gen
+          executable: morpheus
+          smoke_test: about
+
+      - name: Upload Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: morpheus.zip
+          asset_name: morpheus-${{ matrix.target }}.zip
+          asset_content_type: application/zip
