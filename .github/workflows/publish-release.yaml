@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - uses: nalchevanidze/hconf/actions/ghc@main
+      - uses: nalchevanidze/hmm/actions/ghc@main
 
       - name: Upload Packages
         run: |

@@ -17,10 +17,10 @@ jobs:
     name: GHC ${{ matrix.ghc}}
     steps:
       - uses: actions/checkout@v4
-      - uses: nalchevanidze/hconf/actions/ghc@main
+      - uses: nalchevanidze/hmm/actions/ghc@main
         with:
           ghc: ${{ matrix.ghc }}
-      - run: hconf setup ${{ matrix.ghc }}
+      - run: hmm setup ${{ matrix.ghc }}
 
       - name: Install dependencies
         run: stack build --fast --skip-ghc-check --no-terminal --test --only-dependencies
@@ -50,9 +50,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: nalchevanidze/hconf/actions/install@main
+      - uses: nalchevanidze/hmm/actions/install@main
       - name: Format
-        run: hconf format --check
+        run: hmm format --check
 
   artifacts:
     strategy:
@@ -63,10 +63,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - uses: nalchevanidze/hconf/actions/ghc@main
+      - uses: nalchevanidze/hmm/actions/ghc@main
 
       - name: Binary
-        uses: nalchevanidze/hconf/actions/pkg@main
+        uses: nalchevanidze/hmm/actions/pkg@main
         with:
           package: morpheus-graphql-code-gen
           executable: morpheus

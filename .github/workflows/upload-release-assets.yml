@@ -25,10 +25,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - uses: nalchevanidze/hconf/actions/ghc@main
+      - uses: nalchevanidze/hmm/actions/ghc@main
 
       - name: Package
-        uses: nalchevanidze/hconf/actions/pkg@main
+        uses: nalchevanidze/hmm/actions/pkg@main
         with:
           package: morpheus-graphql-code-gen
           executable: morpheus

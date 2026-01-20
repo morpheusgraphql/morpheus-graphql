@@ -46,7 +46,7 @@ words:
   - Hackage
   - Hashable
   - haxl
-  - hconf
+  - hmm
   - hlint
   - hpack
   - hsep
