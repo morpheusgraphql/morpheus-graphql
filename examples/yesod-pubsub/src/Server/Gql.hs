@@ -44,12 +44,10 @@ import GHC.Generics
 import Server.ServerState (Channel (..), Content (..), MEvent, ServerState)
 import qualified Server.ServerState as ServerState
 
-newtype Query m
-  = Query {queryCounter :: m Int}
+newtype Query m = Query {queryCounter :: m Int}
   deriving (Generic, GQLType)
 
-newtype FunctionSearchArgs
-  = FunctionSearchArgs {fn :: Text}
+newtype FunctionSearchArgs = FunctionSearchArgs {fn :: Text}
   deriving (Generic, GQLType)
 
 data QueryCounterArgs
@@ -71,12 +69,10 @@ resolveQuCounter serverState = do
   results <- lift $ ServerState.readResults serverState
   liftEither . return $ Right results
 
-newtype Mutation m
-  = Mutation {updateCounter :: UpdateCounter -> m Int}
+newtype Mutation m = Mutation {updateCounter :: UpdateCounter -> m Int}
   deriving (Generic, GQLType)
 
-newtype UpdateCounter
-  = UpdateCounter {updateCounter_newVal :: Int}
+newtype UpdateCounter = UpdateCounter {updateCounter_newVal :: Int}
   deriving (Generic, GQLType)
 
 mutUpdateCounter :: ServerState -> UpdateCounter -> ResolverM MEvent IO Int
