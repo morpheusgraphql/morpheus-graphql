@@ -50,7 +50,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: nalchevanidze/hmm/actions/install@main
+      - uses: nalchevanidze/hmm/actions/cli@main
       - name: Format
         run: hmm format --check
 
