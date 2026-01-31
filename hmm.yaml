@@ -1,5 +1,5 @@
-# hash: 18413f7aefc079b999604a310f58cac4f372bdbd2aafcc1a13f328b8ec601f00
-version: 0.28.3
+# hash: 0ac5d75e8ddcd572a19641c740a8df145684ec763ed36f07e317c802a011a233
+version: 0.28.4
 bounds: '>= 0.28.0 && < 0.29.0'
 groups:
 - name: examples
