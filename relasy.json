@@ -1,6 +1,7 @@
 {
   "scope": {
-    "server": "morpheus-graphql",
+    "main": "morpheus-graphql",
+    "server": "morpheus-graphql-server",
     "client": "morpheus-graphql-client",
     "core": "morpheus-graphql-core",
     "subscriptions": "morpheus-graphql-subscriptions",
