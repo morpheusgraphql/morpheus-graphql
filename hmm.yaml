@@ -1,4 +1,4 @@
-# hash: 146c2244df8b57e1a7cef429f893a905798a0f3874118f8ee6634933a3f8a2a6
+# hash: 00a5a343db2cb330ecaeb124748d4fab207c1eedcf3d96b357897608f4d14ca1
 version: 0.28.2
 bounds: '>= 0.28.0 && < 0.29.0'
 groups:
@@ -14,6 +14,10 @@ groups:
   - servant
   - yesod-pubsub
   dir: examples
+- name: benchmarks
+  packages:
+  - benchmarks
+  prefix: morpheus-graphql
 - name: morpheus-graphql
   packages:
   - tests
@@ -24,7 +28,6 @@ groups:
   - client
   - subscriptions
   - server
-  - benchmarks
   - .
   prefix: morpheus-graphql
 builds:

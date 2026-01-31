@@ -6,6 +6,7 @@ packages:
 - examples/scotty
 - examples/servant
 - examples/yesod-pubsub
+- morpheus-graphql-benchmarks
 - morpheus-graphql-tests
 - morpheus-graphql-core
 - morpheus-graphql-code-gen-utils
@@ -14,7 +15,6 @@ packages:
 - morpheus-graphql-client
 - morpheus-graphql-subscriptions
 - morpheus-graphql-server
-- morpheus-graphql-benchmarks
 - morpheus-graphql
 allow-newer: true
 save-hackage-creds: false

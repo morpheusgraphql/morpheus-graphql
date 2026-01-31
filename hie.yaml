@@ -24,6 +24,8 @@ cradle:
       component: morpheus-graphql-examples-yesod-pubsub:test:yesod-gql-example-test
     - path: ./examples/yesod-pubsub/app
       component: morpheus-graphql-examples-yesod-pubsub:exe:yesod-gql-example
+    - path: ./morpheus-graphql-benchmarks/src
+      component: morpheus-graphql-benchmarks:bench:morpheus-graphql-bench
     - path: ./morpheus-graphql-tests/src
       component: morpheus-graphql-tests:lib
     - path: ./morpheus-graphql-core/src
@@ -50,8 +52,6 @@ cradle:
       component: morpheus-graphql-server:lib
     - path: ./morpheus-graphql-server/test
       component: morpheus-graphql-server:test:morpheus-graphql-server-test
-    - path: ./morpheus-graphql-benchmarks/src
-      component: morpheus-graphql-benchmarks:bench:morpheus-graphql-bench
     - path: ./morpheus-graphql/src
       component: morpheus-graphql:lib
     - path: ./morpheus-graphql/test
