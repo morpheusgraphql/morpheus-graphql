@@ -1,4 +1,4 @@
-# hash: beff3453840838994a0ae2b013a401fde5ede44ef864e595e398ce72e03e52cd
+# hash: 18413f7aefc079b999604a310f58cac4f372bdbd2aafcc1a13f328b8ec601f00
 version: 0.28.3
 bounds: '>= 0.28.0 && < 0.29.0'
 groups:
@@ -16,7 +16,8 @@ groups:
   dir: examples
 - name: helpers
   packages:
-  - morpheus-graphql-benchmarks
+  - benchmarks
+  dir: helpers
 - name: libs
   packages:
   - tests
