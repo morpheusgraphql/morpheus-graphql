@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           morpheus-graphql-examples-scotty-haxl
-version:        0.28.2
+version:        0.28.3
 synopsis:       examples
 description:    examples of GraphQL APIs
 category:       web, graphql
