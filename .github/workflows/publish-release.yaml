@@ -12,7 +12,8 @@ jobs:
   publish_release:
     if: ${{ github.base_ref == 'main' && startsWith(github.head_ref, 'release-') && github.event.pull_request.merged == true }}
     runs-on: ubuntu-latest
-
+    outputs:
+      upload_url: ${{ steps.publish.outputs.upload_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: nalchevanidze/hmm/actions/ghc@main
@@ -28,3 +29,32 @@ jobs:
         id: publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  upload_artifact:
+    needs: publish_release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux
+          - os: macos-latest
+            target: mac-os
+          - os: windows-latest
+            target: windows
+
+    name: Upload Artifact ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: nalchevanidze/hmm/actions/ghc@main
+
+      - name: Package
+        uses: nalchevanidze/hmm/actions/pkg@main
+        with:
+          package: morpheus-graphql-code-gen
+          executable: morpheus
+          smoke_test: about
+          upload_url: ${{ needs.publish_release.outputs.upload_url }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
