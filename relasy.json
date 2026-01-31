@@ -1,5 +1,5 @@
 {
-  "scope": {
+  "pkgs": {
     "main": "morpheus-graphql",
     "server": "morpheus-graphql-server",
     "client": "morpheus-graphql-client",
