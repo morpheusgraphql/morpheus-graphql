@@ -14,6 +14,7 @@ groups:
       - yesod-pubsub
     dir: examples
   - name: morpheus-graphql
+    prefix: morpheus-graphql
     packages:
       - tests
       - core
@@ -25,7 +26,6 @@ groups:
       - server
       - benchmarks
       - .
-    prefix: true
 builds:
   - ghc: 8.4.4
     resolver: lts-12.26

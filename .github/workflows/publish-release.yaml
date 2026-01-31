@@ -20,15 +20,7 @@ jobs:
       - name: Upload Packages
         run: |
           stack sdist
-          stack upload morpheus-graphql-tests
-          stack upload morpheus-graphql-core
-          stack upload morpheus-graphql-code-gen-utils
-          stack upload morpheus-graphql-code-gen
-          stack upload morpheus-graphql-app
-          stack upload morpheus-graphql-client
-          stack upload morpheus-graphql-subscriptions
-          stack upload morpheus-graphql-server
-          stack upload morpheus-graphql
+          hmm upload morpheus-graphql
         env:
           HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
           HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
