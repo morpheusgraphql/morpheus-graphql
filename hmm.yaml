@@ -1,5 +1,5 @@
-# hash: 00a5a343db2cb330ecaeb124748d4fab207c1eedcf3d96b357897608f4d14ca1
-version: 0.28.2
+# hash: 40b9759e4b978dfb8d85c74327886420fa507aa77e947909d3ff9717b32f7102
+version: 0.28.3
 bounds: '>= 0.28.0 && < 0.29.0'
 groups:
 - name: morpheus-graphql-examples
