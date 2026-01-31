@@ -20,7 +20,7 @@ jobs:
       - uses: nalchevanidze/hmm/actions/ghc@main
         with:
           ghc: ${{ matrix.ghc }}
-      - run: hmm setup ${{ matrix.ghc }}
+      - run: hmm use ${{ matrix.ghc }}
 
       - name: Install dependencies
         run: stack build --fast --skip-ghc-check --no-terminal --test --only-dependencies

@@ -13,6 +13,6 @@
     "pkg": "https://hackage.haskell.org/package/{{PKG}}",
     "version": "hmm version",
     "bump": "hmm version {{BUMP}}",
-    "postBump": "hmm setup 9.6.3"
+    "postBump": "hmm sync"
   }
 }
