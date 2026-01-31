@@ -18,9 +18,7 @@ jobs:
       - uses: nalchevanidze/hmm/actions/ghc@main
 
       - name: Upload Packages
-        run: |
-          stack sdist
-          hmm upload morpheus-graphql
+        run: hmm publish libs
         env:
           HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
           HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
