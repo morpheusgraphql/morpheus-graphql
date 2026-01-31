@@ -25,7 +25,8 @@ jobs:
           HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
           HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
 
-      - name: Publish Release
-        uses: nalchevanidze/relasy/actions/publish-release@0.1.10
+      - name: Publish GitHub Release (from merged release PR)
+        uses: nalchevanidze/relasy/actions/publish-release@v1.1.1
+        id: publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

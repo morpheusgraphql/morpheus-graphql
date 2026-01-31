@@ -16,7 +16,7 @@ jobs:
 
       - uses: nalchevanidze/hmm/actions/ghc@main
 
-      - name: Draft Release
-        uses: nalchevanidze/relasy/actions/draft-release@0.1.10
+      - name: Draft Release PR (compute version + commit bump + changelog + open PR)
+        uses: nalchevanidze/relasy/actions/draft-release@v1.1.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
