@@ -13,3 +13,4 @@ node_modules/
 .vscode/*.log
 __ormolu__
 .envrc
+.hwm
