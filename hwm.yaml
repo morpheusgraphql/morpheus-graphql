@@ -1,4 +1,4 @@
-# hash: 496bc3cf614b522319f262d667ac96f1cd26eae5d57e2d78f03275178281fe8f
+# hash: 51a550a374bb83fd006b5419003d1a259f31a28b6bcab3dff609171128d9a9a8
 version: 0.28.4
 bounds: '>= 0.28.0 && < 0.29.0'
 workspace:
@@ -35,16 +35,37 @@ matrix:
   environments:
   - ghc: 8.4.4
     resolver: lts-12.26
+    extra-deps:
+      aeson: 1.4.4.0
+      base-orphans: 0.8.1
+      fastsum: 0.1.0.0
+      megaparsec: 7.0.5
+      modern-uri: 0.3.0.0
+      relude: 0.3.0
+      retry: 0.8.1.0
+      time-compat: 1.9.2.2
+      websockets: 0.12.6.0
   - ghc: 8.6.5
     resolver: lts-14.14
+    extra-deps:
+      req: 3.0.0
   - ghc: 8.8.3
     resolver: lts-16.2
+    extra-deps:
+      prettyprinter: 1.7.0
   - ghc: 8.10.7
     resolver: lts-18.10
+    extra-deps:
+      fastsum: 0.1.1.1
+      graphql: 0.11.1.0
   - ghc: 9.0.2
     resolver: lts-19.28
     exclude:
     - examples/scotty-fraxl
+    extra-deps:
+      attoparsec-aeson: 2.1.0.0
+      dependent-map: 0.2.4.0
+      dependent-sum: '0.4'
   - ghc: 9.10.3
     resolver: lts-24.25
     exclude:
@@ -52,6 +73,11 @@ matrix:
     - examples/scotty-freer-simple
     - examples/scotty-haxl
     allow-newer: true
+    extra-deps:
+      fastsum: 0.1.1.1
+      fraxl: 0.3.0.0
+      haxl: 2.5.1.1
+      type-aligned: 0.9.6
 registry:
 - Glob                  >=  0.7.0     &&  <  1.0.0
 - aeson                 >=  1.4.4     &&  <  3.0.0
