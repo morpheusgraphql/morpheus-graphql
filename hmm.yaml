@@ -33,7 +33,7 @@ groups:
 builds:
   - ghc: 8.4.4
     resolver: lts-12.26
-    extra-deps:
+    extra:
       aeson: 1.4.4.0
       base-orphans: 0.8.1
       fastsum: 0.1.0.0
@@ -45,22 +45,22 @@ builds:
       websockets: 0.12.6.0
   - ghc: 8.6.5
     resolver: lts-14.14
-    extra-deps:
+    extra:
       req: 3.0.0
   - ghc: 8.8.3
     resolver: lts-16.2
-    extra-deps:
+    extra:
       prettyprinter: 1.7.0
   - ghc: 8.10.7
     resolver: lts-18.10
-    extra-deps:
+    extra:
       fastsum: 0.1.1.1
       graphql: 0.11.1.0
   - ghc: 9.0.2
     resolver: lts-19.28
     exclude:
       - examples/scotty-fraxl
-    extra-deps:
+    extra:
       attoparsec-aeson: 2.1.0.0
       dependent-map: 0.2.4.0
       dependent-sum: "0.4"
@@ -71,7 +71,7 @@ builds:
       - examples/scotty-freer-simple
       - examples/scotty-haxl
     allow-newer: true
-    extra-deps:
+    extra:
       fastsum: 0.1.1.1
       fraxl: 0.3.0.0
       haxl: 2.5.1.1
