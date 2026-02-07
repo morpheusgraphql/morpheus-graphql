@@ -1,0 +1,41 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.38.1.
+--
+-- see: https://github.com/sol/hpack
+
+name:           morpheus-graphql-examples-scotty-fraxl
+version:        0.28.4
+synopsis:       examples
+description:    Fraxl example of GraphQL APIs
+category:       web, graphql
+homepage:       https://github.com/nalchevanidze/morpheus-graphql#readme
+bug-reports:    https://github.com/nalchevanidze/morpheus-graphql/issues
+author:         Daviti Nalchevanidze
+maintainer:     Daviti Nalchevanidze
+copyright:      (c) 2019 Daviti Nalchevanidze
+license:        MIT
+build-type:     Simple
+
+source-repository head
+  type: git
+  location: https://github.com/nalchevanidze/morpheus-graphql
+
+executable scotty-server-fraxl
+  main-is: Main.hs
+  other-modules:
+      Fraxl.API
+      Fraxl.FakeDB
+      Paths_morpheus_graphql_examples_scotty_fraxl
+  hs-source-dirs:
+      src
+  ghc-options: -Wall
+  build-depends:
+      base >=4.7.0 && <5.0.0
+    , containers >=0.4.2.1 && <1.0.0
+    , fraxl >=0.1 && <1.0.0
+    , morpheus-graphql >=0.28.0 && <0.29.0
+    , mtl >=2.0.0 && <3.0.0
+    , scotty >=0.6.0 && <1.0.0
+    , text >=1.2.3 && <3.0.0
+  default-language: Haskell2010

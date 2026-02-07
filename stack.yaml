@@ -14,8 +14,6 @@ packages:
 - examples/code-gen
 - examples/code-gen-docs
 - examples/scotty
-- examples/scotty-haxl
-- examples/scotty-freer-simple
 - examples/servant
 - examples/yesod-pubsub
 allow-newer: true

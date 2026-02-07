@@ -1,4 +1,4 @@
-# hash: 9b8bf0269dd76f8e99d7d07c3465e8a597abcab49b39907a7782613df5b17331
+# hash: f60f6904ba814f56472d4e58d8130c3050bbb48cd6d603bc9e95e1a17c028643
 version: 0.28.4
 bounds: '>= 0.28.0 && < 0.29.0'
 workspace:
@@ -44,6 +44,8 @@ matrix:
     resolver: lts-22.30
     exclude:
     - examples/scotty-fraxl
+    - examples/scotty-freer-simple
+    - examples/scotty-haxl
     extra-deps:
       attoparsec-aeson: 2.1.0.0
       dependent-map: 0.2.4.0
