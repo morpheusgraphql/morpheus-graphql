@@ -1,4 +1,4 @@
-resolver: lts-24.25
+resolver: lts-22.30
 packages:
 - morpheus-graphql-tests
 - morpheus-graphql-core
@@ -14,12 +14,13 @@ packages:
 - examples/code-gen
 - examples/code-gen-docs
 - examples/scotty
+- examples/scotty-haxl
+- examples/scotty-freer-simple
 - examples/servant
 - examples/yesod-pubsub
 allow-newer: true
 save-hackage-creds: false
 extra-deps:
-- fastsum-0.1.1.1
-- fraxl-0.3.0.0
-- haxl-2.5.1.1
-- type-aligned-0.9.6
+- attoparsec-aeson-2.1.0.0
+- dependent-map-0.2.4.0
+- dependent-sum-0.4
