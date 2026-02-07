@@ -2,6 +2,22 @@
 version: 0.28.4
 bounds: ">= 0.28.0 && < 0.29.0"
 workspace:
+  - name: libs
+    members:
+      - tests
+      - core
+      - code-gen-utils
+      - app
+      - subscriptions
+      - client
+      - server
+      - code-gen
+      - .
+    prefix: morpheus-graphql
+  - name: helpers
+    dir: helpers
+    members:
+      - benchmarks
   - name: examples
     dir: examples
     members:
@@ -14,22 +30,6 @@ workspace:
       - scotty-freer-simple
       - servant
       - yesod-pubsub
-  - name: helpers
-    dir: helpers
-    members:
-      - benchmarks
-  - name: libs
-    members:
-      - tests
-      - core
-      - code-gen-utils
-      - code-gen
-      - app
-      - client
-      - subscriptions
-      - server
-      - .
-    prefix: morpheus-graphql
 matrix:
   default-environment: 9.10.3
   environments:
