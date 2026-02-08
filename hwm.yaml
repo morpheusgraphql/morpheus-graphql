@@ -1,4 +1,4 @@
-# hash: 51d262ac22e822eba6756e6b5ee14bb8833506ac2cd1731fb826c80d037bf815
+# hash: 3bc55278e5881275c9fd1320c3839fa7db1e0013d40368197b38e5d9e3a8a68e
 version: 0.28.4
 bounds: ">= 0.28.0 && < 0.29.0"
 workspace:
@@ -116,5 +116,5 @@ registry:
   - yesod                 >=  0.5       &&  <  2.0.0
   - yesod-core            >=  1.0       &&  <  2.0.0
 scripts:
-  build: cabal build
+  build: stack  build {TARGET}
   test: cabal test
