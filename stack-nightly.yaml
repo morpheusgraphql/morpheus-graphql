@@ -22,3 +22,4 @@ extra-deps:
   - fraxl-0.3.0.0
   - haxl-2.5.1.1
   - type-aligned-0.9.6
+allow-newer: true
