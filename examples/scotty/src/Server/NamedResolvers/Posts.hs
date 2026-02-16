@@ -50,12 +50,12 @@ data Post m = Post
 
 getPost :: (Monad m) => ID -> m (Maybe (Post (NamedResolverT m)))
 getPost pid =
-  pure
-    $ Just
-    $ Post
-      { postID = resolve (pure pid),
-        title = resolve (pure $ "title for \"" <> unpackID pid <> "\"")
-      }
+  pure $
+    Just $
+      Post
+        { postID = resolve (pure pid),
+          title = resolve (pure $ "title for \"" <> unpackID pid <> "\"")
+        }
 
 instance ResolveNamed m (Post (NamedResolverT m)) where
   type Dep (Post (NamedResolverT m)) = ID

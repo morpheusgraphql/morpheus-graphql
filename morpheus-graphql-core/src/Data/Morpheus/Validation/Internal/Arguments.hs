@@ -60,8 +60,7 @@ import Data.Morpheus.Validation.Internal.Value
 import Relude hiding (empty)
 
 type VariableConstraints ctx =
-  ( MissingRequired (VariableDefinitions VALID) ctx
-  )
+  (MissingRequired (VariableDefinitions VALID) ctx)
 
 type ArgumentsConstraints c schemaS valueS =
   ( Resolve Argument valueS c,

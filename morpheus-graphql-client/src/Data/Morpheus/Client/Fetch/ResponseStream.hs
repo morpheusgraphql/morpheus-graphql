@@ -68,7 +68,8 @@ requestMany f ResponseStream {..}
       endSession conn sid
 
 -- PUBLIC API
-data ResponseStream a = (ClientTypeConstraint a) =>
+data ResponseStream a
+  = (ClientTypeConstraint a) =>
   ResponseStream
   { _req :: Request a,
     _uri :: URI,

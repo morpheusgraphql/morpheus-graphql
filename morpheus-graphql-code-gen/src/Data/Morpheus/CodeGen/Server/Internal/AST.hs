@@ -144,7 +144,7 @@ instance Pretty ServerDeclaration where
       <+> "TypeGuard"
       <+> unpack (print interfaceName .<> "m")
       <+> unpack (print unionName .<> "m")
-      <> line
+        <> line
   pretty ScalarType {} = ""
   pretty (DataType cgType) = pretty cgType
   pretty (GQLTypeInstance kind gql)

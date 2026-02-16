@@ -16,13 +16,24 @@ jobs:
       upload_url: ${{ steps.publish.outputs.upload_url }}
     steps:
       - uses: actions/checkout@v4
-      - uses: nalchevanidze/hmm/actions/ghc@main
+      - uses: nalchevanidze/hwm/actions/ghc@v0.0.5
 
       - name: Upload Packages
-        run: hmm publish libs
+        run: hwm publish libs
         env:
           HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
           HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
+
+      - name: Show sdist.log
+        if: always()
+        run: |
+          if [ -f .hwm/logs/sdist.log ]; then
+            echo "::group::.hwm/logs/sdist.log"
+            cat .hwm/logs/sdist.log
+            echo "::endgroup::"
+          else
+            echo "No .hwm/logs/sdist.log found"
+          fi
 
       - name: Publish GitHub Release (from merged release PR)
         uses: nalchevanidze/relasy/actions/publish-release@v1.1.1
@@ -48,10 +59,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - uses: nalchevanidze/hmm/actions/ghc@main
+      - uses: nalchevanidze/hwm/actions/ghc@v0.0.5
 
-      - name: Package
-        uses: nalchevanidze/hmm/actions/pkg@main
+      - name: Upload Executable Binary
+        uses: nalchevanidze/hwm/actions/pkg@v0.0.5
         with:
           package: morpheus-graphql-code-gen
           executable: morpheus

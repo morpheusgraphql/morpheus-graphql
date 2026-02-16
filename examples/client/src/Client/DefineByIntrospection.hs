@@ -77,16 +77,16 @@ declareLocalTypesInline
 
 usersApi :: ByteString -> IO ByteString
 usersApi _ =
-  pure
-    $ "{\"data\":{"
-    <> "\"myUser\":{ "
-    <> "   \"boo3\": \"name\","
-    <> "   \"myUserEmail\": \"some field\","
-    <> "   \"address\":{ \"city\":\"some city\" },"
-    <> "   \"customAdress\":{ \"customCity\":\"some custom city\" }"
-    <> "},"
-    <> " \"user\":{ \"email\":\"some email\" }"
-    <> "}}"
+  pure $
+    "{\"data\":{"
+      <> "\"myUser\":{ "
+      <> "   \"boo3\": \"name\","
+      <> "   \"myUserEmail\": \"some field\","
+      <> "   \"address\":{ \"city\":\"some city\" },"
+      <> "   \"customAdress\":{ \"customCity\":\"some custom city\" }"
+      <> "},"
+      <> " \"user\":{ \"email\":\"some email\" }"
+      <> "}}"
 
 fetchUsers :: IO (Either (FetchError GetUser) GetUser)
 fetchUsers = fetch usersApi userArgs

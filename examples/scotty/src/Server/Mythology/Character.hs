@@ -67,11 +67,11 @@ someDeity =
 
 dbDeity :: Text -> Maybe City -> IO (Either String Deity)
 dbDeity _ bornAt =
-  return
-    $ Right
-    $ Deity
-      { name = "Morpheus",
-        power = Just "Shapeshifting",
-        realm = Dream,
-        bornAt
-      }
+  return $
+    Right $
+      Deity
+        { name = "Morpheus",
+          power = Just "Shapeshifting",
+          realm = Dream,
+          bornAt
+        }

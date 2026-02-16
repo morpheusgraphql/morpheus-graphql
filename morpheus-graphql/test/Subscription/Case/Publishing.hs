@@ -78,8 +78,8 @@ triggerSubscription = do
   SimulationState {inputs, outputs, store} <-
     simulatePublish (Event [DEITY] Info {name = "Zeus", age = 1200}) state
       >>= simulatePublish (Event [HUMAN] Info {name = "Hercules", age = 18})
-  pure
-    $ testGroup
+  pure $
+    testGroup
       "publish event"
       [ inputsAreConsumed inputs,
         testResponse

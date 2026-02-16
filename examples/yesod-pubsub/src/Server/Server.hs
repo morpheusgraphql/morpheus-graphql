@@ -64,8 +64,8 @@ mkWebsocketApp serverState httpApp = do
   let morpheusApp = Data.Morpheus.deriveApp $ Gql.rootResolver serverState
   (wsApp, pub) <- MorpheusSub.webSocketsApp morpheusApp
   ServerState.savePublisher serverState pub
-  return
-    $ WaiWebSockets.websocketsOr
+  return $
+    WaiWebSockets.websocketsOr
       WebSockets.defaultConnectionOptions
       wsApp
       httpApp

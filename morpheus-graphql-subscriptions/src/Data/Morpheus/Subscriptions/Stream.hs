@@ -209,8 +209,7 @@ toOutStream app (Request req) =
   PubOutput $ handleResponseHTTP (app req)
 
 handleResponseHTTP ::
-  ( Monad m
-  ) =>
+  (Monad m) =>
   ResponseStream e m (Value VALID) ->
   ApiContext PUB e m ->
   m GQLResponse

@@ -225,8 +225,7 @@ instance Empty (ClientConnectionStore (Event ch con) m) where
   empty = ClientConnectionStore empty HM.empty HM.empty
 
 mapConnections ::
-  ( HashMap UUID (ClientConnection m) -> HashMap UUID (ClientConnection m)
-  ) ->
+  (HashMap UUID (ClientConnection m) -> HashMap UUID (ClientConnection m)) ->
   ClientConnectionStore e m ->
   ClientConnectionStore e m
 mapConnections f ClientConnectionStore {..} =

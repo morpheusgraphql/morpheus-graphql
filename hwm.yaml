@@ -1,136 +1,161 @@
-# hash: fc932d17a3c30a1c83767aa0321e10b9ce2b980c789df1e0fdc854a8ec2e0f28
+# hash: de11cb76fdd525ed1345a21b485d71e8be4a234b393b104b5d9b0f3fdc025b28
 name: morpheus-graphql
 version: 0.28.4
-bounds: '>= 0.28.0 && < 0.29.0'
+bounds: ">= 0.28.0 && < 0.29.0"
 workspace:
-- name: libs
-  members:
-  - tests
-  - core
-  - app
-  - subscriptions
-  - server
-  - code-gen-utils
-  - code-gen
-  - .
-  - client
-  prefix: morpheus-graphql
-  publish: true
-- name: examples
-  dir: examples
-  members:
-  - yesod-pubsub
-  - servant
-  - scotty-haxl
-  - scotty-freer-simple
-  - scotty-fraxl
-  - scotty
-  - code-gen-docs
-  - code-gen
-  - client
-  - subscription-extpubsub
-- name: helpers
-  dir: helpers
-  members:
-  - benchmarks
+  - name: libs
+    members:
+      - tests
+      - core
+      - app
+      - subscriptions
+      - server
+      - code-gen-utils
+      - code-gen
+      - .
+      - client
+    prefix: morpheus-graphql
+    publish: true
+  - name: examples
+    dir: examples
+    members:
+      - yesod-pubsub
+      - servant
+      - scotty-haxl
+      - scotty-freer-simple
+      - scotty-fraxl
+      - scotty
+      - code-gen-docs
+      - code-gen
+      - client
+      - subscription-extpubsub
+  - name: helpers
+    dir: helpers
+    members:
+      - benchmarks
 matrix:
-  default-environment: default
+  default-environment: stable
   environments:
-  - name: legacy
-    ghc: 8.10.7
-    resolver: lts-18.10
-    exclude:
-    - examples/subscription-extpubsub
-    extra-deps:
-      attoparsec-aeson: 2.1.0.0
-      dependent-map: 0.2.4.0
-      dependent-sum: '0.4'
-      fastsum: 0.1.1.1
-      fraxl: 0.3.0.0
-      graphql: 0.11.1.0
-      haxl: 2.5.1.1
-      type-aligned: 0.9.6
-  - name: default
-    ghc: 9.6.6
-    resolver: lts-22.30
-    exclude:
-    - examples/scotty-fraxl
-    - examples/scotty-freer-simple
-    - examples/scotty-haxl
-    - examples/subscription-extpubsub
-    extra-deps:
-      attoparsec-aeson: 2.1.0.0
-      dependent-map: 0.2.4.0
-      dependent-sum: '0.4'
-  - name: nightly
-    ghc: 9.10.3
-    resolver: lts-24.25
-    exclude:
-    - examples/scotty-fraxl
-    - examples/scotty-freer-simple
-    - examples/scotty-haxl
-    - examples/subscription-extpubsub
-    allow-newer: true
-    extra-deps:
-      fastsum: 0.1.1.1
-      fraxl: 0.3.0.0
-      haxl: 2.5.1.1
-      type-aligned: 0.9.6
+    - name: legacy
+      ghc: 8.4.4
+      resolver: lts-12.26
+      exclude:
+        - examples/subscription-extpubsub
+      extra-deps:
+        aeson: 1.4.4.0
+        attoparsec-aeson: 2.1.0.0
+        base-orphans: 0.8.1
+        dependent-map: 0.2.4.0
+        dependent-sum: "0.4"
+        fastsum: 0.1.0.0
+        fraxl: 0.3.0.0
+        graphql: 0.11.1.0
+        haxl: 2.5.1.1
+        megaparsec: 7.0.5
+        modern-uri: 0.3.0.0
+        prettyprinter: 1.7.0
+        relude: 0.3.0
+        req: 3.0.0
+        retry: 0.8.1.0
+        time-compat: 1.9.2.2
+        type-aligned: 0.9.6
+        websockets: 0.12.6.0
+    - name: maintenance
+      ghc: 8.10.7
+      resolver: lts-18.10
+      exclude:
+        - examples/subscription-extpubsub
+      extra-deps:
+        attoparsec-aeson: 2.1.0.0
+        dependent-map: 0.2.4.0
+        dependent-sum: "0.4"
+        fastsum: 0.1.1.1
+        fraxl: 0.3.0.0
+        graphql: 0.11.1.0
+        haxl: 2.5.1.1
+        type-aligned: 0.9.6
+    - name: stable
+      ghc: 9.6.6
+      resolver: lts-22.30
+      exclude:
+        - examples/scotty-fraxl
+        - examples/scotty-freer-simple
+        - examples/scotty-haxl
+        - examples/subscription-extpubsub
+      extra-deps:
+        attoparsec-aeson: 2.1.0.0
+        dependent-map: 0.2.4.0
+        dependent-sum: "0.4"
+    - name: latest
+      ghc: 9.10.3
+      resolver: lts-24.25
+      exclude:
+        - examples/scotty-fraxl
+        - examples/scotty-freer-simple
+        - examples/scotty-haxl
+        - examples/subscription-extpubsub
+      allow-newer: true
+      extra-deps:
+        fastsum: 0.1.1.1
+        fraxl: 0.3.0.0
+        haxl: 2.5.1.1
+        type-aligned: 0.9.6
 registry:
-- Glob                  >=  0.7.0     &&  <  1.0.0
-- aeson                 >=  1.4.4     &&  <  3.0.0
-- attoparsec-aeson      >=  2.1.0.0   &&  <  3.0.0
-- base                  >=  4.7.0     &&  <  5.0.0
-- blaze-html            >=  0.2       &&  <  1.0.0
-- bytestring            >=  0.10.4    &&  <  1.0.0
-- containers            >=  0.4.2.1   &&  <  1.0.0
-- criterion             >=  1.0       &&  <  2.0.0
-- directory             >=  1.0.0     &&  <  2.0.0
-- extra                 >=  1.0.0     &&  <  2.0.0
-- file-embed            >=  0.0.10    &&  <  1.0.0
-- filepath              >=  1.1.0     &&  <  2.0.0
-- fraxl                 >=  0.1       &&  <  1.0.0
-- freer-simple          >=  1.0       &&  <  3.0.0
-- graphql               >=  0.5       &&  <  2.0.0
-- hashable              >=  1.0.0     &&  <  2.0.0
-- haxl                  >=  0.1.0     &&  <  3.0.0
-- http-media            >=  0.5       &&  <  1.0.0
-- http-types            >=  0.5       &&  <  1.0.0
-- megaparsec            >=  7.0.0     &&  <  10.0.0
-- modern-uri            >=  0.1.0.0   &&  <  1.0.0
-- mtl                   >=  2.0.0     &&  <  3.0.0
-- optparse-applicative  >=  0.12.0    &&  <  1.0.0
-- prettyprinter         >=  1.7.0     &&  <  2.0.0
-- relude                >=  0.3.0     &&  <  2.0.0
-- req                   >=  3.0.0     &&  <  4.0.0
-- scientific            >=  0.3.6.2   &&  <  0.4.0
-- scotty                >=  0.6.0     &&  <  1.0.0
-- servant-server        >=  0.2       &&  <  1.0.0
-- shakespeare           >=  1.0       &&  <  3.0.0
-- stm                   >=  2.1       &&  <  3.0.0
-- tasty                 >=  0.1.0     &&  <  2.0.0
-- tasty-hunit           >=  0.1.0     &&  <  1.0.0
-- template-haskell      >=  2.0.0     &&  <  3.0.0
-- text                  >=  1.2.3     &&  <  3.0.0
-- th-lift-instances     >=  0.1.1     &&  <  1.0.0
-- transformers          >=  0.3.0     &&  <  1.0.0
-- unliftio-core         >=  0.0.1     &&  <  1.0.0
-- unordered-containers  >=  0.2.8     &&  <  1.0.0
-- uuid                  >=  1.0.0     &&  <  2.0.0
-- vector                >=  0.12.0.1  &&  <  1.0.0
-- wai                   >=  1.0.0     &&  <  4.0.0
-- wai-cors              >=  0.1.0     &&  <  1.0.0
-- wai-websockets        >=  1.0.0     &&  <  4.0.0
-- warp                  >=  1.0.0     &&  <  4.0.0
-- websockets            >=  0.12.6.0  &&  <  1.0.0
-- wuss                  >=  1.0.0     &&  <  3.0.0
-- yaml                  >=  0.8.32    &&  <  1.0.0
-- yesod                 >=  0.5       &&  <  2.0.0
-- yesod-core            >=  1.0       &&  <  2.0.0
+  - Glob                  >=  0.7.0     &&  <  1.0.0
+  - aeson                 >=  1.4.4     &&  <  3.0.0
+  - attoparsec-aeson      >=  2.1.0.0   &&  <  3.0.0
+  - base                  >=  4.7.0     &&  <  5.0.0
+  - blaze-html            >=  0.2       &&  <  1.0.0
+  - bytestring            >=  0.10.4    &&  <  1.0.0
+  - containers            >=  0.4.2.1   &&  <  1.0.0
+  - criterion             >=  1.0       &&  <  2.0.0
+  - directory             >=  1.0.0     &&  <  2.0.0
+  - extra                 >=  1.0.0     &&  <  2.0.0
+  - file-embed            >=  0.0.10    &&  <  1.0.0
+  - filepath              >=  1.1.0     &&  <  2.0.0
+  - fraxl                 >=  0.1       &&  <  1.0.0
+  - freer-simple          >=  1.0       &&  <  3.0.0
+  - graphql               >=  0.5       &&  <  2.0.0
+  - hashable              >=  1.0.0     &&  <  2.0.0
+  - haxl                  >=  0.1.0     &&  <  3.0.0
+  - http-media            >=  0.5       &&  <  1.0.0
+  - http-types            >=  0.5       &&  <  1.0.0
+  - megaparsec            >=  7.0.0     &&  <  10.0.0
+  - modern-uri            >=  0.1.0.0   &&  <  1.0.0
+  - mtl                   >=  2.0.0     &&  <  3.0.0
+  - optparse-applicative  >=  0.12.0    &&  <  1.0.0
+  - prettyprinter         >=  1.7.0     &&  <  2.0.0
+  - relude                >=  0.3.0     &&  <  2.0.0
+  - req                   >=  3.0.0     &&  <  4.0.0
+  - scientific            >=  0.3.6.2   &&  <  0.4.0
+  - scotty                >=  0.6.0     &&  <  1.0.0
+  - servant-server        >=  0.2       &&  <  1.0.0
+  - shakespeare           >=  1.0       &&  <  3.0.0
+  - stm                   >=  2.1       &&  <  3.0.0
+  - tasty                 >=  0.1.0     &&  <  2.0.0
+  - tasty-hunit           >=  0.1.0     &&  <  1.0.0
+  - template-haskell      >=  2.0.0     &&  <  3.0.0
+  - text                  >=  1.2.3     &&  <  3.0.0
+  - th-lift-instances     >=  0.1.1     &&  <  1.0.0
+  - transformers          >=  0.3.0     &&  <  1.0.0
+  - unliftio-core         >=  0.0.1     &&  <  1.0.0
+  - unordered-containers  >=  0.2.8     &&  <  1.0.0
+  - uuid                  >=  1.0.0     &&  <  2.0.0
+  - vector                >=  0.12.0.1  &&  <  1.0.0
+  - wai                   >=  1.0.0     &&  <  4.0.0
+  - wai-cors              >=  0.1.0     &&  <  1.0.0
+  - wai-websockets        >=  1.0.0     &&  <  4.0.0
+  - warp                  >=  1.0.0     &&  <  4.0.0
+  - websockets            >=  0.12.6.0  &&  <  1.0.0
+  - wuss                  >=  1.0.0     &&  <  3.0.0
+  - yaml                  >=  0.8.32    &&  <  1.0.0
+  - yesod                 >=  0.5       &&  <  2.0.0
+  - yesod-core            >=  1.0       &&  <  2.0.0
 scripts:
   build: stack build --fast
   clean: find . -name "*.cabal" -exec rm -rf {} \; && stack clean
   install: stack install
-  lint: curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh
-    -s .
   test: stack test {TARGET} --fast
+  lint: curl -sSL https://raw.githubusercontent.com/ndmitchell/hlint/master/misc/run.sh | sh -s .
+  format: curl -fsSL "https://raw.githubusercontent.com/nalchevanidze/hwm/main/scripts/format.sh" | bash -s
+  format:fix: curl -fsSL "https://raw.githubusercontent.com/nalchevanidze/hwm/main/scripts/format.sh" | bash -s -- --fix

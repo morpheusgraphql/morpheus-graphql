@@ -14,12 +14,12 @@ resolveUser ::
   ID ->
   m (Maybe (User m))
 resolveUser postId =
-  pure
-    $ Just
-    $ User
-      { Domains.Users.Users.id = pure postId,
-        name = pure "User Tittle"
-      }
+  pure $
+    Just $
+      User
+        { Domains.Users.Users.id = pure postId,
+          name = pure "User Tittle"
+        }
 
 resolveQuery :: (Monad m) => Query m
 resolveQuery =

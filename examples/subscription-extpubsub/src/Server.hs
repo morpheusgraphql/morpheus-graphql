@@ -113,8 +113,7 @@ newtype Subscription m = Subscription
 
 subscriptionInstance ::
   Subscription
-    ( Resolver SUBSCRIPTION (Event EventChannel EventContent) IO
-    )
+    (Resolver SUBSCRIPTION (Event EventChannel EventContent) IO)
 subscriptionInstance =
   Subscription
     { listenToPostgres = subscribe [PgChannel] (pure subResolver)

@@ -47,8 +47,8 @@ rootResolver =
     { queryResolver =
         Query
           { deity =
-              const
-                $ pure
+              const $
+                pure
                   Deity
                     { name =
                         "Morpheus",

@@ -46,13 +46,13 @@ instance ResolveNamed m (Entity (NamedResolverT m)) where
 instance ResolveNamed m (Query (NamedResolverT m)) where
   type Dep (Query (NamedResolverT m)) = ()
   resolveBatched =
-    ignoreBatching
-      $ const
-      $ pure
-        Query
-          { entities = resolve (pure allEntities),
-            entity = \(Arg uid) -> resolve (pure uid)
-          }
+    ignoreBatching $
+      const $
+        pure
+          Query
+            { entities = resolve (pure allEntities),
+              entity = \(Arg uid) -> resolve (pure uid)
+            }
 
 entitiesApp :: App () IO
 entitiesApp = deriveApp (NamedResolvers :: NamedResolvers IO () Query Undefined Undefined)

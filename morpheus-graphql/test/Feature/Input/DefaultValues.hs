@@ -39,11 +39,11 @@ rootResolver =
   where
     user :: (Applicative m) => m (Maybe (User m))
     user =
-      pure
-        $ Just
-        $ User
-          { inputs = pure . pack . show
-          }
+      pure $
+        Just $
+          User
+            { inputs = pure . pack . show
+            }
     testSimple = pure . pack . show
 
 -----------------------------------

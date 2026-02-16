@@ -152,8 +152,8 @@ runBatch :: BatchedReq -> DB.Query BatchedRes
 runBatch BatchedReq {memberInstrumentIDs, memberBandIDs, bandIDs} =
   BatchedRes
     <$> DB.getBandMembersByInstrumentID memberInstrumentIDs
-    <*> DB.getBandMembersByBandID memberBandIDs
-    <*> DB.getBandsByID bandIDs
+      <*> DB.getBandMembersByBandID memberBandIDs
+      <*> DB.getBandsByID bandIDs
 
 -- This, `doFetch` helper actually provides the value for each `Source a`, while
 -- reading from a `BatchedRes` result.
@@ -235,7 +235,7 @@ isSchema = param "schema"
 
 httpEndpoint :: RoutePattern -> ScottyM ()
 httpEndpoint route = do
-  get route
-    $ (isSchema *> raw (render app))
-    <|> raw httpPlayground
+  get route $
+    (isSchema *> raw (render app))
+      <|> raw httpPlayground
   post route (raw . DB.runQuery . runFraxl fetchSource . runApp app =<< body)

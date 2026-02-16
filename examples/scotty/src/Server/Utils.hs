@@ -63,16 +63,16 @@ httpEndpoint ::
   App e IO ->
   ScottyM ()
 httpEndpoint route publish app = do
-  get route
-    $ (isSchema *> raw (render app))
-    <|> raw httpPlayground
+  get route $
+    (isSchema *> raw (render app))
+      <|> raw httpPlayground
   post route $ raw =<< (liftIO . httpPubApp publish app =<< body)
 
 startServer :: ServerApp -> ScottyM () -> IO ()
 startServer wsApp app = do
   httpApp <- scottyApp app
-  runSettings settings
-    $ websocketsOr
+  runSettings settings $
+    websocketsOr
       defaultConnectionOptions
       wsApp
       httpApp

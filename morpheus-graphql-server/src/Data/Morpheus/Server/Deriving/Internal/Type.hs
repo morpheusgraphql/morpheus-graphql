@@ -210,8 +210,8 @@ toTypeDefinition ::
   GQLResult (TypeDefinition cat CONST)
 toTypeDefinition ctx proxy content = do
   dirs <- serializeDirectives ctx (getTypeDirectives ctx proxy)
-  pure
-    $ TypeDefinition
+  pure $
+    TypeDefinition
       (visitTypeDescription ctx proxy Nothing)
       (useTypename ctx proxy)
       dirs

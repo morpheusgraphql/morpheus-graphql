@@ -294,7 +294,7 @@ gqlTypeToInstance GQLTypeDefinition {..} =
         assoc = [(''KIND, AssociatedTypeName (toName gqlKind))],
         typeClassMethods =
           [ ('directives, ProxyArgument, ServerMethodDirectives gqlTypeDirectiveUses)
-            | not (null gqlTypeDirectiveUses)
+          | not (null gqlTypeDirectiveUses)
           ]
       }
 

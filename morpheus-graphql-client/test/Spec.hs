@@ -25,8 +25,8 @@ import Prelude
 
 main :: IO ()
 main =
-  defaultMain
-    $ testGroup
+  defaultMain $
+    testGroup
       "Client tests"
       [ Interface.test,
         LowercaseTypeName.test,

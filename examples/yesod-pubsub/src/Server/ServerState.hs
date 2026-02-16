@@ -40,8 +40,8 @@ new :: IO ServerState
 new = do
   initCounter <- newIORef 0
   initPublisher <- newIORef $ \_ -> return () -- Initially, NOP
-  return
-    $ ServerState
+  return $
+    ServerState
       { counter = initCounter,
         publisher = initPublisher
       }

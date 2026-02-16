@@ -63,8 +63,8 @@ instance ResolveNamed m (Author (NamedResolverT m)) where
   resolveBatched = traverse getAuthor
     where
       getAuthor uid =
-        pure
-          $ Just
+        pure $
+          Just
             Author
               { authorId = resolve (pure uid),
                 role = resolve (pure uid),
@@ -85,8 +85,8 @@ instance ResolveNamed m (Post (NamedResolverT m)) where
   resolveBatched = traverse getPost
     where
       getPost uid =
-        pure
-          $ Just
+        pure $
+          Just
             Post
               { author = resolve (pure uid)
               }

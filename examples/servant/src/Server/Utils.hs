@@ -77,8 +77,8 @@ startServer ::
   Server api ->
   IO ()
 startServer wsApp proxy api =
-  runSettings settings
-    $ websocketsOr
+  runSettings settings $
+    websocketsOr
       defaultConnectionOptions
       wsApp
       (serve proxy api)

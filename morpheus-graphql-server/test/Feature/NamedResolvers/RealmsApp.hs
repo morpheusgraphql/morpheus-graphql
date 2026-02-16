@@ -41,8 +41,8 @@ import Feature.NamedResolvers.Realms
 getRealm :: (Monad m) => ID -> m (Maybe (Realm (NamedResolverT m)))
 getRealm uid
   | uid `elem` allRealms =
-      pure
-        $ Just
+      pure $
+        Just
           Realm
             { name = resolve (getRealmName uid),
               owner = resolve (getOwner uid),
@@ -67,13 +67,13 @@ getDeity arg
 instance ResolveNamed m (Query (NamedResolverT m)) where
   type Dep (Query (NamedResolverT m)) = ()
   resolveBatched =
-    ignoreBatching
-      $ const
-      $ pure
-        Query
-          { realm = \(Arg arg) -> resolve (pure arg),
-            realms = resolve (pure allRealms)
-          }
+    ignoreBatching $
+      const $
+        pure
+          Query
+            { realm = \(Arg arg) -> resolve (pure arg),
+              realms = resolve (pure allRealms)
+            }
 
 realmsApp :: App () IO
 realmsApp =

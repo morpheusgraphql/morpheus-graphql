@@ -1,4 +1,4 @@
-name: Haskell CI
+name: CI
 
 on:
   pull_request:
@@ -11,16 +11,26 @@ jobs:
   build:
     strategy:
       matrix:
-        ghc: ["8.4.4", "8.6.5", "8.8.3", "8.10.7", "9.0.2", "9.10.3"]
+        include:
+          - env: legacy
+            ghc: 8.4.4
+          - env: maintenance
+            ghc: 8.10.7
+          - env: stable
+            ghc: 9.6.6
+          - env: latest
+            ghc: 9.10.3
       fail-fast: false
     runs-on: ubuntu-latest
-    name: GHC ${{ matrix.ghc}}
+    name: GHC ${{ matrix.ghc }} (${{ matrix.env }})
     steps:
       - uses: actions/checkout@v4
-      - uses: nalchevanidze/hmm/actions/ghc@main
+      - uses: nalchevanidze/hwm/actions/ghc@v0.0.5
         with:
           ghc: ${{ matrix.ghc }}
-      - run: hmm use ${{ matrix.ghc }}
+
+      - name: Sync environment
+        run: hwm sync ${{ matrix.env }}
 
       - name: Install dependencies
         run: stack build --fast --skip-ghc-check --no-terminal --test --only-dependencies
@@ -39,20 +49,16 @@ jobs:
           stack install --fast morpheus-graphql-code-gen
           morpheus check
 
-  hlint:
+  style:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Lint
-        run: curl -sSL https://raw.github.com/ndmitchell/hlint/master/misc/run.sh | sh -s .
 
-  format:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: nalchevanidze/hmm/actions/cli@main
-      - name: Format
-        run: hmm format --check
+      - name: lint
+        run: hwm lint
+
+      - name: format
+        run: hwm format
 
   artifacts:
     strategy:
@@ -63,10 +69,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - uses: nalchevanidze/hmm/actions/ghc@main
+      - uses: nalchevanidze/hwm/actions/ghc@v0.0.5
 
       - name: Binary
-        uses: nalchevanidze/hmm/actions/pkg@main
+        uses: nalchevanidze/hwm/actions/pkg@v0.0.5
         with:
           package: morpheus-graphql-code-gen
           executable: morpheus

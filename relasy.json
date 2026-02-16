@@ -12,8 +12,8 @@
   "project": {
     "type": "custom",
     "pkg": "https://hackage.haskell.org/package/{{PKG}}",
-    "version": "hmm version",
-    "bump": "hmm version {{BUMP}}",
-    "postBump": "hmm sync"
+    "version": "hwm version",
+    "bump": "hwm version {{BUMP}}",
+    "postBump": "hwm sync"
   }
 }
