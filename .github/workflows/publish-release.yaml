@@ -16,7 +16,7 @@ jobs:
       upload_url: ${{ steps.publish.outputs.upload_url }}
     steps:
       - uses: actions/checkout@v4
-      - uses: nalchevanidze/hwm/actions/ghc@v0.0.5
+      - uses: ./.github/actions/setup
 
       - name: Upload Packages
         run: hwm publish libs
@@ -59,7 +59,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - uses: nalchevanidze/hwm/actions/ghc@v0.0.5
+      - uses: ./.github/actions/setup
 
       - name: Upload Executable Binary
         uses: nalchevanidze/hwm/actions/pkg@v0.0.5

@@ -14,7 +14,7 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - uses: nalchevanidze/hwm/actions/ghc@v0.0.5
+      - uses: ./.github/actions/setup
 
       - name: Draft Release PR (compute version + commit bump + changelog + open PR)
         uses: nalchevanidze/relasy/actions/draft-release@v1.1.1

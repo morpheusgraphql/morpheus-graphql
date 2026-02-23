@@ -25,7 +25,7 @@ jobs:
     name: GHC ${{ matrix.ghc }} (${{ matrix.env }})
     steps:
       - uses: actions/checkout@v4
-      - uses: nalchevanidze/hwm/actions/ghc@v0.0.5
+      - uses: ./.github/actions/setup
         with:
           ghc: ${{ matrix.ghc }}
 
@@ -70,7 +70,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - uses: nalchevanidze/hwm/actions/ghc@v0.0.5
+      - uses: ./.github/actions/setup
 
       - name: Binary
         uses: nalchevanidze/hwm/actions/pkg@v0.0.5
