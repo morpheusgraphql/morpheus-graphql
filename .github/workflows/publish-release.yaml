@@ -59,13 +59,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup
-
-      - name: Upload Executable Binary
-        uses: nalchevanidze/hwm/actions/pkg@v0.0.5
         with:
-          package: morpheus-graphql-code-gen
-          executable: morpheus
-          smoke_test: about
-          upload_url: ${{ needs.publish_release.outputs.upload_url }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          ref: main
+          fetch-depth: 0
+      - uses: ./.github/actions/setup
+      - run: stack build --fast --skip-ghc-check --no-terminal --only-dependencies
+      - name: Upload Artifacts
+        run: hwm release artifacts --github
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

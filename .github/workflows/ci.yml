@@ -71,14 +71,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
-
-      - name: Binary
-        uses: nalchevanidze/hwm/actions/pkg@v0.0.5
-        with:
-          package: morpheus-graphql-code-gen
-          executable: morpheus
-          smoke_test: about
-
+     - name: Install dependencies
+        run: stack build --fast --skip-ghc-check --no-terminal --test --only-dependencies
+      - name: Test Archiving
+        shell: bash
+        run: hwm release artifacts
 concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: true
