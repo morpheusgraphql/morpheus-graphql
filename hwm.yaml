@@ -150,6 +150,8 @@ registry:
   - yesod                 >=  0.5       &&  <  2.0.0
   - yesod-core            >=  1.0       &&  <  2.0.0
 release:
+  artifacts:
+    morpheus: libs/code-gen:morpheus
   publish:
     main:
       - libs
