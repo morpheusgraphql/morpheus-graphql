@@ -16,15 +16,14 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
 
-      - name: Upload Packages
-        run: hwm publish main
+      - name: Publish
+        run: hwm release publish
         env:
           HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
           HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
 
       - name: Publish GitHub Release (from merged release PR)
         uses: nalchevanidze/relasy/actions/publish-release@v1.1.1
-        id: publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -40,7 +39,6 @@ jobs:
             target: mac-os
           - os: windows-latest
             target: windows
-
     name: Upload Artifact ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
     steps:
@@ -49,7 +47,6 @@ jobs:
           ref: main
           fetch-depth: 0
       - uses: ./.github/actions/setup
-      - run: stack build --fast --skip-ghc-check --no-terminal --only-dependencies
       - name: Upload Artifacts
         run: hwm release artifacts --github
         env:
