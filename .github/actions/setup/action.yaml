@@ -33,13 +33,5 @@ runs:
         restore-keys: |
           ${{ runner.os }}-${{ inputs.ghc }}-stack-
 
-    - name: Build and Install
-      shell: bash
-      run: echo "$(stack path --local-bin)" >> $GITHUB_PATH
-
-    - name: Build and Install
-      shell: bash
-      run: |
-        hash -r || true
-        stack install --fast
-        hwm --version
+    - name: Install HWM
+      uses: nalchevanidze/hwm/actions/cli@main
