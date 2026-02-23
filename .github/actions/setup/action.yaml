@@ -1,0 +1,37 @@
+name: Setup
+inputs:
+  ghc:
+    description: GHC Version
+    required: false
+    default: 9.6.3
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set Stack Root
+      shell: bash
+      run: |
+        if [ "$RUNNER_OS" == "Windows" ]; then
+          echo "STACK_ROOT=${{ github.workspace }}\.stack" >> $GITHUB_ENV
+        fi
+
+    - name: Install GHC
+      uses: haskell-actions/setup@v2.9.0
+      with:
+        ghc-version: ${{ inputs.ghc }}
+        enable-stack: true
+        stack-setup-ghc: true
+
+    - name: Cache
+      uses: actions/cache@v5
+      with:
+        path: |
+          ${{ env.STACK_ROOT }}
+          ~/.stack
+          .stack-work
+        key: ${{ runner.os }}-${{ inputs.ghc }}-stack-${{ hashFiles('stack.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-${{ inputs.ghc }}-stack-
+
+    - name: Install HWM
+      uses: nalchevanidze/hwm/actions/cli@main

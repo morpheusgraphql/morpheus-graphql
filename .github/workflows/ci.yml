@@ -25,7 +25,7 @@ jobs:
     name: GHC ${{ matrix.ghc }} (${{ matrix.env }})
     steps:
       - uses: actions/checkout@v4
-      - uses: nalchevanidze/hwm/actions/ghc@v0.0.5
+      - uses: ./.github/actions/setup
         with:
           ghc: ${{ matrix.ghc }}
 
@@ -53,7 +53,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: nalchevanidze/hwm/actions/cli@v0.0.5
+      - uses: nalchevanidze/hwm/actions/cli@main
 
       - name: lint
         run: hwm lint
@@ -70,14 +70,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - uses: nalchevanidze/hwm/actions/ghc@v0.0.5
+      - uses: ./.github/actions/setup
 
-      - name: Binary
-        uses: nalchevanidze/hwm/actions/pkg@v0.0.5
-        with:
-          package: morpheus-graphql-code-gen
-          executable: morpheus
-          smoke_test: about
+      - name: Install dependencies
+        run: stack build --fast --skip-ghc-check --no-terminal --test --only-dependencies
+
+      - name: Test Archiving
+        shell: bash
+        run: hwm release artifacts
 
 concurrency:
   group: ${{ github.ref }}

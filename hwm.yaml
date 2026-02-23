@@ -1,22 +1,8 @@
-# hash: de11cb76fdd525ed1345a21b485d71e8be4a234b393b104b5d9b0f3fdc025b28
+# hash: 90a6a758cb589bb1cf41c23afda4fcc86112abfa3b2b47b446744d795b193de6
 name: morpheus-graphql
 version: 0.28.4
-bounds: ">= 0.28.0 && < 0.29.0"
 workspace:
-  - name: libs
-    members:
-      - tests
-      - core
-      - app
-      - subscriptions
-      - server
-      - code-gen-utils
-      - code-gen
-      - .
-      - client
-    prefix: morpheus-graphql
-    publish: true
-  - name: examples
+  examples:
     dir: examples
     members:
       - yesod-pubsub
@@ -24,19 +10,31 @@ workspace:
       - scotty-haxl
       - scotty-freer-simple
       - scotty-fraxl
-      - scotty
       - code-gen-docs
+      - scotty
       - code-gen
       - client
       - subscription-extpubsub
-  - name: helpers
+  helpers:
     dir: helpers
     members:
       - benchmarks
-matrix:
-  default-environment: stable
-  environments:
-    - name: legacy
+  libs:
+    members:
+      - app
+      - code-gen-utils
+      - server
+      - tests
+      - core
+      - subscriptions
+      - code-gen
+      - client
+      - .
+    prefix: morpheus-graphql
+environments:
+  default: stable
+  targets:
+    legacy:
       ghc: 8.4.4
       resolver: lts-12.26
       exclude:
@@ -60,7 +58,7 @@ matrix:
         time-compat: 1.9.2.2
         type-aligned: 0.9.6
         websockets: 0.12.6.0
-    - name: maintenance
+    maintenance:
       ghc: 8.10.7
       resolver: lts-18.10
       exclude:
@@ -74,7 +72,7 @@ matrix:
         graphql: 0.11.1.0
         haxl: 2.5.1.1
         type-aligned: 0.9.6
-    - name: stable
+    stable:
       ghc: 9.6.6
       resolver: lts-22.30
       exclude:
@@ -86,7 +84,7 @@ matrix:
         attoparsec-aeson: 2.1.0.0
         dependent-map: 0.2.4.0
         dependent-sum: "0.4"
-    - name: latest
+    latest:
       ghc: 9.10.3
       resolver: lts-24.25
       exclude:
@@ -151,11 +149,23 @@ registry:
   - yaml                  >=  0.8.32    &&  <  1.0.0
   - yesod                 >=  0.5       &&  <  2.0.0
   - yesod-core            >=  1.0       &&  <  2.0.0
+release:
+  artifacts:
+    morpheus: libs/code-gen:morpheus
+  publish:
+    main:
+      - libs
 scripts:
   build: stack build --fast
   clean: find . -name "*.cabal" -exec rm -rf {} \; && stack clean
+  format:
+    curl -fsSL "https://raw.githubusercontent.com/nalchevanidze/hwm/main/scripts/format.sh"
+    | bash -s
+  format:fix:
+    curl -fsSL "https://raw.githubusercontent.com/nalchevanidze/hwm/main/scripts/format.sh"
+    | bash -s -- --fix
   install: stack install
+  lint:
+    curl -sSL https://raw.githubusercontent.com/ndmitchell/hlint/master/misc/run.sh
+    | sh -s .
   test: stack test {TARGET} --fast
-  lint: curl -sSL https://raw.githubusercontent.com/ndmitchell/hlint/master/misc/run.sh | sh -s .
-  format: curl -fsSL "https://raw.githubusercontent.com/nalchevanidze/hwm/main/scripts/format.sh" | bash -s
-  format:fix: curl -fsSL "https://raw.githubusercontent.com/nalchevanidze/hwm/main/scripts/format.sh" | bash -s -- --fix
