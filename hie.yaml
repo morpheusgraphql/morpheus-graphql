@@ -2,36 +2,6 @@ cradle:
   stack:
     stackYaml: ./stack.yaml
     components:
-    - path: ./morpheus-graphql-tests/src
-      component: morpheus-graphql-tests:lib
-    - path: ./morpheus-graphql-core/src
-      component: morpheus-graphql-core:lib
-    - path: ./morpheus-graphql-core/test
-      component: morpheus-graphql-core:test:morpheus-graphql-core-test
-    - path: ./morpheus-graphql-app/src
-      component: morpheus-graphql-app:lib
-    - path: ./morpheus-graphql-app/test
-      component: morpheus-graphql-app:test:morpheus-graphql-app-test
-    - path: ./morpheus-graphql-subscriptions/src
-      component: morpheus-graphql-subscriptions:lib
-    - path: ./morpheus-graphql-server/src
-      component: morpheus-graphql-server:lib
-    - path: ./morpheus-graphql-server/test
-      component: morpheus-graphql-server:test:morpheus-graphql-server-test
-    - path: ./morpheus-graphql-code-gen-utils/src
-      component: morpheus-graphql-code-gen-utils:lib
-    - path: ./morpheus-graphql-code-gen/src
-      component: morpheus-graphql-code-gen:lib
-    - path: ./morpheus-graphql-code-gen/app
-      component: morpheus-graphql-code-gen:exe:morpheus
-    - path: ./morpheus-graphql/src
-      component: morpheus-graphql:lib
-    - path: ./morpheus-graphql/test
-      component: morpheus-graphql:test:morpheus-graphql-test
-    - path: ./morpheus-graphql-client/src
-      component: morpheus-graphql-client:lib
-    - path: ./morpheus-graphql-client/test
-      component: morpheus-graphql-client:test:morpheus-graphql-client-test
     - path: ./examples/yesod-pubsub/src
       component: morpheus-graphql-examples-yesod-pubsub:lib
     - path: ./examples/yesod-pubsub/test
@@ -46,10 +16,10 @@ cradle:
       component: morpheus-graphql-examples-scotty-freer:exe:scotty-freer-server
     - path: ./examples/scotty-fraxl/src
       component: morpheus-graphql-examples-scotty-fraxl:exe:scotty-server-fraxl
-    - path: ./examples/scotty/src
-      component: morpheus-graphql-examples-scotty:exe:scotty-server
     - path: ./examples/code-gen-docs/src
       component: morpheus-graphql-examples-code-gen-docs:exe:code-gen-docs-server
+    - path: ./examples/scotty/src
+      component: morpheus-graphql-examples-scotty:exe:scotty-server
     - path: ./examples/code-gen/src
       component: morpheus-graphql-examples-code-gen:exe:generated-server
     - path: ./examples/client/src
@@ -60,3 +30,33 @@ cradle:
       component: examples-subscription-extpubsub:exe:examples-subscription-extpubsub-exe
     - path: ./helpers/benchmarks/src
       component: morpheus-graphql-benchmarks:bench:morpheus-graphql-bench
+    - path: ./morpheus-graphql-app/src
+      component: morpheus-graphql-app:lib
+    - path: ./morpheus-graphql-app/test
+      component: morpheus-graphql-app:test:morpheus-graphql-app-test
+    - path: ./morpheus-graphql-code-gen-utils/src
+      component: morpheus-graphql-code-gen-utils:lib
+    - path: ./morpheus-graphql-server/src
+      component: morpheus-graphql-server:lib
+    - path: ./morpheus-graphql-server/test
+      component: morpheus-graphql-server:test:morpheus-graphql-server-test
+    - path: ./morpheus-graphql-tests/src
+      component: morpheus-graphql-tests:lib
+    - path: ./morpheus-graphql-core/src
+      component: morpheus-graphql-core:lib
+    - path: ./morpheus-graphql-core/test
+      component: morpheus-graphql-core:test:morpheus-graphql-core-test
+    - path: ./morpheus-graphql-subscriptions/src
+      component: morpheus-graphql-subscriptions:lib
+    - path: ./morpheus-graphql-code-gen/src
+      component: morpheus-graphql-code-gen:lib
+    - path: ./morpheus-graphql-code-gen/app
+      component: morpheus-graphql-code-gen:exe:morpheus
+    - path: ./morpheus-graphql-client/src
+      component: morpheus-graphql-client:lib
+    - path: ./morpheus-graphql-client/test
+      component: morpheus-graphql-client:test:morpheus-graphql-client-test
+    - path: ./morpheus-graphql/src
+      component: morpheus-graphql:lib
+    - path: ./morpheus-graphql/test
+      component: morpheus-graphql:test:morpheus-graphql-test

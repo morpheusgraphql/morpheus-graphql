@@ -1,21 +1,21 @@
 resolver: lts-22.30
 packages:
-- morpheus-graphql-tests
-- morpheus-graphql-core
-- morpheus-graphql-app
-- morpheus-graphql-subscriptions
-- morpheus-graphql-server
-- morpheus-graphql-code-gen-utils
-- morpheus-graphql-code-gen
-- morpheus-graphql
-- morpheus-graphql-client
 - examples/yesod-pubsub
 - examples/servant
-- examples/scotty
 - examples/code-gen-docs
+- examples/scotty
 - examples/code-gen
 - examples/client
 - helpers/benchmarks
+- morpheus-graphql-app
+- morpheus-graphql-code-gen-utils
+- morpheus-graphql-server
+- morpheus-graphql-tests
+- morpheus-graphql-core
+- morpheus-graphql-subscriptions
+- morpheus-graphql-code-gen
+- morpheus-graphql-client
+- morpheus-graphql
 save-hackage-creds: false
 extra-deps:
 - attoparsec-aeson-2.1.0.0
