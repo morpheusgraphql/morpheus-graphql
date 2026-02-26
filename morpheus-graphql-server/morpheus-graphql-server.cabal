@@ -20,6 +20,7 @@ build-type:     Simple
 extra-source-files:
     README.md
     changelog.md
+    src/Data/Morpheus/Server/Playground/index.html
 data-files:
     test/Feature/Collision/category-collision-fail/query.gql
     test/Feature/Collision/category-collision-success/query.gql
@@ -360,6 +361,7 @@ library
     , base >=4.7.0 && <5.0.0
     , bytestring >=0.10.4 && <1.0.0
     , containers >=0.4.2.1 && <1.0.0
+    , file-embed >=0.0.10 && <1.0.0
     , morpheus-graphql-app >=0.28.0 && <0.29.0
     , morpheus-graphql-core >=0.28.0 && <0.29.0
     , mtl >=2.0.0 && <3.0.0
