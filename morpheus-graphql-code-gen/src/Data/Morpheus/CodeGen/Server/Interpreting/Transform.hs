@@ -15,6 +15,7 @@ module Data.Morpheus.CodeGen.Server.Interpreting.Transform
 where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
+import Data.List (nub)
 import Data.Morpheus.CodeGen.Internal.AST
   ( AssociatedType (..),
     CodeGenConstructor (..),
@@ -100,7 +101,9 @@ parseServerTypeDefinitions :: (CodeGenMonad m) => CodeGenConfig -> ByteString ->
 parseServerTypeDefinitions ctx txt =
   case parseDefinitions txt of
     Failure errors -> fail (renderGQLErrors errors)
-    Success {result, warnings} -> printWarnings warnings >> toTHDefinitions (namespace ctx) result
+    Success {result, warnings} -> do
+        printWarnings warnings
+        first nub <$> toTHDefinitions (namespace ctx) result
 
 getExternals :: [ServerDeclaration] -> Flags
 getExternals xs =

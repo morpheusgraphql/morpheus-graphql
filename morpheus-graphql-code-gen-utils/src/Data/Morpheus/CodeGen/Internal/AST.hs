@@ -62,7 +62,7 @@ data DerivingClass
   = SHOW
   | GENERIC
   | CLASS_EQ
-  deriving (Show)
+  deriving (Eq, Show)
 
 instance Pretty DerivingClass where
   pretty SHOW = "Show"
@@ -77,7 +77,7 @@ data TypeValue
   | TypeValueList [TypeValue]
   | TypedValueMaybe (Maybe TypeValue)
   | PrintableTypeValue PrintableValue
-  deriving (Show)
+  deriving (Eq, Show)
 
 renderField :: (FieldName, TypeValue) -> Doc n
 renderField (fName, fValue) = pretty (unpackName fName :: Text) <+> "=" <+> pretty fValue
@@ -101,7 +101,7 @@ data CodeGenType = CodeGenType
     cgConstructors :: [CodeGenConstructor],
     cgDerivations :: [DerivingClass]
   }
-  deriving (Show)
+  deriving (Eq, Show)
 
 isNewType :: CodeGenType -> Bool
 isNewType CodeGenType {cgConstructors = [CodeGenConstructor {constructorFields = [_]}]} = True
@@ -128,7 +128,7 @@ data CodeGenConstructor = CodeGenConstructor
   { constructorName :: CodeGenTypeName,
     constructorFields :: [CodeGenField]
   }
-  deriving (Show)
+  deriving (Eq, Show)
 
 instance Printer CodeGenConstructor where
   print CodeGenConstructor {constructorFields = [CodeGenField {fieldName = "_", ..}], ..} =
@@ -147,7 +147,7 @@ data CodeGenField = CodeGenField
     wrappers :: [FIELD_TYPE_WRAPPER],
     fieldIsNullable :: Bool
   }
-  deriving (Show)
+  deriving (Eq, Show)
 
 instance Printer CodeGenField where
   print CodeGenField {..} = infix' (print fieldName) "::" (foldr renderWrapper (print fieldType) wrappers)
@@ -159,7 +159,7 @@ data FIELD_TYPE_WRAPPER
   | ARG TypeName
   | TAGGED_ARG TH.Name FieldName TypeRef
   | GQL_WRAPPER TypeWrapper
-  deriving (Show)
+  deriving (Eq, Show)
 
 renderWrapper :: FIELD_TYPE_WRAPPER -> HSDoc n -> HSDoc n
 renderWrapper PARAMETRIZED = (.<> "m")
@@ -174,7 +174,7 @@ data CodeGenTypeName = CodeGenTypeName
     typeParameters :: [Text],
     typename :: TypeName
   }
-  deriving (Show)
+  deriving (Eq, Show)
 
 getFullName :: CodeGenTypeName -> TypeName
 getFullName CodeGenTypeName {..} = camelCaseTypeName namespace typename
@@ -248,7 +248,7 @@ data TypeClassInstance body = TypeClassInstance
     assoc :: [(TH.Name, AssociatedType)],
     typeClassMethods :: [(TH.Name, MethodArgument, body)]
   }
-  deriving (Show)
+  deriving (Eq, Show)
 
 instance (Pretty a) => Pretty (TypeClassInstance a) where
   pretty TypeClassInstance {..} =
@@ -271,7 +271,7 @@ renderTypeableConstraints xs = tupled (map (("Typeable" <+>) . pretty) xs) <+> "
 data AssociatedType
   = AssociatedTypeName TH.Name
   | AssociatedLocations [DirectiveLocation]
-  deriving (Show)
+  deriving (Eq, Show)
 
 printTHName :: TH.Name -> Doc ann
 printTHName = ignore . print
@@ -287,7 +287,7 @@ data MethodArgument
   = NoArgument
   | ProxyArgument
   | DestructArgument TH.Name [TH.Name]
-  deriving (Show)
+  deriving (Eq, Show)
 
 instance Pretty MethodArgument where
   pretty NoArgument = ""
@@ -296,6 +296,9 @@ instance Pretty MethodArgument where
 
 data PrintableValue where
   PrintableValue :: forall a. (Show a, Lift a) => a -> PrintableValue
+
+instance Eq PrintableValue where
+  a == b = show a == show b
 
 instance Show PrintableValue where
   show (PrintableValue a) = show a
