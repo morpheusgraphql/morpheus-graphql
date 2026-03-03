@@ -84,7 +84,7 @@ data ServerDirectiveUsage
   = TypeDirectiveUsage TypeValue
   | FieldDirectiveUsage FieldName TypeValue
   | EnumDirectiveUsage TypeName TypeValue
-  deriving (Show)
+  deriving (Eq, Show)
 
 instance PrintExp ServerDirectiveUsage where
   printExp (TypeDirectiveUsage x) = appE (varE 'typeDirective) (printExp x)
@@ -101,14 +101,14 @@ data GQLTypeDefinition = GQLTypeDefinition
     gqlKind :: Kind,
     gqlTypeDirectiveUses :: [ServerDirectiveUsage]
   }
-  deriving (Show)
+  deriving (Eq, Show)
 
 data InterfaceDefinition = InterfaceDefinition
   { aliasName :: TypeName,
     interfaceName :: TypeName,
     unionName :: TypeName
   }
-  deriving (Show)
+  deriving (Eq, Show)
 
 instance PrintDec InterfaceDefinition where
   printDec InterfaceDefinition {..} =
@@ -125,7 +125,7 @@ data GQLDirectiveTypeClass = GQLDirectiveTypeClass
   { directiveTypeName :: CodeGenTypeName,
     directiveLocations :: [DirectiveLocation]
   }
-  deriving (Show)
+  deriving (Eq, Show)
 
 data ServerDeclaration
   = GQLTypeInstance Kind (TypeClassInstance ServerMethod)
@@ -133,7 +133,7 @@ data ServerDeclaration
   | DataType CodeGenType
   | ScalarType {scalarTypeName :: Text}
   | InterfaceType InterfaceDefinition
-  deriving (Show)
+  deriving (Eq, Show)
 
 instance Pretty ServerDeclaration where
   pretty (InterfaceType InterfaceDefinition {..}) =
@@ -157,7 +157,7 @@ newtype CodeGenConfig = CodeGenConfig {namespace :: Bool}
 data ServerMethod
   = ServerMethodDefaultValues (Map Text (Value CONST))
   | ServerMethodDirectives [ServerDirectiveUsage]
-  deriving (Show)
+  deriving (Eq, Show)
 
 instance Pretty ServerMethod where
   pretty (ServerMethodDefaultValues x) = pretty (show x)
