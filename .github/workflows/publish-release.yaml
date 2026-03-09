@@ -17,10 +17,9 @@ jobs:
       - uses: ./.github/actions/setup
 
       - name: Publish
-        run: hwm release publish
+        run: hwm release publish main
         env:
-          HACKAGE_USERNAME: ${{ secrets.HACKAGE_USERNAME }}
-          HACKAGE_PASSWORD: ${{ secrets.HACKAGE_PASSWORD }}
+          HACKAGE_AUTH_TOKEN: ${{ secrets.HACKAGE_AUTH_TOKEN }}
 
       - name: Publish GitHub Release (from merged release PR)
         uses: nalchevanidze/relasy/actions/publish-release@v1.1.1

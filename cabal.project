@@ -1,0 +1,19 @@
+with-compiler: ghc-9.6.6
+packages:
+  examples/yesod-pubsub
+  examples/servant
+  examples/code-gen-docs
+  examples/scotty
+  examples/code-gen
+  examples/client
+  helpers/benchmarks
+  morpheus-graphql-app
+  morpheus-graphql-code-gen-utils
+  morpheus-graphql-server
+  morpheus-graphql-tests
+  morpheus-graphql-core
+  morpheus-graphql-subscriptions
+  morpheus-graphql-code-gen
+  morpheus-graphql-client
+  morpheus-graphql
+
