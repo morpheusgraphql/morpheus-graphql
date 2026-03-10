@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           examples-subscription-extpubsub
-version:        0.28.4
+version:        0.28.5
 synopsis:       examples of external pub-sub
 description:    examples of a GraphQL server using postgresql/rabbitmq as a pusub
 category:       web, graphql

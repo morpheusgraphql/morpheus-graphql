@@ -1,35 +1,35 @@
 # hash: 11fa4b88d5fcf0a18e65f141eae5bc02778cf38706b4189eb037201f6c4ad62b
 name: morpheus-graphql
-version: 0.28.4
+version: 0.28.5
 workspace:
   examples:
     dir: examples
     members:
-      - yesod-pubsub
-      - servant
-      - scotty-haxl
-      - scotty-freer-simple
-      - scotty-fraxl
-      - code-gen-docs
-      - scotty
-      - code-gen
-      - client
-      - subscription-extpubsub
+    - yesod-pubsub
+    - servant
+    - scotty-haxl
+    - scotty-freer-simple
+    - scotty-fraxl
+    - code-gen-docs
+    - scotty
+    - code-gen
+    - client
+    - subscription-extpubsub
   helpers:
     dir: helpers
     members:
-      - benchmarks
+    - benchmarks
   libs:
     members:
-      - app
-      - code-gen-utils
-      - server
-      - tests
-      - core
-      - subscriptions
-      - code-gen
-      - client
-      - .
+    - app
+    - code-gen-utils
+    - server
+    - tests
+    - core
+    - subscriptions
+    - code-gen
+    - client
+    - .
     prefix: morpheus-graphql
 environments:
   builder: stack
@@ -38,10 +38,10 @@ environments:
     latest:
       ghc: 9.10.3
       exclude:
-        - examples/scotty-fraxl
-        - examples/scotty-freer-simple
-        - examples/scotty-haxl
-        - examples/subscription-extpubsub
+      - examples/scotty-fraxl
+      - examples/scotty-freer-simple
+      - examples/scotty-haxl
+      - examples/subscription-extpubsub
       stack:
         resolver: lts-24.25
         allow-newer: true
@@ -53,7 +53,7 @@ environments:
     legacy:
       ghc: 8.4.4
       exclude:
-        - examples/subscription-extpubsub
+      - examples/subscription-extpubsub
       stack:
         resolver: lts-12.26
         extra-deps:
@@ -78,7 +78,7 @@ environments:
     maintenance:
       ghc: 8.10.7
       exclude:
-        - examples/subscription-extpubsub
+      - examples/subscription-extpubsub
       stack:
         resolver: lts-18.10
         extra-deps:
@@ -93,10 +93,10 @@ environments:
     stable:
       ghc: 9.6.6
       exclude:
-        - examples/scotty-fraxl
-        - examples/scotty-freer-simple
-        - examples/scotty-haxl
-        - examples/subscription-extpubsub
+      - examples/scotty-fraxl
+      - examples/scotty-freer-simple
+      - examples/scotty-haxl
+      - examples/subscription-extpubsub
       stack:
         extra-deps:
           attoparsec-aeson: 2.1.0.0
@@ -158,18 +158,15 @@ release:
     morpheus: libs/code-gen:morpheus
   publish:
     main:
-      - libs
+    - libs
 scripts:
   build: stack build --fast
   clean: find . -name "*.cabal" -exec rm -rf {} \; && stack clean
-  format:
-    curl -fsSL "https://raw.githubusercontent.com/nalchevanidze/hwm/main/scripts/format.sh"
+  format: curl -fsSL "https://raw.githubusercontent.com/nalchevanidze/hwm/main/scripts/format.sh"
     | bash -s
-  format:fix:
-    curl -fsSL "https://raw.githubusercontent.com/nalchevanidze/hwm/main/scripts/format.sh"
+  format:fix: curl -fsSL "https://raw.githubusercontent.com/nalchevanidze/hwm/main/scripts/format.sh"
     | bash -s -- --fix
   install: stack install
-  lint:
-    curl -sSL https://raw.githubusercontent.com/ndmitchell/hlint/master/misc/run.sh
+  lint: curl -sSL https://raw.githubusercontent.com/ndmitchell/hlint/master/misc/run.sh
     | sh -s .
   test: stack test {TARGET} --fast
