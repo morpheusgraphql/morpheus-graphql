@@ -14,8 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup
-
+      - uses: nalchevanidze/hwm/actions/cli@main
       - name: Publish
         run: hwm release publish main
         env:
