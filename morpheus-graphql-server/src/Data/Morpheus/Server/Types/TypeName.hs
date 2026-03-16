@@ -76,7 +76,7 @@ instance Hashable TypeFingerprint where
   hashWithSalt s (CustomFingerprint x) = hashWithSalt s (3 :: Int, x)
 
 typeableTypename :: (Typeable a) => f a -> TypeName
-typeableTypename = packName . intercalate "" . fmap (pack . tyConName . replacePairCon) . getTypeConstructors
+typeableTypename = packName . intercalate "" . fmap (pack . dropLeadingTick . tyConName . replacePairCon) . getTypeConstructors
 
 toCategory :: CatType c a -> TypeCategory
 toCategory InputType = IN
@@ -91,6 +91,10 @@ typeableFingerprint p =
 
 getTypeConstructors :: (Typeable a) => f a -> [TyCon]
 getTypeConstructors = ignoreResolver . splitTyConApp . typeRep
+
+-- Filter out ticks from promoted constructors
+dropLeadingTick :: String -> String
+dropLeadingTick = Prelude.dropWhile (== '\'') 
 
 rep :: forall k (a :: k) f. (Typeable a) => f a -> TyCon
 rep = typeRepTyCon . typeRep
